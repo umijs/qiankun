@@ -3,3 +3,7 @@
 
 An implementation of [Micro Frontends](https://micro-frontends.org/), based on [single-spa](https://github.com/CanopyTax/single-spa), but made it production-ready.
 
+## Roadmap
+
+- [ ] core lib
+- [ ] umi-plugin-single-spa integrated

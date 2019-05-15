@@ -1,0 +1,42 @@
+{
+  "name": "qiankun",
+  "version": "0.0.1",
+  "description": "An completed implementation of Micro Frontends",
+  "main": "index.js",
+  "scripts": {
+    "build": "npm run build:esm && npm run build:cjs",
+    "build:esm": "rm -fr esm && tsc",
+    "build:cjs": "rm -fr lib && tsc -p tsconfig.cjs.json",
+    "prepush": "tslint ",
+    "lint": "tslint 'src/**/*.ts'",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kuitos/qiankun.git"
+  },
+  "files": [
+    "esm",
+    "lib"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kuitos/qiankun/issues"
+  },
+  "homepage": "https://github.com/kuitos/qiankun#readme",
+  "dependencies": {
+    "import-html-entry": "^0.4.11",
+    "lodash": "^4.17.11",
+    "single-spa": "^4.3.3",
+    "tslib": "^1.9.3"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.129",
+    "@types/node": "^12.0.2",
+    "husky": "^2.3.0",
+    "tslint": "^5.16.0",
+    "tslint-eslint-rules": "^5.4.0",
+    "typescript": "^3.4.5"
+  }
+}
