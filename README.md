@@ -25,10 +25,12 @@ Visit `http://localhost:7099`
 import { registerMicroApps, start } from 'qiankun';
 
 registerMicroApps(
+  
   [
     { name: 'react app', entry: '//localhost:7100', routerPrefix: '/react' },
     { name: 'vue app', entry: { scripts: [ '//localhost:7100/main.js' ] }, routerPrefix: '/vue' },
   ],
+  
   {
     renderFunction({ appContent, loading }) {
       const container = document.getElementById('container');
@@ -37,7 +39,8 @@ registerMicroApps(
     activeRule(app) {
       return location.pathname.startsWith(app.routerPrefix);
     },
-  });
+  }
+);
 
 start({ prefetch: true, jsSandbox: true });
 ```
