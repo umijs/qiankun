@@ -7,7 +7,7 @@
     "build": "npm run build:esm && npm run build:cjs",
     "build:esm": "rm -fr esm && tsc",
     "build:cjs": "rm -fr lib && tsc -p tsconfig.cjs.json",
-    "prepush": "tslint ",
+    "prepush": "npm run lint",
     "lint": "tslint 'src/**/*.ts'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
