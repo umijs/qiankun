@@ -1,0 +1,27 @@
+{
+  "name": "main",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "parcel serve index.html --global reactapp --port 7101",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "vue": "^2.6.10",
+    "vue-hot-reload-api": "^2.3.3"
+  },
+  "devDependencies": {
+    "@vue/component-compiler-utils": "^3.0.0",
+    "babel-core": "^6.26.3",
+    "babel-preset-env": "^1.7.0",
+    "http-server": "^0.11.1",
+    "parcel-bundler": "^1.12.3",
+    "vue-template-compiler": "^2.6.10"
+  },
+  "browserslist": [
+    "last 2 Chrome versions"
+  ]
+}
