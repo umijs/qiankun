@@ -8,21 +8,6 @@ type LifeCycles = {
   unmount: () => Promise<any>;
 };
 
-declare module 'import-html-entry' {
-
-  interface IImportResult {
-    template: string;
-
-    execScripts(sandbox?: object): Promise<LifeCycles>;
-
-    getExternalScripts(): Promise<string[]>;
-
-    getExternalStyleSheets(): Promise<string[]>;
-  }
-
-  export default function importHTML(url: string): Promise<IImportResult>;
-}
-
 declare module 'single-spa' {
 
   export function start(): void;
