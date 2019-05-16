@@ -48,7 +48,8 @@ start({ prefetch: true, jsSandbox: true });
 - [x] Config Entry
 - [x] Isolated styles
 - [x] JS Sandbox
-- [x] assets prefetch
+- [x] Assets Prefetch
+- [ ] Nested Microfrontends
 - [ ] [umi-plugin-single-spa](https://github.com/umijs/umi-plugin-single-spa) integration
 
 ## API
