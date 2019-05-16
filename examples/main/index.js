@@ -10,8 +10,8 @@ import Framework from './Framework';
 
 registerMicroApps(
   [
-    { name: 'react app', entry: '//localhost:7100', routerPrefix: '#/react' },
-    { name: 'vue app', entry: '//localhost:7101', routerPrefix: '#/vue' },
+    { name: 'react app', entry: '//localhost:7100', routerPrefix: '/react' },
+    { name: 'vue app', entry: '//localhost:7101', routerPrefix: '/vue' },
   ],
   {
     renderFunction({ appContent, loading }) {
@@ -19,7 +19,7 @@ registerMicroApps(
       ReactDOM.render(<Framework loading={loading} content={appContent}/>, container);
     },
     activeRule(app) {
-      return location.hash.startsWith(app.routerPrefix);
+      return location.pathname.startsWith(app.routerPrefix);
     },
   });
 
