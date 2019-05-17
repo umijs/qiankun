@@ -1,5 +1,4 @@
 # qiankun（乾坤）
-⚠️ under api designing, do not use in production environment at present
 > In Chinese traditional culture `qian` means heaven and `kun` stands for earth, so `qiankun` is the universe.
 
 
