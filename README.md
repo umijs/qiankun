@@ -16,6 +16,8 @@ npm i qiankun -S
 ## Examples
 
 ```shell
+npm i
+npm run build
 cd examples/main && npm i && npm start
 cd examples/react && npm i && npm start
 cd examples/vue && npm i && npm start
