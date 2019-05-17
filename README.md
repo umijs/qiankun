@@ -3,6 +3,8 @@
 
 An implementation of [Micro Frontends](https://micro-frontends.org/), based on [single-spa](https://github.com/CanopyTax/single-spa), but made it production-ready.
 
+⚠️ under api designing, do not use in production environment at present
+
 ## Usage
 
 ```shell
