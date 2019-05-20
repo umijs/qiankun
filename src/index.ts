@@ -42,10 +42,10 @@ export function registerMicroApps(apps: RegistrableApp[], options: Options = {})
         let mountSandbox = () => Promise.resolve();
         let unmountSandbox = () => Promise.resolve();
         if (useJsSandbox) {
-          const { sandbox, mount, unmount } = genSandbox(name);
+          const { sandbox, mount: mountS, unmount: unmountS } = genSandbox(name);
           jsSandbox = sandbox;
-          mountSandbox = mount;
-          unmountSandbox = unmount;
+          mountSandbox = mountS;
+          unmountSandbox = unmountS;
         }
 
         // 等待 300 ms，确保菜单切换动画完成
