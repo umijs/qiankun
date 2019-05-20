@@ -1,0 +1,24 @@
+{
+  "name": "react15",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "parcel serve index.html --global reactapp15 --port 7102",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "antd": "2.13.14",
+    "react": "15.6.2",
+    "react-dom": "15.6.2"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.3",
+    "parcel-bundler": "^1.12.3"
+  },
+  "browserslist": [
+    "last 2 Chrome versions"
+  ]
+}

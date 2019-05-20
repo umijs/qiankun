@@ -2,15 +2,11 @@
  * @author 有知 <youzhi.lk@antfin.com>
  * @since 2019-05-16
  */
-import ElementUI from 'element-ui';
-import 'element-ui/lib/theme-chalk/index.css';
-import Vue from 'vue';
+import 'antd/dist/antd.min.css';
+import React from 'react';
+import ReactDOM from 'react-dom';
 import App from './App';
 import './index.css';
-
-Vue.use(ElementUI);
-
-let instance = null;
 
 export async function bootstrap() {
   console.log('react app bootstraped');
@@ -18,13 +14,11 @@ export async function bootstrap() {
 
 export async function mount(props) {
   console.log('props from main framework', props);
-  instance = new Vue({
-    el: '#vueRoot',
-    render: h => h(App),
-  });
+  ReactDOM.render(<App/>, document.getElementById('react15Root'));
 }
 
 export async function unmount() {
-  instance.$destroy();
-  instance = null;
+  ReactDOM.unmountComponentAtNode(document.getElementById('react15Root'));
 }
+
+

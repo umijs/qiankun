@@ -10,7 +10,10 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "parcel-bundler": "^1.12.3"
+    "autoprefixer": "^9.5.1",
+    "less": "^3.9.0",
+    "parcel-bundler": "^1.12.3",
+    "postcss-modules": "^1.4.1"
   },
   "dependencies": {
     "react": "^16.8.6",

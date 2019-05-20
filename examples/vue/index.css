@@ -1,9 +1,3 @@
-main > div {
-  font-size: 18px;
-  color: black;
-  background: green;
-}
-
 main:after {
   content: 'global vue style';
 }

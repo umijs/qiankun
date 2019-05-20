@@ -1,9 +1,0 @@
-main > div {
-  font-size: 20px;
-  color: pink;
-  background: blue;
-}
-
-main:after {
-  content: 'global react style';
-}

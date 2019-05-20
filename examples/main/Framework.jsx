@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import style from './index.less';
 
 export default function Framework(props) {
 
@@ -15,11 +16,12 @@ export default function Framework(props) {
 
   return (
     <>
-      <header>
+      <header className={style.header}>
         <nav>
           <ol>
-            <li><a href="javascript: void 0" onClick={() => goto('react app', '/react')}>react</a></li>
-            <li><a href="javascript: void 0" onClick={() => goto('vue app', '/vue')}>vue</a></li>
+            <li><a href="javascript: void 0" onClick={() => goto('react app', '/react')}>react16 + antd3</a></li>
+            <li><a href="javascript: void 0" onClick={() => goto('react15 app', '/15react15')}>react15 + antd2</a></li>
+            <li><a href="javascript: void 0" onClick={() => goto('vue app', '/vue')}>vue2 + element2</a></li>
           </ol>
         </nav>
       </header>

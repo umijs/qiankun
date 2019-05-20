@@ -2,6 +2,7 @@
  * @author 有知 <youzhi.lk@antfin.com>
  * @since 2019-05-16
  */
+import 'antd/dist/antd.min.css';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './App';

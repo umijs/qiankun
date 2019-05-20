@@ -6,10 +6,11 @@
   "module": "./esm/index.js",
   "types": "./esm/index.d.ts",
   "scripts": {
-    "start": "npm run start:main & npm run start:react16 & npm run start:vue",
+    "start": "npm run start:main & npm run start:react16 & npm run start:react15 & npm run start:vue",
     "build:examples": "cd examples/main && npm i && cd ../react && npm i && cd ../vue && npm i",
     "start:main": "cd examples/main && npm start",
-    "start:react16": "cd examples/react && npm start",
+    "start:react16": "cd examples/react16 && npm start",
+    "start:react15": "cd examples/react15 && npm start",
     "start:vue": "cd examples/vue && npm start",
     "build": "npm run build:esm && npm run build:cjs",
     "build:esm": "rm -fr esm && tsc",
