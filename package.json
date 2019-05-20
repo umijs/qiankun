@@ -2,8 +2,15 @@
   "name": "qiankun",
   "version": "0.0.1",
   "description": "An completed implementation of Micro Frontends",
-  "main": "index.js",
+  "main": "./lib/index.js",
+  "module": "./esm/index.js",
+  "types": "./esm/index.d.ts",
   "scripts": {
+    "start": "npm run start:main & npm run start:react16 & npm run start:vue",
+    "build:examples": "cd examples/main && npm i && cd ../react && npm i && cd ../vue && npm i",
+    "start:main": "cd examples/main && npm start",
+    "start:react16": "cd examples/react && npm start",
+    "start:vue": "cd examples/vue && npm start",
     "build": "npm run build:esm && npm run build:cjs",
     "build:esm": "rm -fr esm && tsc",
     "build:cjs": "rm -fr lib && tsc -p tsconfig.cjs.json",
@@ -19,7 +26,7 @@
     "esm",
     "lib"
   ],
-  "author": "",
+  "author": "Kuitos",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/kuitos/qiankun/issues"

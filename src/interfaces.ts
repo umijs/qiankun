@@ -3,18 +3,19 @@
  * @since 2019-05-16
  */
 
-export type RenderFunction = (props?: { appContent: string, loading: boolean }) => any;
-export type ActiveRule = (app: RegistrableApp) => boolean;
+type render = (props?: { appContent: string, loading: boolean }) => any;
 export type RegistrableApp = {
-  name: string; // 应用名(ID)，也可当做应用的产品码来用
-  entry: Entry;  // 应用入口
-  routerPrefix: string; // 应用路由前缀
-  props?: object;
+  name: string; // app name
+  entry: Entry;  // app entry
+  render: render;
+  activeRule: (location: Location) => boolean;
+  props?: object; // props pass through to app
 };
 
 export type Entry = string | {
-  scripts: string[];
-  styles: string[];
+  scripts?: string[];
+  styles?: string[];
+  html?: string;
 };
 
 export type StartOpts = {

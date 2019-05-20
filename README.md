@@ -4,8 +4,6 @@
 
 An implementation of [Micro Frontends](https://micro-frontends.org/), based on [single-spa](https://github.com/CanopyTax/single-spa), but made it production-ready.
 
-⚠️ under api designing, do not use in production environment at present
-
 ## Usage
 
 ```shell
@@ -29,22 +27,20 @@ Visit `http://localhost:7099`
 ```js
 import { registerMicroApps, start } from 'qiankun';
 
+function render({ appContent, loading }) {
+  const container = document.getElementById('container');
+  ReactDOM.render(<Framework loading={loading} content={appContent}/>, container);
+}
+
+function genActiveRule(routerPrefix) {
+  return (location) => location.pathname.startsWith(routerPrefix);
+}
+
 registerMicroApps(
-  
   [
-    { name: 'react app', entry: '//localhost:7100', routerPrefix: '/react' },
-    { name: 'vue app', entry: { scripts: [ '//localhost:7100/main.js' ] }, routerPrefix: '/vue' },
+    { name: 'react app', entry: '//localhost:7100', render, activeRule: genActiveRule('/react') },
+    { name: 'vue app', entry: { scripts: [ '//localhost:7100/main.js' ] }, render, activeRule: genActiveRule('/vue') },
   ],
-  
-  {
-    renderFunction({ appContent, loading }) {
-      const container = document.getElementById('container');
-      ReactDOM.render(<Framework loading={loading} content={appContent}/>, container);
-    },
-    activeRule(app) {
-      return location.pathname.startsWith(app.routerPrefix);
-    },
-  }
 );
 
 start({ prefetch: true, jsSandbox: true });
