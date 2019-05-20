@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "parcel serve index.html --global reactapp --port 7101",
+    "start": "parcel serve index.html --global vueapp --port 7101",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

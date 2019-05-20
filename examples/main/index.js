@@ -8,19 +8,20 @@ import ReactDOM from 'react-dom';
 import { registerMicroApps, start } from '../../esm/index';
 import Framework from './Framework';
 
+function render({ appContent, loading }) {
+  const container = document.getElementById('container');
+  ReactDOM.render(<Framework loading={loading} content={appContent}/>, container);
+}
+
+function genActiveRule(routerPrefix) {
+  return location => location.pathname.startsWith(routerPrefix);
+}
+
 registerMicroApps(
   [
-    { name: 'react app', entry: '//localhost:7100', routerPrefix: '/react' },
-    { name: 'vue app', entry: '//localhost:7101', routerPrefix: '/vue' },
+    { name: 'react app', entry: '//localhost:7100', render, activeRule: genActiveRule('/react') },
+    { name: 'vue app', entry: '//localhost:7101', render, activeRule: genActiveRule('/vue') },
   ],
-  {
-    renderFunction({ appContent, loading }) {
-      const container = document.getElementById('container');
-      ReactDOM.render(<Framework loading={loading} content={appContent}/>, container);
-    },
-    activeRule(app) {
-      return location.pathname.startsWith(app.routerPrefix);
-    },
-  });
+);
 
-start({});
+start();
