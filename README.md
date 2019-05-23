@@ -39,6 +39,17 @@ registerMicroApps(
     { name: 'react app', entry: '//localhost:7100', render, activeRule: genActiveRule('/react') },
     { name: 'vue app', entry: { scripts: [ '//localhost:7100/main.js' ] }, render, activeRule: genActiveRule('/vue') },
   ],
+  {
+    beforeLoadHooks: [async app => {
+      console.log('before load', app);
+    }],
+    beforeMountHooks: [async app => {
+      console.log('before mount', app);
+    }],
+    afterUnloadHooks: [async app => {
+      console.log('after unload', app);
+    }],
+  },
 );
 
 start({ prefetch: true, jsSandbox: true });
@@ -59,5 +70,21 @@ start({ prefetch: true, jsSandbox: true });
 ### registerMicroApps
 
 ```typescript
+type RegistrableApp = {
+  name: string; // app name
+  entry: string | { scripts?: string[]; styles?: string[]; html?: string };  // app entry
+  render: (props?: { appContent: string, loading: boolean }) => any;
+  activeRule: (location: Location) => boolean;
+  props?: object; // props pass through to app
+};
+
+type Options = {
+  beforeLoadHooks?: Array<(app: RegistrableApp) => Promise<void>>; // function before app load
+  beforeMountHooks?: Array<(app: RegistrableApp) => Promise<void>>; // function before app mount
+  afterUnloadHooks?: Array<(app: RegistrableApp) => Promise<void>>; // function after app unmount
+};
+
 function registerMicroApps(apps: RegistrableApp[], options: Options): void
+
+function start({ prefetch: boolean, jsSandbox: boolean }): void;
 ```

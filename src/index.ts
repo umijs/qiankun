@@ -11,11 +11,11 @@ import { genSandbox } from './sandbox';
 
 import { sleep } from './utils';
 
-interface Options {
+type Options = {
   beforeLoadHooks?: Array<(app: RegistrableApp) => Promise<void>>; // function before app load
   beforeMountHooks?: Array<(app: RegistrableApp) => Promise<void>>; // function before app mount
   afterUnloadHooks?: Array<(app: RegistrableApp) => Promise<void>>; // function after app unmount
-}
+};
 
 export function registerMicroApps(apps: RegistrableApp[], options: Options = {}) {
 
