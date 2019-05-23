@@ -19,7 +19,7 @@ npm i qiankun -S
 
 ```shell
 npm i
-npm run build:examples
+npm run install:examples
 npm start
 ```
 

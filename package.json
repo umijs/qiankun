@@ -7,7 +7,7 @@
   "types": "./esm/index.d.ts",
   "scripts": {
     "start": "npm run start:main & npm run start:react16 & npm run start:react15 & npm run start:vue",
-    "build:examples": "cd examples/main && npm i && cd ../react16 && npm i && cd ../react15 && npm i && cd ../vue && npm i",
+    "install:examples": "npm run build && cd examples/main && npm i && cd ../react16 && npm i && cd ../react15 && npm i && cd ../vue && npm i",
     "start:main": "cd examples/main && npm start",
     "start:react16": "cd examples/react16 && npm start",
     "start:react15": "cd examples/react15 && npm start",
@@ -16,7 +16,7 @@
     "build:esm": "rm -fr esm && tsc",
     "build:cjs": "rm -fr lib && tsc -p tsconfig.cjs.json",
     "prepush": "npm run lint",
-    "prepublish": "npm run lint",
+    "prepublish": "npm run lint && npm run build",
     "lint": "tslint 'src/**/*.ts'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
