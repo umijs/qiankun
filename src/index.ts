@@ -92,6 +92,8 @@ export function registerMicroApps(apps: RegistrableApp[], options: Options = {})
   });
 }
 
+export * from './effects';
+
 let useJsSandbox = true;
 
 export function start(opts: StartOpts = {}) {
