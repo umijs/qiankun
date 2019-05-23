@@ -14,10 +14,8 @@ npm i qiankun -S
 
 ```shell
 npm i
-npm run build
-cd examples/main && npm i && npm start
-cd examples/react && npm i && npm start
-cd examples/vue && npm i && npm start
+npm run build:examples
+npm start
 ```
 
 Visit `http://localhost:7099`

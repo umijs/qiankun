@@ -25,6 +25,17 @@ registerMicroApps(
     { name: 'react15 app', entry: '//localhost:7102', render, activeRule: genActiveRule('/15react15') },
     { name: 'vue app', entry: '//localhost:7101', render, activeRule: genActiveRule('/vue') },
   ],
+  {
+    beforeLoadHooks: [app => {
+      console.log('before load', app);
+    }],
+    beforeMountHooks: [app => {
+      console.log('before mount', app);
+    }],
+    afterUnloadHooks: [app => {
+      console.log('after unload', app);
+    }],
+  },
 );
 
 start();

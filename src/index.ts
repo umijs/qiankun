@@ -13,12 +13,13 @@ import { sleep } from './utils';
 
 interface Options {
   beforeLoadHooks?: Array<(app: RegistrableApp) => Promise<void>>; // function before app load
+  beforeMountHooks?: Array<(app: RegistrableApp) => Promise<void>>; // function before app mount
   afterUnloadHooks?: Array<(app: RegistrableApp) => Promise<void>>; // function after app unmount
 }
 
 export function registerMicroApps(apps: RegistrableApp[], options: Options = {}) {
 
-  const { beforeLoadHooks = [], afterUnloadHooks = [] } = options;
+  const { beforeLoadHooks = [], afterUnloadHooks = [], beforeMountHooks = [] } = options;
 
   apps.forEach(app => {
 
@@ -63,6 +64,11 @@ export function registerMicroApps(apps: RegistrableApp[], options: Options = {})
             bootstrapApp,
           ],
           mount: [
+            async () => {
+              if (beforeMountHooks.length) {
+                await Promise.all(beforeMountHooks.map(hook => hook(app)));
+              }
+            },
             mountSandbox,
             // 添加 mount hook, 确保每次应用加载前容器 dom 结构已经设置完毕
             async () => render({ appContent, loading: false }),
