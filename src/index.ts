@@ -98,9 +98,9 @@ let useJsSandbox = true;
 export function start(opts: StartOpts = {}) {
 
   const { prefetch = true, jsSandbox = true } = opts;
+
   if (prefetch) {
-    console.log('start prefetch');
-    // prefetchEntry();
+    prefetchAfterFirstMounted(microApps);
   }
 
   if (jsSandbox) {
