@@ -7,19 +7,21 @@ import { importEntry } from 'import-html-entry';
 import { isFunction } from 'lodash';
 import { registerApplication, start as startSpa } from 'single-spa';
 import { RegistrableApp, StartOpts } from './interfaces';
+import { prefetchAfterFirstMounted } from './prefetch';
 import { genSandbox } from './sandbox';
 
-import { sleep } from './utils';
-
 type Options = {
-  beforeLoadHooks?: Array<(app: RegistrableApp) => Promise<void>>; // function before app load
-  beforeMountHooks?: Array<(app: RegistrableApp) => Promise<void>>; // function before app mount
-  afterUnloadHooks?: Array<(app: RegistrableApp) => Promise<void>>; // function after app unmount
+  beforeLoadHooks?: Array<(app: RegistrableApp) => Promise<any>>; // function before app load
+  beforeMountHooks?: Array<(app: RegistrableApp) => Promise<any>>; // function before app mount
+  afterUnloadHooks?: Array<(app: RegistrableApp) => Promise<any>>; // function after app unmount
 };
+
+let microApps: RegistrableApp[] = [];
 
 export function registerMicroApps(apps: RegistrableApp[], options: Options = {}) {
 
   const { beforeLoadHooks = [], afterUnloadHooks = [], beforeMountHooks = [] } = options;
+  microApps = [...microApps, ...apps];
 
   apps.forEach(app => {
 
@@ -35,22 +37,19 @@ export function registerMicroApps(apps: RegistrableApp[], options: Options = {})
         // 确保每次应用加载前容器 dom 结构已经设置完毕
         render({ appContent, loading: true });
 
-        if (beforeLoadHooks.length) {
-          await Promise.all(beforeLoadHooks.map(hook => hook(app)));
-        }
-
         let jsSandbox = window;
         let mountSandbox = () => Promise.resolve();
         let unmountSandbox = () => Promise.resolve();
         if (useJsSandbox) {
-          const { sandbox, mount: mountS, unmount: unmountS } = genSandbox(name);
-          jsSandbox = sandbox;
-          mountSandbox = mountS;
-          unmountSandbox = unmountS;
+          const sandbox = genSandbox(name);
+          jsSandbox = sandbox.sandbox;
+          mountSandbox = sandbox.mount;
+          unmountSandbox = sandbox.unmount;
         }
 
-        // 等待 300 ms，确保菜单切换动画完成
-        await sleep(300);
+        if (beforeLoadHooks.length) {
+          await Promise.all(beforeLoadHooks.map(hook => hook(app)));
+        }
 
         // 获取 模块/应用 导出的 lifecycle hooks
         const { bootstrap: bootstrapApp, mount, unmount } = await execScripts(jsSandbox);
