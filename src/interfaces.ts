@@ -22,3 +22,6 @@ export type StartOpts = {
   prefetch?: boolean;
   jsSandbox?: boolean;
 };
+
+export type Rebuilder = () => void;
+export type Freer = () => Rebuilder;

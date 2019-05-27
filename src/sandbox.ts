@@ -2,8 +2,9 @@
  * @author Kuitos
  * @since 2019-04-11
  */
-import { isFunction, noop } from 'lodash';
+import { isFunction } from 'lodash';
 import { hijack } from './hijackers';
+import { Freer, Rebuilder } from './interfaces';
 
 function snapshot(updatedPropsValueMap: Map<PropertyKey, any>) {
   /*
@@ -57,8 +58,8 @@ export function genSandbox(appName: string) {
   // 持续记录更新的(新增和修改的)全局变量的 map，用于在任意时刻做 snapshot
   const currentUpdatedPropsValueMapForSnapshot = new Map<PropertyKey, any>();
 
-  let freers: Array<() => typeof noop> = [];
-  let sideEffectsRebuilders: Array<typeof noop> = [];
+  let freers: Freer[] = [];
+  let sideEffectsRebuilders: Rebuilder[] = [];
 
   // render 沙箱的上下文快照
   let renderSandboxSnapshot: Map<PropertyKey, any> | null = null;
