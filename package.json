@@ -5,6 +5,7 @@
   "main": "./lib/index.js",
   "module": "./esm/index.js",
   "types": "./esm/index.d.ts",
+  "sideEffects": false,
   "scripts": {
     "start": "npm run start:main & npm run start:react16 & npm run start:react15 & npm run start:vue",
     "install:examples": "npm run build && cd examples/main && npm i && cd ../react16 && npm i && cd ../react15 && npm i && cd ../vue && npm i",
@@ -37,7 +38,7 @@
   "dependencies": {
     "import-html-entry": "^1.0.0",
     "lodash": "^4.17.11",
-    "single-spa": "^4.3.3",
+    "single-spa": "^4.3.4",
     "tslib": "^1.9.3"
   },
   "devDependencies": {
