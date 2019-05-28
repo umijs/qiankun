@@ -29,7 +29,7 @@ export function registerMicroApps(apps: RegistrableApp[], options: Options = {})
 
     registerApplication(name,
 
-      async () => {
+      async ({ name: appName }) => {
 
         // 获取入口 html 模板及脚本加载器
         const { template: appContent, execScripts } = await importEntry(entry);
@@ -41,7 +41,7 @@ export function registerMicroApps(apps: RegistrableApp[], options: Options = {})
         let mountSandbox = () => Promise.resolve();
         let unmountSandbox = () => Promise.resolve();
         if (useJsSandbox) {
-          const sandbox = genSandbox(name);
+          const sandbox = genSandbox(appName);
           jsSandbox = sandbox.sandbox;
           mountSandbox = sandbox.mount;
           unmountSandbox = sandbox.unmount;
@@ -55,7 +55,7 @@ export function registerMicroApps(apps: RegistrableApp[], options: Options = {})
         const { bootstrap: bootstrapApp, mount, unmount } = await execScripts(jsSandbox);
 
         if (!isFunction(bootstrapApp) || !isFunction(mount) || !isFunction(unmount)) {
-          throw new Error(`You need to export the functional lifecycles in ${name} entry`);
+          throw new Error(`You need to export the functional lifecycles in ${appName} entry`);
         }
 
         return {
