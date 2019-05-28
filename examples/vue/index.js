@@ -1,5 +1,5 @@
 /**
- * @author 有知 <youzhi.lk@antfin.com>
+ * @author Kuitos
  * @since 2019-05-16
  */
 import ElementUI from 'element-ui';
