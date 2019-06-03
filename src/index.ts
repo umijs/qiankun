@@ -10,15 +10,15 @@ import { RegistrableApp, StartOpts } from './interfaces';
 import { prefetchAfterFirstMounted } from './prefetch';
 import { genSandbox } from './sandbox';
 
-type Options = {
-  beforeLoadHooks?: Array<(app: RegistrableApp) => Promise<any>>; // function before app load
-  beforeMountHooks?: Array<(app: RegistrableApp) => Promise<any>>; // function before app mount
-  afterUnloadHooks?: Array<(app: RegistrableApp) => Promise<any>>; // function after app unmount
+type Options<T extends object> = {
+  beforeLoadHooks?: Array<(app: RegistrableApp<T>) => Promise<any>>; // function before app load
+  beforeMountHooks?: Array<(app: RegistrableApp<T>) => Promise<any>>; // function before app mount
+  afterUnloadHooks?: Array<(app: RegistrableApp<T>) => Promise<any>>; // function after app unmount
 };
 
 let microApps: RegistrableApp[] = [];
 
-export function registerMicroApps(apps: RegistrableApp[], options: Options = {}) {
+export function registerMicroApps<T extends object = {}>(apps: Array<RegistrableApp<T>>, options: Options<T> = {}) {
 
   const { beforeLoadHooks = [], afterUnloadHooks = [], beforeMountHooks = [] } = options;
   microApps = [...microApps, ...apps];
