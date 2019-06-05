@@ -11,7 +11,5 @@ export function isConstructable(fn: () => void | FunctionConstructor) {
   const constructableFunctionRegex = /^function\b\s[A-Z].*/;
   const classRegex = /^class\b/;
 
-  return fn.prototype
-    && Object.keys(fn.prototype).length
-    && (constructableFunctionRegex.test(fn.toString()) || classRegex.test(fn.toString()));
+  return fn.prototype && (constructableFunctionRegex.test(fn.toString()) || classRegex.test(fn.toString()));
 }
