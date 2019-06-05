@@ -5,6 +5,7 @@
 import { isFunction } from 'lodash';
 import { hijack } from './hijackers';
 import { Freer, Rebuilder } from './interfaces';
+import { isConstructable } from './utils';
 
 function snapshot(updatedPropsValueMap: Map<PropertyKey, any>) {
   /*
@@ -97,10 +98,9 @@ export function genSandbox(appName: string) {
 
       const value = (target as any)[p];
       /*
-      1. 仅处理 window 下可枚举的(原生的一些构造函数都是不可枚举的，如 Array、Number、URL 这些)且值类型为 function 的属性
-      2. 仅绑定 !isConstructable && isCallable 的函数对象，如 window.console、window.atob 这类。目前没有完美的检测方式，这里通过 prototype 中是否还有可枚举的拓展方法的方式来判断
+      仅绑定 !isConstructable && isCallable 的函数对象，如 window.console、window.atob 这类。目前没有完美的检测方式，这里通过 prototype 中是否还有可枚举的拓展方法的方式来判断
        */
-      if (isFunction(value) && target.propertyIsEnumerable(p) && (!value.prototype || !Object.keys(value.prototype).length)) {
+      if (isFunction(value) && !isConstructable(value)) {
         return value.bind(target);
       }
 
