@@ -1,6 +1,6 @@
 {
   "name": "qiankun",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "An completed implementation of Micro Frontends",
   "main": "./lib/index.js",
   "module": "./esm/index.js",
