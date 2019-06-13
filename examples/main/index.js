@@ -27,13 +27,13 @@ registerMicroApps(
     { name: 'vue app', entry: '//localhost:7101', render, activeRule: genActiveRule('/vue') },
   ],
   {
-    beforeLoadHooks: [app => {
+    beforeLoad: [app => {
       console.log('before load', app);
     }],
-    beforeMountHooks: [app => {
+    beforeMount: [app => {
       console.log('before mount', app);
     }],
-    afterUnloadHooks: [app => {
+    afterUnload: [app => {
       console.log('after unload', app);
     }],
   },

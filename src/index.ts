@@ -10,17 +10,25 @@ import { RegistrableApp, StartOpts } from './interfaces';
 import { prefetchAfterFirstMounted } from './prefetch';
 import { genSandbox } from './sandbox';
 
-type Options<T extends object> = {
-  beforeLoadHooks?: Array<(app: RegistrableApp<T>) => Promise<any>>; // function before app load
-  beforeMountHooks?: Array<(app: RegistrableApp<T>) => Promise<any>>; // function before app mount
-  afterUnloadHooks?: Array<(app: RegistrableApp<T>) => Promise<any>>; // function after app unmount
+type Lifecycle<T extends object> = (app: RegistrableApp<T>) => Promise<any>;
+
+type LifeCycles<T extends object> = {
+  beforeLoad?: Lifecycle<T> | Array<Lifecycle<T>>; // function before app load
+  beforeMount?: Lifecycle<T> | Array<Lifecycle<T>>; // function before app mount
+  afterUnload?: Lifecycle<T> | Array<Lifecycle<T>>; // function after app unmount
 };
 
 let microApps: RegistrableApp[] = [];
 
-export function registerMicroApps<T extends object = {}>(apps: Array<RegistrableApp<T>>, options: Options<T> = {}) {
+function toArray<T>(array: T | T[]): T[] {
+  return Array.isArray(array) ? array : [array];
+}
 
-  const { beforeLoadHooks = [], afterUnloadHooks = [], beforeMountHooks = [] } = options;
+export function registerMicroApps<T extends object = {}>(apps: Array<RegistrableApp<T>>, lifeCycles: LifeCycles<T> = {}) {
+
+  const beforeLoad = toArray(lifeCycles.beforeLoad || []);
+  const afterUnload = toArray(lifeCycles.afterUnload || []);
+  const beforeMount = toArray(lifeCycles.beforeMount || []);
   microApps = [...microApps, ...apps];
 
   apps.forEach(app => {
@@ -47,8 +55,8 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
           unmountSandbox = sandbox.unmount;
         }
 
-        if (beforeLoadHooks.length) {
-          await Promise.all(beforeLoadHooks.map(hook => hook(app)));
+        if (beforeLoad.length) {
+          await Promise.all(beforeLoad.map(hook => hook(app)));
         }
 
         // 获取 模块/应用 导出的 lifecycle hooks
@@ -64,8 +72,8 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
           ],
           mount: [
             async () => {
-              if (beforeMountHooks.length) {
-                await Promise.all(beforeMountHooks.map(hook => hook(app)));
+              if (beforeMount.length) {
+                await Promise.all(beforeMount.map(hook => hook(app)));
               }
             },
             mountSandbox,
@@ -77,8 +85,8 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
             unmount,
             unmountSandbox,
             async () => {
-              if (afterUnloadHooks.length) {
-                await Promise.all(afterUnloadHooks.map(hook => hook(app)));
+              if (afterUnload.length) {
+                await Promise.all(afterUnload.map(hook => hook(app)));
               }
             },
           ],

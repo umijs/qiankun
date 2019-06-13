@@ -45,13 +45,13 @@ registerMicroApps(
     { name: 'vue app', entry: { scripts: [ '//localhost:7100/main.js' ] }, render, activeRule: genActiveRule('/vue') },
   ],
   {
-    beforeLoadHooks: [async app => {
+    beforeLoad: [async app => {
       console.log('before load', app);
     }],
-    beforeMountHooks: [async app => {
+    beforeMount: [async app => {
       console.log('before mount', app);
     }],
-    afterUnloadHooks: [async app => {
+    afterUnload: [async app => {
       console.log('after unload', app);
     }],
   },
@@ -83,13 +83,18 @@ type RegistrableApp = {
   props?: object; // props pass through to app
 };
 
-type Options = {
-  beforeLoadHooks?: Array<(app: RegistrableApp) => Promise<void>>; // function before app load
-  beforeMountHooks?: Array<(app: RegistrableApp) => Promise<void>>; // function before app mount
-  afterUnloadHooks?: Array<(app: RegistrableApp) => Promise<void>>; // function after app unmount
+type Lifecycle<T extends object> = (app: RegistrableApp<T>) => Promise<any>;
+type LifeCycles<T extends object> = {
+    beforeLoad?: Lifecycle<T> | Array<Lifecycle<T>>;
+    beforeMount?: Lifecycle<T> | Array<Lifecycle<T>>;
+    afterUnload?: Lifecycle<T> | Array<Lifecycle<T>>;
 };
 
-function registerMicroApps(apps: RegistrableApp[], options: Options): void
+function registerMicroApps<T extends object = {}>(apps: Array<RegistrableApp<T>>, lifeCycles?: LifeCycles<T>): void;
+```
 
+### start
+
+```typescript
 function start({ prefetch: boolean, jsSandbox: boolean }): void;
 ```
