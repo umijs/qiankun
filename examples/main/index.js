@@ -33,7 +33,7 @@ registerMicroApps(
     beforeMount: [app => {
       console.log('before mount', app);
     }],
-    afterUnload: [app => {
+    afterUnmount: [app => {
       console.log('after unload', app);
     }],
   },

@@ -51,7 +51,10 @@ registerMicroApps(
     beforeMount: [async app => {
       console.log('before mount', app);
     }],
-    afterUnload: [async app => {
+    afterMount: [async app => {
+      console.log('before mount', app);
+    }],
+    afterUnmount: [async app => {
       console.log('after unload', app);
     }],
   },
@@ -87,7 +90,8 @@ type Lifecycle<T extends object> = (app: RegistrableApp<T>) => Promise<any>;
 type LifeCycles<T extends object> = {
     beforeLoad?: Lifecycle<T> | Array<Lifecycle<T>>;
     beforeMount?: Lifecycle<T> | Array<Lifecycle<T>>;
-    afterUnload?: Lifecycle<T> | Array<Lifecycle<T>>;
+    afterMount?: Lifecycle<T> | Array<Lifecycle<T>>;
+    afterUnmount?: Lifecycle<T> | Array<Lifecycle<T>>;
 };
 
 function registerMicroApps<T extends object = {}>(apps: Array<RegistrableApp<T>>, lifeCycles?: LifeCycles<T>): void;
