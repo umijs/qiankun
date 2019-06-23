@@ -3,7 +3,7 @@
  * @since 2019-05-16
  */
 
-type render = (props?: { appContent: string, loading: boolean }) => any;
+export type render = (props: { appContent: string, loading: boolean }) => any;
 export type Entry = string | {
   scripts?: string[];
   styles?: string[];
