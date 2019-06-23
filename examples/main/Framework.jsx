@@ -26,7 +26,7 @@ export default function Framework(props) {
         </nav>
       </header>
       {loading ? <div>loading...</div> : null}
-      <div dangerouslySetInnerHTML={{ __html: content }}/>
+      <div dangerouslySetInnerHTML={{ __html: content }} className={style.appContainer}/>
     </>
 
   );
