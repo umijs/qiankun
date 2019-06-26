@@ -109,7 +109,7 @@ function start({ prefetch: boolean, jsSandbox: boolean }): void;
 
 ### Sub App
 
-While you wanna build a sub app tp integrate with qiankun, pls make sure your bundler have the required configuration below:
+While you wanna build a sub app to integrate with qiankun, pls make sure your bundler have the required configuration below:
 
 #### webpack:
 ```js
