@@ -126,3 +126,6 @@ see https://webpack.js.org/configuration/output/#outputlibrary
 parcel serve entry.js --global myvariable
 ```
 see https://en.parceljs.org/cli.html#expose-modules-as-umd
+
+## Community
+https://github.com/umijs/umi#community
