@@ -102,3 +102,27 @@ function registerMicroApps<T extends object = {}>(apps: Array<RegistrableApp<T>>
 ```typescript
 function start({ prefetch: boolean, jsSandbox: boolean }): void;
 ```
+
+## Integration
+
+### Main Framework
+
+### Sub App
+
+While you wanna build a sub app tp integrate with qiankun, pls make sure your bundler have the required configuration below:
+
+#### webpack:
+```js
+{
+  libraryTarget: 'umd',
+  library: packageName,
+  jsonpFunction: `webpackJsonp_${packageName}`
+}
+```
+see https://webpack.js.org/configuration/output/#outputlibrary
+
+#### parcel:
+```shell
+parcel serve entry.js --global myvariable
+```
+see https://en.parceljs.org/cli.html#expose-modules-as-umd
