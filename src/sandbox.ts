@@ -2,7 +2,6 @@
  * @author Kuitos
  * @since 2019-04-11
  */
-import { isFunction } from 'lodash';
 import { hijack } from './hijackers';
 import { Freer, Rebuilder } from './interfaces';
 import { isConstructable } from './utils';
@@ -99,8 +98,9 @@ export function genSandbox(appName: string) {
       const value = (target as any)[p];
       /*
       仅绑定 !isConstructable && isCallable 的函数对象，如 window.console、window.atob 这类。目前没有完美的检测方式，这里通过 prototype 中是否还有可枚举的拓展方法的方式来判断
+      @warning 这里不要随意替换成别的判断方式，因为可能触发一些 edge case（比如在 lodash.isFunction 在 iframe 上下文中可能由于调用了 top window 对象触发的安全异常）
        */
-      if (isFunction(value) && !isConstructable(value)) {
+      if (typeof value === 'function' && !isConstructable(value)) {
         return value.bind(target);
       }
 
