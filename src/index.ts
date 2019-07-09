@@ -78,10 +78,12 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
                 await Promise.all(beforeMount.map(hook => hook(app)));
               }
             },
-            mountSandbox,
             // 添加 mount hook, 确保每次应用加载前容器 dom 结构已经设置完毕
-            async () => render({ appContent, loading: false }),
+            async () => render({ appContent, loading: true }),
+            mountSandbox,
             mount,
+            // 应用 mount 完成后结束 loading
+            async () => render({ appContent, loading: false }),
             async () => {
               if (afterMount.length) {
                 await Promise.all(afterMount.map(hook => hook(app)));
