@@ -13,3 +13,4 @@ config.local.js
 .umi
 .umi-production
 .idea/
+.cache
