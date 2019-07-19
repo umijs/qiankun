@@ -110,7 +110,7 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
 
 export * from './effects';
 
-let useJsSandbox = true;
+let useJsSandbox = false;
 
 export function start(opts: StartOpts = {}) {
 
