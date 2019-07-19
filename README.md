@@ -70,8 +70,8 @@ start({ prefetch: true, jsSandbox: true });
 - [x] Isolated styles
 - [x] JS Sandbox
 - [x] Assets Prefetch
+- [x] [@umijs/plugin-qiankun](https://github.com/umijs/umi-plugin-qiankun) integration
 - [ ] Nested Microfrontends
-- [ ] [umi-plugin-single-spa](https://github.com/umijs/umi-plugin-single-spa) integration
 
 ## API
 
@@ -109,9 +109,27 @@ function start({ prefetch: boolean, jsSandbox: boolean }): void;
 
 ### Sub App
 
-While you wanna build a sub app to integrate with qiankun, pls make sure your bundler have the required configuration below:
+Export those lifecycle hooks from your entry
 
-#### webpack:
+```typescript
+export async function bootstrap() {
+  console.log('react app bootstraped');
+}
+
+export async function mount(props) {
+  ReactDOM.render(<App/>, document.getElementById('react15Root'));
+}
+
+export async function unmount() {
+  ReactDOM.unmountComponentAtNode(document.getElementById('react15Root'));
+}
+```
+
+For more lifecycle information, see [single-spa lifecycles](https://single-spa.js.org/docs/building-applications.html#registered-application-lifecycle)
+
+#### bundler configuration
+While you wanna build a sub app to integrate with qiankun, pls make sure your bundler have the required configuration below:
+##### webpack:
 ```js
 output: {
   library: packageName,
@@ -121,7 +139,7 @@ output: {
 ```
 see https://webpack.js.org/configuration/output/#outputlibrary
 
-#### parcel:
+##### parcel:
 ```shell
 parcel serve entry.js --global myvariable
 ```
