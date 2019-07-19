@@ -78,6 +78,8 @@ start({ prefetch: true, jsSandbox: true });
 ### registerMicroApps
 
 ```typescript
+function registerMicroApps<T extends object = {}>(apps: Array<RegistrableApp<T>>, lifeCycles?: LifeCycles<T>): void;
+
 type RegistrableApp = {
   name: string; // app name
   entry: string | { scripts?: string[]; styles?: string[]; html?: string };  // app entry
@@ -93,8 +95,6 @@ type LifeCycles<T extends object> = {
     afterMount?: Lifecycle<T> | Array<Lifecycle<T>>;
     afterUnmount?: Lifecycle<T> | Array<Lifecycle<T>>;
 };
-
-function registerMicroApps<T extends object = {}>(apps: Array<RegistrableApp<T>>, lifeCycles?: LifeCycles<T>): void;
 ```
 
 ### start
