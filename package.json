@@ -17,6 +17,7 @@
     "build:esm": "rm -fr esm && tsc",
     "build:cjs": "rm -fr lib && tsc -p tsconfig.cjs.json",
     "prepush": "npm run lint",
+    "release": "np --no-cleanup --yolo --no-publish",
     "prepublish": "npm run lint && npm run build",
     "lint": "tslint 'src/**/*.ts'",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -45,6 +46,7 @@
     "@types/lodash": "^4.14.129",
     "@types/node": "^12.0.2",
     "husky": "^2.3.0",
+    "np": "^5.0.3",
     "tslint": "^5.16.0",
     "tslint-eslint-rules": "^5.4.0",
     "typescript": "^3.4.5"
