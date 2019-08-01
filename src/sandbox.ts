@@ -101,7 +101,10 @@ export function genSandbox(appName: string) {
       @warning 这里不要随意替换成别的判断方式，因为可能触发一些 edge case（比如在 lodash.isFunction 在 iframe 上下文中可能由于调用了 top window 对象触发的安全异常）
        */
       if (typeof value === 'function' && !isConstructable(value)) {
-        return value.bind(target);
+        const boundValue = value.bind(target);
+        // some callable function has custom fields, we need to copy the enumerable props to boundValue. such as moment function.
+        Object.keys(value).forEach(key => boundValue[key] = value[key]);
+        return boundValue;
       }
 
       return value;
