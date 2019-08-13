@@ -9,6 +9,8 @@
 
 An implementation of [Micro Frontends](https://micro-frontends.org/), based on [single-spa](https://github.com/CanopyTax/single-spa), but made it production-ready.
 
+*Maybe the most complete micro-frontends solution you ever met🧐.*
+
 ## Usage
 
 ```shell
