@@ -9,7 +9,31 @@
 
 An implementation of [Micro Frontends](https://micro-frontends.org/), based on [single-spa](https://github.com/CanopyTax/single-spa), but made it production-ready.
 
-*Maybe the most complete micro-frontends solution you ever met🧐.*
+## Motivation
+
+As we know what micro-frontends aims for:
+
+> Techniques, strategies and recipes for building a **modern web app** with **multiple teams **using **different JavaScript frameworks**.				— [Micro Frontends](https://micro-frontends.org/)
+
+An independent development experience is very important for a large system, especially with an enterprise application. But if you've tried to implement a micro-frontends architecture in such a system, you'll usually hurt your brain with such problems:
+
+* How to compose your independet sub apps into your main system?
+* How to guarantee your sub apps to be isolated by each other?  
+
+So we built an library to help you solve these glitch problems you may met when building a micro-frontends system, and named it `qiankun`.
+
+**Maybe the most complete micro-frontends solution you ever met🧐.**
+
+## Features
+
+- [x] Based on [single-spa](https://github.com/CanopyTax/single-spa)
+- [x] HTML Entry
+- [x] Config Entry
+- [x] Isolated styles
+- [x] JS Sandbox
+- [x] Assets Prefetch
+- [x] [@umijs/plugin-qiankun](https://github.com/umijs/umi-plugin-qiankun) integration
+- [ ] Nested Microfrontends
 
 ## Usage
 
@@ -64,16 +88,6 @@ registerMicroApps(
 
 start({ prefetch: true, jsSandbox: true });
 ```
-
-## Features
-
-- [x] HTML Entry
-- [x] Config Entry
-- [x] Isolated styles
-- [x] JS Sandbox
-- [x] Assets Prefetch
-- [x] [@umijs/plugin-qiankun](https://github.com/umijs/umi-plugin-qiankun) integration
-- [ ] Nested Microfrontends
 
 ## API
 
@@ -152,3 +166,7 @@ see https://en.parceljs.org/cli.html#expose-modules-as-umd
 
 ## Community
 https://github.com/umijs/umi#community
+
+## Acknowledgement
+
+* [single-spa](https://github.com/CanopyTax/single-spa) What an awesome meta-framework for micro-fronteds!
