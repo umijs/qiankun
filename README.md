@@ -167,6 +167,6 @@ see https://en.parceljs.org/cli.html#expose-modules-as-umd
 ## Community
 https://github.com/umijs/umi#community
 
-## Acknowledgement
+## Acknowledgements
 
 * [single-spa](https://github.com/CanopyTax/single-spa) What an awesome meta-framework for micro-fronteds!
