@@ -22,7 +22,7 @@ An independent development experience is very important for a large system, espe
 
 So we built an library to help you solve these glitch problems you may met when building a micro-frontends system, and named it `qiankun`.
 
-**Maybe the most complete micro-frontends solution you ever met🧐.**
+**Probably the most complete micro-frontends solution you ever met🧐.**
 
 ## Features
 
