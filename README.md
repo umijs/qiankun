@@ -13,7 +13,7 @@ An implementation of [Micro Frontends](https://micro-frontends.org/), based on [
 
 As we know what micro-frontends aims for:
 
-> Techniques, strategies and recipes for building a **modern web app** with **multiple teams **using **different JavaScript frameworks**.				— [Micro Frontends](https://micro-frontends.org/)
+> Techniques, strategies and recipes for building a **modern web app** with **multiple teams** using **different JavaScript frameworks**.				— [Micro Frontends](https://micro-frontends.org/)
 
 An independent development experience is very important for a large system, especially with an enterprise application. But if you've tried to implement a micro-frontends architecture in such a system, you'll usually hurt your brain with such problems:
 
