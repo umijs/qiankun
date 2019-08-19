@@ -170,6 +170,10 @@ function start({ prefetch: boolean, jsSandbox: boolean }): void;
 - [ ] Custom side effects hijacker
 - [ ] Nested Microfrontends
 
+## ❓ FAQ
+
+https://github.com/umijs/qiankun/wiki/FAQ
+
 
 ## 👬 Community
 
