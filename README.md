@@ -167,6 +167,7 @@ function start({ prefetch: boolean, jsSandbox: boolean }): void;
 
 ## 🎯 Roadmap
 - [ ] Communication development kits between master and sub apps 
+- [ ] Custom side effects hijacker
 - [ ] Nested Microfrontends
 
 
