@@ -18,7 +18,7 @@
     "build:cjs": "rimraf lib && tsc -p tsconfig.cjs.json",
     "prepush": "npm run lint",
     "release": "np --no-cleanup --yolo --no-publish",
-    "prepublish": "npm run lint && npm run build",
+    "prepublishOnly": "npm run lint && npm run build",
     "lint": "tslint 'src/**/*.ts'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
