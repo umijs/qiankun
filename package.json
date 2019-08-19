@@ -14,8 +14,8 @@
     "start:react15": "cd examples/react15 && npm start",
     "start:vue": "cd examples/vue && npm start",
     "build": "npm run build:esm && npm run build:cjs",
-    "build:esm": "rm -fr esm && tsc",
-    "build:cjs": "rm -fr lib && tsc -p tsconfig.cjs.json",
+    "build:esm": "rimraf esm && tsc",
+    "build:cjs": "rimraf lib && tsc -p tsconfig.cjs.json",
     "prepush": "npm run lint",
     "release": "np --no-cleanup --yolo --no-publish",
     "prepublish": "npm run lint && npm run build",
@@ -47,6 +47,7 @@
     "@types/node": "^12.0.2",
     "husky": "^2.3.0",
     "np": "^5.0.3",
+    "rimraf": "^3.0.0",
     "tslint": "^5.16.0",
     "tslint-eslint-rules": "^5.4.0",
     "typescript": "^3.4.5"
