@@ -166,10 +166,10 @@ function start({ prefetch: boolean, jsSandbox: boolean }): void;
 ```
 
 ## 🎯 Roadmap
+- [ ] Parcel apps integration (multiple sub apps displayed at the same time, but only one uses router at most)
 - [ ] Communication development kits between master and sub apps 
 - [ ] Custom side effects hijacker
 - [ ] Nested Microfrontends
-- [ ] Multiple sub apps displayed at the same time(but only one uses router at most)
 
 ## ❓ FAQ
 
