@@ -25,23 +25,13 @@ We built an library to help you solve these glitch problems automatically withou
 
 **Probably the most complete micro-frontends solution you ever met🧐.**
 
-## :sparkles: Features
-
-* Based on [single-spa](https://github.com/CanopyTax/single-spa)
-* HTML Entry
-* Config Entry
-* **Isolated styles**
-* **JS Sandbox**
-* Assets Prefetch
-* [@umijs/plugin-qiankun](https://github.com/umijs/umi-plugin-qiankun) integration
-
 ## 📦 Installation
 
 ```shell
 npm i qiankun -S
 ```
 
-## 🔨 Usage
+## 🔨 Getting Started
 
 1. Create master framework with qiankun
 
@@ -95,26 +85,27 @@ npm i qiankun -S
    For more lifecycle information, see [single-spa lifecycles](https://single-spa.js.org/docs/building-applications.html#registered-application-lifecycle)
 
 3. Config your sub app bundler
-   While you wanna build a sub app to integrate to qiankun, pls make sure your bundler have the required configuration below:
-
-   ##### webpack:
-
+   
+While you wanna build a sub app to integrate to qiankun, pls make sure your bundler have the required configuration below:
+   
+##### webpack:
+   
    ```js
    output: {
      library: packageName,
      libraryTarget: 'umd',
      jsonpFunction: `webpackJsonp_${packageName}`,
    }
-   ```
-
-   see https://webpack.js.org/configuration/output/#outputlibrary
-
-   ##### parcel:
-
+```
+   
+see https://webpack.js.org/configuration/output/#outputlibrary
+   
+##### parcel:
+   
    ```shell
    parcel serve entry.js --global myvariable
-   ```
-
+```
+   
    see https://en.parceljs.org/cli.html#expose-modules-as-umd
 
 ## 💿 Examples
@@ -129,6 +120,15 @@ Visit `http://localhost:7099`
 
 ![](./examples/example.gif)
 
+## :sparkles: Features
+
+* Based on [single-spa](https://github.com/CanopyTax/single-spa)
+* HTML Entry
+* Config Entry
+* **Isolated styles**
+* **JS Sandbox**
+* Assets Prefetch
+* [@umijs/plugin-qiankun](https://github.com/umijs/umi-plugin-qiankun) integration
 
 ## 📖 API
 
