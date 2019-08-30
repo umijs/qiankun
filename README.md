@@ -156,7 +156,8 @@ type LifeCycles<T extends object> = {
     afterUnmount?: Lifecycle<T> | Array<Lifecycle<T>>;
 };
 
-function registerMicroApps<T extends object = {}>(apps: Array<RegistrableApp<T>>, lifeCycles?: LifeCycles<T>): void;
+function registerMicroApps<T extends object = {}>(apps: Array<RegistrableApp<T>>, lifeCycles?: LifeCycles<T>): void,
+RegisterOpts? RegisterOpts,
 ```
 
 ### start
