@@ -57,6 +57,8 @@ export function genSandbox(appName: string) {
   const modifiedPropsOriginalValueMapInSandbox = new Map<PropertyKey, any>();
   // 持续记录更新的(新增和修改的)全局变量的 map，用于在任意时刻做 snapshot
   const currentUpdatedPropsValueMapForSnapshot = new Map<PropertyKey, any>();
+  // 在挂载前记录head中的标签，在卸载时恢复原始head子元素，为了防止子应用有异步加载的情况
+  let originalHeadElements: Element[] = [];
 
   let freers: Freer[] = [];
   let sideEffectsRebuilders: Rebuilder[] = [];
@@ -150,6 +152,9 @@ export function genSandbox(appName: string) {
         sideEffectsRebuilders = [];
       }
 
+      /* ------------------------------------------ 4. 记录挂载前head子元素 ------------------------------------------*/
+      originalHeadElements = Array.from(document.getElementsByTagName('head')[0].children);
+
       inAppSandbox = true;
     },
 
@@ -172,6 +177,15 @@ export function genSandbox(appName: string) {
       // restore global props to initial snapshot
       addedPropsMapInSandbox.forEach((_, p) => setWindowProp(p, undefined, true));
       modifiedPropsOriginalValueMapInSandbox.forEach((v, p) => setWindowProp(p, v));
+
+      // 获取卸载前的head子元素，和挂载前记录对比，多出来部分删除掉
+      const currentHeadElements = Array.from(document.getElementsByTagName('head')[0].children);
+
+      currentHeadElements.forEach(element => {
+        if (!originalHeadElements.some(original => original === element)) {
+          element.remove();
+        }
+      });
 
       inAppSandbox = false;
     },
