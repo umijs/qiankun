@@ -4,9 +4,9 @@
  */
 
 import { Entry, importEntry } from 'import-html-entry';
-import { noop } from 'lodash';
 import { getMountedApps } from 'single-spa';
 import { RegistrableApp } from './interfaces';
+import { noop } from './utils';
 
 /**
  * 预加载静态资源，不兼容 requestIdleCallback 的浏览器不做任何动作

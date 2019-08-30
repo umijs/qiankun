@@ -38,12 +38,12 @@
   "homepage": "https://github.com/kuitos/qiankun#readme",
   "dependencies": {
     "import-html-entry": "^1.0.0",
-    "lodash": "^4.17.11",
+    "lodash-es": "^4.17.15",
     "single-spa": "^4.3.4",
     "tslib": "^1.9.3"
   },
   "devDependencies": {
-    "@types/lodash": "^4.14.129",
+    "@types/lodash-es": "^4.17.3",
     "husky": "^2.3.0",
     "np": "^5.0.3",
     "rimraf": "^3.0.0",

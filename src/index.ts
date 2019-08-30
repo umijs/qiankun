@@ -4,11 +4,11 @@
  */
 
 import { importEntry } from 'import-html-entry';
-import { isFunction } from 'lodash';
 import { registerApplication, start as startSpa } from 'single-spa';
 import { RegistrableApp, StartOpts } from './interfaces';
 import { prefetchAfterFirstMounted } from './prefetch';
 import { genSandbox } from './sandbox';
+import { isFunction } from './utils';
 
 type Lifecycle<T extends object> = (app: RegistrableApp<T>) => Promise<any>;
 

@@ -3,7 +3,7 @@
  * @since 2019-04-11
  */
 
-import { noop } from 'lodash';
+import { noop } from '../utils';
 
 export default function hijack() {
 
