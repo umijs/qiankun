@@ -20,8 +20,7 @@ export default function hijack() {
     return intervalId;
   };
 
-  // @ts-ignore
-  window.setTimeout = (...args: any[]) => {
+  (window as Window).setTimeout = (...args: any[]) => {
     // @ts-ignore
     const timerId = rawWindowTimeout(...args);
     timerIds.push(timerId);
