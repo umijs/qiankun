@@ -47,7 +47,7 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
         // 确保每次应用加载前容器 dom 结构已经设置完毕
         render({ appContent, loading: true });
 
-        let jsSandbox = window;
+        let jsSandbox: Window = window;
         let mountSandbox = () => Promise.resolve();
         let unmountSandbox = () => Promise.resolve();
         if (useJsSandbox) {
