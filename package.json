@@ -44,7 +44,6 @@
   },
   "devDependencies": {
     "@types/lodash": "^4.14.129",
-    "@types/node": "^12.0.2",
     "husky": "^2.3.0",
     "np": "^5.0.3",
     "rimraf": "^3.0.0",
