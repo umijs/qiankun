@@ -25,3 +25,11 @@ export type StartOpts = {
 
 export type Rebuilder = () => void;
 export type Freer = () => Rebuilder;
+
+export type HijackersOpts = {
+  timer: boolean,
+};
+
+export type RegisterOpts = {
+  hijackersOpts: HijackersOpts;
+};

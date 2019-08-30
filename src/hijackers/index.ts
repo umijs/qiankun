@@ -2,16 +2,16 @@
  * @author Kuitos
  * @since 2019-04-11
  */
-
-import { Freer } from '../interfaces';
+import { noop } from 'lodash';
+import { Freer, HijackersOpts } from '../interfaces';
 import hijackHistoryListener from './historyListener';
 import hijackTimer from './timer';
 import hijackWindowListener from './windowListener';
 
-export function hijack(): Freer[] {
-
+export function hijack(hijackersOpts: HijackersOpts): Freer[] {
+  const { timer } = hijackersOpts;
   return [
-    hijackTimer(),
+    (timer && hijackTimer()) || (() => () => noop),
     hijackWindowListener(),
     hijackHistoryListener(),
   ];

@@ -3,7 +3,7 @@
  * @since 2019-04-11
  */
 import { hijack } from './hijackers';
-import { Freer, Rebuilder } from './interfaces';
+import { Freer, HijackersOpts, Rebuilder } from './interfaces';
 import { isConstructable } from './utils';
 
 function snapshot(updatedPropsValueMap: Map<PropertyKey, any>) {
@@ -49,7 +49,7 @@ function setWindowProp(prop: PropertyKey, value: any, toDelete?: boolean) {
  *
  * @param appName
  */
-export function genSandbox(appName: string) {
+export function genSandbox(appName: string, hijackersOpts: HijackersOpts = { timer: true } ) {
 
   // 沙箱期间新增的全局变量
   const addedPropsMapInSandbox = new Map<PropertyKey, any>();
@@ -141,7 +141,7 @@ export function genSandbox(appName: string) {
 
       /* ------------------------------------------ 2. 开启全局变量补丁 ------------------------------------------*/
       // render 沙箱启动时开始劫持各类全局监听，这就要求应用初始化阶段不应该有 事件监听/定时器 等副作用
-      freers.push(...hijack());
+      freers.push(...hijack(hijackersOpts));
 
       /* ------------------------------------------ 3. 重置一些初始化时的副作用 ------------------------------------------*/
       // 存在 rebuilder 则表明有些副作用需要重建

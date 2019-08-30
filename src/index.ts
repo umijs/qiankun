@@ -6,7 +6,7 @@
 import { importEntry } from 'import-html-entry';
 import { isFunction } from 'lodash';
 import { registerApplication, start as startSpa } from 'single-spa';
-import { RegistrableApp, StartOpts } from './interfaces';
+import { RegisterOpts, RegistrableApp, StartOpts } from './interfaces';
 import { prefetchAfterFirstMounted } from './prefetch';
 import { genSandbox } from './sandbox';
 
@@ -25,7 +25,15 @@ function toArray<T>(array: T | T[]): T[] {
   return Array.isArray(array) ? array : [array];
 }
 
-export function registerMicroApps<T extends object = {}>(apps: Array<RegistrableApp<T>>, lifeCycles: LifeCycles<T> = {}) {
+export function registerMicroApps<T extends object = {}>(
+  apps: Array<RegistrableApp<T>>,
+  lifeCycles: LifeCycles<T> = {},
+  opts: RegisterOpts = {
+    hijackersOpts: {
+      timer: true,
+    },
+  },
+) {
 
   const beforeLoad = toArray(lifeCycles.beforeLoad || []);
   const beforeMount = toArray(lifeCycles.beforeMount || []);
@@ -51,7 +59,7 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
         let mountSandbox = () => Promise.resolve();
         let unmountSandbox = () => Promise.resolve();
         if (useJsSandbox) {
-          const sandbox = genSandbox(appName);
+          const sandbox = genSandbox(appName, opts.hijackersOpts);
           jsSandbox = sandbox.sandbox;
           mountSandbox = sandbox.mount;
           unmountSandbox = sandbox.unmount;
@@ -114,7 +122,10 @@ let useJsSandbox = false;
 
 export function start(opts: StartOpts = {}) {
 
-  const { prefetch = true, jsSandbox = true } = opts;
+  const {
+    prefetch = true,
+    jsSandbox = true,
+  } = opts;
 
   if (prefetch) {
     prefetchAfterFirstMounted(microApps);
