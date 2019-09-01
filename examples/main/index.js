@@ -5,8 +5,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { runDefaultMountEffects } from '../../esm/effects';
-import { registerMicroApps, start } from '../../esm/index';
+import { registerMicroApps, runDefaultMountEffects, start } from '../../dist/index.esm';
 import Framework from './Framework';
 
 function render({ appContent, loading }) {
