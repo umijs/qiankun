@@ -2,9 +2,9 @@
   "name": "qiankun",
   "version": "1.1.5",
   "description": "An completed implementation of Micro Frontends",
-  "main": "./lib/index.js",
-  "module": "./esm/index.js",
-  "types": "./esm/index.d.ts",
+  "main": "./index.js",
+  "module": "./index.esm.js",
+  "types": "./index.d.ts",
   "sideEffects": false,
   "scripts": {
     "start": "npm run start:main & npm run start:react16 & npm run start:react15 & npm run start:vue",
@@ -13,9 +13,7 @@
     "start:react16": "cd examples/react16 && npm start",
     "start:react15": "cd examples/react15 && npm start",
     "start:vue": "cd examples/vue && npm start",
-    "build": "npm run build:esm && npm run build:cjs",
-    "build:esm": "rimraf esm && tsc",
-    "build:cjs": "rimraf lib && tsc -p tsconfig.cjs.json",
+    "build": "father-build",
     "prepush": "npm run lint",
     "release": "np --no-cleanup --yolo --no-publish",
     "prepublishOnly": "npm run lint && npm run build",
@@ -27,8 +25,7 @@
     "url": "git+https://github.com/kuitos/qiankun.git"
   },
   "files": [
-    "esm",
-    "lib"
+    "dist"
   ],
   "author": "Kuitos",
   "license": "MIT",
@@ -37,6 +34,7 @@
   },
   "homepage": "https://github.com/kuitos/qiankun#readme",
   "dependencies": {
+    "@babel/runtime": "^7.5.5",
     "import-html-entry": "^1.0.0",
     "lodash": "^4.17.11",
     "single-spa": "^4.3.4",
@@ -44,6 +42,8 @@
   },
   "devDependencies": {
     "@types/lodash": "^4.14.129",
+    "babel-plugin-import": "^1.12.1",
+    "father-build": "^1.7.0",
     "husky": "^2.3.0",
     "np": "^5.0.3",
     "rimraf": "^3.0.0",
