@@ -14,6 +14,12 @@ export default function Framework(props) {
     window.history.pushState({}, title, href);
   }
 
+  function setInterval() {
+    window.setInterval(() => {
+      console.log('master interval');
+    }, 1000);
+  }
+
   return (
     <>
       <header className={style.header}>
@@ -25,6 +31,7 @@ export default function Framework(props) {
           </ol>
         </nav>
       </header>
+      <button onClick={setInterval}>set master interval</button>
       {loading ? <div>loading...</div> : null}
       <div dangerouslySetInnerHTML={{ __html: content }} className={style.appContainer}/>
     </>
