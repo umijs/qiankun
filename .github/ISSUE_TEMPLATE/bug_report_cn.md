@@ -1,7 +1,7 @@
 ---
 name: '缺陷问题反馈'
 about: '反馈问题以帮助我们改进'
-title: ''
+title: '[Bug]请遵循下文模板提交问题，否则您的问题会被关闭'
 labels: ''
 assignees: ''
 ---
