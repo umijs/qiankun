@@ -2,9 +2,9 @@
   "name": "qiankun",
   "version": "1.1.6-0",
   "description": "An completed implementation of Micro Frontends",
-  "main": "./index.js",
-  "module": "./index.esm.js",
-  "types": "./index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.esm.js",
+  "types": "./dist/index.d.ts",
   "sideEffects": false,
   "scripts": {
     "start": "npm run start:main & npm run start:react16 & npm run start:react15 & npm run start:vue",
