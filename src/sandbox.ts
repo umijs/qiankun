@@ -6,17 +6,6 @@ import { hijack } from './hijackers';
 import { Freer, Rebuilder } from './interfaces';
 import { isConstructable } from './utils';
 
-function snapshot(updatedPropsValueMap: Map<PropertyKey, any>) {
-  /*
-   浅克隆一把
-   这里是有问题的，理论上应该深克隆，但是深克隆因为不会共用引用，在某些代码里就跪了。。
-   @see https://github.com/dvajs/dva/blob/master/packages/dva/src/index.js#L33-L78
-   */
-  const copyMap = new Map<PropertyKey, any>();
-  updatedPropsValueMap.forEach((v, k) => copyMap.set(k, v));
-  return copyMap;
-}
-
 function isPropConfigurable(target: object, prop: PropertyKey) {
   const descriptor = Object.getOwnPropertyDescriptor(target, prop);
   return descriptor ? descriptor.configurable : true;
@@ -56,21 +45,19 @@ export function genSandbox(appName: string) {
   // 沙箱期间更新的全局变量
   const modifiedPropsOriginalValueMapInSandbox = new Map<PropertyKey, any>();
   // 持续记录更新的(新增和修改的)全局变量的 map，用于在任意时刻做 snapshot
-  const currentUpdatedPropsValueMapForSnapshot = new Map<PropertyKey, any>();
+  const currentUpdatedPropsValueMap = new Map<PropertyKey, any>();
 
   let freers: Freer[] = [];
   let sideEffectsRebuilders: Rebuilder[] = [];
 
-  // render 沙箱的上下文快照
-  let renderSandboxSnapshot: Map<PropertyKey, any> | null = null;
-  let inAppSandbox = true;
+  let sandboxRunning = true;
 
   const boundValueSymbol = Symbol('bound value');
   const sandbox = new Proxy(window, {
 
     set(target: Window, p: PropertyKey, value: any): boolean {
 
-      if (inAppSandbox) {
+      if (sandboxRunning) {
 
         if (!target.hasOwnProperty(p)) {
           addedPropsMapInSandbox.set(p, value);
@@ -80,7 +67,7 @@ export function genSandbox(appName: string) {
           modifiedPropsOriginalValueMapInSandbox.set(p, originalValue);
         }
 
-        currentUpdatedPropsValueMapForSnapshot.set(p, value);
+        currentUpdatedPropsValueMap.set(p, value);
         // 必须重新设置 window 对象保证下次 get 时能拿到已更新的数据
         (target as any)[p] = value;
 
@@ -131,12 +118,9 @@ export function genSandbox(appName: string) {
       /* ------------------------------------------ 因为有上下文依赖（window），以下代码执行顺序不能变 ------------------------------------------ */
 
       /* ------------------------------------------ 1. 启动/恢复 快照 ------------------------------------------ */
-      // 如果沙箱已启动，表明当前方法执行上下文是在沙箱生成之后，此时对应用的状态做 snapshot，以便下次唤醒应用时直接从 snapshot 中恢复沙箱上下文
-      if (inAppSandbox) {
-        renderSandboxSnapshot = snapshot(currentUpdatedPropsValueMapForSnapshot);
-      } else if (renderSandboxSnapshot) {
-        // 从 snapshot 中恢复沙箱上下文
-        renderSandboxSnapshot.forEach((v, p) => setWindowProp(p, v));
+      // 沙箱未启动说明为唤醒流程，此时需从之前的修改记录中恢复上下文
+      if (!sandboxRunning) {
+        currentUpdatedPropsValueMap.forEach((v, p) => setWindowProp(p, v));
       }
 
       /* ------------------------------------------ 2. 开启全局变量补丁 ------------------------------------------*/
@@ -150,7 +134,7 @@ export function genSandbox(appName: string) {
         sideEffectsRebuilders = [];
       }
 
-      inAppSandbox = true;
+      sandboxRunning = true;
     },
 
     /**
@@ -173,7 +157,7 @@ export function genSandbox(appName: string) {
       addedPropsMapInSandbox.forEach((_, p) => setWindowProp(p, undefined, true));
       modifiedPropsOriginalValueMapInSandbox.forEach((v, p) => setWindowProp(p, v));
 
-      inAppSandbox = false;
+      sandboxRunning = false;
     },
   };
 }
