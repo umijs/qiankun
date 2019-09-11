@@ -153,6 +153,7 @@ type LifeCycles<T extends object> = {
     beforeLoad?: Lifecycle<T> | Array<Lifecycle<T>>;
     beforeMount?: Lifecycle<T> | Array<Lifecycle<T>>;
     afterMount?: Lifecycle<T> | Array<Lifecycle<T>>;
+    beforeUnmount?: Lifecycle<T> | Array<Lifecycle<T>>;
     afterUnmount?: Lifecycle<T> | Array<Lifecycle<T>>;
 };
 

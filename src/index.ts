@@ -16,6 +16,7 @@ type LifeCycles<T extends object> = {
   beforeLoad?: Lifecycle<T> | Array<Lifecycle<T>>; // function before app load
   beforeMount?: Lifecycle<T> | Array<Lifecycle<T>>; // function before app mount
   afterMount?: Lifecycle<T> | Array<Lifecycle<T>>; // function after app mount
+  beforeUnmount?: Lifecycle<T> | Array<Lifecycle<T>>; // function after app unmount
   afterUnmount?: Lifecycle<T> | Array<Lifecycle<T>>; // function after app unmount
 };
 
@@ -25,11 +26,20 @@ function toArray<T>(array: T | T[]): T[] {
   return Array.isArray(array) ? array : [array];
 }
 
+function execHooks<T extends object>(hooks: Array<Lifecycle<T>>, app: RegistrableApp<T>) {
+  if (hooks.length) {
+    return Promise.all(hooks.map(hook => hook(app)));
+  }
+
+  return Promise.resolve();
+}
+
 export function registerMicroApps<T extends object = {}>(apps: Array<RegistrableApp<T>>, lifeCycles: LifeCycles<T> = {}) {
 
   const beforeLoad = toArray(lifeCycles.beforeLoad || []);
   const beforeMount = toArray(lifeCycles.beforeMount || []);
   const afterMount = toArray(lifeCycles.afterMount || []);
+  const beforeUnmount = toArray(lifeCycles.beforeUnmount || []);
   const afterUnmount = toArray(lifeCycles.afterUnmount || []);
   microApps = [...microApps, ...apps];
 
@@ -57,9 +67,7 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
           unmountSandbox = sandbox.unmount;
         }
 
-        if (beforeLoad.length) {
-          await Promise.all(beforeLoad.map(hook => hook(app)));
-        }
+        await execHooks(beforeLoad, app);
 
         // 获取 模块/应用 导出的 lifecycle hooks
         const { bootstrap: bootstrapApp, mount, unmount } = await execScripts(jsSandbox);
@@ -73,31 +81,20 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
             bootstrapApp,
           ],
           mount: [
-            async () => {
-              if (beforeMount.length) {
-                await Promise.all(beforeMount.map(hook => hook(app)));
-              }
-            },
+            async () => execHooks(beforeMount, app),
             // 添加 mount hook, 确保每次应用加载前容器 dom 结构已经设置完毕
             async () => render({ appContent, loading: true }),
             mountSandbox,
             mount,
             // 应用 mount 完成后结束 loading
             async () => render({ appContent, loading: false }),
-            async () => {
-              if (afterMount.length) {
-                await Promise.all(afterMount.map(hook => hook(app)));
-              }
-            },
+            async () => execHooks(afterMount, app),
           ],
           unmount: [
+            async () => execHooks(beforeUnmount, app),
             unmount,
             unmountSandbox,
-            async () => {
-              if (afterUnmount.length) {
-                await Promise.all(afterUnmount.map(hook => hook(app)));
-              }
-            },
+            async () => execHooks(afterUnmount, app),
           ],
         };
       },
