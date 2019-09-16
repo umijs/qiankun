@@ -29,9 +29,9 @@ export default function hijack() {
 
   return function free() {
 
-    listenerMap.forEach((listeners, type) => listeners.forEach(listener => window.removeEventListener(type, listener)));
-    window.addEventListener = rawAddEventListener.bind(window);
-    window.removeEventListener = rawRemoveEventListener.bind(window);
+    listenerMap.forEach((listeners, type) => [...listeners].forEach(listener => window.removeEventListener(type, listener)));
+    window.addEventListener = rawAddEventListener;
+    window.removeEventListener = rawRemoveEventListener;
 
     return noop;
   };

@@ -8,8 +8,8 @@ import { sleep } from '../utils';
 
 export default function hijack() {
 
-  const rawWindowInterval = window.setInterval.bind(window);
-  const rawWindowTimeout = window.setTimeout.bind(window);
+  const rawWindowInterval = window.setInterval;
+  const rawWindowTimeout = window.setTimeout;
   const timerIds: number[] = [];
   const intervalIds: number[] = [];
 
