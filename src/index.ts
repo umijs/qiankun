@@ -26,9 +26,9 @@ function toArray<T>(array: T | T[]): T[] {
   return Array.isArray(array) ? array : [array];
 }
 
-function execHooks<T extends object>(hooks: Array<Lifecycle<T>>, app: RegistrableApp<T>) {
+function execHooksChain<T extends object>(hooks: Array<Lifecycle<T>>, app: RegistrableApp<T>): Promise<any> {
   if (hooks.length) {
-    return Promise.all(hooks.map(hook => hook(app)));
+    return hooks.reduce((chain, hook) => chain.then(() => hook(app)), Promise.resolve());
   }
 
   return Promise.resolve();
@@ -36,11 +36,7 @@ function execHooks<T extends object>(hooks: Array<Lifecycle<T>>, app: Registrabl
 
 export function registerMicroApps<T extends object = {}>(apps: Array<RegistrableApp<T>>, lifeCycles: LifeCycles<T> = {}) {
 
-  const beforeLoad = toArray(lifeCycles.beforeLoad || []);
-  const beforeMount = toArray(lifeCycles.beforeMount || []);
-  const afterMount = toArray(lifeCycles.afterMount || []);
-  const beforeUnmount = toArray(lifeCycles.beforeUnmount || []);
-  const afterUnmount = toArray(lifeCycles.afterUnmount || []);
+  const { beforeUnmount = [], afterUnmount = [], afterMount = [], beforeMount = [], beforeLoad = [] } = lifeCycles;
   microApps = [...microApps, ...apps];
 
   apps.forEach(app => {
@@ -67,7 +63,7 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
           unmountSandbox = sandbox.unmount;
         }
 
-        await execHooks(beforeLoad, app);
+        await execHooksChain(toArray(beforeLoad), app);
 
         // 获取 模块/应用 导出的 lifecycle hooks
         const { bootstrap: bootstrapApp, mount, unmount } = await execScripts(jsSandbox);
@@ -81,20 +77,20 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
             bootstrapApp,
           ],
           mount: [
-            async () => execHooks(beforeMount, app),
+            async () => execHooksChain(toArray(beforeMount), app),
             // 添加 mount hook, 确保每次应用加载前容器 dom 结构已经设置完毕
             async () => render({ appContent, loading: true }),
             mountSandbox,
             mount,
             // 应用 mount 完成后结束 loading
             async () => render({ appContent, loading: false }),
-            async () => execHooks(afterMount, app),
+            async () => execHooksChain(toArray(afterMount), app),
           ],
           unmount: [
-            async () => execHooks(beforeUnmount, app),
+            async () => execHooksChain(toArray(beforeUnmount), app),
             unmount,
             unmountSandbox,
-            async () => execHooks(afterUnmount, app),
+            async () => execHooksChain(toArray(afterUnmount), app),
           ],
         };
       },
