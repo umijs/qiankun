@@ -34,10 +34,26 @@ function execHooksChain<T extends object>(hooks: Array<Lifecycle<T>>, app: Regis
   return Promise.resolve();
 }
 
+class Defer<T> {
+
+  promise: Promise<T>;
+  resolve!: (value?: T | PromiseLike<T>) => void;
+  reject!: (reason?: any) => void;
+
+  constructor() {
+    this.promise = new Promise((resolve, reject) => {
+      this.resolve = resolve;
+      this.reject = reject;
+    });
+  }
+}
+
 export function registerMicroApps<T extends object = {}>(apps: Array<RegistrableApp<T>>, lifeCycles: LifeCycles<T> = {}) {
 
   const { beforeUnmount = [], afterUnmount = [], afterMount = [], beforeMount = [], beforeLoad = [] } = lifeCycles;
   microApps = [...microApps, ...apps];
+
+  let prevAppUnmountedDefer: Defer<void>;
 
   apps.forEach(app => {
 
@@ -49,6 +65,12 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
 
         // 获取入口 html 模板及脚本加载器
         const { template: appContent, execScripts } = await importEntry(entry);
+        // as single-spa load and bootstrap new app parallel with other apps unmounting
+        // (see https://github.com/CanopyTax/single-spa/blob/master/src/navigation/reroute.js#L74)
+        // we need wait to load the app until all apps are finishing unmount in singular mode
+        if (singularMode) {
+          await (prevAppUnmountedDefer && prevAppUnmountedDefer.promise);
+        }
         // 第一次加载设置应用可见区域 dom 结构
         // 确保每次应用加载前容器 dom 结构已经设置完毕
         render({ appContent, loading: true });
@@ -77,6 +99,7 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
             bootstrapApp,
           ],
           mount: [
+            async () => singularMode ? prevAppUnmountedDefer && prevAppUnmountedDefer.promise : void 0,
             async () => execHooksChain(toArray(beforeMount), app),
             // 添加 mount hook, 确保每次应用加载前容器 dom 结构已经设置完毕
             async () => render({ appContent, loading: true }),
@@ -85,12 +108,15 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
             // 应用 mount 完成后结束 loading
             async () => render({ appContent, loading: false }),
             async () => execHooksChain(toArray(afterMount), app),
+            // initialize the unmount defer after app mounted and resolve the defer after it unmounted
+            async () => singularMode ? prevAppUnmountedDefer = new Defer<void>() : void 0,
           ],
           unmount: [
             async () => execHooksChain(toArray(beforeUnmount), app),
             unmount,
             unmountSandbox,
             async () => execHooksChain(toArray(afterUnmount), app),
+            async () => singularMode ? prevAppUnmountedDefer && prevAppUnmountedDefer.resolve() : void 0,
           ],
         };
       },
@@ -104,10 +130,15 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
 export * from './effects';
 
 let useJsSandbox = false;
+/*
+ * with singular mode, any app will wait to load until other apps are unmouting
+ * it is useful for the scenario that only one sub app shown at one time
+ */
+let singularMode = false;
 
 export function start(opts: StartOpts = {}) {
 
-  const { prefetch = true, jsSandbox = true } = opts;
+  const { prefetch = true, jsSandbox = true, singular = true } = opts;
 
   if (prefetch) {
     prefetchAfterFirstMounted(microApps);
@@ -115,6 +146,10 @@ export function start(opts: StartOpts = {}) {
 
   if (jsSandbox) {
     useJsSandbox = jsSandbox;
+  }
+
+  if (singular) {
+    singularMode = singular;
   }
 
   startSpa();

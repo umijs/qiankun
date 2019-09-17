@@ -63,7 +63,7 @@ npm i qiankun -S
      ],
    );
    
-   start({ prefetch: true, jsSandbox: true });
+   start();
    ```
    
 2. Export the lifecycles from your sub app entry
@@ -163,7 +163,7 @@ function registerMicroApps<T extends object = {}>(apps: Array<RegistrableApp<T>>
 ### start
 
 ```typescript
-function start({ prefetch: boolean, jsSandbox: boolean }): void;
+function start({ prefetch: boolean, jsSandbox: boolean, singular: boolean }): void;
 ```
 
 ## 🎯 Roadmap
