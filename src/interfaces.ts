@@ -21,6 +21,7 @@ export type RegistrableApp<T extends object = {}> = {
 export type StartOpts = {
   prefetch?: boolean;
   jsSandbox?: boolean;
+  singular?: boolean;
 };
 
 export type Rebuilder = () => void;
