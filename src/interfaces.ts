@@ -21,7 +21,7 @@ export type RegistrableApp<T extends object = {}> = {
 export type StartOpts = {
   prefetch?: boolean;
   jsSandbox?: boolean;
-  singular?: boolean;
+  singular?: boolean | ((app: RegistrableApp<any>) => Promise<boolean>);
 };
 
 export type Rebuilder = () => void;
