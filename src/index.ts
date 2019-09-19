@@ -34,6 +34,10 @@ function execHooksChain<T extends object>(hooks: Array<Lifecycle<T>>, app: Regis
   return Promise.resolve();
 }
 
+async function validateSingularMode<T extends object>(validate: StartOpts['singular'], app: RegistrableApp<T>): Promise<boolean> {
+  return typeof validate === 'function' ? validate(app) : !!validate;
+}
+
 class Defer<T> {
 
   promise: Promise<T>;
@@ -68,7 +72,7 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
         // as single-spa load and bootstrap new app parallel with other apps unmounting
         // (see https://github.com/CanopyTax/single-spa/blob/master/src/navigation/reroute.js#L74)
         // we need wait to load the app until all apps are finishing unmount in singular mode
-        if (singularMode) {
+        if (await validateSingularMode(singularMode, app)) {
           await (prevAppUnmountedDefer && prevAppUnmountedDefer.promise);
         }
         // 第一次加载设置应用可见区域 dom 结构
@@ -99,7 +103,7 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
             bootstrapApp,
           ],
           mount: [
-            async () => singularMode ? prevAppUnmountedDefer && prevAppUnmountedDefer.promise : void 0,
+            async () => await validateSingularMode(singularMode, app) ? prevAppUnmountedDefer && prevAppUnmountedDefer.promise : void 0,
             async () => execHooksChain(toArray(beforeMount), app),
             // 添加 mount hook, 确保每次应用加载前容器 dom 结构已经设置完毕
             async () => render({ appContent, loading: true }),
@@ -109,14 +113,14 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
             async () => render({ appContent, loading: false }),
             async () => execHooksChain(toArray(afterMount), app),
             // initialize the unmount defer after app mounted and resolve the defer after it unmounted
-            async () => singularMode ? prevAppUnmountedDefer = new Defer<void>() : void 0,
+            async () => await validateSingularMode(singularMode, app) ? prevAppUnmountedDefer = new Defer<void>() : void 0,
           ],
           unmount: [
             async () => execHooksChain(toArray(beforeUnmount), app),
             unmount,
             unmountSandbox,
             async () => execHooksChain(toArray(afterUnmount), app),
-            async () => singularMode ? prevAppUnmountedDefer && prevAppUnmountedDefer.resolve() : void 0,
+            async () => await validateSingularMode(singularMode, app) ? prevAppUnmountedDefer && prevAppUnmountedDefer.resolve() : void 0,
           ],
         };
       },
@@ -134,7 +138,7 @@ let useJsSandbox = false;
  * with singular mode, any app will wait to load until other apps are unmouting
  * it is useful for the scenario that only one sub app shown at one time
  */
-let singularMode = false;
+let singularMode: StartOpts['singular'] = false;
 
 export function start(opts: StartOpts = {}) {
 
