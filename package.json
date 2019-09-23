@@ -15,7 +15,7 @@
     "start:vue": "cd examples/vue && npm start",
     "build": "father-build",
     "prepush": "npm run lint",
-    "release": "np --no-cleanup --yolo --no-publish",
+    "release": "np --no-cleanup --yolo --no-publish --any-branch",
     "prepublishOnly": "npm run lint && npm run build",
     "lint": "tslint 'src/**/*.ts'",
     "test": "echo \"Error: no test specified\" && exit 1"
