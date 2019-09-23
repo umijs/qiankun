@@ -12,7 +12,7 @@ import { genSandbox } from './sandbox';
 
 type Lifecycle<T extends object> = (app: RegistrableApp<T>) => Promise<any>;
 
-type LifeCycles<T extends object> = {
+export type LifeCycles<T extends object> = {
   beforeLoad?: Lifecycle<T> | Array<Lifecycle<T>>; // function before app load
   beforeMount?: Lifecycle<T> | Array<Lifecycle<T>>; // function before app mount
   afterMount?: Lifecycle<T> | Array<Lifecycle<T>>; // function after app mount
