@@ -44,7 +44,7 @@ async function validateSingularMode<T extends object>(validate: StartOpts['singu
   return typeof validate === 'function' ? validate(app) : !!validate;
 }
 
-class Defer<T> {
+class Deferred<T> {
 
   promise: Promise<T>;
   resolve!: (value?: T | PromiseLike<T>) => void;
@@ -63,7 +63,7 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
   const { beforeUnmount = [], afterUnmount = [], afterMount = [], beforeMount = [], beforeLoad = [] } = lifeCycles;
   microApps = [...microApps, ...apps];
 
-  let prevAppUnmountedDefer: Defer<void>;
+  let prevAppUnmountedDeferred: Deferred<void>;
 
   apps.forEach(app => {
 
@@ -79,7 +79,7 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
         // (see https://github.com/CanopyTax/single-spa/blob/master/src/navigation/reroute.js#L74)
         // we need wait to load the app until all apps are finishing unmount in singular mode
         if (await validateSingularMode(singularMode, app)) {
-          await (prevAppUnmountedDefer && prevAppUnmountedDefer.promise);
+          await (prevAppUnmountedDeferred && prevAppUnmountedDeferred.promise);
         }
         // 第一次加载设置应用可见区域 dom 结构
         // 确保每次应用加载前容器 dom 结构已经设置完毕
@@ -109,7 +109,8 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
             bootstrapApp,
           ],
           mount: [
-            async () => await validateSingularMode(singularMode, app) ? prevAppUnmountedDefer && prevAppUnmountedDefer.promise : void 0,
+            async () =>
+              await validateSingularMode(singularMode, app) ? prevAppUnmountedDeferred && prevAppUnmountedDeferred.promise : void 0,
             async () => execHooksChain(toArray(beforeMount), app),
             // 添加 mount hook, 确保每次应用加载前容器 dom 结构已经设置完毕
             async () => render({ appContent, loading: true }),
@@ -119,14 +120,15 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
             async () => render({ appContent, loading: false }),
             async () => execHooksChain(toArray(afterMount), app),
             // initialize the unmount defer after app mounted and resolve the defer after it unmounted
-            async () => await validateSingularMode(singularMode, app) ? prevAppUnmountedDefer = new Defer<void>() : void 0,
+            async () => await validateSingularMode(singularMode, app) ? prevAppUnmountedDeferred = new Deferred<void>() : void 0,
           ],
           unmount: [
             async () => execHooksChain(toArray(beforeUnmount), app),
             unmount,
             unmountSandbox,
             async () => execHooksChain(toArray(afterUnmount), app),
-            async () => await validateSingularMode(singularMode, app) ? prevAppUnmountedDefer && prevAppUnmountedDefer.resolve() : void 0,
+            async () =>
+              await validateSingularMode(singularMode, app) ? prevAppUnmountedDeferred && prevAppUnmountedDeferred.resolve() : void 0,
           ],
         };
       },
