@@ -10,6 +10,12 @@ import { RegistrableApp, StartOpts } from './interfaces';
 import { prefetchAfterFirstMounted } from './prefetch';
 import { genSandbox } from './sandbox';
 
+declare global {
+  interface Window {
+    __POWERED_BY_QIANKUN__?: boolean;
+  }
+}
+
 type Lifecycle<T extends object> = (app: RegistrableApp<T>) => Promise<any>;
 
 export type LifeCycles<T extends object> = {
@@ -141,6 +147,8 @@ let useJsSandbox = false;
 let singularMode: StartOpts['singular'] = false;
 
 export function start(opts: StartOpts = {}) {
+
+  window.__POWERED_BY_QIANKUN__ = true;
 
   const { prefetch = true, jsSandbox = true, singular = true } = opts;
 
