@@ -31,7 +31,6 @@ export default function Framework(props) {
           </ol>
         </nav>
       </header>
-      <button onClick={setInterval}>set master interval</button>
       {loading ? <div>loading...</div> : null}
       <div dangerouslySetInnerHTML={{ __html: content }} className={style.appContainer}/>
     </>

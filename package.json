@@ -7,7 +7,7 @@
   "types": "./dist/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "start": "npm run start:main & npm run start:react16 & npm run start:react15 & npm run start:vue",
+    "start": "concurrently \"npm run start:main\" \"npm run start:react16\" \"npm run start:react15\" \"npm run start:vue\"",
     "install:examples": "npm run build && cd examples/main && npm i && cd ../react16 && npm i && cd ../react15 && npm i && cd ../vue && npm i",
     "start:main": "cd examples/main && npm start",
     "start:react16": "cd examples/react16 && npm start",
@@ -43,6 +43,7 @@
   "devDependencies": {
     "@types/lodash": "^4.14.129",
     "babel-plugin-import": "^1.12.1",
+    "concurrently": "^4.1.2",
     "father-build": "^1.7.0",
     "husky": "^2.3.0",
     "np": "^5.0.3",

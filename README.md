@@ -33,79 +33,79 @@ npm i qiankun -S
 
 ## 🔨 Getting Started
 
-1. Create master framework with qiankun
+### 1. Create master framework with qiankun
 
-   ```ts
-   import { registerMicroApps, start } from 'qiankun';
-   
-   function render({ appContent, loading }) {
-     const container = document.getElementById('container');
-     ReactDOM.render(<Framework loading={loading} content={appContent}/>, container);
-   }
-   
-   function genActiveRule(routerPrefix) {
-     return (location) => location.pathname.startsWith(routerPrefix);
-   }
-   
-   registerMicroApps(
-     [
-       { 
-         name: 'react app', // app name registered
-         entry: '//localhost:7100',
-         render, 
-         activeRule: genActiveRule('/react') },
-       { 
-         name: 'vue app',
-         entry: { scripts: [ '//localhost:7100/main.js' ] }, 
-         render, 
-         activeRule: genActiveRule('/vue') 
-       },
-     ],
-   );
-   
-   start();
-   ```
-   
-2. Export the lifecycles from your sub app entry
+```ts
+import { registerMicroApps, start } from 'qiankun';
 
-   ```ts
-   export async function bootstrap() {
-     console.log('react app bootstraped');
-   }
-   
-   export async function mount(props) {
-     console.log(props);
-     ReactDOM.render(<App/>, document.getElementById('react15Root'));
-   }
-   
-   export async function unmount() {
-     ReactDOM.unmountComponentAtNode(document.getElementById('react15Root'));
-   }
-   ```
-   For more lifecycle information, see [single-spa lifecycles](https://single-spa.js.org/docs/building-applications.html#registered-application-lifecycle)
+function render({ appContent, loading }) {
+  const container = document.getElementById('container');
+  ReactDOM.render(<Framework loading={loading} content={appContent}/>, container);
+}
 
-3. Config your sub app bundler
-   
+function genActiveRule(routerPrefix) {
+  return (location) => location.pathname.startsWith(routerPrefix);
+}
+
+registerMicroApps(
+  [
+    { 
+      name: 'react app', // app name registered
+      entry: '//localhost:7100',
+      render, 
+      activeRule: genActiveRule('/react') },
+    { 
+      name: 'vue app',
+      entry: { scripts: [ '//localhost:7100/main.js' ] }, 
+      render, 
+      activeRule: genActiveRule('/vue') 
+    },
+  ],
+);
+
+start();
+```
+
+### 2. Export the lifecycles from your sub app entry
+
+```ts
+export async function bootstrap() {
+  console.log('react app bootstraped');
+}
+
+export async function mount(props) {
+  console.log(props);
+  ReactDOM.render(<App/>, document.getElementById('react15Root'));
+}
+
+export async function unmount() {
+  ReactDOM.unmountComponentAtNode(document.getElementById('react15Root'));
+}
+```
+For more lifecycle information, see [single-spa lifecycles](https://single-spa.js.org/docs/building-applications.html#registered-application-lifecycle)
+
+### 3. Config your sub app bundler
+
 While you wanna build a sub app to integrate to qiankun, pls make sure your bundler have the required configuration below:
-   
-##### webpack:
-   
+
+#### webpack:
+
    ```js
    output: {
      library: packageName,
      libraryTarget: 'umd',
      jsonpFunction: `webpackJsonp_${packageName}`,
    }
-```
-   
+   ```
+
 see https://webpack.js.org/configuration/output/#outputlibrary
-   
-##### parcel:
-   
+
+#### parcel:
+
    ```shell
    parcel serve entry.js --global myvariable
-```
-   
+   ```
+
    see https://en.parceljs.org/cli.html#expose-modules-as-umd
 
 ## 💿 Examples
@@ -119,6 +119,8 @@ npm start
 Visit `http://localhost:7099`
 
 ![](./examples/example.gif)
+
+
 
 ## :sparkles: Features
 
@@ -166,7 +168,22 @@ function registerMicroApps<T extends object = {}>(apps: Array<RegistrableApp<T>>
 function start({ prefetch: boolean, jsSandbox: boolean, singular: boolean }): void;
 ```
 
+### setDefaultMountApp
+
+Set which sub app shoule be active by default after master loaded.
+
+```typescript
+function setDefaultMountApp(defaultAppLink: string): void
+```
+
+### runAfterFirstMounted
+
+```typescript
+function runAfterFirstMounted(effect: () => void): void
+```
+
 ## 🎯 Roadmap
+
 - [ ] Parcel apps integration (multiple sub apps displayed at the same time, but only one uses router at most)
 - [ ] Communication development kits between master and sub apps 
 - [ ] Custom side effects hijacker
