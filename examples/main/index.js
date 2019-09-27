@@ -6,7 +6,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 // import Vue from 'vue';
-import { registerMicroApps, runDefaultMountEffects, start } from '../../dist/index.esm';
+import { registerMicroApps, runAfterFirstMounted, setDefaultMountApp, start } from '../../dist/index.esm';
 import Framework from './Framework';
 // import Framework from './Framework.vue';
 
@@ -69,6 +69,7 @@ registerMicroApps(
   },
 );
 
-runDefaultMountEffects('/react');
+setDefaultMountApp('/react');
+runAfterFirstMounted(() => console.info('first app mounted'));
 
 start();
