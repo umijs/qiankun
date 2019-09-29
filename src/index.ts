@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/array-type */
+
 /**
  * @author Kuitos
  * @since 2019-04-25
@@ -32,7 +34,10 @@ function toArray<T>(array: T | T[]): T[] {
   return Array.isArray(array) ? array : [array];
 }
 
-function execHooksChain<T extends object>(hooks: Array<Lifecycle<T>>, app: RegistrableApp<T>): Promise<any> {
+function execHooksChain<T extends object>(
+  hooks: Array<Lifecycle<T>>,
+  app: RegistrableApp<T>,
+): Promise<any> {
   if (hooks.length) {
     return hooks.reduce((chain, hook) => chain.then(() => hook(app)), Promise.resolve());
   }
@@ -40,14 +45,18 @@ function execHooksChain<T extends object>(hooks: Array<Lifecycle<T>>, app: Regis
   return Promise.resolve();
 }
 
-async function validateSingularMode<T extends object>(validate: StartOpts['singular'], app: RegistrableApp<T>): Promise<boolean> {
+async function validateSingularMode<T extends object>(
+  validate: StartOpts['singular'],
+  app: RegistrableApp<T>,
+): Promise<boolean> {
   return typeof validate === 'function' ? validate(app) : !!validate;
 }
 
 class Deferred<T> {
-
   promise: Promise<T>;
+
   resolve!: (value?: T | PromiseLike<T>) => void;
+
   reject!: (reason?: any) => void;
 
   constructor() {
@@ -58,21 +67,28 @@ class Deferred<T> {
   }
 }
 
-export function registerMicroApps<T extends object = {}>(apps: Array<RegistrableApp<T>>, lifeCycles: LifeCycles<T> = {}) {
-
-  const { beforeUnmount = [], afterUnmount = [], afterMount = [], beforeMount = [], beforeLoad = [] } = lifeCycles;
+export function registerMicroApps<T extends object = {}>(
+  apps: Array<RegistrableApp<T>>,
+  lifeCycles: LifeCycles<T> = {},
+) {
+  const {
+    beforeUnmount = [],
+    afterUnmount = [],
+    afterMount = [],
+    beforeMount = [],
+    beforeLoad = [],
+  } = lifeCycles;
   microApps = [...microApps, ...apps];
 
   let prevAppUnmountedDeferred: Deferred<void>;
 
   apps.forEach(app => {
-
     const { name, entry, render, activeRule, props = {} } = app;
 
-    registerApplication(name,
+    registerApplication(
+      name,
 
       async ({ name: appName }) => {
-
         // 获取入口 html 模板及脚本加载器
         const { template: appContent, execScripts } = await importEntry(entry);
         // as single-spa load and bootstrap new app parallel with other apps unmounting
@@ -105,12 +121,9 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
         }
 
         return {
-          bootstrap: [
-            bootstrapApp,
-          ],
+          bootstrap: [bootstrapApp],
           mount: [
-            async () =>
-              await validateSingularMode(singularMode, app) ? prevAppUnmountedDeferred && prevAppUnmountedDeferred.promise : void 0,
+            async () => (await validateSingularMode(singularMode, app) ? prevAppUnmountedDeferred && prevAppUnmountedDeferred.promise : undefined),
             async () => execHooksChain(toArray(beforeMount), app),
             // 添加 mount hook, 确保每次应用加载前容器 dom 结构已经设置完毕
             async () => render({ appContent, loading: true }),
@@ -120,15 +133,15 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
             async () => render({ appContent, loading: false }),
             async () => execHooksChain(toArray(afterMount), app),
             // initialize the unmount defer after app mounted and resolve the defer after it unmounted
-            async () => await validateSingularMode(singularMode, app) ? prevAppUnmountedDeferred = new Deferred<void>() : void 0,
+            // eslint-disable-next-line no-return-assign
+            async () => (await validateSingularMode(singularMode, app) ? (prevAppUnmountedDeferred = new Deferred<void>()) : undefined),
           ],
           unmount: [
             async () => execHooksChain(toArray(beforeUnmount), app),
             unmount,
             unmountSandbox,
             async () => execHooksChain(toArray(afterUnmount), app),
-            async () =>
-              await validateSingularMode(singularMode, app) ? prevAppUnmountedDeferred && prevAppUnmountedDeferred.resolve() : void 0,
+            async () => (await validateSingularMode(singularMode, app) ? prevAppUnmountedDeferred && prevAppUnmountedDeferred.resolve() : undefined),
           ],
         };
       },
@@ -149,7 +162,7 @@ let useJsSandbox = false;
 let singularMode: StartOpts['singular'] = false;
 
 export function start(opts: StartOpts = {}) {
-
+  // eslint-disable-next-line no-underscore-dangle
   window.__POWERED_BY_QIANKUN__ = true;
 
   const { prefetch = true, jsSandbox = true, singular = true } = opts;

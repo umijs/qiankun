@@ -17,7 +17,9 @@
     "prepush": "npm run lint",
     "release": "np --no-cleanup --yolo --no-publish",
     "prepublishOnly": "npm run lint && npm run build",
-    "lint": "tslint 'src/**/*.ts'",
+    "lint": "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty ./src && npm run lint:prettier",
+    "lint:prettier": "check-prettier lint",
+    "prettier": "prettier -c --write **/*",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -42,14 +44,15 @@
   },
   "devDependencies": {
     "@types/lodash": "^4.14.129",
+    "@umijs/fabric": "^1.1.10",
     "babel-plugin-import": "^1.12.1",
+    "check-prettier": "^1.0.3",
     "concurrently": "^4.1.2",
     "father-build": "^1.7.0",
     "husky": "^2.3.0",
     "np": "^5.0.3",
+    "prettier": "^1.18.2",
     "rimraf": "^3.0.0",
-    "tslint": "^5.16.0",
-    "tslint-eslint-rules": "^5.4.0",
     "typescript": "^3.4.5"
   }
 }
