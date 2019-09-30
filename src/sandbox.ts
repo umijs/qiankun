@@ -102,9 +102,7 @@ export function genSandbox(appName: string) {
 
         const boundValue = value.bind(target);
         // some callable function has custom fields, we need to copy the enumerable props to boundValue. such as moment function.
-        Object.keys(value).forEach(key => {
-          boundValue[key] = value[key];
-        });
+        Object.keys(value).forEach(key => boundValue[key] = value[key]);
         Object.defineProperty(value, boundValueSymbol, { enumerable: false, value: boundValue });
         return boundValue;
       }

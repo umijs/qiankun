@@ -5,5 +5,6 @@ module.exports = {
   rules: {
     ...fabric.eslint.rules,
     '@typescript-eslint/prefer-interface': 0,
+    'no-return-assign': 0
   },
 };

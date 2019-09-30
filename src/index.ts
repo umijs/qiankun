@@ -133,7 +133,6 @@ export function registerMicroApps<T extends object = {}>(
             async () => render({ appContent, loading: false }),
             async () => execHooksChain(toArray(afterMount), app),
             // initialize the unmount defer after app mounted and resolve the defer after it unmounted
-            // eslint-disable-next-line no-return-assign
             async () => (await validateSingularMode(singularMode, app) ? (prevAppUnmountedDeferred = new Deferred<void>()) : undefined),
           ],
           unmount: [
