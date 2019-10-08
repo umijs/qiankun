@@ -34,10 +34,7 @@ function toArray<T>(array: T | T[]): T[] {
   return Array.isArray(array) ? array : [array];
 }
 
-function execHooksChain<T extends object>(
-  hooks: Array<Lifecycle<T>>,
-  app: RegistrableApp<T>,
-): Promise<any> {
+function execHooksChain<T extends object>(hooks: Array<Lifecycle<T>>, app: RegistrableApp<T>): Promise<any> {
   if (hooks.length) {
     return hooks.reduce((chain, hook) => chain.then(() => hook(app)), Promise.resolve());
   }
@@ -67,17 +64,18 @@ class Deferred<T> {
   }
 }
 
+/*
+ * with singular mode, any app will wait to load until other apps are unmouting
+ * it is useful for the scenario that only one sub app shown at one time
+ */
+let singularMode: StartOpts['singular'] = false;
+let useJsSandbox = false;
+
 export function registerMicroApps<T extends object = {}>(
   apps: Array<RegistrableApp<T>>,
   lifeCycles: LifeCycles<T> = {},
 ) {
-  const {
-    beforeUnmount = [],
-    afterUnmount = [],
-    afterMount = [],
-    beforeMount = [],
-    beforeLoad = [],
-  } = lifeCycles;
+  const { beforeUnmount = [], afterUnmount = [], afterMount = [], beforeMount = [], beforeLoad = [] } = lifeCycles;
   microApps = [...microApps, ...apps];
 
   let prevAppUnmountedDeferred: Deferred<void>;
@@ -123,7 +121,13 @@ export function registerMicroApps<T extends object = {}>(
         return {
           bootstrap: [bootstrapApp],
           mount: [
-            async () => (await validateSingularMode(singularMode, app) ? prevAppUnmountedDeferred && prevAppUnmountedDeferred.promise : undefined),
+            async () => {
+              if ((await validateSingularMode(singularMode, app)) && prevAppUnmountedDeferred) {
+                return prevAppUnmountedDeferred.promise;
+              }
+
+              return undefined;
+            },
             async () => execHooksChain(toArray(beforeMount), app),
             // 添加 mount hook, 确保每次应用加载前容器 dom 结构已经设置完毕
             async () => render({ appContent, loading: true }),
@@ -133,14 +137,22 @@ export function registerMicroApps<T extends object = {}>(
             async () => render({ appContent, loading: false }),
             async () => execHooksChain(toArray(afterMount), app),
             // initialize the unmount defer after app mounted and resolve the defer after it unmounted
-            async () => (await validateSingularMode(singularMode, app) ? (prevAppUnmountedDeferred = new Deferred<void>()) : undefined),
+            async () => {
+              if (await validateSingularMode(singularMode, app)) {
+                prevAppUnmountedDeferred = new Deferred<void>();
+              }
+            },
           ],
           unmount: [
             async () => execHooksChain(toArray(beforeUnmount), app),
             unmount,
             unmountSandbox,
             async () => execHooksChain(toArray(afterUnmount), app),
-            async () => (await validateSingularMode(singularMode, app) ? prevAppUnmountedDeferred && prevAppUnmountedDeferred.resolve() : undefined),
+            async () => {
+              if ((await validateSingularMode(singularMode, app)) && prevAppUnmountedDeferred) {
+                prevAppUnmountedDeferred.resolve();
+              }
+            },
           ],
         };
       },
@@ -152,13 +164,6 @@ export function registerMicroApps<T extends object = {}>(
 }
 
 export * from './effects';
-
-let useJsSandbox = false;
-/*
- * with singular mode, any app will wait to load until other apps are unmouting
- * it is useful for the scenario that only one sub app shown at one time
- */
-let singularMode: StartOpts['singular'] = false;
 
 export function start(opts: StartOpts = {}) {
   // eslint-disable-next-line no-underscore-dangle

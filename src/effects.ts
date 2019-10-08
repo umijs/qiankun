@@ -23,9 +23,7 @@ export function setDefaultMountApp(defaultAppLink: string) {
 }
 
 export function runDefaultMountEffects(defaultAppLink: string) {
-  console.warn(
-    'runDefaultMountEffects will be removed in next version, please use setDefaultMountApp instead!',
-  );
+  console.warn('runDefaultMountEffects will be removed in next version, please use setDefaultMountApp instead!');
   setDefaultMountApp(defaultAppLink);
 }
 
