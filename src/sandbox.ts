@@ -23,16 +23,12 @@ function isPropConfigurable(target: object, prop: PropertyKey) {
 }
 
 function setWindowProp(prop: PropertyKey, value: any, toDelete?: boolean) {
-
   if (value === undefined && toDelete) {
     delete (window as any)[prop];
-  } else {
-    if (isPropConfigurable(window, prop) && typeof prop !== 'symbol') {
-      Object.defineProperty(window, prop, { writable: true, configurable: true });
-      (window as any)[prop] = value;
-    }
+  } else if (isPropConfigurable(window, prop) && typeof prop !== 'symbol') {
+    Object.defineProperty(window, prop, { writable: true, configurable: true });
+    (window as any)[prop] = value;
   }
-
 }
 
 /**
@@ -50,7 +46,6 @@ function setWindowProp(prop: PropertyKey, value: any, toDelete?: boolean) {
  * @param appName
  */
 export function genSandbox(appName: string) {
-
   // 沙箱期间新增的全局变量
   const addedPropsMapInSandbox = new Map<PropertyKey, any>();
   // 沙箱期间更新的全局变量
@@ -67,11 +62,8 @@ export function genSandbox(appName: string) {
 
   const boundValueSymbol = Symbol('bound value');
   const sandbox = new Proxy(window, {
-
     set(target: Window, p: PropertyKey, value: any): boolean {
-
       if (inAppSandbox) {
-
         if (!target.hasOwnProperty(p)) {
           addedPropsMapInSandbox.set(p, value);
         } else if (!modifiedPropsOriginalValueMapInSandbox.has(p)) {
@@ -82,20 +74,22 @@ export function genSandbox(appName: string) {
 
         currentUpdatedPropsValueMapForSnapshot.set(p, value);
         // 必须重新设置 window 对象保证下次 get 时能拿到已更新的数据
+        // eslint-disable-next-line no-param-reassign
         (target as any)[p] = value;
 
         return true;
       }
 
       if (process.env.NODE_ENV === 'development') {
-        console.warn(`Try to set window.${p.toString()} while js sandbox destroyed or not active in ${appName}!`);
+        console.warn(
+          `Try to set window.${p.toString()} while js sandbox destroyed or not active in ${appName}!`,
+        );
       }
 
       return false;
     },
 
     get(target: Window, p: PropertyKey) {
-
       const value = (target as any)[p];
       /*
       仅绑定 !isConstructable && isCallable 的函数对象，如 window.console、window.atob 这类。目前没有完美的检测方式，这里通过 prototype 中是否还有可枚举的拓展方法的方式来判断
@@ -115,7 +109,6 @@ export function genSandbox(appName: string) {
 
       return value;
     },
-
   });
 
   return {
@@ -127,7 +120,6 @@ export function genSandbox(appName: string) {
      * 也可能是从 unmount 之后再次唤醒进入 mount
      */
     async mount() {
-
       /* ------------------------------------------ 因为有上下文依赖（window），以下代码执行顺序不能变 ------------------------------------------ */
 
       /* ------------------------------------------ 1. 启动/恢复 快照 ------------------------------------------ */
@@ -157,11 +149,11 @@ export function genSandbox(appName: string) {
      * 恢复 global 状态，使其能回到应用加载之前的状态
      */
     async unmount() {
-
       if (process.env.NODE_ENV === 'development') {
-        console.info(`${appName} modified global properties will be restore`,
-          [...addedPropsMapInSandbox.keys(), ...modifiedPropsOriginalValueMapInSandbox.keys()],
-        );
+        console.info(`${appName} modified global properties will be restore`, [
+          ...addedPropsMapInSandbox.keys(),
+          ...modifiedPropsOriginalValueMapInSandbox.keys(),
+        ]);
       }
 
       // record the rebuilders of window side effects (event listeners or timers)
