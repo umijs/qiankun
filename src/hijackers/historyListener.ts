@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/array-type */
-
 /**
  * @author Kuitos
  * @since 2019-04-11
