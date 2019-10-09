@@ -14,10 +14,11 @@
     "start:react15": "cd examples/react15 && npm start",
     "start:vue": "cd examples/vue && npm start",
     "build": "father-build",
-    "prepush": "npm run lint",
     "release": "np --no-cleanup --yolo --no-publish",
     "prepublishOnly": "npm run lint && npm run build",
-    "lint": "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty ./src && npm run lint:prettier",
+    "lint": "npm run lint:js && npm run lint:prettier",
+    "lint:js": "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty ./src",
+    "lint:fix": "npm run lint:js -- --fix",
     "lint:prettier": "check-prettier lint",
     "prettier": "prettier -c --write **/*",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -39,8 +40,7 @@
     "@babel/runtime": "^7.5.5",
     "import-html-entry": "^1.0.0",
     "lodash": "^4.17.11",
-    "single-spa": "^4.3.4",
-    "tslib": "^1.9.3"
+    "single-spa": "^4.3.4"
   },
   "devDependencies": {
     "@types/lodash": "^4.14.129",
@@ -50,9 +50,25 @@
     "concurrently": "^4.1.2",
     "father-build": "^1.7.0",
     "husky": "^2.3.0",
+    "lint-staged": "^9.4.2",
     "np": "^5.0.3",
     "prettier": "^1.18.2",
     "rimraf": "^3.0.0",
     "typescript": "^3.4.5"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "**/*.{js,ts,json,css,md}": [
+      "npm run prettier",
+      "git add"
+    ],
+    "**/*.{js,ts}": [
+      "npm run lint:fix",
+      "git add"
+    ]
   }
 }

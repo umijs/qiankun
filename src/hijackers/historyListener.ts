@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/array-type */
-
 /**
  * @author Kuitos
  * @since 2019-04-11
@@ -10,7 +8,8 @@ import { isFunction, noop } from 'lodash';
 export default function hijack() {
   // FIXME umi unmount feature request
   // @see http://gitlab.alipay-inc.com/bigfish/bigfish/issues/1154
-  let rawHistoryListen = (..._: any[]) => noop;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  let rawHistoryListen = (_: any) => noop;
   const historyListeners: Array<typeof noop> = [];
   const historyUnListens: Array<typeof noop> = [];
 
