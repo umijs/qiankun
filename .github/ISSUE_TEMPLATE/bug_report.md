@@ -4,10 +4,10 @@ about: 'Report a bug to help us improve'
 title: ''
 labels: ''
 assignees: ''
-
 ---
 
 ## What happens?
+
 A clear and concise description of what the bug is.
 
 ## Mini Showcase Repository(REQUIRED)
@@ -17,15 +17,13 @@ A clear and concise description of what the bug is.
 <!-- https://github.com/YOUR_REPOSITORY_URL -->
 
 ## How To Reproduce
-**Steps to reproduce the behavior:**
-1.
-2.
 
-**Expected behavior**
-1.
-2.
+**Steps to reproduce the behavior:** 1. 2.
+
+**Expected behavior** 1. 2.
 
 ## Context
 
-- **Node Version**:
 - **Platform**:
+- **Browser Version**:
+- **Node Version**:
