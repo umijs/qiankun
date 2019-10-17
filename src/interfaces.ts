@@ -24,6 +24,7 @@ export type StartOpts = {
   prefetch?: boolean;
   jsSandbox?: boolean;
   singular?: boolean | ((app: RegistrableApp<any>) => Promise<boolean>);
+  fetch?: Function;
 };
 
 export type Rebuilder = () => void;

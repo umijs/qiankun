@@ -5,6 +5,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom';
+import fetch from 'isomorphic-fetch';
 // import Vue from 'vue';
 import { registerMicroApps, runAfterFirstMounted, setDefaultMountApp, start } from '../../dist/index.esm';
 import Framework from './Framework';
@@ -13,7 +14,6 @@ import Framework from './Framework';
 // let app = null;
 
 function render({ appContent, loading }) {
-
   /*
   examples for vue
    */
@@ -41,7 +41,7 @@ function render({ appContent, loading }) {
   // }
 
   const container = document.getElementById('container');
-  ReactDOM.render(<Framework loading={loading} content={appContent}/>, container);
+  ReactDOM.render(<Framework loading={loading} content={appContent} />, container);
 }
 
 function genActiveRule(routerPrefix) {
@@ -50,6 +50,12 @@ function genActiveRule(routerPrefix) {
 
 render({ loading: true });
 
+// support custom fetch see: https://github.com/kuitos/import-html-entry/blob/91d542e936a74408c6c8cd1c9eebc5a9f83a8dc0/src/index.js#L163
+const request = url =>
+  fetch(url, {
+    referrerPolicy: 'origin-when-cross-origin',
+  });
+
 registerMicroApps(
   [
     { name: 'react app', entry: '//localhost:7100', render, activeRule: genActiveRule('/react') },
@@ -57,19 +63,28 @@ registerMicroApps(
     { name: 'vue app', entry: '//localhost:7101', render, activeRule: genActiveRule('/vue') },
   ],
   {
-    beforeLoad: [app => {
-      console.log('before load', app);
-    }],
-    beforeMount: [app => {
-      console.log('before mount', app);
-    }],
-    afterUnmount: [app => {
-      console.log('after unload', app);
-    }],
+    beforeLoad: [
+      app => {
+        console.log('before load', app);
+      },
+    ],
+    beforeMount: [
+      app => {
+        console.log('before mount', app);
+      },
+    ],
+    afterUnmount: [
+      app => {
+        console.log('after unload', app);
+      },
+    ],
+  },
+  {
+    fetch: request,
   },
 );
 
 setDefaultMountApp('/react');
 runAfterFirstMounted(() => console.info('first app mounted'));
 
-start();
+start({ prefetch: true, fetch: request });
