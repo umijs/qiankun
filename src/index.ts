@@ -6,7 +6,7 @@
 import { importEntry } from 'import-html-entry';
 import { isFunction } from 'lodash';
 import { registerApplication, start as startSpa } from 'single-spa';
-import { RegistrableApp, StartOpts } from './interfaces';
+import { RegistrableApp, StartOpts, Fetch } from './interfaces';
 import { prefetchAfterFirstMounted } from './prefetch';
 import { genSandbox } from './sandbox';
 
@@ -27,7 +27,7 @@ export type LifeCycles<T extends object> = {
 };
 
 type RegisterMicroAppsOpts = {
-  fetch?: Function;
+  fetch?: Fetch;
 };
 
 let microApps: RegistrableApp[] = [];

@@ -164,7 +164,7 @@ function registerMicroApps<T extends object = {}>(
 ### start
 
 ```typescript
-function start({ prefetch: boolean, jsSandbox: boolean, singular: boolean, fetch?: Function }): void;
+function start({ prefetch: boolean, jsSandbox: boolean, singular: boolean, fetch?: typeof fetch }): void;
 ```
 
 ### setDefaultMountApp

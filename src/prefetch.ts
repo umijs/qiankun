@@ -6,13 +6,14 @@
 import { Entry, importEntry } from 'import-html-entry';
 import { noop } from 'lodash';
 import { getMountedApps } from 'single-spa';
-import { RegistrableApp } from './interfaces';
+import { RegistrableApp, Fetch } from './interfaces';
 
 /**
  * 预加载静态资源，不兼容 requestIdleCallback 的浏览器不做任何动作
  * @param entry
+ * @param fetch
  */
-export function prefetch(entry: Entry, fetch?: Function) {
+export function prefetch(entry: Entry, fetch?: Fetch) {
   const requestIdleCallback = window.requestIdleCallback || noop;
 
   requestIdleCallback(async () => {
@@ -22,7 +23,7 @@ export function prefetch(entry: Entry, fetch?: Function) {
   });
 }
 
-export function prefetchAfterFirstMounted(apps: RegistrableApp[], fetch?: Function) {
+export function prefetchAfterFirstMounted(apps: RegistrableApp[], fetch?: Fetch) {
   window.addEventListener(
     'single-spa:first-mount',
     () => {
