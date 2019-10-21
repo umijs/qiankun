@@ -72,6 +72,7 @@ class Deferred<T> {
  */
 let singularMode: StartOpts['singular'] = false;
 let useJsSandbox = false;
+const frameworkStartedDefer = new Deferred<void>();
 
 export function registerMicroApps<T extends object = {}>(
   apps: Array<RegistrableApp<T>>,
@@ -94,6 +95,8 @@ export function registerMicroApps<T extends object = {}>(
       name,
 
       async ({ name: appName }) => {
+        await frameworkStartedDefer.promise;
+
         // 获取入口 html 模板及脚本加载器
         const { template: appContent, execScripts } = await importEntry(entry, { fetch });
         // as single-spa load and bootstrap new app parallel with other apps unmounting
@@ -188,4 +191,6 @@ export function start(opts: StartOpts = {}) {
   }
 
   startSpa();
+
+  frameworkStartedDefer.resolve();
 }
