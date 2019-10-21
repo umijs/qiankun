@@ -4,14 +4,11 @@
  */
 
 import { Freer } from '../interfaces';
+import hijackDynamicStylesheet from './dynamicStylesheet';
 import hijackHistoryListener from './historyListener';
 import hijackTimer from './timer';
 import hijackWindowListener from './windowListener';
 
 export function hijack(): Freer[] {
-  return [
-    hijackTimer(),
-    hijackWindowListener(),
-    hijackHistoryListener(),
-  ];
+  return [hijackTimer(), hijackWindowListener(), hijackHistoryListener(), hijackDynamicStylesheet()];
 }
