@@ -24,7 +24,9 @@ export type StartOpts = {
   prefetch?: boolean;
   jsSandbox?: boolean;
   singular?: boolean | ((app: RegistrableApp<any>) => Promise<boolean>);
+  fetch?: Fetch;
 };
 
 export type Rebuilder = () => void;
 export type Freer = () => Rebuilder;
+export type Fetch = typeof fetch;

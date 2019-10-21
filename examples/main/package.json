@@ -18,6 +18,7 @@
     "vue-template-compiler": "^2.6.10"
   },
   "dependencies": {
+    "isomorphic-fetch": "^2.2.1",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
     "vue": "^2.6.10",

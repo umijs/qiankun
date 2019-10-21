@@ -6,7 +6,7 @@
 import { importEntry } from 'import-html-entry';
 import { isFunction } from 'lodash';
 import { registerApplication, start as startSpa } from 'single-spa';
-import { RegistrableApp, StartOpts } from './interfaces';
+import { RegistrableApp, StartOpts, Fetch } from './interfaces';
 import { prefetchAfterFirstMounted } from './prefetch';
 import { genSandbox } from './sandbox';
 
@@ -24,6 +24,10 @@ export type LifeCycles<T extends object> = {
   afterMount?: Lifecycle<T> | Array<Lifecycle<T>>; // function after app mount
   beforeUnmount?: Lifecycle<T> | Array<Lifecycle<T>>; // function after app unmount
   afterUnmount?: Lifecycle<T> | Array<Lifecycle<T>>; // function after app unmount
+};
+
+type RegisterMicroAppsOpts = {
+  fetch?: Fetch;
 };
 
 let microApps: RegistrableApp[] = [];
@@ -72,8 +76,10 @@ let useJsSandbox = false;
 export function registerMicroApps<T extends object = {}>(
   apps: Array<RegistrableApp<T>>,
   lifeCycles: LifeCycles<T> = {},
+  opts?: RegisterMicroAppsOpts,
 ) {
   const { beforeUnmount = [], afterUnmount = [], afterMount = [], beforeMount = [], beforeLoad = [] } = lifeCycles;
+  const { fetch } = opts || {};
   microApps = [...microApps, ...apps];
 
   let prevAppUnmountedDeferred: Deferred<void>;
@@ -86,7 +92,7 @@ export function registerMicroApps<T extends object = {}>(
 
       async ({ name: appName }) => {
         // 获取入口 html 模板及脚本加载器
-        const { template: appContent, execScripts } = await importEntry(entry);
+        const { template: appContent, execScripts } = await importEntry(entry, { fetch });
         // as single-spa load and bootstrap new app parallel with other apps unmounting
         // (see https://github.com/CanopyTax/single-spa/blob/master/src/navigation/reroute.js#L74)
         // we need wait to load the app until all apps are finishing unmount in singular mode
@@ -167,10 +173,10 @@ export function start(opts: StartOpts = {}) {
   // eslint-disable-next-line no-underscore-dangle
   window.__POWERED_BY_QIANKUN__ = true;
 
-  const { prefetch = true, jsSandbox = true, singular = true } = opts;
+  const { prefetch = true, jsSandbox = true, singular = true, fetch } = opts;
 
   if (prefetch) {
-    prefetchAfterFirstMounted(microApps);
+    prefetchAfterFirstMounted(microApps, fetch);
   }
 
   if (jsSandbox) {
