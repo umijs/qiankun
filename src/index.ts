@@ -6,7 +6,7 @@
 import { importEntry } from 'import-html-entry';
 import { isFunction } from 'lodash';
 import { registerApplication, start as startSpa } from 'single-spa';
-import { RegistrableApp, StartOpts, Fetch } from './interfaces';
+import { Fetch, RegistrableApp, StartOpts } from './interfaces';
 import { prefetchAfterFirstMounted } from './prefetch';
 import { genSandbox } from './sandbox';
 
@@ -78,6 +78,9 @@ export function registerMicroApps<T extends object = {}>(
   lifeCycles: LifeCycles<T> = {},
   opts?: RegisterMicroAppsOpts,
 ) {
+  // eslint-disable-next-line no-underscore-dangle
+  window.__POWERED_BY_QIANKUN__ = true;
+
   const { beforeUnmount = [], afterUnmount = [], afterMount = [], beforeMount = [], beforeLoad = [] } = lifeCycles;
   const { fetch } = opts || {};
   microApps = [...microApps, ...apps];
@@ -170,9 +173,6 @@ export function registerMicroApps<T extends object = {}>(
 export * from './effects';
 
 export function start(opts: StartOpts = {}) {
-  // eslint-disable-next-line no-underscore-dangle
-  window.__POWERED_BY_QIANKUN__ = true;
-
   const { prefetch = true, jsSandbox = true, singular = true, fetch } = opts;
 
   if (prefetch) {
