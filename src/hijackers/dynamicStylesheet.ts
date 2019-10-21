@@ -10,7 +10,7 @@ export default function hijack(): Freer {
   let dynamicStyleSheets: HTMLLinkElement[] = [];
   HTMLHeadElement.prototype.appendChild = function appendChild<T extends Node>(this: any, newChild: T) {
     // hijack dynamic style injection
-    if ((newChild as any).tagName && (newChild as any).tagName === 'LINK') {
+    if ((newChild as any).tagName && ((newChild as any).tagName === 'LINK' || (newChild as any).tagName === 'STYLE')) {
       dynamicStyleSheets.push(newChild as any);
     }
 
