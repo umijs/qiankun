@@ -5,7 +5,7 @@
 import { Freer } from '../interfaces';
 
 export default function hijack(): Freer {
-  const rawHtmlAppendChild = Node.prototype.appendChild;
+  const rawHtmlAppendChild = HTMLHeadElement.prototype.appendChild;
 
   let dynamicStyleSheets: HTMLLinkElement[] = [];
   HTMLHeadElement.prototype.appendChild = function appendChild<T extends Node>(this: any, newChild: T) {
