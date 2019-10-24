@@ -89,7 +89,7 @@ While you wanna build a sub app to integrate to qiankun, pls make sure your bund
 
 ```js
 output: {
-  library: packageName,
+  library: `${packageName}-[name]`,
   libraryTarget: 'umd',
   jsonpFunction: `webpackJsonp_${packageName}`,
 }
