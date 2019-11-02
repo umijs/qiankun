@@ -10,6 +10,15 @@ script:
 #after_success:
 #  - npm run codecov
 
+before_deploy: |
+  function npm_dist_tag() {
+    if [[ "$TRAVIS_TAG" = *"-"* ]]; then
+      echo "next"
+    else
+      echo "latest"
+    fi
+  }
+
 deploy:
   provider: npm
   email: kuitos.lau@gmail.com
@@ -17,3 +26,4 @@ deploy:
   skip_cleanup: true
   on:
     tags: true
+  tag: $(npm_dist_tag)
