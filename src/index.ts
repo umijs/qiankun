@@ -175,6 +175,7 @@ export function registerMicroApps<T extends object = {}>(
 }
 
 export * from './effects';
+export * from './interfaces';
 
 export function start(opts: StartOpts = {}) {
   const { prefetch = true, jsSandbox = true, singular = true, fetch } = opts;
