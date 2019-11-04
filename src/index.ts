@@ -159,10 +159,8 @@ export function registerMicroApps<T extends object = {}>(
             unmount,
             unmountSandbox,
             async () => execHooksChain(toArray(afterUnmount), app),
-            async () => {
-              // remove the app content after unmount
-              render({ appContent: '', loading: false });
-            },
+            // remove the app content after unmount
+            async () => render({ appContent: '', loading: false }),
             async () => {
               if ((await validateSingularMode(singularMode, app)) && prevAppUnmountedDeferred) {
                 prevAppUnmountedDeferred.resolve();
