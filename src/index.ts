@@ -28,6 +28,7 @@ export type LifeCycles<T extends object> = {
 
 type RegisterMicroAppsOpts = {
   fetch?: Fetch;
+  appEntryName?: string;
 };
 
 let microApps: RegistrableApp[] = [];
@@ -114,7 +115,7 @@ export function registerMicroApps<T extends object = {}>(
         let mountSandbox = () => Promise.resolve();
         let unmountSandbox = () => Promise.resolve();
         if (useJsSandbox) {
-          const sandbox = genSandbox(appName);
+          const sandbox = genSandbox(appName, props);
           jsSandbox = sandbox.sandbox;
           mountSandbox = sandbox.mount;
           unmountSandbox = sandbox.unmount;

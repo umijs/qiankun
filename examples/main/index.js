@@ -2,7 +2,7 @@
  * @author Kuitos
  * @since 2019-05-16
  */
-
+import 'zone.js';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import fetch from 'isomorphic-fetch';
@@ -61,6 +61,13 @@ registerMicroApps(
     { name: 'react app', entry: '//localhost:7100', render, activeRule: genActiveRule('/react') },
     { name: 'react15 app', entry: '//localhost:7102', render, activeRule: genActiveRule('/15react15') },
     { name: 'vue app', entry: '//localhost:7101', render, activeRule: genActiveRule('/vue') },
+    {
+      name: 'angular8 app',
+      entry: '//localhost:7103',
+      render,
+      activeRule: genActiveRule('/angular8'),
+      props: { appEntryName: 'ngTestApp' },
+    },
   ],
   {
     beforeLoad: [

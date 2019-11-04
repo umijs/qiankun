@@ -22,6 +22,7 @@
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
     "vue": "^2.6.10",
-    "vue-hot-reload-api": "^2.3.3"
+    "vue-hot-reload-api": "^2.3.3",
+    "zone.js": "^0.10.2"
   }
 }

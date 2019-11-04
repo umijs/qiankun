@@ -1,0 +1,15 @@
+<div style="text-align:center">
+  <h1>
+    Welcome to {{ title }}!
+  </h1>
+</div>
+<a [routerLink]="'/home'">
+  home
+</a>
+<br/>
+<a [routerLink]="'/list'">
+  list
+</a>
+<br/>
+应用主要内容展示区
+<router-outlet></router-outlet>

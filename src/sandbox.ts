@@ -45,7 +45,7 @@ function setWindowProp(prop: PropertyKey, value: any, toDelete?: boolean) {
  *
  * @param appName
  */
-export function genSandbox(appName: string) {
+export function genSandbox(appName: string, props: any = {}) {
   // 沙箱期间新增的全局变量
   const addedPropsMapInSandbox = new Map<PropertyKey, any>();
   // 沙箱期间更新的全局变量
@@ -88,6 +88,9 @@ export function genSandbox(appName: string) {
     },
 
     get(target: Window, p: PropertyKey) {
+      if (p === '__app_entry_name__') {
+        return props.appEntryName || undefined;
+      }
       const value = (target as any)[p];
       /*
       仅绑定 !isConstructable && isCallable 的函数对象，如 window.console、window.atob 这类。目前没有完美的检测方式，这里通过 prototype 中是否还有可枚举的拓展方法的方式来判断
