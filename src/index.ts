@@ -122,8 +122,14 @@ export function registerMicroApps<T extends object = {}>(
 
         await execHooksChain(toArray(beforeLoad), app);
 
-        // 获取 模块/应用 导出的 lifecycle hooks
-        const { bootstrap: bootstrapApp, mount, unmount } = await execScripts(jsSandbox);
+        // get the lifecycle hooks from module exports
+        // fallback to global variable who named with ${appName} while module exports not found
+        const globalVariableExports = (window as any)[appName] || {};
+        const {
+          bootstrap: bootstrapApp = globalVariableExports.bootstrap,
+          mount = globalVariableExports.mount,
+          unmount = globalVariableExports.unmount,
+        } = await execScripts(jsSandbox);
 
         if (!isFunction(bootstrapApp) || !isFunction(mount) || !isFunction(unmount)) {
           throw new Error(`You need to export the functional lifecycles in ${appName} entry`);
