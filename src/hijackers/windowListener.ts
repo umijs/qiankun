@@ -5,10 +5,11 @@
 
 import { noop } from 'lodash';
 
+const rawAddEventListener = window.addEventListener;
+const rawRemoveEventListener = window.removeEventListener;
+
 export default function hijack() {
   const listenerMap = new Map<string, EventListenerOrEventListenerObject[]>();
-  const rawAddEventListener = window.addEventListener;
-  const rawRemoveEventListener = window.removeEventListener;
 
   window.addEventListener = (
     type: string,
