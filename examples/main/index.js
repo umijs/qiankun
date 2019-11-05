@@ -3,11 +3,11 @@
  * @since 2019-05-16
  */
 
+import fetch from 'isomorphic-fetch';
 import React from 'react';
 import ReactDOM from 'react-dom';
-import fetch from 'isomorphic-fetch';
 // import Vue from 'vue';
-import { registerMicroApps, runAfterFirstMounted, setDefaultMountApp, start } from '../../dist/index.esm';
+import { registerMicroApps, runAfterFirstMounted, setDefaultMountApp, start } from '../../es';
 import Framework from './Framework';
 // import Framework from './Framework.vue';
 
