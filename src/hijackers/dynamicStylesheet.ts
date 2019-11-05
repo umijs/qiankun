@@ -4,9 +4,9 @@
  */
 import { Freer } from '../interfaces';
 
-export default function hijack(): Freer {
-  const rawHtmlAppendChild = HTMLHeadElement.prototype.appendChild;
+const rawHtmlAppendChild = HTMLHeadElement.prototype.appendChild;
 
+export default function hijack(bootstrapping = false): Freer {
   let dynamicStyleSheets: HTMLLinkElement[] = [];
   HTMLHeadElement.prototype.appendChild = function appendChild<T extends Node>(this: any, newChild: T) {
     // hijack dynamic style injection
@@ -23,8 +23,10 @@ export default function hijack(): Freer {
 
     return function rebuild() {
       dynamicStyleSheets.forEach(stylesheet => document.head.appendChild(stylesheet));
-      // for gc
-      dynamicStyleSheets = [];
+      if (!bootstrapping) {
+        // for gc
+        dynamicStyleSheets = [];
+      }
     };
   };
 }

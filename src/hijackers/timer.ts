@@ -6,9 +6,10 @@
 import { noop } from 'lodash';
 import { sleep } from '../utils';
 
+const rawWindowInterval = window.setInterval;
+const rawWindowTimeout = window.setTimeout;
+
 export default function hijack() {
-  const rawWindowInterval = window.setInterval;
-  const rawWindowTimeout = window.setTimeout;
   const timerIds: number[] = [];
   const intervalIds: number[] = [];
 

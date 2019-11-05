@@ -2,7 +2,7 @@
  * @author Kuitos
  * @since 2019-04-11
  */
-import { hijack } from './hijackers';
+import { hijackAtBootstrapping, hijackAtMounting } from './hijackers';
 import { Freer, Rebuilder } from './interfaces';
 import { isConstructable } from './utils';
 
@@ -53,7 +53,11 @@ export function genSandbox(appName: string) {
   // 持续记录更新的(新增和修改的)全局变量的 map，用于在任意时刻做 snapshot
   const currentUpdatedPropsValueMapForSnapshot = new Map<PropertyKey, any>();
 
-  let freers: Freer[] = [];
+  // some side effect could be be invoked while bootstrapping, such as dynamic stylesheet injection with style-loader, especially during the development phase
+  const bootstrappingFreers = hijackAtBootstrapping();
+  // mounting freers are one-off and should be re-init at every mounting time
+  let mountingFreers: Freer[] = [];
+
   let sideEffectsRebuilders: Rebuilder[] = [];
 
   // render 沙箱的上下文快照
@@ -118,6 +122,14 @@ export function genSandbox(appName: string) {
      * 也可能是从 unmount 之后再次唤醒进入 mount
      */
     async mount() {
+      const sideEffectsRebuildersAtBootstrapping = sideEffectsRebuilders.slice(0, bootstrappingFreers.length);
+      const sideEffectsRebuildersAtMounting = sideEffectsRebuilders.slice(bootstrappingFreers.length);
+
+      // must rebuild the side effects which added at bootstrapping firstly to recovery to nature state
+      if (sideEffectsRebuildersAtBootstrapping.length) {
+        sideEffectsRebuildersAtBootstrapping.forEach(rebuild => rebuild());
+      }
+
       /* ------------------------------------------ 因为有上下文依赖（window），以下代码执行顺序不能变 ------------------------------------------ */
 
       /* ------------------------------------------ 1. 启动/恢复 快照 ------------------------------------------ */
@@ -131,14 +143,16 @@ export function genSandbox(appName: string) {
 
       /* ------------------------------------------ 2. 开启全局变量补丁 ------------------------------------------*/
       // render 沙箱启动时开始劫持各类全局监听，这就要求应用初始化阶段不应该有 事件监听/定时器 等副作用
-      freers.push(...hijack());
+      mountingFreers = hijackAtMounting();
 
       /* ------------------------------------------ 3. 重置一些初始化时的副作用 ------------------------------------------*/
       // 存在 rebuilder 则表明有些副作用需要重建
-      if (sideEffectsRebuilders.length) {
-        sideEffectsRebuilders.forEach(rebuild => rebuild());
-        sideEffectsRebuilders = [];
+      if (sideEffectsRebuildersAtMounting.length) {
+        sideEffectsRebuildersAtMounting.forEach(rebuild => rebuild());
       }
+
+      // clean up rebuilders
+      sideEffectsRebuilders = [];
 
       inAppSandbox = true;
     },
@@ -155,8 +169,8 @@ export function genSandbox(appName: string) {
       }
 
       // record the rebuilders of window side effects (event listeners or timers)
-      freers.forEach(free => sideEffectsRebuilders.push(free()));
-      freers = [];
+      // note that the frees of mounting phase are one-off as it will be re-init at next mounting
+      sideEffectsRebuilders = [...bootstrappingFreers, ...mountingFreers].map(free => free());
 
       // renderSandboxSnapshot = snapshot(currentUpdatedPropsValueMapForSnapshot);
       // restore global props to initial snapshot
