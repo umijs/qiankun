@@ -123,16 +123,25 @@ export function registerMicroApps<T extends object = {}>(
         await execHooksChain(toArray(beforeLoad), app);
 
         // get the lifecycle hooks from module exports
-        // fallback to global variable who named with ${appName} while module exports not found
-        const globalVariableExports = (window as any)[appName] || {};
-        const {
-          bootstrap: bootstrapApp = globalVariableExports.bootstrap,
-          mount = globalVariableExports.mount,
-          unmount = globalVariableExports.unmount,
-        } = await execScripts(jsSandbox);
+        let { bootstrap: bootstrapApp, mount, unmount } = await execScripts(jsSandbox);
 
         if (!isFunction(bootstrapApp) || !isFunction(mount) || !isFunction(unmount)) {
-          throw new Error(`You need to export the functional lifecycles in ${appName} entry`);
+          // fallback to global variable who named with ${appName} while module exports not found
+          const globalVariableExports = (window as any)[appName] || {};
+          bootstrapApp = globalVariableExports.bootstrap;
+          // eslint-disable-next-line prefer-destructuring
+          mount = globalVariableExports.mount;
+          // eslint-disable-next-line prefer-destructuring
+          unmount = globalVariableExports.unmount;
+          if (!isFunction(bootstrapApp) || !isFunction(mount) || !isFunction(unmount)) {
+            throw new Error(`You need to export the functional lifecycles in ${appName} entry`);
+          }
+
+          if (process.env.NODE_ENV === 'development') {
+            console.warn(
+              `LifeCycles are not found from ${appName} entry exports, fallback to get them from window['${appName}'] `,
+            );
+          }
         }
 
         return {
