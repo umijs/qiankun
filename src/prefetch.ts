@@ -6,7 +6,26 @@
 import { Entry, importEntry } from 'import-html-entry';
 import { noop } from 'lodash';
 import { getMountedApps } from 'single-spa';
-import { RegistrableApp, Fetch } from './interfaces';
+import { Fetch, RegistrableApp } from './interfaces';
+
+type RequestIdleCallbackHandle = any;
+type RequestIdleCallbackOptions = {
+  timeout: number;
+};
+type RequestIdleCallbackDeadline = {
+  readonly didTimeout: boolean;
+  timeRemaining: () => number;
+};
+
+declare global {
+  interface Window {
+    requestIdleCallback: (
+      callback: (deadline: RequestIdleCallbackDeadline) => void,
+      opts?: RequestIdleCallbackOptions,
+    ) => RequestIdleCallbackHandle;
+    cancelIdleCallback: (handle: RequestIdleCallbackHandle) => void;
+  }
+}
 
 /**
  * 预加载静态资源，不兼容 requestIdleCallback 的浏览器不做任何动作

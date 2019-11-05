@@ -1,15 +1,17 @@
 export default {
   target: 'browser',
   entry: 'src/index.ts',
-  esm: 'rollup',
-  cjs: 'rollup',
-  disableTypeCheck: true,
+  esm: 'babel',
+  cjs: 'babel',
   runtimeHelpers: true,
   extraBabelPlugins: [
-    ['babel-plugin-import', {
-      libraryName: 'lodash',
-      libraryDirectory: '',
-      camel2DashComponentName: false,
-    }],
+    [
+      'babel-plugin-import',
+      {
+        libraryName: 'lodash',
+        libraryDirectory: '',
+        camel2DashComponentName: false,
+      },
+    ],
   ],
 };
