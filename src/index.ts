@@ -77,13 +77,13 @@ const frameworkStartedDefer = new Deferred<void>();
 export function registerMicroApps<T extends object = {}>(
   apps: Array<RegistrableApp<T>>,
   lifeCycles: LifeCycles<T> = {},
-  opts?: RegisterMicroAppsOpts,
+  opts: RegisterMicroAppsOpts = {},
 ) {
   // eslint-disable-next-line no-underscore-dangle
   window.__POWERED_BY_QIANKUN__ = true;
 
   const { beforeUnmount = [], afterUnmount = [], afterMount = [], beforeMount = [], beforeLoad = [] } = lifeCycles;
-  const { fetch } = opts || {};
+  const { fetch } = opts;
   microApps = [...microApps, ...apps];
 
   let prevAppUnmountedDeferred: Deferred<void>;
