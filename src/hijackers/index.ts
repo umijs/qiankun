@@ -10,10 +10,10 @@ import hijackHistoryListener from './historyListener';
 import hijackTimer from './timer';
 import hijackWindowListener from './windowListener';
 
-export function hijackAtMounting(): Freer[] {
-  return [hijackTimer(), hijackWindowListener(), hijackHistoryListener(), hijackDynamicStylesheet()];
+export function hijackAtMounting(appName: string): Freer[] {
+  return [hijackTimer(), hijackWindowListener(), hijackHistoryListener(), hijackDynamicStylesheet(appName)];
 }
 
-export function hijackAtBootstrapping(): Freer[] {
-  return [process.env.NODE_ENV === 'development' ? hijackDynamicStylesheet(true) : () => () => noop];
+export function hijackAtBootstrapping(appName: string): Freer[] {
+  return [process.env.NODE_ENV === 'development' ? hijackDynamicStylesheet(appName, true) : () => () => noop];
 }
