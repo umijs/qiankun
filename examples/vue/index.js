@@ -13,7 +13,7 @@ Vue.use(ElementUI);
 let instance = null;
 
 export async function bootstrap() {
-  console.log('react app bootstraped');
+  console.log('vue app bootstraped');
 }
 
 export async function mount(props) {
