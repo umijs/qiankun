@@ -21,7 +21,7 @@ export type RegistrableApp<T extends object = {}> = {
 };
 
 export type StartOpts = {
-  prefetch?: boolean;
+  prefetch?: boolean | 'all';
   jsSandbox?: boolean;
   singular?: boolean | ((app: RegistrableApp<any>) => Promise<boolean>);
   fetch?: Fetch;

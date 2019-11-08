@@ -50,10 +50,23 @@ export function prefetchAfterFirstMounted(apps: RegistrableApp[], fetch?: Fetch)
       const notMountedApps = apps.filter(app => mountedApps.indexOf(app.name) === -1);
 
       if (process.env.NODE_ENV === 'development') {
-        console.log('prefetch starting...', notMountedApps);
+        console.log(`prefetch starting after ${mountedApps} mounted...`, notMountedApps);
       }
 
       notMountedApps.forEach(app => prefetch(app.entry, fetch));
+    },
+    { once: true },
+  );
+}
+
+export function prefetchAll(apps: RegistrableApp[], fetch?: Fetch) {
+  window.addEventListener(
+    'single-spa:no-app-change',
+    () => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('prefetch starting for all assets...', apps);
+      }
+      apps.forEach(app => prefetch(app.entry, fetch));
     },
     { once: true },
   );
