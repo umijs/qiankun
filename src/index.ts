@@ -7,7 +7,7 @@ import { importEntry } from 'import-html-entry';
 import { isFunction } from 'lodash';
 import { registerApplication, start as startSpa } from 'single-spa';
 import { Fetch, RegistrableApp, StartOpts } from './interfaces';
-import { prefetchAfterFirstMounted } from './prefetch';
+import { prefetchAfterFirstMounted, prefetchAll } from './prefetch';
 import { genSandbox } from './sandbox';
 
 declare global {
@@ -197,8 +197,17 @@ export * from './interfaces';
 export function start(opts: StartOpts = {}) {
   const { prefetch = true, jsSandbox = true, singular = true, fetch } = opts;
 
-  if (prefetch) {
-    prefetchAfterFirstMounted(microApps, fetch);
+  switch (prefetch) {
+    case true:
+      prefetchAfterFirstMounted(microApps, fetch);
+      break;
+
+    case 'all':
+      prefetchAll(microApps, fetch);
+      break;
+
+    default:
+      break;
   }
 
   if (jsSandbox) {
