@@ -2,10 +2,10 @@
   <div id="app">
     <div id="nav">
       <h1>我是子应用一，sub-app1</h1>
-      <router-link to="/sub-app1">子应用一:首页dsds</router-link> |||
-      <router-link to="/sub-app1/about">子应用一:about页面</router-link>
+        <router-link to="/sub-app1">子应用一:首页dsds</router-link> |||
+        <router-link to="/sub-app1/about">子应用一:about页面</router-link>
     </div>
-    <router-view />
+    <router-view/>
   </div>
 </template>
 

@@ -4,7 +4,7 @@ function resolve(dir) {
   return path.join(__dirname, dir);
 }
 
-const port = 7100; // dev port
+const port = 7103; // dev port
 
 module.exports = {
   /**
