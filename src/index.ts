@@ -79,7 +79,6 @@ export function registerMicroApps<T extends object = {}>(
   lifeCycles: LifeCycles<T> = {},
   opts: RegisterMicroAppsOpts = {},
 ) {
-  // eslint-disable-next-line no-underscore-dangle
   window.__POWERED_BY_QIANKUN__ = true;
 
   const { beforeUnmount = [], afterUnmount = [], afterMount = [], beforeMount = [], beforeLoad = [] } = lifeCycles;
@@ -98,7 +97,7 @@ export function registerMicroApps<T extends object = {}>(
         await frameworkStartedDefer.promise;
 
         // 获取入口 html 模板及脚本加载器
-        const { template: appContent, execScripts } = await importEntry(entry, { fetch });
+        const { template: appContent, execScripts, assetPublicPath } = await importEntry(entry, { fetch });
 
         // as single-spa load and bootstrap new app parallel with other apps unmounting
         // (see https://github.com/CanopyTax/single-spa/blob/master/src/navigation/reroute.js#L74)
@@ -114,7 +113,7 @@ export function registerMicroApps<T extends object = {}>(
         let mountSandbox = () => Promise.resolve();
         let unmountSandbox = () => Promise.resolve();
         if (useJsSandbox) {
-          const sandbox = genSandbox(appName);
+          const sandbox = genSandbox(appName, assetPublicPath);
           jsSandbox = sandbox.sandbox;
           mountSandbox = sandbox.mount;
           unmountSandbox = sandbox.unmount;
