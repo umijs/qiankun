@@ -10,12 +10,6 @@ import { Fetch, RegistrableApp, StartOpts } from './interfaces';
 import { prefetchAfterFirstMounted, prefetchAll } from './prefetch';
 import { genSandbox } from './sandbox';
 
-declare global {
-  interface Window {
-    __POWERED_BY_QIANKUN__?: boolean;
-  }
-}
-
 type Lifecycle<T extends object> = (app: RegistrableApp<T>) => Promise<any>;
 
 export type LifeCycles<T extends object> = {

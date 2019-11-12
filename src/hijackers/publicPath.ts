@@ -4,12 +4,6 @@
  */
 import { Freer } from '../interfaces';
 
-declare global {
-  interface Window {
-    __INJECTED_PUBLIC_PATH_BY_QIANKUN__?: string;
-  }
-}
-
 const rawPublicPath = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
 
 export default function hijack(publicPath = '/'): Freer {
