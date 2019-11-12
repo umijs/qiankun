@@ -32,7 +32,12 @@ export default function hijack(appName: string, bootstrapping = false): Freer {
 
   return function free() {
     HTMLHeadElement.prototype.appendChild = rawHtmlAppendChild;
-    dynamicStyleSheets.forEach(stylesheet => document.head.removeChild(stylesheet));
+    dynamicStyleSheets.forEach(stylesheet => {
+      // the dynamic injected stylesheet may had been removed by itself while unmounting
+      if (document.head.contains(stylesheet)) {
+        document.head.removeChild(stylesheet);
+      }
+    });
 
     return function rebuild() {
       dynamicStyleSheets.forEach(stylesheet => document.head.appendChild(stylesheet));
