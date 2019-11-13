@@ -26,6 +26,8 @@
     "lint:fix": "yarn lint:js -- --fix",
     "lint:prettier": "check-prettier lint",
     "prettier": "prettier -c --write **/*",
+    "docs:dev": "vuepress dev docs",
+    "docs:build": "vuepress build docs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -63,7 +65,8 @@
     "np": "^5.0.3",
     "prettier": "^1.18.2",
     "rimraf": "^3.0.0",
-    "typescript": "^3.4.5"
+    "typescript": "^3.4.5",
+    "vuepress": "^1.2.0"
   },
   "husky": {
     "hooks": {
