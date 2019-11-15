@@ -207,4 +207,4 @@ https://github.com/umijs/umi#community
 
 ## 🎁 Acknowledgements
 
-- [single-spa](https://github.com/CanopyTax/single-spa) What an awesome meta-framework for micro-fronteds!
+- [single-spa](https://github.com/CanopyTax/single-spa) What an awesome meta-framework for micro-frontends!
