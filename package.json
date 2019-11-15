@@ -2,6 +2,11 @@
   "name": "qiankun",
   "version": "1.3.5",
   "description": "An completed implementation of Micro Frontends",
+  "keywords": [
+    "micro frontend",
+    "microfrontend",
+    "micro frontends"
+  ],
   "main": "./lib/index.js",
   "module": "./es/index.js",
   "types": "./es/index.d.ts",
