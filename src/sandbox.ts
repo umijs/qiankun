@@ -175,8 +175,8 @@ export function genSandbox(appName: string, assetPublicPath: string) {
 
       // renderSandboxSnapshot = snapshot(currentUpdatedPropsValueMapForSnapshot);
       // restore global props to initial snapshot
-      addedPropsMapInSandbox.forEach((_, p) => setWindowProp(p, undefined, true));
       modifiedPropsOriginalValueMapInSandbox.forEach((v, p) => setWindowProp(p, v));
+      addedPropsMapInSandbox.forEach((_, p) => setWindowProp(p, undefined, true));
 
       inAppSandbox = false;
     },
