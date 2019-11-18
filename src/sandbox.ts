@@ -54,8 +54,6 @@ export function genSandbox(appName: string, assetPublicPath: string) {
   // 持续记录更新的(新增和修改的)全局变量的 map，用于在任意时刻做 snapshot
   const currentUpdatedPropsValueMapForSnapshot = new Map<PropertyKey, any>();
 
-  // some side effect could be be invoked while bootstrapping, such as dynamic stylesheet injection with style-loader, especially during the development phase
-  const bootstrappingFreers = hijackAtBootstrapping(appName, assetPublicPath);
   // mounting freers are one-off and should be re-init at every mounting time
   let mountingFreers: Freer[] = [];
 
@@ -113,6 +111,9 @@ export function genSandbox(appName: string, assetPublicPath: string) {
       return value;
     },
   });
+
+  // some side effect could be be invoked while bootstrapping, such as dynamic stylesheet injection with style-loader, especially during the development phase
+  const bootstrappingFreers = hijackAtBootstrapping(appName, assetPublicPath, sandbox);
 
   return {
     sandbox,
