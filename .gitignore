@@ -19,3 +19,4 @@ es
 lib
 package-lock.json
 .eslintcache
+.history

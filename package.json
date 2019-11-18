@@ -18,6 +18,7 @@
     "start:react16": "cd examples/react16 && npm start",
     "start:react15": "cd examples/react15 && npm start",
     "start:vue": "cd examples/vue && npm start",
+    "start:cra": "cd examples/cra && npm start",
     "build": "father-build",
     "release": "np --no-cleanup --yolo --no-publish",
     "prepublishOnly": "npm run lint && npm run build",
