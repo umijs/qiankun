@@ -2,8 +2,8 @@
  * @author Kuitos
  * @since 2019-10-21
  */
-import { checkActivityFunctions } from 'single-spa';
 import { execScripts } from 'import-html-entry';
+import { checkActivityFunctions } from 'single-spa';
 import { Freer } from '../interfaces';
 
 const rawHtmlAppendChild = HTMLHeadElement.prototype.appendChild;
@@ -14,37 +14,47 @@ const STYLE_TAG_NAME = 'STYLE';
 
 export default function hijack(appName: string, proxy: Window, bootstrapping = false): Freer {
   let dynamicStyleSheets: HTMLLinkElement[] = [];
+
   HTMLHeadElement.prototype.appendChild = function appendChild<T extends Node>(this: any, newChild: T) {
-    if (
-      !(
-        (newChild as any).tagName &&
-        [SCRIPT_TAG_NAME, LINK_TAG_NAME, STYLE_TAG_NAME].includes((newChild as any).tagName)
-      )
-    ) {
-      return rawHtmlAppendChild.call(this, newChild) as T;
-    }
+    let element = newChild as any;
+    if (element.tagName) {
+      switch (element.tagName) {
+        case LINK_TAG_NAME:
+        case STYLE_TAG_NAME: {
+          const stylesheetElement = (newChild as any) as HTMLLinkElement | HTMLStyleElement;
 
-    const element = (newChild as any) as HTMLScriptElement | HTMLStyleElement | HTMLLinkElement | HTMLElement;
+          // check if the currently specified application is active
+          // While we switch page from qiankun app to a normal react routing page, the normal one may load stylesheet dynamically while page rendering,
+          // but the url change listener must to wait until the current call stack is flushed.
+          // This scenario may cause we record the stylesheet from react routing page dynamic injection,
+          // and remove them after the url change triggered and qiankun app is unmouting
+          // see https://github.com/ReactTraining/history/blob/master/modules/createHashHistory.js#L222-L230
+          const activated = checkActivityFunctions(window.location).some(name => name === appName);
+          // only hijack dynamic style injection when app activated
+          if (activated) {
+            dynamicStyleSheets.push(stylesheetElement as any);
+          }
 
-    if (element.tagName === SCRIPT_TAG_NAME) {
-      const script = element as HTMLScriptElement;
+          break;
+        }
 
-      return script.src
-        ? execScripts(null, [script.src], proxy)
-        : execScripts(null, [`<script>${script.text}</script>`], proxy);
-    }
+        case SCRIPT_TAG_NAME: {
+          const { src, text } = element as HTMLScriptElement;
 
-    // check if the currently specified application is active
-    // While we switch page from qiankun app to a normal react routing page, the normal one may load stylesheet dynamically while page rendering,
-    // but the url change listener must to wait until the current call stack is flushed.
-    // This scenario may cause we record the stylesheet from react routing page dynamic injection,
-    // and remove them after the url change triggered and qiankun app is unmouting
-    // see https://github.com/ReactTraining/history/blob/master/modules/createHashHistory.js#L222-L230
-    const activated = checkActivityFunctions(window.location).some(name => name === appName);
+          if (src) {
+            execScripts(null, [src], proxy);
+            element = document.createComment(`dynamic script ${src} replaced by qiankun`);
+          } else {
+            execScripts(null, [`<script>${text}</script>`], proxy);
+            element = document.createComment('dynamic inline script replaced by qiankun');
+          }
 
-    // only hijack dynamic style injection when app activated
-    if (activated && (element.tagName === LINK_TAG_NAME || element.tagName === STYLE_TAG_NAME)) {
-      dynamicStyleSheets.push(element as any);
+          break;
+        }
+
+        default:
+          break;
+      }
     }
 
     return rawHtmlAppendChild.call(this, element) as T;
