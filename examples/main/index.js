@@ -61,8 +61,6 @@ registerMicroApps(
     { name: 'react app', entry: '//localhost:7100', render, activeRule: genActiveRule('/react') },
     { name: 'react15 app', entry: '//localhost:7102', render, activeRule: genActiveRule('/15react15') },
     { name: 'vue app', entry: '//localhost:7101', render, activeRule: genActiveRule('/vue') },
-    { name: 'vuecli', entry: '//localhost:7103', render, activeRule: genActiveRule('/vuecli') },
-    { name: 'cra', entry: '//localhost:7104', render, activeRule: genActiveRule('/cra')}
   ],
   {
     beforeLoad: [

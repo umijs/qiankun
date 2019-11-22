@@ -14,11 +14,9 @@ export async function bootstrap() {
 
 export async function mount(props) {
   console.log('props from main framework', props);
-  ReactDOM.render(<App/>, document.getElementById('react15Root'));
+  ReactDOM.render(<App />, document.getElementById('react15Root'));
 }
 
 export async function unmount() {
   ReactDOM.unmountComponentAtNode(document.getElementById('react15Root'));
 }
-
-
