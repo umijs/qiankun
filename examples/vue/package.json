@@ -1,28 +1,23 @@
 {
-  "name": "main",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "sub-app1",
+  "version": "0.1.0",
   "scripts": {
-    "start": "parcel serve index.html --global vueapp --port 7101",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "vue-cli-service serve",
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build"
   },
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "element-ui": "^2.8.2",
+    "core-js": "^3.3.2",
+    "element-ui": "^2.12.0",
     "vue": "^2.6.10",
-    "vue-hot-reload-api": "^2.3.3"
+    "vue-router": "^3.1.3",
+    "vuex": "^3.0.1"
   },
   "devDependencies": {
-    "@vue/component-compiler-utils": "^3.0.0",
-    "babel-core": "^6.26.3",
-    "babel-preset-env": "^1.7.0",
-    "http-server": "^0.11.1",
-    "parcel-bundler": "^1.12.3",
+    "@vue/cli-plugin-babel": "^4.0.0",
+    "@vue/cli-service": "^4.0.0",
+    "node-sass": "^4.12.0",
+    "sass-loader": "^8.0.0",
     "vue-template-compiler": "^2.6.10"
-  },
-  "browserslist": [
-    "last 2 Chrome versions"
-  ]
+  }
 }
