@@ -1,23 +1,33 @@
 {
-  "name": "main",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "start": "parcel serve index.html --global reactapp --port 7100",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "ISC",
+  "name": "hello-react",
+  "version": "0.1.0",
+  "private": true,
   "dependencies": {
-    "antd": "^3.18.2",
-    "react": "^16.8.6",
-    "react-dom": "^16.8.6"
+    "antd": "^3.25.2",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0",
+    "react-router-dom": "^5.1.2",
+    "react-scripts": "3.2.0"
+  },
+  "scripts": {
+    "start": "react-app-rewired start",
+    "build": "react-app-rewired build",
+    "test": "react-app-rewired test",
+    "eject": "react-app-rewired eject"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   },
   "devDependencies": {
-    "parcel-bundler": "^1.12.3"
-  },
-  "browserslist": [
-    "last 2 Chrome versions"
-  ]
+    "react-app-rewired": "^2.1.5"
+  }
 }

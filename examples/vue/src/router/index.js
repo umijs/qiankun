@@ -20,10 +20,4 @@ const routes = [
   },
 ];
 
-const router = new VueRouter({
-  base: window.__POWERED_BY_QIANKUN__ ? '/vue' : '/',
-  mode: 'history',
-  routes,
-});
-
-export default router;
+export default routes;
