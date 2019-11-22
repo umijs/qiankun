@@ -1,27 +1,28 @@
-/**
- * @author Kuitos
- * @since 2019-05-16
- */
 import ElementUI from 'element-ui';
 import 'element-ui/lib/theme-chalk/index.css';
 import Vue from 'vue';
-import App from './App';
-import './index.css';
+import App from './App.vue';
+import './public-path';
+import router from './router';
+import store from './store';
+
+Vue.config.productionTip = false;
 
 Vue.use(ElementUI);
 
 let instance = null;
 
 export async function bootstrap() {
-  console.log('vue app bootstraped');
+  console.log('react app bootstraped');
 }
 
 export async function mount(props) {
   console.log('props from main framework', props);
   instance = new Vue({
-    el: '#vueRoot',
+    router,
+    store,
     render: h => h(App),
-  });
+  }).$mount('#app');
 }
 
 export async function unmount() {

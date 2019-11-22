@@ -108,9 +108,9 @@ see https://en.parceljs.org/cli.html#expose-modules-as-umd
 ## 💿 Examples
 
 ```shell
-npm i
-npm run install:examples
-npm start
+$yarn
+$yarn install:examples
+$yarn start
 ```
 
 Visit `http://localhost:7099`
