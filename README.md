@@ -174,7 +174,7 @@ Options
 | prefetch | Whether to prefetch assets of sub apps after first sub app mounted | true |
 | jsSandbox | While sandbox enabled, we could guarantee that sub apps is isolated with each others | true |
 | singular | Only one sub app display at one runtime, that means a sub app will wait to mount until the before one unmounted | true |
-| fetch | Set a cuntom fetch function | `window.fetch` |
+| fetch | Set a custom fetch function | `window.fetch` |
 
 ### setDefaultMountApp
 
