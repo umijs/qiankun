@@ -25,7 +25,7 @@ We built an library to help you solve these glitch problems automatically withou
 ## 📦 Installation
 
 ```shell
-npm i qiankun -S
+$ yarn add qiankun  # or npm i qiankun -S
 ```
 
 ## 🔨 Getting Started
