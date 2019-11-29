@@ -91,12 +91,6 @@ export function genSandbox(appName: string, assetPublicPath: string) {
     },
 
     get(target: Window, p: PropertyKey) {
-      // avoid who using window.window or window.self to escape the sandbox environment to touch the really window
-      // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
-      if (p === 'window' || p === 'self') {
-        return sandbox;
-      }
-
       const value = (target as any)[p];
       /*
       仅绑定 !isConstructable && isCallable 的函数对象，如 window.console、window.atob 这类。目前没有完美的检测方式，这里通过 prototype 中是否还有可枚举的拓展方法的方式来判断
