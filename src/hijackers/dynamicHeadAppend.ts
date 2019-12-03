@@ -45,6 +45,10 @@ export default function hijack(appName: string, proxy: Window, bootstrapping = f
           if (src) {
             execScripts(null, [src], proxy).then(
               () => {
+                // we need to invoke the onload event manually to notify the event listener that the script was completed
+                // here are the two typical ways of dynamic script loading
+                // 1. element.onload callback way, which webpack and loadjs used, see https://github.com/muicss/loadjs/blob/master/src/loadjs.js#L138
+                // 2. addEventListener way, which toast-loader used, see https://github.com/pyrsmk/toast/blob/master/src/Toast.ts#L64
                 const loadEvent = new CustomEvent('load');
                 if (isFunction(element.onload)) {
                   element.onload(loadEvent);
