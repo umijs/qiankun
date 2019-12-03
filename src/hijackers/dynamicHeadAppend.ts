@@ -3,6 +3,7 @@
  * @since 2019-10-21
  */
 import { execScripts } from 'import-html-entry';
+import { isFunction } from 'lodash';
 import { checkActivityFunctions } from 'single-spa';
 import { Freer } from '../interfaces';
 
@@ -16,7 +17,7 @@ export default function hijack(appName: string, proxy: Window, bootstrapping = f
   let dynamicStyleSheets: HTMLLinkElement[] = [];
 
   HTMLHeadElement.prototype.appendChild = function appendChild<T extends Node>(this: any, newChild: T) {
-    let element = newChild as any;
+    const element = newChild as any;
     if (element.tagName) {
       switch (element.tagName) {
         case LINK_TAG_NAME:
@@ -42,14 +43,36 @@ export default function hijack(appName: string, proxy: Window, bootstrapping = f
           const { src, text } = element as HTMLScriptElement;
 
           if (src) {
-            execScripts(null, [src], proxy);
-            element = document.createComment(`dynamic script ${src} replaced by qiankun`);
-          } else {
-            execScripts(null, [`<script>${text}</script>`], proxy);
-            element = document.createComment('dynamic inline script replaced by qiankun');
+            execScripts(null, [src], proxy).then(
+              () => {
+                // we need to invoke the onload event manually to notify the event listener that the script was completed
+                // here are the two typical ways of dynamic script loading
+                // 1. element.onload callback way, which webpack and loadjs used, see https://github.com/muicss/loadjs/blob/master/src/loadjs.js#L138
+                // 2. addEventListener way, which toast-loader used, see https://github.com/pyrsmk/toast/blob/master/src/Toast.ts#L64
+                const loadEvent = new CustomEvent('load');
+                if (isFunction(element.onload)) {
+                  element.onload(loadEvent);
+                } else {
+                  element.dispatchEvent(loadEvent);
+                }
+              },
+              () => {
+                const errorEvent = new CustomEvent('error');
+                if (isFunction(element.onerror)) {
+                  element.onerror(errorEvent);
+                } else {
+                  element.dispatchEvent(errorEvent);
+                }
+              },
+            );
+
+            const dynamicScriptCommentElement = document.createComment(`dynamic script ${src} replaced by qiankun`);
+            return rawHtmlAppendChild.call(this, dynamicScriptCommentElement) as T;
           }
 
-          break;
+          execScripts(null, [`<script>${text}</script>`], proxy).then(element.onload, element.onerror);
+          const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
+          return rawHtmlAppendChild.call(this, dynamicInlineScriptCommentElement) as T;
         }
 
         default:
