@@ -4,7 +4,9 @@ about: 'Suggest an idea for this project'
 title: '[Feature Request] say something'
 labels: ''
 assignees: ''
----## Background
+---
+
+## Background
 
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 
