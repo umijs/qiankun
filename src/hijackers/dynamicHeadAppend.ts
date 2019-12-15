@@ -23,7 +23,7 @@ const LINK_TAG_NAME = 'LINK';
 const STYLE_TAG_NAME = 'STYLE';
 
 /**
- * check if a element if an styled-component
+ * check if a element is an styled-component
  * @param element
  * @see https://github.com/styled-components/styled-components/blob/master/packages/styled-components/src/constants.js#L4-L10
  */
