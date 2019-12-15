@@ -10,7 +10,7 @@ declare global {
   }
 }
 
-export type render = (props: { appContent: string; loading: boolean }) => any;
+export type render = (props: { appContent: string; entry: Entry; loading: boolean }) => any;
 export type Entry =
   | string
   | {

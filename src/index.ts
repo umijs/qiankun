@@ -101,7 +101,7 @@ export function registerMicroApps<T extends object = {}>(
         }
         // 第一次加载设置应用可见区域 dom 结构
         // 确保每次应用加载前容器 dom 结构已经设置完毕
-        render({ appContent, loading: true });
+        render({ appContent, entry, loading: true });
 
         let jsSandbox: Window = window;
         let mountSandbox = () => Promise.resolve();
@@ -149,11 +149,11 @@ export function registerMicroApps<T extends object = {}>(
             },
             async () => execHooksChain(toArray(beforeMount), app),
             // 添加 mount hook, 确保每次应用加载前容器 dom 结构已经设置完毕
-            async () => render({ appContent, loading: true }),
+            async () => render({ appContent, entry, loading: true }),
             mountSandbox,
             mount,
             // 应用 mount 完成后结束 loading
-            async () => render({ appContent, loading: false }),
+            async () => render({ appContent, entry, loading: false }),
             async () => execHooksChain(toArray(afterMount), app),
             // initialize the unmount defer after app mounted and resolve the defer after it unmounted
             async () => {
@@ -168,7 +168,7 @@ export function registerMicroApps<T extends object = {}>(
             unmountSandbox,
             async () => execHooksChain(toArray(afterUnmount), app),
             // remove the app content after unmount
-            async () => render({ appContent: '', loading: false }),
+            async () => render({ appContent: '', entry, loading: false }),
             async () => {
               if ((await validateSingularMode(singularMode, app)) && prevAppUnmountedDeferred) {
                 prevAppUnmountedDeferred.resolve();
