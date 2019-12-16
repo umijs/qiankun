@@ -18,7 +18,6 @@
     "start:react16": "cd examples/react16 && yarn start",
     "start:react15": "cd examples/react15 && yarn start",
     "start:vue": "cd examples/vue && yarn start",
-    "start:cra": "cd examples/cra && npm start",
     "build": "father-build",
     "release": "np --no-cleanup --yolo --no-publish",
     "prepublishOnly": "yarn lint && yarn build",
