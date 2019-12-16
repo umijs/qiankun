@@ -53,7 +53,6 @@
   "devDependencies": {
     "@types/lodash": "^4.14.129",
     "@types/vfile-message": "1.x",
-    "@typescript-eslint/parser": "2.x",
     "@umijs/fabric": "^1.1.10",
     "babel-plugin-import": "^1.12.1",
     "check-prettier": "^1.0.3",
