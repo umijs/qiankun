@@ -48,7 +48,7 @@ export default function hijack(appName: string, proxy: Window): Freer {
       switch (element.tagName) {
         case LINK_TAG_NAME:
         case STYLE_TAG_NAME: {
-          const stylesheetElement = (newChild as any) as HTMLLinkElement | HTMLStyleElement;
+          const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
 
           // check if the currently specified application is active
           // While we switch page from qiankun app to a normal react routing page, the normal one may load stylesheet dynamically while page rendering,
@@ -59,7 +59,7 @@ export default function hijack(appName: string, proxy: Window): Freer {
           const activated = checkActivityFunctions(window.location).some(name => name === appName);
           // only hijack dynamic style injection when app activated
           if (activated) {
-            dynamicStyleSheetElements.push(stylesheetElement as HTMLStyleElement);
+            dynamicStyleSheetElements.push(stylesheetElement);
           }
 
           break;
