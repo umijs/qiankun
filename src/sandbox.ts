@@ -51,23 +51,23 @@ export function genSandbox(appName: string, assetPublicPath: string) {
   let sandboxRunning = true;
 
   const boundValueSymbol = Symbol('bound value');
-  const originalTarget = window
+  const rawWindow = window;
   // fake proxy target with a empty object
   const sandbox: WindowProxy = new Proxy(Object.create(null) as Window, {
-    set(_target: Window, p: PropertyKey, value: any): boolean {
+    set(_: Window, p: PropertyKey, value: any): boolean {
       if (sandboxRunning) {
-        if (!originalTarget.hasOwnProperty(p)) {
+        if (!rawWindow.hasOwnProperty(p)) {
           addedPropsMapInSandbox.set(p, value);
         } else if (!modifiedPropsOriginalValueMapInSandbox.has(p)) {
           // 如果当前 window 对象存在该属性，且 record map 中未记录过，则记录该属性初始值
-          const originalValue = (originalTarget as any)[p];
+          const originalValue = (rawWindow as any)[p];
           modifiedPropsOriginalValueMapInSandbox.set(p, originalValue);
         }
 
         currentUpdatedPropsValueMap.set(p, value);
         // 必须重新设置 window 对象保证下次 get 时能拿到已更新的数据
         // eslint-disable-next-line no-param-reassign
-        (originalTarget as any)[p] = value;
+        (rawWindow as any)[p] = value;
 
         return true;
       }
@@ -79,15 +79,15 @@ export function genSandbox(appName: string, assetPublicPath: string) {
       return false;
     },
 
-    get(_target: Window, p: PropertyKey) {
-      const value = (originalTarget as any)[p];
-      if (p === 'top') {
-        /**
-         * 有的业务脚本里包含 window.top !== window 来判断是否是 iframe 内嵌页面
-         * 需要特殊处理
-         */
-        return sandbox
+    get(_: Window, p: PropertyKey) {
+      // avoid who using window.window or window.self to escape the sandbox environment to touch the really window
+      // or use window.top to check if an iframe context
+      // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
+      if (p === 'top' || p === 'window' || p === 'self') {
+        return sandbox;
       }
+
+      const value = (rawWindow as any)[p];
       /*
       仅绑定 !isConstructable && isCallable 的函数对象，如 window.console、window.atob 这类。目前没有完美的检测方式，这里通过 prototype 中是否还有可枚举的拓展方法的方式来判断
       @warning 这里不要随意替换成别的判断方式，因为可能触发一些 edge case（比如在 lodash.isFunction 在 iframe 上下文中可能由于调用了 top window 对象触发的安全异常）
@@ -97,7 +97,7 @@ export function genSandbox(appName: string, assetPublicPath: string) {
           return value[boundValueSymbol];
         }
 
-        const boundValue = value.bind(originalTarget);
+        const boundValue = value.bind(rawWindow);
         // some callable function has custom fields, we need to copy the enumerable props to boundValue. such as moment function.
         Object.keys(value).forEach(key => (boundValue[key] = value[key]));
         Object.defineProperty(value, boundValueSymbol, { enumerable: false, value: boundValue });
