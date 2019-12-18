@@ -29,7 +29,11 @@ const STYLE_TAG_NAME = 'STYLE';
  * @param element
  */
 function isStyledComponentsLike(element: HTMLStyleElement) {
-  return !element.textContent && ((element.sheet as CSSStyleSheet)?.cssRules.length || getCachedRules(element)?.length);
+  return (
+    element instanceof HTMLStyleElement &&
+    !element.textContent &&
+    ((element.sheet as CSSStyleSheet)?.cssRules.length || getCachedRules(element)?.length)
+  );
 }
 
 function getCachedRules(element: HTMLStyleElement) {
