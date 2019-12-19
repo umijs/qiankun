@@ -51,9 +51,13 @@ export function genSandbox(appName: string, assetPublicPath: string) {
   let sandboxRunning = true;
 
   const boundValueSymbol = Symbol('bound value');
+
   const rawWindow = window;
   // fake proxy target with a empty object
-  const sandbox: WindowProxy = new Proxy(Object.create(null) as Window, {
+  // see the invariants section of Proxy https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/get
+  const fakeWindow = Object.create(null) as Window;
+
+  const sandbox: WindowProxy = new Proxy(fakeWindow, {
     set(_: Window, p: PropertyKey, value: any): boolean {
       if (sandboxRunning) {
         if (!rawWindow.hasOwnProperty(p)) {
@@ -79,7 +83,7 @@ export function genSandbox(appName: string, assetPublicPath: string) {
       return false;
     },
 
-    get(_: Window, p: PropertyKey) {
+    get(_: Window, p: PropertyKey): any {
       // avoid who using window.window or window.self to escape the sandbox environment to touch the really window
       // or use window.top to check if an iframe context
       // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
@@ -105,6 +109,12 @@ export function genSandbox(appName: string, assetPublicPath: string) {
       }
 
       return value;
+    },
+
+    // trap in operator
+    // see https://github.com/styled-components/styled-components/blob/master/packages/styled-components/src/constants.js#L12
+    has(_: Window, p: string | number | symbol): boolean {
+      return p in rawWindow;
     },
   });
 
