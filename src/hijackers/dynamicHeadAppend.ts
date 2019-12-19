@@ -29,11 +29,7 @@ const STYLE_TAG_NAME = 'STYLE';
  * @param element
  */
 function isStyledComponentsLike(element: HTMLStyleElement) {
-  return (
-    element instanceof HTMLStyleElement &&
-    !element.textContent &&
-    ((element.sheet as CSSStyleSheet)?.cssRules.length || getCachedRules(element)?.length)
-  );
+  return !element.textContent && ((element.sheet as CSSStyleSheet)?.cssRules.length || getCachedRules(element)?.length);
 }
 
 function getCachedRules(element: HTMLStyleElement) {
@@ -124,7 +120,7 @@ export default function hijack(appName: string, proxy: Window): Freer {
          We're doing this because the sheet of style element is going to be cleaned automatically by browser after the style element dom removed from document.
          see https://www.w3.org/TR/cssom-1/#associated-css-style-sheet
          */
-        if (isStyledComponentsLike(stylesheetElement)) {
+        if (stylesheetElement instanceof HTMLStyleElement && isStyledComponentsLike(stylesheetElement)) {
           if (stylesheetElement.sheet) {
             // record the original css rules of the style element for restore
             setCachedRules(stylesheetElement, (stylesheetElement.sheet as CSSStyleSheet).cssRules);
@@ -144,7 +140,7 @@ export default function hijack(appName: string, proxy: Window): Freer {
         note that we must do this after style element had been added to document, which stylesheet would be associated to the document automatically.
         check the spec https://www.w3.org/TR/cssom-1/#associated-css-style-sheet
          */
-        if (isStyledComponentsLike(stylesheetElement)) {
+        if (stylesheetElement instanceof HTMLStyleElement && isStyledComponentsLike(stylesheetElement)) {
           const cssRules = getCachedRules(stylesheetElement);
           if (cssRules) {
             // eslint-disable-next-line no-plusplus
