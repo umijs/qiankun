@@ -133,9 +133,15 @@ Visit `http://localhost:7099`
 
 ## 📖 API
 
-### registerMicroApps
+### `registerMicroApps(apps: Array<RegistrableApp<T>>, lifeCycles?: LifeCycles<T>, opts?: RegisterMicroAppsOpts)`
 
 ```typescript
+function registerMicroApps<T extends object = {}>(
+  apps: Array<RegistrableApp<T>>,
+  lifeCycles?: LifeCycles<T>,
+  opts?: RegisterMicroAppsOpts,
+): void;
+
 type RegistrableApp = {
   // name to identify your app
   name: string;
@@ -157,15 +163,9 @@ type LifeCycles<T extends object> = {
   beforeUnmount?: Lifecycle<T> | Array<Lifecycle<T>>;
   afterUnmount?: Lifecycle<T> | Array<Lifecycle<T>>;
 };
-
-function registerMicroApps<T extends object = {}>(
-  apps: Array<RegistrableApp<T>>,
-  lifeCycles?: LifeCycles<T>,
-  opts?: RegisterMicroAppsOpts,
-): void;
 ```
 
-### start
+### start(options: Options): void
 
 ```typescript
 function start(options: Options): void;
@@ -208,6 +208,10 @@ https://github.com/umijs/qiankun/wiki/FAQ
 ## 👬 Community
 
 https://github.com/umijs/umi#community
+
+or
+
+![](https://cdn.nlark.com/yuque/0/2019/png/200577/1576829637662-58ba92a1-182b-466b-85cc-e8b19d3bb602.png?x-oss-process=image/resize,w_876)
 
 ## 🎁 Acknowledgements
 
