@@ -211,7 +211,7 @@ https://github.com/umijs/umi#community
 
 or
 
-![](https://cdn.nlark.com/yuque/0/2019/png/200577/1576829637662-58ba92a1-182b-466b-85cc-e8b19d3bb602.png?x-oss-process=image/resize,w_876)
+<img src="https://cdn.nlark.com/yuque/0/2019/png/200577/1576829637662-58ba92a1-182b-466b-85cc-e8b19d3bb602.png?x-oss-process=image/resize,w_876" width="60" />
 
 ## 🎁 Acknowledgements
 
