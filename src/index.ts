@@ -16,7 +16,7 @@ export type LifeCycles<T extends object> = {
   beforeLoad?: Lifecycle<T> | Array<Lifecycle<T>>; // function before app load
   beforeMount?: Lifecycle<T> | Array<Lifecycle<T>>; // function before app mount
   afterMount?: Lifecycle<T> | Array<Lifecycle<T>>; // function after app mount
-  beforeUnmount?: Lifecycle<T> | Array<Lifecycle<T>>; // function after app unmount
+  beforeUnmount?: Lifecycle<T> | Array<Lifecycle<T>>; // function before app unmount
   afterUnmount?: Lifecycle<T> | Array<Lifecycle<T>>; // function after app unmount
 };
 
