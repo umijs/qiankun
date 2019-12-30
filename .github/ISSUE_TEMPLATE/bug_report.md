@@ -24,6 +24,6 @@ A clear and concise description of what the bug is.
 
 ## Context
 
-- **Platform**:
+- **qiankun Version**:
+- **Platform Version**:
 - **Browser Version**:
-- **Node Version**:
