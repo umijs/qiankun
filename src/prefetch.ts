@@ -4,7 +4,6 @@
  */
 
 import { Entry, importEntry } from 'import-html-entry';
-import { noop } from 'lodash';
 import { getMountedApps } from 'single-spa';
 import { Fetch, RegistrableApp } from './interfaces';
 
@@ -25,15 +24,40 @@ declare global {
     ) => RequestIdleCallbackHandle;
     cancelIdleCallback: (handle: RequestIdleCallbackHandle) => void;
   }
+
+  interface Navigator {
+    connection: {
+      saveData: Function;
+      effectiveType: string;
+    };
+  }
 }
+
+// RIC and shim for browsers setTimeout() without it
+const requestIdleCallback =
+  window.requestIdleCallback ||
+  function requestIdleCallback(cb: Function) {
+    const start = Date.now();
+    return setTimeout(() => {
+      cb({
+        didTimeout: false,
+        timeRemaining() {
+          return Math.max(0, 50 - (Date.now() - start));
+        },
+      });
+    }, 1);
+  };
 
 /**
  * 预加载静态资源，不兼容 requestIdleCallback 的浏览器不做任何动作
  * @param entry
  * @param fetch
  */
-export function prefetch(entry: Entry, fetch?: Fetch) {
-  const requestIdleCallback = window.requestIdleCallback || noop;
+export function prefetch(entry: Entry, fetch?: Fetch): void {
+  if (navigator.connection) {
+    // Don't prefetch if using 2G or if Save-Data is enabled.
+    if (navigator.connection.saveData || /2g/.test(navigator.connection.effectiveType)) return;
+  }
 
   requestIdleCallback(async () => {
     const { getExternalScripts, getExternalStyleSheets } = await importEntry(entry, { fetch });
@@ -42,7 +66,7 @@ export function prefetch(entry: Entry, fetch?: Fetch) {
   });
 }
 
-export function prefetchAfterFirstMounted(apps: RegistrableApp[], fetch?: Fetch) {
+export function prefetchAfterFirstMounted(apps: RegistrableApp[], fetch?: Fetch): void {
   window.addEventListener(
     'single-spa:first-mount',
     () => {
@@ -59,7 +83,7 @@ export function prefetchAfterFirstMounted(apps: RegistrableApp[], fetch?: Fetch)
   );
 }
 
-export function prefetchAll(apps: RegistrableApp[], fetch?: Fetch) {
+export function prefetchAll(apps: RegistrableApp[], fetch?: Fetch): void {
   window.addEventListener(
     'single-spa:no-app-change',
     () => {
