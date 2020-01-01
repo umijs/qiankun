@@ -4,7 +4,7 @@
  */
 import { Freer } from '../interfaces';
 
-const rawPublicPath = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
+const rawPublicPath = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__ || '/';
 
 export default function hijack(publicPath = '/'): Freer {
   window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__ = publicPath;
