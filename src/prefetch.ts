@@ -49,7 +49,7 @@ const requestIdleCallback =
   };
 
 /**
- * 预加载静态资源，不兼容 requestIdleCallback 的浏览器不做任何动作
+ * prefetch assets, do nothing while in mobile network
  * @param entry
  * @param fetch
  */
