@@ -147,9 +147,10 @@ export function registerMicroApps<T extends object = {}>(
 
               return undefined;
             },
-            async () => execHooksChain(toArray(beforeMount), app),
             // 添加 mount hook, 确保每次应用加载前容器 dom 结构已经设置完毕
             async () => render({ appContent, loading: true }),
+            // exec the chain after rendering to keep the behavior with beforeLoad
+            async () => execHooksChain(toArray(beforeMount), app),
             mountSandbox,
             mount,
             // 应用 mount 完成后结束 loading
