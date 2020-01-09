@@ -3,10 +3,10 @@
  * @since 2019-04-25
  */
 
-import { importEntry } from 'import-html-entry';
+import { importEntry, ImportEntryOpts } from 'import-html-entry';
 import { isFunction } from 'lodash';
 import { registerApplication, start as startSpa } from 'single-spa';
-import { Fetch, RegistrableApp, StartOpts } from './interfaces';
+import { RegistrableApp, StartOpts } from './interfaces';
 import { prefetchAfterFirstMounted, prefetchAll } from './prefetch';
 import { genSandbox } from './sandbox';
 
@@ -20,9 +20,7 @@ export type LifeCycles<T extends object> = {
   afterUnmount?: Lifecycle<T> | Array<Lifecycle<T>>; // function after app unmount
 };
 
-type RegisterMicroAppsOpts = {
-  fetch?: Fetch;
-};
+type RegisterMicroAppsOpts = ImportEntryOpts;
 
 let microApps: RegistrableApp[] = [];
 
@@ -71,12 +69,11 @@ const frameworkStartedDefer = new Deferred<void>();
 export function registerMicroApps<T extends object = {}>(
   apps: Array<RegistrableApp<T>>,
   lifeCycles: LifeCycles<T> = {},
-  opts: RegisterMicroAppsOpts = {},
+  opts: RegisterMicroAppsOpts,
 ) {
   window.__POWERED_BY_QIANKUN__ = true;
 
   const { beforeUnmount = [], afterUnmount = [], afterMount = [], beforeMount = [], beforeLoad = [] } = lifeCycles;
-  const { fetch } = opts;
   microApps = [...microApps, ...apps];
 
   let prevAppUnmountedDeferred: Deferred<void>;
@@ -91,7 +88,7 @@ export function registerMicroApps<T extends object = {}>(
         await frameworkStartedDefer.promise;
 
         // 获取入口 html 模板及脚本加载器
-        const { template: appContent, execScripts, assetPublicPath } = await importEntry(entry, { fetch });
+        const { template: appContent, execScripts, assetPublicPath } = await importEntry(entry, opts);
 
         // as single-spa load and bootstrap new app parallel with other apps unmounting
         // (see https://github.com/CanopyTax/single-spa/blob/master/src/navigation/reroute.js#L74)
