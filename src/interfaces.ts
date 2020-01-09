@@ -27,6 +27,7 @@ export type RegistrableApp<T extends object = {}> = {
   props?: T; // props pass through to app
 };
 
+export type Fetch = typeof fetch;
 export type StartOpts = {
   prefetch?: boolean | 'all';
   jsSandbox?: boolean;
@@ -36,4 +37,3 @@ export type StartOpts = {
 
 export type Rebuilder = () => void;
 export type Freer = () => Rebuilder;
-export type Fetch = typeof fetch;

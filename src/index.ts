@@ -68,12 +68,13 @@ const frameworkStartedDefer = new Deferred<void>();
 
 export function registerMicroApps<T extends object = {}>(
   apps: Array<RegistrableApp<T>>,
-  lifeCycles: LifeCycles<T> = {},
-  opts: RegisterMicroAppsOpts,
+  lifeCycles?: LifeCycles<T>,
+  opts?: RegisterMicroAppsOpts,
 ) {
   window.__POWERED_BY_QIANKUN__ = true;
 
-  const { beforeUnmount = [], afterUnmount = [], afterMount = [], beforeMount = [], beforeLoad = [] } = lifeCycles;
+  const { beforeUnmount = [], afterUnmount = [], afterMount = [], beforeMount = [], beforeLoad = [] } =
+    lifeCycles || {};
   microApps = [...microApps, ...apps];
 
   let prevAppUnmountedDeferred: Deferred<void>;
