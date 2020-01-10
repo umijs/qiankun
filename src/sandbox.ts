@@ -80,7 +80,8 @@ export function genSandbox(appName: string, assetPublicPath: string) {
         console.warn(`Try to set window.${p.toString()} while js sandbox destroyed or not active in ${appName}!`);
       }
 
-      return false;
+      // 在 strict-mode 下，Proxy 的 handler.set 返回 false 会抛出 TypeError，在沙箱卸载的情况下应该忽略错误
+      return true;
     },
 
     get(_: Window, p: PropertyKey): any {
