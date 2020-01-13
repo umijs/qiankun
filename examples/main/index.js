@@ -3,7 +3,6 @@
  * @since 2019-05-16
  */
 
-import fetch from 'isomorphic-fetch';
 import React from 'react';
 import ReactDOM from 'react-dom';
 // import Vue from 'vue';
@@ -48,13 +47,11 @@ function genActiveRule(routerPrefix) {
   return location => location.pathname.startsWith(routerPrefix);
 }
 
-render({ loading: true });
+function initApp() {
+  render({ appContent: '', loading: true });
+}
 
-// support custom fetch see: https://github.com/kuitos/import-html-entry/blob/91d542e936a74408c6c8cd1c9eebc5a9f83a8dc0/src/index.js#L163
-const request = url =>
-  fetch(url, {
-    referrerPolicy: 'origin-when-cross-origin',
-  });
+initApp();
 
 registerMicroApps(
   [
@@ -78,9 +75,6 @@ registerMicroApps(
         console.log('after unload', app);
       },
     ],
-  },
-  {
-    fetch: request,
   },
 );
 
