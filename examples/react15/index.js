@@ -20,3 +20,7 @@ export async function mount(props) {
 export async function unmount() {
   ReactDOM.unmountComponentAtNode(document.getElementById('react15Root'));
 }
+
+if (!window.__POWERED_BY_QIANKUN__) {
+  bootstrap().then(mount);
+}
