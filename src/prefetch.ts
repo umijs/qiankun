@@ -48,15 +48,21 @@ const requestIdleCallback =
     }, 1);
   };
 
+// https://stackoverflow.com/questions/3514784/what-is-the-best-way-to-detect-a-mobile-device
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+const isSlowNetwork = navigator.connection
+  ? navigator.connection.saveData || /(2|3)g/.test(navigator.connection.effectiveType)
+  : false;
+
 /**
  * prefetch assets, do nothing while in mobile network
  * @param entry
  * @param fetch
  */
 export function prefetch(entry: Entry, fetch?: Fetch): void {
-  if (navigator.connection) {
-    // Don't prefetch if using 2G or if Save-Data is enabled.
-    if (navigator.connection.saveData || /2g/.test(navigator.connection.effectiveType)) return;
+  if (isMobile || isSlowNetwork) {
+    // Don't prefetch if an mobile device or in a slow network.
+    return;
   }
 
   requestIdleCallback(async () => {
