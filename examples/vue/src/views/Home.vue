@@ -9,7 +9,7 @@
     <el-dialog
       :before-close="handleClose"
       :visible.sync="dialogVisible"
-      title="提示"
+      title="hit"
       width="30%">
       <span>dialog message</span>
       <span class="dialog-footer" slot="footer">
