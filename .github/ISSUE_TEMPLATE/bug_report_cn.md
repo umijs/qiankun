@@ -6,6 +6,8 @@ labels: ''
 assignees: ''
 ---
 
+# 提问之前强烈建立您能先阅读一下[《提问的智慧》](https://github.com/ryanhanwu/How-To-Ask-Questions-The-Smart-Way/blob/master/README-zh_CN.md)
+
 <!--
 感谢您向我们反馈问题，为了高效的解决问题，我们期望你能提供以下信息：
 -->
