@@ -103,4 +103,4 @@ see https://en.parceljs.org/cli.html#expose-modules-as-umd
 
 | Github Issue | 钉钉群 |
 | --- | --- |
-| [umijs/qiankun/issues](https://github.com/umijs/qiankun/issues) | <img src="https://cdn.nlark.com/yuque/0/2019/png/200577/1576829637662-58ba92a1-182b-466b-85cc-e8b19d3bb602.png?x-oss-process=image/resize,w_876" width="60" /> |
+| [umijs/qiankun/issues](https://github.com/umijs/qiankun/issues) | <img src="https://gw.alipayobjects.com/mdn/rms_655822/afts/img/A*HMVERqOue-AAAAAAAAAAAABkARQnAQ" width="60" /> |
