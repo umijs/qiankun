@@ -69,12 +69,12 @@ module.exports = {
       },
     },
   },
-  // plugins: [
-  //   [
-  //     '@vuepress/google-analytics',
-  //     {
-  //       ga: 'UA-149864185-1',
-  //     },
-  //   ],
-  // ],
+  plugins: [
+    [
+      '@vuepress/google-analytics',
+      {
+        ga: 'UA-157295698-1',
+      },
+    ],
+  ],
 };
