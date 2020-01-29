@@ -12,7 +12,7 @@
 
   - `RegistrableApp<T>`
 
-    - name - `string` - 必选，子应用的名称，子应用之间必选确保唯一。
+    - name - `string` - 必选，子应用的名称，子应用之间必须确保唯一。
 
     - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - 必选，子应用的 entry 地址。
 
@@ -106,7 +106,7 @@
 
 - 参数
 
-  - appLink - `string` - 必填
+  - appLink - `string` - 必选
 
 - 用法
 
@@ -124,11 +124,11 @@
 
 - 参数
 
-  - effect - `() => void` - 必填
+  - effect - `() => void` - 必选
 
 - 用法
 
-  第一个子应用 mount 后需要调用的方法，比如开启一些监控或者埋点脚本
+  第一个子应用 mount 后需要调用的方法，比如开启一些监控或者埋点脚本。
 
 - 示例
 

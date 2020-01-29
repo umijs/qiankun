@@ -6,9 +6,9 @@ features:
   - title: Simple
     details: Build your micro-frontend system just like using with iframe, but not iframe actually.
   - title: Complete
-    details: Almost contains all the basic capabilities you need for a micro frontend system.
+    details: Includes almost all the basic capabilities required to build a micro-frontend system, such as style isolation, js sandbox, preloading, and so on.
   - title: Production-Ready
-    details: Had been extensively applied and polished by a large number of online applications.
+    details: Had been extensively tested and polished by a large number of online applications both inside and outside of Ant Financial, the robustness is trustworthy.
 footer: MIT Licensed | Copyright © 2019-present
 ---
 
@@ -20,84 +20,23 @@ $ yarn add qiankun  # or npm i qiankun -S
 
 ## 🔨 Getting Started
 
-### 1. Create master framework with qiankun
-
-```ts
+```tsx
 import { registerMicroApps, start } from 'qiankun';
 
-function render({ appContent, loading }) {
-  const container = document.getElementById('container');
-  ReactDOM.render(<Framework loading={loading} content={appContent} />, container);
-}
-
-function genActiveRule(routerPrefix) {
-  return location => location.pathname.startsWith(routerPrefix);
-}
-
+// register the sub apps
 registerMicroApps([
   {
-    name: 'react app', // app name registered
+    name: 'reactApp',
     entry: '//localhost:7100',
-    render,
-    activeRule: genActiveRule('/react'),
-  },
-  {
-    name: 'vue app',
-    entry: { scripts: ['//localhost:7100/main.js'] },
-    render,
-    activeRule: genActiveRule('/vue'),
+    render: ({ appContent }) => ReactDOM.render(<App appContent={appContent}>, document.getElementById('container')),
+    activeRule: location => location.pathname.startsWith('/react'),
   },
 ]);
 
 start();
 ```
 
-### 2. Export the lifecycles from your sub app entry
-
-```ts
-export async function bootstrap() {
-  console.log('react app bootstraped');
-}
-
-export async function mount(props) {
-  console.log(props);
-  ReactDOM.render(<App />, document.getElementById('react15Root'));
-}
-
-export async function unmount() {
-  ReactDOM.unmountComponentAtNode(document.getElementById('react15Root'));
-}
-```
-
-For more lifecycle information, see [single-spa lifecycles](https://single-spa.js.org/docs/building-applications.html#registered-application-lifecycle)
-
-### 3. Config your sub app bundler
-
-While you wanna build a sub app to integrate to qiankun, pls make sure your bundler have the required configuration below:
-
-#### webpack:
-
-```js
-const packageName = require('./package.json').name;
-
-module.exports = {
-  output: {
-    library: `${packageName}-[name]`,
-    libraryTarget: 'umd',
-    jsonpFunction: `webpackJsonp_${packageName}`,
-  },
-};
-```
-
-see https://webpack.js.org/configuration/output/#outputlibrary
-
-#### parcel:
-
-```shell
-parcel serve entry.js --global myvariable
-```
-
-see https://en.parceljs.org/cli.html#expose-modules-as-umd
+see details：[Getting Started](/guide/getting-started.html)。
 
 ## Community
 
