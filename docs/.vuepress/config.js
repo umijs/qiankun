@@ -1,5 +1,6 @@
 module.exports = {
   title: 'qiankun',
+  base: '/qiankun/',
   locales: {
     '/': {
       lang: 'en-US',
@@ -68,12 +69,12 @@ module.exports = {
       },
     },
   },
-  plugins: [
-    [
-      '@vuepress/google-analytics',
-      {
-        ga: 'UA-149864185-1',
-      },
-    ],
-  ],
+  // plugins: [
+  //   [
+  //     '@vuepress/google-analytics',
+  //     {
+  //       ga: 'UA-149864185-1',
+  //     },
+  //   ],
+  // ],
 };
