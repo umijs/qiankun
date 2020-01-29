@@ -79,6 +79,5 @@ registerMicroApps(
 );
 
 setDefaultMountApp('/react');
-runAfterFirstMounted(() => console.info('first app mounted'));
 
 start({ prefetch: true });
