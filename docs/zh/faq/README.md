@@ -36,7 +36,7 @@ registerMicroApps([
 ]);
 ```
 
-## 为什么子应用加载的资源会 404?
+## 为什么子应用加载的资源会 404？
 
 原因是 webpack 加载资源时未使用正确的 `publicPath`。
 
@@ -64,7 +64,15 @@ __webpack_public_path__ = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
 }
 ```
 
-## 如何确保主应用跟子应用之间的样式隔离？
+## 子应用静态资源一定要支持跨域吗？
+
+是的。
+
+由于 qiankun 是通过 fetch 去获取子应用的引入的静态资源的，所以必须要求这些静态资源支持[跨域](https://developer.mozilla.org/zh/docs/Web/HTTP/Access_control_CORS)。
+
+参考：[Nginx 跨域配置](https://segmentfault.com/a/1190000012550346)
+
+## 如何确保主应用跟子应用之间的样式隔离
 
 qiankun 将会自动隔离子应用之间的样式（开启沙箱的情况下），你可以通过手动的方式确保主应用与子应用之间的样式隔离。比如给主应用的所有样式添加一个前缀，或者假如你使用了 [ant-design](https://ant.design) 这样的组件库，你可以通过[这篇文档](https://ant.design/docs/react/customize-theme)中的配置方式给主应用样式自动添加指定的前缀。
 

@@ -54,6 +54,14 @@ You need to set your publicPath configuration to an absolute url, and in develop
 }
 ```
 
+## Must a sub app asseta support cors?
+
+Yes it is.
+
+Since qiankun get assets which imported by sub app via fetch, these static resources must be required to support [cors](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS).
+
+See [Enable Nginx Cors](https://enable-cors.org/server_nginx.html).
+
 ## How to guarantee the main app stylesheet isolated with sub apps?
 
 Qiankun will isolate stylesheet between your sub apps automatically, you can manually ensure isolation between master and child applications. Such as add a prefix to all classes in the master application, and if you are using [ant-design](https://ant.design), you can follow [this doc](https://ant.design/docs/react/customize-theme) to make it works.
