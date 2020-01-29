@@ -16,12 +16,7 @@ module.exports = {
     lastUpdated: 'Last Updated',
     editLinks: true,
     docsDir: 'docs',
-    serviceWorker: {
-      updatePopup: {
-        message: 'New content is available.',
-        buttonText: 'Refresh',
-      },
-    },
+    smoothScroll: true,
     locales: {
       '/': {
         selectText: 'Languages',
@@ -74,6 +69,22 @@ module.exports = {
       '@vuepress/google-analytics',
       {
         ga: 'UA-157295698-1',
+      },
+    ],
+    [
+      '@vuepress/pwa',
+      {
+        serviceWorker: true,
+        updatePopup: {
+          '/': {
+            message: 'New content is available.',
+            buttonText: 'Refresh',
+          },
+          '/zh/': {
+            message: '发现新内容可用',
+            buttonText: '刷新',
+          },
+        },
       },
     ],
   ],

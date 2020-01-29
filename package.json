@@ -56,6 +56,8 @@
     "@types/lodash": "^4.14.129",
     "@types/vfile-message": "1.x",
     "@umijs/fabric": "^1.1.10",
+    "@vuepress/plugin-google-analytics": "^1.2.0",
+    "@vuepress/plugin-pwa": "^1.2.0",
     "babel-plugin-import": "^1.12.1",
     "check-prettier": "^1.0.3",
     "concurrently": "^4.1.2",
