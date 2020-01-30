@@ -6,7 +6,7 @@
 $ yarn add qiankun # or npm i qiankun -S
 ```
 
-## Register Sub Apps In The Master Application
+## Register Sub Apps In Master Application
 
 ```ts
 import { registerMicroApps, start } from 'qiankun';
@@ -29,9 +29,9 @@ registerMicroApps([
 start();
 ```
 
-When the subapplication information is registered, the matching logic of the qiankun will be automatically triggered if the browser url changes, and all the render methods corresponding to the subapplications whose activeRule methods return `true` will be called, in turn calling the subapplications' exposed lifecycle hooks.
+After the sub-application information is registered, the matching logic of the qiankun will be automatically triggered once the browser url changes, and all the render methods corresponding to the subapplications whose activeRule methods returns `true` will be called, at the same time the subapplications' exposed lifecycle hooks will be called in turn.
 
-In general, the render and activeRule configurations of our subapplications can be extracted into public methods. Take react as an example:
+Usually, the render and activeRule configurations of our sub-applications can be extracted into public methods. Take react as an example:
 
 ```ts
 import { registerMicroApps, start } from 'qiankun';
@@ -53,15 +53,15 @@ registerMicroApps([
 start();
 ```
 
-## Exports The Lifecycles From Your Sub App Entry
+## Exports Lifecycles From Sub App Entry
 
 The child application needs to export `bootstrap`,`mount`, `unmount` three lifecycle hooks in its own entry js (usually the entry js of webpack you configure) for the main application to call at the appropriate time.
 
 ```ts
 /**
- * bootstrap will only be called once when the child application initializes,
- * and the next child application will directly call the mount hook when it re-enters, so bootstrap will not be fired again.
- * usually we can do some initialization of global variables here,
+ * The bootstrap will only be called once when the child application is initialized.
+ * The next time the child application re-enters, the mount hook will be called directly, and bootstrap will not be triggered repeatedly.
+ * Usually we can do some initialization of global variables here,
  * such as application-level caches that will not be destroyed during the unmount phase.
  */
 export async function bootstrap() {
@@ -70,7 +70,7 @@ export async function bootstrap() {
 
 /**
  * The mount method is called every time the application enters,
- * which is where we normally trigger the render method of the application.
+ * usually we trigger the application's rendering method here.
  */
 export async function mount(props) {
   console.log(props);
@@ -79,18 +79,18 @@ export async function mount(props) {
 
 /**
  * Methods that are called each time the application is switched/unloaded,
- * usually in this case we uninstall the application instance of the subapplication
+ * usually in this case we uninstall the application instance of the subapplication.
  */
 export async function unmount() {
   ReactDOM.unmountComponentAtNode(document.getElementById('react15Root'));
 }
 ```
 
-Qiankun based on single-spa, you can be in [here](https://single-spa.js.org/docs/building-applications.html#registered-application-lifecycle) to find out more about applying life cycle related documentation.
+As qiankun based on single-spa, you can find more documentation about the sub-application lifecycle [here](https://single-spa.js.org/docs/building-applications.html#registered-application-lifecycle).
 
-## Config Your Sub App Bundler
+## Config Sub App Bundler
 
-In addition to exposing the appropriate lifecycle hooks in the code, in order for the main application to correctly recognize some of the information exposed by the child application, the packaging tool for the child application needs to add the following configuration:
+In addition to exposing the corresponding life-cycle hooks in the code, in order for the main application to correctly identify some of the information exposed by the sub-application, the sub-application bundler needs to add the following configuration:
 
 #### webpack:
 

@@ -14,30 +14,36 @@ Micro Frontends architecture has the following core values:
 
 - Technology Agnostic
 
-- Independent development and deployment The sub-application warehouse is independent, and the front and rear end can be developed independently. After deployment, the main framework can be updated automatically
+  The main framework does not restrict access to the technology stack of the application, and the sub-applications have full autonomy.
 
-- incremental upgrade
+- Independent Development and Deployment
 
-In the face of various complex scenarios, it is usually difficult for us to upgrade or refactor an existing system's technical stack in full, while micro-front end is a very good means and strategy to implement progressive reconfiguration
+  The sub application repo is independent, and the frontend and backend can be independently developed. After deployment, the main framework can be updated automatically.
 
-- independent runtime State is isolated between each subapplication and is not Shared at runtime
+- Incremental Upgrade
 
-Micro front-end application architecture is designed to solve monomer under a relatively long time span, due to the increase in the number of personnel, team participation, change, from an ordinary evolved into a boulder application ([Frontend Monolith] (HTTP: / / https://www.youtube.com/watch? After that, the application is not maintainable. This type of problem is particularly common in enterprise Web applications.
+  In the face of various complex scenarios, it is often difficult for us to upgrade or refactor the entire technology stack of an existing system. Micro frontends is a very good method and strategy for implementing progressive refactoring.
 
-For more information about micro front end, I recommend you to read these articles:
+- Isolated Runtime
+
+  State is isolated between each subapplication and no shared runtime state.
+
+The micro-frontends architecture is designed to solve the application of a single application in a relatively long time span. As a result of the increase in the number of people and teams involved, it has evolved from a common application to a [Frontend Monolith](https://www.youtube.com/watch?v=pU1gXA0rfwc) then becomes unmaintainable. Such a problem is especially common in enterprise web applications.
+
+For more related introductions about micro frontends, I recommend that you check out these articles:
 
 - [Micro Frontends](https://micro-frontends.org/)
 - [Micro Frontends from martinfowler.com](https://martinfowler.com/articles/micro-frontends.html)
 
-## The Core Design Concept Of qiankun
+## The Core Design Philosophy Of qiankun
 
-- 🥄 simple
+- 🥄 Simple
 
-Since the main application and sub-applications can be technology stack independent, qiankun is just a library similar to jQuery for users. You need to call several of the apis of qiankun to complete the micro-front-end modification of the application. Meanwhile, due to the design of the qiankun's HTML entry and sandbox, the access of sub-applications is as simple as using an iframe.
+  Since the main application sub-applications can be independent of the technology stack, qiankun is just a jQuery-like library for users. You need to call several qiankun APIs to complete the micro frontends transformation of your application. At the same time, due to the design of qiankun's HTML entry and sandbox, accessing sub-applications is as simple as using an iframe.
 
-- 🍡 decoupling/technology stack has nothing to do
+- 🍡 Decoupling/Technology Agnostic
 
-The core goal of the microfront is to break monolabes into loosely coupled microapplications that can be autonomous, and the design of qiankun is based on this principle, such as HTML entry, sandboxes, and inter-application communication. This can ensure that the sub-application has the ability to develop and run independently.
+  As the core goal of the micro frontends is to disassemble the monolithic application into a number of loosely coupled micro applications that can be autonomous, all the designs of qiankun are follow this principle, such as HTML Entry, sandbox, and communicating mechanism between applications. Only in this way can we ensure that sub-applications truly have the ability to develop and run independently.
 
 ## How Does Qiankun Works
 
@@ -45,13 +51,13 @@ TODO
 
 ## Why Not Iframe
 
-See this artical [Why Not Iframe](https://www.yuque.com/kuitos/gky7yw/gesexv)
+Check this artical [Why Not Iframe](https://www.yuque.com/kuitos/gky7yw/gesexv)
 
 ## Features
 
-- :package: base on [single-spa](https://github.com/CanopyTax/single-spa) , provide a more out-of-the-box API.
-- 🦾 HTML Entry access mode, allows you to access the son as simple application like use the iframe.
-- 🛡 style isolation, ensure the application between the pillars without interfering with each other.
-- 🧳 JS sandbox, to ensure that the global variable/events do not conflict between applications.
-- ⚡ prefetch resources, in the browser idle time preload did not open the application resources, accelerate the application open speed.
-- 🔌 umi plugin \* _, _ \* provides @ umijs/plugin - qiankun (https://github.com/umijs/umi-plugin-qiankun) for umi application a key switch into micro front-end architecture system.
+- :package: **Based On [single-spa](https://github.com/CanopyTax/single-spa)** , provide a more out-of-box APIs.
+- 🦾 **HTML Entry access mode**, allows you to access the son as simple application like use the iframe.
+- 🛡 **Style Isolation**, make sure styles don't interfere with each other.
+- 🧳 **JS Sandbox**, ensure that global variables/events do not conflict between sub-applications.
+- ⚡ **Prefetch Assets**, prefetch unopened sub-application assets during the browser idle time to speed up the sub-application opening speed.
+- 🔌 **Umi Plugin**, [@umijs/plugin-qiankun](https://github.com/umijs/umi-plugin-qiankun) is provided for umi applications to switch to a micro frontends architecture system with one line code.
