@@ -8,7 +8,7 @@ qiankun 孵化自蚂蚁金融科技基于微前端架构的云产品统一接入
 
 ## 什么是微前端
 
-> Techniques, strategies and recipes for building a **modern web app** with **multiple teams** that can **ship features independently**.
+> Techniques, strategies and recipes for building a **modern web app** with **multiple teams** that can **ship features independently**. -- [Micro Frontends](https://micro-frontends.org/)
 >
 > 微前端是一种多个团队通过独立发布功能的方式来共同构建现代化 web 应用的技术手段及方法策略。
 

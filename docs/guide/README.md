@@ -1,10 +1,10 @@
 # Introduction
 
-Qiankun is a [single-spa](https://github.com/CanopyTax/single-spa) based [Micro Frontends](https://micro-frontends.org/) to realize library, designed to help you can be more simple, painless to build a production on the front-end architecture system is available.
+Qiankun is an implementation of [Micro Frontends](https://micro-frontends.org/), which based on [single-spa](https://github.com/CanopyTax/single-spa). It aims to make it easier and painless to build a production-ready microfront-end architecture system.
 
-Qiankun hatch from ant financial technology based on micro front-end architecture cloud products unified access platform, in a number of online application fully tested and polishing, we will be the micro front kernel extracted and open source, hoping to help the community at the same time have a similar demand of the construction of the system more convenient own micro front-end system, at the same time also hope that through the help of the community will qiankun grinding is more mature and perfect.
+Qiankun hatched from [Ant Financial](https://en.wikipedia.org/wiki/Ant_Financial)’s unified front-end platform for cloud products based on micro-frontends architecture. After full testing and polishing of a number of online applications, we extracted its micro-frontends kernel and open sourced it. We hope to help the systems who has the same requirement more convenient to build its own micro-frontends application in the community. At the same time, with the help of community, qiankun will be polished and improved.
 
-So far, qiankun has served more than 100 online applications inside the ants, and is absolutely reliable in terms of ease of use and completeness.
+At present qiankun has served more than 100 online applications inside Ant, and it is definitely trustworthy in terms of ease of use and completeness.
 
 ## What Are Micro FrontEnds
 
@@ -12,9 +12,9 @@ So far, qiankun has served more than 100 online applications inside the ants, an
 
 Micro Frontends architecture has the following core values:
 
-- technology agnostic The main framework does not limit access to the application stack, and the sub-applications have full autonomy
+- Technology Agnostic
 
-- independent development and deployment The sub-application warehouse is independent, and the front and rear end can be developed independently. After deployment, the main framework can be updated automatically
+- Independent development and deployment The sub-application warehouse is independent, and the front and rear end can be developed independently. After deployment, the main framework can be updated automatically
 
 - incremental upgrade
 
