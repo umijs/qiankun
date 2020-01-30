@@ -35,7 +35,7 @@ For more related introductions about micro frontends, I recommend that you check
 - [Micro Frontends](https://micro-frontends.org/)
 - [Micro Frontends from martinfowler.com](https://martinfowler.com/articles/micro-frontends.html)
 
-## The Core Design Philosophy Of qiankun
+## Core Design Philosophy Of qiankun
 
 - 🥄 Simple
 
