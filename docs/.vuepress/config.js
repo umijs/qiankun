@@ -1,6 +1,6 @@
 module.exports = {
   title: 'qiankun',
-  base: '/qiankun/',
+  base: process.env.NOW_DEPLOY ? '/' : '/qiankun/',
   locales: {
     '/': {
       lang: 'en-US',
