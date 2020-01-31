@@ -5,7 +5,10 @@
   "keywords": [
     "micro frontend",
     "microfrontend",
-    "micro frontends"
+    "micro frontends",
+    "micro-frontend",
+    "micro-frontends",
+    "microservice"
   ],
   "main": "./lib/index.js",
   "module": "./es/index.js",

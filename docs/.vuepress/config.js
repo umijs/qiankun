@@ -1,6 +1,16 @@
 module.exports = {
   title: 'qiankun',
   base: process.env.NOW_DEPLOY ? '/' : '/qiankun/',
+  head: [
+    [
+      'meta',
+      {
+        name: 'keywords',
+        content:
+          'microfrontend, micro frontend, micro frontends, micro-frontend, micro-frontends, microservice, javascript',
+      },
+    ],
+  ],
   locales: {
     '/': {
       lang: 'en-US',
@@ -75,16 +85,7 @@ module.exports = {
       '@vuepress/pwa',
       {
         serviceWorker: true,
-        updatePopup: {
-          '/': {
-            message: 'New content is available.',
-            buttonText: 'Refresh',
-          },
-          '/zh/': {
-            message: '发现新内容可用',
-            buttonText: '刷新',
-          },
-        },
+        updatePopup: true,
       },
     ],
   ],
