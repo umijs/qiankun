@@ -7,7 +7,15 @@
       "use": "@now/static-build"
     }
   ],
-  "rewrites": [{ "source": "/qiankun", "destination": "/" }],
+  "routes": [
+    {
+      "src": "/qiankun/assets/(.*)",
+      "headers": {
+        "cache-control": "s-maxage=604800"
+      },
+      "dest": "/assets/$1"
+    }
+  ],
   "github": {
     "silent": true
   },
