@@ -14,6 +14,10 @@
         "cache-control": "s-maxage=604800"
       },
       "dest": "/assets/$1"
+    },
+    {
+      "src": "/qiankun/(.*)",
+      "dest": "/$1"
     }
   ],
   "github": {
