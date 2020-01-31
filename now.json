@@ -1,0 +1,27 @@
+{
+  "name": "qiankun",
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@now/static-build"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/qiankun/assets/(.*)",
+      "headers": {
+        "cache-control": "s-maxage=604800"
+      },
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/qiankun/(.*)",
+      "dest": "/$1"
+    }
+  ],
+  "github": {
+    "silent": true
+  },
+  "alias": ["qiankun.umijs.org"]
+}
