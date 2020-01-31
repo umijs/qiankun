@@ -7,7 +7,7 @@
       "use": "@now/static-build"
     }
   ],
-  "routes": [{ "src": "/qiankun/", "dest": "/" }],
+  "routes": [{ "src": "/qiankun/.*", "dest": "/" }],
   "github": {
     "silent": true
   },
