@@ -7,19 +7,11 @@
       "use": "@now/static-build"
     }
   ],
-  "routes": [
-    {
-      "src": "/qiankun/assets/(.*)",
-      "headers": {
-        "cache-control": "s-maxage=604800"
-      },
-      "dest": "/assets/$1"
-    },
-    {
-      "src": "/qiankun/(.*)",
-      "dest": "/$1"
+  "build": {
+    "env": {
+      "NOW_DEPLOY": "true"
     }
-  ],
+  },
   "github": {
     "silent": true
   },
