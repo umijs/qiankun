@@ -7,7 +7,7 @@
       "use": "@now/static-build"
     }
   ],
-  "routes": [{ "src": "/qiankun/.*", "dest": "/" }],
+  "rewrites": [{ "source": "/qiankun", "destination": "/" }],
   "github": {
     "silent": true
   },
