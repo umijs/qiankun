@@ -1,0 +1,18 @@
+{
+  "name": "qiankun",
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@now/static-build",
+      "config": {
+        "distDir": "./docs/.vuepress/dist"
+      }
+    }
+  ],
+  "routes": [{ "src": "/(.*)", "dest": "docs/.vuepress/dist/$1" }],
+  "github": {
+    "silent": true
+  },
+  "alias": ["qiankun.umijs.org"]
+}
