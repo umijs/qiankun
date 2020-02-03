@@ -73,4 +73,4 @@ https://qiankun.umijs.org/#community
 ## 🎁 Acknowledgements
 
 - [single-spa](https://github.com/CanopyTax/single-spa) What an awesome meta-framework for micro-frontends!
-- [import-html-entry](https://github.com/kuitos/import-html-entry/) An assets loader which support html entry.
+- [import-html-entry](https://github.com/kuitos/import-html-entry/) An assets loader which supports html entry.
