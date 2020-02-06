@@ -49,6 +49,7 @@ Visit `http://localhost:7099`
 ## :sparkles: Features
 
 - 📦 **Based On [single-spa](https://github.com/CanopyTax/single-spa)**
+- 📱 **Technology Agnostic**
 - 🦾 **HTML Entry Access Mode**
 - 🛡 **Style Isolation**
 - 🧳 **JS Sandbox**
