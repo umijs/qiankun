@@ -10,7 +10,7 @@ To solve the exception, try the following steps:
 2. check you have set the specified configuration with your bundler, see the [doc](https://github.com/umijs/qiankun#3-config-your-sub-app-bundler)
 3. check your `package.json` name field is unique between sub apps.
 
-If it still not works after the steps above, try to **set the name field in `package.json` of the broken sub app the same with your main app configuration**, such as:
+If it still not works after the steps above, this is usually due to browser compatibility issues. Try to **set the name field in `package.json` of the broken sub app the same with your main app configuration**, such as:
 
 ```js
 // main app
@@ -80,18 +80,24 @@ export const mount = async () => render();
 
 ## Could I active two sub apps at the same time?
 
-How many sub apps are active are depends on you, for example:
+When the subapp should be active depends on your `activeRule` config, like the example below, we set `activeRule` logic the same between `reactApp` and `react15App`:
 
-```js
+```js {2,3,7}
 registerMicroApps([
   // define the activeRule by your self
-  { name: 'react app', entry: '//localhost:7100', render, activeRule: () => window.isReactApp },
-  { name: 'react15 app', entry: '//localhost:7102', render, activeRule: () => window.isReactApp },
+  { name: 'reactApp', entry: '//localhost:7100', render, activeRule: () => window.isReactApp },
+  { name: 'react15App', entry: '//localhost:7102', render, activeRule: () => window.isReactApp },
   { name: 'vue app', entry: '//localhost:7101', render, activeRule: () => window.isVueApp },
 ]);
+
+start({ singular: false });
 ```
 
-`react app` and `react15 app` will show in viewport at the same time while activeRule returns truty. Notice that no more than one application that relies on router can be displayed on the page at the same time, as the browser has only one url location, if there is more than one routing apps, it will definitely result in one with 404.
+After setting `singular: false` in `start` method, `reactApp` and `react15App` should be active at the same time once `isReactApp` method returns `true`.
+
+::: warning
+Notice that no more than one application that relies on router can be displayed on the page at the same time, as the browser has only one url location, if there is more than one routing apps, it will definitely result in one of them to be 404 found.
+:::
 
 ## How to extract the common library？
 
