@@ -90,19 +90,23 @@ export const mount = async () => render();
 
 ## 如何同时激活两个子应用？
 
-子应用何时被激活完全取决于你的 `activeRule` 配置，比如你可以这样配置 `activeRule`：
+子应用何时被激活完全取决于你的 `activeRule` 配置，比如下面的例子里，我们将 `reactApp` 和 `react15App` 的 `activeRule` 逻辑设置成一致的：
 
-```js
+```js {2,3,7}
 registerMicroApps([
   { name: 'reactApp', entry: '//localhost:7100', render, activeRule: () => isReactApp() },
   { name: 'react15App', entry: '//localhost:7102', render, activeRule: () => isReactApp() },
   { name: 'vueApp', entry: '//localhost:7101', render, activeRule: () => isVueApp() },
 ]);
+
+start({ singular: false });
 ```
 
-`reactApp` 和 `react15App` 在 `activeRule` 将会在 `isReactApp()` 返回 `true` 时同时展示。
+当在 `start` 方法中配置好 `singular: false` 后，只要 `isReactApp()` 返回 `true` 时，`reactApp` 和 `react15App` 将会同时被 mount。
 
-请注意，页面上不能同时显示多个依赖于路由的子应用，因为浏览器只有一个 url，如果有多个依赖路由的子应用同时被激活，那么必定会导致其中一个 404。
+::: warning
+页面上不能同时显示多个依赖于路由的子应用，因为浏览器只有一个 url，如果有多个依赖路由的子应用同时被激活，那么必定会导致其中一个 404。
+:::
 
 ## 如何提取出公共的依赖库？
 
