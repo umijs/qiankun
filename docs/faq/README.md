@@ -10,7 +10,7 @@ To solve the exception, try the following steps:
 2. check you have set the specified configuration with your bundler, see the [doc](https://github.com/umijs/qiankun#3-config-your-sub-app-bundler)
 3. check your `package.json` name field is unique between sub apps.
 
-If it still not works after the steps above, try to **set the name field in `package.json` of the broken sub app the same with your main app configuration**, such as:
+If it still not works after the steps above, this is usually due to browser compatibility issues. Try to **set the name field in `package.json` of the broken sub app the same with your main app configuration**, such as:
 
 ```js
 // main app

@@ -10,7 +10,7 @@ qiankun 抛出这个错误是因为无法从子应用的 entry js 中识别出�
 2. 检查子应用的 webpack 是否增加了指定的配置，参考[文档](/zh/guide/getting-started.html#配置子应用的打包工具)。
 3. 检查子应用的 `package.json` 中的 `name` 字段是否是子应用中唯一的。
 
-如果在上述步骤完成后仍有问题，可以尝试 **将有问题的子应用的 `package.json` 中的 `name` 字段设置成跟主应用中注册的对应子应用的 `name` 字段一致**，如：
+如果在上述步骤完成后仍有问题，通常说明是浏览器兼容性问题导致的。可以尝试 **将有问题的子应用的 `package.json` 中的 `name` 字段设置成跟主应用中注册的对应子应用的 `name` 字段一致**，如：
 
 假如子应用的 `package.json` 是这样的：
 
@@ -27,7 +27,6 @@ qiankun 抛出这个错误是因为无法从子应用的 entry js 中识别出�
 registerMicroApps([
   {
     // 这里配置成跟子应用的 package.json 的 name 字段一致即可。
-    // 如果你的 webpack 开启了分包策略(即打出了 1 个以上的 js)，这里则需要配置为 `brokenSubApp-[name]` 的形式，[name] 指代的你的 entry chunk 的名字，通常会是 main，那么这里就是 'brokenSubApp-main'。
     name: 'brokenSubApp',
     entry: '//localhost:7100',
     render,
@@ -35,6 +34,10 @@ registerMicroApps([
   },
 ]);
 ```
+
+::: warning
+如果你的 webpack 开启了分包策略(即打出了 1 个以上的 js)，子应用的 name 则需要配置为 `brokenSubApp-[name]` 的形式，`[name]` 指代的你的 webpack chunk 的名字（通常会是 main，比如上面的就是 `brokenSubApp-main`）。
+:::
 
 ## 为什么子应用加载的资源会 404？
 
