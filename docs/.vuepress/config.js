@@ -10,6 +10,20 @@ module.exports = {
           'microfrontend, micro frontend, micro frontends, micro-frontend, micro-frontends, microservice, javascript',
       },
     ],
+    [
+      // baidu analytics
+      'script',
+      {},
+      `
+        var _hmt = _hmt || [];
+        (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?0f738d9b0ac90574c09183ea85bcfa2e";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+        })();
+      `
+    ],
   ],
   locales: {
     '/': {
