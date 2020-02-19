@@ -36,7 +36,7 @@ registerMicroApps([
 start();
 ```
 
-see details：[Getting Started](/guide/getting-started.html)。
+See details：[Getting Started](/guide/getting-started.html)
 
 ## Community
 
