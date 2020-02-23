@@ -4,6 +4,7 @@ import { registerApplication, start as startSingleSpa } from 'single-spa';
 import { RegistrableApp, StartOpts } from './interfaces';
 import { prefetchAfterFirstMounted, prefetchAll } from './prefetch';
 import { genSandbox } from './sandbox';
+import { defaultTemplateGetter } from './utils';
 
 type Lifecycle<T extends object> = (app: RegistrableApp<T>) => Promise<any>;
 
@@ -83,8 +84,12 @@ export function registerMicroApps<T extends object = {}>(
       async ({ name: appName }) => {
         await frameworkStartedDefer.promise;
 
+        const { getTemplate = (tpl: string) => defaultTemplateGetter(appName, tpl), ...settings } = opts || {};
         // 获取入口 html 模板及脚本加载器
-        const { template: appContent, execScripts, assetPublicPath } = await importEntry(entry, opts);
+        const { template: appContent, execScripts, assetPublicPath } = await importEntry(entry, {
+          getTemplate,
+          ...settings,
+        });
 
         // as single-spa load and bootstrap new app parallel with other apps unmounting
         // (see https://github.com/CanopyTax/single-spa/blob/master/src/navigation/reroute.js#L74)
@@ -179,15 +184,15 @@ export function registerMicroApps<T extends object = {}>(
 }
 
 export function start(opts: StartOpts = {}) {
-  const { prefetch = true, jsSandbox = true, singular = true, fetch } = opts;
+  const { prefetch = true, jsSandbox = true, singular = true, ...importEntryOpts } = opts;
 
   switch (prefetch) {
     case true:
-      prefetchAfterFirstMounted(microApps, fetch);
+      prefetchAfterFirstMounted(microApps, importEntryOpts);
       break;
 
     case 'all':
-      prefetchAll(microApps, fetch);
+      prefetchAll(microApps, importEntryOpts);
       break;
 
     default:

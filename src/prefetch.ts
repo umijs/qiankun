@@ -3,9 +3,10 @@
  * @since 2019-02-26
  */
 
-import { Entry, importEntry } from 'import-html-entry';
+import { Entry, importEntry, ImportEntryOpts } from 'import-html-entry';
 import { getMountedApps } from 'single-spa';
-import { Fetch, RegistrableApp } from './interfaces';
+import { RegistrableApp } from './interfaces';
+import { defaultTemplateGetter } from './utils';
 
 type RequestIdleCallbackHandle = any;
 type RequestIdleCallbackOptions = {
@@ -56,23 +57,25 @@ const isSlowNetwork = navigator.connection
 
 /**
  * prefetch assets, do nothing while in mobile network
+ * @param appName
  * @param entry
- * @param fetch
+ * @param opts
  */
-export function prefetch(entry: Entry, fetch?: Fetch): void {
+function prefetch(appName: string, entry: Entry, opts?: ImportEntryOpts): void {
   if (isMobile || isSlowNetwork) {
     // Don't prefetch if an mobile device or in a slow network.
     return;
   }
 
   requestIdleCallback(async () => {
-    const { getExternalScripts, getExternalStyleSheets } = await importEntry(entry, { fetch });
+    const { getTemplate = (tpl: string) => defaultTemplateGetter(appName, tpl), ...settings } = opts || {};
+    const { getExternalScripts, getExternalStyleSheets } = await importEntry(entry, { getTemplate, ...settings });
     requestIdleCallback(getExternalStyleSheets);
     requestIdleCallback(getExternalScripts);
   });
 }
 
-export function prefetchAfterFirstMounted(apps: RegistrableApp[], fetch?: Fetch): void {
+export function prefetchAfterFirstMounted(apps: RegistrableApp[], opts?: ImportEntryOpts): void {
   window.addEventListener(
     'single-spa:first-mount',
     () => {
@@ -83,20 +86,20 @@ export function prefetchAfterFirstMounted(apps: RegistrableApp[], fetch?: Fetch)
         console.log(`prefetch starting after ${mountedApps} mounted...`, notMountedApps);
       }
 
-      notMountedApps.forEach(app => prefetch(app.entry, fetch));
+      notMountedApps.forEach(({ name, entry }) => prefetch(name, entry, opts));
     },
     { once: true },
   );
 }
 
-export function prefetchAll(apps: RegistrableApp[], fetch?: Fetch): void {
+export function prefetchAll(apps: RegistrableApp[], opts?: ImportEntryOpts): void {
   window.addEventListener(
     'single-spa:no-app-change',
     () => {
       if (process.env.NODE_ENV === 'development') {
         console.log('prefetch starting for all assets...', apps);
       }
-      apps.forEach(app => prefetch(app.entry, fetch));
+      apps.forEach(({ name, entry }) => prefetch(name, entry, opts));
     },
     { once: true },
   );

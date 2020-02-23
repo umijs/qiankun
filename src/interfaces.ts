@@ -2,6 +2,7 @@
  * @author kuitos
  * @since 2019-05-16
  */
+import { ImportEntryOpts } from 'import-html-entry';
 
 declare global {
   interface Window {
@@ -27,13 +28,11 @@ export type RegistrableApp<T extends object = {}> = {
   props?: T; // props pass through to app
 };
 
-export type Fetch = typeof fetch;
 export type StartOpts = {
   prefetch?: boolean | 'all';
   jsSandbox?: boolean;
   singular?: boolean | ((app: RegistrableApp<any>) => Promise<boolean>);
-  fetch?: Fetch;
-};
+} & ImportEntryOpts;
 
 export type Rebuilder = () => void;
 export type Freer = () => Rebuilder;

@@ -6,6 +6,7 @@ import { execScripts } from 'import-html-entry';
 import { isFunction } from 'lodash';
 import { checkActivityFunctions } from 'single-spa';
 import { Freer } from '../interfaces';
+import { getWrapperId } from '../utils';
 
 const styledComponentSymbol = Symbol('styled-component');
 
@@ -16,7 +17,7 @@ declare global {
   }
 }
 
-const rawHtmlAppendChild = HTMLHeadElement.prototype.appendChild;
+const rawHtmlAppendChild = HTMLElement.prototype.appendChild;
 
 const SCRIPT_TAG_NAME = 'SCRIPT';
 const LINK_TAG_NAME = 'LINK';
@@ -43,7 +44,7 @@ function setCachedRules(element: HTMLStyleElement, cssRules: CSSRuleList) {
 export default function hijack(appName: string, proxy: Window): Freer {
   const dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
 
-  HTMLHeadElement.prototype.appendChild = function appendChild<T extends Node>(this: any, newChild: T) {
+  HTMLElement.prototype.appendChild = function appendChild<T extends Node>(this: HTMLElement, newChild: T) {
     const element = newChild as any;
     if (element.tagName) {
       switch (element.tagName) {
@@ -61,9 +62,16 @@ export default function hijack(appName: string, proxy: Window): Freer {
           // only hijack dynamic style injection when app activated
           if (activated) {
             dynamicStyleSheetElements.push(stylesheetElement);
+
+            const appWrapper = document.querySelector(`#${getWrapperId(appName)}`);
+            if (appWrapper) {
+              return rawHtmlAppendChild.call(appWrapper, stylesheetElement) as T;
+            }
+
+            throw new Error(`[qiankun]: ${appName} wrapper with id ${getWrapperId(appName)} not ready!`);
           }
 
-          break;
+          return rawHtmlAppendChild.call(this, element) as T;
         }
 
         case SCRIPT_TAG_NAME: {
@@ -111,29 +119,32 @@ export default function hijack(appName: string, proxy: Window): Freer {
   };
 
   return function free() {
-    HTMLHeadElement.prototype.appendChild = rawHtmlAppendChild;
+    HTMLElement.prototype.appendChild = rawHtmlAppendChild;
     dynamicStyleSheetElements.forEach(stylesheetElement => {
-      // the dynamic injected stylesheet may had been removed by itself while unmounting
-      if (document.head.contains(stylesheetElement)) {
-        /*
+      /*
          with a styled-components generated style element, we need to record its cssRules for restore next re-mounting time.
          We're doing this because the sheet of style element is going to be cleaned automatically by browser after the style element dom removed from document.
          see https://www.w3.org/TR/cssom-1/#associated-css-style-sheet
          */
-        if (stylesheetElement instanceof HTMLStyleElement && isStyledComponentsLike(stylesheetElement)) {
-          if (stylesheetElement.sheet) {
-            // record the original css rules of the style element for restore
-            setCachedRules(stylesheetElement, (stylesheetElement.sheet as CSSStyleSheet).cssRules);
-          }
+      if (stylesheetElement instanceof HTMLStyleElement && isStyledComponentsLike(stylesheetElement)) {
+        if (stylesheetElement.sheet) {
+          // record the original css rules of the style element for restore
+          setCachedRules(stylesheetElement, (stylesheetElement.sheet as CSSStyleSheet).cssRules);
         }
-
-        document.head.removeChild(stylesheetElement);
       }
+
+      // As now the sub app content all wrapped with a special id container,
+      // the dynamic style sheet would be removed automatically while unmoutting
     });
 
     return function rebuild() {
       dynamicStyleSheetElements.forEach(stylesheetElement => {
-        document.head.appendChild(stylesheetElement);
+        const appWrapper = document.querySelector(`#${getWrapperId(appName)}`);
+        if (appWrapper) {
+          // must use Element.appendChild to trigger the overwritten prototype method to collect dynamic insert stylesheet collection,
+          // rather than use the raw append child method.
+          appWrapper.appendChild(stylesheetElement);
+        }
 
         /*
         get the stored css rules from styled-components generated element, and the re-insert rules for them.
