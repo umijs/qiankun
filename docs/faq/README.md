@@ -7,8 +7,17 @@ This error thrown as qiankun could not find the exported lifecycle method from y
 To solve the exception, try the following steps:
 
 1. check you have exported the specified lifecycles, see the [doc](https://github.com/umijs/qiankun#2-export-the-lifecycles-from-your-sub-app-entry)
+
 2. check you have set the specified configuration with your bundler, see the [doc](https://github.com/umijs/qiankun#3-config-your-sub-app-bundler)
+
 3. check your `package.json` name field is unique between sub apps.
+
+4. Check if the entry js in the sub-app's entry HTML is the last script to load. If not, move the order to make it be the last, or manually mark the entry js as `entry` in the HTML, such as:
+   ```html {2}
+   <script src="/antd.js"></script>
+   <script src="/appEntry.js" entry></script>
+   <script src="https://www.google.com/analytics.js"></script>
+   ```
 
 If it still not works after the steps above, this is usually due to browser compatibility issues. Try to **set the name field in `package.json` of the broken sub app the same with your main app configuration**, such as:
 

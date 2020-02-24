@@ -7,8 +7,18 @@ qiankun 抛出这个错误是因为无法从子应用的 entry js 中识别出�
 可以通过以下几个步骤解决这个问题：
 
 1. 检查子应用是否已经导出相应的生命周期钩子，参考[文档](/zh/guide/getting-started.html#子应用导出相应的生命周期钩子)。
+
 2. 检查子应用的 webpack 是否增加了指定的配置，参考[文档](/zh/guide/getting-started.html#配置子应用的打包工具)。
+
 3. 检查子应用的 `package.json` 中的 `name` 字段是否是子应用中唯一的。
+
+4. 检查子应用的 entry html 中入口的 js 是不是最后一个加载的脚本。如果不是，需要移动顺序将其变成最后一个加载的 js，或者在 html 中将入口 js 手动标记为 `entry`，如：
+
+   ```html {2}
+   <script src="/antd.js"></script>
+   <script src="/appEntry.js" entry></script>
+   <script src="https://www.google.com/analytics.js"></script>
+   ```
 
 如果在上述步骤完成后仍有问题，通常说明是浏览器兼容性问题导致的。可以尝试 **将有问题的子应用的 `package.json` 中的 `name` 字段设置成跟主应用中注册的对应子应用的 `name` 字段一致**，如：
 
