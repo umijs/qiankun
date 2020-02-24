@@ -41,6 +41,10 @@ function setCachedRules(element: HTMLStyleElement, cssRules: CSSRuleList) {
   Object.defineProperty(element, styledComponentSymbol, { value: cssRules, configurable: true, enumerable: false });
 }
 
+function assertElementExist(appName: string, element: Element | null) {
+  if (!element) throw new Error(`[qiankun]: ${appName} wrapper with id ${getWrapperId(appName)} not ready!`);
+}
+
 export default function hijack(appName: string, proxy: Window): Freer {
   const dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
 
@@ -64,11 +68,8 @@ export default function hijack(appName: string, proxy: Window): Freer {
             dynamicStyleSheetElements.push(stylesheetElement);
 
             const appWrapper = document.querySelector(`#${getWrapperId(appName)}`);
-            if (appWrapper) {
-              return rawHtmlAppendChild.call(appWrapper, stylesheetElement) as T;
-            }
-
-            throw new Error(`[qiankun]: ${appName} wrapper with id ${getWrapperId(appName)} not ready!`);
+            assertElementExist(appName, appWrapper);
+            return rawHtmlAppendChild.call(appWrapper, stylesheetElement) as T;
           }
 
           return rawHtmlAppendChild.call(this, element) as T;
@@ -102,12 +103,16 @@ export default function hijack(appName: string, proxy: Window): Freer {
             );
 
             const dynamicScriptCommentElement = document.createComment(`dynamic script ${src} replaced by qiankun`);
-            return rawHtmlAppendChild.call(this, dynamicScriptCommentElement) as T;
+            const appWrapper = document.querySelector(`#${getWrapperId(appName)}`);
+            assertElementExist(appName, appWrapper);
+            return rawHtmlAppendChild.call(appWrapper, dynamicScriptCommentElement) as T;
           }
 
           execScripts(null, [`<script>${text}</script>`], proxy).then(element.onload, element.onerror);
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
-          return rawHtmlAppendChild.call(this, dynamicInlineScriptCommentElement) as T;
+          const appWrapper = document.querySelector(`#${getWrapperId(appName)}`);
+          assertElementExist(appName, appWrapper);
+          return rawHtmlAppendChild.call(appWrapper, dynamicInlineScriptCommentElement) as T;
         }
 
         default:
