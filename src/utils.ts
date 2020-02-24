@@ -3,6 +3,8 @@
  * @since 2019-05-15
  */
 
+import { snakeCase } from 'lodash';
+
 export async function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -17,4 +19,12 @@ export function isConstructable(fn: () => void | FunctionConstructor) {
     constructableFunctionRegex.test(fn.toString()) ||
     classRegex.test(fn.toString())
   );
+}
+
+export function defaultTemplateGetter(appName: string, tpl: string) {
+  return `<div id="${getWrapperId(appName)}">${tpl}</div>`;
+}
+
+export function getWrapperId(appName: string) {
+  return `__qiankun_subapp_wrapper_for_${snakeCase(appName)}__`;
 }

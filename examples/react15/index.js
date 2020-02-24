@@ -2,6 +2,7 @@
  * @author Kuitos
  * @since 2019-05-16
  */
+import './public-path';
 import 'antd/dist/antd.min.css';
 import React from 'react';
 import ReactDOM from 'react-dom';
@@ -15,6 +16,7 @@ export async function bootstrap() {
 export async function mount(props) {
   console.log('props from main framework', props);
   ReactDOM.render(<App />, document.getElementById('react15Root'));
+  import('./dynamic.css').then(r => console.log(r));
 }
 
 export async function unmount() {
