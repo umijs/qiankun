@@ -137,3 +137,42 @@
 
   runAfterFirstMounted(() => startMonitor());
   ```
+
+## [addErrorHandler/removeErrorHandler](https://single-spa.js.org/docs/api#adderrorhandler)
+
+## `addGlobalUncaughtErrorHandler(handler)`
+
+- 参数
+
+  - handler - `(...args: any[]) => void` - 必选
+
+- 用法
+
+  添加全局的未捕获异常处理器。
+
+- 示例
+
+  ```ts
+  import { addGlobalUncaughtErrorHandler } from 'qiankun';
+  
+  addGlobalUncaughtErrorHandler(event => console.log(event));
+  ```
+
+## `removeGlobalUncaughtErrorHandler(handler)`
+
+- 参数
+
+  - handler - `(...args: any[]) => void` - 必选
+
+- 用法
+
+  移除全局的未捕获异常处理器。
+
+- 示例
+
+  ```ts
+  import { removeGlobalUncaughtErrorHandler } from 'qiankun';
+  
+  removeGlobalUncaughtErrorHandler(handler);
+  ```
+
