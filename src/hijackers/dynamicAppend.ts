@@ -67,7 +67,7 @@ export default function hijack(appName: string, proxy: Window): Freer {
           if (activated) {
             dynamicStyleSheetElements.push(stylesheetElement);
 
-            const appWrapper = document.querySelector(`#${getWrapperId(appName)}`);
+            const appWrapper = document.getElementById(getWrapperId(appName));
             assertElementExist(appName, appWrapper);
             return rawHtmlAppendChild.call(appWrapper, stylesheetElement) as T;
           }
@@ -103,14 +103,14 @@ export default function hijack(appName: string, proxy: Window): Freer {
             );
 
             const dynamicScriptCommentElement = document.createComment(`dynamic script ${src} replaced by qiankun`);
-            const appWrapper = document.querySelector(`#${getWrapperId(appName)}`);
+            const appWrapper = document.getElementById(getWrapperId(appName));
             assertElementExist(appName, appWrapper);
             return rawHtmlAppendChild.call(appWrapper, dynamicScriptCommentElement) as T;
           }
 
           execScripts(null, [`<script>${text}</script>`], proxy).then(element.onload, element.onerror);
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
-          const appWrapper = document.querySelector(`#${getWrapperId(appName)}`);
+          const appWrapper = document.getElementById(getWrapperId(appName));
           assertElementExist(appName, appWrapper);
           return rawHtmlAppendChild.call(appWrapper, dynamicInlineScriptCommentElement) as T;
         }
