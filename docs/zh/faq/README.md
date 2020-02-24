@@ -7,8 +7,18 @@ qiankun 抛出这个错误是因为无法从子应用的 entry js 中识别出�
 可以通过以下几个步骤解决这个问题：
 
 1. 检查子应用是否已经导出相应的生命周期钩子，参考[文档](/zh/guide/getting-started.html#子应用导出相应的生命周期钩子)。
+
 2. 检查子应用的 webpack 是否增加了指定的配置，参考[文档](/zh/guide/getting-started.html#配置子应用的打包工具)。
+
 3. 检查子应用的 `package.json` 中的 `name` 字段是否是子应用中唯一的。
+
+4. 检查子应用的 entry html 中入口的 js 是不是最后一个加载的脚本。如果不是，需要移动顺序将其变成最后一个加载的 js，或者在 html 中将入口 js 手动标记为 `entry`，如：
+
+   ```html {2}
+   <script src="/antd.js"></script>
+   <script src="/appEntry.js" entry></script>
+   <script src="https://www.google.com/analytics.js"></script>
+   ```
 
 如果在上述步骤完成后仍有问题，通常说明是浏览器兼容性问题导致的。可以尝试 **将有问题的子应用的 `package.json` 中的 `name` 字段设置成跟主应用中注册的对应子应用的 `name` 字段一致**，如：
 
@@ -47,13 +57,17 @@ registerMicroApps([
 
 ### a. 使用 webpack 运行时 publicPath 配置
 
-qiankun 将会在子应用 bootstrap 之前注入一个运行时的 publicPath 变量，你需要做的是在你的 entry js 的顶部添加如下代码：
+qiankun 将会在子应用 bootstrap 之前注入一个运行时的 publicPath 变量，你需要做的是在子应用的 entry js 的顶部添加如下代码：
 
 ```js
 __webpack_public_path__ = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
 ```
 
 关于运行时 publicPath 的技术细节，可以参考 [webpack 文档](https://webpack.js.org/guides/public-path/#on-the-fly)。
+
+::: tip
+自动注入的 `window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__` 值是根据子应用的 HTML Entry 的域名计算得来的，比如子应用 entry 为 `//www.test.com/p/index.html`，则 `window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__` 的实际值为 `//www.test.com/`。如果你的子应用中动态加载的资源不是部署在 `//www.test.com/` 的根目录下的（比如部署在一个子目录下 `//www.test.com/dir/`），你需要关闭运行时 publicPath 特性，然后使用 [静态配置 publicPath 方案](/zh/faq/#b-使用-webpack-静态-publicpath-配置)。
+:::
 
 ### b. 使用 webpack 静态 publicPath 配置
 

@@ -7,8 +7,17 @@ This error thrown as qiankun could not find the exported lifecycle method from y
 To solve the exception, try the following steps:
 
 1. check you have exported the specified lifecycles, see the [doc](https://github.com/umijs/qiankun#2-export-the-lifecycles-from-your-sub-app-entry)
+
 2. check you have set the specified configuration with your bundler, see the [doc](https://github.com/umijs/qiankun#3-config-your-sub-app-bundler)
+
 3. check your `package.json` name field is unique between sub apps.
+
+4. Check if the entry js in the sub-app's entry HTML is the last script to load. If not, move the order to make it be the last, or manually mark the entry js as `entry` in the HTML, such as:
+   ```html {2}
+   <script src="/antd.js"></script>
+   <script src="/appEntry.js" entry></script>
+   <script src="https://www.google.com/analytics.js"></script>
+   ```
 
 If it still not works after the steps above, this is usually due to browser compatibility issues. Try to **set the name field in `package.json` of the broken sub app the same with your main app configuration**, such as:
 
@@ -34,13 +43,17 @@ Two way to solve that:
 
 ### 1. With webpack live public path config
 
-qiankun will inject a live public path variable before your sub app bootstrap, what you need is to add this code at the top of your entry js
+qiankun will inject a live public path variable before your sub app bootstrap, what you need is to add this code at the top of your sub app entry js:
 
 ```js
 __webpack_public_path__ = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
 ```
 
-For more details, check the [webpack doc](https://webpack.js.org/guides/public-path/#on-the-fly)
+For more details, check the [webpack doc](https://webpack.js.org/guides/public-path/#on-the-fly).
+
+::: tip
+Automatic injection ` window. __INJECTED_PUBLIC_PATH_BY_QIANKUN__ ` value is calculated according to the child using HTML Entry domain, such as the `window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__` actual value is `//www.test.com/` while sub application entry is `//www.test.com/p/index.html`. If the dynamically loaded resources in your sub app are not deployed in the root directory of `//www.test.com/`(such as deployed in `//www.test.com/dir/`), you need to turn off the runtime publicPath feature and use [static public path config](/faq/#_2-with-webpack-static-public-path-config).
+:::
 
 ### 2. With webpack static public path config
 
