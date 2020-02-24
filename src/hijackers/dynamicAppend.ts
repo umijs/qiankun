@@ -122,7 +122,7 @@ export default function hijack(appName: string, proxy: Window): Freer {
     HTMLElement.prototype.appendChild = rawHtmlAppendChild;
     dynamicStyleSheetElements.forEach(stylesheetElement => {
       /*
-         with a styled-components generated style element, we need to record its cssRules for restore next re-mounting time.
+         With a styled-components generated style element, we need to record its cssRules for restore next re-mounting time.
          We're doing this because the sheet of style element is going to be cleaned automatically by browser after the style element dom removed from document.
          see https://www.w3.org/TR/cssom-1/#associated-css-style-sheet
          */
@@ -139,12 +139,8 @@ export default function hijack(appName: string, proxy: Window): Freer {
 
     return function rebuild() {
       dynamicStyleSheetElements.forEach(stylesheetElement => {
-        const appWrapper = document.querySelector(`#${getWrapperId(appName)}`);
-        if (appWrapper) {
-          // must use Element.appendChild to trigger the overwritten prototype method to collect dynamic insert stylesheet collection,
-          // rather than use the raw append child method.
-          appWrapper.appendChild(stylesheetElement);
-        }
+        // Using document.head.appendChild ensures that appendChild calls can also directly use the HTMLElement.prototype.appendChild method that is overwritten
+        document.head.appendChild(stylesheetElement);
 
         /*
         get the stored css rules from styled-components generated element, and the re-insert rules for them.
