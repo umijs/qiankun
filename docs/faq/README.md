@@ -34,13 +34,17 @@ Two way to solve that:
 
 ### 1. With webpack live public path config
 
-qiankun will inject a live public path variable before your sub app bootstrap, what you need is to add this code at the top of your entry js
+qiankun will inject a live public path variable before your sub app bootstrap, what you need is to add this code at the top of your sub app entry js:
 
 ```js
 __webpack_public_path__ = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
 ```
 
-For more details, check the [webpack doc](https://webpack.js.org/guides/public-path/#on-the-fly)
+For more details, check the [webpack doc](https://webpack.js.org/guides/public-path/#on-the-fly).
+
+::: tip
+Automatic injection ` window. __INJECTED_PUBLIC_PATH_BY_QIANKUN__ ` value is calculated according to the child using HTML Entry domain, such as the `window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__` actual value is `//www.test.com/` while sub application entry is `//www.test.com/p/index.html`. If the dynamically loaded resources in your sub app are not deployed in the root directory of `//www.test.com/`(such as deployed in `//www.test.com/dir/`), you need to turn off the runtime publicPath feature and use [static public path config](/faq/#_2-with-webpack-static-public-path-config).
+:::
 
 ### 2. With webpack static public path config
 
