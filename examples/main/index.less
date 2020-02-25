@@ -1,12 +1,7 @@
-// reset
+// 主应用慎用 reset 样式
 body {
   margin: 0;
 }
-
-* {
-  box-sizing: border-box;
-}
-
 
 .mainapp {
   // 防止被子应用的样式覆盖
@@ -53,6 +48,7 @@ body {
   }
 
   .mainapp-subapp {
+    position: relative;
     flex-grow: 1;
     margin: 0 40px;
 

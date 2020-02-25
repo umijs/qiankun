@@ -3,6 +3,9 @@ import ReactDOM from 'react-dom';
 import { registerMicroApps, runAfterFirstMounted, setDefaultMountApp, start } from '../../es';
 import Framework from './Framework';
 
+// for angular subapp
+import 'zone.js';
+
 /**
  * react 版本的 render 示例
  */
@@ -42,6 +45,12 @@ registerMicroApps(
       entry: '//localhost:7101',
       render,
       activeRule: genActiveRule('/vue'),
+    },
+    {
+      name: 'angular9',
+      entry: '//localhost:7103',
+      render,
+      activeRule: genActiveRule('/angular9'),
     },
   ],
   {
