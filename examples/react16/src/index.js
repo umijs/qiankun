@@ -1,7 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './App';
-import './index.css';
 import './public-path';
 import * as serviceWorker from './serviceWorker';
 
@@ -14,11 +13,11 @@ if (!window.__POWERED_BY_QIANKUN__) {
 }
 
 export async function bootstrap() {
-  console.log('react app bootstraped');
+  console.log('[react16] react app bootstraped');
 }
 
 export async function mount(props) {
-  console.log(props);
+  console.log('[react16] props from main framework', props);
   render();
 }
 

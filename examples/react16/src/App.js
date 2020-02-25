@@ -1,56 +1,43 @@
-import { Button, Modal, version as antdVersion } from 'antd';
-import 'antd/dist/antd.min.css';
-import React, { lazy, Suspense, useState, version } from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Link, Route, Switch } from 'react-router-dom';
+import { Divider } from 'antd';
+
+import 'antd/dist/antd.min.css';
 import './App.css';
 
-const User = lazy(() => import('./User'));
+import LibVersion from './components/LibVersion';
+import HelloModal from './components/HelloModal';
 
-function App() {
-  const [visible, setVisible] = useState(false);
+import Home from './pages/Home';
+const About = lazy(() => import('./pages/About'));
 
+const RouteExample = () => {
   return (
-    <Router basename={window.__POWERED_BY_QIANKUN__ ? '/react' : '/'}>
-      <div className="App">
-        <header className="App-header">
-          <div style={{ color: 'green' }}>Hello React</div>
-          <Button onClick={() => setVisible(true)}>open antd modal</Button>
-          <Modal visible={visible} onOk={() => setVisible(false)} onCancel={() => setVisible(false)}>
-            Hello React {version} and antd {antdVersion}
-          </Modal>
-        </header>
-
-        <nav>
-          <ul>
-            <li>
-              <Link to="/">Home</Link>
-            </li>
-            <li>
-              <Link to="/about">About</Link>
-            </li>
-            <li>
-              <Link to="/users">Users</Link>
-            </li>
-          </ul>
-        </nav>
-        <Suspense fallback={<div>Loading...</div>}>
-          <Switch>
-            <Route path="/about" component={About} />
-            <Route path="/users" component={User} />
-            <Route path="/" component={Home} />
-          </Switch>
-        </Suspense>
-      </div>
+    <Router basename={window.__POWERED_BY_QIANKUN__ ? '/react16' : '/'}>
+      <nav>
+        <Link to="/">Home</Link>
+        <Divider type="vertical" />
+        <Link to="/about">About</Link>
+      </nav>
+      <Suspense fallback={null}>
+        <Switch>
+          <Route path="/" exact component={Home} />
+          <Route path="/about" component={About} />
+        </Switch>
+      </Suspense>
     </Router>
   );
-}
+};
 
-function Home() {
-  return <h2>Home</h2>;
-}
+export default function App() {
+  return (
+    <div className="app-main">
+      <LibVersion />
+      <HelloModal />
 
-function About() {
-  return <h2>About</h2>;
-}
+      <Divider />
 
-export default App;
+      <RouteExample />
+    </div>
+  );
+}
