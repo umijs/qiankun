@@ -1,40 +1,49 @@
-/**
- * @author Kuitos
- * @since 2019-05-16
- */
-
 import React from 'react';
-import style from './index.less';
+import './index.less';
 
-export default function Framework(props) {
-
-  const { content, loading } = props;
-
-  function goto(title, href) {
+function goto(title, href) {
+  return function (evt) {
+    evt?.preventDefault();
     window.history.pushState({}, title, href);
   }
+}
 
-  function setInterval() {
-    window.setInterval(() => {
-      console.log('master interval');
-    }, 1000);
-  }
-
+/**
+ * 渲染子应用
+ */
+function SubApp(props) {
+  const { content, loading } = props;
   return (
     <>
-      <header className={style.header}>
-        <nav>
-          <ol>
-            <li><a onClick={() => goto('home', '/')}>home</a></li>
-            <li><a onClick={() => goto('react15 app', '/15react15')}>react15 + antd2</a></li>
-            <li><a onClick={() => goto('vue app', '/vue')}>vue2 + element2</a></li>
-            <li><a onClick={() => goto('react app', '/react')}>react16 + antd3</a></li>
-          </ol>
-        </nav>
-      </header>
-      {loading ? <div>loading...</div> : null}
-      <div dangerouslySetInnerHTML={{ __html: content }} className={style.appContainer}/>
+      <div className="mainapp-subapp">
+        {loading && (
+          <h4 className="mainapp-subapp-loading">Loading...</h4>
+        )}
+        <div dangerouslySetInnerHTML={{ __html: content }} />
+      </div >
     </>
+  )
+}
 
+export default function Framework(props) {
+  return (
+    <div className="mainapp">
+      {/* 标题栏 */}
+      <header className="mainapp-header">
+        <h1>QianKun</h1>
+      </header>
+      <div className="mainapp-main">
+        {/* 侧边栏 */}
+        <ul className="mainapp-sidemenu">
+          <li onClick={goto('main', '/')}>main</li>
+          <li onClick={goto('react16', '/react16')}>React16</li>
+          <li onClick={goto('react15', '/react15')}>React15</li>
+          <li onClick={goto('vue', '/vue')}>Vue</li>
+          <li onClick={goto('angular9', '/angular9')}>Angular9</li>
+        </ul>
+        {/* 子应用 */}
+        <SubApp {...props} />
+      </div>
+    </div>
   );
 }

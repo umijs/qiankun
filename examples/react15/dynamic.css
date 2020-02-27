@@ -1,3 +1,5 @@
-main {
-  background: pink;
+/* 动态加载的样式 */
+
+.react15-lib {
+  color: #818ff7;
 }

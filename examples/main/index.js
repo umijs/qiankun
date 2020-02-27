@@ -1,83 +1,92 @@
-/**
- * @author Kuitos
- * @since 2019-05-16
- */
-
 import React from 'react';
 import ReactDOM from 'react-dom';
-// import Vue from 'vue';
 import { registerMicroApps, runAfterFirstMounted, setDefaultMountApp, start } from '../../es';
 import Framework from './Framework';
-// import Framework from './Framework.vue';
 
-// let app = null;
+// for angular subapp
+import 'zone.js';
 
+/**
+ * react 版本的 render 示例
+ */
 function render({ appContent, loading }) {
-  /*
-  examples for vue
-   */
-  // if (!app) {
-  //   app = new Vue({
-  //     el: '#container',
-  //     data() {
-  //       return {
-  //         content: appContent,
-  //         loading,
-  //       };
-  //     },
-  //     render(h) {
-  //       return h(Framework, {
-  //         props: {
-  //           content: this.content,
-  //           loading: this.loading,
-  //         },
-  //       });
-  //     },
-  //   });
-  // } else {
-  //   app.content = appContent;
-  //   app.loading = loading;
-  // }
-
   const container = document.getElementById('container');
-  ReactDOM.render(<Framework loading={loading} content={appContent} />, container);
+  ReactDOM.render(<Framework content={appContent} loading={loading} />, container);
 }
 
 function genActiveRule(routerPrefix) {
   return location => location.pathname.startsWith(routerPrefix);
 }
 
-function initApp() {
-  render({ appContent: '', loading: true });
-}
+/**
+ * Step1 初始化应用（可选）
+ */
+render({ appContent: '', loading: true });
 
-initApp();
-
+/**
+ * Step2 注册子应用
+ */
 registerMicroApps(
   [
-    { name: 'react16-main', entry: '//localhost:7100', render, activeRule: genActiveRule('/react') },
-    { name: 'react15 app', entry: '//localhost:7102', render, activeRule: genActiveRule('/15react15') },
-    { name: 'vue app', entry: '//localhost:7101', render, activeRule: genActiveRule('/vue') },
+    {
+      name: 'react16',
+      entry: '//localhost:7100',
+      render,
+      activeRule: genActiveRule('/react16'),
+    },
+    {
+      name: 'react15',
+      entry: '//localhost:7102',
+      render,
+      activeRule: genActiveRule('/react15'),
+    },
+    {
+      name: 'vue',
+      entry: '//localhost:7101',
+      render,
+      activeRule: genActiveRule('/vue'),
+    },
+    {
+      name: 'angular9',
+      entry: '//localhost:7103',
+      render,
+      activeRule: genActiveRule('/angular9'),
+    },
   ],
   {
     beforeLoad: [
       app => {
-        console.log('before load', app);
+        console.log('[LifeCycle] before load %c%s', 'color: green;', app.name);
       },
     ],
     beforeMount: [
       app => {
-        console.log('before mount', app);
+        console.log('[LifeCycle] before mount %c%s', 'color: green;', app.name);
       },
     ],
     afterUnmount: [
       app => {
-        console.log('after unload', app);
+        console.log('[LifeCycle] after unload %c%s', 'color: green;', app.name);
       },
     ],
   },
 );
 
-setDefaultMountApp('/react');
+/**
+ * Step3 设置默认进入的子应用
+ */
+setDefaultMountApp('/react16');
 
-start({ prefetch: true });
+/**
+ * Step4 启动应用
+ */
+start({
+  prefetch: true,
+  jsSandbox: true,
+  singular: true,
+  fetch: window.fetch,
+});
+
+runAfterFirstMounted(() => {
+  console.log('[MainApp] first app mounted');
+});

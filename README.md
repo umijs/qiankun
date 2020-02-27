@@ -38,8 +38,8 @@ https://qiankun.umijs.org/
 
 ```shell
 $yarn
-$yarn install:examples
-$yarn start
+$yarn examples:install
+$yarn examples:start
 ```
 
 Visit `http://localhost:7099`

@@ -1,33 +1,18 @@
-/**
- * @author Kuitos
- * @since 2019-05-16
- */
+import React, { version as reactVersion } from 'react';
+import { version as antdVersion } from 'antd';
 
-import { Button, Modal, version as antdVersion } from 'antd';
-import React, { version } from 'react';
+import Logo from './components/Logo'
+import HelloModal from './components/HelloModal'
 
 export default class App extends React.Component {
-
-  constructor() {
-    super();
-    this.state = {
-      visible: false,
-    };
-
-    this.setVisible = visible => this.setState({ visible });
-  }
-
   render() {
-
-    const { visible } = this.state;
-
     return (
-      <div>
-        <div style={{ color: 'green' }}>Hello React15</div>
-        <Button onClick={() => this.setVisible(true)}>open antd modal</Button>
-        <Modal visible={visible} onCancel={() => this.setVisible(false)} onOk={() => this.setVisible(false)}>
-          Hello React {version} and antd {antdVersion}
-        </Modal>
+      <div className="react15-main">
+        <Logo />
+        <p className="react15-lib">
+          React version: {reactVersion}, AntD version: {antdVersion}
+        </p>
+        <HelloModal />
       </div>
     );
   }

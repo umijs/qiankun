@@ -1,15 +1,14 @@
 <template>
   <div class="home">
     <img alt="Vue logo" src="../assets/logo.png"/>
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+    <HelloWorld msg="Vue.js Demo"/>
 
-    <i class="el-icon-edit"/>
     <el-button @click="dialogVisible = true" type="text">Open Dialog</el-button>
 
     <el-dialog
       :before-close="handleClose"
       :visible.sync="dialogVisible"
-      title="hit"
+      title="Dialog"
       width="30%">
       <span>dialog message</span>
       <span class="dialog-footer" slot="footer">
