@@ -137,3 +137,41 @@
 
   runAfterFirstMounted(() => startMonitor());
   ```
+
+## [addErrorHandler/removeErrorHandler](https://single-spa.js.org/docs/api#adderrorhandler)
+
+## `addGlobalUncaughtErrorHandler(handler)`
+
+- Parameters
+
+  - handler - `(...args: any[]) => void` - 必选
+
+- Usage
+
+  Add the global uncaught error hander.
+
+- Sample
+
+  ```ts
+  import { addGlobalUncaughtErrorHandler } from 'qiankun';
+  
+  addGlobalUncaughtErrorHandler(event => console.log(event));
+  ```
+
+## `removeGlobalUncaughtErrorHandler(handler)`
+
+- Parameters
+
+  - handler - `(...args: any[]) => void` - 必选
+
+- Usage
+
+  Remove the global uncaught error hander.
+
+- Sample
+
+  ```ts
+  import { removeGlobalUncaughtErrorHandler } from 'qiankun';
+  
+  removeGlobalUncaughtErrorHandler(handler);
+  ```
