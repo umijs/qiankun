@@ -23,7 +23,7 @@ If it still not works after the steps above, this is usually due to browser comp
 
 Such as here is the main configuration:
 
-```ts { 4 }
+```ts {4}
 // main app
 registerMicroApps([
   {
@@ -37,7 +37,7 @@ registerMicroApps([
 
 Set the `output.library` the same with main app registration:
 
-```js { 4 }
+```js {4}
 module.exports = {
   output: {
     // Keep the same with the registration in main app
