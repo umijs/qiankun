@@ -35,7 +35,6 @@ export default function Framework(props) {
       <div className="mainapp-main">
         {/* 侧边栏 */}
         <ul className="mainapp-sidemenu">
-          <li onClick={goto('main', '/')}>main</li>
           <li onClick={goto('react16', '/react16')}>React16</li>
           <li onClick={goto('react15', '/react15')}>React15</li>
           <li onClick={goto('vue', '/vue')}>Vue</li>
