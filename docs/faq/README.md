@@ -19,22 +19,33 @@ To solve the exception, try the following steps:
    <script src="https://www.google.com/analytics.js"></script>
    ```
 
-If it still not works after the steps above, this is usually due to browser compatibility issues. Try to **set the name field in `package.json` of the broken sub app the same with your main app configuration**, such as:
+If it still not works after the steps above, this is usually due to browser compatibility issues. Try to **set the webpack `output.library` of the broken sub app the same with your main app registration for your app**, such as:
 
-```js
+Such as here is the main configuration:
+
+```ts { 4 }
 // main app
 registerMicroApps([
-  // the name is same with the name field of subapp's `package.json`
-  { name: 'brokenSubApp', entry: '//localhost:7100', render, activeRule: genActiveRule('/react') },
+  {
+    name: 'brokenSubApp',
+    entry: '//localhost:7100',
+    render,
+    activeRule: genActiveRule('/react'),
+  },
 ]);
 ```
 
-`package.json` of the broken sub app
+Set the `output.library` the same with main app registration:
 
-```json
-{
-  "name": "brokenSubApp"
-}
+```js { 4 }
+module.exports = {
+  output: {
+    // Keep the same with the registration in main app
+    library: 'brokenSubApp',
+    libraryTarget: 'umd',
+    jsonpFunction: `webpackJsonp_${packageName}`,
+  },
+};
 ```
 
 ## Why dynamic imported assets missing?
