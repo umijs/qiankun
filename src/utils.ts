@@ -28,3 +28,7 @@ export function defaultTemplateGetter(appName: string, tpl: string) {
 export function getWrapperId(appName: string) {
   return `__qiankun_subapp_wrapper_for_${snakeCase(appName)}__`;
 }
+
+export function toArray<T>(array: T | T[]): T[] {
+  return Array.isArray(array) ? array : [array];
+}

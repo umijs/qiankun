@@ -1,10 +1,11 @@
 import { importEntry, ImportEntryOpts } from 'import-html-entry';
-import { isFunction } from 'lodash';
+import { isFunction, mergeWith } from 'lodash';
 import { registerApplication, start as startSingleSpa } from 'single-spa';
 import { RegistrableApp, StartOpts } from './interfaces';
 import { prefetchAfterFirstMounted, prefetchAll } from './prefetch';
 import { genSandbox } from './sandbox';
-import { defaultTemplateGetter } from './utils';
+import { defaultTemplateGetter, toArray } from './utils';
+import getAddOns from './addons';
 
 type Lifecycle<T extends object> = (app: RegistrableApp<T>) => Promise<any>;
 
@@ -19,10 +20,6 @@ export type LifeCycles<T extends object> = {
 type RegisterMicroAppsOpts = ImportEntryOpts;
 
 let microApps: RegistrableApp[] = [];
-
-function toArray<T>(array: T | T[]): T[] {
-  return Array.isArray(array) ? array : [array];
-}
 
 function execHooksChain<T extends object>(hooks: Array<Lifecycle<T>>, app: RegistrableApp<T>): Promise<any> {
   if (hooks.length) {
@@ -69,8 +66,6 @@ export function registerMicroApps<T extends object = {}>(
 ) {
   window.__POWERED_BY_QIANKUN__ = true;
 
-  const { beforeUnmount = [], afterUnmount = [], afterMount = [], beforeMount = [], beforeLoad = [] } =
-    lifeCycles || {};
   microApps = [...microApps, ...apps];
 
   let prevAppUnmountedDeferred: Deferred<void>;
@@ -105,11 +100,23 @@ export function registerMicroApps<T extends object = {}>(
         let mountSandbox = () => Promise.resolve();
         let unmountSandbox = () => Promise.resolve();
         if (useJsSandbox) {
-          const sandbox = genSandbox(appName, assetPublicPath);
+          const sandbox = genSandbox(appName);
           jsSandbox = sandbox.sandbox;
           mountSandbox = sandbox.mount;
           unmountSandbox = sandbox.unmount;
         }
+
+        const {
+          beforeUnmount = [],
+          afterUnmount = [],
+          afterMount = [],
+          beforeMount = [],
+          beforeLoad = [],
+        } = mergeWith(
+          getAddOns(jsSandbox, assetPublicPath),
+          lifeCycles,
+          (v1: () => Promise<void>, v2: () => Promise<void>) => [...toArray(v1 ?? []), ...toArray(v2 ?? [])],
+        );
 
         await execHooksChain(toArray(beforeLoad), app);
 
@@ -117,6 +124,12 @@ export function registerMicroApps<T extends object = {}>(
         let { bootstrap: bootstrapApp, mount, unmount } = await execScripts(jsSandbox);
 
         if (!isFunction(bootstrapApp) || !isFunction(mount) || !isFunction(unmount)) {
+          if (process.env.NODE_ENV === 'development') {
+            console.warn(
+              `LifeCycles are not found from ${appName} entry exports, fallback to get them from window['${appName}'] `,
+            );
+          }
+
           // fallback to global variable who named with ${appName} while module exports not found
           const globalVariableExports = (window as any)[appName] || {};
           bootstrapApp = globalVariableExports.bootstrap;
@@ -126,12 +139,6 @@ export function registerMicroApps<T extends object = {}>(
           unmount = globalVariableExports.unmount;
           if (!isFunction(bootstrapApp) || !isFunction(mount) || !isFunction(unmount)) {
             throw new Error(`You need to export the functional lifecycles in ${appName} entry`);
-          }
-
-          if (process.env.NODE_ENV === 'development') {
-            console.warn(
-              `LifeCycles are not found from ${appName} entry exports, fallback to get them from window['${appName}'] `,
-            );
           }
         }
 

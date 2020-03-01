@@ -33,9 +33,8 @@ function setWindowProp(prop: PropertyKey, value: any, toDelete?: boolean) {
  * 这么设计的目的是为了保证每个子应用切换回来之后，还能运行在应用 bootstrap 之后的环境下。
  *
  * @param appName
- * @param assetPublicPath
  */
-export function genSandbox(appName: string, assetPublicPath: string) {
+export function genSandbox(appName: string) {
   // 沙箱期间新增的全局变量
   const addedPropsMapInSandbox = new Map<PropertyKey, any>();
   // 沙箱期间更新的全局变量
@@ -120,7 +119,7 @@ export function genSandbox(appName: string, assetPublicPath: string) {
   });
 
   // some side effect could be be invoked while bootstrapping, such as dynamic stylesheet injection with style-loader, especially during the development phase
-  const bootstrappingFreers = hijackAtBootstrapping(appName, assetPublicPath, sandbox);
+  const bootstrappingFreers = hijackAtBootstrapping(appName, sandbox);
 
   return {
     sandbox,
