@@ -1,12 +1,13 @@
 # 快速上手
 
-## 安装 qiankun
+## 主应用
+### 1. 安装 qiankun
 
 ```bash
 $ yarn add qiankun # 或者 npm i qiankun -S
 ```
 
-## 在主应用中注册子应用
+## 2. 在主应用中注册子应用
 
 ```ts
 import { registerMicroApps, start } from 'qiankun';
@@ -53,7 +54,10 @@ registerMicroApps([
 start();
 ```
 
-## 子应用导出相应的生命周期钩子
+## 子应用
+子应用不需要额外安装任何其他依赖即可接入 qiankun 主应用。
+
+### 1. 导出相应的生命周期钩子
 
 子应用需要在自己的入口 js (通常就是你配置的 webpack 的 entry js) 导出 `bootstrap`、`mount`、`unmount` 三个生命周期钩子，以供主应用在适当的时机调用。
 
@@ -84,7 +88,7 @@ export async function unmount() {
 
 qiankun 基于 single-spa，所以你可以在[这里](https://single-spa.js.org/docs/building-applications.html#registered-application-lifecycle)找到更多关于子应用生命周期相关的文档说明。
 
-## 配置子应用的打包工具
+### 2. 配置子应用的打包工具
 
 除了代码中暴露出相应的生命周期钩子之外，为了让主应用能正确识别子应用暴露出来的一些信息，子应用的打包工具需要增加如下配置：
 
