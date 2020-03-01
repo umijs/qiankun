@@ -7,7 +7,7 @@
 $ yarn add qiankun # 或者 npm i qiankun -S
 ```
 
-## 2. 在主应用中注册子应用
+### 2. 在主应用中注册子应用
 
 ```ts
 import { registerMicroApps, start } from 'qiankun';
