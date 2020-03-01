@@ -1,12 +1,13 @@
 # Getting Started
 
-## Installation
+## Master Application
+### 1. Installation
 
 ```bash
 $ yarn add qiankun # or npm i qiankun -S
 ```
 
-## Register Sub Apps In Master Application
+### 2. Register Sub Apps In Master Application
 
 ```ts
 import { registerMicroApps, start } from 'qiankun';
@@ -53,7 +54,9 @@ registerMicroApps([
 start();
 ```
 
-## Exports Lifecycles From Sub App Entry
+## Sub Application
+Sub applications do not need to install any additional dependencies to integrate to qiankun master application.
+### 1. Exports Lifecycles From Sub App Entry
 
 The child application needs to export `bootstrap`,`mount`, `unmount` three lifecycle hooks in its own entry js (usually the entry js of webpack you configure) for the main application to call at the appropriate time.
 
@@ -88,7 +91,7 @@ export async function unmount() {
 
 As qiankun based on single-spa, you can find more documentation about the sub-application lifecycle [here](https://single-spa.js.org/docs/building-applications.html#registered-application-lifecycle).
 
-## Config Sub App Bundler
+### 2. Config Sub App Bundler
 
 In addition to exposing the corresponding life-cycle hooks in the code, in order for the main application to correctly identify some of the information exposed by the sub-application, the sub-application bundler needs to add the following configuration:
 
