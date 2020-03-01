@@ -7,7 +7,7 @@ import { mergeWith } from 'lodash';
 
 import { LifeCycles } from '../register';
 import { toArray } from '../utils';
-import getRuntimePublicPathAddOn from './publicPath';
+import getRuntimePublicPathAddOn from './runtimePublicPath';
 
 export default function getAddOns<T extends object>(global: Window, publicPath: string): LifeCycles<T> {
   return mergeWith(
