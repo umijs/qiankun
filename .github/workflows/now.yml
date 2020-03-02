@@ -12,7 +12,7 @@ jobs:
         run: |
           yarn install
           yarn now-build
-      - uses: ./
+      - uses: amondnet/now-deployment@v2
         id: now-deployment-production
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
