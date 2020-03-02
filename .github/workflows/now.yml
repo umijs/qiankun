@@ -9,6 +9,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: build
+        env:
+          NOW_DEPLOY: true
         run: |
           yarn install
           yarn docs:build
