@@ -2,12 +2,7 @@
   "name": "qiankun",
   "scope": "umijs",
   "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@now/static-build"
-    }
-  ],
+  "builds": [{ "src": "./dist/**", "use": "@now/static" }],
   "build": {
     "env": {
       "NOW_DEPLOY": "true"

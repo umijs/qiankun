@@ -11,7 +11,8 @@ jobs:
       - name: build
         run: |
           yarn install
-          yarn now-build
+          yarn docs:build
+          mv docs/.vuepress/dist dist
       - uses: amondnet/now-deployment@v2
         id: now-deployment-production
         with:
