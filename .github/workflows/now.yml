@@ -4,7 +4,7 @@ on:
     branches:
       - master
 jobs:
-  angular:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
