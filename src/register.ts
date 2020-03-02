@@ -1,11 +1,11 @@
 import { importEntry, ImportEntryOpts } from 'import-html-entry';
 import { isFunction, mergeWith } from 'lodash';
 import { registerApplication, start as startSingleSpa } from 'single-spa';
+import getAddOns from './addons';
 import { RegistrableApp, StartOpts } from './interfaces';
 import { prefetchAfterFirstMounted, prefetchAll } from './prefetch';
 import { genSandbox } from './sandbox';
 import { defaultTemplateGetter, toArray } from './utils';
-import getAddOns from './addons';
 
 type Lifecycle<T extends object> = (app: RegistrableApp<T>) => Promise<any>;
 
@@ -113,6 +113,7 @@ export function registerMicroApps<T extends object = {}>(
           beforeMount = [],
           beforeLoad = [],
         } = mergeWith(
+          {},
           getAddOns(jsSandbox, assetPublicPath),
           lifeCycles,
           (v1: () => Promise<void>, v2: () => Promise<void>) => [...toArray(v1 ?? []), ...toArray(v2 ?? [])],
