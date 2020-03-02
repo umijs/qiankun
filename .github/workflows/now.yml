@@ -1,0 +1,23 @@
+name: qiankun - deploy
+on:
+  push:
+    branches:
+      - master
+jobs:
+  angular:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: build
+        run: |
+          yarn install
+          yarn now-build
+      - uses: ./
+        id: now-deployment-production
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          zeit-token: ${{ secrets.ZEIT_TOKEN }}
+          now-org-id: ${{ secrets.NOW_ORG_ID }}
+          now-project-id: ${{ secrets.NOW_PROJECT_ID }}
+          working-directory: dist
+          now-args: '--prod'
