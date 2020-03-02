@@ -66,7 +66,7 @@ __webpack_public_path__ = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
 关于运行时 publicPath 的技术细节，可以参考 [webpack 文档](https://webpack.js.org/guides/public-path/#on-the-fly)。
 
 ::: tip
-自动注入的 `window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__` 值是根据子应用的 HTML Entry 的域名计算得来的，比如子应用 entry 为 `//www.test.com/p/index.html`，则 `window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__` 的实际值为 `//www.test.com/`。如果你的子应用中动态加载的资源不是部署在 `//www.test.com/` 的根目录下的（比如部署在一个子目录下 `//www.test.com/dir/`），你需要关闭运行时 publicPath 特性，然后使用 [静态配置 publicPath 方案](/zh/faq/#b-使用-webpack-静态-publicpath-配置)。
+runtime publicPath 主要解决的是子应用动态载入的 脚本、样式、图片 等地址不正确的问题。
 :::
 
 ### b. 使用 webpack 静态 publicPath 配置
