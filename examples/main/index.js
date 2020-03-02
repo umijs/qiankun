@@ -66,7 +66,7 @@ registerMicroApps(
     ],
     afterUnmount: [
       app => {
-        console.log('[LifeCycle] after unload %c%s', 'color: green;', app.name);
+        console.log('[LifeCycle] after unmount %c%s', 'color: green;', app.name);
       },
     ],
   },
