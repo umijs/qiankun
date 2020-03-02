@@ -27,11 +27,11 @@ self.addEventListener('message', (event) => {
 self.__precacheManifest = [
   {
     "url": "404.html",
-    "revision": "2bc584a2483af797f72ab03bbb9b76d4"
+    "revision": "c1fcab3063ec3f17f0e8e5de0e17fda7"
   },
   {
     "url": "api/index.html",
-    "revision": "22ad33732ca87c212c7aa078714f869c"
+    "revision": "79b7243c4c50d4d47ecc62221532e02c"
   },
   {
     "url": "assets/css/0.styles.81e21519.css",
@@ -86,12 +86,12 @@ self.__precacheManifest = [
     "revision": "74d72d20b78c877ce724c7df884be7cf"
   },
   {
-    "url": "assets/js/6.51647356.js",
-    "revision": "650e505c6a2cc76b1f1bed6db707c0fb"
+    "url": "assets/js/6.dd28064e.js",
+    "revision": "68fb2f88fe9218be036bbbb48c5e62eb"
   },
   {
-    "url": "assets/js/7.178bb0a7.js",
-    "revision": "3dc1b6193fa2e1230dabb31b1b72394e"
+    "url": "assets/js/7.04cf036a.js",
+    "revision": "234a92fbd0340c696d579b29e46c3562"
   },
   {
     "url": "assets/js/8.4c4270a0.js",
@@ -102,44 +102,44 @@ self.__precacheManifest = [
     "revision": "27d455a8718052f2d7262dd10f5fcf53"
   },
   {
-    "url": "assets/js/app.e1ffdfcf.js",
-    "revision": "21cc03e15f5041465399e61d3a2b94df"
+    "url": "assets/js/app.14d43278.js",
+    "revision": "6da8ed268e0fa3cd5a9e6d18bbb5dfac"
   },
   {
     "url": "faq/index.html",
-    "revision": "f8ef6df56d2670413639f7936f2efefe"
+    "revision": "5c738838e34088367daccad2b516bc4a"
   },
   {
     "url": "guide/getting-started.html",
-    "revision": "f26bccbfc09bbe5178179002b6fdf234"
+    "revision": "2dc279b4e9c43a73e3baef786049284a"
   },
   {
     "url": "guide/index.html",
-    "revision": "a5da3425122a7082202b1841deb6a36e"
+    "revision": "250b67ff24f8937c79ecbbe28077335e"
   },
   {
     "url": "index.html",
-    "revision": "245302d70746a2fad7b952cd6efd8305"
+    "revision": "5542dc420de9182dfb2a8e8313228eab"
   },
   {
     "url": "zh/api/index.html",
-    "revision": "95e794e9651daba33fb45bfca1d71441"
+    "revision": "c93fefa52ac89c216d0644bc117d95ff"
   },
   {
     "url": "zh/faq/index.html",
-    "revision": "f2684be2b555e12e7f2fb4ceba98054a"
+    "revision": "a113de00357f3110f1e3a34ed4fa48ab"
   },
   {
     "url": "zh/guide/getting-started.html",
-    "revision": "68c7feadc21b93b86dab363a521ea6c6"
+    "revision": "69f2ebe51b0c3b2587a79e528c32ca1d"
   },
   {
     "url": "zh/guide/index.html",
-    "revision": "491e4f80a6a1681537eca439d2e2dc16"
+    "revision": "3f0d726520b15a762a93fba7c8d52fe2"
   },
   {
     "url": "zh/index.html",
-    "revision": "22d7765f638be9286acb32eecb11e016"
+    "revision": "2c90ef22f371d55329875c166343cf7c"
   }
 ].concat(self.__precacheManifest || []);
 workbox.precaching.precacheAndRoute(self.__precacheManifest, {});
