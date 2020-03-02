@@ -2,11 +2,10 @@ const { name } = require('./package');
 
 module.exports = {
   webpack: function override(config, env) {
-    const copyConfig = { ...config };
     console.log('env', env);
-    copyConfig.output.library = `${name}-[name]`;
-    copyConfig.output.libraryTarget = 'umd';
-    copyConfig.output.jsonpFunction = `webpackJsonp_${name}`;
+    config.output.library = `${name}-[name]`;
+    config.output.libraryTarget = 'umd';
+    config.output.jsonpFunction = `webpackJsonp_${name}`;
     return config;
   },
   devServer: function(configFunction) {
