@@ -18,3 +18,4 @@ lib
 package-lock.json
 .eslintcache
 .history
+.now

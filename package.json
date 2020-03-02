@@ -37,7 +37,6 @@
     "prettier": "prettier -c --write **/*",
     "docs:dev": "vuepress dev docs",
     "docs:build": "vuepress build docs",
-    "now-build": "npm run docs:build && mv docs/.vuepress/dist dist",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
