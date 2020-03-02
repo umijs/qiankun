@@ -110,12 +110,13 @@ export function registerMicroApps<T extends object = {}>(
           unmountSandbox = sandbox.unmount;
         }
 
-        const { beforeUnmount = [], afterUnmount = [], afterMount = [], beforeMount = [], beforeLoad = [] } = mergeWith(
-          {},
-          getAddOns(jsSandbox, assetPublicPath),
-          lifeCycles,
-          concat,
-        );
+        const {
+          beforeUnmount = [],
+          afterUnmount = [],
+          afterMount = [],
+          beforeMount = [],
+          beforeLoad = [],
+        } = mergeWith({}, getAddOns(jsSandbox, assetPublicPath), lifeCycles, (v1, v2) => concat(v1 ?? [], v2 ?? []));
 
         await execHooksChain(toArray(beforeLoad), app);
 
