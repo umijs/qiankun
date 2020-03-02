@@ -1,11 +1,11 @@
 import { importEntry, ImportEntryOpts } from 'import-html-entry';
-import { isFunction, mergeWith } from 'lodash';
+import { concat, isFunction, mergeWith } from 'lodash';
 import { registerApplication, start as startSingleSpa } from 'single-spa';
 import getAddOns from './addons';
 import { RegistrableApp, StartOpts } from './interfaces';
 import { prefetchAfterFirstMounted, prefetchAll } from './prefetch';
 import { genSandbox } from './sandbox';
-import { defaultTemplateGetter, toArray } from './utils';
+import { defaultTemplateGetter } from './utils';
 
 type Lifecycle<T extends object> = (app: RegistrableApp<T>) => Promise<any>;
 
@@ -20,6 +20,10 @@ export type LifeCycles<T extends object> = {
 type RegisterMicroAppsOpts = ImportEntryOpts;
 
 let microApps: RegistrableApp[] = [];
+
+function toArray<T>(array: T | T[]): T[] {
+  return Array.isArray(array) ? array : [array];
+}
 
 function execHooksChain<T extends object>(hooks: Array<Lifecycle<T>>, app: RegistrableApp<T>): Promise<any> {
   if (hooks.length) {
@@ -106,17 +110,11 @@ export function registerMicroApps<T extends object = {}>(
           unmountSandbox = sandbox.unmount;
         }
 
-        const {
-          beforeUnmount = [],
-          afterUnmount = [],
-          afterMount = [],
-          beforeMount = [],
-          beforeLoad = [],
-        } = mergeWith(
+        const { beforeUnmount = [], afterUnmount = [], afterMount = [], beforeMount = [], beforeLoad = [] } = mergeWith(
           {},
           getAddOns(jsSandbox, assetPublicPath),
           lifeCycles,
-          (v1: () => Promise<void>, v2: () => Promise<void>) => [...toArray(v1 ?? []), ...toArray(v2 ?? [])],
+          concat,
         );
 
         await execHooksChain(toArray(beforeLoad), app);
