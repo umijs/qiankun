@@ -70,11 +70,14 @@ export function registerMicroApps<T extends object = {}>(
 ) {
   window.__POWERED_BY_QIANKUN__ = true;
 
-  microApps = [...microApps, ...apps];
+  // Each app only needs to be registered once
+  const unregisteredApps = apps.filter(app => !microApps.some(registeredApp => registeredApp.name === app.name));
+
+  microApps = [...microApps, ...unregisteredApps];
 
   let prevAppUnmountedDeferred: Deferred<void>;
 
-  apps.forEach(app => {
+  unregisteredApps.forEach(app => {
     const { name, entry, render, activeRule, props = {} } = app;
 
     registerApplication(
