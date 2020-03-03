@@ -34,12 +34,22 @@ $ yarn add qiankun  # or npm i qiankun -S
 
 https://qiankun.umijs.org/
 
-## 💿 Examples
+## 💿 Getting started
+
+This repo contains an `examples` folder with a sample Shell app and multiple mounted Micro FE apps.
+To run this app, first clone `qiankun`
 
 ```shell
-$yarn
-$yarn examples:install
-$yarn examples:start
+$ git clone git@github.com:umijs/qiankun.git
+$ cd qiankun
+```
+
+Now run the yarn scripts to install and run the examples project
+
+```shell
+$ yarn install
+$ yarn examples:install
+$ yarn examples:start
 ```
 
 Visit `http://localhost:7099`
