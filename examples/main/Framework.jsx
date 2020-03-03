@@ -20,7 +20,7 @@ function SubApp(props) {
           <h4 className="mainapp-subapp-loading">Loading...</h4>
         )}
         <div dangerouslySetInnerHTML={{ __html: content }} />
-      </div >
+      </div>
     </>
   )
 }
