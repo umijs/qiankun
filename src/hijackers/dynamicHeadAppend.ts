@@ -49,7 +49,9 @@ function assertElementExist(appName: string, element: Element | null) {
 }
 
 /**
- * Just hijack dynamic head append, that could avoid accidentally hijacking the insertion of elements such as div
+ * Just hijack dynamic head append, that could avoid accidentally hijacking the insertion of elements except in head.
+ * Such a case: ReactDOM.createPortal(<style>.test{color:blue}</style>, container),
+ * this could made we append the style element into app wrapper but it will cause an error while the react portal unmounting, as ReactDOM could not find the style in body children list.
  * @param appName
  * @param proxy
  */
