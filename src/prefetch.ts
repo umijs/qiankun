@@ -4,9 +4,10 @@
  */
 
 import { Entry, importEntry, ImportEntryOpts } from 'import-html-entry';
+import { flow, identity } from 'lodash';
 import { getMountedApps } from 'single-spa';
 import { RegistrableApp } from './interfaces';
-import { defaultTemplateGetter } from './utils';
+import { getDefaultTplWrapper } from './utils';
 
 type RequestIdleCallbackHandle = any;
 type RequestIdleCallbackOptions = {
@@ -68,8 +69,11 @@ function prefetch(appName: string, entry: Entry, opts?: ImportEntryOpts): void {
   }
 
   requestIdleCallback(async () => {
-    const { getTemplate = (tpl: string) => defaultTemplateGetter(appName, tpl), ...settings } = opts || {};
-    const { getExternalScripts, getExternalStyleSheets } = await importEntry(entry, { getTemplate, ...settings });
+    const { getTemplate = identity, ...settings } = opts || {};
+    const { getExternalScripts, getExternalStyleSheets } = await importEntry(entry, {
+      getTemplate: flow(getTemplate, getDefaultTplWrapper(appName)),
+      ...settings,
+    });
     requestIdleCallback(getExternalStyleSheets);
     requestIdleCallback(getExternalScripts);
   });

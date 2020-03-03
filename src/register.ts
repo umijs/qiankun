@@ -1,11 +1,11 @@
 import { importEntry, ImportEntryOpts } from 'import-html-entry';
-import { concat, isFunction, mergeWith } from 'lodash';
+import { concat, flow, identity, isFunction, mergeWith } from 'lodash';
 import { registerApplication, start as startSingleSpa } from 'single-spa';
 import getAddOns from './addons';
 import { RegistrableApp, StartOpts } from './interfaces';
 import { prefetchAfterFirstMounted, prefetchAll } from './prefetch';
 import { genSandbox } from './sandbox';
-import { defaultTemplateGetter } from './utils';
+import { getDefaultTplWrapper } from './utils';
 
 type Lifecycle<T extends object> = (app: RegistrableApp<T>) => Promise<any>;
 
@@ -83,10 +83,11 @@ export function registerMicroApps<T extends object = {}>(
       async ({ name: appName }) => {
         await frameworkStartedDefer.promise;
 
-        const { getTemplate = (tpl: string) => defaultTemplateGetter(appName, tpl), ...settings } = opts || {};
-        // 获取入口 html 模板及脚本加载器
+        const { getTemplate = identity, ...settings } = opts || {};
+        // get the entry html content and script executor
         const { template: appContent, execScripts, assetPublicPath } = await importEntry(entry, {
-          getTemplate,
+          // compose the config getTemplate function with default wrapper
+          getTemplate: flow(getTemplate, getDefaultTplWrapper(appName)),
           ...settings,
         });
 
