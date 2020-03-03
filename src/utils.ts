@@ -21,8 +21,8 @@ export function isConstructable(fn: () => void | FunctionConstructor) {
   );
 }
 
-export function defaultTemplateGetter(appName: string, tpl: string) {
-  return `<div id="${getWrapperId(appName)}">${tpl}</div>`;
+export function getDefaultTplWrapper(appName: string) {
+  return (tpl: string) => `<div id="${getWrapperId(appName)}">${tpl}</div>`;
 }
 
 export function getWrapperId(appName: string) {
