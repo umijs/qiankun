@@ -71,7 +71,8 @@ export function registerMicroApps<T extends object = {}>(
   window.__POWERED_BY_QIANKUN__ = true;
 
   // Each app only needs to be registered once
-  const unregisteredApps = apps.filter(app => !microApps.map(registeredApp => registeredApp.name).includes(app.name));
+  const unregisteredApps = apps.filter(app => !microApps.some(registeredApp => registeredApp.name === app.name));
+
   microApps = [...microApps, ...unregisteredApps];
 
   let prevAppUnmountedDeferred: Deferred<void>;
