@@ -17,7 +17,10 @@ declare global {
   }
 }
 
-const rawHtmlAppendChild = HTMLElement.prototype.appendChild;
+const rawHeadAppendChild = HTMLHeadElement.prototype.appendChild;
+const rawHeadRemoveChild = HTMLHeadElement.prototype.removeChild;
+const rawAppendChild = HTMLElement.prototype.appendChild;
+const rawRemoveChild = HTMLElement.prototype.removeChild;
 
 const SCRIPT_TAG_NAME = 'SCRIPT';
 const LINK_TAG_NAME = 'LINK';
@@ -45,10 +48,15 @@ function assertElementExist(appName: string, element: Element | null) {
   if (!element) throw new Error(`[qiankun]: ${appName} wrapper with id ${getWrapperId(appName)} not ready!`);
 }
 
+/**
+ * Just hijack dynamic head append, that could avoid accidentally hijacking the insertion of elements such as div
+ * @param appName
+ * @param proxy
+ */
 export default function hijack(appName: string, proxy: Window): Freer {
   const dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
 
-  HTMLElement.prototype.appendChild = function appendChild<T extends Node>(this: HTMLElement, newChild: T) {
+  HTMLHeadElement.prototype.appendChild = function appendChild<T extends Node>(this: HTMLHeadElement, newChild: T) {
     const element = newChild as any;
     if (element.tagName) {
       switch (element.tagName) {
@@ -69,10 +77,10 @@ export default function hijack(appName: string, proxy: Window): Freer {
 
             const appWrapper = document.getElementById(getWrapperId(appName));
             assertElementExist(appName, appWrapper);
-            return rawHtmlAppendChild.call(appWrapper, stylesheetElement) as T;
+            return rawAppendChild.call(appWrapper, stylesheetElement) as T;
           }
 
-          return rawHtmlAppendChild.call(this, element) as T;
+          return rawHeadAppendChild.call(this, element) as T;
         }
 
         case SCRIPT_TAG_NAME: {
@@ -105,14 +113,14 @@ export default function hijack(appName: string, proxy: Window): Freer {
             const dynamicScriptCommentElement = document.createComment(`dynamic script ${src} replaced by qiankun`);
             const appWrapper = document.getElementById(getWrapperId(appName));
             assertElementExist(appName, appWrapper);
-            return rawHtmlAppendChild.call(appWrapper, dynamicScriptCommentElement) as T;
+            return rawAppendChild.call(appWrapper, dynamicScriptCommentElement) as T;
           }
 
           execScripts(null, [`<script>${text}</script>`], proxy).then(element.onload, element.onerror);
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
           const appWrapper = document.getElementById(getWrapperId(appName));
           assertElementExist(appName, appWrapper);
-          return rawHtmlAppendChild.call(appWrapper, dynamicInlineScriptCommentElement) as T;
+          return rawAppendChild.call(appWrapper, dynamicInlineScriptCommentElement) as T;
         }
 
         default:
@@ -120,11 +128,22 @@ export default function hijack(appName: string, proxy: Window): Freer {
       }
     }
 
-    return rawHtmlAppendChild.call(this, element) as T;
+    return rawHeadAppendChild.call(this, element) as T;
+  };
+
+  HTMLHeadElement.prototype.removeChild = function removeChild<T extends Node>(this: HTMLHeadElement, child: T) {
+    const appWrapper = document.getElementById(getWrapperId(appName));
+    if (appWrapper?.contains(child)) {
+      return rawRemoveChild.call(appWrapper, child) as T;
+    }
+
+    return rawHeadRemoveChild.call(this, child) as T;
   };
 
   return function free() {
-    HTMLElement.prototype.appendChild = rawHtmlAppendChild;
+    HTMLHeadElement.prototype.appendChild = rawHeadAppendChild;
+    HTMLHeadElement.prototype.removeChild = rawHeadRemoveChild;
+
     dynamicStyleSheetElements.forEach(stylesheetElement => {
       /*
          With a styled-components generated style element, we need to record its cssRules for restore next re-mounting time.

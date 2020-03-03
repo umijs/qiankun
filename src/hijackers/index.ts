@@ -5,7 +5,7 @@
 
 import { noop } from 'lodash';
 import { Freer } from '../interfaces';
-import hijackDynamicAppend from './dynamicAppend';
+import hijackDynamicAppend from './dynamicHeadAppend';
 import hijackHistoryListener from './historyListener';
 import hijackTimer from './timer';
 import hijackWindowListener from './windowListener';
