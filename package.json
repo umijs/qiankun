@@ -56,7 +56,7 @@
   "homepage": "https://github.com/kuitos/qiankun#readme",
   "dependencies": {
     "@babel/runtime": "^7.5.5",
-    "import-html-entry": "^1.4.0",
+    "import-html-entry": "^1.4.1",
     "lodash": "^4.17.11",
     "single-spa": "^4.4.3",
     "tslib": "^1.10.0"
