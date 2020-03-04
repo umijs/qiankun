@@ -14,7 +14,7 @@ As we know what micro-frontends aims for:
 
 Modularity is very important for large application. By breaking down a large system into individual sub-applications, we can achieve good divide-and-conquer between products and when necessary combination, especially for enterprise applications that usually involve multi-team collaboration. But if you're trying to implement such a micro frontends architecture system by yourself, you're likely to run into some tricky problems:
 
-- In what form do subapplications publish static resources?
+- In what form do sub applications publish static resources?
 - How does the main application integrate individual sub-applications?
 - How do you ensure that sub-applications are independent of each other (development independent, deployment independent) and runtime isolated?
 - Performance issues? What about public dependencies?
@@ -36,15 +36,14 @@ https://qiankun.umijs.org/
 
 ## 💿 Getting started
 
-This repo contains an `examples` folder with a sample Shell app and multiple mounted Micro FE apps.
-To run this app, first clone `qiankun`
+This repo contains an `examples` folder with a sample Shell app and multiple mounted Micro FE apps. To run this app, first clone `qiankun`:
 
 ```shell
 $ git clone git@github.com:umijs/qiankun.git
 $ cd qiankun
 ```
 
-Now run the yarn scripts to install and run the examples project
+Now run the yarn scripts to install and run the examples project:
 
 ```shell
 $ yarn install
@@ -52,7 +51,7 @@ $ yarn examples:install
 $ yarn examples:start
 ```
 
-Visit `http://localhost:7099`
+Visit `http://localhost:7099`.
 
 ![](./examples/example.gif)
 
