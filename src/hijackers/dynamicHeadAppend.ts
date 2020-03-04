@@ -48,6 +48,10 @@ function assertElementExist(appName: string, element: Element | null) {
   if (!element) throw new Error(`[qiankun]: ${appName} wrapper with id ${getWrapperId(appName)} not ready!`);
 }
 
+function getWrapperElement(appName: string) {
+  return document.getElementById(getWrapperId(appName));
+}
+
 /**
  * Just hijack dynamic head append, that could avoid accidentally hijacking the insertion of elements except in head.
  * Such a case: ReactDOM.createPortal(<style>.test{color:blue}</style>, container),
@@ -77,7 +81,7 @@ export default function hijack(appName: string, proxy: Window): Freer {
           if (activated) {
             dynamicStyleSheetElements.push(stylesheetElement);
 
-            const appWrapper = document.getElementById(getWrapperId(appName));
+            const appWrapper = getWrapperElement(appName);
             assertElementExist(appName, appWrapper);
             return rawAppendChild.call(appWrapper, stylesheetElement) as T;
           }
@@ -113,14 +117,14 @@ export default function hijack(appName: string, proxy: Window): Freer {
             );
 
             const dynamicScriptCommentElement = document.createComment(`dynamic script ${src} replaced by qiankun`);
-            const appWrapper = document.getElementById(getWrapperId(appName));
+            const appWrapper = getWrapperElement(appName);
             assertElementExist(appName, appWrapper);
             return rawAppendChild.call(appWrapper, dynamicScriptCommentElement) as T;
           }
 
           execScripts(null, [`<script>${text}</script>`], proxy).then(element.onload, element.onerror);
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
-          const appWrapper = document.getElementById(getWrapperId(appName));
+          const appWrapper = getWrapperElement(appName);
           assertElementExist(appName, appWrapper);
           return rawAppendChild.call(appWrapper, dynamicInlineScriptCommentElement) as T;
         }
@@ -134,7 +138,7 @@ export default function hijack(appName: string, proxy: Window): Freer {
   };
 
   HTMLHeadElement.prototype.removeChild = function removeChild<T extends Node>(this: HTMLHeadElement, child: T) {
-    const appWrapper = document.getElementById(getWrapperId(appName));
+    const appWrapper = getWrapperElement(appName);
     if (appWrapper?.contains(child)) {
       return rawRemoveChild.call(appWrapper, child) as T;
     }
@@ -165,8 +169,10 @@ export default function hijack(appName: string, proxy: Window): Freer {
 
     return function rebuild() {
       dynamicStyleSheetElements.forEach(stylesheetElement => {
-        // Using document.head.appendChild ensures that appendChild calls can also directly use the HTMLElement.prototype.appendChild method that is overwritten
-        document.head.appendChild(stylesheetElement);
+        // re-append the dynamic stylesheet to sub-app container
+        const appWrapper = getWrapperElement(appName);
+        assertElementExist(appName, appWrapper);
+        rawAppendChild.call(appWrapper, stylesheetElement);
 
         /*
         get the stored css rules from styled-components generated element, and the re-insert rules for them.
