@@ -58,9 +58,10 @@ function getWrapperElement(appName: string) {
  * this could made we append the style element into app wrapper but it will cause an error while the react portal unmounting, as ReactDOM could not find the style in body children list.
  * @param appName
  * @param proxy
+ * @param mounting
  */
-export default function hijack(appName: string, proxy: Window): Freer {
-  const dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
+export default function hijack(appName: string, proxy: Window, mounting = true): Freer {
+  let dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
 
   HTMLHeadElement.prototype.appendChild = function appendChild<T extends Node>(this: HTMLHeadElement, newChild: T) {
     const element = newChild as any;
@@ -172,7 +173,9 @@ export default function hijack(appName: string, proxy: Window): Freer {
         // re-append the dynamic stylesheet to sub-app container
         const appWrapper = getWrapperElement(appName);
         assertElementExist(appName, appWrapper);
-        rawAppendChild.call(appWrapper, stylesheetElement);
+        // Using document.head.appendChild ensures that appendChild calls
+        // can also directly use the HTMLHeadElement.prototype.appendChild method which is overwritten at mounting phase
+        document.head.appendChild.call(appWrapper!, stylesheetElement);
 
         /*
         get the stored css rules from styled-components generated element, and the re-insert rules for them.
@@ -190,6 +193,11 @@ export default function hijack(appName: string, proxy: Window): Freer {
           }
         }
       });
+
+      // As the hijacker will be invoked every mounting phase, we could release the cache for gc after rebuilding
+      if (mounting) {
+        dynamicStyleSheetElements = [];
+      }
     };
   };
 }
