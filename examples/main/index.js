@@ -41,6 +41,12 @@ registerMicroApps(
       activeRule: genActiveRule('/react15'),
     },
     {
+      name: 'vue',
+      entry: '//localhost:7101',
+      render,
+      activeRule: genActiveRule('/vue'),
+    },
+    {
       name: 'angular9',
       entry: '//localhost:7103',
       render,
@@ -83,14 +89,4 @@ start({
 
 runAfterFirstMounted(() => {
   console.log('[MainApp] first app mounted');
-
-  // Incremental register the new app
-  registerMicroApps([
-    {
-      name: 'vue',
-      entry: '//localhost:7101',
-      render,
-      activeRule: genActiveRule('/vue'),
-    },
-  ]);
 });
