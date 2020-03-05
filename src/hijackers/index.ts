@@ -15,5 +15,5 @@ export function hijackAtMounting(appName: string, proxy: Window): Freer[] {
 }
 
 export function hijackAtBootstrapping(appName: string, proxy: Window): Freer[] {
-  return [process.env.NODE_ENV === 'development' ? hijackDynamicAppend(appName, proxy) : () => () => noop];
+  return [process.env.NODE_ENV === 'development' ? hijackDynamicAppend(appName, proxy, false) : () => () => noop];
 }
