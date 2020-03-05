@@ -15,6 +15,7 @@
   "dependencies": {
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
+    "vue": "^2.6.11",
     "zone.js": "^0.10.2"
   }
 }
