@@ -173,8 +173,8 @@ export default function hijack(appName: string, proxy: Window, mounting = true):
         // re-append the dynamic stylesheet to sub-app container
         const appWrapper = getWrapperElement(appName);
         assertElementExist(appName, appWrapper);
-        // Using document.head.appendChild ensures that appendChild calls can also directly use the HTMLElement.prototype.appendChild method,
-        // which is overwritten at mounting phase
+        // Using document.head.appendChild ensures that appendChild calls
+        // can also directly use the HTMLHeadElement.prototype.appendChild method which is overwritten at mounting phase
         document.head.appendChild.call(appWrapper!, stylesheetElement);
 
         /*
