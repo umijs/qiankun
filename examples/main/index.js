@@ -1,18 +1,15 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
 import { registerMicroApps, runAfterFirstMounted, setDefaultMountApp, start } from '../../es';
-import Framework from './Framework';
+import './index.less';
 
 // for angular subapp
 import 'zone.js';
 
 /**
- * react 版本的 render 示例
+ * 主应用 **可以使用任意技术栈**
+ * 以下分别是 React 和 Vue 的示例，可切换尝试
  */
-function render({ appContent, loading }) {
-  const container = document.getElementById('container');
-  ReactDOM.render(<Framework content={appContent} loading={loading} />, container);
-}
+import render from './render/ReactRender';
+// import render from './render/VueRender'
 
 function genActiveRule(routerPrefix) {
   return location => location.pathname.startsWith(routerPrefix);
