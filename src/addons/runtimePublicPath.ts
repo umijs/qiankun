@@ -22,7 +22,7 @@ export default function getAddOn(global: Window, publicPath = '/'): LifeCycles<a
       }
     },
 
-    async afterUnmount() {
+    async beforeUnmount() {
       if (rawPublicPath === undefined) {
         // eslint-disable-next-line no-param-reassign
         delete global.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
