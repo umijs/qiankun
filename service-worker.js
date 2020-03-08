@@ -27,11 +27,11 @@ self.addEventListener('message', (event) => {
 self.__precacheManifest = [
   {
     "url": "404.html",
-    "revision": "9ed723b48c286d7074427b50e3f36072"
+    "revision": "28e61ac76459eadc705160a18e28ffa5"
   },
   {
     "url": "api/index.html",
-    "revision": "9b79399ac28f6b8c28520950543eb15c"
+    "revision": "1591acd48d0041d67a1e0b35b85d5cb2"
   },
   {
     "url": "assets/css/0.styles.bedefebe.css",
@@ -102,44 +102,44 @@ self.__precacheManifest = [
     "revision": "27d455a8718052f2d7262dd10f5fcf53"
   },
   {
-    "url": "assets/js/app.9d8e383a.js",
-    "revision": "e804f6cd239df638b445c8d76616df1e"
+    "url": "assets/js/app.deb31eed.js",
+    "revision": "3c4f36ebc5bb1e63641f4dd9462f94c3"
   },
   {
     "url": "faq/index.html",
-    "revision": "3349a6a41732de9b7d038fa081676a56"
+    "revision": "7149042b589446ef4bcd251786bfb478"
   },
   {
     "url": "guide/getting-started.html",
-    "revision": "2a7a3502899fc9f716a092ecf11fd1e3"
+    "revision": "da3007e2922e2c03fdb185c65a53e0b7"
   },
   {
     "url": "guide/index.html",
-    "revision": "ddcfe48f22f1e0847f2022135f616179"
+    "revision": "59b533a86e682c3f7e73262969b0490b"
   },
   {
     "url": "index.html",
-    "revision": "95eaffe8e898fe5fa341f98ca09a8f19"
+    "revision": "0d6a1b0ddaff243ba6b0c3a81971ed08"
   },
   {
     "url": "zh/api/index.html",
-    "revision": "0d57bfabafa14f85bb099575ef50d458"
+    "revision": "bf526ca6b718860d3d0281b87e3638df"
   },
   {
     "url": "zh/faq/index.html",
-    "revision": "64b5cac3d11bc13c5bca7b1d154dcf2d"
+    "revision": "5bb7b1889aa80258d2b45034abb2ac04"
   },
   {
     "url": "zh/guide/getting-started.html",
-    "revision": "ade6b9092e3dfad486ef8d88e7f04341"
+    "revision": "8ef05b1f33bfb4b95b4dd8f453bbd542"
   },
   {
     "url": "zh/guide/index.html",
-    "revision": "917291348f633cb935fd4bbb81657641"
+    "revision": "3481e7bba41e016086938bb4b91112a3"
   },
   {
     "url": "zh/index.html",
-    "revision": "f6ee2bca84ea70a34fca4db71146db41"
+    "revision": "bf67ff1e25bb626ad1cfda5c29452037"
   }
 ].concat(self.__precacheManifest || []);
 workbox.precaching.precacheAndRoute(self.__precacheManifest, {});
