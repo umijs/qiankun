@@ -1,0 +1,66 @@
+/**
+ * @author Hydrogen
+ * @since 2020-3-8
+ */
+import { SandBox } from '../interfaces';
+
+function iter(obj: object, callbackFn: (prop: any) => void) {
+  // eslint-disable-next-line guard-for-in, no-restricted-syntax
+  for (const prop in obj) {
+    callbackFn(prop);
+  }
+}
+
+/**
+ * 基于 diff 方式实现的沙箱，用于不支持 Proxy 的低版本浏览器
+ */
+export default class SnapshotSandbox implements SandBox {
+  proxy: WindowProxy;
+
+  name: string;
+
+  sandboxRunning = false;
+
+  private windosSnapshot!: Window;
+
+  private modifyPropsMap: Record<any, any> = {};
+
+  constructor(name: string) {
+    this.name = name;
+    this.proxy = window;
+    this.active();
+  }
+
+  active() {
+    if (this.sandboxRunning) {
+      return;
+    }
+
+    // 记录当前快照
+    this.windosSnapshot = {} as Window;
+    iter(window, prop => {
+      this.windosSnapshot[prop] = window[prop];
+    });
+
+    // 恢复之前的变更
+    Object.keys(this.modifyPropsMap).forEach((p: any) => {
+      window[p] = this.modifyPropsMap[p];
+    });
+
+    this.sandboxRunning = true;
+  }
+
+  inactive() {
+    this.modifyPropsMap = {};
+
+    iter(window, prop => {
+      if (window[prop] !== this.windosSnapshot[prop]) {
+        // 记录变更，恢复环境
+        this.modifyPropsMap[prop] = window[prop];
+        window[prop] = this.windosSnapshot[prop];
+      }
+    });
+
+    this.sandboxRunning = false;
+  }
+}
