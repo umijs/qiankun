@@ -39,7 +39,7 @@ https://qiankun.umijs.org/
 This repo contains an `examples` folder with a sample Shell app and multiple mounted Micro FE apps. To run this app, first clone `qiankun`:
 
 ```shell
-$ git clone git@github.com:umijs/qiankun.git
+$ git clone https://github.com/umijs/qiankun.git
 $ cd qiankun
 ```
 
