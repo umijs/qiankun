@@ -28,8 +28,14 @@ export type RegistrableApp<T extends object = {}> = {
   props?: T; // props pass through to app
 };
 
+export type Prefetch =
+  | boolean
+  | 'all'
+  | string[]
+  | ((apps: RegistrableApp[]) => { mainAppStartingAppsName: string[]; firstMountedAppsName: string[] });
+
 export type StartOpts = {
-  prefetch?: boolean | 'all';
+  prefetch?: Prefetch;
   jsSandbox?: boolean;
   singular?: boolean | ((app: RegistrableApp<any>) => Promise<boolean>);
 } & ImportEntryOpts;

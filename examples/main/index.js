@@ -78,7 +78,7 @@ setDefaultMountApp('/react16');
  * Step4 启动应用
  */
 start({
-  prefetch: true,
+  prefetch: ['react16', 'react15', 'vue'],
   jsSandbox: true,
   singular: true,
   fetch: window.fetch,
