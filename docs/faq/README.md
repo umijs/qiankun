@@ -78,7 +78,7 @@ You need to set your publicPath configuration to an absolute url, and in develop
 }
 ```
 
-## Must a sub app asseta support cors?
+## Must a sub app asset support cors?
 
 Yes it is.
 
