@@ -194,7 +194,7 @@ export function registerMicroApps<T extends object = {}>(
   });
 }
 
-async function declarePrefetch(prefetch: Prefetch, importEntryOpts: ImportEntryOpts) {
+async function doPrefetch(prefetch: Prefetch, importEntryOpts: ImportEntryOpts) {
   const appsName2Apps = (names: string[]): RegistrableApp[] => microApps.filter(app => names.includes(app.name));
   if (Array.isArray(prefetch)) {
     prefetchAfterFirstMounted(appsName2Apps(prefetch as string[]), importEntryOpts);
@@ -221,7 +221,7 @@ async function declarePrefetch(prefetch: Prefetch, importEntryOpts: ImportEntryO
 export function start(opts: StartOpts = {}) {
   const { prefetch = true, jsSandbox = true, singular = true, ...importEntryOpts } = opts;
 
-  declarePrefetch(prefetch, importEntryOpts);
+  doPrefetch(prefetch, importEntryOpts);
 
   if (jsSandbox) {
     useJsSandbox = jsSandbox;
