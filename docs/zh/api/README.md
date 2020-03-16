@@ -39,7 +39,7 @@
   - `RegisterMicroAppsOpts`
 
     - fetch - `Function` - 可选
-    - getDomain - `Function` - 可选
+    - getPublicPath - `(url: string) => string` - 可选
     - getTemplate - `(tpl: string) => string` - 可选
 
 - 用法

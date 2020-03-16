@@ -87,7 +87,87 @@ runtime publicPath 主要解决的是子应用动态载入的 脚本、样式、
 
 由于 qiankun 是通过 fetch 去获取子应用的引入的静态资源的，所以必须要求这些静态资源支持[跨域](https://developer.mozilla.org/zh/docs/Web/HTTP/Access_control_CORS)。
 
+如果是自己的脚本，可以通过开发服务端跨域来支持。如果是三方脚本且无法为其添加跨域头，可以将脚本拖到本地，由自己的服务器 serve 来支持跨域。
+
 参考：[Nginx 跨域配置](https://segmentfault.com/a/1190000012550346)
+
+## 如何解决由于运营商动态插入的脚本加载异常导致子应用加载失败的问题
+
+运营商插入的脚本通常会用 async 标记从而避免 block 子应用的加载，这种通常没问题，如：
+
+```html
+<script async src="//www.rogue.com/rogue.js"></script>
+```
+
+但如果有些插入的脚本不是被标记成 async 的，这类脚本一旦运行失败，将会导致整个应用被 block 且后续的脚本也不再执行。我们可以通过以下几个方式来解决这个问题：
+
+### 使用自定义的 getTemplate 方法
+
+通过自己实现的 getTemplate 方法过滤子应用 HTML 模板中的异常脚本
+
+```js
+import { registerMicroApps, start } from 'qiankun';
+
+const customImportConfig = {
+  getTemplate(tpl) {
+    return tpl.replace('<script src="/to-be-replaced.js"><script>', '');
+  }
+};
+
+registerMicroApps(
+  [{ name: 'app1', entry: '//localhost:8080', render, activeRule: location => location.pathname.startsWith('/react')}],
+  {},
+  customImportConfig,
+);
+
+start(customImportConfig);
+```
+
+### 使用自定义的 fetch 方法
+
+通过自己实现的 fetch 方法拦截有问题的脚本
+
+```js
+import { registerMicroApps, start } from 'qiankun';
+
+const customImportConfig = {
+  fetch(url, ...args) {
+    if (url === 'http://to-be-replaced.js')  
+      return {  
+        async text() { return '' }
+      };
+    
+    return window.fetch(url, ...args);
+  }
+};
+
+registerMicroApps(
+  [{ name: 'app1', entry: '//localhost:8080', render, activeRule: location => location.pathname.startsWith('/react')}],
+  {},
+  customImportConfig,
+);
+
+start(customImportConfig);
+```
+
+### 将子应用的 HTML 的 response content-type 改为 text/plain（终极方案）
+
+原理是运营商只能识别 response content-type 为 text/html 的请求并插入脚本，text/plain 类型的响应则不会被劫持。
+
+修改子应用 HTML 的 content-type 方法可以自行 google，也有一个更简单高效的方案：
+
+1. 子应用发布时从 index.html 复制出一个 index.txt 文件出来
+
+2. 将主应用中的 entry 改为 txt 地址，如：
+
+   ```diff
+   registerMicroApps(
+     [
+   -    { name: 'app1', entry: '//localhost:8080/index.html', render, activeRule },
+   +    { name: 'app1', entry: '//localhost:8080/index.txt', render, activeRule },
+     ],
+   );
+   ```
 
 ## 如何确保主应用跟子应用之间的样式隔离
 

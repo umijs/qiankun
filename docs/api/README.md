@@ -39,7 +39,7 @@
   - `RegisterMicroAppsOpts`
 
     - fetch - `Function` - optional
-    - getDomain - `Function` - optional
+    - getPublicPath - `(url: string) => string` - optional
     - getTemplate - `(tpl: string) => string` - optional
 
 - Usage
