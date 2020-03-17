@@ -21,7 +21,7 @@ export default class SnapshotSandbox implements SandBox {
 
   sandboxRunning = false;
 
-  private windosSnapshot!: Window;
+  private windowSnapshot!: Window;
 
   private modifyPropsMap: Record<any, any> = {};
 
@@ -37,9 +37,9 @@ export default class SnapshotSandbox implements SandBox {
     }
 
     // 记录当前快照
-    this.windosSnapshot = {} as Window;
+    this.windowSnapshot = {} as Window;
     iter(window, prop => {
-      this.windosSnapshot[prop] = window[prop];
+      this.windowSnapshot[prop] = window[prop];
     });
 
     // 恢复之前的变更
@@ -54,10 +54,10 @@ export default class SnapshotSandbox implements SandBox {
     this.modifyPropsMap = {};
 
     iter(window, prop => {
-      if (window[prop] !== this.windosSnapshot[prop]) {
+      if (window[prop] !== this.windowSnapshot[prop]) {
         // 记录变更，恢复环境
         this.modifyPropsMap[prop] = window[prop];
-        window[prop] = this.windosSnapshot[prop];
+        window[prop] = this.windowSnapshot[prop];
       }
     });
 
