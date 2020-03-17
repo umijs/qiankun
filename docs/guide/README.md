@@ -57,7 +57,7 @@ Check this artical [Why Not Iframe](https://www.yuque.com/kuitos/gky7yw/gesexv)
 
 - 📦 **Based On [single-spa](https://github.com/CanopyTax/single-spa)** , provide a more out-of-box APIs.
 - 📱 **Technology Agnostic**，any javascript framework can use/integrate, whether React/Vue/Angular/JQuery or the others.
-- 🦾 **HTML Entry access mode**, allows you to access the son as simple application like use the iframe.
+- 💪 **HTML Entry access mode**, allows you to access the son as simple application like use the iframe.
 - 🛡 **Style Isolation**, make sure styles don't interfere with each other.
 - 🧳 **JS Sandbox**, ensure that global variables/events do not conflict between sub-applications.
 - ⚡ **Prefetch Assets**, prefetch unopened sub-application assets during the browser idle time to speed up the sub-application opening speed.
