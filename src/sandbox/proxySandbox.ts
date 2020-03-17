@@ -72,7 +72,7 @@ export default class ProxySandbox implements SandBox {
         }
 
         if (process.env.NODE_ENV === 'development') {
-          console.warn(`Try to set window.${p.toString()} while js sandbox destroyed or not active in ${name}!`);
+          console.warn(`[qiankun] Set window.${p.toString()} while jsSandbox destroyed or inactive in ${name}!`);
         }
 
         // 在 strict-mode 下，Proxy 的 handler.set 返回 false 会抛出 TypeError，在沙箱卸载的情况下应该忽略错误
@@ -126,6 +126,13 @@ export default class ProxySandbox implements SandBox {
   }
 
   inactive() {
+    if (process.env.NODE_ENV === 'development') {
+      console.info(`[qiankun:sandbox] ${this.name} modified global properties restore...`, [
+        ...this.addedPropsMapInSandbox.keys(),
+        ...this.modifiedPropsOriginalValueMapInSandbox.keys(),
+      ]);
+    }
+
     // renderSandboxSnapshot = snapshot(currentUpdatedPropsValueMapForSnapshot);
     // restore global props to initial snapshot
     this.modifiedPropsOriginalValueMapInSandbox.forEach((v, p) => setWindowProp(p, v));

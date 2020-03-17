@@ -4,7 +4,7 @@
  */
 import { getMountedApps, navigateToUrl } from 'single-spa';
 
-const firstMountLogLabel = '[qiankun]: first app mounted';
+const firstMountLogLabel = '[qiankun] first app mounted';
 if (process.env.NODE_ENV === 'development') {
   console.time(firstMountLogLabel);
 }
@@ -22,7 +22,9 @@ export function setDefaultMountApp(defaultAppLink: string) {
 }
 
 export function runDefaultMountEffects(defaultAppLink: string) {
-  console.warn('runDefaultMountEffects will be removed in next version, please use setDefaultMountApp instead!');
+  console.warn(
+    '[qiankun] runDefaultMountEffects will be removed in next version, please use setDefaultMountApp instead',
+  );
   setDefaultMountApp(defaultAppLink);
 }
 

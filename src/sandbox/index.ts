@@ -4,7 +4,7 @@
  */
 import { hijackAtBootstrapping, hijackAtMounting } from '../hijackers';
 import { Freer, Rebuilder, SandBox } from '../interfaces';
-import ProxySandBox from './proxySandbox';
+import ProxySandbox from './proxySandbox';
 import SnapshotSandbox from './snapshotSandbox';
 
 /**
@@ -27,7 +27,13 @@ export function genSandbox(appName: string) {
 
   let sideEffectsRebuilders: Rebuilder[] = [];
 
-  const sandbox: SandBox = window.Proxy ? new ProxySandBox(appName) : new SnapshotSandbox(appName);
+  let sandbox: SandBox;
+  if (window.Proxy) {
+    sandbox = new ProxySandbox(appName);
+  } else {
+    console.warn('[qiankun] Miss window.Proxy, proxySandbox degenerate into snapshotSandbox');
+    sandbox = new SnapshotSandbox(appName);
+  }
 
   // some side effect could be be invoked while bootstrapping, such as dynamic stylesheet injection with style-loader, especially during the development phase
   const bootstrappingFreers = hijackAtBootstrapping(appName, sandbox.proxy);

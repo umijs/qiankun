@@ -130,7 +130,7 @@ export function registerMicroApps<T extends object = {}>(
         if (!isFunction(bootstrapApp) || !isFunction(mount) || !isFunction(unmount)) {
           if (process.env.NODE_ENV === 'development') {
             console.warn(
-              `LifeCycles are not found from ${appName} entry exports, fallback to get them from window['${appName}'] `,
+              `[qiankun] lifecycle not found from ${appName} entry exports, fallback to get from window['${appName}']`,
             );
           }
 
@@ -142,7 +142,7 @@ export function registerMicroApps<T extends object = {}>(
           // eslint-disable-next-line prefer-destructuring
           unmount = globalVariableExports.unmount;
           if (!isFunction(bootstrapApp) || !isFunction(mount) || !isFunction(unmount)) {
-            throw new Error(`You need to export the functional lifecycles in ${appName} entry`);
+            throw new Error(`[qiankun] You need to export lifecycle functions in ${appName} entry`);
           }
         }
 
@@ -210,12 +210,18 @@ export function start(opts: StartOpts = {}) {
       break;
   }
 
-  if (jsSandbox) {
-    useJsSandbox = jsSandbox;
-  }
-
   if (singular) {
     singularMode = singular;
+  }
+
+  if (jsSandbox) {
+    // 快照沙箱不支持非 singular 模式
+    if (!window.Proxy && !singular) {
+      console.error('[qiankun] singular is forced to be true when jsSandbox enable but proxySandbox unavailable');
+      singularMode = true;
+    }
+
+    useJsSandbox = jsSandbox;
   }
 
   startSingleSpa();

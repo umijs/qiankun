@@ -45,7 +45,7 @@ function setCachedRules(element: HTMLStyleElement, cssRules: CSSRuleList) {
 }
 
 function assertElementExist(appName: string, element: Element | null) {
-  if (!element) throw new Error(`[qiankun]: ${appName} wrapper with id ${getWrapperId(appName)} not ready!`);
+  if (!element) throw new Error(`[qiankun] ${appName} wrapper with id ${getWrapperId(appName)} not ready!`);
 }
 
 function getWrapperElement(appName: string) {

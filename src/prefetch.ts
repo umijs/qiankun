@@ -87,7 +87,7 @@ export function prefetchAfterFirstMounted(apps: RegistrableApp[], opts?: ImportE
       const notMountedApps = apps.filter(app => mountedApps.indexOf(app.name) === -1);
 
       if (process.env.NODE_ENV === 'development') {
-        console.log(`prefetch starting after ${mountedApps} mounted...`, notMountedApps);
+        console.log(`[qiankun] prefetch starting after ${mountedApps} mounted...`, notMountedApps);
       }
 
       notMountedApps.forEach(({ name, entry }) => prefetch(name, entry, opts));
@@ -101,7 +101,7 @@ export function prefetchAll(apps: RegistrableApp[], opts?: ImportEntryOpts): voi
     'single-spa:no-app-change',
     () => {
       if (process.env.NODE_ENV === 'development') {
-        console.log('prefetch starting for all assets...', apps);
+        console.log('[qiankun] prefetch starting for all assets...', apps);
       }
       apps.forEach(({ name, entry }) => prefetch(name, entry, opts));
     },

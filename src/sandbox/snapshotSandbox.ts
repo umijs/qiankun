@@ -61,6 +61,10 @@ export default class SnapshotSandbox implements SandBox {
       }
     });
 
+    if (process.env.NODE_ENV === 'development') {
+      console.info(`[qiankun:sandbox] ${this.name} origin window restore...`, Object.keys(this.modifyPropsMap));
+    }
+
     this.sandboxRunning = false;
   }
 }
