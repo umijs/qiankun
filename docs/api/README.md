@@ -80,9 +80,15 @@
 
   - `Options`
 
-    - prefetch - `boolean | 'all'` - optional, whether to enable prefetch, default is `true`.
+    - prefetch - `boolean | 'all' | string[] | (( apps: RegistrableApp[] ) => { mainAppStartingAppsName: string[]; firstMountedAppsName: string[] })` - optional, whether to enable prefetch, default is `true`.
 
-      A configuration of `true` starts prefetching static resources for other subapplications after the first subapplication mount completes. If configured as `'all'`, the main application `start` will begin to preload all subapplication static resources.
+      A configuration of `true` starts prefetching static resources for other subapplications after the first subapplication mount completes.
+  
+      If configured as `'all'`, the main application `start` will begin to preload all subapplication static resources.
+
+      If configured as `string[]`, starts prefetching static resources for subapplications after the first subapplication mount completes which be declared in this list.
+
+      If configured as `function`, the timing of all subapplication static resources will be controlled by yourself.
 
     - jsSandbox - `boolean` - optional, whether to open the js sandbox, default is `true`.
 
