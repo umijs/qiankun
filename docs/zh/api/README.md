@@ -80,9 +80,14 @@
 
   - `Options`
 
-    - prefetch - `boolean | 'all'` - 可选，是否开启预加载，默认为 `true`。
+    - prefetch - `boolean | 'all' | string[] | (( apps: RegistrableApp[] ) => { mainAppStartingAppsName: string[]; firstMountedAppsName: string[] })`
+    - 可选，是否开启预加载，默认为 `true`。
 
-      配置为 `true` 则会在第一个子应用 mount 完成后开始预加载其他子应用的静态资源。配置为 `'all'` 则主应用 `start` 后即开始预加载所有子应用静态资源。
+      配置为 `true` 则会在第一个子应用 mount 完成后开始预加载其他子应用的静态资源，配置为 `'all'` 则主应用 `start` 后即开始预加载所有子应用静态资源。
+
+      配置为 `string[]` 则会在第一个子应用 mounted 后开始加载数组内的子应用资源
+
+      配置为 `function` 则可完全自定义应用的资源加载时机 (首个子应用 mounted，或主应用 starting)
 
     - jsSandbox - `boolean` - 可选，是否开启沙箱，默认为 `true`。
 

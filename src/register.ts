@@ -2,7 +2,7 @@ import { importEntry, ImportEntryOpts } from 'import-html-entry';
 import { concat, flow, identity, isFunction, mergeWith } from 'lodash';
 import { registerApplication, start as startSingleSpa } from 'single-spa';
 import getAddOns from './addons';
-import { RegistrableApp, StartOpts } from './interfaces';
+import { RegistrableApp, StartOpts, Prefetch } from './interfaces';
 import { prefetchAfterFirstMounted, prefetchAll } from './prefetch';
 import { genSandbox } from './sandbox';
 import { getDefaultTplWrapper } from './utils';
@@ -194,21 +194,34 @@ export function registerMicroApps<T extends object = {}>(
   });
 }
 
+async function doPrefetch(prefetch: Prefetch, importEntryOpts: ImportEntryOpts) {
+  const appsName2Apps = (names: string[]): RegistrableApp[] => microApps.filter(app => names.includes(app.name));
+  if (Array.isArray(prefetch)) {
+    prefetchAfterFirstMounted(appsName2Apps(prefetch as string[]), importEntryOpts);
+  } else if (isFunction(prefetch)) {
+    const { firstMountedAppsName = [], mainAppStartingAppsName = [] } = await prefetch(microApps);
+    prefetchAfterFirstMounted(appsName2Apps(firstMountedAppsName), importEntryOpts);
+    prefetchAll(appsName2Apps(mainAppStartingAppsName), importEntryOpts);
+  } else {
+    switch (prefetch) {
+      case true:
+        prefetchAfterFirstMounted(microApps, importEntryOpts);
+        break;
+
+      case 'all':
+        prefetchAll(microApps, importEntryOpts);
+        break;
+
+      default:
+        break;
+    }
+  }
+}
+
 export function start(opts: StartOpts = {}) {
   const { prefetch = true, jsSandbox = true, singular = true, ...importEntryOpts } = opts;
 
-  switch (prefetch) {
-    case true:
-      prefetchAfterFirstMounted(microApps, importEntryOpts);
-      break;
-
-    case 'all':
-      prefetchAll(microApps, importEntryOpts);
-      break;
-
-    default:
-      break;
-  }
+  doPrefetch(prefetch, importEntryOpts);
 
   if (jsSandbox) {
     useJsSandbox = jsSandbox;
