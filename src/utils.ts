@@ -22,7 +22,7 @@ export function isConstructable(fn: () => void | FunctionConstructor) {
 }
 
 export function getDefaultTplWrapper(appName: string) {
-  return (tpl: string) => `<div id="${getWrapperId(appName)}">${tpl}</div>`;
+  return (tpl: string) => `<span id="${getWrapperId(appName)}">${tpl}</span>`;
 }
 
 export function getWrapperId(appName: string) {
