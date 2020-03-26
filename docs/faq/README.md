@@ -6,9 +6,9 @@ This error thrown as qiankun could not find the exported lifecycle method from y
 
 To solve the exception, try the following steps:
 
-1. check you have exported the specified lifecycles, see the [doc](https://github.com/umijs/qiankun#2-export-the-lifecycles-from-your-sub-app-entry)
+1. check you have exported the specified lifecycles, see the [doc](/guide/getting-started.html#_1-exports-lifecycles-from-sub-app-entry)
 
-2. check you have set the specified configuration with your bundler, see the [doc](https://github.com/umijs/qiankun#3-config-your-sub-app-bundler)
+2. check you have set the specified configuration with your bundler, see the [doc](/guide/getting-started.html#_2-config-sub-app-bundler)
 
 3. check your `package.json` name field is unique between sub apps.
 

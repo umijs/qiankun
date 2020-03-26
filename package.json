@@ -69,7 +69,6 @@
     "@vuepress/plugin-pwa": "^1.2.0",
     "babel-plugin-import": "^1.12.1",
     "check-prettier": "^1.0.3",
-    "concurrently": "^4.1.2",
     "father-build": "^1.7.0",
     "husky": "^2.3.0",
     "lint-staged": "^9.4.2",
