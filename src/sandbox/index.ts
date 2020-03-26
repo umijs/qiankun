@@ -2,7 +2,7 @@
  * @author Kuitos
  * @since 2019-04-11
  */
-import { hijackAtBootstrapping, hijackAtMounting } from '../hijackers';
+import { patchAtBootstrapping, patchAtMounting } from './patchers';
 import { Freer, Rebuilder, SandBox } from '../interfaces';
 import ProxySandbox from './proxySandbox';
 import SnapshotSandbox from './snapshotSandbox';
@@ -36,7 +36,7 @@ export function genSandbox(appName: string) {
   }
 
   // some side effect could be be invoked while bootstrapping, such as dynamic stylesheet injection with style-loader, especially during the development phase
-  const bootstrappingFreers = hijackAtBootstrapping(appName, sandbox.proxy);
+  const bootstrappingFreers = patchAtBootstrapping(appName, sandbox.proxy);
 
   return {
     sandbox: sandbox.proxy,
@@ -62,7 +62,7 @@ export function genSandbox(appName: string) {
 
       /* ------------------------------------------ 2. 开启全局变量补丁 ------------------------------------------*/
       // render 沙箱启动时开始劫持各类全局监听，尽量不要在应用初始化阶段有 事件监听/定时器 等副作用
-      mountingFreers = hijackAtMounting(appName, sandbox.proxy);
+      mountingFreers = patchAtMounting(appName, sandbox.proxy);
 
       /* ------------------------------------------ 3. 重置一些初始化时的副作用 ------------------------------------------*/
       // 存在 rebuilder 则表明有些副作用需要重建
