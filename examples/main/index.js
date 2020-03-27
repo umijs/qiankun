@@ -49,6 +49,12 @@ registerMicroApps(
       render,
       activeRule: genActiveRule('/angular9'),
     },
+    {
+      name: 'ssr',
+      entry: '//localhost:7104',
+      render,
+      activeRule: genActiveRule('/ssr'),
+    },
   ],
   {
     beforeLoad: [
