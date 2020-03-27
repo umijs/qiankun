@@ -2,7 +2,7 @@
  * @author Kuitos
  * @since 2019-10-21
  */
-import { execScripts } from 'import-html-entry';
+import { execScripts, ExecScriptsOpts } from 'import-html-entry';
 import { isFunction } from 'lodash';
 import { checkActivityFunctions } from 'single-spa';
 import { Freer } from '../interfaces';
@@ -60,7 +60,12 @@ function getWrapperElement(appName: string) {
  * @param proxy
  * @param mounting
  */
-export default function hijack(appName: string, proxy: Window, mounting = true): Freer {
+export default function hijack(
+  appName: string,
+  proxy: Window,
+  mounting = true,
+  execScriptesOpts: ExecScriptsOpts,
+): Freer {
   let dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
 
   HTMLHeadElement.prototype.appendChild = function appendChild<T extends Node>(this: HTMLHeadElement, newChild: T) {
@@ -94,7 +99,7 @@ export default function hijack(appName: string, proxy: Window, mounting = true):
           const { src, text } = element as HTMLScriptElement;
 
           if (src) {
-            execScripts(null, [src], proxy).then(
+            execScripts(null, [src], proxy, execScriptesOpts).then(
               () => {
                 // we need to invoke the onload event manually to notify the event listener that the script was completed
                 // here are the two typical ways of dynamic script loading
@@ -123,7 +128,10 @@ export default function hijack(appName: string, proxy: Window, mounting = true):
             return rawAppendChild.call(appWrapper, dynamicScriptCommentElement) as T;
           }
 
-          execScripts(null, [`<script>${text}</script>`], proxy).then(element.onload, element.onerror);
+          execScripts(null, [`<script>${text}</script>`], proxy, execScriptesOpts).then(
+            element.onload,
+            element.onerror,
+          );
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
           const appWrapper = getWrapperElement(appName);
           assertElementExist(appName, appWrapper);
