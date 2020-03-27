@@ -136,3 +136,57 @@ In the future qiankun will provide a smarter way to make it automatically.
 Not compatible now, will be supported if enough user appeal for.
 
 If you have to support ie now actually, you could try to disable the `jsSandbox` to make your app work(but not guarantee correctly).
+
+## Does the subApp support server-side-rendering?
+
+> Yes
+
+There is not much difference between `SSR` and `SPA`, when we use `html entry`
+
+The only change is that we need to declare a script tag, to export the `lifecycles`
+
+example:
+
+1. declare entry script
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SSR Example</title>
+</head>
+<body>
+  <div style="display: flex; justify-content: center; align-items: center; height: 200px;">
+    SSR Example
+  </div>
+</body>
+<script src="./entry.js" entry></script>
+</html>
+```
+
+2. export lifecycles in the entry
+
+```javascript
+(global => {
+  global['ssr'] = {
+    bootstrap: () => {
+      console.log('ssr bootstrap');
+      return Promise.resolve();
+    },
+    mount: () => {
+      console.log('ssr mount');
+      return Promise.resolve();
+    },
+    unmount: () => {
+      console.log('ssr unmount');
+      return Promise.resolve();
+    },
+  };
+})(window);
+```
+
+refer to the [ssr examples](https://github.com/umijs/qiankun/tree/master/examples/ssr)
+
+At the same time, [the subApp must support the CORS](/docs/faq/README.html#must-a-sub-app-asset-support-cors)
