@@ -5,7 +5,7 @@
 
 import { isFunction, noop } from 'lodash';
 
-export default function hijack() {
+export default function patch() {
   // FIXME umi unmount feature request
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let rawHistoryListen = (_: any) => noop;

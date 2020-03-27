@@ -8,7 +8,7 @@ import { noop } from 'lodash';
 const rawAddEventListener = window.addEventListener;
 const rawRemoveEventListener = window.removeEventListener;
 
-export default function hijack() {
+export default function patch() {
   const listenerMap = new Map<string, EventListenerOrEventListenerObject[]>();
 
   window.addEventListener = (

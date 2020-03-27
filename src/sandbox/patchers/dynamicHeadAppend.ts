@@ -5,8 +5,8 @@
 import { execScripts } from 'import-html-entry';
 import { isFunction } from 'lodash';
 import { checkActivityFunctions } from 'single-spa';
-import { Freer } from '../interfaces';
-import { getWrapperId } from '../utils';
+import { Freer } from '../../interfaces';
+import { getWrapperId } from '../../utils';
 
 const styledComponentSymbol = Symbol('styled-component');
 
@@ -60,7 +60,7 @@ function getWrapperElement(appName: string) {
  * @param proxy
  * @param mounting
  */
-export default function hijack(appName: string, proxy: Window, mounting = true): Freer {
+export default function patch(appName: string, proxy: Window, mounting = true): Freer {
   let dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
 
   HTMLHeadElement.prototype.appendChild = function appendChild<T extends Node>(this: HTMLHeadElement, newChild: T) {

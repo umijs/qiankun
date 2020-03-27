@@ -4,12 +4,12 @@
  */
 
 import { noop } from 'lodash';
-import { sleep } from '../utils';
+import { sleep } from '../../utils';
 
 const rawWindowInterval = window.setInterval;
 const rawWindowTimeout = window.setTimeout;
 
-export default function hijack() {
+export default function patch() {
   const timerIds: number[] = [];
   const intervalIds: number[] = [];
 
