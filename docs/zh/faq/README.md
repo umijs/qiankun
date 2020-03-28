@@ -219,13 +219,11 @@ qiankun 2.0 版本将提供一种更智能的方式使其自动化。
 
 如果你现在就需要 ie 支持，你可以尝试关掉 `jsSandbox` 配置来让你的应用可以跑在 ie 下（但要承担关掉沙箱后子应用之间可能造成冲突的风险）。
 
-## qiankun 支持服务端渲染子应用吗？
+## 非 webpack 构建的子应用支持接入 qiankun 么？
 
 > 支持
 
-在 `html entry` 在背景下，`服务端渲染的子应用` 与 `SPA 子应用` 并无太大的区别
-
-唯一需要改动的点是，需要声明一个 `script`，用于 `export` 相对应的 `lifecycles`
+需要额外声明一个 `script`，用于 `export` 相对应的 `lifecycles`
 
 例如:
 
@@ -237,11 +235,11 @@ qiankun 2.0 版本将提供一种更智能的方式使其自动化。
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SSR Example</title>
+  <title>Purehtml Example</title>
 </head>
 <body>
   <div style="display: flex; justify-content: center; align-items: center; height: 200px;">
-    SSR Example
+    Purehtml Example
   </div>
 </body>
 
@@ -253,23 +251,23 @@ qiankun 2.0 版本将提供一种更智能的方式使其自动化。
 
 ```javascript
 (global => {
-  global['ssr'] = {
+  global['purehtml'] = {
     bootstrap: () => {
-      console.log('ssr bootstrap');
+      console.log('purehtml bootstrap');
       return Promise.resolve();
     },
     mount: () => {
-      console.log('ssr mount');
+      console.log('purehtml mount');
       return Promise.resolve();
     },
     unmount: () => {
-      console.log('ssr unmount');
+      console.log('purehtml unmount');
       return Promise.resolve();
     },
   };
 })(window);
 ```
 
-你也可以直接参照 examples 中 ssr 部分的[代码](https://github.com/umijs/qiankun/tree/master/examples/ssr)
+你也可以直接参照 examples 中 purehtml 部分的[代码](https://github.com/umijs/qiankun/tree/master/examples/purehtml)
 
 同时，你也需要开启相关资源的 CORS，具体请参照[此处](/docs/zh/faq/README.html#子应用静态资源一定要支持跨域吗)

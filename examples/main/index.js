@@ -50,10 +50,10 @@ registerMicroApps(
       activeRule: genActiveRule('/angular9'),
     },
     {
-      name: 'ssr',
+      name: 'purehtml',
       entry: '//localhost:7104',
       render,
-      activeRule: genActiveRule('/ssr'),
+      activeRule: genActiveRule('/purehtml'),
     },
   ],
   {

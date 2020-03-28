@@ -1,15 +1,15 @@
 (global => {
-  global['ssr'] = {
+  global['purehtml'] = {
     bootstrap: () => {
-      console.log('ssr bootstrap');
+      console.log('purehtml bootstrap');
       return Promise.resolve();
     },
     mount: () => {
-      console.log('ssr mount');
+      console.log('purehtml mount');
       return Promise.resolve();
     },
     unmount: () => {
-      console.log('ssr unmount');
+      console.log('purehtml unmount');
       return Promise.resolve();
     },
   };
