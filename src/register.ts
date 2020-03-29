@@ -2,8 +2,8 @@ import { importEntry, ImportEntryOpts } from 'import-html-entry';
 import { concat, flow, identity, isFunction, mergeWith } from 'lodash';
 import { registerApplication, start as startSingleSpa } from 'single-spa';
 import getAddOns from './addons';
-import { RegistrableApp, StartOpts, Prefetch } from './interfaces';
-import { prefetchAfterFirstMounted, prefetchAll } from './prefetch';
+import { RegistrableApp, StartOpts } from './interfaces';
+import { prefetchApps } from './prefetch';
 import { genSandbox } from './sandbox';
 import { getDefaultTplWrapper } from './utils';
 
@@ -62,6 +62,7 @@ let useJsSandbox = false;
 const frameworkStartedDefer = new Deferred<void>();
 
 let importLoaderConfiguration: ImportEntryOpts = {};
+
 export function getImportLoaderConfiguration() {
   return importLoaderConfiguration;
 }
@@ -192,37 +193,15 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
   });
 }
 
-async function doPrefetch(prefetch: Prefetch, importEntryOpts: ImportEntryOpts) {
-  const appsName2Apps = (names: string[]): RegistrableApp[] => microApps.filter(app => names.includes(app.name));
-  if (Array.isArray(prefetch)) {
-    prefetchAfterFirstMounted(appsName2Apps(prefetch as string[]), importEntryOpts);
-  } else if (isFunction(prefetch)) {
-    const { firstMountedAppsName = [], mainAppStartingAppsName = [] } = await prefetch(microApps);
-    prefetchAfterFirstMounted(appsName2Apps(firstMountedAppsName), importEntryOpts);
-    prefetchAll(appsName2Apps(mainAppStartingAppsName), importEntryOpts);
-  } else {
-    switch (prefetch) {
-      case true:
-        prefetchAfterFirstMounted(microApps, importEntryOpts);
-        break;
-
-      case 'all':
-        prefetchAll(microApps, importEntryOpts);
-        break;
-
-      default:
-        break;
-    }
-  }
-}
-
 export function start(opts: StartOpts = {}) {
   window.__POWERED_BY_QIANKUN__ = true;
 
   const { prefetch = true, jsSandbox = true, singular: singularMode = true, ...importEntryOpts } = opts;
   importLoaderConfiguration = importEntryOpts;
 
-  doPrefetch(prefetch, importLoaderConfiguration);
+  if (prefetch) {
+    prefetchApps(microApps, prefetch, importLoaderConfiguration);
+  }
 
   if (singularMode) {
     singular = singularMode;

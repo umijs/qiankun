@@ -32,7 +32,7 @@ export type Prefetch =
   | boolean
   | 'all'
   | string[]
-  | ((apps: RegistrableApp[]) => { mainAppStartingAppsName: string[]; firstMountedAppsName: string[] });
+  | ((apps: RegistrableApp[]) => { criticalAppNames: string[]; minorAppsName: string[] });
 
 export type StartOpts = {
   prefetch?: Prefetch;
