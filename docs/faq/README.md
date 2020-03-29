@@ -161,7 +161,7 @@ example:
   </div>
 </body>
 
-+ <script src="./entry.js" entry></script>
++ <script src="//yourhost/entry.js" entry></script>
 </html>
 ```
 

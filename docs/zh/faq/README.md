@@ -243,7 +243,7 @@ qiankun 2.0 版本将提供一种更智能的方式使其自动化。
   </div>
 </body>
 
-+ <script src="./entry.js" entry></script>
++ <script src="//yourhost/entry.js" entry></script>
 </html>
 ```
 
