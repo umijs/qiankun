@@ -270,4 +270,4 @@ qiankun 2.0 版本将提供一种更智能的方式使其自动化。
 
 你也可以直接参照 examples 中 purehtml 部分的[代码](https://github.com/umijs/qiankun/tree/master/examples/purehtml)
 
-同时，你也需要开启相关资源的 CORS，具体请参照[此处](/docs/zh/faq/README.html#子应用静态资源一定要支持跨域吗)
+同时，你也需要开启相关资源的 CORS，具体请参照[此处](/zh/faq/#%E5%AD%90%E5%BA%94%E7%94%A8%E9%9D%99%E6%80%81%E8%B5%84%E6%BA%90%E4%B8%80%E5%AE%9A%E8%A6%81%E6%94%AF%E6%8C%81%E8%B7%A8%E5%9F%9F%E5%90%97%EF%BC%9F)
