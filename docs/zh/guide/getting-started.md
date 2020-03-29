@@ -88,7 +88,8 @@ export async function unmount() {
 
 qiankun 基于 single-spa，所以你可以在[这里](https://single-spa.js.org/docs/building-applications.html#registered-application-lifecycle)找到更多关于子应用生命周期相关的文档说明。
 
-无 webpack 等构建工具的应用接入方式请见[这里](/docs/zh/faq/README.html#非-webpack-构建的应用支持接入-qiankun-么)
+
+无 webpack 等构建工具的应用接入方式请见[这里](/zh/faq/#非-webpack-构建的子应用支持接入-qiankun-么？)
 
 ### 2. 配置子应用的打包工具
 
