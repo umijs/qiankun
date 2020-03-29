@@ -4,39 +4,56 @@
  */
 
 import { noop } from 'lodash';
-import { sleep } from '../../utils';
 
 const rawWindowInterval = window.setInterval;
+const rawWindowClearInterval = window.clearInterval;
 const rawWindowTimeout = window.setTimeout;
+const rawWindowClearTimout = window.clearTimeout;
 
 export default function patch() {
-  const timerIds: number[] = [];
-  const intervalIds: number[] = [];
+  let timers: Array<{ id: number; handler: Function; args: any[] }> = [];
+  let intervals: Array<{ id: number; handler: Function; args: any[] }> = [];
 
-  window.setInterval = (...args: any[]) => {
-    // @ts-ignore
-    const intervalId = rawWindowInterval(...args);
-    intervalIds.push(intervalId);
+  // @ts-ignore
+  window.setInterval = (handler: Function, timeout?: number, ...args: any[]) => {
+    const intervalId = rawWindowInterval(handler, timeout, ...args);
+    intervals = [...intervals, { id: intervalId, handler, args }];
     return intervalId;
   };
+  // @ts-ignore
+  window.clearInterval = (intervalId: number) => {
+    intervals = intervals.filter(({ id }) => id !== intervalId);
+    return rawWindowClearInterval(intervalId);
+  };
 
-  (window as Window).setTimeout = (...args: any[]) => {
-    // @ts-ignore
-    const timerId = rawWindowTimeout(...args);
-    timerIds.push(timerId);
+  // @ts-ignore
+  window.setTimeout = (handler: Function, timeout?: number, ...args: any[]) => {
+    const timerId = rawWindowTimeout(handler, timeout, ...args);
+    timers = [...timers, { id: timerId, handler, args }];
     return timerId;
+  };
+  // @ts-ignore
+  window.clearTimeout = (timerId: number) => {
+    timers = timers.filter(({ id }) => id !== timerId);
+    return rawWindowClearTimout(timerId);
   };
 
   return function free() {
     window.setInterval = rawWindowInterval;
+    window.clearInterval = rawWindowClearInterval;
     window.setTimeout = rawWindowTimeout;
+    window.clearTimeout = rawWindowClearTimout;
 
-    timerIds.forEach(async id => {
-      // 延迟 timeout 的清理，因为可能会有动画还没完成
-      await sleep(500);
+    timers.forEach(async ({ handler, id, args }) => {
+      // clear the timers and execute its handler to avoid unclearing effects
+      // such as antd auto close message
+      handler(...args);
       window.clearTimeout(id);
     });
-    intervalIds.forEach(id => {
+
+    intervals.forEach(({ id, args, handler }) => {
+      // clear the interval and execute its handler
+      handler(...args);
       window.clearInterval(id);
     });
 
