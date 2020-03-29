@@ -136,3 +136,56 @@ In the future qiankun will provide a smarter way to make it automatically.
 Not compatible now, will be supported if enough user appeal for.
 
 If you have to support ie now actually, you could try to disable the `jsSandbox` to make your app work(but not guarantee correctly).
+
+## Does qiankun support the subApp without bundler?
+
+> Yes
+
+The only change is that we need to declare a script tag, to export the `lifecycles`
+
+example:
+
+1. declare entry script
+
+```diff
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Purehtml Example</title>
+</head>
+<body>
+  <div style="display: flex; justify-content: center; align-items: center; height: 200px;">
+    Purehtml Example
+  </div>
+</body>
+
++ <script src="./entry.js" entry></script>
+</html>
+```
+
+2. export lifecycles in the entry
+
+```javascript
+(global => {
+  global['purehtml'] = {
+    bootstrap: () => {
+      console.log('purehtml bootstrap');
+      return Promise.resolve();
+    },
+    mount: () => {
+      console.log('purehtml mount');
+      return Promise.resolve();
+    },
+    unmount: () => {
+      console.log('purehtml unmount');
+      return Promise.resolve();
+    },
+  };
+})(window);
+```
+
+refer to the [purehtml examples](https://github.com/umijs/qiankun/tree/master/examples/purehtml)
+
+At the same time, [the subApp must support the CORS](/docs/faq/README.html#must-a-sub-app-asset-support-cors)

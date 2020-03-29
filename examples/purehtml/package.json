@@ -1,0 +1,15 @@
+{
+  "name": "purehtml",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.html",
+  "scripts": {
+    "start": "PORT=7104 http-server . --cors",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^0.12.1"
+  }
+}
