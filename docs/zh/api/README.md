@@ -36,12 +36,6 @@
     - beforeUnmount - `Lifecycle<T> | Array<Lifecycle<T>>` - 可选
     - afterUnmount - `Lifecycle<T> | Array<Lifecycle<T>>` - 可选
 
-  - `RegisterMicroAppsOpts`
-
-    - fetch - `Function` - 可选
-    - getPublicPath - `(url: string) => string` - 可选
-    - getTemplate - `(tpl: string) => string` - 可选
-
 - 用法
 
   主应用中注册子应用的配置信息。
@@ -93,7 +87,9 @@
 
     - singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - 可选，是否为单实例场景，默认为 `true`。
 
-    - fetch - `Fetch` - 可选，自定义的 fetch 方法。
+    - fetch - `Function` - 可选，自定义的 fetch 方法。
+    - getPublicPath - `(url: string) => string` - 可选
+    - getTemplate - `(tpl: string) => string` - 可选
 
 - 用法
 
