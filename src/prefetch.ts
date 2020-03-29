@@ -80,31 +80,27 @@ function prefetch(appName: string, entry: Entry, opts?: ImportEntryOpts): void {
 }
 
 export function prefetchAfterFirstMounted(apps: RegistrableApp[], opts?: ImportEntryOpts): void {
-  window.addEventListener(
-    'single-spa:first-mount',
-    () => {
-      const mountedApps = getMountedApps();
-      const notMountedApps = apps.filter(app => mountedApps.indexOf(app.name) === -1);
+  window.addEventListener('single-spa:first-mount', function listener() {
+    const mountedApps = getMountedApps();
+    const notMountedApps = apps.filter(app => mountedApps.indexOf(app.name) === -1);
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[qiankun] prefetch starting after ${mountedApps} mounted...`, notMountedApps);
-      }
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[qiankun] prefetch starting after ${mountedApps} mounted...`, notMountedApps);
+    }
 
-      notMountedApps.forEach(({ name, entry }) => prefetch(name, entry, opts));
-    },
-    { once: true },
-  );
+    notMountedApps.forEach(({ name, entry }) => prefetch(name, entry, opts));
+
+    window.removeEventListener('single-spa:first-mount', listener);
+  });
 }
 
 export function prefetchAll(apps: RegistrableApp[], opts?: ImportEntryOpts): void {
-  window.addEventListener(
-    'single-spa:no-app-change',
-    () => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[qiankun] prefetch starting for all assets...', apps);
-      }
-      apps.forEach(({ name, entry }) => prefetch(name, entry, opts));
-    },
-    { once: true },
-  );
+  window.addEventListener('single-spa:no-app-change', function listener() {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[qiankun] prefetch starting for all assets...', apps);
+    }
+    apps.forEach(({ name, entry }) => prefetch(name, entry, opts));
+
+    window.removeEventListener('single-spa:no-app-change', listener);
+  });
 }
