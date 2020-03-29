@@ -11,5 +11,5 @@
   "github": {
     "enable": false
   },
-  "alias": ["qiankun.umijs.org"]
+  "alias": ["v1.qiankun.umijs.org"]
 }
