@@ -105,8 +105,7 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
         let mountSandbox = () => Promise.resolve();
         let unmountSandbox = () => Promise.resolve();
         if (useJsSandbox) {
-          const { fetch } = settings || {};
-          const sandbox = genSandbox(appName, { fetch });
+          const sandbox = genSandbox(appName);
           jsSandbox = sandbox.sandbox;
           mountSandbox = sandbox.mount;
           unmountSandbox = sandbox.unmount;

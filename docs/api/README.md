@@ -6,7 +6,6 @@
 
   - apps - `Array<RegistrableApp<T>>` - required, registration information for the child application
   - lifeCycles - `LifeCycles<T>` - optional, global sub app lifecycle hooks
-  - opts - `RegisterMicroAppsOpts` - optional
 
 - Type
 
@@ -35,12 +34,6 @@
     - afterMount - `Lifecycle<T> | Array<Lifecycle<T>>` - optional
     - beforeUnmount - `Lifecycle<T> | Array<Lifecycle<T>>` - optional
     - afterUnmount - `Lifecycle<T> | Array<Lifecycle<T>>` - optional
-
-  - `RegisterMicroAppsOpts`
-
-    - fetch - `Function` - optional
-    - getPublicPath - `(url: string) => string` - optional
-    - getTemplate - `(tpl: string) => string` - optional
 
 - Usage
 
@@ -94,7 +87,11 @@
 
     - singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - optional，whether is a singular mode，default is `true`.
 
-    - fetch - `Fetch` - optional, customized fetch function.
+    - fetch - `Function` - optional
+    
+    - getPublicPath - `(url: string) => string` - optional
+    
+    - getTemplate - `(tpl: string) => string` - optional
 
 - Usage
 
