@@ -2,10 +2,10 @@
  * @author Kuitos
  * @since 2019-10-21
  */
-import { execScripts, ExecScriptsOpts } from 'import-html-entry';
+import { execScripts } from 'import-html-entry';
 import { isFunction } from 'lodash';
 import { checkActivityFunctions } from 'single-spa';
-import { Freer } from '../interfaces';
+import { Freer, ExecScriptsOpts } from '../interfaces';
 import { getWrapperId } from '../utils';
 
 const styledComponentSymbol = Symbol('styled-component');

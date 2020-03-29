@@ -2,9 +2,8 @@
  * @author Kuitos
  * @since 2019-04-11
  */
-import { ExecScriptsOpts } from 'import-html-entry';
 import { hijackAtBootstrapping, hijackAtMounting } from './hijackers';
-import { Freer, Rebuilder } from './interfaces';
+import { Freer, Rebuilder, ExecScriptsOpts } from './interfaces';
 import { isConstructable } from './utils';
 
 function isPropConfigurable(target: object, prop: PropertyKey) {

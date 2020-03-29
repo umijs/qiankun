@@ -4,8 +4,7 @@
  */
 
 import { noop } from 'lodash';
-import { ExecScriptsOpts } from 'import-html-entry';
-import { Freer } from '../interfaces';
+import { Freer, ExecScriptsOpts } from '../interfaces';
 import hijackDynamicAppend from './dynamicHeadAppend';
 import hijackHistoryListener from './historyListener';
 import hijackTimer from './timer';
