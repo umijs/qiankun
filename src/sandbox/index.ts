@@ -5,7 +5,7 @@
 import { Freer, Rebuilder, SandBox } from '../interfaces';
 import { patchAtBootstrapping, patchAtMounting } from './patchers';
 import SingularProxySandbox from './proxy/singular';
-import MultiplyProxySandbox from './proxy/multiply';
+import MultiplyProxySandbox from './proxy/multiple';
 import SnapshotSandbox from './snapshotSandbox';
 
 /**
