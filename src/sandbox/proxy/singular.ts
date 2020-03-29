@@ -2,8 +2,8 @@
  * @author Kuitos
  * @since 2019-04-11
  */
-import { isConstructable } from '../utils';
-import { SandBox } from '../interfaces';
+import { SandBox } from '../../interfaces';
+import { isConstructable } from '../../utils';
 
 function isPropConfigurable(target: object, prop: PropertyKey) {
   const descriptor = Object.getOwnPropertyDescriptor(target, prop);
@@ -23,12 +23,6 @@ function setWindowProp(prop: PropertyKey, value: any, toDelete?: boolean) {
  * 基于 Proxy 实现的沙箱
  */
 export default class ProxySandbox implements SandBox {
-  proxy: WindowProxy;
-
-  name: string;
-
-  sandboxRunning = true;
-
   /** 沙箱期间新增的全局变量 */
   private addedPropsMapInSandbox = new Map<PropertyKey, any>();
 
@@ -37,6 +31,36 @@ export default class ProxySandbox implements SandBox {
 
   /** 持续记录更新的(新增和修改的)全局变量的 map，用于在任意时刻做 snapshot */
   private currentUpdatedPropsValueMap = new Map<PropertyKey, any>();
+
+  name: string;
+
+  proxy: WindowProxy;
+
+  sandboxRunning = true;
+
+  active() {
+    if (!this.sandboxRunning) {
+      this.currentUpdatedPropsValueMap.forEach((v, p) => setWindowProp(p, v));
+    }
+
+    this.sandboxRunning = true;
+  }
+
+  inactive() {
+    if (process.env.NODE_ENV === 'development') {
+      console.info(`[qiankun:sandbox] ${this.name} modified global properties restore...`, [
+        ...this.addedPropsMapInSandbox.keys(),
+        ...this.modifiedPropsOriginalValueMapInSandbox.keys(),
+      ]);
+    }
+
+    // renderSandboxSnapshot = snapshot(currentUpdatedPropsValueMapForSnapshot);
+    // restore global props to initial snapshot
+    this.modifiedPropsOriginalValueMapInSandbox.forEach((v, p) => setWindowProp(p, v));
+    this.addedPropsMapInSandbox.forEach((_, p) => setWindowProp(p, undefined, true));
+
+    this.sandboxRunning = false;
+  }
 
   constructor(name: string) {
     this.name = name;
@@ -115,29 +139,5 @@ export default class ProxySandbox implements SandBox {
     });
 
     this.active();
-  }
-
-  active() {
-    if (!this.sandboxRunning) {
-      this.currentUpdatedPropsValueMap.forEach((v, p) => setWindowProp(p, v));
-    }
-
-    this.sandboxRunning = true;
-  }
-
-  inactive() {
-    if (process.env.NODE_ENV === 'development') {
-      console.info(`[qiankun:sandbox] ${this.name} modified global properties restore...`, [
-        ...this.addedPropsMapInSandbox.keys(),
-        ...this.modifiedPropsOriginalValueMapInSandbox.keys(),
-      ]);
-    }
-
-    // renderSandboxSnapshot = snapshot(currentUpdatedPropsValueMapForSnapshot);
-    // restore global props to initial snapshot
-    this.modifiedPropsOriginalValueMapInSandbox.forEach((v, p) => setWindowProp(p, v));
-    this.addedPropsMapInSandbox.forEach((_, p) => setWindowProp(p, undefined, true));
-
-    this.sandboxRunning = false;
   }
 }
