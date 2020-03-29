@@ -3,7 +3,7 @@
  * @since 2019-04-11
  */
 import { hijackAtBootstrapping, hijackAtMounting } from './hijackers';
-import { Freer, Rebuilder } from './interfaces';
+import { Freer, Rebuilder, ExecScriptsOpts } from './interfaces';
 import { isConstructable } from './utils';
 
 function isPropConfigurable(target: object, prop: PropertyKey) {
@@ -34,7 +34,7 @@ function setWindowProp(prop: PropertyKey, value: any, toDelete?: boolean) {
  *
  * @param appName
  */
-export function genSandbox(appName: string) {
+export function genSandbox(appName: string, execScriptsOpts: ExecScriptsOpts) {
   // 沙箱期间新增的全局变量
   const addedPropsMapInSandbox = new Map<PropertyKey, any>();
   // 沙箱期间更新的全局变量
@@ -119,7 +119,7 @@ export function genSandbox(appName: string) {
   });
 
   // some side effect could be be invoked while bootstrapping, such as dynamic stylesheet injection with style-loader, especially during the development phase
-  const bootstrappingFreers = hijackAtBootstrapping(appName, sandbox);
+  const bootstrappingFreers = hijackAtBootstrapping(appName, sandbox, execScriptsOpts);
 
   return {
     sandbox,
@@ -148,7 +148,7 @@ export function genSandbox(appName: string) {
 
       /* ------------------------------------------ 2. 开启全局变量补丁 ------------------------------------------*/
       // render 沙箱启动时开始劫持各类全局监听，尽量不要在应用初始化阶段有 事件监听/定时器 等副作用
-      mountingFreers = hijackAtMounting(appName, sandbox);
+      mountingFreers = hijackAtMounting(appName, sandbox, execScriptsOpts);
 
       /* ------------------------------------------ 3. 重置一些初始化时的副作用 ------------------------------------------*/
       // 存在 rebuilder 则表明有些副作用需要重建
