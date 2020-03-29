@@ -5,15 +5,15 @@
 
 import { noop } from 'lodash';
 import { Freer } from '../../interfaces';
-import patchDynamicAppend from './dynamicHeadAppend';
-import patchHistoryListener from './historyListener';
-import patchTimer from './timer';
-import patchWindowListener from './windowListener';
+import hijackDynamicAppend from './dynamicHeadAppend';
+import hijackHistoryListener from './historyListener';
+import hijackTimer from './timer';
+import hijackWindowListener from './windowListener';
 
 export function patchAtMounting(appName: string, proxy: Window): Freer[] {
-  return [patchTimer(), patchWindowListener(), patchHistoryListener(), patchDynamicAppend(appName, proxy)];
+  return [hijackTimer(), hijackWindowListener(), hijackHistoryListener(), hijackDynamicAppend(appName, proxy, true)];
 }
 
 export function patchAtBootstrapping(appName: string, proxy: Window): Freer[] {
-  return [process.env.NODE_ENV === 'development' ? patchDynamicAppend(appName, proxy, false) : () => () => noop];
+  return [process.env.NODE_ENV === 'development' ? hijackDynamicAppend(appName, proxy, false) : () => () => noop];
 }

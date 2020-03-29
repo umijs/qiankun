@@ -17,8 +17,6 @@ export type LifeCycles<T extends object> = {
   afterUnmount?: Lifecycle<T> | Array<Lifecycle<T>>; // function after app unmount
 };
 
-type RegisterMicroAppsOpts = ImportEntryOpts;
-
 let microApps: RegistrableApp[] = [];
 
 function toArray<T>(array: T | T[]): T[] {
@@ -59,15 +57,16 @@ class Deferred<T> {
  * with singular mode, any app will wait to load until other apps are unmouting
  * it is useful for the scenario that only one sub app shown at one time
  */
-let singularMode: StartOpts['singular'] = false;
+let singular: StartOpts['singular'] = false;
 let useJsSandbox = false;
 const frameworkStartedDefer = new Deferred<void>();
 
-export function registerMicroApps<T extends object = {}>(
-  apps: Array<RegistrableApp<T>>,
-  lifeCycles?: LifeCycles<T>,
-  opts?: RegisterMicroAppsOpts,
-) {
+let importLoaderConfiguration: ImportEntryOpts = {};
+export function getImportLoaderConfiguration() {
+  return importLoaderConfiguration;
+}
+
+export function registerMicroApps<T extends object = {}>(apps: Array<RegistrableApp<T>>, lifeCycles?: LifeCycles<T>) {
   window.__POWERED_BY_QIANKUN__ = true;
 
   // Each app only needs to be registered once
@@ -86,7 +85,7 @@ export function registerMicroApps<T extends object = {}>(
       async ({ name: appName }) => {
         await frameworkStartedDefer.promise;
 
-        const { getTemplate = identity, ...settings } = opts || {};
+        const { getTemplate = identity, ...settings } = importLoaderConfiguration || {};
         // get the entry html content and script executor
         const { template: appContent, execScripts, assetPublicPath } = await importEntry(entry, {
           // compose the config getTemplate function with default wrapper
@@ -97,7 +96,7 @@ export function registerMicroApps<T extends object = {}>(
         // as single-spa load and bootstrap new app parallel with other apps unmounting
         // (see https://github.com/CanopyTax/single-spa/blob/master/src/navigation/reroute.js#L74)
         // we need wait to load the app until all apps are finishing unmount in singular mode
-        if (await validateSingularMode(singularMode, app)) {
+        if (await validateSingularMode(singular, app)) {
           await (prevAppUnmountedDeferred && prevAppUnmountedDeferred.promise);
         }
         // 第一次加载设置应用可见区域 dom 结构
@@ -151,7 +150,7 @@ export function registerMicroApps<T extends object = {}>(
           bootstrap: [bootstrapApp],
           mount: [
             async () => {
-              if ((await validateSingularMode(singularMode, app)) && prevAppUnmountedDeferred) {
+              if ((await validateSingularMode(singular, app)) && prevAppUnmountedDeferred) {
                 return prevAppUnmountedDeferred.promise;
               }
 
@@ -168,7 +167,7 @@ export function registerMicroApps<T extends object = {}>(
             async () => execHooksChain(toArray(afterMount), app),
             // initialize the unmount defer after app mounted and resolve the defer after it unmounted
             async () => {
-              if (await validateSingularMode(singularMode, app)) {
+              if (await validateSingularMode(singular, app)) {
                 prevAppUnmountedDeferred = new Deferred<void>();
               }
             },
@@ -181,7 +180,7 @@ export function registerMicroApps<T extends object = {}>(
             // remove the app content after unmount
             async () => render({ appContent: '', loading: false }),
             async () => {
-              if ((await validateSingularMode(singularMode, app)) && prevAppUnmountedDeferred) {
+              if ((await validateSingularMode(singular, app)) && prevAppUnmountedDeferred) {
                 prevAppUnmountedDeferred.resolve();
               }
             },
@@ -220,19 +219,20 @@ async function doPrefetch(prefetch: Prefetch, importEntryOpts: ImportEntryOpts) 
 }
 
 export function start(opts: StartOpts = {}) {
-  const { prefetch = true, jsSandbox = true, singular = true, ...importEntryOpts } = opts;
+  const { prefetch = true, jsSandbox = true, singular: singularMode = true, ...importEntryOpts } = opts;
+  importLoaderConfiguration = importEntryOpts;
 
-  doPrefetch(prefetch, importEntryOpts);
+  doPrefetch(prefetch, importLoaderConfiguration);
 
-  if (singular) {
-    singularMode = singular;
+  if (singularMode) {
+    singular = singularMode;
   }
 
   if (jsSandbox) {
     // 快照沙箱不支持非 singular 模式
-    if (!window.Proxy && !singular) {
+    if (!window.Proxy && !singularMode) {
       console.error('[qiankun] singular is forced to be true when jsSandbox enable but proxySandbox unavailable');
-      singularMode = true;
+      singular = true;
     }
 
     useJsSandbox = jsSandbox;

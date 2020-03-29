@@ -3,7 +3,7 @@
  * @since 2019-04-25
  */
 
-export * from './register';
+export { LifeCycles, registerMicroApps, start } from './register';
 export * from './errorHandler';
 export * from './effects';
 export * from './interfaces';
