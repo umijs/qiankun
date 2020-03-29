@@ -1,6 +1,6 @@
 # API 说明
 
-## `registerMicroApps(apps, lifeCycles?, opts?)`
+## `registerMicroApps(apps, lifeCycles?)`
 
 - 参数
 

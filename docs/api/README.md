@@ -1,6 +1,6 @@
 # API
 
-## `registerMicroApps(apps, lifeCycles?, opts?)`
+## `registerMicroApps(apps, lifeCycles?)`
 
 - Parameters
 
