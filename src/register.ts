@@ -67,8 +67,6 @@ export function getImportLoaderConfiguration() {
 }
 
 export function registerMicroApps<T extends object = {}>(apps: Array<RegistrableApp<T>>, lifeCycles?: LifeCycles<T>) {
-  window.__POWERED_BY_QIANKUN__ = true;
-
   // Each app only needs to be registered once
   const unregisteredApps = apps.filter(app => !microApps.some(registeredApp => registeredApp.name === app.name));
 
@@ -107,8 +105,7 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
         let mountSandbox = () => Promise.resolve();
         let unmountSandbox = () => Promise.resolve();
         if (useJsSandbox) {
-          const { fetch } = settings || {};
-          const sandbox = genSandbox(appName, { fetch });
+          const sandbox = genSandbox(appName);
           jsSandbox = sandbox.sandbox;
           mountSandbox = sandbox.mount;
           unmountSandbox = sandbox.unmount;
@@ -219,6 +216,8 @@ async function doPrefetch(prefetch: Prefetch, importEntryOpts: ImportEntryOpts) 
 }
 
 export function start(opts: StartOpts = {}) {
+  window.__POWERED_BY_QIANKUN__ = true;
+
   const { prefetch = true, jsSandbox = true, singular: singularMode = true, ...importEntryOpts } = opts;
   importLoaderConfiguration = importEntryOpts;
 

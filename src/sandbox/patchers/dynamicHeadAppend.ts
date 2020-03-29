@@ -6,6 +6,7 @@ import { execScripts } from 'import-html-entry';
 import { isFunction } from 'lodash';
 import { checkActivityFunctions } from 'single-spa';
 import { Freer } from '../../interfaces';
+import { getImportLoaderConfiguration } from '../../register';
 import { getWrapperId } from '../../utils';
 
 const styledComponentSymbol = Symbol('styled-component');
@@ -93,8 +94,9 @@ export default function patch(appName: string, proxy: Window, mounting = true): 
         case SCRIPT_TAG_NAME: {
           const { src, text } = element as HTMLScriptElement;
 
+          const { fetch } = getImportLoaderConfiguration();
           if (src) {
-            execScripts(null, [src], proxy).then(
+            execScripts(null, [src], proxy, { fetch }).then(
               () => {
                 // we need to invoke the onload event manually to notify the event listener that the script was completed
                 // here are the two typical ways of dynamic script loading
