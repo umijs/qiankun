@@ -161,7 +161,7 @@ example:
   </div>
 </body>
 
-+ <script src="./entry.js" entry></script>
++ <script src="//yourhost/entry.js" entry></script>
 </html>
 ```
 
@@ -188,4 +188,4 @@ example:
 
 refer to the [purehtml examples](https://github.com/umijs/qiankun/tree/master/examples/purehtml)
 
-At the same time, [the subApp must support the CORS](/docs/faq/README.html#must-a-sub-app-asset-support-cors)
+At the same time, [the subApp must support the CORS](/faq/#must-a-sub-app-asset-support-cors)
