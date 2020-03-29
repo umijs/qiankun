@@ -91,6 +91,8 @@ export async function unmount() {
 
 As qiankun based on single-spa, you can find more documentation about the sub-application lifecycle [here](https://single-spa.js.org/docs/building-applications.html#registered-application-lifecycle).
 
+Refer to [example without bundler](/faq/#does-qiankun-support-the-subapp-without-bundler)
+
 ### 2. Config Sub App Bundler
 
 In addition to exposing the corresponding life-cycle hooks in the code, in order for the main application to correctly identify some of the information exposed by the sub-application, the sub-application bundler needs to add the following configuration:
