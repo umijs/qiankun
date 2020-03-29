@@ -2,8 +2,8 @@
  * @author Kuitos
  * @since 2019-04-11
  */
-import { patchAtBootstrapping, patchAtMounting } from './patchers';
 import { Freer, Rebuilder, SandBox } from '../interfaces';
+import { patchAtBootstrapping, patchAtMounting } from './patchers';
 import ProxySandbox from './proxySandbox';
 import SnapshotSandbox from './snapshotSandbox';
 
