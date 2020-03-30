@@ -7,7 +7,7 @@ cache:
   directories:
     - node_modules
 script:
-  - yarn lint
+  - yarn ci
   - yarn docs:build
 
 #after_success:

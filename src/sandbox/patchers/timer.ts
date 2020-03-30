@@ -4,41 +4,58 @@
  */
 
 import { noop } from 'lodash';
-import { sleep } from '../../utils';
 
 const rawWindowInterval = window.setInterval;
+const rawWindowClearInterval = window.clearInterval;
 const rawWindowTimeout = window.setTimeout;
+const rawWindowClearTimout = window.clearTimeout;
 
 export default function patch() {
-  const timerIds: number[] = [];
-  const intervalIds: number[] = [];
+  let timers: number[] = [];
+  let intervals: number[] = [];
 
-  window.setInterval = (...args: any[]) => {
-    // @ts-ignore
-    const intervalId = rawWindowInterval(...args);
-    intervalIds.push(intervalId);
+  // @ts-ignore
+  window.clearInterval = (intervalId: number) => {
+    intervals = intervals.filter(id => id !== intervalId);
+    return rawWindowClearInterval(intervalId);
+  };
+
+  // @ts-ignore
+  window.setInterval = (handler: Function, timeout?: number, ...args: any[]) => {
+    const intervalId = rawWindowInterval(handler, timeout, ...args);
+    intervals = [...intervals, intervalId];
     return intervalId;
   };
 
-  (window as Window).setTimeout = (...args: any[]) => {
-    // @ts-ignore
-    const timerId = rawWindowTimeout(...args);
-    timerIds.push(timerId);
+  // @ts-ignore
+  window.clearTimeout = (timerId: number) => {
+    timers = timers.filter(id => id !== timerId);
+    return rawWindowClearTimout(timerId);
+  };
+
+  // @ts-ignore
+  window.setTimeout = (handler: Function, timeout?: number, ...args: any[]) => {
+    const timerId = rawWindowTimeout(
+      () => {
+        handler(...args);
+        // auto clear timeout to make timers length rigth
+        window.clearTimeout(timerId);
+      },
+      timeout,
+      ...args,
+    );
+    timers = [...timers, timerId];
     return timerId;
   };
 
   return function free() {
-    window.setInterval = rawWindowInterval;
-    window.setTimeout = rawWindowTimeout;
+    timers.forEach(id => window.clearTimeout(id));
+    intervals.forEach(id => window.clearInterval(id));
 
-    timerIds.forEach(async id => {
-      // 延迟 timeout 的清理，因为可能会有动画还没完成
-      await sleep(500);
-      window.clearTimeout(id);
-    });
-    intervalIds.forEach(id => {
-      window.clearInterval(id);
-    });
+    window.setInterval = rawWindowInterval;
+    window.clearInterval = rawWindowClearInterval;
+    window.setTimeout = rawWindowTimeout;
+    window.clearTimeout = rawWindowClearTimout;
 
     return noop;
   };
