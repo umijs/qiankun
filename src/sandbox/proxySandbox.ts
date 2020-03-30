@@ -38,8 +38,11 @@ export default class ProxySandbox implements SandBox {
     const { proxy, sandboxRunning, updateValueMap } = this;
 
     const boundValueSymbol = Symbol('bound value');
+    // https://github.com/umijs/qiankun/pull/192
+    const rawWindow = window;
+    const fakeWindow = Object.create(null) as Window;
 
-    this.proxy = new Proxy(window, {
+    this.proxy = new Proxy(fakeWindow, {
       set(_: Window, p: PropertyKey, value: any): boolean {
         if (sandboxRunning) {
           updateValueMap.set(p, value);
@@ -53,7 +56,7 @@ export default class ProxySandbox implements SandBox {
         return true;
       },
 
-      get(target: Window, p: PropertyKey): any {
+      get(_: Window, p: PropertyKey): any {
         // avoid who using window.window or window.self to escape the sandbox environment to touch the really window
         // or use window.top to check if an iframe context
         // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
@@ -62,7 +65,7 @@ export default class ProxySandbox implements SandBox {
         }
 
         // Take priority from the updateValueMap, or fallback to window
-        const value = updateValueMap.get(p) || (target as any)[p];
+        const value = updateValueMap.get(p) || (rawWindow as any)[p];
         /*
         仅绑定 !isConstructable && isCallable 的函数对象，如 window.console、window.atob 这类。目前没有完美的检测方式，这里通过 prototype 中是否还有可枚举的拓展方法的方式来判断
         @warning 这里不要随意替换成别的判断方式，因为可能触发一些 edge case（比如在 lodash.isFunction 在 iframe 上下文中可能由于调用了 top window 对象触发的安全异常）
@@ -72,7 +75,7 @@ export default class ProxySandbox implements SandBox {
             return value[boundValueSymbol];
           }
 
-          const boundValue = value.bind(target);
+          const boundValue = value.bind(rawWindow);
           // some callable function has custom fields, we need to copy the enumerable props to boundValue. such as moment function.
           Object.keys(value).forEach(key => (boundValue[key] = value[key]));
           Object.defineProperty(value, boundValueSymbol, { enumerable: false, value: boundValue });
@@ -84,27 +87,27 @@ export default class ProxySandbox implements SandBox {
 
       // trap in operator
       // see https://github.com/styled-components/styled-components/blob/master/packages/styled-components/src/constants.js#L12
-      has(target: Window, p: string | number | symbol): boolean {
-        return updateValueMap.has(p) || p in target;
+      has(_: Window, p: string | number | symbol): boolean {
+        return updateValueMap.has(p) || p in rawWindow;
       },
 
       // trap for getOwnPropertyDescriptor and hasOwnProperty
-      getOwnPropertyDescriptor(target: Window, p: string | number | symbol): PropertyDescriptor | undefined {
+      getOwnPropertyDescriptor(_: Window, p: string | number | symbol): PropertyDescriptor | undefined {
         // 这里包含了对 hasOwnProperty 的 trap
         // https://stackoverflow.com/questions/40451694/use-es6-proxy-to-trap-object-hasownproperty
         if (updateValueMap.has(p)) {
           return { configurable: true, enumerable: true, value: updateValueMap.get(p) };
         }
 
-        if ((target as any)[p]) {
-          return Object.getOwnPropertyDescriptor(target, p);
+        if ((rawWindow as any)[p]) {
+          return Object.getOwnPropertyDescriptor(rawWindow, p);
         }
 
         return undefined;
       },
 
-      ownKeys(target: Window): PropertyKey[] {
-        return uniq([...Reflect.ownKeys(target), ...updateValueMap.keys()]);
+      ownKeys(): PropertyKey[] {
+        return uniq([...Reflect.ownKeys(rawWindow), ...updateValueMap.keys()]);
       },
 
       deleteProperty(_: Window, p: string | number | symbol): boolean {
