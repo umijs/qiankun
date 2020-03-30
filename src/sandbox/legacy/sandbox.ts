@@ -2,14 +2,28 @@
  * @author Kuitos
  * @since 2019-04-11
  */
-import { uniq } from 'lodash';
 import { SandBox } from '../../interfaces';
 import { isConstructable } from '../../utils';
 
+function isPropConfigurable(target: object, prop: PropertyKey) {
+  const descriptor = Object.getOwnPropertyDescriptor(target, prop);
+  return descriptor ? descriptor.configurable : true;
+}
+
+function setWindowProp(prop: PropertyKey, value: any, toDelete?: boolean) {
+  if (value === undefined && toDelete) {
+    delete (window as any)[prop];
+  } else if (isPropConfigurable(window, prop) && typeof prop !== 'symbol') {
+    Object.defineProperty(window, prop, { writable: true, configurable: true });
+    (window as any)[prop] = value;
+  }
+}
+
 /**
  * 基于 Proxy 实现的沙箱
+ * TODO: 为了兼容性 singular 模式下依旧使用该沙箱，等新沙箱稳定之后再切换
  */
-export default class MultipleProxySandbox implements SandBox {
+export default class SingularProxySandbox implements SandBox {
   /** 沙箱期间新增的全局变量 */
   private addedPropsMapInSandbox = new Map<PropertyKey, any>();
 
@@ -26,6 +40,10 @@ export default class MultipleProxySandbox implements SandBox {
   sandboxRunning = true;
 
   active() {
+    if (!this.sandboxRunning) {
+      this.currentUpdatedPropsValueMap.forEach((v, p) => setWindowProp(p, v));
+    }
+
     this.sandboxRunning = true;
   }
 
@@ -36,6 +54,11 @@ export default class MultipleProxySandbox implements SandBox {
         ...this.modifiedPropsOriginalValueMapInSandbox.keys(),
       ]);
     }
+
+    // renderSandboxSnapshot = snapshot(currentUpdatedPropsValueMapForSnapshot);
+    // restore global props to initial snapshot
+    this.modifiedPropsOriginalValueMapInSandbox.forEach((v, p) => setWindowProp(p, v));
+    this.addedPropsMapInSandbox.forEach((_, p) => setWindowProp(p, undefined, true));
 
     this.sandboxRunning = false;
   }
@@ -68,7 +91,7 @@ export default class MultipleProxySandbox implements SandBox {
           currentUpdatedPropsValueMap.set(p, value);
           // 必须重新设置 window 对象保证下次 get 时能拿到已更新的数据
           // eslint-disable-next-line no-param-reassign
-          // (rawWindow as any)[p] = value;
+          (rawWindow as any)[p] = value;
 
           return true;
         }
@@ -89,12 +112,7 @@ export default class MultipleProxySandbox implements SandBox {
           return proxy;
         }
 
-        if (p === 'hasOwnProperty') {
-          return (key: PropertyKey) => currentUpdatedPropsValueMap.has(key) || rawWindow.hasOwnProperty(key);
-        }
-
-        // Take priority from the currentUpdatedPropsValueMap, or fallback to window
-        const value = currentUpdatedPropsValueMap.get(p) || (rawWindow as any)[p];
+        const value = (rawWindow as any)[p];
         /*
         仅绑定 !isConstructable && isCallable 的函数对象，如 window.console、window.atob 这类。目前没有完美的检测方式，这里通过 prototype 中是否还有可枚举的拓展方法的方式来判断
         @warning 这里不要随意替换成别的判断方式，因为可能触发一些 edge case（比如在 lodash.isFunction 在 iframe 上下文中可能由于调用了 top window 对象触发的安全异常）
@@ -117,24 +135,7 @@ export default class MultipleProxySandbox implements SandBox {
       // trap in operator
       // see https://github.com/styled-components/styled-components/blob/master/packages/styled-components/src/constants.js#L12
       has(_: Window, p: string | number | symbol): boolean {
-        return currentUpdatedPropsValueMap.has(p) || p in rawWindow;
-      },
-
-      // trap for getOwnPropertyDescriptor and hasOwnProperty
-      getOwnPropertyDescriptor(_: Window, p: string | number | symbol): PropertyDescriptor | undefined {
-        if (currentUpdatedPropsValueMap.has(p)) {
-          return { configurable: true, enumerable: true, value: currentUpdatedPropsValueMap.get(p) };
-        }
-
-        if ((<any>rawWindow)[p]) {
-          return Object.getOwnPropertyDescriptor(rawWindow, p);
-        }
-
-        return undefined;
-      },
-
-      ownKeys(): PropertyKey[] {
-        return uniq([...Reflect.ownKeys(rawWindow), ...currentUpdatedPropsValueMap.keys()]);
+        return p in rawWindow;
       },
     });
 

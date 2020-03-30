@@ -207,10 +207,13 @@ export function start(opts: StartOpts = {}) {
   }
 
   if (jsSandbox) {
-    // 快照沙箱不支持非 singular 模式
-    if (!window.Proxy && !singularMode) {
-      console.error('[qiankun] singular is forced to be true when jsSandbox enable but proxySandbox unavailable');
-      singular = true;
+    if (!window.Proxy) {
+      console.warn('[qiankun] Miss window.Proxy, proxySandbox will degenerate into snapshotSandbox');
+      // 快照沙箱不支持非 singular 模式
+      if (!singularMode) {
+        console.error('[qiankun] singular is forced to be true when jsSandbox enable but proxySandbox unavailable');
+        singular = true;
+      }
     }
 
     useJsSandbox = jsSandbox;
