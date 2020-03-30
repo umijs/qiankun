@@ -15,27 +15,37 @@ export default function patch() {
   let intervals: Array<{ id: number; handler: Function; args: any[] }> = [];
 
   // @ts-ignore
-  window.setInterval = (handler: Function, timeout?: number, ...args: any[]) => {
-    const intervalId = rawWindowInterval(handler, timeout, ...args);
-    intervals = [...intervals, { id: intervalId, handler, args }];
-    return intervalId;
-  };
-  // @ts-ignore
   window.clearInterval = (intervalId: number) => {
     intervals = intervals.filter(({ id }) => id !== intervalId);
     return rawWindowClearInterval(intervalId);
   };
 
   // @ts-ignore
-  window.setTimeout = (handler: Function, timeout?: number, ...args: any[]) => {
-    const timerId = rawWindowTimeout(handler, timeout, ...args);
-    timers = [...timers, { id: timerId, handler, args }];
-    return timerId;
+  window.setInterval = (handler: Function, timeout?: number, ...args: any[]) => {
+    const intervalId = rawWindowInterval(handler, timeout, ...args);
+    intervals = [...intervals, { id: intervalId, handler, args }];
+    return intervalId;
   };
+
   // @ts-ignore
   window.clearTimeout = (timerId: number) => {
     timers = timers.filter(({ id }) => id !== timerId);
     return rawWindowClearTimout(timerId);
+  };
+
+  // @ts-ignore
+  window.setTimeout = (handler: Function, timeout?: number, ...args: any[]) => {
+    const timerId = rawWindowTimeout(
+      () => {
+        handler(...args);
+        // auto clear timeout to make timers length rigth
+        window.clearTimeout(timerId);
+      },
+      timeout,
+      ...args,
+    );
+    timers = [...timers, { id: timerId, handler, args }];
+    return timerId;
   };
 
   return function free() {
@@ -44,9 +54,9 @@ export default function patch() {
     window.setTimeout = rawWindowTimeout;
     window.clearTimeout = rawWindowClearTimout;
 
-    timers.forEach(async ({ handler, id, args }) => {
-      // clear the timers and execute its handler to avoid unclearing effects
-      // such as antd auto close message
+    timers.forEach(({ handler, id, args }) => {
+      // clear the timers and execute its handler to avoid uncleared effects
+      // such as antd auto closing message
       handler(...args);
       window.clearTimeout(id);
     });

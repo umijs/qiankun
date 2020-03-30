@@ -31,7 +31,7 @@
     "start:purehtml": "cd examples/purehtml && yarn start",
     "build": "father-build",
     "release": "np --no-cleanup --yolo --no-publish",
-    "prepublishOnly": "yarn lint && yarn build",
+    "prepublishOnly": "yarn lint && yarn test && yarn build",
     "lint": "yarn lint:js && yarn lint:prettier",
     "lint:js": "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty ./src",
     "lint:fix": "yarn lint:js -- --fix",
@@ -39,7 +39,8 @@
     "prettier": "prettier -c --write **/*",
     "docs:dev": "vuepress dev docs",
     "docs:build": "vuepress build docs",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "ci": "yarn lint && yarn test",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -64,6 +65,7 @@
     "tslib": "^1.10.0"
   },
   "devDependencies": {
+    "@types/jest": "^25.1.4",
     "@types/lodash": "^4.14.129",
     "@types/vfile-message": "1.x",
     "@umijs/fabric": "^1.1.10",
@@ -73,11 +75,13 @@
     "check-prettier": "^1.0.3",
     "father-build": "^1.7.0",
     "husky": "^2.3.0",
+    "jest": "^25.2.2",
     "lint-staged": "^9.4.2",
     "np": "^5.0.3",
     "npm-run-all": "^4.1.5",
     "prettier": "^1.18.2",
     "rimraf": "^3.0.0",
+    "ts-jest": "^25.2.1",
     "typescript": "^3.4.5",
     "vuepress": "^1.2.0"
   },
@@ -94,6 +98,27 @@
     "**/*.{js,ts}": [
       "yarn lint:fix",
       "git add"
+    ]
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "ts"
+    ],
+    "testMatch": [
+      "<rootDir>/src/**/__tests__/**/*.test.ts"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/fixtures/"
+    ],
+    "transform": {
+      "^.+\\.ts$": "<rootDir>/node_modules/ts-jest"
+    },
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/__tests__/",
+      "/dist/"
     ]
   }
 }
