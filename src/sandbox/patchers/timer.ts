@@ -11,25 +11,25 @@ const rawWindowTimeout = window.setTimeout;
 const rawWindowClearTimout = window.clearTimeout;
 
 export default function patch() {
-  let timers: Array<{ id: number; handler: Function; args: any[] }> = [];
-  let intervals: Array<{ id: number; handler: Function; args: any[] }> = [];
+  let timers: number[] = [];
+  let intervals: number[] = [];
 
   // @ts-ignore
   window.clearInterval = (intervalId: number) => {
-    intervals = intervals.filter(({ id }) => id !== intervalId);
+    intervals = intervals.filter(id => id !== intervalId);
     return rawWindowClearInterval(intervalId);
   };
 
   // @ts-ignore
   window.setInterval = (handler: Function, timeout?: number, ...args: any[]) => {
     const intervalId = rawWindowInterval(handler, timeout, ...args);
-    intervals = [...intervals, { id: intervalId, handler, args }];
+    intervals = [...intervals, intervalId];
     return intervalId;
   };
 
   // @ts-ignore
   window.clearTimeout = (timerId: number) => {
-    timers = timers.filter(({ id }) => id !== timerId);
+    timers = timers.filter(id => id !== timerId);
     return rawWindowClearTimout(timerId);
   };
 
@@ -44,28 +44,18 @@ export default function patch() {
       timeout,
       ...args,
     );
-    timers = [...timers, { id: timerId, handler, args }];
+    timers = [...timers, timerId];
     return timerId;
   };
 
   return function free() {
+    timers.forEach(id => window.clearTimeout(id));
+    intervals.forEach(id => window.clearInterval(id));
+
     window.setInterval = rawWindowInterval;
     window.clearInterval = rawWindowClearInterval;
     window.setTimeout = rawWindowTimeout;
     window.clearTimeout = rawWindowClearTimout;
-
-    timers.forEach(({ handler, id, args }) => {
-      // clear the timers and execute its handler to avoid uncleared effects
-      // such as antd auto closing message
-      handler(...args);
-      window.clearTimeout(id);
-    });
-
-    intervals.forEach(({ id, args, handler }) => {
-      // clear the interval and execute its handler
-      handler(...args);
-      window.clearInterval(id);
-    });
 
     return noop;
   };

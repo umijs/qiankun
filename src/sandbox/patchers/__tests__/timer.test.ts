@@ -27,10 +27,8 @@ test('patch setTimeout', async () => {
   expect(clearedListener).toBeCalledTimes(0);
   expect(autoClearedListener).toBeCalledTimes(1);
   expect(autoClearedListener).toBeCalledWith('kuitos');
-  expect(unclearedListener).toBeCalledTimes(1);
-  expect(unclearedListener).toBeCalledWith();
-  expect(unclearedListenerWithArgs).toBeCalledTimes(1);
-  expect(unclearedListenerWithArgs).toBeCalledWith('kuitos');
+  expect(unclearedListener).toBeCalledTimes(0);
+  expect(unclearedListenerWithArgs).toBeCalledTimes(0);
 });
 
 test('patch setInterval', async () => {
@@ -50,7 +48,6 @@ test('patch setInterval', async () => {
   free();
 
   expect(clearedListener).toBeCalledTimes(0);
-  expect(unclearedListener).toBeCalledTimes(2);
-  expect(unclearedListenerWithArgs).toBeCalledTimes(1);
-  expect(unclearedListenerWithArgs).toBeCalledWith('kuitos');
+  expect(unclearedListener).toBeCalledTimes(1);
+  expect(unclearedListenerWithArgs).toBeCalledTimes(0);
 });
