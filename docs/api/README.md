@@ -73,7 +73,7 @@
 
   - `Options`
 
-    - prefetch - `boolean | 'all' | string[] | (( apps: RegistrableApp[] ) => { mainAppStartingAppsName: string[]; firstMountedAppsName: string[] })` - optional, whether to enable prefetch, default is `true`.
+    - prefetch - `boolean | 'all' | string[] | (( apps: RegistrableApp[] ) => { criticalAppNames: string[]; minorAppsName: string[] })` - optional, whether to enable prefetch, default is `true`.
 
       A configuration of `true` starts prefetching static resources for other subapplications after the first subapplication mount completes.
   

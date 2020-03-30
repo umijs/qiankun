@@ -4,9 +4,9 @@
  */
 
 import { Entry, importEntry, ImportEntryOpts } from 'import-html-entry';
-import { flow, identity } from 'lodash';
+import { flow, identity, isFunction } from 'lodash';
 import { getMountedApps } from 'single-spa';
-import { RegistrableApp } from './interfaces';
+import { Prefetch, RegistrableApp } from './interfaces';
 import { getDefaultTplWrapper } from './utils';
 
 type RequestIdleCallbackHandle = any;
@@ -79,7 +79,7 @@ function prefetch(appName: string, entry: Entry, opts?: ImportEntryOpts): void {
   });
 }
 
-export function prefetchAfterFirstMounted(apps: RegistrableApp[], opts?: ImportEntryOpts): void {
+function prefetchAfterFirstMounted(apps: RegistrableApp[], opts?: ImportEntryOpts): void {
   window.addEventListener('single-spa:first-mount', function listener() {
     const mountedApps = getMountedApps();
     const notMountedApps = apps.filter(app => mountedApps.indexOf(app.name) === -1);
@@ -94,13 +94,38 @@ export function prefetchAfterFirstMounted(apps: RegistrableApp[], opts?: ImportE
   });
 }
 
-export function prefetchAll(apps: RegistrableApp[], opts?: ImportEntryOpts): void {
-  window.addEventListener('single-spa:no-app-change', function listener() {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[qiankun] prefetch starting for all assets...', apps);
-    }
-    apps.forEach(({ name, entry }) => prefetch(name, entry, opts));
+function prefetchImmediately(apps: RegistrableApp[], opts?: ImportEntryOpts): void {
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[qiankun] prefetch starting for apps...', apps);
+  }
 
-    window.removeEventListener('single-spa:no-app-change', listener);
-  });
+  apps.forEach(({ name, entry }) => prefetch(name, entry, opts));
+}
+
+export function prefetchApps(apps: RegistrableApp[], prefetchAction: Prefetch, importEntryOpts: ImportEntryOpts) {
+  const appsName2Apps = (names: string[]): RegistrableApp[] => apps.filter(app => names.includes(app.name));
+
+  if (Array.isArray(prefetchAction)) {
+    prefetchAfterFirstMounted(appsName2Apps(prefetchAction as string[]), importEntryOpts);
+  } else if (isFunction(prefetchAction)) {
+    (async () => {
+      // critical rendering apps would be prefetch as earlier as possible
+      const { criticalAppNames = [], minorAppsName = [] } = await prefetchAction(apps);
+      prefetchImmediately(appsName2Apps(criticalAppNames), importEntryOpts);
+      prefetchAfterFirstMounted(appsName2Apps(minorAppsName), importEntryOpts);
+    })();
+  } else {
+    switch (prefetchAction) {
+      case true:
+        prefetchAfterFirstMounted(apps, importEntryOpts);
+        break;
+
+      case 'all':
+        prefetchImmediately(apps, importEntryOpts);
+        break;
+
+      default:
+        break;
+    }
+  }
 }
