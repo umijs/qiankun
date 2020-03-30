@@ -62,7 +62,6 @@ let useJsSandbox = false;
 const frameworkStartedDefer = new Deferred<void>();
 
 let importLoaderConfiguration: ImportEntryOpts = {};
-
 export function getImportLoaderConfiguration() {
   return importLoaderConfiguration;
 }
@@ -106,7 +105,7 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
         let mountSandbox = () => Promise.resolve();
         let unmountSandbox = () => Promise.resolve();
         if (useJsSandbox) {
-          const sandbox = genSandbox(appName);
+          const sandbox = genSandbox(appName, !!singular);
           jsSandbox = sandbox.sandbox;
           mountSandbox = sandbox.mount;
           unmountSandbox = sandbox.unmount;
@@ -123,7 +122,7 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
         await execHooksChain(toArray(beforeLoad), app);
 
         // get the lifecycle hooks from module exports
-        let { bootstrap: bootstrapApp, mount, unmount } = await execScripts(jsSandbox);
+        let { bootstrap: bootstrapApp, mount, unmount } = await execScripts(jsSandbox, !singular);
 
         if (!isFunction(bootstrapApp) || !isFunction(mount) || !isFunction(unmount)) {
           if (process.env.NODE_ENV === 'development') {
@@ -132,8 +131,9 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
             );
           }
 
+          const global = jsSandbox;
           // fallback to global variable who named with ${appName} while module exports not found
-          const globalVariableExports = (window as any)[appName] || {};
+          const globalVariableExports = (global as any)[appName] || {};
           bootstrapApp = globalVariableExports.bootstrap;
           // eslint-disable-next-line prefer-destructuring
           mount = globalVariableExports.mount;
@@ -207,10 +207,13 @@ export function start(opts: StartOpts = {}) {
   }
 
   if (jsSandbox) {
-    // 快照沙箱不支持非 singular 模式
-    if (!window.Proxy && !singularMode) {
-      console.error('[qiankun] singular is forced to be true when jsSandbox enable but proxySandbox unavailable');
-      singular = true;
+    if (!window.Proxy) {
+      console.warn('[qiankun] Miss window.Proxy, proxySandbox will degenerate into snapshotSandbox');
+      // 快照沙箱不支持非 singular 模式
+      if (!singularMode) {
+        console.error('[qiankun] singular is forced to be true when jsSandbox enable but proxySandbox unavailable');
+        singular = true;
+      }
     }
 
     useJsSandbox = jsSandbox;

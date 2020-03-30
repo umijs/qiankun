@@ -2,16 +2,36 @@
  * @author Kuitos
  * @since 2019-04-11
  */
-import { uniq } from 'lodash';
-import { SandBox } from '../interfaces';
-import { isConstructable } from '../utils';
+import { SandBox } from '../../interfaces';
+import { isConstructable } from '../../utils';
+
+function isPropConfigurable(target: object, prop: PropertyKey) {
+  const descriptor = Object.getOwnPropertyDescriptor(target, prop);
+  return descriptor ? descriptor.configurable : true;
+}
+
+function setWindowProp(prop: PropertyKey, value: any, toDelete?: boolean) {
+  if (value === undefined && toDelete) {
+    delete (window as any)[prop];
+  } else if (isPropConfigurable(window, prop) && typeof prop !== 'symbol') {
+    Object.defineProperty(window, prop, { writable: true, configurable: true });
+    (window as any)[prop] = value;
+  }
+}
 
 /**
  * 基于 Proxy 实现的沙箱
+ * TODO: 为了兼容性 singular 模式下依旧使用该沙箱，等新沙箱稳定之后再切换
  */
-export default class ProxySandbox implements SandBox {
-  /** window 值变更的记录快照 */
-  private updateValueMap = new Map<PropertyKey, any>();
+export default class SingularProxySandbox implements SandBox {
+  /** 沙箱期间新增的全局变量 */
+  private addedPropsMapInSandbox = new Map<PropertyKey, any>();
+
+  /** 沙箱期间更新的全局变量 */
+  private modifiedPropsOriginalValueMapInSandbox = new Map<PropertyKey, any>();
+
+  /** 持续记录更新的(新增和修改的)全局变量的 map，用于在任意时刻做 snapshot */
+  private currentUpdatedPropsValueMap = new Map<PropertyKey, any>();
 
   name: string;
 
@@ -20,32 +40,60 @@ export default class ProxySandbox implements SandBox {
   sandboxRunning = true;
 
   active() {
+    if (!this.sandboxRunning) {
+      this.currentUpdatedPropsValueMap.forEach((v, p) => setWindowProp(p, v));
+    }
+
     this.sandboxRunning = true;
   }
 
   inactive() {
     if (process.env.NODE_ENV === 'development') {
       console.info(`[qiankun:sandbox] ${this.name} modified global properties restore...`, [
-        ...this.updateValueMap.keys(),
+        ...this.addedPropsMapInSandbox.keys(),
+        ...this.modifiedPropsOriginalValueMapInSandbox.keys(),
       ]);
     }
+
+    // renderSandboxSnapshot = snapshot(currentUpdatedPropsValueMapForSnapshot);
+    // restore global props to initial snapshot
+    this.modifiedPropsOriginalValueMapInSandbox.forEach((v, p) => setWindowProp(p, v));
+    this.addedPropsMapInSandbox.forEach((_, p) => setWindowProp(p, undefined, true));
 
     this.sandboxRunning = false;
   }
 
   constructor(name: string) {
     this.name = name;
-    const { proxy, sandboxRunning, updateValueMap } = this;
+    const {
+      proxy,
+      sandboxRunning,
+      addedPropsMapInSandbox,
+      modifiedPropsOriginalValueMapInSandbox,
+      currentUpdatedPropsValueMap,
+    } = this;
 
     const boundValueSymbol = Symbol('bound value');
-    // https://github.com/umijs/qiankun/pull/192
     const rawWindow = window;
     const fakeWindow = Object.create(null) as Window;
 
     this.proxy = new Proxy(fakeWindow, {
       set(_: Window, p: PropertyKey, value: any): boolean {
         if (sandboxRunning) {
-          updateValueMap.set(p, value);
+          if (!rawWindow.hasOwnProperty(p)) {
+            addedPropsMapInSandbox.set(p, value);
+          } else if (!modifiedPropsOriginalValueMapInSandbox.has(p)) {
+            // 如果当前 window 对象存在该属性，且 record map 中未记录过，则记录该属性初始值
+            const originalValue = (rawWindow as any)[p];
+            modifiedPropsOriginalValueMapInSandbox.set(p, originalValue);
+          }
+
+          currentUpdatedPropsValueMap.set(p, value);
+          // 必须重新设置 window 对象保证下次 get 时能拿到已更新的数据
+          // eslint-disable-next-line no-param-reassign
+          (rawWindow as any)[p] = value;
+
+          return true;
         }
 
         if (process.env.NODE_ENV === 'development') {
@@ -64,8 +112,7 @@ export default class ProxySandbox implements SandBox {
           return proxy;
         }
 
-        // Take priority from the updateValueMap, or fallback to window
-        const value = updateValueMap.get(p) || (rawWindow as any)[p];
+        const value = (rawWindow as any)[p];
         /*
         仅绑定 !isConstructable && isCallable 的函数对象，如 window.console、window.atob 这类。目前没有完美的检测方式，这里通过 prototype 中是否还有可枚举的拓展方法的方式来判断
         @warning 这里不要随意替换成别的判断方式，因为可能触发一些 edge case（比如在 lodash.isFunction 在 iframe 上下文中可能由于调用了 top window 对象触发的安全异常）
@@ -88,39 +135,10 @@ export default class ProxySandbox implements SandBox {
       // trap in operator
       // see https://github.com/styled-components/styled-components/blob/master/packages/styled-components/src/constants.js#L12
       has(_: Window, p: string | number | symbol): boolean {
-        return updateValueMap.has(p) || p in rawWindow;
-      },
-
-      // trap for getOwnPropertyDescriptor and hasOwnProperty
-      getOwnPropertyDescriptor(_: Window, p: string | number | symbol): PropertyDescriptor | undefined {
-        // 这里包含了对 hasOwnProperty 的 trap
-        // https://stackoverflow.com/questions/40451694/use-es6-proxy-to-trap-object-hasownproperty
-        if (updateValueMap.has(p)) {
-          return { configurable: true, enumerable: true, value: updateValueMap.get(p) };
-        }
-
-        if ((rawWindow as any)[p]) {
-          return Object.getOwnPropertyDescriptor(rawWindow, p);
-        }
-
-        return undefined;
-      },
-
-      ownKeys(): PropertyKey[] {
-        return uniq([...Reflect.ownKeys(rawWindow), ...updateValueMap.keys()]);
-      },
-
-      deleteProperty(_: Window, p: string | number | symbol): boolean {
-        if (updateValueMap.has(p)) {
-          updateValueMap.delete(p);
-
-          return true;
-        }
-
-        // 我想没人会删 window 上自有的属性吧？
-
-        return false;
+        return p in rawWindow;
       },
     });
+
+    this.active();
   }
 }

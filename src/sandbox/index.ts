@@ -4,6 +4,7 @@
  */
 import { Freer, Rebuilder, SandBox } from '../interfaces';
 import { patchAtBootstrapping, patchAtMounting } from './patchers';
+import LegacySandbox from './legacy/sandbox';
 import ProxySandbox from './proxySandbox';
 import SnapshotSandbox from './snapshotSandbox';
 
@@ -20,8 +21,9 @@ import SnapshotSandbox from './snapshotSandbox';
  * 这么设计的目的是为了保证每个子应用切换回来之后，还能运行在应用 bootstrap 之后的环境下。
  *
  * @param appName
+ * @param singular
  */
-export function genSandbox(appName: string) {
+export function genSandbox(appName: string, singular: boolean) {
   // mounting freers are one-off and should be re-init at every mounting time
   let mountingFreers: Freer[] = [];
 
@@ -29,9 +31,8 @@ export function genSandbox(appName: string) {
 
   let sandbox: SandBox;
   if (window.Proxy) {
-    sandbox = new ProxySandbox(appName);
+    sandbox = singular ? new ProxySandbox(appName) : new LegacySandbox(appName);
   } else {
-    console.warn('[qiankun] Miss window.Proxy, proxySandbox degenerate into snapshotSandbox');
     sandbox = new SnapshotSandbox(appName);
   }
 
