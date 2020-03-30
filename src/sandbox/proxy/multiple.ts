@@ -9,7 +9,7 @@ import { isConstructable } from '../../utils';
 /**
  * 基于 Proxy 实现的沙箱
  */
-export default class ProxySandbox implements SandBox {
+export default class MultipleProxySandbox implements SandBox {
   /** 沙箱期间新增的全局变量 */
   private addedPropsMapInSandbox = new Map<PropertyKey, any>();
 

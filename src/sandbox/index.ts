@@ -5,7 +5,7 @@
 import { Freer, Rebuilder, SandBox } from '../interfaces';
 import { patchAtBootstrapping, patchAtMounting } from './patchers';
 import SingularProxySandbox from './proxy/singular';
-import MultiplyProxySandbox from './proxy/multiple';
+import MultipleProxySandbox from './proxy/multiple';
 import SnapshotSandbox from './snapshotSandbox';
 
 /**
@@ -31,7 +31,7 @@ export function genSandbox(appName: string, singular: boolean) {
 
   let sandbox: SandBox;
   if (window.Proxy) {
-    sandbox = singular ? new SingularProxySandbox(appName) : new MultiplyProxySandbox(appName);
+    sandbox = singular ? new SingularProxySandbox(appName) : new MultipleProxySandbox(appName);
   } else {
     console.warn('[qiankun] Miss window.Proxy, proxySandbox degenerate into snapshotSandbox');
     sandbox = new SnapshotSandbox(appName);
