@@ -31,7 +31,7 @@ export function genSandbox(appName: string, singular: boolean) {
 
   let sandbox: SandBox;
   if (window.Proxy) {
-    sandbox = singular ? new ProxySandbox(appName) : new LegacySandbox(appName);
+    sandbox = singular ? new LegacySandbox(appName) : new ProxySandbox(appName);
   } else {
     sandbox = new SnapshotSandbox(appName);
   }

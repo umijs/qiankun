@@ -40,7 +40,7 @@
     "docs:dev": "vuepress dev docs",
     "docs:build": "vuepress build docs",
     "ci": "yarn lint && yarn test",
-    "test": "jest"
+    "test": "NODE_ENV=test jest"
   },
   "repository": {
     "type": "git",
