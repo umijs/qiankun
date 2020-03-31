@@ -12,7 +12,7 @@ import render from './render/ReactRender';
 // import render from './render/VueRender'
 
 function genActiveRule(routerPrefix) {
-  return location => location.pathname.startsWith(routerPrefix);
+  return (location) => location.pathname.startsWith(routerPrefix);
 }
 
 /**
@@ -26,25 +26,25 @@ render({ appContent: '', loading: true });
 registerMicroApps(
   [
     {
-      name: 'react16',
+      name: 'subapp-react16',
       entry: '//localhost:7100',
       render,
       activeRule: genActiveRule('/react16'),
     },
     {
-      name: 'react15',
+      name: 'subapp-react15',
       entry: '//localhost:7102',
       render,
       activeRule: genActiveRule('/react15'),
     },
     {
-      name: 'vue',
+      name: 'subapp-vue',
       entry: '//localhost:7101',
       render,
       activeRule: genActiveRule('/vue'),
     },
     {
-      name: 'angular9',
+      name: 'subapp-angular9',
       entry: '//localhost:7103',
       render,
       activeRule: genActiveRule('/angular9'),
@@ -58,17 +58,17 @@ registerMicroApps(
   ],
   {
     beforeLoad: [
-      app => {
+      (app) => {
         console.log('[LifeCycle] before load %c%s', 'color: green;', app.name);
       },
     ],
     beforeMount: [
-      app => {
+      (app) => {
         console.log('[LifeCycle] before mount %c%s', 'color: green;', app.name);
       },
     ],
     afterUnmount: [
-      app => {
+      (app) => {
         console.log('[LifeCycle] after unmount %c%s', 'color: green;', app.name);
       },
     ],
@@ -86,7 +86,7 @@ setDefaultMountApp('/react16');
 start({
   prefetch: ['react16', 'react15', 'vue'],
   jsSandbox: true,
-  singular: true,
+  singular: false,
   fetch: window.fetch,
 });
 

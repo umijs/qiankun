@@ -6,7 +6,7 @@ module.exports = (angularWebpackConfig, options) => {
 
   const singleSpaConfig = {
     output: {
-      library: 'angular9',
+      library: 'subapp-angular9',
       libraryTarget: 'umd',
     },
     externals: {

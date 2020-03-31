@@ -1,11 +1,11 @@
 import { importEntry, ImportEntryOpts } from 'import-html-entry';
-import { concat, flow, identity, isFunction, mergeWith } from 'lodash';
+import { concat, flow, identity, mergeWith } from 'lodash';
 import { registerApplication, start as startSingleSpa } from 'single-spa';
 import getAddOns from './addons';
 import { RegistrableApp, StartOpts } from './interfaces';
 import { prefetchApps } from './prefetch';
 import { genSandbox } from './sandbox';
-import { getDefaultTplWrapper } from './utils';
+import { getDefaultTplWrapper, appExportLifecycleVaildator } from './utils';
 
 type Lifecycle<T extends object> = (app: RegistrableApp<T>) => Promise<any>;
 
@@ -68,13 +68,13 @@ export function getImportLoaderConfiguration() {
 
 export function registerMicroApps<T extends object = {}>(apps: Array<RegistrableApp<T>>, lifeCycles?: LifeCycles<T>) {
   // Each app only needs to be registered once
-  const unregisteredApps = apps.filter(app => !microApps.some(registeredApp => registeredApp.name === app.name));
+  const unregisteredApps = apps.filter((app) => !microApps.some((registeredApp) => registeredApp.name === app.name));
 
   microApps = [...microApps, ...unregisteredApps];
 
   let prevAppUnmountedDeferred: Deferred<void>;
 
-  unregisteredApps.forEach(app => {
+  unregisteredApps.forEach((app) => {
     const { name, entry, render, activeRule, props = {} } = app;
 
     registerApplication(
@@ -101,12 +101,13 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
         // 确保每次应用加载前容器 dom 结构已经设置完毕
         render({ appContent, loading: true });
 
-        let jsSandbox: Window = window;
+        let global: Window = window;
         let mountSandbox = () => Promise.resolve();
         let unmountSandbox = () => Promise.resolve();
         if (useJsSandbox) {
           const sandbox = genSandbox(appName, !!singular);
-          jsSandbox = sandbox.sandbox;
+          // 用沙箱的代理对象作为接下来使用的全局对象
+          global = sandbox.sandbox;
           mountSandbox = sandbox.mount;
           unmountSandbox = sandbox.unmount;
         }
@@ -117,35 +118,48 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
           afterMount = [],
           beforeMount = [],
           beforeLoad = [],
-        } = mergeWith({}, getAddOns(jsSandbox, assetPublicPath), lifeCycles, (v1, v2) => concat(v1 ?? [], v2 ?? []));
+        } = mergeWith({}, getAddOns(global, assetPublicPath), lifeCycles, (v1, v2) => concat(v1 ?? [], v2 ?? []));
 
         await execHooksChain(toArray(beforeLoad), app);
 
         // get the lifecycle hooks from module exports
-        let { bootstrap: bootstrapApp, mount, unmount } = await execScripts(jsSandbox, !singular);
+        const lastGlobalPropExports: any = await execScripts(global, !singular);
+        let bootstrap;
+        let mount;
+        let unmount;
 
-        if (!isFunction(bootstrapApp) || !isFunction(mount) || !isFunction(unmount)) {
-          if (process.env.NODE_ENV === 'development') {
+        // FIXME: 多实例模式下，lastGlobalProp 会错误的取到外层 windos 上而不是 proxyWindow
+        if (singular && appExportLifecycleVaildator(lastGlobalPropExports)) {
+          // eslint-disable-next-line prefer-destructuring
+          bootstrap = lastGlobalPropExports.bootstrap;
+          // eslint-disable-next-line prefer-destructuring
+          mount = lastGlobalPropExports.mount;
+          // eslint-disable-next-line prefer-destructuring
+          unmount = lastGlobalPropExports.unmount;
+        } else {
+          if (singular && process.env.NODE_ENV === 'development') {
             console.warn(
               `[qiankun] lifecycle not found from ${appName} entry exports, fallback to get from window['${appName}']`,
             );
           }
 
-          const global = jsSandbox;
           // fallback to global variable who named with ${appName} while module exports not found
-          const globalVariableExports = (global as any)[appName] || {};
-          bootstrapApp = globalVariableExports.bootstrap;
-          // eslint-disable-next-line prefer-destructuring
-          mount = globalVariableExports.mount;
-          // eslint-disable-next-line prefer-destructuring
-          unmount = globalVariableExports.unmount;
-          if (!isFunction(bootstrapApp) || !isFunction(mount) || !isFunction(unmount)) {
+          const globalVariableExports = (global as any)[appName];
+
+          if (appExportLifecycleVaildator(globalVariableExports)) {
+            // eslint-disable-next-line prefer-destructuring
+            bootstrap = globalVariableExports.bootstrap;
+            // eslint-disable-next-line prefer-destructuring
+            mount = globalVariableExports.mount;
+            // eslint-disable-next-line prefer-destructuring
+            unmount = globalVariableExports.unmount;
+          } else {
             throw new Error(`[qiankun] You need to export lifecycle functions in ${appName} entry`);
           }
         }
 
         return {
-          bootstrap: [bootstrapApp],
+          bootstrap: [bootstrap],
           mount: [
             async () => {
               if ((await validateSingularMode(singular, app)) && prevAppUnmountedDeferred) {

@@ -1,15 +1,15 @@
 const { name } = require('./package');
 
 module.exports = {
-  webpack: config => {
-    config.output.library = `${name}-[name]`;
+  webpack: (config) => {
+    config.output.library = `subapp-${name}`;
     config.output.libraryTarget = 'umd';
     config.output.jsonpFunction = `webpackJsonp_${name}`;
 
     return config;
   },
 
-  devServer: _ => {
+  devServer: (_) => {
     const config = {};
 
     config.port = '7100';

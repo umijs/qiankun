@@ -10,8 +10,8 @@ import { isConstructable } from '../utils';
  * 基于 Proxy 实现的沙箱
  */
 export default class ProxySandbox implements SandBox {
-  /** window 值变更的记录快照 */
-  private updateValueMap = new Map<PropertyKey, any>();
+  /** 代理 window，承载原本会写到 window 上的操作 */
+  proxyWindow: Window = Object.create(null);
 
   name: string;
 
@@ -26,7 +26,7 @@ export default class ProxySandbox implements SandBox {
   inactive() {
     if (process.env.NODE_ENV === 'development') {
       console.info(`[qiankun:sandbox] ${this.name} modified global properties restore...`, [
-        ...this.updateValueMap.keys(),
+        ...Reflect.ownKeys(this.proxyWindow),
       ]);
     }
 
@@ -35,20 +35,18 @@ export default class ProxySandbox implements SandBox {
 
   constructor(name: string) {
     this.name = name;
-    const { proxy, sandboxRunning, updateValueMap } = this;
+    const { proxy, sandboxRunning, proxyWindow } = this;
 
     const boundValueSymbol = Symbol('bound value');
     // https://github.com/umijs/qiankun/pull/192
     const rawWindow = window;
-    const fakeWindow = Object.create(null) as Window;
 
-    this.proxy = new Proxy(fakeWindow, {
+    this.proxy = new Proxy(proxyWindow, {
       set(_: Window, p: PropertyKey, value: any): boolean {
         if (sandboxRunning) {
-          updateValueMap.set(p, value);
-        }
-
-        if (process.env.NODE_ENV === 'development') {
+          // 直接写在代理对象上，不要回写
+          proxyWindow[p as any] = value;
+        } else if (process.env.NODE_ENV === 'development') {
           console.warn(`[qiankun] Set window.${p.toString()} while jsSandbox destroyed or inactive in ${name}!`);
         }
 
@@ -65,7 +63,7 @@ export default class ProxySandbox implements SandBox {
         }
 
         // Take priority from the updateValueMap, or fallback to window
-        const value = updateValueMap.get(p) || (rawWindow as any)[p];
+        const value = (proxyWindow as any)[p] || (rawWindow as any)[p];
         /*
         仅绑定 !isConstructable && isCallable 的函数对象，如 window.console、window.atob 这类。目前没有完美的检测方式，这里通过 prototype 中是否还有可枚举的拓展方法的方式来判断
         @warning 这里不要随意替换成别的判断方式，因为可能触发一些 edge case（比如在 lodash.isFunction 在 iframe 上下文中可能由于调用了 top window 对象触发的安全异常）
@@ -77,7 +75,7 @@ export default class ProxySandbox implements SandBox {
 
           const boundValue = value.bind(rawWindow);
           // some callable function has custom fields, we need to copy the enumerable props to boundValue. such as moment function.
-          Object.keys(value).forEach(key => (boundValue[key] = value[key]));
+          Object.keys(value).forEach((key) => (boundValue[key] = value[key]));
           Object.defineProperty(value, boundValueSymbol, { enumerable: false, value: boundValue });
           return boundValue;
         }
@@ -88,37 +86,37 @@ export default class ProxySandbox implements SandBox {
       // trap in operator
       // see https://github.com/styled-components/styled-components/blob/master/packages/styled-components/src/constants.js#L12
       has(_: Window, p: string | number | symbol): boolean {
-        return updateValueMap.has(p) || p in rawWindow;
+        return p in proxyWindow || p in rawWindow;
       },
 
       // trap for getOwnPropertyDescriptor and hasOwnProperty
       getOwnPropertyDescriptor(_: Window, p: string | number | symbol): PropertyDescriptor | undefined {
         // 这里包含了对 hasOwnProperty 的 trap
         // https://stackoverflow.com/questions/40451694/use-es6-proxy-to-trap-object-hasownproperty
-        if (updateValueMap.has(p)) {
-          return { configurable: true, enumerable: true, value: updateValueMap.get(p) };
+        if ((proxyWindow as any)[p]) {
+          return { configurable: true, enumerable: true, value: (proxyWindow as any)[p] };
         }
 
         if ((rawWindow as any)[p]) {
-          return Object.getOwnPropertyDescriptor(rawWindow, p);
+          // https://stackoverflow.com/questions/40921884/create-dynamic-non-configurable-properties-using-proxy
+          // just lie say the property is configurable
+          return { ...Reflect.getOwnPropertyDescriptor(rawWindow, p), configurable: true };
         }
 
         return undefined;
       },
 
       ownKeys(): PropertyKey[] {
-        return uniq([...Reflect.ownKeys(rawWindow), ...updateValueMap.keys()]);
+        return uniq([...Reflect.ownKeys(rawWindow), ...Reflect.ownKeys(proxyWindow)]);
       },
 
       deleteProperty(_: Window, p: string | number | symbol): boolean {
-        if (updateValueMap.has(p)) {
-          updateValueMap.delete(p);
-
+        if (p in proxyWindow) {
+          delete (proxyWindow as any)[p];
           return true;
         }
 
         // 我想没人会删 window 上自有的属性吧？
-
         return false;
       },
     });
