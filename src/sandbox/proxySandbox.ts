@@ -185,7 +185,6 @@ export default class ProxySandbox implements SandBox {
           return true;
         }
 
-        // return delete (rawWindow as any)[p];
         return true;
       },
     });

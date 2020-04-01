@@ -15,7 +15,7 @@ module.exports = {
     overlay: { warnings: false, errors: true },
   },
   output: {
-    library: `${name}`,
+    library: `${name}-[name]`,
     libraryTarget: 'umd',
     jsonpFunction: `webpackJsonp_${name}`,
   },
