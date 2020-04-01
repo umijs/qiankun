@@ -68,7 +68,7 @@
     "@types/jest": "^25.1.4",
     "@types/lodash": "^4.14.129",
     "@types/vfile-message": "1.x",
-    "@umijs/fabric": "^1.1.10",
+    "@umijs/fabric": "^2.0.7",
     "@vuepress/plugin-google-analytics": "^1.2.0",
     "@vuepress/plugin-pwa": "^1.2.0",
     "babel-plugin-import": "^1.12.1",
@@ -87,7 +87,8 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "lint-staged"
+      "pre-commit": "lint-staged",
+      "pre-push": "yarn test"
     }
   },
   "lint-staged": {
