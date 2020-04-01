@@ -6,6 +6,49 @@ import { uniq } from 'lodash';
 import { SandBox } from '../interfaces';
 import { isConstructable } from '../utils';
 
+// zone.js will overwrite Object.defineProperty
+const rawObjectDefineProperty = Object.defineProperty;
+
+function createFakeWindow(global: Window): Window {
+  const fakeWindow = {} as Window;
+
+  /*
+   copy the non-configurable property of global to fakeWindow
+   see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/getOwnPropertyDescriptor
+   > A property cannot be reported as non-configurable, if it does not exists as an own property of the target object or if it exists as a configurable own property of the target object.
+   */
+  Object.getOwnPropertyNames(global)
+    .filter(p => {
+      const descriptor = Object.getOwnPropertyDescriptor(global, p);
+      return !descriptor?.configurable;
+    })
+    .forEach(p => {
+      const descriptor = Object.getOwnPropertyDescriptor(global, p);
+      if (descriptor) {
+        /*
+         make top/self/window property configurable and writable, otherwise it will cause TypeError while get trap return.
+         see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/get
+         > The value reported for a property must be the same as the value of the corresponding target object property if the target object property is a non-writable, non-configurable data property.
+         */
+        if (p === 'top' || p === 'self' || p === 'window') {
+          descriptor.configurable = true;
+          descriptor.writable = true;
+        }
+
+        // just for test
+        if (process.env.NODE_ENV === 'test' && p === 'mockTop') {
+          descriptor.configurable = true;
+          descriptor.writable = true;
+        }
+        // freeze the descriptor to avoid being modified by zone.js
+        // see https://github.com/angular/zone.js/blob/a5fe09b0fac27ac5df1fa746042f96f05ccb6a00/lib/browser/define-property.ts#L71
+        rawObjectDefineProperty(fakeWindow, p, Object.freeze(descriptor!));
+      }
+    });
+
+  return fakeWindow;
+}
+
 /**
  * 基于 Proxy 实现的沙箱
  */
@@ -35,17 +78,19 @@ export default class ProxySandbox implements SandBox {
 
   constructor(name: string) {
     this.name = name;
-    const { proxy, sandboxRunning, updateValueMap } = this;
+    const { sandboxRunning, updateValueMap } = this;
 
     const boundValueSymbol = Symbol('bound value');
     // https://github.com/umijs/qiankun/pull/192
     const rawWindow = window;
-    const fakeWindow = Object.create(null) as Window;
+    const fakeWindow = createFakeWindow(rawWindow);
 
-    this.proxy = new Proxy(fakeWindow, {
+    const proxy = new Proxy(fakeWindow, {
       set(_: Window, p: PropertyKey, value: any): boolean {
         if (sandboxRunning) {
           updateValueMap.set(p, value);
+
+          return true;
         }
 
         if (process.env.NODE_ENV === 'development') {
@@ -62,6 +107,16 @@ export default class ProxySandbox implements SandBox {
         // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
         if (p === 'top' || p === 'window' || p === 'self') {
           return proxy;
+        }
+
+        // just for test
+        if (process.env.NODE_ENV === 'test' && p === 'mockTop') {
+          return proxy;
+        }
+
+        // proxy.hasOwnProperty would invoke getter firstly, then its value represented as rawWindow.hasOwnProperty
+        if (p === 'hasOwnProperty') {
+          return (key: PropertyKey) => updateValueMap.has(key) || rawWindow.hasOwnProperty(key);
         }
 
         // Take priority from the updateValueMap, or fallback to window
@@ -91,21 +146,34 @@ export default class ProxySandbox implements SandBox {
         return updateValueMap.has(p) || p in rawWindow;
       },
 
-      // trap for getOwnPropertyDescriptor and hasOwnProperty
-      getOwnPropertyDescriptor(_: Window, p: string | number | symbol): PropertyDescriptor | undefined {
-        // 这里包含了对 hasOwnProperty 的 trap
-        // https://stackoverflow.com/questions/40451694/use-es6-proxy-to-trap-object-hasownproperty
+      getOwnPropertyDescriptor(target: Window, p: string | number | symbol): PropertyDescriptor | undefined {
         if (updateValueMap.has(p)) {
-          return { configurable: true, enumerable: true, value: updateValueMap.get(p) };
+          // if the property is existed on raw window, use it original descriptor
+          const descriptor = Object.getOwnPropertyDescriptor(rawWindow, p);
+          if (descriptor) {
+            return descriptor;
+          }
+
+          return { configurable: true, enumerable: true, writable: true, value: updateValueMap.get(p) };
         }
 
-        if ((rawWindow as any)[p]) {
+        /*
+         as the descriptor of top/self/window/mockTop in raw window are configurable but not in proxy target, we need to get it from target to avoid TypeError
+         see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/getOwnPropertyDescriptor
+         > A property cannot be reported as non-configurable, if it does not exists as an own property of the target object or if it exists as a configurable own property of the target object.
+         */
+        if (target.hasOwnProperty(p)) {
+          return Object.getOwnPropertyDescriptor(target, p);
+        }
+
+        if (rawWindow.hasOwnProperty(p)) {
           return Object.getOwnPropertyDescriptor(rawWindow, p);
         }
 
         return undefined;
       },
 
+      // trap to support iterator with sandbox
       ownKeys(): PropertyKey[] {
         return uniq([...Reflect.ownKeys(rawWindow), ...updateValueMap.keys()]);
       },
@@ -117,10 +185,10 @@ export default class ProxySandbox implements SandBox {
           return true;
         }
 
-        // 我想没人会删 window 上自有的属性吧？
-
-        return false;
+        return delete (<any>rawWindow)[p];
       },
     });
+
+    this.proxy = proxy;
   }
 }

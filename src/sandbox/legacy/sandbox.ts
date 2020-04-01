@@ -66,7 +66,6 @@ export default class SingularProxySandbox implements SandBox {
   constructor(name: string) {
     this.name = name;
     const {
-      proxy,
       sandboxRunning,
       addedPropsMapInSandbox,
       modifiedPropsOriginalValueMapInSandbox,
@@ -77,7 +76,7 @@ export default class SingularProxySandbox implements SandBox {
     const rawWindow = window;
     const fakeWindow = Object.create(null) as Window;
 
-    this.proxy = new Proxy(fakeWindow, {
+    const proxy = new Proxy(fakeWindow, {
       set(_: Window, p: PropertyKey, value: any): boolean {
         if (sandboxRunning) {
           if (!rawWindow.hasOwnProperty(p)) {
@@ -139,6 +138,6 @@ export default class SingularProxySandbox implements SandBox {
       },
     });
 
-    this.active();
+    this.proxy = proxy;
   }
 }
