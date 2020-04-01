@@ -3,7 +3,7 @@
  * @since 2019-05-15
  */
 
-import { snakeCase } from 'lodash';
+import { snakeCase, isFunction } from 'lodash';
 
 export function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -27,4 +27,10 @@ export function getDefaultTplWrapper(appName: string) {
 
 export function getWrapperId(appName: string) {
   return `__qiankun_subapp_wrapper_for_${snakeCase(appName)}__`;
+}
+
+/** 校验子应用导出的 生命周期 对象是否正确 */
+export function validateExportLifecycle(exports: any) {
+  const { bootstrap, mount, unmount } = exports ?? {};
+  return isFunction(bootstrap) && isFunction(mount) && isFunction(unmount);
 }

@@ -1,6 +1,6 @@
 /**
  * @author Kuitos
- * @since 2019-04-11
+ * @since 2020-3-31
  */
 import { uniq } from 'lodash';
 import { SandBox } from '../interfaces';
@@ -185,7 +185,7 @@ export default class ProxySandbox implements SandBox {
           return true;
         }
 
-        return delete (<any>rawWindow)[p];
+        return true;
       },
     });
 
