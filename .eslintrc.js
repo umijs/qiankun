@@ -6,7 +6,7 @@ module.exports = {
     ...fabric.eslint.rules,
     '@typescript-eslint/prefer-interface': 0,
     '@typescript-eslint/no-explicit-any': 0,
-    '@typescript-eslint/array-type': ['error', 'array-simple'],
+    '@typescript-eslint/array-type': ['error', { default: 'array-simple' }],
     'no-return-assign': 0,
     semi: ['error', 'always'],
     'no-console': 0,
