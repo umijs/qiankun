@@ -34,11 +34,25 @@ export type Prefetch =
   | string[]
   | ((apps: RegistrableApp[]) => { criticalAppNames: string[]; minorAppsName: string[] });
 
-export type StartOpts = {
+export type Configuration = {
   prefetch?: Prefetch;
   jsSandbox?: boolean;
+  /*
+    with singular mode, any app will wait to load until other apps are unmouting
+    it is useful for the scenario that only one sub app shown at one time
+  */
   singular?: boolean | ((app: RegistrableApp<any>) => Promise<boolean>);
-} & ImportEntryOpts;
+} & ImportEntryOpts /** single-spa start opts */ & { urlRerouteOnly?: boolean };
+
+export type Lifecycle<T extends object> = (app: RegistrableApp<T>) => Promise<any>;
+
+export type LifeCycles<T extends object> = {
+  beforeLoad?: Lifecycle<T> | Array<Lifecycle<T>>; // function before app load
+  beforeMount?: Lifecycle<T> | Array<Lifecycle<T>>; // function before app mount
+  afterMount?: Lifecycle<T> | Array<Lifecycle<T>>; // function after app mount
+  beforeUnmount?: Lifecycle<T> | Array<Lifecycle<T>>; // function before app unmount
+  afterUnmount?: Lifecycle<T> | Array<Lifecycle<T>>; // function after app unmount
+};
 
 export type Rebuilder = () => void;
 export type Freer = () => Rebuilder;

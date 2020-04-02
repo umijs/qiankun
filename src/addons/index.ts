@@ -4,8 +4,8 @@
  */
 
 import { concat, mergeWith } from 'lodash';
+import { LifeCycles } from '../interfaces';
 
-import { LifeCycles } from '../register';
 import getRuntimePublicPathAddOn from './runtimePublicPath';
 
 export default function getAddOns<T extends object>(global: Window, publicPath: string): LifeCycles<T> {

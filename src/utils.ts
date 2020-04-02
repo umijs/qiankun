@@ -3,7 +3,7 @@
  * @since 2019-05-15
  */
 
-import { snakeCase, isFunction } from 'lodash';
+import { isFunction, snakeCase } from 'lodash';
 
 export function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -34,3 +34,20 @@ export function validateExportLifecycle(exports: any) {
   const { bootstrap, mount, unmount } = exports ?? {};
   return isFunction(bootstrap) && isFunction(mount) && isFunction(unmount);
 }
+
+class Deferred<T> {
+  promise: Promise<T>;
+
+  resolve!: (value?: T | PromiseLike<T>) => void;
+
+  reject!: (reason?: any) => void;
+
+  constructor() {
+    this.promise = new Promise((resolve, reject) => {
+      this.resolve = resolve;
+      this.reject = reject;
+    });
+  }
+}
+
+export { Deferred };
