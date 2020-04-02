@@ -19,7 +19,12 @@ export function registerMicroApps<T extends object = {}>(apps: Array<Registrable
   unregisteredApps.forEach(app => {
     const { name, activeRule, props = {} } = app;
 
-    registerApplication(name, () => loadApp(app, frameworkConfiguration, lifeCycles), activeRule, props);
+    registerApplication({
+      name,
+      app: () => loadApp(app, frameworkConfiguration, lifeCycles),
+      activeWhen: activeRule,
+      customProps: props,
+    });
   });
 }
 
@@ -50,7 +55,7 @@ export function start(opts: Configuration = {}) {
     }
   }
 
-  startSingleSpa();
+  startSingleSpa({ urlRerouteOnly });
 
   frameworkStartedDefer.resolve();
 }
