@@ -6,7 +6,7 @@ import { execScripts } from 'import-html-entry';
 import { isFunction } from 'lodash';
 import { checkActivityFunctions } from 'single-spa';
 import { Freer } from '../../interfaces';
-import { getImportLoaderConfiguration } from '../../register';
+import { frameworkConfiguration } from '../../apis';
 import { getWrapperId } from '../../utils';
 
 const styledComponentSymbol = Symbol('styled-component');
@@ -94,7 +94,7 @@ export default function patch(appName: string, proxy: Window, mounting = true): 
         case SCRIPT_TAG_NAME: {
           const { src, text } = element as HTMLScriptElement;
 
-          const { fetch } = getImportLoaderConfiguration();
+          const { fetch } = frameworkConfiguration;
           if (src) {
             execScripts(null, [src], proxy, { fetch }).then(
               () => {
