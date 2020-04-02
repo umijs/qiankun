@@ -6,8 +6,8 @@
 import { importEntry } from 'import-html-entry';
 import { concat, flow, identity, mergeWith } from 'lodash';
 import getAddOns from './addons';
-import { Lifecycle, LifeCycles, RegistrableApp, Configuration } from './interfaces';
 import { frameworkStartedDefer } from './apis';
+import { Configuration, Lifecycle, LifeCycles, LoadableApp } from './interfaces';
 import { genSandbox } from './sandbox';
 import { Deferred, getDefaultTplWrapper, validateExportLifecycle } from './utils';
 
@@ -15,7 +15,7 @@ function toArray<T>(array: T | T[]): T[] {
   return Array.isArray(array) ? array : [array];
 }
 
-function execHooksChain<T extends object>(hooks: Array<Lifecycle<T>>, app: LoadableApp): Promise<any> {
+function execHooksChain<T extends object>(hooks: Array<Lifecycle<T>>, app: LoadableApp<T>): Promise<any> {
   if (hooks.length) {
     return hooks.reduce((chain, hook) => chain.then(() => hook(app)), Promise.resolve());
   }
@@ -25,17 +25,15 @@ function execHooksChain<T extends object>(hooks: Array<Lifecycle<T>>, app: Loada
 
 async function validateSingularMode<T extends object>(
   validate: Configuration['singular'],
-  app: RegistrableApp<T>,
+  app: LoadableApp<T>,
 ): Promise<boolean> {
   return typeof validate === 'function' ? validate(app) : !!validate;
 }
 
 let prevAppUnmountedDeferred: Deferred<void>;
 
-type LoadableApp = Omit<RegistrableApp, 'props'>;
-
 export async function loadApp<T extends object>(
-  app: LoadableApp,
+  app: LoadableApp<T>,
   configuration: Configuration,
   lifeCycles?: LifeCycles<T>,
 ) {
