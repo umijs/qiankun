@@ -3,6 +3,7 @@
  * @since 2019-05-16
  */
 import { ImportEntryOpts } from 'import-html-entry';
+import { RegisterApplicationConfig } from 'single-spa';
 
 declare global {
   interface Window {
@@ -20,12 +21,19 @@ export type Entry =
       html?: string;
     };
 
-export type RegistrableApp<T extends object = {}> = {
+type SingleSpaStartOpts = { urlRerouteOnly?: boolean };
+
+// just for manual loaded apps, in single-spa it called parcel
+export type LoadableApp<T extends object = {}> = {
   name: string; // app name
   entry: Entry; // app entry
   render: render;
-  activeRule: (location: Location) => boolean;
   props?: T; // props pass through to app
+};
+
+// for the route-based apps
+export type RegistrableApp<T extends object = {}> = LoadableApp<T> & {
+  activeRule: RegisterApplicationConfig['activeWhen'];
 };
 
 export type Prefetch =
@@ -41,10 +49,11 @@ export type Configuration = {
     with singular mode, any app will wait to load until other apps are unmouting
     it is useful for the scenario that only one sub app shown at one time
   */
-  singular?: boolean | ((app: RegistrableApp<any>) => Promise<boolean>);
-} & ImportEntryOpts /** single-spa start opts */ & { urlRerouteOnly?: boolean };
+  singular?: boolean | ((app: LoadableApp<any>) => Promise<boolean>);
+} & ImportEntryOpts &
+  SingleSpaStartOpts;
 
-export type Lifecycle<T extends object> = (app: RegistrableApp<T>) => Promise<any>;
+export type Lifecycle<T extends object> = (app: LoadableApp<T>) => Promise<any>;
 
 export type LifeCycles<T extends object> = {
   beforeLoad?: Lifecycle<T> | Array<Lifecycle<T>>; // function before app load
