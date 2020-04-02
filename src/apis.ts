@@ -55,7 +55,7 @@ export function start(opts: Configuration = {}) {
     }
   }
 
-  startSingleSpa();
+  startSingleSpa({ urlRerouteOnly });
 
   frameworkStartedDefer.resolve();
 }
