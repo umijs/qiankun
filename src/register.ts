@@ -102,7 +102,7 @@ export function registerMicroApps<T extends object = {}>(
         }
         // 第一次加载设置应用可见区域 dom 结构
         // 确保每次应用加载前容器 dom 结构已经设置完毕
-        await render({ appContent, loading: true });
+        render({ appContent, loading: true });
 
         let jsSandbox: Window = window;
         let mountSandbox = () => Promise.resolve();
