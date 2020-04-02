@@ -21,8 +21,6 @@ export type Entry =
       html?: string;
     };
 
-type SingleSpaStartOpts = { urlRerouteOnly?: boolean };
-
 // just for manual loaded apps, in single-spa it called parcel
 export type LoadableApp<T extends object = {}> = {
   name: string; // app name
@@ -42,7 +40,8 @@ export type Prefetch =
   | string[]
   | ((apps: RegistrableApp[]) => { criticalAppNames: string[]; minorAppsName: string[] });
 
-export type Configuration = {
+type SingleSpaStartOpts = { urlRerouteOnly?: boolean };
+type QiankunSpecialOpts = {
   prefetch?: Prefetch;
   jsSandbox?: boolean;
   /*
@@ -50,8 +49,8 @@ export type Configuration = {
     it is useful for the scenario that only one sub app shown at one time
   */
   singular?: boolean | ((app: LoadableApp<any>) => Promise<boolean>);
-} & ImportEntryOpts &
-  SingleSpaStartOpts;
+};
+export type Configuration = QiankunSpecialOpts & ImportEntryOpts & SingleSpaStartOpts;
 
 export type Lifecycle<T extends object> = (app: LoadableApp<T>) => Promise<any>;
 
