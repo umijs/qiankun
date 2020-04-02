@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useRef} from 'react';
 import ReactDOM from 'react-dom';
 
 /**
@@ -17,10 +17,31 @@ function Render(props) {
   )
 }
 
-export default function render({ appContent, loading }) {
+function ElementRender(props) {
+
+  const { loading, element } = props;
+
+  const ref = useRef(null);
+  useEffect(() => {
+    if(element) {
+      ref.current.appendChild(element);
+    }
+  }, [element]);
+
+  return (
+    <>
+      {loading && (
+        <h4 className="subapp-loading">Loading...</h4>
+      )}
+      <div ref={ref} />
+    </>
+  )
+}
+
+export default function render({ appContent, element, loading }) {
   const container = document.getElementById('subapp-container');
   ReactDOM.render(
-    <Render appContent={appContent} loading={loading} />,
+    <ElementRender appContent={appContent} loading={loading} element={element} />,
     container,
   )
 }

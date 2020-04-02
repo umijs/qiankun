@@ -1,5 +1,5 @@
-import { registerApplication, start as startSingleSpa } from 'single-spa';
-import { Configuration, LifeCycles, RegistrableApp } from './interfaces';
+import { mountRootParcel, Parcel, registerApplication, start as startSingleSpa } from 'single-spa';
+import { ElementRender, FrameworkConfiguration, FrameworkLifeCycles, LoadableApp, RegistrableApp } from './interfaces';
 import { loadApp } from './loader';
 import { prefetchApps } from './prefetch';
 import { Deferred } from './utils';
@@ -7,28 +7,46 @@ import { Deferred } from './utils';
 let microApps: RegistrableApp[] = [];
 
 // eslint-disable-next-line import/no-mutable-exports
-export let frameworkConfiguration: Configuration = {};
+export let frameworkConfiguration: FrameworkConfiguration = {};
 export const frameworkStartedDefer = new Deferred<void>();
 
-export function registerMicroApps<T extends object = {}>(apps: Array<RegistrableApp<T>>, lifeCycles?: LifeCycles<T>) {
+export function registerMicroApps<T extends object = {}>(
+  apps: Array<RegistrableApp<T>>,
+  lifeCycles?: FrameworkLifeCycles<T>,
+) {
   // Each app only needs to be registered once
   const unregisteredApps = apps.filter(app => !microApps.some(registeredApp => registeredApp.name === app.name));
 
   microApps = [...microApps, ...unregisteredApps];
 
   unregisteredApps.forEach(app => {
-    const { name, activeRule, props = {} } = app;
+    const { name, activeRule, render, props, entry } = app;
+
+    // convert element render to hybrid render to compatible with prev version
+    const elementRender: ElementRender = ({ element, loading }) =>
+      render({ element, loading, appContent: element ? element.outerHTML : '' });
 
     registerApplication({
       name,
-      app: () => loadApp(app, frameworkConfiguration, lifeCycles),
+      app: () => loadApp({ name, entry, render: elementRender, props }, frameworkConfiguration, lifeCycles),
       activeWhen: activeRule,
       customProps: props,
     });
   });
 }
 
-export function start(opts: Configuration = {}) {
+export function loadMicroApp<T extends object = {}>(
+  app: LoadableApp<T>,
+  configuration = frameworkConfiguration,
+): Parcel {
+  const { props, ...appConfig } = app;
+  return mountRootParcel(() => loadApp(appConfig, configuration), {
+    domElement: document.createElement('div'),
+    ...props,
+  });
+}
+
+export function start(opts: FrameworkConfiguration = {}) {
   window.__POWERED_BY_QIANKUN__ = true;
 
   frameworkConfiguration = opts;

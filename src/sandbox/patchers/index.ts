@@ -10,10 +10,12 @@ import patchHistoryListener from './historyListener';
 import patchTimer from './timer';
 import patchWindowListener from './windowListener';
 
-export function patchAtMounting(appName: string, proxy: Window): Freer[] {
-  return [patchTimer(), patchWindowListener(), patchHistoryListener(), patchDynamicAppend(appName, proxy)];
+export function patchAtMounting(appName: string, element: HTMLElement | ShadowRoot, proxy: Window): Freer[] {
+  return [patchTimer(), patchWindowListener(), patchHistoryListener(), patchDynamicAppend(appName, element, proxy)];
 }
 
-export function patchAtBootstrapping(appName: string, proxy: Window): Freer[] {
-  return [process.env.NODE_ENV === 'development' ? patchDynamicAppend(appName, proxy, false) : () => () => noop];
+export function patchAtBootstrapping(appName: string, element: HTMLElement | ShadowRoot, proxy: Window): Freer[] {
+  return [
+    process.env.NODE_ENV === 'development' ? patchDynamicAppend(appName, element, proxy, false) : () => () => noop,
+  ];
 }

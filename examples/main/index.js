@@ -87,6 +87,7 @@ start({
   prefetch: ['react16', 'react15', 'vue'],
   jsSandbox: true,
   singular: true,
+  cssIsolation: true,
 });
 
 runAfterFirstMounted(() => {
