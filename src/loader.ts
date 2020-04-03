@@ -8,9 +8,20 @@ import { concat, mergeWith } from 'lodash';
 import { LifeCycles, ParcelConfigObject } from 'single-spa';
 import getAddOns from './addons';
 import { frameworkStartedDefer } from './apis';
-import { FrameworkConfiguration, FrameworkLifeCycles, LifeCycleFn, LoadableApp } from './interfaces';
+import {
+  ElementRender,
+  FrameworkConfiguration,
+  FrameworkLifeCycles,
+  HTMLContentRender,
+  LifeCycleFn,
+  LoadableApp,
+} from './interfaces';
 import { genSandbox } from './sandbox';
-import { Deferred, getDefaultTplWrapper, validateExportLifecycle } from './utils';
+import { Deferred, getDefaultTplWrapper, getWrapperId, validateExportLifecycle } from './utils';
+
+function assertElementExist(id: string, element: Element | null) {
+  if (!element) throw new Error(`[qiankun] ${id} wrapper with id ${getWrapperId(id)} not ready!`);
+}
 
 function toArray<T>(array: T | T[]): T[] {
   return Array.isArray(array) ? array : [array];
@@ -51,6 +62,49 @@ function createElement(appContent: string, cssIsolation: boolean): HTMLElement {
 
   return appElement;
 }
+/** generate app wrapper dom getter */
+function genAppWrapperGetter(
+  appInstanceId: string,
+  legacyRender: boolean,
+  cssIsolation: boolean,
+  elementGetter: () => HTMLElement | null,
+) {
+  return () => {
+    if (legacyRender) {
+      if (cssIsolation) throw new Error('[qiankun]: cssIsolation must not be used with legacyRender');
+
+      const appWrapper = document.getElementById(getWrapperId(appInstanceId));
+      assertElementExist(appInstanceId, appWrapper);
+      return appWrapper!;
+    }
+
+    const element = elementGetter();
+    assertElementExist(appInstanceId, element);
+
+    if (cssIsolation) {
+      return element!.shadowRoot!;
+    }
+
+    return element!;
+  };
+}
+
+/** convert element render to html content render if legacyRender enabled */
+function getAutomaticRender(
+  hybridRender: ElementRender | HTMLContentRender,
+  legacyRender: boolean,
+  appContent: string,
+) {
+  const render: ElementRender = ({ element, loading }) => {
+    if (legacyRender) {
+      return (<HTMLContentRender>hybridRender)({ loading, appContent: element ? appContent : '' });
+    }
+
+    return (<ElementRender>hybridRender)({ element, loading });
+  };
+
+  return render;
+}
 
 export async function loadApp<T extends object>(
   app: LoadableApp<T>,
@@ -59,7 +113,7 @@ export async function loadApp<T extends object>(
 ): Promise<ParcelConfigObject> {
   await frameworkStartedDefer.promise;
 
-  const { entry, render, name: appName } = app;
+  const { entry, name: appName, render: hybridRender, legacyRender } = app;
   const { singular, jsSandbox: useJsSandbox, cssIsolation = false, ...importEntryOpts } = configuration || {};
 
   // get the entry html content and script executor
@@ -77,20 +131,21 @@ export async function loadApp<T extends object>(
   }`;
 
   const appContent = getDefaultTplWrapper(appInstanceId)(template);
-  const element = createElement(appContent, cssIsolation);
+  let element: HTMLElement | null = createElement(appContent, cssIsolation);
+
+  const render = getAutomaticRender(hybridRender, !!legacyRender, appContent);
 
   // 第一次加载设置应用可见区域 dom 结构
   // 确保每次应用加载前容器 dom 结构已经设置完毕
   render({ element, loading: true });
 
-  const container = cssIsolation ? element.shadowRoot : element;
+  const containerGetter = genAppWrapperGetter(appInstanceId, !!legacyRender, cssIsolation, () => element);
 
   let global: Window = window;
   let mountSandbox = () => Promise.resolve();
   let unmountSandbox = () => Promise.resolve();
   if (useJsSandbox) {
-    const sandbox = genSandbox(appName, container!, !!singular);
-
+    const sandbox = genSandbox(appName, containerGetter, !!singular);
     // 用沙箱的代理对象作为接下来使用的全局对象
     global = sandbox.sandbox;
     mountSandbox = sandbox.mount;
@@ -159,11 +214,15 @@ export async function loadApp<T extends object>(
         return undefined;
       },
       // 添加 mount hook, 确保每次应用加载前容器 dom 结构已经设置完毕
-      async () => render({ element, loading: true }),
+      async () => {
+        // element would be destroyed after unmounted, we need to recreate it if it not exist
+        element = element || createElement(appContent, cssIsolation);
+        render({ element, loading: true });
+      },
       // exec the chain after rendering to keep the behavior with beforeLoad
       async () => execHooksChain(toArray(beforeMount), app),
       mountSandbox,
-      async props => mount({ ...props, container }),
+      async props => mount({ ...props, containerGetter }),
       // 应用 mount 完成后结束 loading
       async () => render({ element, loading: false }),
       async () => execHooksChain(toArray(afterMount), app),
@@ -176,11 +235,13 @@ export async function loadApp<T extends object>(
     ],
     unmount: [
       async () => execHooksChain(toArray(beforeUnmount), app),
-      async props => unmount({ ...props, container }),
+      async props => unmount({ ...props, containerGetter }),
       unmountSandbox,
       async () => execHooksChain(toArray(afterUnmount), app),
       async () => {
         render({ element: null, loading: false });
+        // for gc
+        element = null;
       },
       async () => {
         if ((await validateSingularMode(singular, app)) && prevAppUnmountedDeferred) {

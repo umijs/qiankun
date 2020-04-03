@@ -29,30 +29,35 @@ registerMicroApps(
       name: 'react16',
       entry: '//localhost:7100',
       render,
+      legacyRender: true,
       activeRule: genActiveRule('/react16'),
     },
     {
       name: 'react15',
       entry: '//localhost:7102',
       render,
+      legacyRender: true,
       activeRule: genActiveRule('/react15'),
     },
     {
       name: 'vue',
       entry: '//localhost:7101',
       render,
+      legacyRender: true,
       activeRule: genActiveRule('/vue'),
     },
     {
       name: 'angular9',
       entry: '//localhost:7103',
       render,
+      legacyRender: true,
       activeRule: genActiveRule('/angular9'),
     },
     {
       name: 'purehtml',
       entry: '//localhost:7104',
       render,
+      legacyRender: true,
       activeRule: genActiveRule('/purehtml'),
     },
   ],
@@ -87,7 +92,6 @@ start({
   prefetch: ['react16', 'react15', 'vue'],
   jsSandbox: true,
   singular: true,
-  cssIsolation: true,
 });
 
 runAfterFirstMounted(() => {

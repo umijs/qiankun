@@ -21,10 +21,10 @@ import SnapshotSandbox from './snapshotSandbox';
  * 这么设计的目的是为了保证每个子应用切换回来之后，还能运行在应用 bootstrap 之后的环境下。
  *
  * @param appName
- * @param element
+ * @param elementGetter
  * @param singular
  */
-export function genSandbox(appName: string, element: HTMLElement | ShadowRoot, singular: boolean) {
+export function genSandbox(appName: string, elementGetter: () => HTMLElement | ShadowRoot, singular: boolean) {
   // mounting freers are one-off and should be re-init at every mounting time
   let mountingFreers: Freer[] = [];
 
@@ -38,7 +38,7 @@ export function genSandbox(appName: string, element: HTMLElement | ShadowRoot, s
   }
 
   // some side effect could be be invoked while bootstrapping, such as dynamic stylesheet injection with style-loader, especially during the development phase
-  const bootstrappingFreers = patchAtBootstrapping(appName, element, sandbox.proxy);
+  const bootstrappingFreers = patchAtBootstrapping(appName, elementGetter, sandbox.proxy);
 
   return {
     sandbox: sandbox.proxy,
@@ -64,7 +64,7 @@ export function genSandbox(appName: string, element: HTMLElement | ShadowRoot, s
 
       /* ------------------------------------------ 2. 开启全局变量补丁 ------------------------------------------*/
       // render 沙箱启动时开始劫持各类全局监听，尽量不要在应用初始化阶段有 事件监听/定时器 等副作用
-      mountingFreers = patchAtMounting(appName, element, sandbox.proxy);
+      mountingFreers = patchAtMounting(appName, elementGetter, sandbox.proxy);
 
       /* ------------------------------------------ 3. 重置一些初始化时的副作用 ------------------------------------------*/
       // 存在 rebuilder 则表明有些副作用需要重建

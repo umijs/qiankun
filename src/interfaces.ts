@@ -20,22 +20,26 @@ export type Entry =
       html?: string;
     };
 
-type HTMLContentRender = (props: { appContent: string; loading: boolean }) => any;
+export type HTMLContentRender = (props: { appContent: string; loading: boolean }) => any;
 export type ElementRender = (props: { element: HTMLElement | null; loading: boolean }) => any;
 
 // just for manual loaded apps, in single-spa it called parcel
 export type LoadableApp<T extends object = {}> = {
-  name: string; // app name
-  entry: Entry; // app entry
-  render: ElementRender;
-  props?: T; // props pass through to app
+  // app name
+  name: string;
+  // app entry
+  entry: Entry;
+  render: ElementRender | HTMLContentRender;
+  // if legacyRender enabled, the render will be convert to HTMLContentRender automatically
+  legacyRender?: boolean;
+  // props pass through to app
+  props?: T;
 };
 
 // for the route-based apps
 export type RegistrableApp<T extends object = {}> = {
-  render: HTMLContentRender | ElementRender;
   activeRule: RegisterApplicationConfig['activeWhen'];
-} & Omit<LoadableApp<T>, 'render'>;
+} & LoadableApp<T>;
 
 export type Prefetch =
   | boolean

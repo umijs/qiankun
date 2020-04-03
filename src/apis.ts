@@ -1,5 +1,5 @@
 import { mountRootParcel, Parcel, registerApplication, start as startSingleSpa } from 'single-spa';
-import { ElementRender, FrameworkConfiguration, FrameworkLifeCycles, LoadableApp, RegistrableApp } from './interfaces';
+import { FrameworkConfiguration, FrameworkLifeCycles, LoadableApp, RegistrableApp } from './interfaces';
 import { loadApp } from './loader';
 import { prefetchApps } from './prefetch';
 import { Deferred } from './utils';
@@ -20,15 +20,11 @@ export function registerMicroApps<T extends object = {}>(
   microApps = [...microApps, ...unregisteredApps];
 
   unregisteredApps.forEach(app => {
-    const { name, activeRule, render, props, entry } = app;
-
-    // convert element render to hybrid render to compatible with prev version
-    const elementRender: ElementRender = ({ element, loading }) =>
-      render({ element, loading, appContent: element ? element.outerHTML : '' });
+    const { name, activeRule, props, ...appConfig } = app;
 
     registerApplication({
       name,
-      app: () => loadApp({ name, entry, render: elementRender, props }, frameworkConfiguration, lifeCycles),
+      app: () => loadApp({ name, props, ...appConfig }, frameworkConfiguration, lifeCycles),
       activeWhen: activeRule,
       customProps: props,
     });
