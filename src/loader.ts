@@ -44,7 +44,7 @@ function createElement(appContent: string, cssIsolation: boolean): HTMLElement {
   const containerElement = document.createElement('div');
   containerElement.innerHTML = appContent;
   // appContent always wrapped with a singular div
-  const appElement = containerElement.children[0] as HTMLElement;
+  const appElement = containerElement.firstChild as HTMLElement;
   if (cssIsolation) {
     const { innerHTML } = appElement;
     appElement.innerHTML = '';
