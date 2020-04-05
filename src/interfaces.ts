@@ -21,7 +21,6 @@ export type Entry =
     };
 
 export type HTMLContentRender = (props: { appContent: string; loading: boolean }) => any;
-export type ElementRender = (props: { element: HTMLElement | null; loading: boolean }) => any;
 
 // just for manual loaded apps, in single-spa it called parcel
 export type LoadableApp<T extends object = {}> = {
@@ -29,11 +28,12 @@ export type LoadableApp<T extends object = {}> = {
   name: string;
   // app entry
   entry: Entry;
-  render: ElementRender | HTMLContentRender;
-  // if legacyRender enabled, the render will be convert to HTMLContentRender automatically
-  legacyRender?: boolean;
+  // where the app mount to, mutual exclusive with the legacy custom render function
+  container: string | HTMLElement;
   // props pass through to app
   props?: T;
+  // legacy mode, the render function all handled by user
+  render?: HTMLContentRender;
 };
 
 // for the route-based apps

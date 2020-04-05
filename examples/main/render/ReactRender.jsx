@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom';
 
 /**
@@ -12,38 +12,16 @@ function Render(props) {
       {loading && (
         <h4 className="subapp-loading">Loading...</h4>
       )}
+      <div id="subapp-viewport"/>
       <div dangerouslySetInnerHTML={{ __html: appContent }}/>
     </>
   );
 }
 
-function ElementRender(props) {
-
-  const { loading, element } = props;
-
-  const ref = useRef(null);
-  useEffect(() => {
-    if (element) {
-      ref.current.appendChild(element);
-    } else {
-      ref.current.innerHTML = '';
-    }
-  }, [element]);
-
-  return (
-    <>
-      {loading && (
-        <h4 className="subapp-loading">Loading...</h4>
-      )}
-      <div ref={ref}/>
-    </>
-  );
-}
-
-export default function render({ appContent, element, loading }) {
+export default function render({ appContent, loading }) {
   const container = document.getElementById('subapp-container');
   ReactDOM.render(
-    <Render appContent={appContent} loading={loading} element={element}/>,
+    <Render appContent={appContent} loading={loading}/>,
     container,
   );
 }

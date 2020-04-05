@@ -6,7 +6,7 @@ import * as serviceWorker from './serviceWorker';
 
 function render(props) {
   const { container } = props;
-  ReactDOM.render(<App />, container ? container.querySelector('#root') : document.getElementById('root'));
+  ReactDOM.render(<App />, container.querySelector('#root'));
 }
 
 if (!window.__POWERED_BY_QIANKUN__) {
@@ -22,9 +22,8 @@ export async function mount(props) {
   render(props);
 }
 
-export async function unmount(props) {
-  const { container } = props;
-  ReactDOM.unmountComponentAtNode(container ? container.querySelector('#root') : document.getElementById('root'));
+export async function unmount() {
+  ReactDOM.unmountComponentAtNode(document.getElementById('root'));
 }
 
 // If you want your app to work offline and load faster, you can change
