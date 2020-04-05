@@ -45,7 +45,7 @@ export type Prefetch =
   | boolean
   | 'all'
   | string[]
-  | ((apps: RegistrableApp[]) => { criticalAppNames: string[]; minorAppsName: string[] });
+  | ((apps: LoadableApp[]) => { criticalAppNames: string[]; minorAppsName: string[] });
 
 type QiankunSpecialOpts = {
   prefetch?: Prefetch;

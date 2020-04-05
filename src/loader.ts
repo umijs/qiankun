@@ -7,7 +7,6 @@ import { importEntry } from 'import-html-entry';
 import { concat, mergeWith } from 'lodash';
 import { LifeCycles, ParcelConfigObject } from 'single-spa';
 import getAddOns from './addons';
-import { frameworkStartedDefer } from './apis';
 import { FrameworkConfiguration, FrameworkLifeCycles, HTMLContentRender, LifeCycleFn, LoadableApp } from './interfaces';
 import { genSandbox } from './sandbox';
 import { Deferred, getDefaultTplWrapper, getWrapperId, validateExportLifecycle } from './utils';
@@ -41,12 +40,6 @@ async function validateSingularMode<T extends object>(
   return typeof validate === 'function' ? validate(app) : !!validate;
 }
 
-const appExportPromiseCaches: Record<string, Promise<LifeCycles>> = {};
-
-const appInstanceCounts: Record<string, number> = {};
-
-let prevAppUnmountedDeferred: Deferred<void>;
-
 function createElement(appContent: string, cssIsolation: boolean): HTMLElement {
   const containerElement = document.createElement('div');
   containerElement.innerHTML = appContent;
@@ -61,6 +54,7 @@ function createElement(appContent: string, cssIsolation: boolean): HTMLElement {
 
   return appElement;
 }
+
 /** generate app wrapper dom getter */
 function getAppWrapperGetter(
   appInstanceId: string,
@@ -136,15 +130,17 @@ function getRender(appContent: string, container?: string | HTMLElement, legacyR
   return render;
 }
 
+const appExportPromiseCaches: Record<string, Promise<LifeCycles>> = {};
+const appInstanceCounts: Record<string, number> = {};
+let prevAppUnmountedDeferred: Deferred<void>;
+
 export async function loadApp<T extends object>(
   app: LoadableApp<T>,
-  configuration: FrameworkConfiguration,
+  configuration: FrameworkConfiguration = {},
   lifeCycles?: FrameworkLifeCycles<T>,
 ): Promise<ParcelConfigObject> {
-  await frameworkStartedDefer.promise;
-
   const { entry, name: appName, render: legacyRender, container } = app;
-  const { singular, jsSandbox: useJsSandbox, cssIsolation = false, ...importEntryOpts } = configuration || {};
+  const { singular = true, jsSandbox = true, cssIsolation = false, ...importEntryOpts } = configuration;
 
   // get the entry html content and script executor
   const { template, execScripts, assetPublicPath } = await importEntry(entry, importEntryOpts);
@@ -174,8 +170,8 @@ export async function loadApp<T extends object>(
   let global: Window = window;
   let mountSandbox = () => Promise.resolve();
   let unmountSandbox = () => Promise.resolve();
-  if (useJsSandbox) {
-    const sandbox = genSandbox(appName, containerGetter, !!singular);
+  if (jsSandbox) {
+    const sandbox = genSandbox(appName, containerGetter, Boolean(singular));
     // 用沙箱的代理对象作为接下来使用的全局对象
     global = sandbox.sandbox;
     mountSandbox = sandbox.mount;
@@ -252,7 +248,7 @@ export async function loadApp<T extends object>(
       // exec the chain after rendering to keep the behavior with beforeLoad
       async () => execHooksChain(toArray(beforeMount), app),
       mountSandbox,
-      async props => mount({ ...props, container: element }),
+      async props => mount({ ...props, container: containerGetter() }),
       // 应用 mount 完成后结束 loading
       async () => render({ element, loading: false }),
       async () => execHooksChain(toArray(afterMount), app),
@@ -265,7 +261,7 @@ export async function loadApp<T extends object>(
     ],
     unmount: [
       async () => execHooksChain(toArray(beforeUnmount), app),
-      async props => unmount({ ...props, container: element }),
+      async props => unmount({ ...props, container: containerGetter() }),
       unmountSandbox,
       async () => execHooksChain(toArray(afterUnmount), app),
       async () => {

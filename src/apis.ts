@@ -4,11 +4,13 @@ import { loadApp } from './loader';
 import { prefetchApps } from './prefetch';
 import { Deferred } from './utils';
 
+window.__POWERED_BY_QIANKUN__ = true;
+
 let microApps: RegistrableApp[] = [];
 
 // eslint-disable-next-line import/no-mutable-exports
 export let frameworkConfiguration: FrameworkConfiguration = {};
-export const frameworkStartedDefer = new Deferred<void>();
+const frameworkStartedDefer = new Deferred<void>();
 
 export function registerMicroApps<T extends object = {}>(
   apps: Array<RegistrableApp<T>>,
@@ -24,7 +26,10 @@ export function registerMicroApps<T extends object = {}>(
 
     registerApplication({
       name,
-      app: () => loadApp({ name, props, ...appConfig }, frameworkConfiguration, lifeCycles),
+      app: async () => {
+        await frameworkStartedDefer.promise;
+        return loadApp({ name, props, ...appConfig }, frameworkConfiguration, lifeCycles);
+      },
       activeWhen: activeRule,
       customProps: props,
     });
@@ -43,8 +48,6 @@ export function loadMicroApp<T extends object = {}>(
 }
 
 export function start(opts: FrameworkConfiguration = {}) {
-  window.__POWERED_BY_QIANKUN__ = true;
-
   frameworkConfiguration = opts;
   const {
     prefetch = true,
