@@ -1,3 +1,8 @@
+const render = $ => {
+  $('#purehtml-container').html('Hello, render with jQuery');
+  return Promise.resolve();
+};
+
 (global => {
   global['purehtml'] = {
     bootstrap: () => {
@@ -6,7 +11,7 @@
     },
     mount: () => {
       console.log('purehtml mount');
-      return Promise.resolve();
+      return render($);
     },
     unmount: () => {
       console.log('purehtml unmount');
