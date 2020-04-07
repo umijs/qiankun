@@ -21,12 +21,12 @@ export function isConstructable(fn: () => void | FunctionConstructor) {
   );
 }
 
-export function getDefaultTplWrapper(appName: string) {
-  return (tpl: string) => `<div id="${getWrapperId(appName)}">${tpl}</div>`;
+export function getDefaultTplWrapper(id: string) {
+  return (tpl: string) => `<div id="${getWrapperId(id)}">${tpl}</div>`;
 }
 
-export function getWrapperId(appName: string) {
-  return `__qiankun_subapp_wrapper_for_${snakeCase(appName)}__`;
+export function getWrapperId(id: string) {
+  return `__qiankun_subapp_wrapper_for_${snakeCase(id)}__`;
 }
 
 /** 校验子应用导出的 生命周期 对象是否正确 */

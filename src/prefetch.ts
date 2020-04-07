@@ -4,10 +4,9 @@
  */
 
 import { Entry, importEntry, ImportEntryOpts } from 'import-html-entry';
-import { flow, identity, isFunction } from 'lodash';
+import { isFunction } from 'lodash';
 import { getMountedApps } from 'single-spa';
-import { Prefetch, RegistrableApp } from './interfaces';
-import { getDefaultTplWrapper } from './utils';
+import { LoadableApp, Prefetch } from './interfaces';
 
 type RequestIdleCallbackHandle = any;
 type RequestIdleCallbackOptions = {
@@ -58,28 +57,23 @@ const isSlowNetwork = navigator.connection
 
 /**
  * prefetch assets, do nothing while in mobile network
- * @param appName
  * @param entry
  * @param opts
  */
-function prefetch(appName: string, entry: Entry, opts?: ImportEntryOpts): void {
+function prefetch(entry: Entry, opts?: ImportEntryOpts): void {
   if (isMobile || isSlowNetwork) {
     // Don't prefetch if an mobile device or in a slow network.
     return;
   }
 
   requestIdleCallback(async () => {
-    const { getTemplate = identity, ...settings } = opts || {};
-    const { getExternalScripts, getExternalStyleSheets } = await importEntry(entry, {
-      getTemplate: flow(getTemplate, getDefaultTplWrapper(appName)),
-      ...settings,
-    });
+    const { getExternalScripts, getExternalStyleSheets } = await importEntry(entry, opts);
     requestIdleCallback(getExternalStyleSheets);
     requestIdleCallback(getExternalScripts);
   });
 }
 
-function prefetchAfterFirstMounted(apps: RegistrableApp[], opts?: ImportEntryOpts): void {
+function prefetchAfterFirstMounted(apps: LoadableApp[], opts?: ImportEntryOpts): void {
   window.addEventListener('single-spa:first-mount', function listener() {
     const mountedApps = getMountedApps();
     const notMountedApps = apps.filter(app => mountedApps.indexOf(app.name) === -1);
@@ -88,22 +82,22 @@ function prefetchAfterFirstMounted(apps: RegistrableApp[], opts?: ImportEntryOpt
       console.log(`[qiankun] prefetch starting after ${mountedApps} mounted...`, notMountedApps);
     }
 
-    notMountedApps.forEach(({ name, entry }) => prefetch(name, entry, opts));
+    notMountedApps.forEach(({ entry }) => prefetch(entry, opts));
 
     window.removeEventListener('single-spa:first-mount', listener);
   });
 }
 
-function prefetchImmediately(apps: RegistrableApp[], opts?: ImportEntryOpts): void {
+function prefetchImmediately(apps: LoadableApp[], opts?: ImportEntryOpts): void {
   if (process.env.NODE_ENV === 'development') {
     console.log('[qiankun] prefetch starting for apps...', apps);
   }
 
-  apps.forEach(({ name, entry }) => prefetch(name, entry, opts));
+  apps.forEach(({ entry }) => prefetch(entry, opts));
 }
 
-export function prefetchApps(apps: RegistrableApp[], prefetchAction: Prefetch, importEntryOpts: ImportEntryOpts) {
-  const appsName2Apps = (names: string[]): RegistrableApp[] => apps.filter(app => names.includes(app.name));
+export function prefetchApps(apps: LoadableApp[], prefetchAction: Prefetch, importEntryOpts: ImportEntryOpts) {
+  const appsName2Apps = (names: string[]): LoadableApp[] => apps.filter(app => names.includes(app.name));
 
   if (Array.isArray(prefetchAction)) {
     prefetchAfterFirstMounted(appsName2Apps(prefetchAction as string[]), importEntryOpts);

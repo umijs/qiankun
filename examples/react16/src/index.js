@@ -4,8 +4,9 @@ import App from './App';
 import './public-path';
 import * as serviceWorker from './serviceWorker';
 
-function render() {
-  ReactDOM.render(<App />, document.getElementById('root'));
+function render(props) {
+  const { container } = props;
+  ReactDOM.render(<App />, container.querySelector('#root'));
 }
 
 if (!window.__POWERED_BY_QIANKUN__) {
@@ -18,7 +19,7 @@ export async function bootstrap() {
 
 export async function mount(props) {
   console.log('[react16] props from main framework', props);
-  render();
+  render(props);
 }
 
 export async function unmount() {

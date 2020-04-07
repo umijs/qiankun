@@ -5,9 +5,8 @@
 import { execScripts } from 'import-html-entry';
 import { isFunction } from 'lodash';
 import { checkActivityFunctions } from 'single-spa';
-import { Freer } from '../../interfaces';
 import { frameworkConfiguration } from '../../apis';
-import { getWrapperId } from '../../utils';
+import { Freer } from '../../interfaces';
 
 const styledComponentSymbol = Symbol('styled-component');
 
@@ -45,23 +44,21 @@ function setCachedRules(element: HTMLStyleElement, cssRules: CSSRuleList) {
   Object.defineProperty(element, styledComponentSymbol, { value: cssRules, configurable: true, enumerable: false });
 }
 
-function assertElementExist(appName: string, element: Element | null) {
-  if (!element) throw new Error(`[qiankun] ${appName} wrapper with id ${getWrapperId(appName)} not ready!`);
-}
-
-function getWrapperElement(appName: string) {
-  return document.getElementById(getWrapperId(appName));
-}
-
 /**
  * Just hijack dynamic head append, that could avoid accidentally hijacking the insertion of elements except in head.
  * Such a case: ReactDOM.createPortal(<style>.test{color:blue}</style>, container),
  * this could made we append the style element into app wrapper but it will cause an error while the react portal unmounting, as ReactDOM could not find the style in body children list.
  * @param appName
+ * @param appWrapperGetter
  * @param proxy
  * @param mounting
  */
-export default function patch(appName: string, proxy: Window, mounting = true): Freer {
+export default function patch(
+  appName: string,
+  appWrapperGetter: () => HTMLElement | ShadowRoot,
+  proxy: Window,
+  mounting = true,
+): Freer {
   let dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
 
   HTMLHeadElement.prototype.appendChild = function appendChild<T extends Node>(this: HTMLHeadElement, newChild: T) {
@@ -83,9 +80,7 @@ export default function patch(appName: string, proxy: Window, mounting = true): 
           if (activated) {
             dynamicStyleSheetElements.push(stylesheetElement);
 
-            const appWrapper = getWrapperElement(appName);
-            assertElementExist(appName, appWrapper);
-            return rawAppendChild.call(appWrapper, stylesheetElement) as T;
+            return rawAppendChild.call(appWrapperGetter(), stylesheetElement) as T;
           }
 
           return rawHeadAppendChild.call(this, element) as T;
@@ -120,16 +115,12 @@ export default function patch(appName: string, proxy: Window, mounting = true): 
             );
 
             const dynamicScriptCommentElement = document.createComment(`dynamic script ${src} replaced by qiankun`);
-            const appWrapper = getWrapperElement(appName);
-            assertElementExist(appName, appWrapper);
-            return rawAppendChild.call(appWrapper, dynamicScriptCommentElement) as T;
+            return rawAppendChild.call(appWrapperGetter(), dynamicScriptCommentElement) as T;
           }
 
           execScripts(null, [`<script>${text}</script>`], proxy).then(element.onload, element.onerror);
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
-          const appWrapper = getWrapperElement(appName);
-          assertElementExist(appName, appWrapper);
-          return rawAppendChild.call(appWrapper, dynamicInlineScriptCommentElement) as T;
+          return rawAppendChild.call(appWrapperGetter(), dynamicInlineScriptCommentElement) as T;
         }
 
         default:
@@ -141,9 +132,8 @@ export default function patch(appName: string, proxy: Window, mounting = true): 
   };
 
   HTMLHeadElement.prototype.removeChild = function removeChild<T extends Node>(this: HTMLHeadElement, child: T) {
-    const appWrapper = getWrapperElement(appName);
-    if (appWrapper?.contains(child)) {
-      return rawRemoveChild.call(appWrapper, child) as T;
+    if (appWrapperGetter().contains(child)) {
+      return rawRemoveChild.call(appWrapperGetter(), child) as T;
     }
 
     return rawHeadRemoveChild.call(this, child) as T;
@@ -173,11 +163,9 @@ export default function patch(appName: string, proxy: Window, mounting = true): 
     return function rebuild() {
       dynamicStyleSheetElements.forEach(stylesheetElement => {
         // re-append the dynamic stylesheet to sub-app container
-        const appWrapper = getWrapperElement(appName);
-        assertElementExist(appName, appWrapper);
         // Using document.head.appendChild ensures that appendChild calls
         // can also directly use the HTMLHeadElement.prototype.appendChild method which is overwritten at mounting phase
-        document.head.appendChild.call(appWrapper!, stylesheetElement);
+        document.head.appendChild.call(appWrapperGetter(), stylesheetElement);
 
         /*
         get the stored css rules from styled-components generated element, and the re-insert rules for them.

@@ -3,7 +3,7 @@
  * @since 2019-05-16
  */
 import { ImportEntryOpts } from 'import-html-entry';
-import { RegisterApplicationConfig } from 'single-spa';
+import { RegisterApplicationConfig, StartOpts } from 'single-spa';
 
 declare global {
   interface Window {
@@ -12,7 +12,6 @@ declare global {
   }
 }
 
-export type render = (props: { appContent: string; loading: boolean }) => any;
 export type Entry =
   | string
   | {
@@ -21,45 +20,52 @@ export type Entry =
       html?: string;
     };
 
+export type HTMLContentRender = (props: { appContent: string; loading: boolean }) => any;
+
 // just for manual loaded apps, in single-spa it called parcel
 export type LoadableApp<T extends object = {}> = {
-  name: string; // app name
-  entry: Entry; // app entry
-  render: render;
-  props?: T; // props pass through to app
+  // app name
+  name: string;
+  // app entry
+  entry: Entry;
+  // where the app mount to, mutual exclusive with the legacy custom render function
+  container: string | HTMLElement;
+  // props pass through to app
+  props?: T;
+  // legacy mode, the render function all handled by user
+  render?: HTMLContentRender;
 };
 
 // for the route-based apps
-export type RegistrableApp<T extends object = {}> = LoadableApp<T> & {
+export type RegistrableApp<T extends object = {}> = {
   activeRule: RegisterApplicationConfig['activeWhen'];
-};
+} & LoadableApp<T>;
 
 export type Prefetch =
   | boolean
   | 'all'
   | string[]
-  | ((apps: RegistrableApp[]) => { criticalAppNames: string[]; minorAppsName: string[] });
+  | ((apps: LoadableApp[]) => { criticalAppNames: string[]; minorAppsName: string[] });
 
-type SingleSpaStartOpts = { urlRerouteOnly?: boolean };
 type QiankunSpecialOpts = {
   prefetch?: Prefetch;
   jsSandbox?: boolean;
+  cssIsolation?: boolean;
   /*
     with singular mode, any app will wait to load until other apps are unmouting
     it is useful for the scenario that only one sub app shown at one time
   */
   singular?: boolean | ((app: LoadableApp<any>) => Promise<boolean>);
 };
-export type Configuration = QiankunSpecialOpts & ImportEntryOpts & SingleSpaStartOpts;
+export type FrameworkConfiguration = QiankunSpecialOpts & ImportEntryOpts & StartOpts;
 
-export type Lifecycle<T extends object> = (app: LoadableApp<T>) => Promise<any>;
-
-export type LifeCycles<T extends object> = {
-  beforeLoad?: Lifecycle<T> | Array<Lifecycle<T>>; // function before app load
-  beforeMount?: Lifecycle<T> | Array<Lifecycle<T>>; // function before app mount
-  afterMount?: Lifecycle<T> | Array<Lifecycle<T>>; // function after app mount
-  beforeUnmount?: Lifecycle<T> | Array<Lifecycle<T>>; // function before app unmount
-  afterUnmount?: Lifecycle<T> | Array<Lifecycle<T>>; // function after app unmount
+export type LifeCycleFn<T extends object> = (app: LoadableApp<T>) => Promise<any>;
+export type FrameworkLifeCycles<T extends object> = {
+  beforeLoad?: LifeCycleFn<T> | Array<LifeCycleFn<T>>; // function before app load
+  beforeMount?: LifeCycleFn<T> | Array<LifeCycleFn<T>>; // function before app mount
+  afterMount?: LifeCycleFn<T> | Array<LifeCycleFn<T>>; // function after app mount
+  beforeUnmount?: LifeCycleFn<T> | Array<LifeCycleFn<T>>; // function before app unmount
+  afterUnmount?: LifeCycleFn<T> | Array<LifeCycleFn<T>>; // function after app unmount
 };
 
 export type Rebuilder = () => void;

@@ -38,7 +38,7 @@ export async function bootstrap() {
 
 export async function mount(props) {
   console.log('[vue] props from main framework', props);
-  render();
+  render(props);
 }
 
 export async function unmount() {

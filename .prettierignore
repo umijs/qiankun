@@ -2,3 +2,5 @@
 **/*.gif
 /dist
 /docs
+/es
+/lib

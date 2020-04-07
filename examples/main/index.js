@@ -11,14 +11,10 @@ import 'zone.js';
 import render from './render/ReactRender';
 // import render from './render/VueRender'
 
-function genActiveRule(routerPrefix) {
-  return location => location.pathname.startsWith(routerPrefix);
-}
-
 /**
  * Step1 初始化应用（可选）
  */
-render({ appContent: '', loading: true });
+render({ loading: true });
 
 /**
  * Step2 注册子应用
@@ -28,32 +24,32 @@ registerMicroApps(
     {
       name: 'react16',
       entry: '//localhost:7100',
-      render,
-      activeRule: genActiveRule('/react16'),
+      container: '#subapp-viewport',
+      activeRule: '/react16',
     },
     {
       name: 'react15',
       entry: '//localhost:7102',
       render,
-      activeRule: genActiveRule('/react15'),
+      activeRule: '/react15',
     },
     {
       name: 'vue',
       entry: '//localhost:7101',
-      render,
-      activeRule: genActiveRule('/vue'),
+      container: '#subapp-viewport',
+      activeRule: '/vue',
     },
     {
       name: 'angular9',
       entry: '//localhost:7103',
-      render,
-      activeRule: genActiveRule('/angular9'),
+      container: '#subapp-viewport',
+      activeRule: '/angular9',
     },
     {
       name: 'purehtml',
       entry: '//localhost:7104',
-      render,
-      activeRule: genActiveRule('/purehtml'),
+      container: '#subapp-viewport',
+      activeRule: '/purehtml',
     },
   ],
   {

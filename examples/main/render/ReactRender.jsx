@@ -12,15 +12,16 @@ function Render(props) {
       {loading && (
         <h4 className="subapp-loading">Loading...</h4>
       )}
-      <div dangerouslySetInnerHTML={{ __html: appContent }} />
+      <div id="subapp-viewport"/>
+      <div dangerouslySetInnerHTML={{ __html: appContent }}/>
     </>
-  )
+  );
 }
 
 export default function render({ appContent, loading }) {
   const container = document.getElementById('subapp-container');
   ReactDOM.render(
-    <Render appContent={appContent} loading={loading} />,
+    <Render appContent={appContent} loading={loading}/>,
     container,
-  )
+  );
 }
