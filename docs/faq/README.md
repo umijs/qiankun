@@ -168,6 +168,11 @@ example:
 2. export lifecycles in the entry
 
 ```javascript
+const render = ($) => {
+  $('#purehtml-container').html("Hello, render with jQuery");
+  return Promise.resolve();
+}
+
 (global => {
   global['purehtml'] = {
     bootstrap: () => {
@@ -176,7 +181,7 @@ example:
     },
     mount: () => {
       console.log('purehtml mount');
-      return Promise.resolve();
+      return render($)
     },
     unmount: () => {
       console.log('purehtml unmount');
