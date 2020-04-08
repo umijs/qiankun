@@ -49,6 +49,23 @@ module.exports = {
 };
 ```
 
+## Vue Router 报错 `Uncaught TypeError: Cannot redefine property: $router`
+
+qiankun 中的代码使用 Proxy 去代理父页面的 window，来实现的沙箱，在子应用中访问 `window.Vue` 时，会先在自己的 window 里查找有没有 `Vue` 属性，如果没有就去父应用里查找。
+
+在 VueRouter 的代码里有这样三行代码，会在模块加载的时候就访问 `window.Vue` 这个变量，子项目中报这个错，一般是由于父应用中的 Vue 挂载到了父应用的 `window` 对象上了。
+
+```javascript
+if (inBrowser && window.Vue) {
+  window.Vue.use(VueRouter)
+}
+```
+
+可以从以下方式中选择一种来解决问题：
+
+1. 在主应用中不使用 CDN 等 external 的方式来加载 `Vue` 框架，使用前端打包软件来加载模块
+2. 在主应用中，将 `window.Vue` 变量改个名称，例如 `window.Vue2 = window.Vue; window.Vue = undefined`
+
 ## 为什么子应用加载的资源会 404？
 
 原因是 webpack 加载资源时未使用正确的 `publicPath`。
