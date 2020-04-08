@@ -1,4 +1,4 @@
-import { registerMicroApps, runAfterFirstMounted, setDefaultMountApp, start } from '../../es';
+import { registerMicroApps, runAfterFirstMounted, setDefaultMountApp, start, getGlobalStore } from '../../es';
 import './index.less';
 
 // for angular subapp
@@ -15,6 +15,12 @@ import render from './render/ReactRender';
  * Step1 初始化应用（可选）
  */
 render({ loading: true });
+
+const { methods } = getGlobalStore();
+
+methods.onStateChange('user', value => console.log(value));
+methods.setState('others', { value: 'from-main' });
+console.log(2);
 
 /**
  * Step2 注册子应用

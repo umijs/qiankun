@@ -3,10 +3,19 @@ import { FrameworkConfiguration, FrameworkLifeCycles, LoadableApp, RegistrableAp
 import { loadApp } from './loader';
 import { prefetchApps } from './prefetch';
 import { Deferred } from './utils';
+import { createStore } from './store';
 
 window.__POWERED_BY_QIANKUN__ = true;
 
 let microApps: RegistrableApp[] = [];
+const store = createStore({});
+
+export function getGlobalStore() {
+  return {
+    methods: store.getMethods('#__gloabl__'),
+    unmount: store.unmout,
+  };
+}
 
 // eslint-disable-next-line import/no-mutable-exports
 export let frameworkConfiguration: FrameworkConfiguration = {};
@@ -28,7 +37,7 @@ export function registerMicroApps<T extends object = {}>(
       name,
       app: async () => {
         await frameworkStartedDefer.promise;
-        return loadApp({ name, props, ...appConfig }, frameworkConfiguration, lifeCycles);
+        return loadApp({ name, props, ...appConfig }, frameworkConfiguration, store, lifeCycles);
       },
       activeWhen: activeRule,
       customProps: props,
@@ -41,7 +50,7 @@ export function loadMicroApp<T extends object = {}>(
   configuration = frameworkConfiguration,
 ): Parcel {
   const { props, ...appConfig } = app;
-  return mountRootParcel(() => loadApp(appConfig, configuration), {
+  return mountRootParcel(() => loadApp(appConfig, configuration, store), {
     domElement: document.createElement('div'),
     ...props,
   });

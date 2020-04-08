@@ -18,6 +18,8 @@ export async function bootstrap() {
 }
 
 export async function mount(props) {
+  props.store.setState('user', { name: 'react16' });
+  props.store.onStateChange('others', value => console.log(value));
   console.log('[react16] props from main framework', props);
   render(props);
 }

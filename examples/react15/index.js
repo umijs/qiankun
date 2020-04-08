@@ -16,6 +16,8 @@ export async function bootstrap() {
 
 export async function mount(props) {
   console.log('[react15] props from main framework', props);
+  props.store.setState('user', { name: 'react15' });
+
   ReactDOM.render(<App />, document.getElementById('react15Root'));
   import('./dynamic.css').then(() => {
     console.log('[react15] dynamic style load');
