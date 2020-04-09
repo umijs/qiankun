@@ -48,6 +48,23 @@ module.exports = {
 };
 ```
 
+## Vue Router Error - `Uncaught TypeError: Cannot redefine property: $router`
+
+If you pass `{ jsSandbox: true }` to `start()` function, `qiankun` will use `Proxy` to isolate global `window` object for sub applications. When you access `window.Vue` in sub application's code，it will check whether the `Vue` property in the proxyed `window` object. If the property does not exist, it will look it up in the global `window` object and return it.
+
+There are three lines code in the `vue-router` as followed, and it will access `window.Vue` once the `vue-router` module is loaded. And the `window.Vue` in following code is your master application's `Vue`.
+
+```javascript
+if (inBrowser && window.Vue) {
+  window.Vue.use(VueRouter)
+}
+```
+
+To solve the error, choose one of the options listed below:
+
+1. Use bundler to pack `Vue` library, instead of CDN or external module
+2. Rename `Vue` to other name in master application, eg: `window.Vue2 = window.Vue; window.Vue = undefined`
+
 ## Why dynamic imported assets missing?
 
 Two way to solve that:
