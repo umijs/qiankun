@@ -139,7 +139,7 @@ export async function loadApp<T extends object>(
   configuration: FrameworkConfiguration = {},
   lifeCycles?: FrameworkLifeCycles<T>,
 ): Promise<ParcelConfigObject> {
-  const { entry, name: appName, render: legacyRender, container } = app;
+  const { entry, name: appName } = app;
   const { singular = true, jsSandbox = true, cssIsolation = false, ...importEntryOpts } = configuration;
 
   // get the entry html content and script executor
@@ -158,6 +158,9 @@ export async function loadApp<T extends object>(
 
   const appContent = getDefaultTplWrapper(appInstanceId)(template);
   let element: HTMLElement | null = createElement(appContent, cssIsolation);
+
+  const container = 'container' in app ? app.container : undefined;
+  const legacyRender = 'render' in app ? app.render : undefined;
 
   const render = getRender(appContent, container, legacyRender);
 
