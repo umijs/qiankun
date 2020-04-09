@@ -10,7 +10,7 @@ function render(props) {
 }
 
 if (!window.__POWERED_BY_QIANKUN__) {
-  render();
+  render({});
 }
 
 export async function bootstrap() {
