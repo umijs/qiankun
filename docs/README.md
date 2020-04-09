@@ -42,4 +42,4 @@ See details：[Getting Started](/guide/getting-started.html)
 
 | Github Issue | 钉钉群 |
 | --- | --- |
-| [umijs/qiankun/issues](https://github.com/umijs/qiankun/issues) | <img src="https://gw.alipayobjects.com/mdn/rms_655822/afts/img/A*HMVERqOue-AAAAAAAAAAAABkARQnAQ" width="60" /> |
+| [umijs/qiankun/issues](https://github.com/umijs/qiankun/issues) | <img src="https://gw.alipayobjects.com/mdn/rms_655822/afts/img/A*HMVERqOue-AAAAAAAAAAAABkARQnAQ" width="150" /> |
