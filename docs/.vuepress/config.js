@@ -51,6 +51,7 @@ module.exports = {
           { text: 'API', link: '/api/' },
           { text: 'FAQ', link: '/faq/' },
           { text: 'Changelog', link: 'https://github.com/umijs/qiankun/releases' },
+          { text: '1.x', link: 'https://v1.qiankun.umijs.org/' },
         ],
         sidebar: {
           '/guide/': [
@@ -73,6 +74,7 @@ module.exports = {
           { text: 'API', link: '/zh/api/' },
           { text: '常见问题', link: '/zh/faq/' },
           { text: '发布日志', link: 'https://github.com/umijs/qiankun/releases' },
+          { text: '1.x', link: 'https://v1.qiankun.umijs.org/zh/' },
         ],
         sidebar: {
           '/zh/guide/': [
