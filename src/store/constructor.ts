@@ -122,7 +122,9 @@ export default class Store {
             console.warn(`[${bucket}] not declared when create store！`);
           }
         });
-        self.__gloablEmit(state, prevs);
+        if (prevs.length > 0) {
+          self.__gloablEmit(state, prevs);
+        }
         return true;
       },
     };
