@@ -138,7 +138,7 @@ let prevAppUnmountedDeferred: Deferred<void>;
 export async function loadApp<T extends object>(
   app: LoadableApp<T>,
   configuration: FrameworkConfiguration = {},
-  store: Store,
+  store?: Store,
   lifeCycles?: FrameworkLifeCycles<T>,
 ): Promise<ParcelConfigObject> {
   const { entry, name: appName, render: legacyRender, container } = app;
@@ -230,6 +230,10 @@ export async function loadApp<T extends object>(
     }
   }
 
+  const { onStateChange, setState, onGlobalStateChange }: Record<string, Function> = store
+    ? store.getMethods(appInstanceId) || {}
+    : {};
+
   return {
     name: appInstanceId,
     bootstrap: [bootstrap],
@@ -250,7 +254,7 @@ export async function loadApp<T extends object>(
       // exec the chain after rendering to keep the behavior with beforeLoad
       async () => execHooksChain(toArray(beforeMount), app),
       mountSandbox,
-      async props => mount({ ...props, container: containerGetter(), store: store.getMethods(appInstanceId) }),
+      async props => mount({ ...props, container: containerGetter(), onStateChange, setState, onGlobalStateChange }),
       // 应用 mount 完成后结束 loading
       async () => render({ element, loading: false }),
       async () => execHooksChain(toArray(afterMount), app),
@@ -268,7 +272,9 @@ export async function loadApp<T extends object>(
       async () => execHooksChain(toArray(afterUnmount), app),
       async () => {
         render({ element: null, loading: false });
-        store.unmout(appInstanceId);
+        if (store) {
+          store.unmout(appInstanceId);
+        }
         // for gc
         element = null;
       },

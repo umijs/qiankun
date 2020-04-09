@@ -10,13 +10,24 @@ import './public-path';
 import 'antd/dist/antd.min.css';
 import './index.css';
 
+function storeTest(props) {
+  props.setState({
+    ignore: props.name,
+    user: {
+      name: props.name,
+    },
+  });
+  props.onStateChange('user', value => console.log(`[onStateChange - user - ${props.name}]:`, value));
+  props.onGlobalStateChange((value, prev) => console.log(`[onGlobalStateChange - ${props.name}]:`, value, prev));
+}
+
 export async function bootstrap() {
   console.log('[react15] react app bootstraped');
 }
 
 export async function mount(props) {
   console.log('[react15] props from main framework', props);
-  props.store.setState('user', { name: 'react15' });
+  storeTest(props);
 
   ReactDOM.render(<App />, document.getElementById('react15Root'));
   import('./dynamic.css').then(() => {
