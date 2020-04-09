@@ -3,7 +3,7 @@
  * @since 2019-05-16
  */
 import { ImportEntryOpts } from 'import-html-entry';
-import { RegisterApplicationConfig, StartOpts } from 'single-spa';
+import { RegisterApplicationConfig, StartOpts, Parcel } from 'single-spa';
 
 declare global {
   interface Window {
@@ -67,6 +67,8 @@ export type FrameworkLifeCycles<T extends object> = {
   beforeUnmount?: LifeCycleFn<T> | Array<LifeCycleFn<T>>; // function before app unmount
   afterUnmount?: LifeCycleFn<T> | Array<LifeCycleFn<T>>; // function after app unmount
 };
+
+export type MicroApp = Parcel;
 
 export type Rebuilder = () => void;
 export type Freer = () => Rebuilder;
