@@ -28,13 +28,18 @@ export type LoadableApp<T extends object = {}> = {
   name: string;
   // app entry
   entry: Entry;
-  // where the app mount to, mutual exclusive with the legacy custom render function
-  container: string | HTMLElement;
   // props pass through to app
   props?: T;
-  // legacy mode, the render function all handled by user
-  render?: HTMLContentRender;
-};
+} & (
+  | {
+      // legacy mode, the render function all handled by user
+      render: HTMLContentRender;
+    }
+  | {
+      // where the app mount to, mutual exclusive with the legacy custom render function
+      container: string | HTMLElement;
+    }
+);
 
 // for the route-based apps
 export type RegistrableApp<T extends object = {}> = {
