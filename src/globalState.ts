@@ -3,7 +3,7 @@
  * @since 2020-04-10
  */
 
-type OnGlobalStateChangeCallBack = (state: any, bucket?: string[]) => void;
+type OnGlobalStateChangeCallBack = (state: Record<string, any>, prev: Record<string, any> | null) => void;
 
 type MicroAppStateActions = {
   onGlobalStateChange: (callback: OnGlobalStateChangeCallBack, fireImmediately?: boolean) => void;
@@ -16,26 +16,25 @@ let gloabalState: Record<string, any> = {};
 const deps: Record<string, OnGlobalStateChangeCallBack> = {};
 
 // 触发全局监听
-function gloablEmit(state: Record<string, any>, prevs: string[]) {
+function emitGloabl(state: Record<string, any>, prev: Record<string, any> = {}) {
   Object.keys(deps).forEach((id: string) => {
     if (deps[id] instanceof Function) {
-      deps[id]({ ...state }, prevs);
+      deps[id](state, prev);
     }
   });
 }
 
-export function initGlobalState(obj: Record<string, any> = {}) {
-  gloabalState = { ...obj };
-  gloablEmit(gloabalState, Object.keys(gloabalState));
+export function initGlobalState(state: Record<string, any> = {}) {
+  if (state === gloabalState) {
+    console.warn('[state] has not changed！');
+  } else {
+    gloabalState = { ...state };
+    emitGloabl(gloabalState, state);
+  }
   return getMicroAppStateActions(`gloabal-${+new Date()}`);
 }
 
-export function getMicroAppStateActions(id: string): MicroAppStateActions | null {
-  if (!(typeof id === 'string')) {
-    console.error('[appId] must be string！');
-    return null;
-  }
-
+export function getMicroAppStateActions(id: string): MicroAppStateActions {
   return {
     /**
      * onStateChange 全局依赖监听
@@ -58,9 +57,12 @@ export function getMicroAppStateActions(id: string): MicroAppStateActions | null
         console.error('[callback] must be function!');
         return;
       }
+      if (deps[id]) {
+        console.warn(`[${id}] gloabal listening already exists before this, new listening will overwrite it.`);
+      }
       deps[id] = callback;
       if (fireImmediately) {
-        callback({ ...gloabalState }, []);
+        callback({ ...gloabalState }, null);
       }
     },
 
@@ -73,18 +75,24 @@ export function getMicroAppStateActions(id: string): MicroAppStateActions | null
      * @param state
      */
     setGlobalState(state: Record<string, any> = {}) {
-      const prevs: string[] = [];
-      Object.keys(state).forEach(bucket => {
-        if (bucket in gloabalState) {
-          gloabalState[bucket] = state[bucket];
-          prevs.push(bucket);
-        } else {
-          console.warn(`[${bucket}] not declared when init state！`);
-        }
-      });
-      if (prevs.length > 0) {
-        gloablEmit(gloabalState, prevs);
+      if (state === gloabalState) {
+        console.warn('[state] has not changed！');
+        return false;
       }
+      const changeKeys: string[] = [];
+      gloabalState = Object.keys(state).reduce((_gloabalState, changeKey) => {
+        if (changeKey in _gloabalState) {
+          changeKeys.push(changeKey);
+          return { ..._gloabalState, [changeKey]: state[changeKey] };
+        }
+        console.warn(`[${changeKey}] not declared when init state！`);
+        return _gloabalState;
+      }, gloabalState);
+      if (changeKeys.length === 0) {
+        console.warn('[state] has not changed！');
+        return false;
+      }
+      emitGloabl(gloabalState, state);
       return true;
     },
 

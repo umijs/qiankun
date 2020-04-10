@@ -229,8 +229,11 @@ export async function loadApp<T extends object>(
     }
   }
 
-  const { onGlobalStateChange, setGlobalState, offGlobalStateChange }: Record<string, Function> =
-    getMicroAppStateActions(appInstanceId) || {};
+  const {
+    onGlobalStateChange,
+    setGlobalState,
+    offGlobalStateChange,
+  }: Record<string, Function> = getMicroAppStateActions(appInstanceId);
 
   return {
     name: appInstanceId,
