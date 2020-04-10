@@ -10,7 +10,7 @@ import getAddOns from './addons';
 import { FrameworkConfiguration, FrameworkLifeCycles, HTMLContentRender, LifeCycleFn, LoadableApp } from './interfaces';
 import { genSandbox } from './sandbox';
 import { Deferred, getDefaultTplWrapper, getWrapperId, validateExportLifecycle } from './utils';
-import { Store } from './store';
+import { getMicroAppStateActions } from './store';
 
 function assertElementExist(element: Element | null | undefined, id?: string, msg?: string) {
   if (!element) {
@@ -138,7 +138,6 @@ let prevAppUnmountedDeferred: Deferred<void>;
 export async function loadApp<T extends object>(
   app: LoadableApp<T>,
   configuration: FrameworkConfiguration = {},
-  store: Store,
   lifeCycles?: FrameworkLifeCycles<T>,
 ): Promise<ParcelConfigObject> {
   const { entry, name: appName, render: legacyRender, container } = app;
@@ -230,7 +229,8 @@ export async function loadApp<T extends object>(
     }
   }
 
-  const { onGlobalStateChange, setGlobalState }: Record<string, Function> = store.getMethods(appInstanceId);
+  const { onGlobalStateChange, setGlobalState, offGlobalStateChange }: Record<string, Function> =
+    getMicroAppStateActions(appInstanceId) || {};
 
   return {
     name: appInstanceId,
@@ -270,7 +270,7 @@ export async function loadApp<T extends object>(
       async () => execHooksChain(toArray(afterUnmount), app),
       async () => {
         render({ element: null, loading: false });
-        store.unmout(appInstanceId);
+        offGlobalStateChange(appInstanceId);
         // for gc
         element = null;
       },
