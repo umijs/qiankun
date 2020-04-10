@@ -1,4 +1,4 @@
-import { registerMicroApps, runAfterFirstMounted, setDefaultMountApp, start, createStore } from '../../es';
+import { registerMicroApps, runAfterFirstMounted, setDefaultMountApp, start, initMasterState } from '../../es';
 import './index.less';
 
 // for angular subapp
@@ -19,11 +19,6 @@ render({ loading: true });
 /**
  * Step2 注册子应用
  */
-const store = createStore({
-  user: {
-    name: 'qiankun',
-  },
-});
 
 registerMicroApps(
   [
@@ -75,12 +70,20 @@ registerMicroApps(
       },
     ],
   },
-  store,
 );
 
-const { onStateChange, onGlobalStateChange } = store.getMethods(`master-${+new Date()}`);
-onStateChange('user', value => console.log('[onStateChange - user - master]:', value));
+const { onGlobalStateChange, setGlobalState } = initMasterState({
+  user: 'qiankun',
+});
+
 onGlobalStateChange((value, prev) => console.log('[onGlobalStateChange - master]:', value, prev));
+
+setGlobalState({
+  ignore: 'master',
+  user: {
+    name: 'master',
+  },
+});
 
 /**
  * Step3 设置默认进入的子应用

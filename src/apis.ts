@@ -3,11 +3,17 @@ import { FrameworkConfiguration, FrameworkLifeCycles, LoadableApp, RegistrableAp
 import { loadApp } from './loader';
 import { prefetchApps } from './prefetch';
 import { Deferred } from './utils';
-import { Store } from './store';
+import { createStore } from './store';
 
 window.__POWERED_BY_QIANKUN__ = true;
 
 let microApps: RegistrableApp[] = [];
+
+const store = createStore({});
+
+export function initMasterState(obj: Record<string, any> = {}) {
+  return store.initMasterState(obj);
+}
 
 // eslint-disable-next-line import/no-mutable-exports
 export let frameworkConfiguration: FrameworkConfiguration = {};
@@ -16,7 +22,6 @@ const frameworkStartedDefer = new Deferred<void>();
 export function registerMicroApps<T extends object = {}>(
   apps: Array<RegistrableApp<T>>,
   lifeCycles?: FrameworkLifeCycles<T>,
-  store?: Store,
 ) {
   // Each app only needs to be registered once
   const unregisteredApps = apps.filter(app => !microApps.some(registeredApp => registeredApp.name === app.name));
@@ -41,7 +46,6 @@ export function registerMicroApps<T extends object = {}>(
 export function loadMicroApp<T extends object = {}>(
   app: LoadableApp<T>,
   configuration = frameworkConfiguration,
-  store?: Store,
 ): Parcel {
   const { props, ...appConfig } = app;
   return mountRootParcel(() => loadApp(appConfig, configuration, store), {
