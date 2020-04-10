@@ -22,24 +22,24 @@ export type Entry =
 
 export type HTMLContentRender = (props: { appContent: string; loading: boolean }) => any;
 
-// just for manual loaded apps, in single-spa it called parcel
-export type LoadableApp<T extends object = {}> = {
+export type AppMetadata = {
   // app name
   name: string;
   // app entry
   entry: Entry;
-  // props pass through to app
-  props?: T;
-} & (
-  | {
-      // legacy mode, the render function all handled by user
-      render: HTMLContentRender;
-    }
-  | {
-      // where the app mount to, mutual exclusive with the legacy custom render function
-      container: string | HTMLElement;
-    }
-);
+};
+
+// just for manual loaded apps, in single-spa it called parcel
+export type LoadableApp<T extends object = {}> = AppMetadata & { /* props pass through to app */ props?: T } & (
+    | {
+        // legacy mode, the render function all handled by user
+        render: HTMLContentRender;
+      }
+    | {
+        // where the app mount to, mutual exclusive with the legacy custom render function
+        container: string | HTMLElement;
+      }
+  );
 
 // for the route-based apps
 export type RegistrableApp<T extends object = {}> = {
@@ -50,7 +50,7 @@ export type Prefetch =
   | boolean
   | 'all'
   | string[]
-  | ((apps: LoadableApp[]) => { criticalAppNames: string[]; minorAppsName: string[] });
+  | ((apps: AppMetadata[]) => { criticalAppNames: string[]; minorAppsName: string[] });
 
 type QiankunSpecialOpts = {
   prefetch?: Prefetch;
