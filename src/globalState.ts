@@ -19,14 +19,14 @@ const deps: Record<string, OnGlobalStateChangeCallBack> = {};
 function gloablEmit(state: Record<string, any>, prevs: string[]) {
   Object.keys(deps).forEach((id: string) => {
     if (deps[id] instanceof Function) {
-      deps[id](state, prevs);
+      deps[id]({ ...state }, prevs);
     }
   });
 }
 
 export function initGlobalState(obj: Record<string, any> = {}) {
   gloabalState = { ...obj };
-  gloablEmit({ ...obj }, Object.keys(gloabalState));
+  gloablEmit(gloabalState, Object.keys(gloabalState));
   return getMicroAppStateActions(`gloabal-${+new Date()}`);
 }
 
@@ -83,7 +83,7 @@ export function getMicroAppStateActions(id: string): MicroAppStateActions | null
         }
       });
       if (prevs.length > 0) {
-        gloablEmit({ ...gloabalState }, prevs);
+        gloablEmit(gloabalState, prevs);
       }
       return true;
     },
