@@ -10,7 +10,7 @@ import getAddOns from './addons';
 import { FrameworkConfiguration, FrameworkLifeCycles, HTMLContentRender, LifeCycleFn, LoadableApp } from './interfaces';
 import { genSandbox } from './sandbox';
 import { Deferred, getDefaultTplWrapper, getWrapperId, validateExportLifecycle } from './utils';
-import { getMicroAppStateActions } from './store';
+import { getMicroAppStateActions } from './globalState';
 
 function assertElementExist(element: Element | null | undefined, id?: string, msg?: string) {
   if (!element) {
