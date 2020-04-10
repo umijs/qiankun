@@ -11,8 +11,8 @@ let microApps: RegistrableApp[] = [];
 
 const store = createStore({});
 
-export function initMasterState(obj: Record<string, any> = {}) {
-  return store.initMasterState(obj);
+export function initGlobalState(obj: Record<string, any> = {}) {
+  return store.initGlobalState(obj);
 }
 
 // eslint-disable-next-line import/no-mutable-exports

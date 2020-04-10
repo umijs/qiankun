@@ -26,7 +26,7 @@ export default class Store {
     });
   }
 
-  initMasterState(obj: Record<string, any> = {}) {
+  initGlobalState(obj: Record<string, any> = {}) {
     this.__store = obj;
     return this.getMethods(`gloabal-${+new Date()}`);
   }

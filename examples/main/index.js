@@ -1,4 +1,4 @@
-import { registerMicroApps, runAfterFirstMounted, setDefaultMountApp, start, initMasterState } from '../../es';
+import { registerMicroApps, runAfterFirstMounted, setDefaultMountApp, start, initGlobalState } from '../../es';
 import './index.less';
 
 // for angular subapp
@@ -72,7 +72,7 @@ registerMicroApps(
   },
 );
 
-const { onGlobalStateChange, setGlobalState } = initMasterState({
+const { onGlobalStateChange, setGlobalState } = initGlobalState({
   user: 'qiankun',
 });
 
