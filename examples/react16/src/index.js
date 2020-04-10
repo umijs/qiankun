@@ -6,7 +6,7 @@ import * as serviceWorker from './serviceWorker';
 
 function render(props) {
   const { container } = props;
-  ReactDOM.render(<App />, container.querySelector('#root'));
+  ReactDOM.render(<App />, container ? container.querySelector('#root') : document.querySelector('#root'));
 }
 
 if (!window.__POWERED_BY_QIANKUN__) {
