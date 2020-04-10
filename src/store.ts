@@ -25,7 +25,8 @@ function gloablEmit(state: Record<string, any>, prevs: string[]) {
 }
 
 export function initGlobalState(obj: Record<string, any> = {}) {
-  gloabalState = obj;
+  gloabalState = { ...obj };
+  gloablEmit({ ...obj }, Object.keys(gloabalState));
   return getMicroAppStateActions(`gloabal-${+new Date()}`);
 }
 
