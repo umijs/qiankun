@@ -28,10 +28,9 @@ function deepClone(target: any) {
     } else if (target.constructor === RegExp) {
       result = target;
     } else {
-      result = {};
-      Object.keys(target).forEach(key => {
-        result[key] = deepClone(target[key]);
-      });
+      result = Object.keys(target).reduce((_result, key) => {
+        return Object.assign(_result, { [key]: deepClone(target[key]) });
+      }, {});
     }
   } else {
     result = target;
