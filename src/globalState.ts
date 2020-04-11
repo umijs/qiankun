@@ -19,10 +19,9 @@ function deepClone(target: any) {
   let result: any;
   if (typeof target === 'object') {
     if (Array.isArray(target)) {
-      result = [];
-      target.forEach(key => {
-        result.push(deepClone(target[key]));
-      });
+      result = target.reduce((_result, key) => {
+        return [..._result, key];
+      }, []);
     } else if (target === null) {
       result = null;
     } else if (target.constructor === RegExp) {
