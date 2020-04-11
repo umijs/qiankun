@@ -15,11 +15,35 @@ let gloabalState: Record<string, any> = {};
 
 const deps: Record<string, OnGlobalStateChangeCallBack> = {};
 
+function deepClone(target: any) {
+  let result: any;
+  if (typeof target === 'object') {
+    if (Array.isArray(target)) {
+      result = [];
+      target.forEach(key => {
+        result.push(deepClone(target[key]));
+      });
+    } else if (target === null) {
+      result = null;
+    } else if (target.constructor === RegExp) {
+      result = target;
+    } else {
+      result = {};
+      Object.keys(target).forEach(key => {
+        result[key] = deepClone(target[key]);
+      });
+    }
+  } else {
+    result = target;
+  }
+  return result;
+}
+
 // 触发全局监听
 function emitGloabl(state: Record<string, any>, prev: Record<string, any> = {}) {
   Object.keys(deps).forEach((id: string) => {
     if (deps[id] instanceof Function) {
-      deps[id](state, prev);
+      deps[id](deepClone(state), prev);
     }
   });
 }
@@ -28,7 +52,7 @@ export function initGlobalState(state: Record<string, any> = {}) {
   if (state === gloabalState) {
     console.warn('[state] has not changed！');
   } else {
-    gloabalState = { ...state };
+    gloabalState = deepClone(state);
     emitGloabl(gloabalState, state);
   }
   return getMicroAppStateActions(`gloabal-${+new Date()}`);
@@ -62,7 +86,7 @@ export function getMicroAppStateActions(id: string): MicroAppStateActions {
       }
       deps[id] = callback;
       if (fireImmediately) {
-        callback({ ...gloabalState }, null);
+        callback(deepClone(gloabalState), null);
       }
     },
 
@@ -80,14 +104,16 @@ export function getMicroAppStateActions(id: string): MicroAppStateActions {
         return false;
       }
       const changeKeys: string[] = [];
-      gloabalState = Object.keys(state).reduce((_gloabalState, changeKey) => {
-        if (changeKey in _gloabalState) {
-          changeKeys.push(changeKey);
-          return { ..._gloabalState, [changeKey]: state[changeKey] };
-        }
-        console.warn(`[${changeKey}] not declared when init state！`);
-        return _gloabalState;
-      }, gloabalState);
+      gloabalState = deepClone(
+        Object.keys(state).reduce((_gloabalState, changeKey) => {
+          if (changeKey in _gloabalState) {
+            changeKeys.push(changeKey);
+            return Object.assign(_gloabalState, { [changeKey]: state[changeKey] });
+          }
+          console.warn(`[${changeKey}] not declared when init state！`);
+          return _gloabalState;
+        }, gloabalState),
+      );
       if (changeKeys.length === 0) {
         console.warn('[state] has not changed！');
         return false;
