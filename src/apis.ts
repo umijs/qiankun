@@ -51,7 +51,7 @@ export function start(opts: FrameworkConfiguration = {}) {
   frameworkConfiguration = opts;
   const {
     prefetch = true,
-    jsSandbox = true,
+    sandbox = true,
     singular = true,
     urlRerouteOnly,
     ...importEntryOpts
@@ -61,7 +61,7 @@ export function start(opts: FrameworkConfiguration = {}) {
     prefetchApps(microApps, prefetch, importEntryOpts);
   }
 
-  if (jsSandbox) {
+  if (sandbox) {
     if (!window.Proxy) {
       console.warn('[qiankun] Miss window.Proxy, proxySandbox will degenerate into snapshotSandbox');
       // 快照沙箱不支持非 singular 模式

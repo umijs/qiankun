@@ -54,8 +54,12 @@ export type Prefetch =
 
 type QiankunSpecialOpts = {
   prefetch?: Prefetch;
-  jsSandbox?: boolean;
-  cssIsolation?: boolean;
+  sandbox?:
+    | boolean
+    | {
+        strictStyleIsolation?: boolean;
+        patchers?: Patcher[];
+      };
   /*
     with singular mode, any app will wait to load until other apps are unmouting
     it is useful for the scenario that only one sub app shown at one time
@@ -77,6 +81,7 @@ export type MicroApp = Parcel;
 
 export type Rebuilder = () => void;
 export type Freer = () => Rebuilder;
+export type Patcher = () => Freer;
 
 export interface SandBox {
   /** 沙箱的名字 */
