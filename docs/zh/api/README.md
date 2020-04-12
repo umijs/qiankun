@@ -185,16 +185,35 @@
 
 适用于需要手动 加载/卸载 一个微应用的场景。
 
+::: info 
+通常这种场景下微应用是一个不带路由的可独立运行的业务组件。
+微应用不宜拆分过细，建议按照业务域来做拆分。业务关联紧密的功能单元应该做成一个微应用，反之关联不紧密的可以考虑拆分成多个微应用。
+一个判断业务关联是否紧密的标准：**看这个微应用与其他微应用是否有频繁的通信需求**。如果有可能说明这两个微应用本身就是服务于同一个业务场景，合并成一个微应用可能会更合适。
+:::
+
 ### `loadMicroApp(app, configuration?)`
 
 * 参数
-  * app - `LoadableApp` - 必选，子应用的一些基础信息
-    * name - `string` - 必选，子应用的名称，子应用之间必须确保唯一。
-    * entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - 必选，子应用的 entry 地址。
-    * container - `string | HTMLElement` - 必选，子应用的容器节点的选择器或者 Element 实例。如`container: '#root'` 或 `container: document.querySelector('#root')`。
+  * app - `LoadableApp` - 必选，微应用的基础信息
+    * name - `string` - 必选，微应用的名称，微应用之间必须确保唯一。
+    * entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - 必选，微应用的 entry 地址。
+    * container - `string | HTMLElement` - 必选，微应用的容器节点的选择器或者 Element 实例。如`container: '#root'` 或 `container: document.querySelector('#root')`。
     * props - `object` - 可选，初始化时需要传递给微应用的数据。
-  * configuration - `Configuration`
-  
+    
+  * configuration - `Configuration` - 可选，微应用的配置信息
+
+    * sandbox - `boolean` | `{ strictStyleIsolation?: boolean }` - 可选，是否开启沙箱，默认为 `true`。
+
+      当配置为 `{ strictStyleIsolation: true }` 表示开启严格的样式隔离模式。这种模式下 qiankun 会为每个子应用的容器包裹上一个 [shadow dom](https://developer.mozilla.org/zh-CN/docs/Web/Web_Components/Using_shadow_DOM) 节点，从而确保子应用的样式不会对全局造成影响。
+
+    * singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - 可选，是否为单实例场景，默认为 `false`。
+
+    * fetch - `Function` - 可选，自定义的 fetch 方法。
+
+    * getPublicPath - `(url: string) => string` - 可选
+
+    * getTemplate - `(tpl: string) => string` - 可选
+
 * 返回值 - `MicroApp` - 微应用实例
   * mount(): Promise<null>;
   * unmount(): Promise<null>;
@@ -250,6 +269,10 @@
     }
   }
   ```
+
+### `prefetchApps(apps, prefetchAction, importEntryOpts?)`
+
+手动预加载指定的微应用静态资源。仅手动加载微应用场景需要，基于路由自动激活场景直接配置 `prefetch` 属性即可。
 
 ## [addErrorHandler/removeErrorHandler](https://single-spa.js.org/docs/api#adderrorhandler)
 
