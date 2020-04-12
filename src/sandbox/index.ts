@@ -24,7 +24,7 @@ import SnapshotSandbox from './snapshotSandbox';
  * @param elementGetter
  * @param singular
  */
-export function genSandbox(appName: string, elementGetter: () => HTMLElement | ShadowRoot, singular: boolean) {
+export function createSandbox(appName: string, elementGetter: () => HTMLElement | ShadowRoot, singular: boolean) {
   // mounting freers are one-off and should be re-init at every mounting time
   let mountingFreers: Freer[] = [];
 
@@ -41,7 +41,7 @@ export function genSandbox(appName: string, elementGetter: () => HTMLElement | S
   const bootstrappingFreers = patchAtBootstrapping(appName, elementGetter, sandbox.proxy);
 
   return {
-    sandbox: sandbox.proxy,
+    proxy: sandbox.proxy,
 
     /**
      * 沙箱被 mount

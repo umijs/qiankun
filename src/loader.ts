@@ -8,7 +8,7 @@ import { concat, mergeWith } from 'lodash';
 import { LifeCycles, ParcelConfigObject } from 'single-spa';
 import getAddOns from './addons';
 import { FrameworkConfiguration, FrameworkLifeCycles, HTMLContentRender, LifeCycleFn, LoadableApp } from './interfaces';
-import { genSandbox } from './sandbox';
+import { createSandbox } from './sandbox';
 import { Deferred, getDefaultTplWrapper, getWrapperId, validateExportLifecycle } from './utils';
 
 function assertElementExist(element: Element | null | undefined, id?: string, msg?: string) {
@@ -40,12 +40,12 @@ async function validateSingularMode<T extends object>(
   return typeof validate === 'function' ? validate(app) : !!validate;
 }
 
-function createElement(appContent: string, cssIsolation: boolean): HTMLElement {
+function createElement(appContent: string, strictStyleIsolation: boolean): HTMLElement {
   const containerElement = document.createElement('div');
   containerElement.innerHTML = appContent;
   // appContent always wrapped with a singular div
   const appElement = containerElement.firstChild as HTMLElement;
-  if (cssIsolation) {
+  if (strictStyleIsolation) {
     const { innerHTML } = appElement;
     appElement.innerHTML = '';
     const shadow = appElement.attachShadow({ mode: 'open' });
@@ -59,12 +59,12 @@ function createElement(appContent: string, cssIsolation: boolean): HTMLElement {
 function getAppWrapperGetter(
   appInstanceId: string,
   useLegacyRender: boolean,
-  cssIsolation: boolean,
+  strictStyleIsolation: boolean,
   elementGetter: () => HTMLElement | null,
 ) {
   return () => {
     if (useLegacyRender) {
-      if (cssIsolation) throw new Error('[qiankun]: cssIsolation must not be used with legacyRender');
+      if (strictStyleIsolation) throw new Error('[qiankun]: cssIsolation must not be used with legacyRender');
 
       const appWrapper = document.getElementById(getWrapperId(appInstanceId));
       assertElementExist(appWrapper, appInstanceId);
@@ -74,7 +74,7 @@ function getAppWrapperGetter(
     const element = elementGetter();
     assertElementExist(element, appInstanceId);
 
-    if (cssIsolation) {
+    if (strictStyleIsolation) {
       return element!.shadowRoot!;
     }
 
@@ -140,7 +140,7 @@ export async function loadApp<T extends object>(
   lifeCycles?: FrameworkLifeCycles<T>,
 ): Promise<ParcelConfigObject> {
   const { entry, name: appName } = app;
-  const { singular = true, jsSandbox = true, cssIsolation = false, ...importEntryOpts } = configuration;
+  const { singular = true, sandbox = true, ...importEntryOpts } = configuration;
 
   // get the entry html content and script executor
   const { template, execScripts, assetPublicPath } = await importEntry(entry, importEntryOpts);
@@ -156,8 +156,10 @@ export async function loadApp<T extends object>(
     appInstanceCounts.hasOwnProperty(appName) ? (appInstanceCounts[appName] ?? 0) + 1 : 0
   }`;
 
+  const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
+
   const appContent = getDefaultTplWrapper(appInstanceId)(template);
-  let element: HTMLElement | null = createElement(appContent, cssIsolation);
+  let element: HTMLElement | null = createElement(appContent, strictStyleIsolation);
 
   const container = 'container' in app ? app.container : undefined;
   const legacyRender = 'render' in app ? app.render : undefined;
@@ -168,17 +170,17 @@ export async function loadApp<T extends object>(
   // 确保每次应用加载前容器 dom 结构已经设置完毕
   render({ element, loading: true });
 
-  const containerGetter = getAppWrapperGetter(appInstanceId, !!legacyRender, cssIsolation, () => element);
+  const containerGetter = getAppWrapperGetter(appInstanceId, !!legacyRender, strictStyleIsolation, () => element);
 
   let global: Window = window;
   let mountSandbox = () => Promise.resolve();
   let unmountSandbox = () => Promise.resolve();
-  if (jsSandbox) {
-    const sandbox = genSandbox(appName, containerGetter, Boolean(singular));
+  if (sandbox) {
+    const sandboxInstance = createSandbox(appName, containerGetter, Boolean(singular));
     // 用沙箱的代理对象作为接下来使用的全局对象
-    global = sandbox.sandbox;
-    mountSandbox = sandbox.mount;
-    unmountSandbox = sandbox.unmount;
+    global = sandboxInstance.proxy;
+    mountSandbox = sandboxInstance.mount;
+    unmountSandbox = sandboxInstance.unmount;
   }
 
   const { beforeUnmount = [], afterUnmount = [], afterMount = [], beforeMount = [], beforeLoad = [] } = mergeWith(
@@ -245,7 +247,7 @@ export async function loadApp<T extends object>(
       // 添加 mount hook, 确保每次应用加载前容器 dom 结构已经设置完毕
       async () => {
         // element would be destroyed after unmounted, we need to recreate it if it not exist
-        element = element || createElement(appContent, cssIsolation);
+        element = element || createElement(appContent, strictStyleIsolation);
         render({ element, loading: true });
       },
       // exec the chain after rendering to keep the behavior with beforeLoad
