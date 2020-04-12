@@ -21,8 +21,8 @@ export function patchAtMounting(
   excludeAssetFilter?: Function,
 ): Freer[] {
   const basePatchers = [
-    () => patchInterval(),
-    () => patchWindowListener(),
+    () => patchInterval(sandbox.proxy),
+    () => patchWindowListener(sandbox.proxy),
     () => patchHistoryListener(),
     () => patchDynamicAppend(appName, elementGetter, sandbox.proxy, true, singular, scopedCSS, excludeAssetFilter),
   ];

@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 /**
  * @author Kuitos
  * @since 2019-04-11
@@ -8,10 +9,10 @@ import { noop } from 'lodash';
 const rawAddEventListener = window.addEventListener;
 const rawRemoveEventListener = window.removeEventListener;
 
-export default function patch() {
+export default function patch(global: WindowProxy) {
   const listenerMap = new Map<string, EventListenerOrEventListenerObject[]>();
 
-  window.addEventListener = (
+  global.addEventListener = (
     type: string,
     listener: EventListenerOrEventListenerObject,
     options?: boolean | AddEventListenerOptions,
@@ -21,7 +22,7 @@ export default function patch() {
     return rawAddEventListener.call(window, type, listener, options);
   };
 
-  window.removeEventListener = (
+  global.removeEventListener = (
     type: string,
     listener: EventListenerOrEventListenerObject,
     options?: boolean | AddEventListenerOptions,
@@ -35,10 +36,10 @@ export default function patch() {
 
   return function free() {
     listenerMap.forEach((listeners, type) =>
-      [...listeners].forEach(listener => window.removeEventListener(type, listener)),
+      [...listeners].forEach(listener => global.removeEventListener(type, listener)),
     );
-    window.addEventListener = rawAddEventListener;
-    window.removeEventListener = rawRemoveEventListener;
+    global.addEventListener = rawAddEventListener;
+    global.removeEventListener = rawRemoveEventListener;
 
     return noop;
   };
