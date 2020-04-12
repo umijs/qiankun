@@ -6,8 +6,7 @@
 
   - apps - `Array<RegistrableApp<T>>` - 必选，子应用的一些注册信息
   - lifeCycles - `LifeCycles<T>` - 可选，全局的子应用生命周期钩子
-  - opts - `RegisterMicroAppsOpts` - 可选
-
+  
 - 类型
 
   - `RegistrableApp<T>`
@@ -75,6 +74,7 @@
   - `Options`
 
     - prefetch - `boolean | 'all' | string[] | (( apps: RegistrableApp[] ) => { criticalAppNames: string[]; minorAppsName: string[] })`
+
     - 可选，是否开启预加载，默认为 `true`。
 
       配置为 `true` 则会在第一个子应用 mount 完成后开始预加载其他子应用的静态资源，配置为 `'all'` 则主应用 `start` 后即开始预加载所有子应用静态资源。
@@ -83,12 +83,16 @@
 
       配置为 `function` 则可完全自定义应用的资源加载时机 (首屏应用及次屏应用)
 
-    - jsSandbox - `boolean` - 可选，是否开启沙箱，默认为 `true`。
+    - sandbox - `boolean` | `{ strictStyleIsolation?: boolean }` - 可选，是否开启沙箱，默认为 `true`。
+
+      当配置为 `{ strictStyleIsolation: true }` 表示开启严格的样式隔离模式。这种模式下 qiankun 会为每个子应用的容器包裹上一个 [shadow dom](https://developer.mozilla.org/zh-CN/docs/Web/Web_Components/Using_shadow_DOM) 节点，从而确保子应用的样式不会对全局造成影响。
 
     - singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - 可选，是否为单实例场景，默认为 `true`。
 
     - fetch - `Function` - 可选，自定义的 fetch 方法。
+
     - getPublicPath - `(url: string) => string` - 可选
+
     - getTemplate - `(tpl: string) => string` - 可选
 
 - 用法
