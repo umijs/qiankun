@@ -81,7 +81,7 @@ setDefaultMountApp('/react16');
  */
 start({
   prefetch: ['react16', 'react15', 'vue'],
-  jsSandbox: true,
+  sandbox: true,
   singular: true,
 });
 
