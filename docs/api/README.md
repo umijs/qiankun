@@ -83,9 +83,7 @@
 
       If configured as `function`, the timing of all subapplication static resources will be controlled by yourself.
 
-    - jsSandbox - `boolean` - optional, whether to open the js sandbox, default is `true`.
-    
-    - sandbox - `boolean` | `{ strictStyleIsolation?: boolean }` - optional，optional, whether to open the js sandbox, default is `true`.
+    - sandbox - `boolean` | `{ strictStyleIsolation?: boolean }` - optional, whether to open the js sandbox, default is `true`.
       
       When configured as `{strictStyleIsolation: true}`, qiankun will convert the container dom of each application to a [shadow dom](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_shadow_DOM), to ensure that the style of the application will not leak to the global.
 

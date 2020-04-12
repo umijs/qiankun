@@ -232,9 +232,11 @@ qiankun 2.0 版本将提供一种更智能的方式使其自动化。
 
 ## qiankun 能兼容 ie 吗？
 
-目前不兼容，如果有足够多的用户有[诉求](https://github.com/umijs/qiankun/issues/182)，我们会考虑加入这个特性。
+> 兼容.
 
-如果你现在就需要 ie 支持，你可以尝试关掉 `jsSandbox` 配置来让你的应用可以跑在 ie 下（但要承担关掉沙箱后子应用之间可能造成冲突的风险）。
+但是 IE 环境下（不支持 Proxy 的浏览器）只能使用单实例模式，即 `singular` 配置会被自动置为 `true`。
+
+你可以在[这里](/zh/api/#start-opts)找到 singular 相关说明。
 
 ## 非 webpack 构建的子应用支持接入 qiankun 么？
 

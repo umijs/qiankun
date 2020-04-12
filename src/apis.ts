@@ -1,5 +1,5 @@
-import { mountRootParcel, Parcel, registerApplication, start as startSingleSpa } from 'single-spa';
-import { FrameworkConfiguration, FrameworkLifeCycles, LoadableApp, RegistrableApp } from './interfaces';
+import { mountRootParcel, registerApplication, start as startSingleSpa } from 'single-spa';
+import { FrameworkConfiguration, FrameworkLifeCycles, LoadableApp, MicroApp, RegistrableApp } from './interfaces';
 import { loadApp } from './loader';
 import { prefetchApps } from './prefetch';
 import { Deferred } from './utils';
@@ -39,7 +39,7 @@ export function registerMicroApps<T extends object = {}>(
 export function loadMicroApp<T extends object = {}>(
   app: LoadableApp<T>,
   configuration = frameworkConfiguration,
-): Parcel {
+): MicroApp {
   const { props, ...appConfig } = app;
   return mountRootParcel(() => loadApp(appConfig, configuration), {
     domElement: document.createElement('div'),
