@@ -97,7 +97,6 @@ export default class SingularProxySandbox implements SandBox {
 
         if (process.env.NODE_ENV === 'development') {
           console.warn(`[qiankun] Set window.${p.toString()} while sandbox destroyed or inactive in ${name}!`);
-          console.warn(`[qiankun] Set window.${p.toString()} while sandbox destroyed or inactive in ${name}!`);
         }
 
         // 在 strict-mode 下，Proxy 的 handler.set 返回 false 会抛出 TypeError，在沙箱卸载的情况下应该忽略错误
