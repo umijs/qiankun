@@ -26,3 +26,19 @@ export function getTargetValue(target: any, value: any): any {
 
   return value;
 }
+
+const proxyGetterMap = new Map<WindowProxy, Record<PropertyKey, any>>();
+
+export function getProxyPropertyGetter(proxy: WindowProxy, property: PropertyKey) {
+  const getters = proxyGetterMap.get(proxy) || ({} as Record<string, any>);
+  return getters[property as string];
+}
+
+export function setProxyPropertyGetter(proxy: WindowProxy, property: PropertyKey, getter: () => any) {
+  const prevGetters = proxyGetterMap.get(proxy) || {};
+  proxyGetterMap.set(proxy, { ...prevGetters, [property]: getter });
+}
+
+export function removeProxyPropertyGetters(proxy: WindowProxy) {
+  proxyGetterMap.delete(proxy);
+}

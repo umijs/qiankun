@@ -7,7 +7,7 @@ import { isFunction } from 'lodash';
 import { checkActivityFunctions } from 'single-spa';
 import { frameworkConfiguration } from '../../apis';
 import { Freer } from '../../interfaces';
-import { getTargetValue } from '../common';
+import { getTargetValue, setProxyPropertyGetter } from '../common';
 
 const styledComponentSymbol = 'Symbol(styled-component-qiankun)';
 const attachProxySymbol = 'Symbol(attach-proxy-qiankun)';
@@ -161,7 +161,7 @@ export default function patch(
   };
 
   if (!singular) {
-    (<any>proxy).setProxyPropertyGetter('document', () => {
+    setProxyPropertyGetter(proxy, 'document', () => {
       return new Proxy(document, {
         get(target: Document, property: PropertyKey): any {
           if (property === 'createElement') {

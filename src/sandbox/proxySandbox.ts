@@ -4,7 +4,7 @@
  */
 import { uniq } from 'lodash';
 import { SandBox } from '../interfaces';
-import { getTargetValue } from './common';
+import { getProxyPropertyGetter, getTargetValue } from './common';
 
 // zone.js will overwrite Object.defineProperty
 const rawObjectDefineProperty = Object.defineProperty;
@@ -80,8 +80,6 @@ export default class ProxySandbox implements SandBox {
     this.name = name;
     const { sandboxRunning, updateValueMap } = this;
 
-    const proxyPropertyGetterMap = new Map<PropertyKey, PropertyDescriptor['get']>();
-
     // https://github.com/umijs/qiankun/pull/192
     const rawWindow = window;
     const fakeWindow = createFakeWindow(rawWindow);
@@ -121,8 +119,9 @@ export default class ProxySandbox implements SandBox {
         }
 
         // call proxy getter interceptors
-        if (proxyPropertyGetterMap.has(p)) {
-          return proxyPropertyGetterMap.get(p)!();
+        const proxyPropertyGetter = getProxyPropertyGetter(proxy, p);
+        if (proxyPropertyGetter) {
+          return proxyPropertyGetter();
         }
 
         // Take priority from the updateValueMap, or fallback to window
@@ -177,14 +176,6 @@ export default class ProxySandbox implements SandBox {
 
         return true;
       },
-    });
-
-    Object.defineProperty(proxy, 'setProxyPropertyGetter', {
-      value: (property: PropertyKey, getter: () => any) => {
-        proxyPropertyGetterMap.set(property, getter);
-      },
-      enumerable: false,
-      configurable: true,
     });
 
     this.proxy = proxy;
