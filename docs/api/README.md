@@ -178,3 +178,32 @@
   
   removeGlobalUncaughtErrorHandler(handler);
   ```
+
+  ## `initGloabalState(state)`
+
+- Parameters
+
+  - state - `Record<string, any>` - 必选
+
+- Usage
+
+  init global state, and return actions for communication. It is recommended to use in master, and slave get actions through props。
+
+- Sample
+
+  ```ts
+  import { initGloabalState } from 'qiankun';
+
+  type OnGlobalStateChangeCallBack = (state: Record<string, any>) => void;
+  
+  type MicroAppStateActions = {
+    // Listen the global status in the current application: when state changes will trigger callback; fireImmediately = true, will trigger callback immediately when use this method.
+    onGlobalStateChange: (callback: OnGlobalStateChangeCallBack, fireImmediately?: boolean) => void;
+    // Set global state.
+    setGlobalState: (state: Record<string, any>) => boolean;
+    // Remove Listener in this app.
+    offGlobalStateChange: () => boolean;
+  };
+
+  const actions: MicroAppStateActions = initGloabalState(state);
+  ```

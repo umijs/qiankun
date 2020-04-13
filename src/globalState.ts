@@ -5,7 +5,7 @@
 
 import { cloneDeep } from 'lodash';
 
-type OnGlobalStateChangeCallBack = (state: Record<string, any>, prev: Record<string, any> | null) => void;
+type OnGlobalStateChangeCallBack = (state: Record<string, any>) => void;
 
 type MicroAppStateActions = {
   onGlobalStateChange: (callback: OnGlobalStateChangeCallBack, fireImmediately?: boolean) => void;
@@ -18,10 +18,10 @@ let gloabalState: Record<string, any> = {};
 const deps: Record<string, OnGlobalStateChangeCallBack> = {};
 
 // 触发全局监听
-function emitGloabl(state: Record<string, any>, prev: Record<string, any> = {}) {
+function emitGloabl(state: Record<string, any>) {
   Object.keys(deps).forEach((id: string) => {
     if (deps[id] instanceof Function) {
-      deps[id](cloneDeep(state), prev);
+      deps[id](cloneDeep(state));
     }
   });
 }
@@ -31,7 +31,7 @@ export function initGlobalState(state: Record<string, any> = {}) {
     console.warn('[state] has not changed！');
   } else {
     gloabalState = cloneDeep(state);
-    emitGloabl(gloabalState, state);
+    emitGloabl(gloabalState);
   }
   return getMicroAppStateActions(`gloabal-${+new Date()}`);
 }
@@ -64,7 +64,7 @@ export function getMicroAppStateActions(id: string): MicroAppStateActions {
       }
       deps[id] = callback;
       if (fireImmediately) {
-        callback(cloneDeep(gloabalState), null);
+        callback(cloneDeep(gloabalState));
       }
     },
 
@@ -96,7 +96,7 @@ export function getMicroAppStateActions(id: string): MicroAppStateActions {
         console.warn('[state] has not changed！');
         return false;
       }
-      emitGloabl(gloabalState, state);
+      emitGloabl(gloabalState);
       return true;
     },
 
