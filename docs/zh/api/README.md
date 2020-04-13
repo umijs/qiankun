@@ -187,22 +187,27 @@
 
   定义全局状态，并返回通信方法，建议在主应用使用，子应用通过 props 获取通信方法。
 
+- 返回
+
+  - MicroAppStateActions
+
+    - onGlobalStateChange: `(callback: OnGlobalStateChangeCallback, fireImmediately?: boolean) => void`， 在当前应用监听全局状态，有变更触发 callback，fireImmediately = true 立即触发 callback
+
+    - setGlobalState: `(state: Record<string, any>) => boolean`， 设置全局状态
+
+    - offGlobalStateChange: `() => boolean`，移除当前应用的状态监听
+
 - 示例
 
   ```ts
-  import { initGloabalState } from 'qiankun';
-
-  type OnGlobalStateChangeCallBack = (state: Record<string, any>) => void;
-  
-  type MicroAppStateActions = {
-    // 在当前应用监听全局状态，有变更触发 callback，fireImmediately = true 立即触发 callback
-    onGlobalStateChange: (callback: OnGlobalStateChangeCallBack, fireImmediately?: boolean) => void;
-    // 设置全局状态
-    setGlobalState: (state: Record<string, any>) => boolean;
-    // 移除当前应用的状态监听
-    offGlobalStateChange: () => boolean;
-  };
+  import { initGloabalState, MicroAppStateActions } from 'qiankun';
 
   const actions: MicroAppStateActions = initGloabalState(state);
+
+  actions.onGlobalStateChange((state, prev) => console.log(state, prev));
+  actions.setGlobalState(state);
+  actions.offGlobalStateChange();
+
+  // 备注：子应用可以使用 props 获取方法，如 props.onGlobalStateChange(...)
   ```
 

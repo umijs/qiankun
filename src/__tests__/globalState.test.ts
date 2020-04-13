@@ -8,8 +8,9 @@ import { initGlobalState, getMicroAppStateActions } from '../globalState';
 const master = initGlobalState({ user: 'qiankun' });
 
 test('test master to master actions', () => {
-  const callback1 = (state: Record<string, any>) => {
+  const callback1 = (state: Record<string, any>, prevState: Record<string, any>) => {
     expect(state).toEqual({ user: 'master' });
+    expect(prevState).toEqual({ user: 'qiankun' });
   };
   master.onGlobalStateChange(callback1);
   master.setGlobalState({
@@ -17,8 +18,9 @@ test('test master to master actions', () => {
     user: 'master',
   });
 
-  const callback2 = (state: Record<string, any>) => {
+  const callback2 = (state: Record<string, any>, prevState: Record<string, any>) => {
     expect(state).toEqual({ user: 'master' });
+    expect(prevState).toEqual({ user: 'master' });
   };
   master.onGlobalStateChange(callback2, true);
 
@@ -31,8 +33,9 @@ test('test master to master actions', () => {
 const slaveA = getMicroAppStateActions('slaveA');
 
 test('test master to slave actions', () => {
-  const slaveCallback1 = (state: Record<string, any>) => {
+  const slaveCallback1 = (state: Record<string, any>, prevState: Record<string, any>) => {
     expect(state).toEqual({ user: 'master2' });
+    expect(prevState).toEqual({ user: 'master' });
   };
   slaveA.onGlobalStateChange(slaveCallback1);
 
@@ -41,8 +44,9 @@ test('test master to slave actions', () => {
     user: 'master2',
   });
 
-  const slaveCallback2 = (state: Record<string, any>) => {
+  const slaveCallback2 = (state: Record<string, any>, prevState: Record<string, any>) => {
     expect(state).toEqual({ user: 'master2' });
+    expect(prevState).toEqual({ user: 'master2' });
   };
   slaveA.onGlobalStateChange(slaveCallback2, true);
 
@@ -53,8 +57,9 @@ test('test master to slave actions', () => {
 // gloabal: { user: 'master2' }
 
 test('test slave to master actions', () => {
-  const callback1 = (state: Record<string, any>) => {
+  const callback1 = (state: Record<string, any>, prevState: Record<string, any>) => {
     expect(state).toEqual({ user: 'slaveA' });
+    expect(prevState).toEqual({ user: 'master2' });
   };
   master.onGlobalStateChange(callback1);
 
@@ -63,8 +68,9 @@ test('test slave to master actions', () => {
     user: 'slaveA',
   });
 
-  const callback2 = (state: Record<string, any>) => {
+  const callback2 = (state: Record<string, any>, prevState: Record<string, any>) => {
     expect(state).toEqual({ user: 'slaveA' });
+    expect(prevState).toEqual({ user: 'slaveA' });
   };
   master.onGlobalStateChange(callback2, true);
 
@@ -76,8 +82,9 @@ test('test slave to master actions', () => {
 
 const slaveB = getMicroAppStateActions('slaveB');
 test('test slave to slave actions', () => {
-  const callback1 = (state: Record<string, any>) => {
+  const callback1 = (state: Record<string, any>, prevState: Record<string, any>) => {
     expect(state).toEqual({ user: 'slaveB' });
+    expect(prevState).toEqual({ user: 'slaveA' });
   };
   slaveA.onGlobalStateChange(callback1);
 
@@ -86,8 +93,9 @@ test('test slave to slave actions', () => {
     user: 'slaveB',
   });
 
-  const callback2 = (state: Record<string, any>) => {
+  const callback2 = (state: Record<string, any>, prevState: Record<string, any>) => {
     expect(state).toEqual({ user: 'slaveB' });
+    expect(prevState).toEqual({ user: 'slaveB' });
   };
   slaveA.onGlobalStateChange(callback2, true);
 });

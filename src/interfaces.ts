@@ -84,10 +84,10 @@ export interface SandBox {
   inactive(): void;
 }
 
-export type OnGlobalStateChangeCallBack = (state: Record<string, any>) => void;
+export type OnGlobalStateChangeCallback = (state: Record<string, any>, prevState: Record<string, any>) => void;
 
 export type MicroAppStateActions = {
-  onGlobalStateChange: (callback: OnGlobalStateChangeCallBack, fireImmediately?: boolean) => void;
+  onGlobalStateChange: (callback: OnGlobalStateChangeCallback, fireImmediately?: boolean) => void;
   setGlobalState: (state: Record<string, any>) => boolean;
   offGlobalStateChange: () => boolean;
 };

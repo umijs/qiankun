@@ -189,21 +189,26 @@
 
   init global state, and return actions for communication. It is recommended to use in master, and slave get actions through props。
 
+- Return
+
+  - MicroAppStateActions
+
+    - onGlobalStateChange: `(callback: OnGlobalStateChangeCallback, fireImmediately?: boolean) => void` - Listen the global status in the current application: when state changes will trigger callback; fireImmediately = true, will trigger callback immediately when use this method.
+
+    - setGlobalState: `(state: Record<string, any>) => boolean` - Set global state.
+
+    - offGlobalStateChange: `() => boolean` - Remove Listener in this app.
+
 - Sample
 
   ```ts
-  import { initGloabalState } from 'qiankun';
-
-  type OnGlobalStateChangeCallBack = (state: Record<string, any>) => void;
-  
-  type MicroAppStateActions = {
-    // Listen the global status in the current application: when state changes will trigger callback; fireImmediately = true, will trigger callback immediately when use this method.
-    onGlobalStateChange: (callback: OnGlobalStateChangeCallBack, fireImmediately?: boolean) => void;
-    // Set global state.
-    setGlobalState: (state: Record<string, any>) => boolean;
-    // Remove Listener in this app.
-    offGlobalStateChange: () => boolean;
-  };
+  import { initGloabalState, MicroAppStateActions } from 'qiankun';
 
   const actions: MicroAppStateActions = initGloabalState(state);
+
+  actions.onGlobalStateChange((state, prev) => console.log(state, prev));
+  actions.setGlobalState(state);
+  actions.offGlobalStateChange();
+
+  // PS: Slave can get actions through props, example: props.onGlobalStateChange(...).
   ```
