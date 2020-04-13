@@ -4,14 +4,7 @@
  */
 
 import { cloneDeep } from 'lodash';
-
-type OnGlobalStateChangeCallBack = (state: Record<string, any>) => void;
-
-type MicroAppStateActions = {
-  onGlobalStateChange: (callback: OnGlobalStateChangeCallBack, fireImmediately?: boolean) => void;
-  setGlobalState: (state: Record<string, any>) => boolean;
-  offGlobalStateChange: () => boolean;
-};
+import { OnGlobalStateChangeCallBack, MicroAppStateActions } from './interfaces';
 
 let gloabalState: Record<string, any> = {};
 
