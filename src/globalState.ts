@@ -28,7 +28,7 @@ function emitGloabl(state: Record<string, any>) {
 
 export function initGlobalState(state: Record<string, any> = {}) {
   if (state === gloabalState) {
-    console.warn('[state] has not changed！');
+    console.warn('[qiankun] state has not changed！');
   } else {
     gloabalState = cloneDeep(state);
     emitGloabl(gloabalState);
@@ -56,11 +56,13 @@ export function getMicroAppStateActions(id: string): MicroAppStateActions {
      */
     onGlobalStateChange(callback: OnGlobalStateChangeCallBack, fireImmediately?: boolean) {
       if (!(callback instanceof Function)) {
-        console.error('[callback] must be function!');
+        console.error('[qiankun] callback must be function!');
         return;
       }
       if (deps[id]) {
-        console.warn(`[${id}] gloabal listening already exists before this, new listening will overwrite it.`);
+        console.warn(
+          `[qiankun] '${id}' gloabal listening already exists before this, new listening will overwrite it.`,
+        );
       }
       deps[id] = callback;
       if (fireImmediately) {
@@ -78,7 +80,7 @@ export function getMicroAppStateActions(id: string): MicroAppStateActions {
      */
     setGlobalState(state: Record<string, any> = {}) {
       if (state === gloabalState) {
-        console.warn('[state] has not changed！');
+        console.warn('[qiankun] state has not changed！');
         return false;
       }
       const changeKeys: string[] = [];
@@ -88,12 +90,12 @@ export function getMicroAppStateActions(id: string): MicroAppStateActions {
             changeKeys.push(changeKey);
             return Object.assign(_gloabalState, { [changeKey]: state[changeKey] });
           }
-          console.warn(`[${changeKey}] not declared when init state！`);
+          console.warn(`[qiankun] '${changeKey}' not declared when init state！`);
           return _gloabalState;
         }, gloabalState),
       );
       if (changeKeys.length === 0) {
-        console.warn('[state] has not changed！');
+        console.warn('[qiankun] state has not changed！');
         return false;
       }
       emitGloabl(gloabalState);
