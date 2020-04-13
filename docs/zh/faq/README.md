@@ -250,6 +250,11 @@ qiankun 2.0 版本将提供一种更智能的方式使其自动化。
 2. 在 entry js 里声明 lifecycles
 
 ```javascript
+const render = ($) => {
+  $('#purehtml-container').html("Hello, render with jQuery");
+  return Promise.resolve();
+}
+
 (global => {
   global['purehtml'] = {
     bootstrap: () => {
@@ -258,7 +263,7 @@ qiankun 2.0 版本将提供一种更智能的方式使其自动化。
     },
     mount: () => {
       console.log('purehtml mount');
-      return Promise.resolve();
+      return render($);
     },
     unmount: () => {
       console.log('purehtml unmount');
