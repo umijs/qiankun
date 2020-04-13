@@ -7,8 +7,10 @@ import { isFunction } from 'lodash';
 import { checkActivityFunctions } from 'single-spa';
 import { frameworkConfiguration } from '../../apis';
 import { Freer } from '../../interfaces';
+import { getTargetValue } from '../common';
 
-const styledComponentSymbol = Symbol('styled-component');
+const styledComponentSymbol = 'Symbol(styled-component-qiankun)';
+const attachProxySymbol = 'Symbol(attach-proxy-qiankun)';
 
 declare global {
   interface HTMLStyleElement {
@@ -52,12 +54,14 @@ function setCachedRules(element: HTMLStyleElement, cssRules: CSSRuleList) {
  * @param appWrapperGetter
  * @param proxy
  * @param mounting
+ * @param singular
  */
 export default function patch(
   appName: string,
   appWrapperGetter: () => HTMLElement | ShadowRoot,
   proxy: Window,
   mounting = true,
+  singular = true,
 ): Freer {
   let dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
 
@@ -68,6 +72,13 @@ export default function patch(
         case LINK_TAG_NAME:
         case STYLE_TAG_NAME: {
           const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
+
+          if (!singular) {
+            // eslint-disable-next-line no-shadow
+            const { appWrapperGetter, dynamicStyleSheetElements } = element[attachProxySymbol];
+            dynamicStyleSheetElements.push(stylesheetElement);
+            return rawAppendChild.call(appWrapperGetter(), stylesheetElement) as T;
+          }
 
           // check if the currently specified application is active
           // While we switch page from qiankun app to a normal react routing page, the normal one may load stylesheet dynamically while page rendering,
@@ -89,9 +100,19 @@ export default function patch(
         case SCRIPT_TAG_NAME: {
           const { src, text } = element as HTMLScriptElement;
 
+          let realAppWrapperGetter = appWrapperGetter;
+          let realProxy = proxy;
+
+          if (!singular) {
+            // eslint-disable-next-line no-shadow
+            const { appWrapperGetter, proxy } = element[attachProxySymbol];
+            realAppWrapperGetter = appWrapperGetter;
+            realProxy = proxy;
+          }
+
           const { fetch } = frameworkConfiguration;
           if (src) {
-            execScripts(null, [src], proxy, { fetch }).then(
+            execScripts(null, [src], realProxy, { fetch }).then(
               () => {
                 // we need to invoke the onload event manually to notify the event listener that the script was completed
                 // here are the two typical ways of dynamic script loading
@@ -115,12 +136,12 @@ export default function patch(
             );
 
             const dynamicScriptCommentElement = document.createComment(`dynamic script ${src} replaced by qiankun`);
-            return rawAppendChild.call(appWrapperGetter(), dynamicScriptCommentElement) as T;
+            return rawAppendChild.call(realAppWrapperGetter(), dynamicScriptCommentElement) as T;
           }
 
-          execScripts(null, [`<script>${text}</script>`], proxy).then(element.onload, element.onerror);
+          execScripts(null, [`<script>${text}</script>`], realProxy).then(element.onload, element.onerror);
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
-          return rawAppendChild.call(appWrapperGetter(), dynamicInlineScriptCommentElement) as T;
+          return rawAppendChild.call(realAppWrapperGetter(), dynamicInlineScriptCommentElement) as T;
         }
 
         default:
@@ -138,6 +159,31 @@ export default function patch(
 
     return rawHeadRemoveChild.call(this, child) as T;
   };
+
+  if (!singular) {
+    (<any>proxy).setProxyPropertyGetter('document', () => {
+      return new Proxy(document, {
+        get(target: Document, property: PropertyKey): any {
+          if (property === 'createElement') {
+            return function createElement(tagName: string, options?: any) {
+              const element = document.createElement(tagName, options);
+
+              if (tagName?.toLowerCase() === 'style' || tagName?.toLowerCase() === 'script') {
+                Object.defineProperty(element, attachProxySymbol, {
+                  value: { name: appName, proxy, appWrapperGetter, dynamicStyleSheetElements },
+                  enumerable: false,
+                });
+              }
+
+              return element;
+            };
+          }
+
+          return getTargetValue(document, (<any>target)[property]);
+        },
+      });
+    });
+  }
 
   return function free() {
     HTMLHeadElement.prototype.appendChild = rawHeadAppendChild;

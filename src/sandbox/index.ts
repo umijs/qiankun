@@ -3,8 +3,8 @@
  * @since 2019-04-11
  */
 import { Freer, Rebuilder, SandBox } from '../interfaces';
-import { patchAtBootstrapping, patchAtMounting } from './patchers';
 import LegacySandbox from './legacy/sandbox';
+import { patchAtBootstrapping, patchAtMounting } from './patchers';
 import ProxySandbox from './proxySandbox';
 import SnapshotSandbox from './snapshotSandbox';
 
@@ -38,7 +38,7 @@ export function createSandbox(appName: string, elementGetter: () => HTMLElement 
   }
 
   // some side effect could be be invoked while bootstrapping, such as dynamic stylesheet injection with style-loader, especially during the development phase
-  const bootstrappingFreers = patchAtBootstrapping(appName, elementGetter, sandbox.proxy);
+  const bootstrappingFreers = patchAtBootstrapping(appName, elementGetter, sandbox.proxy, singular);
 
   return {
     proxy: sandbox.proxy,
@@ -64,7 +64,7 @@ export function createSandbox(appName: string, elementGetter: () => HTMLElement 
 
       /* ------------------------------------------ 2. 开启全局变量补丁 ------------------------------------------*/
       // render 沙箱启动时开始劫持各类全局监听，尽量不要在应用初始化阶段有 事件监听/定时器 等副作用
-      mountingFreers = patchAtMounting(appName, elementGetter, sandbox.proxy);
+      mountingFreers = patchAtMounting(appName, elementGetter, sandbox.proxy, singular);
 
       /* ------------------------------------------ 3. 重置一些初始化时的副作用 ------------------------------------------*/
       // 存在 rebuilder 则表明有些副作用需要重建

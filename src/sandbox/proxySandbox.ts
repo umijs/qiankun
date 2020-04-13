@@ -4,7 +4,7 @@
  */
 import { uniq } from 'lodash';
 import { SandBox } from '../interfaces';
-import { isConstructable } from '../utils';
+import { getTargetValue } from './common';
 
 // zone.js will overwrite Object.defineProperty
 const rawObjectDefineProperty = Object.defineProperty;
@@ -80,7 +80,8 @@ export default class ProxySandbox implements SandBox {
     this.name = name;
     const { sandboxRunning, updateValueMap } = this;
 
-    const boundValueSymbol = Symbol('bound value');
+    const proxyPropertyGetterMap = new Map<PropertyKey, PropertyDescriptor['get']>();
+
     // https://github.com/umijs/qiankun/pull/192
     const rawWindow = window;
     const fakeWindow = createFakeWindow(rawWindow);
@@ -102,15 +103,15 @@ export default class ProxySandbox implements SandBox {
       },
 
       get(_: Window, p: PropertyKey): any {
+        // just for test
+        if (process.env.NODE_ENV === 'test' && p === 'mockTop') {
+          return proxy;
+        }
+
         // avoid who using window.window or window.self to escape the sandbox environment to touch the really window
         // or use window.top to check if an iframe context
         // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
         if (p === 'top' || p === 'window' || p === 'self') {
-          return proxy;
-        }
-
-        // just for test
-        if (process.env.NODE_ENV === 'test' && p === 'mockTop') {
           return proxy;
         }
 
@@ -119,25 +120,14 @@ export default class ProxySandbox implements SandBox {
           return (key: PropertyKey) => updateValueMap.has(key) || rawWindow.hasOwnProperty(key);
         }
 
-        // Take priority from the updateValueMap, or fallback to window
-        const value = updateValueMap.get(p) || (rawWindow as any)[p];
-        /*
-        仅绑定 !isConstructable && isCallable 的函数对象，如 window.console、window.atob 这类。目前没有完美的检测方式，这里通过 prototype 中是否还有可枚举的拓展方法的方式来判断
-        @warning 这里不要随意替换成别的判断方式，因为可能触发一些 edge case（比如在 lodash.isFunction 在 iframe 上下文中可能由于调用了 top window 对象触发的安全异常）
-         */
-        if (typeof value === 'function' && !isConstructable(value)) {
-          if (value[boundValueSymbol]) {
-            return value[boundValueSymbol];
-          }
-
-          const boundValue = value.bind(rawWindow);
-          // some callable function has custom fields, we need to copy the enumerable props to boundValue. such as moment function.
-          Object.keys(value).forEach(key => (boundValue[key] = value[key]));
-          Object.defineProperty(value, boundValueSymbol, { enumerable: false, value: boundValue });
-          return boundValue;
+        // call proxy getter interceptors
+        if (proxyPropertyGetterMap.has(p)) {
+          return proxyPropertyGetterMap.get(p)!();
         }
 
-        return value;
+        // Take priority from the updateValueMap, or fallback to window
+        const value = updateValueMap.get(p) || (rawWindow as any)[p];
+        return getTargetValue(rawWindow, value);
       },
 
       // trap in operator
@@ -187,6 +177,14 @@ export default class ProxySandbox implements SandBox {
 
         return true;
       },
+    });
+
+    Object.defineProperty(proxy, 'setProxyPropertyGetter', {
+      value: (property: PropertyKey, getter: () => any) => {
+        proxyPropertyGetterMap.set(property, getter);
+      },
+      enumerable: false,
+      configurable: true,
     });
 
     this.proxy = proxy;

@@ -14,12 +14,13 @@ export function patchAtMounting(
   appName: string,
   elementGetter: () => HTMLElement | ShadowRoot,
   proxy: Window,
+  singular: boolean,
 ): Freer[] {
   return [
     patchTimer(),
     patchWindowListener(),
     patchHistoryListener(),
-    patchDynamicAppend(appName, elementGetter, proxy),
+    patchDynamicAppend(appName, elementGetter, proxy, true, singular),
   ];
 }
 
@@ -27,10 +28,11 @@ export function patchAtBootstrapping(
   appName: string,
   elementGetter: () => HTMLElement | ShadowRoot,
   proxy: Window,
+  singular: boolean,
 ): Freer[] {
   return [
     process.env.NODE_ENV === 'development'
-      ? patchDynamicAppend(appName, elementGetter, proxy, false)
+      ? patchDynamicAppend(appName, elementGetter, proxy, false, singular)
       : () => () => noop,
   ];
 }
