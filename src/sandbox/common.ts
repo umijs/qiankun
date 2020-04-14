@@ -38,7 +38,3 @@ export function setProxyPropertyGetter(proxy: WindowProxy, property: PropertyKey
   const prevGetters = proxyGetterMap.get(proxy) || {};
   proxyGetterMap.set(proxy, { ...prevGetters, [property]: getter });
 }
-
-export function removeProxyPropertyGetters(proxy: WindowProxy) {
-  proxyGetterMap.delete(proxy);
-}
