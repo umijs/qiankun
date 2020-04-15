@@ -4,6 +4,7 @@
  */
 
 import { noop } from 'lodash';
+import { sleep } from '../../utils';
 
 const rawWindowInterval = window.setInterval;
 const rawWindowClearInterval = window.clearInterval;
@@ -49,7 +50,11 @@ export default function patch() {
   };
 
   return function free() {
-    timers.forEach(id => window.clearTimeout(id));
+    timers.forEach(async id => {
+      // FIXME 延迟 timeout 的清理，因为可能会有动画还没完成
+      await sleep(500);
+      window.clearTimeout(id);
+    });
     intervals.forEach(id => window.clearInterval(id));
 
     window.setInterval = rawWindowInterval;
