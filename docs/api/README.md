@@ -179,7 +179,7 @@
   removeGlobalUncaughtErrorHandler(handler);
   ```
 
-  ## `initGloabalState(state)`
+## `initGloabalState(state)`
 
 - Parameters
 
@@ -197,18 +197,37 @@
 
     - setGlobalState: `(state: Record<string, any>) => boolean` - Set global state.
 
-    - offGlobalStateChange: `() => boolean` - Remove Listener in this app.
+    - offGlobalStateChange: `() => boolean` - Remove Listener in this app, will default trigger when app unmount.
 
 - Sample
 
+  Master:
   ```ts
   import { initGloabalState, MicroAppStateActions } from 'qiankun';
 
   const actions: MicroAppStateActions = initGloabalState(state);
 
-  actions.onGlobalStateChange((state, prev) => console.log(state, prev));
+  actions.onGlobalStateChange((state, prev) => {
+    // state: new state; prev old state
+    console.log(state, prev);
+  });
   actions.setGlobalState(state);
   actions.offGlobalStateChange();
-
-  // PS: Slave can get actions through props, example: props.onGlobalStateChange(...).
   ```
+
+  Slave:
+  ```ts
+  // get actions from mount
+  export function mount(props) {
+
+    props.onGlobalStateChange((state, prev) => {
+      // state: new state; prev old state
+      console.log(state, prev);
+    });
+    props.setGlobalState(state);
+
+    // It will trigger when slave umount,  not necessary to use in non special cases.
+    props.offGlobalStateChange();
+    
+    // ...
+  }
