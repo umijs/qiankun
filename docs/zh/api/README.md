@@ -193,21 +193,41 @@
 
     - onGlobalStateChange: `(callback: OnGlobalStateChangeCallback, fireImmediately?: boolean) => void`， 在当前应用监听全局状态，有变更触发 callback，fireImmediately = true 立即触发 callback
 
-    - setGlobalState: `(state: Record<string, any>) => boolean`， 设置全局状态
+    - setGlobalState: `(state: Record<string, any>) => boolean`， 按一级属性设置全局状态，子应用中只能修改已存在的一级属性
 
-    - offGlobalStateChange: `() => boolean`，移除当前应用的状态监听
+    - offGlobalStateChange: `() => boolean`，移除当前应用的状态监听，子应用 umount 时会默认调用
 
 - 示例
 
+  主应用：
   ```ts
   import { initGloabalState, MicroAppStateActions } from 'qiankun';
 
+  // 初始化 state
   const actions: MicroAppStateActions = initGloabalState(state);
 
-  actions.onGlobalStateChange((state, prev) => console.log(state, prev));
+  actions.onGlobalStateChange((state, prev) => {
+    // state: 变更后的状态; prev 变更前的状态
+    console.log(state, prev);
+  });
   actions.setGlobalState(state);
   actions.offGlobalStateChange();
-
-  // 备注：子应用可以使用 props 获取方法，如 props.onGlobalStateChange(...)
   ```
 
+  子应用：
+  ```ts
+  // 从生命周期 mount 中获取通信方法，使用方式和 master 一致
+  export function mount(props) {
+
+    props.onGlobalStateChange((state, prev) => {
+      // state: 变更后的状态; prev 变更前的状态
+      console.log(state, prev);
+    });
+    props.setGlobalState(state);
+  
+    // 子应用 umount 时会默认调用，非特殊情况不需要使用
+    props.offGlobalStateChange();
+
+    // ...
+  }
+  ```

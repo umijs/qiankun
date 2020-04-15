@@ -179,7 +179,7 @@
   removeGlobalUncaughtErrorHandler(handler);
   ```
 
-  ## `initGloabalState(state)`
+## `initGloabalState(state)`
 
 - Parameters
 
@@ -195,20 +195,39 @@
 
     - onGlobalStateChange: `(callback: OnGlobalStateChangeCallback, fireImmediately?: boolean) => void` - Listen the global status in the current application: when state changes will trigger callback; fireImmediately = true, will trigger callback immediately when use this method.
 
-    - setGlobalState: `(state: Record<string, any>) => boolean` - Set global state.
+    - setGlobalState: `(state: Record<string, any>) => boolean` - Set global state by first layer props, it can just modify first layer props what has defined.
 
-    - offGlobalStateChange: `() => boolean` - Remove Listener in this app.
+    - offGlobalStateChange: `() => boolean` - Remove Listener in this app, will default trigger when app unmount.
 
 - Sample
 
+  Master:
   ```ts
   import { initGloabalState, MicroAppStateActions } from 'qiankun';
 
   const actions: MicroAppStateActions = initGloabalState(state);
 
-  actions.onGlobalStateChange((state, prev) => console.log(state, prev));
+  actions.onGlobalStateChange((state, prev) => {
+    // state: new state; prev old state
+    console.log(state, prev);
+  });
   actions.setGlobalState(state);
   actions.offGlobalStateChange();
-
-  // PS: Slave can get actions through props, example: props.onGlobalStateChange(...).
   ```
+
+  Slave:
+  ```ts
+  // get actions from mount
+  export function mount(props) {
+
+    props.onGlobalStateChange((state, prev) => {
+      // state: new state; prev old state
+      console.log(state, prev);
+    });
+    props.setGlobalState(state);
+
+    // It will trigger when slave umount,  not necessary to use in non special cases.
+    props.offGlobalStateChange();
+    
+    // ...
+  }

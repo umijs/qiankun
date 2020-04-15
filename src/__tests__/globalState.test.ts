@@ -9,7 +9,7 @@ const master = initGlobalState({ user: 'qiankun' });
 
 test('test master to master actions', () => {
   const callback1 = (state: Record<string, any>, prevState: Record<string, any>) => {
-    expect(state).toEqual({ user: 'master' });
+    expect(state).toEqual({ ignore: 'matser', user: 'master' });
     expect(prevState).toEqual({ user: 'qiankun' });
   };
   master.onGlobalStateChange(callback1);
@@ -19,8 +19,8 @@ test('test master to master actions', () => {
   });
 
   const callback2 = (state: Record<string, any>, prevState: Record<string, any>) => {
-    expect(state).toEqual({ user: 'master' });
-    expect(prevState).toEqual({ user: 'master' });
+    expect(state).toEqual({ ignore: 'matser', user: 'master' });
+    expect(prevState).toEqual({ ignore: 'matser', user: 'master' });
   };
   master.onGlobalStateChange(callback2, true);
 
@@ -28,25 +28,24 @@ test('test master to master actions', () => {
   master.offGlobalStateChange();
 });
 
-// gloabal: { user: 'master' }
+// gloabal: { ignore: 'matser', user: 'master' }
 
 const slaveA = getMicroAppStateActions('slaveA');
 
 test('test master to slave actions', () => {
   const slaveCallback1 = (state: Record<string, any>, prevState: Record<string, any>) => {
-    expect(state).toEqual({ user: 'master2' });
-    expect(prevState).toEqual({ user: 'master' });
+    expect(state).toEqual({ ignore: 'matser', user: 'master2' });
+    expect(prevState).toEqual({ ignore: 'matser', user: 'master' });
   };
   slaveA.onGlobalStateChange(slaveCallback1);
 
   master.setGlobalState({
-    ignore: 'matser2',
     user: 'master2',
   });
 
   const slaveCallback2 = (state: Record<string, any>, prevState: Record<string, any>) => {
-    expect(state).toEqual({ user: 'master2' });
-    expect(prevState).toEqual({ user: 'master2' });
+    expect(state).toEqual({ ignore: 'matser', user: 'master2' });
+    expect(prevState).toEqual({ ignore: 'matser', user: 'master2' });
   };
   slaveA.onGlobalStateChange(slaveCallback2, true);
 
@@ -54,12 +53,12 @@ test('test master to slave actions', () => {
   slaveA.offGlobalStateChange();
 });
 
-// gloabal: { user: 'master2' }
+// gloabal: { ignore: 'matser', user: 'master2' }
 
 test('test slave to master actions', () => {
   const callback1 = (state: Record<string, any>, prevState: Record<string, any>) => {
-    expect(state).toEqual({ user: 'slaveA' });
-    expect(prevState).toEqual({ user: 'master2' });
+    expect(state).toEqual({ ignore: 'slaveA', user: 'slaveA' });
+    expect(prevState).toEqual({ ignore: 'matser', user: 'master2' });
   };
   master.onGlobalStateChange(callback1);
 
@@ -69,8 +68,8 @@ test('test slave to master actions', () => {
   });
 
   const callback2 = (state: Record<string, any>, prevState: Record<string, any>) => {
-    expect(state).toEqual({ user: 'slaveA' });
-    expect(prevState).toEqual({ user: 'slaveA' });
+    expect(state).toEqual({ ignore: 'slaveA', user: 'slaveA' });
+    expect(prevState).toEqual({ ignore: 'slaveA', user: 'slaveA' });
   };
   master.onGlobalStateChange(callback2, true);
 
@@ -78,24 +77,24 @@ test('test slave to master actions', () => {
   master.offGlobalStateChange();
 });
 
-// gloabal: { user: 'slaveA' }
+// gloabal: { ignore: 'slaveA', user: 'slaveA' }
 
 const slaveB = getMicroAppStateActions('slaveB');
 test('test slave to slave actions', () => {
   const callback1 = (state: Record<string, any>, prevState: Record<string, any>) => {
-    expect(state).toEqual({ user: 'slaveB' });
-    expect(prevState).toEqual({ user: 'slaveA' });
+    expect(state).toEqual({ ignore: 'slaveA', user: 'slaveB' });
+    expect(prevState).toEqual({ ignore: 'slaveA', user: 'slaveA' });
   };
   slaveA.onGlobalStateChange(callback1);
 
   slaveB.setGlobalState({
-    ignore: 'slaveB',
+    ignore2: 'slaveB',
     user: 'slaveB',
   });
 
   const callback2 = (state: Record<string, any>, prevState: Record<string, any>) => {
-    expect(state).toEqual({ user: 'slaveB' });
-    expect(prevState).toEqual({ user: 'slaveB' });
+    expect(state).toEqual({ ignore: 'slaveA', user: 'slaveB' });
+    expect(prevState).toEqual({ ignore: 'slaveA', user: 'slaveB' });
   };
   slaveA.onGlobalStateChange(callback2, true);
 });
