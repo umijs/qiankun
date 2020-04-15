@@ -364,19 +364,9 @@
 
     - onGlobalStateChange: `(callback: OnGlobalStateChangeCallback, fireImmediately?: boolean) => void`， 在当前应用监听全局状态，有变更触发 callback，fireImmediately = true 立即触发 callback
 
-<<<<<<< HEAD
-<<<<<<< HEAD
     - setGlobalState: `(state: Record<string, any>) => boolean`， 按一级属性设置全局状态，微应用中只能修改已存在的一级属性
 
     - offGlobalStateChange: `() => boolean`，移除当前应用的状态监听，微应用 umount 时会默认调用
-=======
-    - setGlobalState: `(state: Record<string, any>) => boolean`， 设置全局状态，只修改初始化过的一级属性
-=======
-    - setGlobalState: `(state: Record<string, any>) => boolean`， 按一级属性设置全局状态，子应用中只能修改已存在的一级属性
->>>>>>> master setGlobalState can change all props
-
-    - offGlobalStateChange: `() => boolean`，移除当前应用的状态监听，子应用 umount 时会默认调用
->>>>>>> update zh api doc
 
 - 示例
 
@@ -395,8 +385,15 @@
   actions.offGlobalStateChange();
   ```
 
+<<<<<<< HEAD
   微应用：
+<<<<<<< HEAD
 
+=======
+=======
+  子应用：
+>>>>>>> update zh api doc
+>>>>>>> update zh api doc
   ```ts
   // 从生命周期 mount 中获取通信方法，使用方式和 master 一致
   export function mount(props) {
@@ -405,7 +402,16 @@
       // state: 变更后的状态; prev: 变更前的状态
       console.log(state, prev);
     });
+<<<<<<< HEAD
   
     props.setGlobalState(state);
+=======
+    props.setGlobalState(state);
+  
+    // 子应用 umount 时会默认调用，非特殊情况不需要使用
+    props.offGlobalStateChange();
+
+    // ...
+>>>>>>> update zh api doc
   }
   ```
