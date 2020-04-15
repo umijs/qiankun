@@ -385,15 +385,7 @@
   actions.offGlobalStateChange();
   ```
 
-<<<<<<< HEAD
   微应用：
-<<<<<<< HEAD
-
-=======
-=======
-  子应用：
->>>>>>> update zh api doc
->>>>>>> update zh api doc
   ```ts
   // 从生命周期 mount 中获取通信方法，使用方式和 master 一致
   export function mount(props) {
@@ -402,16 +394,7 @@
       // state: 变更后的状态; prev: 变更前的状态
       console.log(state, prev);
     });
-<<<<<<< HEAD
   
     props.setGlobalState(state);
-=======
-    props.setGlobalState(state);
-  
-    // 子应用 umount 时会默认调用，非特殊情况不需要使用
-    props.offGlobalStateChange();
-
-    // ...
->>>>>>> update zh api doc
   }
   ```
