@@ -201,14 +201,31 @@
 
 - Sample
 
+  Master:
   ```ts
   import { initGloabalState, MicroAppStateActions } from 'qiankun';
 
   const actions: MicroAppStateActions = initGloabalState(state);
 
-  actions.onGlobalStateChange((state, prev) => console.log(state, prev));
+  actions.onGlobalStateChange((state, prev) => {
+    // state: new state; prev old state
+    console.log(state, prev);
+  });
   actions.setGlobalState(state);
   actions.offGlobalStateChange();
-
-  // PS: Slave can get actions through props, example: props.onGlobalStateChange(...).
   ```
+
+  Slave:
+  ```ts
+  // get actions from mount
+  export function mount(props) {
+
+    props.onGlobalStateChange((state, prev) => {
+      // state: new state; prev old state
+      console.log(state, prev);
+    });
+    props.setGlobalState(state);
+    props.offGlobalStateChange();
+    
+    // ...
+  }
