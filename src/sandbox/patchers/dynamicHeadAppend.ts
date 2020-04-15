@@ -112,7 +112,7 @@ export default function patch(
 
           const { fetch } = frameworkConfiguration;
           if (src) {
-            execScripts(null, [src], realProxy, { fetch }).then(
+            execScripts(null, [src], realProxy, { fetch, strictGlobal: !singular }).then(
               () => {
                 // we need to invoke the onload event manually to notify the event listener that the script was completed
                 // here are the two typical ways of dynamic script loading
@@ -139,7 +139,10 @@ export default function patch(
             return rawAppendChild.call(realAppWrapperGetter(), dynamicScriptCommentElement) as T;
           }
 
-          execScripts(null, [`<script>${text}</script>`], realProxy).then(element.onload, element.onerror);
+          execScripts(null, [`<script>${text}</script>`], realProxy, { strictGlobal: !singular }).then(
+            element.onload,
+            element.onerror,
+          );
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
           return rawAppendChild.call(realAppWrapperGetter(), dynamicInlineScriptCommentElement) as T;
         }
