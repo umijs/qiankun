@@ -10,6 +10,7 @@ import getAddOns from './addons';
 import { FrameworkConfiguration, FrameworkLifeCycles, HTMLContentRender, LifeCycleFn, LoadableApp } from './interfaces';
 import { createSandbox } from './sandbox';
 import { Deferred, getDefaultTplWrapper, getWrapperId, validateExportLifecycle } from './utils';
+import { getMicroAppStateActions } from './globalState';
 
 function assertElementExist(element: Element | null | undefined, id?: string, msg?: string) {
   if (!element) {
@@ -233,6 +234,12 @@ export async function loadApp<T extends object>(
     }
   }
 
+  const {
+    onGlobalStateChange,
+    setGlobalState,
+    offGlobalStateChange,
+  }: Record<string, Function> = getMicroAppStateActions(appInstanceId);
+
   return {
     name: appInstanceId,
     bootstrap: [bootstrap],
@@ -253,7 +260,7 @@ export async function loadApp<T extends object>(
       // exec the chain after rendering to keep the behavior with beforeLoad
       async () => execHooksChain(toArray(beforeMount), app),
       mountSandbox,
-      async props => mount({ ...props, container: containerGetter() }),
+      async props => mount({ ...props, container: containerGetter(), setGlobalState, onGlobalStateChange }),
       // 应用 mount 完成后结束 loading
       async () => render({ element, loading: false }),
       async () => execHooksChain(toArray(afterMount), app),
@@ -271,6 +278,7 @@ export async function loadApp<T extends object>(
       async () => execHooksChain(toArray(afterUnmount), app),
       async () => {
         render({ element: null, loading: false });
+        offGlobalStateChange(appInstanceId);
         // for gc
         element = null;
       },
