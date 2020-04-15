@@ -14,7 +14,8 @@ Vue.use(ElementUI);
 let router = null;
 let instance = null;
 
-function render() {
+function render(props = {}) {
+  const { container } = props;
   router = new VueRouter({
     base: window.__POWERED_BY_QIANKUN__ ? '/vue' : '/',
     mode: 'history',
@@ -25,7 +26,7 @@ function render() {
     router,
     store,
     render: h => h(App),
-  }).$mount('#app');
+  }).$mount(container ? container.querySelector('#app') : '#app');
 }
 
 if (!window.__POWERED_BY_QIANKUN__) {

@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "parcel index.html --port 7099",
+    "start:multiple": "parcel multiple.html --port 7099",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
