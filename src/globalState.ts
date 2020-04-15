@@ -23,8 +23,9 @@ export function initGlobalState(state: Record<string, any> = {}) {
   if (state === gloabalState) {
     console.warn('[qiankun] state has not changed！');
   } else {
+    const prevGloabalState = cloneDeep(gloabalState);
     gloabalState = cloneDeep(state);
-    emitGloabl(gloabalState, gloabalState);
+    emitGloabl(gloabalState, prevGloabalState);
   }
   return getMicroAppStateActions(`gloabal-${+new Date()}`, true);
 }
