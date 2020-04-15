@@ -15,9 +15,9 @@
 
     - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - required, The entry url of the child application.
 
-    - render - `(props?: { appContent: string; loading: boolean }) => any` - required, the child application triggers the render method when it needs to be activated.
+    - container - `string | HTMLElement` - required，A selector or Element instance of the container node of a micro application. Such as `container: '#root'` or `container: document.querySelector('#root')`。
 
-    - activeRule - `(location: Location) => boolean` - optional, activation rules for subapplications.
+    - activeRule -  - `string | (location: Location) => boolean | Array<string | (location: Location) => boolean> ` - required.
 
       This function is called when the browser url changes, and `activeRule` returns `true` to indicate that the subapplication needs to be activated.
 
@@ -45,15 +45,17 @@
   import { registerMicroApps } from 'qiankun';
 
   registerMicroApps(
-    [{
-      name: 'app1',
-      entry: '//localhost:8080',
-      render: ({ appContent }) => ReactDOM.render(<App appContent={appContent}>, document.getElementById('container')),
-      activeRule: location => location.pathname.startsWith('/react'),
-      props: {
-        name: 'kuitos',
+    [
+      {
+        name: 'app1',
+        entry: '//localhost:8080',
+        container: '#container',
+        activeRule: '/react',
+        props: {
+          name: 'kuitos',
+        }
       }
-    }],
+    ],
     {
       beforeLoad: app => console.log('before load', app.name),
       beforeMount: [
@@ -233,3 +235,4 @@
     
     // ...
   }
+  ```

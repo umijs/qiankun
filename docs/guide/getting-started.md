@@ -16,14 +16,14 @@ registerMicroApps([
   {
     name: 'react app', // app name registered
     entry: '//localhost:7100',
-    render: ({ appContent, loading }) => yourRenderFunction({ appContent, loading }),
-    activeRule: location => yourActiveRule(location),
+    container: '#yourContainer',
+    activeRule: '/yourActiveRule',
   },
   {
     name: 'vue app',
     entry: { scripts: ['//localhost:7100/main.js'] },
-    render: ({ appContent, loading }) => yourRenderFunction({ appContent, loading }),
-    activeRule: location => yourActiveRule(location),
+    container: '#yourContainer2',
+    activeRule: '/yourActiveRule2',
   },
 ]);
 
@@ -31,28 +31,6 @@ start();
 ```
 
 After the sub-application information is registered, the matching logic of the qiankun will be automatically triggered once the browser url changes, and all the render methods corresponding to the subapplications whose activeRule methods returns `true` will be called, at the same time the subapplications' exposed lifecycle hooks will be called in turn.
-
-Usually, the render and activeRule configurations of our sub-applications can be extracted into public methods. Take react as an example:
-
-```ts
-import { registerMicroApps, start } from 'qiankun';
-
-function render({ appContent, loading }) {
-  const container = document.getElementById('container');
-  ReactDOM.render(<Framework loading={loading} content={appContent} />, container);
-}
-
-function genActiveRule(routerPrefix) {
-  return location => location.pathname.startsWith(routerPrefix);
-}
-
-registerMicroApps([
-  { name: 'react app', entry: '//localhost:7100', render, activeRule: genActiveRule('/react') },
-  { name: 'vue app', entry: { scripts: ['//localhost:7100/main.js'] }, render, activeRule: genActiveRule('/vue') },
-]);
-
-start();
-```
 
 ## Sub Application
 Sub applications do not need to install any additional dependencies to integrate to qiankun master application.
