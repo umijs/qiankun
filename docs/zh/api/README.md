@@ -195,7 +195,7 @@
 
     - setGlobalState: `(state: Record<string, any>) => boolean`， 设置全局状态，只修改初始化过的一级属性
 
-    - offGlobalStateChange: `() => boolean`，移除当前应用的状态监听
+    - offGlobalStateChange: `() => boolean`，移除当前应用的状态监听，子应用 umount 时会默认调用
 
 - 示例
 
@@ -224,8 +224,10 @@
       console.log(state, prev);
     });
     props.setGlobalState(state);
+  
+    // 子应用 umount 时会默认调用，非特殊情况不需要使用
     props.offGlobalStateChange();
-    
+
     // ...
   }
   ```

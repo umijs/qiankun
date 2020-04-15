@@ -179,7 +179,7 @@
   removeGlobalUncaughtErrorHandler(handler);
   ```
 
-  ## `initGloabalState(state)`
+## `initGloabalState(state)`
 
 - Parameters
 
@@ -197,7 +197,7 @@
 
     - setGlobalState: `(state: Record<string, any>) => boolean` - Set global state.
 
-    - offGlobalStateChange: `() => boolean` - Remove Listener in this app.
+    - offGlobalStateChange: `() => boolean` - Remove Listener in this app, will default trigger when app unmount.
 
 - Sample
 
@@ -225,6 +225,8 @@
       console.log(state, prev);
     });
     props.setGlobalState(state);
+
+    // It will trigger when slave umount,  not necessary to use in non special cases.
     props.offGlobalStateChange();
     
     // ...
