@@ -26,10 +26,10 @@ export function initGlobalState(state: Record<string, any> = {}) {
     gloabalState = cloneDeep(state);
     emitGloabl(gloabalState, gloabalState);
   }
-  return getMicroAppStateActions(`gloabal-${+new Date()}`);
+  return getMicroAppStateActions(`gloabal-${+new Date()}`, true);
 }
 
-export function getMicroAppStateActions(id: string): MicroAppStateActions {
+export function getMicroAppStateActions(id: string, isMaster?: boolean): MicroAppStateActions {
   return {
     /**
      * onStateChange 全局依赖监听
@@ -75,11 +75,12 @@ export function getMicroAppStateActions(id: string): MicroAppStateActions {
         console.warn('[qiankun] state has not changed！');
         return false;
       }
+
       const changeKeys: string[] = [];
       const prevGloabalState = cloneDeep(gloabalState);
       gloabalState = cloneDeep(
         Object.keys(state).reduce((_gloabalState, changeKey) => {
-          if (changeKey in _gloabalState) {
+          if (isMaster || changeKey in _gloabalState) {
             changeKeys.push(changeKey);
             return Object.assign(_gloabalState, { [changeKey]: state[changeKey] });
           }
