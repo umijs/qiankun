@@ -141,7 +141,7 @@ export async function loadApp<T extends object>(
   lifeCycles?: FrameworkLifeCycles<T>,
 ): Promise<ParcelConfigObject> {
   const { entry, name: appName } = app;
-  const { singular = true, sandbox = true, ...importEntryOpts } = configuration;
+  const { singular = false, sandbox = true, ...importEntryOpts } = configuration;
 
   // get the entry html content and script executor
   const { template, execScripts, assetPublicPath } = await importEntry(entry, importEntryOpts);

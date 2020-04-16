@@ -34,13 +34,18 @@ if (!window.__POWERED_BY_QIANKUN__) {
 }
 
 function storeTest(props) {
-  props.onGlobalStateChange((value, prev) => console.log(`[onGlobalStateChange - ${props.name}]:`, value, prev), true);
-  props.setGlobalState({
-    ignore: props.name,
-    user: {
-      name: props.name,
-    },
-  });
+  props.onGlobalStateChange &&
+    props.onGlobalStateChange(
+      (value, prev) => console.log(`[onGlobalStateChange - ${props.name}]:`, value, prev),
+      true,
+    );
+  props.setGlobalState &&
+    props.setGlobalState({
+      ignore: props.name,
+      user: {
+        name: props.name,
+      },
+    });
 }
 
 export async function bootstrap() {

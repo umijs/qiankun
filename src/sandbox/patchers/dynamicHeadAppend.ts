@@ -74,10 +74,13 @@ export default function patch(
           const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
 
           if (!singular) {
-            // eslint-disable-next-line no-shadow
-            const { appWrapperGetter, dynamicStyleSheetElements } = element[attachProxySymbol];
-            dynamicStyleSheetElements.push(stylesheetElement);
-            return rawAppendChild.call(appWrapperGetter(), stylesheetElement) as T;
+            const storedContainerInfo = element[attachProxySymbol];
+            if (storedContainerInfo) {
+              // eslint-disable-next-line no-shadow
+              const { appWrapperGetter, dynamicStyleSheetElements } = storedContainerInfo;
+              dynamicStyleSheetElements.push(stylesheetElement);
+              return rawAppendChild.call(appWrapperGetter(), stylesheetElement) as T;
+            }
           }
 
           // check if the currently specified application is active
