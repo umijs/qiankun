@@ -48,14 +48,8 @@ export function loadMicroApp<T extends object = {}>(
 }
 
 export function start(opts: FrameworkConfiguration = {}) {
-  frameworkConfiguration = opts;
-  const {
-    prefetch = true,
-    sandbox = true,
-    singular = true,
-    urlRerouteOnly,
-    ...importEntryOpts
-  } = frameworkConfiguration;
+  frameworkConfiguration = { prefetch: true, singular: true, sandbox: true, ...opts };
+  const { prefetch, sandbox, singular, urlRerouteOnly, ...importEntryOpts } = frameworkConfiguration;
 
   if (prefetch) {
     prefetchApps(microApps, prefetch, importEntryOpts);
