@@ -46,14 +46,14 @@ export type RegistrableApp<T extends object = {}> = LoadableApp<T> & {
   activeRule: RegisterApplicationConfig['activeWhen'];
 };
 
-export type Prefetch =
+export type PrefetchStrategy =
   | boolean
   | 'all'
   | string[]
   | ((apps: AppMetadata[]) => { criticalAppNames: string[]; minorAppsName: string[] });
 
 type QiankunSpecialOpts = {
-  prefetch?: Prefetch;
+  prefetch?: PrefetchStrategy;
   sandbox?:
     | boolean
     | {

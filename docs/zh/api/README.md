@@ -285,9 +285,28 @@
   }
   ```
 
-### `prefetchApps(apps, prefetchAction, importEntryOpts?)`
+### `prefetchApps(apps, importEntryOpts?)`
 
-手动预加载指定的微应用静态资源。仅手动加载微应用场景需要，基于路由自动激活场景直接配置 `prefetch` 属性即可。
+- 参数
+  - apps - `AppMetadata[]` - 必选 - 预加载的应用列表
+  - importEntryOpts - 可选 - 加载配置
+  
+- 类型
+  - `AppMetadata`
+    - name - `string` - 必选 - 应用名
+    - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - 必选，微应用的 entry 地址
+
+- 用法
+  
+  手动预加载指定的微应用静态资源。仅手动加载微应用场景需要，基于路由自动激活场景直接配置 `prefetch` 属性即可。
+  
+- 示例
+
+  ```ts
+  import { prefetchApps } from 'qiankun';
+  
+  prefetchApps([ { name: 'app1', entry: '//locahost:7001' }, { name: 'app2', entry: '//locahost:7002' } ])
+  ```
 
 ## [addErrorHandler/removeErrorHandler](https://single-spa.js.org/docs/api#adderrorhandler)
 
