@@ -28,8 +28,8 @@ registerMicroApps([
   {
     name: 'reactApp',
     entry: '//localhost:7100',
-    render: ({ appContent }) => ReactDOM.render(<App appContent={appContent}>, document.getElementById('container')),
-    activeRule: location => location.pathname.startsWith('/react'),
+    container: '#container',
+    activeRule: '/react',
   },
 ]);
 
