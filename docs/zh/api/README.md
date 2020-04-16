@@ -1,44 +1,83 @@
 # API 说明
 
-## `registerMicroApps(apps, lifeCycles?)`
+## 基于路由配置
+
+适用于 route-based 场景。
+
+通过将微应用关联到一些 url 规则的方式，实现当浏览器 url 发生变化时，自动加载相应的微应用的功能。
+
+### registerMicroApps(apps, lifeCycles?)
 
 - 参数
 
-  - apps - `Array<RegistrableApp<T>>` - 必选，子应用的一些注册信息
-  - lifeCycles - `LifeCycles<T>` - 可选，全局的子应用生命周期钩子
-  - opts - `RegisterMicroAppsOpts` - 可选
-
+  - apps - `Array<RegistrableApp>` - 必选，微应用的一些注册信息
+  - lifeCycles - `LifeCycles` - 可选，全局的微应用生命周期钩子
+  
 - 类型
 
-  - `RegistrableApp<T>`
+  - `RegistrableApp`
 
-    - name - `string` - 必选，子应用的名称，子应用之间必须确保唯一。
+    - name - `string` - 必选，微应用的名称，微应用之间必须确保唯一。
 
-    - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - 必选，子应用的 entry 地址。
+    - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - 必选，微应用的 entry 地址。
 
-    - render - `(props?: { appContent: string; loading: boolean }) => any` - 必选，子应用在需要被激活时触发的渲染方法。
+    - container - `string | HTMLElement` - 必选，微应用的容器节点的选择器或者 Element 实例。如`container: '#root'` 或 `container: document.querySelector('#root')`。
 
-    - activeRule - `(location: Location) => boolean` - 必选，子应用的激活规则。
+    - activeRule - `string | (location: Location) => boolean | Array<string | (location: Location) => boolean> ` - 必选，微应用的激活规则。
 
-      浏览器 url 发生变化会调用这个函数，`activeRule` 返回 `true` 时表明该子应用需要被激活。
+      * 支持直接配置字符串或字符串数组，如 `activeRule: '/app1'` 或 `activeRule: ['/app1', '/app2']`，当配置为字符串时会直接跟 url 中的路径部分做前缀匹配，匹配成功表明当前应用会被激活。
+      * 支持配置一个 active function 函数或一组 active function。函数会传入当前 location 作为参数，函数返回 true 时表明当前微应用会被激活。如 `location => location.pathname.startsWith('/app1')`。
 
-    - props - `object` - 可选，主应用需要传递给子应用的数据。
+      规则示例：
 
-  - `LifeCycles<T>`
+      `'/app1'`
+
+      * ✅ https://app.com/app1
+
+      * ✅ https://app.com/app1/anything/everything
+
+      * 🚫 https://app.com/app2
+
+      `'/users/:userId/profile'`
+
+      * ✅ https://app.com/users/123/profile
+      * ✅ https://app.com/users/123/profile/sub-profile/
+      * 🚫 https://app.com/users//profile/sub-profile/
+      * 🚫 https://app.com/users/profile/sub-profile/
+
+      `'/pathname/#/hash'`
+
+      * ✅ https://app.com/pathname/#/hash
+      * ✅ https://app.com/pathname/#/hash/route/nested
+      * 🚫 https://app.com/pathname#/hash/route/nested
+      * 🚫 https://app.com/pathname#/another-hash
+
+      `['/pathname/#/hash', '/app1']`
+
+      * ✅ https://app.com/pathname/#/hash/route/nested
+      * ✅ https://app.com/app1/anything/everything
+      * 🚫 https://app.com/pathname/app1
+      * 🚫 https://app.com/app2
+
+      浏览器 url 发生变化会调用 activeRule 里的规则，`activeRule` 任意一个返回 `true` 时表明该微应用需要被激活。
+
+    - props - `object` - 可选，主应用需要传递给微应用的数据。
+
+  - `LifeCycles`
 
     ```ts
-    type Lifecycle<T extends object> = (app: RegistrableApp<T>) => Promise<any>;
+    type Lifecycle = (app: RegistrableApp) => Promise<any>;
     ```
 
-    - beforeLoad - `Lifecycle<T> | Array<Lifecycle<T>>` - 可选
-    - beforeMount - `Lifecycle<T> | Array<Lifecycle<T>>` - 可选
-    - afterMount - `Lifecycle<T> | Array<Lifecycle<T>>` - 可选
-    - beforeUnmount - `Lifecycle<T> | Array<Lifecycle<T>>` - 可选
-    - afterUnmount - `Lifecycle<T> | Array<Lifecycle<T>>` - 可选
+    - beforeLoad - `Lifecycle | Array<Lifecycle>` - 可选
+    - beforeMount - `Lifecycle | Array<Lifecycle>` - 可选
+    - afterMount - `Lifecycle | Array<Lifecycle>` - 可选
+    - beforeUnmount - `Lifecycle | Array<Lifecycle>` - 可选
+    - afterUnmount - `Lifecycle | Array<Lifecycle>` - 可选
 
 - 用法
 
-  主应用中注册子应用的配置信息。
+  注册微应用的基础配置信息。当浏览器 url 发生变化时，会自动检查每一个微应用注册的 `activeRule` 规则，符合规则的应用将会被自动激活。
 
 - 示例
 
@@ -46,15 +85,17 @@
   import { registerMicroApps } from 'qiankun';
 
   registerMicroApps(
-    [{
-      name: 'app1',
-      entry: '//localhost:8080',
-      render: ({ appContent }) => ReactDOM.render(<App appContent={appContent}>, document.getElementById('container')),
-      activeRule: location => location.pathname.startsWith('/react'),
-      props: {
-        name: 'kuitos',
+    [
+      {
+        name: 'app1',
+        entry: '//localhost:8080',
+        container: '#container',
+        activeRule: '/react',
+        props: {
+          name: 'kuitos',
+        }
       }
-    }],
+    ],
     {
       beforeLoad: app => console.log('before load', app.name),
       beforeMount: [
@@ -64,7 +105,7 @@
   );
   ```
 
-## `start(opts?)`
+### `start(opts?)`
 
 - 参数
 
@@ -74,21 +115,24 @@
 
   - `Options`
 
-    - prefetch - `boolean | 'all' | string[] | (( apps: RegistrableApp[] ) => { criticalAppNames: string[]; minorAppsName: string[] })`
-    - 可选，是否开启预加载，默认为 `true`。
+    - prefetch - `boolean | 'all' | string[] | (( apps: RegistrableApp[] ) => { criticalAppNames: string[]; minorAppsName: string[] })` - 可选，是否开启预加载，默认为 `true`。
 
-      配置为 `true` 则会在第一个子应用 mount 完成后开始预加载其他子应用的静态资源，配置为 `'all'` 则主应用 `start` 后即开始预加载所有子应用静态资源。
+      配置为 `true` 则会在第一个微应用 mount 完成后开始预加载其他微应用的静态资源，配置为 `'all'` 则主应用 `start` 后即开始预加载所有微应用静态资源。
 
-      配置为 `string[]` 则会在第一个子应用 mounted 后开始加载数组内的子应用资源
+      配置为 `string[]` 则会在第一个微应用 mounted 后开始加载数组内的微应用资源
 
       配置为 `function` 则可完全自定义应用的资源加载时机 (首屏应用及次屏应用)
 
-    - jsSandbox - `boolean` - 可选，是否开启沙箱，默认为 `true`。
+    - sandbox - `boolean` | `{ strictStyleIsolation?: boolean }` - 可选，是否开启沙箱，默认为 `true`。
+
+      当配置为 `{ strictStyleIsolation: true }` 表示开启严格的样式隔离模式。这种模式下 qiankun 会为每个微应用的容器包裹上一个 [shadow dom](https://developer.mozilla.org/zh-CN/docs/Web/Web_Components/Using_shadow_DOM) 节点，从而确保微应用的样式不会对全局造成影响。
 
     - singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - 可选，是否为单实例场景，默认为 `true`。
 
     - fetch - `Function` - 可选，自定义的 fetch 方法。
+
     - getPublicPath - `(url: string) => string` - 可选
+
     - getTemplate - `(tpl: string) => string` - 可选
 
 - 用法
@@ -103,7 +147,7 @@
   start();
   ```
 
-## `setDefaultMountApp(appLink)`
+### setDefaultMountApp(appLink)`
 
 - 参数
 
@@ -111,7 +155,7 @@
 
 - 用法
 
-  设置主应用启动后默认进入的子应用。
+  设置主应用启动后默认进入的微应用。
 
 - 示例
 
@@ -121,7 +165,7 @@
   setDefaultMountApp('/homeApp');
   ```
 
-## `runAfterFirstMounted(effect)`
+### `runAfterFirstMounted(effect)`
 
 - 参数
 
@@ -129,7 +173,7 @@
 
 - 用法
 
-  第一个子应用 mount 后需要调用的方法，比如开启一些监控或者埋点脚本。
+  第一个微应用 mount 后需要调用的方法，比如开启一些监控或者埋点脚本。
 
 - 示例
 
@@ -138,6 +182,112 @@
 
   runAfterFirstMounted(() => startMonitor());
   ```
+  
+## 手动加载微应用
+
+适用于需要手动 加载/卸载 一个微应用的场景。
+
+::: info 
+通常这种场景下微应用是一个不带路由的可独立运行的业务组件。
+微应用不宜拆分过细，建议按照业务域来做拆分。业务关联紧密的功能单元应该做成一个微应用，反之关联不紧密的可以考虑拆分成多个微应用。
+一个判断业务关联是否紧密的标准：**看这个微应用与其他微应用是否有频繁的通信需求**。如果有可能说明这两个微应用本身就是服务于同一个业务场景，合并成一个微应用可能会更合适。
+:::
+
+### `loadMicroApp(app, configuration?)`
+
+* 参数
+  * app - `LoadableApp` - 必选，微应用的基础信息
+    * name - `string` - 必选，微应用的名称，微应用之间必须确保唯一。
+    * entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - 必选，微应用的 entry 地址。
+    * container - `string | HTMLElement` - 必选，微应用的容器节点的选择器或者 Element 实例。如`container: '#root'` 或 `container: document.querySelector('#root')`。
+    * props - `object` - 可选，初始化时需要传递给微应用的数据。
+    
+  * configuration - `Configuration` - 可选，微应用的配置信息
+
+    * sandbox - `boolean` | `{ strictStyleIsolation?: boolean }` - 可选，是否开启沙箱，默认为 `true`。
+
+      当配置为 `{ strictStyleIsolation: true }` 表示开启严格的样式隔离模式。这种模式下 qiankun 会为每个微应用的容器包裹上一个 [shadow dom](https://developer.mozilla.org/zh-CN/docs/Web/Web_Components/Using_shadow_DOM) 节点，从而确保微应用的样式不会对全局造成影响。
+
+    * singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - 可选，是否为单实例场景，默认为 `false`。
+
+    * fetch - `Function` - 可选，自定义的 fetch 方法。
+
+    * getPublicPath - `(url: string) => string` - 可选
+
+    * getTemplate - `(tpl: string) => string` - 可选
+
+* 返回值 - `MicroApp` - 微应用实例
+  * mount(): Promise<null>;
+  * unmount(): Promise<null>;
+  * update(customProps: object): Promise<any>;
+  * getStatus():
+      | "NOT_LOADED"
+      | "LOADING_SOURCE_CODE"
+      | "NOT_BOOTSTRAPPED"
+      | "BOOTSTRAPPING"
+      | "NOT_MOUNTED"
+      | "MOUNTING"
+      | "MOUNTED"
+      | "UPDATING"
+      | "UNMOUNTING"
+      | "UNLOADING"
+      | "SKIP_BECAUSE_BROKEN"
+      | "LOAD_ERROR";
+  * loadPromise: Promise<null>;
+  * bootstrapPromise: Promise<null>;
+  * mountPromise: Promise<null>;
+  * unmountPromise: Promise<null>;
+  
+* 用法
+
+  手动加载一个微应用。
+
+  如果需要能支持主应用手动 update 微应用，需要微应用 entry 再多导出一个 update 钩子：
+
+  ```ts
+  export function mount(props) {
+    renderApp(props);
+  }
+  
+  // 增加 update 钩子以便主应用手动更新微应用
+  export function update(props) {
+    renderPatch(props);
+  }
+  ```
+
+* 示例
+
+  ```jsx
+  import { loadMicroApp } from 'qiankun';
+  import React from 'react';
+  
+  class App extends React.Component {
+    
+    microApp = null;
+    
+    componentDidMount() {
+      this.microApp = loadMicroApp(
+    		{ name: 'app1', entry: '//localhost:1234', container: '#app1', props: { name: 'qiankum' } },
+  		);
+    }
+  
+    componentWillUnmount() {
+      this.microApp.unmount();
+    }
+  
+  	componentDidUpdate() {
+      this.microApp.update({ name: 'kuitos' });
+    }
+    
+  	render() {
+      return <div id="app1"></div>;
+    }
+  }
+  ```
+
+### `prefetchApps(apps, prefetchAction, importEntryOpts?)`
+
+手动预加载指定的微应用静态资源。仅手动加载微应用场景需要，基于路由自动激活场景直接配置 `prefetch` 属性即可。
 
 ## [addErrorHandler/removeErrorHandler](https://single-spa.js.org/docs/api#adderrorhandler)
 
@@ -185,7 +335,7 @@
 
 - 用法
 
-  定义全局状态，并返回通信方法，建议在主应用使用，子应用通过 props 获取通信方法。
+  定义全局状态，并返回通信方法，建议在主应用使用，微应用通过 props 获取通信方法。
 
 - 返回
 
@@ -193,9 +343,9 @@
 
     - onGlobalStateChange: `(callback: OnGlobalStateChangeCallback, fireImmediately?: boolean) => void`， 在当前应用监听全局状态，有变更触发 callback，fireImmediately = true 立即触发 callback
 
-    - setGlobalState: `(state: Record<string, any>) => boolean`， 按一级属性设置全局状态，子应用中只能修改已存在的一级属性
+    - setGlobalState: `(state: Record<string, any>) => boolean`， 按一级属性设置全局状态，微应用中只能修改已存在的一级属性
 
-    - offGlobalStateChange: `() => boolean`，移除当前应用的状态监听，子应用 umount 时会默认调用
+    - offGlobalStateChange: `() => boolean`，移除当前应用的状态监听，微应用 umount 时会默认调用
 
 - 示例
 
@@ -214,7 +364,7 @@
   actions.offGlobalStateChange();
   ```
 
-  子应用：
+  微应用：
   ```ts
   // 从生命周期 mount 中获取通信方法，使用方式和 master 一致
   export function mount(props) {
@@ -223,11 +373,7 @@
       // state: 变更后的状态; prev 变更前的状态
       console.log(state, prev);
     });
-    props.setGlobalState(state);
   
-    // 子应用 umount 时会默认调用，非特殊情况不需要使用
-    props.offGlobalStateChange();
-
-    // ...
+    props.setGlobalState(state);
   }
   ```

@@ -96,7 +96,7 @@ function prefetchImmediately(apps: AppMetadata[], opts?: ImportEntryOpts): void 
   apps.forEach(({ entry }) => prefetch(entry, opts));
 }
 
-export function prefetchApps(apps: AppMetadata[], prefetchAction: Prefetch, importEntryOpts: ImportEntryOpts) {
+export function prefetchApps(apps: AppMetadata[], prefetchAction: Prefetch, importEntryOpts?: ImportEntryOpts) {
   const appsName2Apps = (names: string[]): AppMetadata[] => apps.filter(app => names.includes(app.name));
 
   if (Array.isArray(prefetchAction)) {

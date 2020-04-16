@@ -4,7 +4,7 @@ actionText: 快速开始 →
 actionLink: /guide/
 features:
   - title: 简单
-    details: 任意 js 框架均可使用。子应用接入像使用接入一个 iframe 系统一样简单，但实际不是 iframe。
+    details: 任意 js 框架均可使用。微应用接入像使用接入一个 iframe 系统一样简单，但实际不是 iframe。
   - title: 完备
     details: 几乎包含所有构建微前端系统时所需要的基本能力，如 样式隔离、js 沙箱、预加载等。
   - title: 生产可用
@@ -23,7 +23,7 @@ $ yarn add qiankun  # or npm i qiankun -S
 ```tsx
 import { registerMicroApps, start } from 'qiankun';
 
-// 注册子应用
+// 注册微应用
 registerMicroApps([
   {
     name: 'reactApp',
