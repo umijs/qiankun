@@ -1,7 +1,7 @@
 import { mountRootParcel, registerApplication, start as startSingleSpa } from 'single-spa';
 import { FrameworkConfiguration, FrameworkLifeCycles, LoadableApp, MicroApp, RegistrableApp } from './interfaces';
 import { loadApp } from './loader';
-import { prefetchApps } from './prefetch';
+import { doPrefetchStrategy } from './prefetch';
 import { Deferred } from './utils';
 
 window.__POWERED_BY_QIANKUN__ = true;
@@ -52,7 +52,7 @@ export function start(opts: FrameworkConfiguration = {}) {
   const { prefetch, sandbox, singular, urlRerouteOnly, ...importEntryOpts } = frameworkConfiguration;
 
   if (prefetch) {
-    prefetchApps(microApps, prefetch, importEntryOpts);
+    doPrefetchStrategy(microApps, prefetch, importEntryOpts);
   }
 
   if (sandbox) {

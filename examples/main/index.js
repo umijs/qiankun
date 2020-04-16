@@ -93,11 +93,7 @@ setDefaultMountApp('/react16');
 /**
  * Step4 启动应用
  */
-start({
-  prefetch: ['react16', 'react15', 'vue'],
-  sandbox: true,
-  singular: true,
-});
+start();
 
 runAfterFirstMounted(() => {
   console.log('[MainApp] first app mounted');
