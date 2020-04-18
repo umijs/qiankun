@@ -8,6 +8,8 @@ import { patchAtBootstrapping, patchAtMounting } from './patchers';
 import ProxySandbox from './proxySandbox';
 import SnapshotSandbox from './snapshotSandbox';
 
+export { QiankunCSSRewriteAttr } from './patchers';
+
 /**
  * 生成应用运行时沙箱
  *

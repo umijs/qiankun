@@ -10,6 +10,8 @@ import patchInterval from './interval';
 import patchWindowListener from './windowListener';
 import patchUIEvent from './UIEvent';
 
+export { QiankunCSSRewriteAttr } from './css';
+
 export function patchAtMounting(
   appName: string,
   elementGetter: () => HTMLElement | ShadowRoot,

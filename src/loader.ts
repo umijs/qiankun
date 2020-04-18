@@ -9,7 +9,7 @@ import { LifeCycles, ParcelConfigObject } from 'single-spa';
 import getAddOns from './addons';
 import { getMicroAppStateActions } from './globalState';
 import { FrameworkConfiguration, FrameworkLifeCycles, HTMLContentRender, LifeCycleFn, LoadableApp } from './interfaces';
-import { createSandbox } from './sandbox';
+import { createSandbox, QiankunCSSRewriteAttr } from './sandbox';
 import {
   Deferred,
   getDefaultTplWrapper,
@@ -18,6 +18,7 @@ import {
   performanceMeasure,
   toArray,
   validateExportLifecycle,
+  isEnableScopedCSS,
 } from './utils';
 
 function assertElementExist(element: Element | null | undefined, msg?: string) {
@@ -78,6 +79,7 @@ function getAppWrapperGetter(
   appInstanceId: string,
   useLegacyRender: boolean,
   strictStyleIsolation: boolean,
+  enableScopedCSS: boolean,
   elementGetter: () => HTMLElement | null,
 ) {
   return () => {
@@ -97,6 +99,13 @@ function getAppWrapperGetter(
       element,
       `[qiankun] Wrapper element for ${appName} with instance ${appInstanceId} is not existed!`,
     );
+
+    if (enableScopedCSS && element) {
+      const attr = element.getAttribute(QiankunCSSRewriteAttr);
+      if (!attr) {
+        element.setAttribute(QiankunCSSRewriteAttr, appName);
+      }
+    }
 
     if (strictStyleIsolation) {
       return element!.shadowRoot!;
@@ -226,6 +235,7 @@ export async function loadApp<T extends object>(
   }
 
   const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
+  const enableScopedCSS = isEnableScopedCSS(configuration);
 
   const appContent = getDefaultTplWrapper(appInstanceId)(template);
   let element: HTMLElement | null = createElement(appContent, strictStyleIsolation);
@@ -244,6 +254,7 @@ export async function loadApp<T extends object>(
     appInstanceId,
     !!legacyRender,
     strictStyleIsolation,
+    enableScopedCSS,
     () => element,
   );
 

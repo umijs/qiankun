@@ -8,6 +8,8 @@ import { checkActivityFunctions } from 'single-spa';
 import { frameworkConfiguration } from '../../apis';
 import { Freer } from '../../interfaces';
 import { getTargetValue, setProxyPropertyGetter } from '../common';
+import { isEnableScopedCSS } from '../../utils';
+import * as css from './css';
 
 const styledComponentSymbol = 'Symbol(styled-component-qiankun)';
 const attachProxySymbol = 'Symbol(attach-proxy-qiankun)';
@@ -96,6 +98,10 @@ function getNewAppendChild(args: {
 
           if (!invokedByMicroApp) {
             return headOrBodyAppendChild.call(this, element) as T;
+          }
+
+          if (isEnableScopedCSS(frameworkConfiguration)) {
+            css.process(appWrapperGetter as () => HTMLElement, stylesheetElement, appName);
           }
 
           // eslint-disable-next-line no-shadow
@@ -220,6 +226,10 @@ function getNewInsertBefore(args: {
 
           if (!invokedByMicroApp) {
             return headOrBodyInsertBefore.call(this, element, refChild) as T;
+          }
+
+          if (isEnableScopedCSS(frameworkConfiguration)) {
+            css.process(appWrapperGetter as () => HTMLElement, stylesheetElement, appName);
           }
 
           dynamicStyleSheetElements.push(stylesheetElement);
