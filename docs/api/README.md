@@ -25,7 +25,7 @@ By linking the micro-application to some url rules, the function of automaticall
 
     - activeRule -  - `string | (location: Location) => boolean | Array<string | (location: Location) => boolean> ` - required,activation rules for micro-apps.
 
-      * Support direct configuration of string or string array, such as `activeRule: '/app1'` or `activeRule: ['/app1','/app2']`, when configured as a string, it will directly follow the path part in the url Do a prefix match. A successful match indicates that the current application will be activated.
+      * Support direct configuration of string or string array, such as `activeRule: '/app1'` or `activeRule: ['/app1', '/app2']`, when configured as a string, it will directly follow the path part in the url Do a prefix match. A successful match indicates that the current application will be activated.
       * Support to configure an active function or a group of active functions. The function will pass in the current location as a parameter. When the function returns true, it indicates that the current micro application will be activated. Such as `location => location.pathname.startsWith ('/app1')`.
 
       Example rules:
