@@ -131,7 +131,7 @@ function getRender(appContent: string, container?: string | HTMLElement, legacyR
   return render;
 }
 
-const appInstanceCounts: Record<string, number> = {};
+const appInstanceMap: Record<string, number[]> = {};
 let prevAppUnmountedDeferred: Deferred<void>;
 
 export async function loadApp<T extends object>(
@@ -152,9 +152,14 @@ export async function loadApp<T extends object>(
     await (prevAppUnmountedDeferred && prevAppUnmountedDeferred.promise);
   }
 
-  const appInstanceId = `${appName}_${
-    appInstanceCounts.hasOwnProperty(appName) ? (appInstanceCounts[appName] += 1) : (appInstanceCounts[appName] = 0)
-  }`;
+  const appInstanceKey = +new Date();
+  const appInstanceId = `${appName}_${appInstanceKey}`;
+
+  if (Array.isArray(appInstanceMap[appName])) {
+    appInstanceMap[appName].push(appInstanceKey);
+  } else {
+    appInstanceMap[appName] = [appInstanceKey];
+  }
 
   const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
 
