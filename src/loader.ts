@@ -152,7 +152,6 @@ function getLifecyclesFromExports(scriptExports: LifeCycles<any>, appName: strin
   throw new Error(`[qiankun] You need to export lifecycle functions in ${appName} entry`);
 }
 
-const appInstanceCounts: Record<string, number> = {};
 let prevAppUnmountedDeferred: Deferred<void>;
 
 export async function loadApp<T extends object>(
@@ -173,9 +172,7 @@ export async function loadApp<T extends object>(
     await (prevAppUnmountedDeferred && prevAppUnmountedDeferred.promise);
   }
 
-  const appInstanceId = `${appName}_${
-    appInstanceCounts.hasOwnProperty(appName) ? (appInstanceCounts[appName] += 1) : (appInstanceCounts[appName] = 0)
-  }`;
+  const appInstanceId = `${appName}_${+new Date()}`;
 
   const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
 
