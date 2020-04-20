@@ -47,6 +47,7 @@ export function getMicroAppStateActions(id: string, isMaster?: boolean): MicroAp
      * }
      *
      * @param callback
+     * @param fireImmediately
      */
     onGlobalStateChange(callback: OnGlobalStateChangeCallback, fireImmediately?: boolean) {
       if (!(callback instanceof Function)) {

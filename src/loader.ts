@@ -5,12 +5,12 @@
 
 import { importEntry } from 'import-html-entry';
 import { concat, mergeWith } from 'lodash';
-import { LifeCycles, ParcelConfigObject } from 'single-spa';
+import { ParcelConfigObject } from 'single-spa';
 import getAddOns from './addons';
+import { getMicroAppStateActions } from './globalState';
 import { FrameworkConfiguration, FrameworkLifeCycles, HTMLContentRender, LifeCycleFn, LoadableApp } from './interfaces';
 import { createSandbox } from './sandbox';
 import { Deferred, getDefaultTplWrapper, getWrapperId, validateExportLifecycle } from './utils';
-import { getMicroAppStateActions } from './globalState';
 
 function assertElementExist(element: Element | null | undefined, id?: string, msg?: string) {
   if (!element) {
@@ -131,7 +131,6 @@ function getRender(appContent: string, container?: string | HTMLElement, legacyR
   return render;
 }
 
-const appExportPromiseCaches: Record<string, Promise<LifeCycles>> = {};
 const appInstanceCounts: Record<string, number> = {};
 let prevAppUnmountedDeferred: Deferred<void>;
 
@@ -154,7 +153,7 @@ export async function loadApp<T extends object>(
   }
 
   const appInstanceId = `${appName}_${
-    appInstanceCounts.hasOwnProperty(appName) ? (appInstanceCounts[appName] ?? 0) + 1 : 0
+    appInstanceCounts.hasOwnProperty(appName) ? (appInstanceCounts[appName] ?? 0) + 1 : ''
   }`;
 
   const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
@@ -193,13 +192,8 @@ export async function loadApp<T extends object>(
 
   await execHooksChain(toArray(beforeLoad), app);
 
-  // cache the execScripts returned promise
-  if (!appExportPromiseCaches[appName]) {
-    appExportPromiseCaches[appName] = execScripts(global, !singular);
-  }
-
   // get the lifecycle hooks from module exports
-  const scriptExports: any = await appExportPromiseCaches[appName];
+  const scriptExports: any = await execScripts(global, !singular);
   let bootstrap;
   let mount: any;
   let unmount: any;
@@ -229,7 +223,6 @@ export async function loadApp<T extends object>(
       // eslint-disable-next-line prefer-destructuring
       unmount = globalVariableExports.unmount;
     } else {
-      delete appExportPromiseCaches[appName];
       throw new Error(`[qiankun] You need to export lifecycle functions in ${appName} entry`);
     }
   }
