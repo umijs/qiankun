@@ -1,39 +1,79 @@
 # API
 
-## `registerMicroApps(apps, lifeCycles?)`
+## Route based configuration
+
+Suitable for route-based scenarios.
+
+By linking the micro-application to some url rules, the function of automatically loading the corresponding micro-application when the browser url changes.
+
+### `registerMicroApps(apps, lifeCycles?)`
 
 - Parameters
 
-  - apps - `Array<RegistrableApp<T>>` - required, registration information for the child application
-  - lifeCycles - `LifeCycles<T>` - optional, global sub app lifecycle hooks
+  - apps - `Array<RegistrableApp>` - required, registration information for the child application
+  - lifeCycles - `LifeCycles` - optional, global sub app lifecycle hooks
 
 - Type
 
-  - `RegistrableApp<T>`
+  - `RegistrableApp`
 
     - name - `string` - required, the name of the child application and must be unique between the child applications.
 
     - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - required, The entry url of the child application.
 
-    - container - `string | HTMLElement` - required，A selector or Element instance of the container node of a micro application. Such as `container: '#root'` or `container: document.querySelector('#root')`。
+    - container - `string | HTMLElement` - required，A selector or Element instance of the container node of a micro application. Such as `container: '#root'` or `container: document.querySelector('#root')`.
 
-    - activeRule -  - `string | (location: Location) => boolean | Array<string | (location: Location) => boolean> ` - required.
+    - activeRule -  - `string | (location: Location) => boolean | Array<string | (location: Location) => boolean> ` - required,activation rules for micro-apps.
+
+      * Support direct configuration of string or string array, such as `activeRule: '/app1'` or `activeRule: ['/app1', '/app2']`, when configured as a string, it will directly follow the path part in the url Do a prefix match. A successful match indicates that the current application will be activated.
+      * Support to configure an active function or a group of active functions. The function will pass in the current location as a parameter. When the function returns true, it indicates that the current micro application will be activated. Such as `location => location.pathname.startsWith ('/app1')`.
+
+      Example rules:
+
+      `'/app1'`
+
+      * ✅ https://app.com/app1
+
+      * ✅ https://app.com/app1/anything/everything
+
+      * 🚫 https://app.com/app2
+
+      `'/users/:userId/profile'`
+
+      * ✅ https://app.com/users/123/profile
+      * ✅ https://app.com/users/123/profile/sub-profile/
+      * 🚫 https://app.com/users//profile/sub-profile/
+      * 🚫 https://app.com/users/profile/sub-profile/
+
+      `'/pathname/#/hash'`
+
+      * ✅ https://app.com/pathname/#/hash
+      * ✅ https://app.com/pathname/#/hash/route/nested
+      * 🚫 https://app.com/pathname#/hash/route/nested
+      * 🚫 https://app.com/pathname#/another-hash
+
+      `['/pathname/#/hash', '/app1']`
+
+      * ✅ https://app.com/pathname/#/hash/route/nested
+      * ✅ https://app.com/app1/anything/everything
+      * 🚫 https://app.com/pathname/app1
+      * 🚫 https://app.com/app2
 
       This function is called when the browser url changes, and `activeRule` returns `true` to indicate that the subapplication needs to be activated.
 
     - props - `object` - optional, data that the primary application needs to pass to the child application.
 
-  - `LifeCycles<T>`
+  - `LifeCycles`
 
     ```ts
-    type Lifecycle<T extends object> = (app: RegistrableApp<T>) => Promise<any>;
+    type Lifecycle = (app: RegistrableApp) => Promise<any>;
     ```
 
-    - beforeLoad - `Lifecycle<T> | Array<Lifecycle<T>>` - optional
-    - beforeMount - `Lifecycle<T> | Array<Lifecycle<T>>` - optional
-    - afterMount - `Lifecycle<T> | Array<Lifecycle<T>>` - optional
-    - beforeUnmount - `Lifecycle<T> | Array<Lifecycle<T>>` - optional
-    - afterUnmount - `Lifecycle<T> | Array<Lifecycle<T>>` - optional
+    - beforeLoad - `Lifecycle | Array<Lifecycle>` - optional
+    - beforeMount - `Lifecycle | Array<Lifecycle>` - optional
+    - afterMount - `Lifecycle | Array<Lifecycle>` - optional
+    - beforeUnmount - `Lifecycle | Array<Lifecycle>` - optional
+    - afterUnmount - `Lifecycle | Array<Lifecycle>` - optional
 
 - Usage
 
@@ -65,7 +105,7 @@
   );
   ```
 
-## `start(opts?)`
+### `start(opts?)`
 
 - Parameters
 
@@ -78,7 +118,7 @@
     - prefetch - `boolean | 'all' | string[] | (( apps: RegistrableApp[] ) => { criticalAppNames: string[]; minorAppsName: string[] })` - optional, whether to enable prefetch, default is `true`.
 
       A configuration of `true` starts prefetching static resources for other subapplications after the first subapplication mount completes.
-  
+
       If configured as `'all'`, the main application `start` will begin to preload all subapplication static resources.
 
       If configured as `string[]`, starts prefetching static resources for subapplications after the first subapplication mount completes which be declared in this list.
@@ -109,7 +149,7 @@
   start();
   ```
 
-## `setDefaultMountApp(appLink)`
+### `setDefaultMountApp(appLink)`
 
 - Parameters
 
@@ -127,7 +167,7 @@
   setDefaultMountApp('/homeApp');
   ```
 
-## `runAfterFirstMounted(effect)`
+### `runAfterFirstMounted(effect)`
 
 - Parameters
 
@@ -145,13 +185,138 @@
   runAfterFirstMounted(() => startMonitor());
   ```
 
+## Manually load micro applications
+
+It is suitable for scenarios where a micro application needs to be manually loaded / unloaded.
+
+::: tip
+Usually in this scenario, the micro application is a business component that can run independently without routing.
+Micro applications should not be split too fine, it is recommended to split according to the business domain. Functional units with close business associations should be made into one micro-application, and conversely, those with less close association can be considered to be split into multiple micro-applications.
+A criterion for judging whether the business is closely related: **Look at whether this micro application has frequent communication needs with other micro applications**. If it is possible to show that these two micro-applications are serving the same business scenario, it may be more appropriate to merge them into one micro-application.
+:::
+
+### `loadMicroApp(app, configuration?)`
+
+* Parameters
+  * app - `LoadableApp` - Required, basic information of micro application
+    * name - `string` - Required, the name of the micro application must be unique among the micro applications.
+    * entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - Required, the entry address of the micro application.
+    * container - `string | HTMLElement` - Required, selector or Element instance of the container node of the micro application. Such as `container: '#root'` or `container: document.querySelector('#root')`.
+    * props - `object` - Optional, the data that needs to be passed to the micro-application during initialization.
+
+  * configuration - `Configuration` - Optional, configuration information of the micro application
+
+    * sandbox - `boolean` | `{ strictStyleIsolation?: boolean }` - Optional, whether to enable the sandbox, the default is `true`.
+
+      When configured as `{strictStyleIsolation: true}`, it means that strict style isolation mode is enabled. In this mode, qiankun will wrap a [shadow dom](https://developer.mozilla.org/zh-CN/docs/Web/Web_Components/Using_shadow_DOM) node for each micro-application container, so as to ensure that the style of the micro application will not affect the whole world.
+
+    * singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - Optional, whether it is a single instance scenario, the default is `false`.
+
+    * fetch - `Function` - Optional, custom fetch method.
+
+    * getPublicPath - `(url: string) => string` - Optional
+
+    * getTemplate - `(tpl: string) => string` - Optional
+
+* 返回值 - `MicroApp` - Micro application examples
+  * mount(): Promise<null>;
+  * unmount(): Promise<null>;
+  * update(customProps: object): Promise<any>;
+  * getStatus():
+      | "NOT_LOADED"
+      | "LOADING_SOURCE_CODE"
+      | "NOT_BOOTSTRAPPED"
+      | "BOOTSTRAPPING"
+      | "NOT_MOUNTED"
+      | "MOUNTING"
+      | "MOUNTED"
+      | "UPDATING"
+      | "UNMOUNTING"
+      | "UNLOADING"
+      | "SKIP_BECAUSE_BROKEN"
+      | "LOAD_ERROR";
+  * loadPromise: Promise<null>;
+  * bootstrapPromise: Promise<null>;
+  * mountPromise: Promise<null>;
+  * unmountPromise: Promise<null>;
+  
+* Usage
+
+  Load a micro application manually.
+
+  If you need to support the main application to manually update the micro application, you need to export an update hook for the micro application entry:
+
+  ```ts
+  export function mount(props) {
+    renderApp(props);
+  }
+  
+  // Added update hook to allow the main application to manually update the micro application
+  export function update(props) {
+    renderPatch(props);
+  }
+  ```
+
+* Sample
+
+  ```jsx
+  import { loadMicroApp } from 'qiankun';
+  import React from 'react';
+  
+  class App extends React.Component {
+    
+    microApp = null;
+    
+    componentDidMount() {
+      this.microApp = loadMicroApp(
+    		{ name: 'app1', entry: '//localhost:1234', container: '#app1', props: { name: 'qiankum' } },
+  		);
+    }
+  
+    componentWillUnmount() {
+      this.microApp.unmount();
+    }
+  
+  	componentDidUpdate() {
+      this.microApp.update({ name: 'kuitos' });
+    }
+    
+  	render() {
+      return <div id="app1"></div>;
+    }
+  }
+  ```
+
+### `prefetchApps(apps, importEntryOpts?)`
+
+- Parameters
+  - apps - `AppMetadata[]` - Required - list of preloaded apps
+  - importEntryOpts - Optional - Load configuration
+  
+- Type
+  - `AppMetadata`
+    - name - `string` - Required - Application name
+    - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - Required,The entry address of the microapp
+
+- Usage
+  
+  Manually preload the specified micro application static resources. Only needed to manually load micro-application scenarios, you can directly configure the `prefetch` attribute based on the route automatic activation scenario.
+  
+- Sample
+
+  ```ts
+  import { prefetchApps } from 'qiankun';
+  
+  prefetchApps([ { name: 'app1', entry: '//locahost:7001' }, { name: 'app2', entry: '//locahost:7002' } ])
+  ```
+
 ## [addErrorHandler/removeErrorHandler](https://single-spa.js.org/docs/api#adderrorhandler)
 
 ## `addGlobalUncaughtErrorHandler(handler)`
 
 - Parameters
 
-  - handler - `(...args: any[]) => void` - 必选
+  - handler - `(...args: any[]) => void` - Required
 
 - Usage
 
@@ -169,7 +334,7 @@
 
 - Parameters
 
-  - handler - `(...args: any[]) => void` - 必选
+  - handler - `(...args: any[]) => void` - Required
 
 - Usage
 
@@ -187,7 +352,7 @@
 
 - Parameters
 
-  - state - `Record<string, any>` - 必选
+  - state - `Record<string, any>` - Required
 
 - Usage
 
@@ -209,6 +374,7 @@
   ```ts
   import { initGloabalState, MicroAppStateActions } from 'qiankun';
 
+  // Initialize state
   const actions: MicroAppStateActions = initGloabalState(state);
 
   actions.onGlobalStateChange((state, prev) => {
