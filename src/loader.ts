@@ -153,7 +153,7 @@ export async function loadApp<T extends object>(
   }
 
   const appInstanceId = `${appName}_${
-    appInstanceCounts.hasOwnProperty(appName) ? (appInstanceCounts[appName] ?? 0) + 1 : ''
+    appInstanceCounts.hasOwnProperty(appName) ? (appInstanceCounts[appName] += 1) : (appInstanceCounts[appName] = 0)
   }`;
 
   const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
