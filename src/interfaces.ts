@@ -3,7 +3,7 @@
  * @since 2019-05-16
  */
 import { ImportEntryOpts } from 'import-html-entry';
-import { RegisterApplicationConfig, StartOpts, Parcel } from 'single-spa';
+import { RegisterApplicationConfig, StartOpts, Parcel, ParcelConfigObject } from 'single-spa';
 
 declare global {
   interface Window {
@@ -40,6 +40,11 @@ export type LoadableApp<T extends object = {}> = AppMetadata & { /* props pass t
         container: string | HTMLElement;
       }
   );
+
+export type SeparatedLoadedApp = {
+  instance: Promise<ParcelConfigObject & { reuse: Function }>;
+  name: string;
+};
 
 // for the route-based apps
 export type RegistrableApp<T extends object = {}> = LoadableApp<T> & {

@@ -139,7 +139,7 @@ export async function loadApp<T extends object>(
   app: LoadableApp<T>,
   configuration: FrameworkConfiguration = {},
   lifeCycles?: FrameworkLifeCycles<T>,
-): Promise<ParcelConfigObject> {
+): Promise<ParcelConfigObject & { reuse: Function }> {
   const { entry, name: appName } = app;
   const { singular = false, sandbox = true, ...importEntryOpts } = configuration;
 
@@ -162,10 +162,15 @@ export async function loadApp<T extends object>(
   const appContent = getDefaultTplWrapper(appInstanceId)(template);
   let element: HTMLElement | null = createElement(appContent, strictStyleIsolation);
 
-  const container = 'container' in app ? app.container : undefined;
-  const legacyRender = 'render' in app ? app.render : undefined;
+  let container = 'container' in app ? app.container : undefined;
+  let legacyRender = 'render' in app ? app.render : undefined;
 
-  const render = getRender(appContent, container, legacyRender);
+  let render = getRender(appContent, container, legacyRender);
+  const updateRender = (options: { render?: HTMLContentRender; container?: string | HTMLElement }) => {
+    container = 'container' in options ? options.container : undefined;
+    legacyRender = 'render' in options ? options.render : undefined;
+    render = getRender(appContent, container, legacyRender);
+  };
 
   // 第一次加载设置应用可见区域 dom 结构
   // 确保每次应用加载前容器 dom 结构已经设置完毕
@@ -288,5 +293,6 @@ export async function loadApp<T extends object>(
         }
       },
     ],
+    reuse: updateRender,
   };
 }

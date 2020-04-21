@@ -1,5 +1,12 @@
 import { mountRootParcel, registerApplication, start as startSingleSpa } from 'single-spa';
-import { FrameworkConfiguration, FrameworkLifeCycles, LoadableApp, MicroApp, RegistrableApp } from './interfaces';
+import {
+  FrameworkConfiguration,
+  FrameworkLifeCycles,
+  LoadableApp,
+  MicroApp,
+  RegistrableApp,
+  SeparatedLoadedApp,
+} from './interfaces';
 import { loadApp } from './loader';
 import { doPrefetchStrategy } from './prefetch';
 import { Deferred } from './utils';
@@ -11,6 +18,7 @@ let microApps: RegistrableApp[] = [];
 // eslint-disable-next-line import/no-mutable-exports
 export let frameworkConfiguration: FrameworkConfiguration = {};
 const frameworkStartedDefer = new Deferred<void>();
+const separatedLoadedApps: SeparatedLoadedApp[] = [];
 
 export function registerMicroApps<T extends object = {}>(
   apps: Array<RegistrableApp<T>>,
@@ -41,10 +49,26 @@ export function loadMicroApp<T extends object = {}>(
   configuration = frameworkConfiguration,
 ): MicroApp {
   const { props, ...appConfig } = app;
-  return mountRootParcel(() => loadApp(appConfig, configuration), {
-    domElement: document.createElement('div'),
-    ...props,
-  });
+  return mountRootParcel(
+    () => {
+      const loadedApp = separatedLoadedApps.find(item => item.name === app.name);
+      if (loadedApp) {
+        const instance = loadedApp.instance.then(parcel => {
+          parcel.reuse(app);
+          return parcel;
+        });
+        return Promise.resolve(instance);
+      }
+
+      const ongoingApp = loadApp(appConfig, configuration);
+      separatedLoadedApps.push({ name: app.name, instance: ongoingApp });
+      return ongoingApp;
+    },
+    {
+      domElement: document.createElement('div'),
+      ...props,
+    },
+  );
 }
 
 export function start(opts: FrameworkConfiguration = {}) {
