@@ -5,7 +5,7 @@
 
 import { importEntry } from 'import-html-entry';
 import { concat, mergeWith } from 'lodash';
-import { ParcelConfigObject } from 'single-spa';
+import { LifeCycles, ParcelConfigObject } from 'single-spa';
 import getAddOns from './addons';
 import { getMicroAppStateActions } from './globalState';
 import { FrameworkConfiguration, FrameworkLifeCycles, HTMLContentRender, LifeCycleFn, LoadableApp } from './interfaces';
@@ -131,6 +131,27 @@ function getRender(appContent: string, container?: string | HTMLElement, legacyR
   return render;
 }
 
+function getLifecyclesFromExports(scriptExports: LifeCycles<any>, appName: string, global: WindowProxy) {
+  if (validateExportLifecycle(scriptExports)) {
+    return scriptExports;
+  }
+
+  if (process.env.NODE_ENV === 'development') {
+    console.warn(
+      `[qiankun] lifecycle not found from ${appName} entry exports, fallback to get from window['${appName}']`,
+    );
+  }
+
+  // fallback to global variable who named with ${appName} while module exports not found
+  const globalVariableExports = (global as any)[appName];
+
+  if (validateExportLifecycle(globalVariableExports)) {
+    return globalVariableExports;
+  }
+
+  throw new Error(`[qiankun] You need to export lifecycle functions in ${appName} entry`);
+}
+
 const appInstanceCounts: Record<string, number> = {};
 let prevAppUnmountedDeferred: Deferred<void>;
 
@@ -194,38 +215,7 @@ export async function loadApp<T extends object>(
 
   // get the lifecycle hooks from module exports
   const scriptExports: any = await execScripts(global, !singular);
-  let bootstrap;
-  let mount: any;
-  let unmount: any;
-
-  if (validateExportLifecycle(scriptExports)) {
-    // eslint-disable-next-line prefer-destructuring
-    bootstrap = scriptExports.bootstrap;
-    // eslint-disable-next-line prefer-destructuring
-    mount = scriptExports.mount;
-    // eslint-disable-next-line prefer-destructuring
-    unmount = scriptExports.unmount;
-  } else {
-    if (process.env.NODE_ENV === 'development') {
-      console.warn(
-        `[qiankun] lifecycle not found from ${appName} entry exports, fallback to get from window['${appName}']`,
-      );
-    }
-
-    // fallback to global variable who named with ${appName} while module exports not found
-    const globalVariableExports = (global as any)[appName];
-
-    if (validateExportLifecycle(globalVariableExports)) {
-      // eslint-disable-next-line prefer-destructuring
-      bootstrap = globalVariableExports.bootstrap;
-      // eslint-disable-next-line prefer-destructuring
-      mount = globalVariableExports.mount;
-      // eslint-disable-next-line prefer-destructuring
-      unmount = globalVariableExports.unmount;
-    } else {
-      throw new Error(`[qiankun] You need to export lifecycle functions in ${appName} entry`);
-    }
-  }
+  const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(scriptExports, appName, global);
 
   const {
     onGlobalStateChange,
@@ -233,9 +223,9 @@ export async function loadApp<T extends object>(
     offGlobalStateChange,
   }: Record<string, Function> = getMicroAppStateActions(appInstanceId);
 
-  return {
+  const parcelConfig: ParcelConfigObject = {
     name: appInstanceId,
-    bootstrap: [bootstrap],
+    bootstrap,
     mount: [
       async () => {
         if ((await validateSingularMode(singular, app)) && prevAppUnmountedDeferred) {
@@ -282,4 +272,10 @@ export async function loadApp<T extends object>(
       },
     ],
   };
+
+  if (typeof update === 'function') {
+    parcelConfig.update = update;
+  }
+
+  return parcelConfig;
 }
