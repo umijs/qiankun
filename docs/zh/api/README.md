@@ -281,7 +281,7 @@
       this.microApp.update({ name: 'kuitos' });
     }
     
-  	render() {
+    render() {
       return <div id="app1"></div>;
     }
   }

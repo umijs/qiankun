@@ -281,7 +281,7 @@ A criterion for judging whether the business is closely related: **Look at wheth
       this.microApp.update({ name: 'kuitos' });
     }
     
-  	render() {
+    render() {
       return <div id="app1"></div>;
     }
   }
