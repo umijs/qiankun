@@ -7,7 +7,7 @@ import { noop } from 'lodash';
 import { Freer } from '../../interfaces';
 import patchDynamicAppend from './dynamicHeadAppend';
 import patchHistoryListener from './historyListener';
-import patchTimer from './timer';
+import patchInterval from './interval';
 import patchWindowListener from './windowListener';
 
 export function patchAtMounting(
@@ -17,7 +17,7 @@ export function patchAtMounting(
   singular: boolean,
 ): Freer[] {
   return [
-    patchTimer(),
+    patchInterval(),
     patchWindowListener(),
     patchHistoryListener(),
     patchDynamicAppend(appName, elementGetter, proxy, true, singular),
