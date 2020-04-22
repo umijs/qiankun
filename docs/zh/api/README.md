@@ -270,7 +270,7 @@
     componentDidMount() {
       this.microApp = loadMicroApp(
         { name: 'app1', entry: '//localhost:1234', container: '#app1', props: { name: 'qiankun' } },
-  	  );
+      );
     }
   
     componentWillUnmount() {

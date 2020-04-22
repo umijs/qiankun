@@ -270,7 +270,7 @@ A criterion for judging whether the business is closely related: **Look at wheth
     componentDidMount() {
       this.microApp = loadMicroApp(
         { name: 'app1', entry: '//localhost:1234', container: '#app1', props: { name: 'qiankun' } },
-  	  );
+      );
     }
   
     componentWillUnmount() {
