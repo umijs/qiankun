@@ -3,7 +3,6 @@
  * @since 2019-04-11
  */
 
-import { noop } from 'lodash';
 import { Freer } from '../../interfaces';
 import patchDynamicAppend from './dynamicHeadAppend';
 import patchHistoryListener from './historyListener';
@@ -30,9 +29,5 @@ export function patchAtBootstrapping(
   proxy: Window,
   singular: boolean,
 ): Freer[] {
-  return [
-    process.env.NODE_ENV === 'development'
-      ? patchDynamicAppend(appName, elementGetter, proxy, false, singular)
-      : () => () => noop,
-  ];
+  return [patchDynamicAppend(appName, elementGetter, proxy, false, singular)];
 }
