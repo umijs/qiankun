@@ -130,11 +130,12 @@ function getRender(
       const errorMsg = (() => {
         switch (phase) {
           case 'loading':
-            return `[qiankun] Target container with ${container} not existed while ${appName} loading!`;
           case 'mounting':
-            return `[qiankun] Target container with ${container} not existed while ${appName} mounting!`;
+            return `[qiankun] Target container with ${container} not existed while ${appName} ${phase}!`;
+
           case 'mounted':
-            return `[qiankun] Target container with ${container} not existed after ${appName} mounted!`;
+            return `[qiankun] Target container with ${container} not existed after ${appName} ${phase}!`;
+
           default:
             return `[qiankun] Target container with ${container} not existed while ${appName} rendering!`;
         }
