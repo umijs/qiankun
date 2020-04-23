@@ -3,8 +3,7 @@
  * @since 2019-04-11
  */
 
-import { noop } from 'lodash';
-import { Freer, ExecScriptsOpts } from '../interfaces';
+import { ExecScriptsOpts, Freer } from '../interfaces';
 import hijackDynamicAppend from './dynamicHeadAppend';
 import hijackHistoryListener from './historyListener';
 import hijackTimer from './timer';
@@ -20,9 +19,5 @@ export function hijackAtMounting(appName: string, proxy: Window, execScriptsOpts
 }
 
 export function hijackAtBootstrapping(appName: string, proxy: Window, execScriptsOpts: ExecScriptsOpts): Freer[] {
-  return [
-    process.env.NODE_ENV === 'development'
-      ? hijackDynamicAppend(appName, proxy, false, execScriptsOpts)
-      : () => () => noop,
-  ];
+  return [hijackDynamicAppend(appName, proxy, false, execScriptsOpts)];
 }
