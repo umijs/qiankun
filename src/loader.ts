@@ -12,13 +12,13 @@ import { FrameworkConfiguration, FrameworkLifeCycles, HTMLContentRender, LifeCyc
 import { createSandbox } from './sandbox';
 import { Deferred, getDefaultTplWrapper, getWrapperId, validateExportLifecycle } from './utils';
 
-function assertElementExist(element: Element | null | undefined, id?: string, msg?: string) {
+function assertElementExist(element: Element | null | undefined, msg?: string) {
   if (!element) {
     if (msg) {
       throw new Error(msg);
     }
 
-    throw new Error(`[qiankun] container element with ${id} is not existed!`);
+    throw new Error('[qiankun] element not existed!');
   }
 }
 
@@ -58,6 +58,7 @@ function createElement(appContent: string, strictStyleIsolation: boolean): HTMLE
 
 /** generate app wrapper dom getter */
 function getAppWrapperGetter(
+  appName: string,
   appInstanceId: string,
   useLegacyRender: boolean,
   strictStyleIsolation: boolean,
@@ -65,15 +66,21 @@ function getAppWrapperGetter(
 ) {
   return () => {
     if (useLegacyRender) {
-      if (strictStyleIsolation) throw new Error('[qiankun]: cssIsolation must not be used with legacyRender');
+      if (strictStyleIsolation) throw new Error('[qiankun]: strictStyleIsolation can not be used with legacy render!');
 
       const appWrapper = document.getElementById(getWrapperId(appInstanceId));
-      assertElementExist(appWrapper, appInstanceId);
+      assertElementExist(
+        appWrapper,
+        `[qiankun] Wrapper element for ${appName} with instance ${appInstanceId} is not existed!`,
+      );
       return appWrapper!;
     }
 
     const element = elementGetter();
-    assertElementExist(element, appInstanceId);
+    assertElementExist(
+      element,
+      `[qiankun] Wrapper element for ${appName} with instance ${appInstanceId} is not existed!`,
+    );
 
     if (strictStyleIsolation) {
       return element!.shadowRoot!;
@@ -85,17 +92,26 @@ function getAppWrapperGetter(
 
 const rawAppendChild = HTMLElement.prototype.appendChild;
 const rawRemoveChild = HTMLElement.prototype.removeChild;
-type ElementRender = (props: { element: HTMLElement | null; loading: boolean }) => any;
+type ElementRender = (
+  props: { element: HTMLElement | null; loading: boolean },
+  phase: 'loading' | 'mounting' | 'mounted' | 'unmounted',
+) => any;
 
 /**
  * Get the render function
  * If the legacy render function is provide, used as it, otherwise we will insert the app element to target container by qiankun
+ * @param appName
  * @param appContent
  * @param container
  * @param legacyRender
  */
-function getRender(appContent: string, container?: string | HTMLElement, legacyRender?: HTMLContentRender) {
-  const render: ElementRender = ({ element, loading }) => {
+function getRender(
+  appName: string,
+  appContent: string,
+  container?: string | HTMLElement,
+  legacyRender?: HTMLContentRender,
+) {
+  const render: ElementRender = ({ element, loading }, phase) => {
     if (legacyRender) {
       if (process.env.NODE_ENV === 'development') {
         console.warn(
@@ -107,13 +123,27 @@ function getRender(appContent: string, container?: string | HTMLElement, legacyR
     }
 
     const containerElement = typeof container === 'string' ? document.querySelector(container) : container;
-    assertElementExist(
-      containerElement,
-      '',
-      `[qiankun] target container with ${container} not existed while rendering!`,
-    );
 
-    if (!containerElement!.contains(element)) {
+    // The container might have be removed after micro app unmounted.
+    // Such as the micro app unmount lifecycle called by a react componentWillUnmount lifecycle, after micro app unmounted, the react component might also be removed
+    if (phase !== 'unmounted') {
+      const errorMsg = (() => {
+        switch (phase) {
+          case 'loading':
+          case 'mounting':
+            return `[qiankun] Target container with ${container} not existed while ${appName} ${phase}!`;
+
+          case 'mounted':
+            return `[qiankun] Target container with ${container} not existed after ${appName} ${phase}!`;
+
+          default:
+            return `[qiankun] Target container with ${container} not existed while ${appName} rendering!`;
+        }
+      })();
+      assertElementExist(containerElement, errorMsg);
+    }
+
+    if (containerElement && !containerElement.contains(element)) {
       // clear the container
       while (containerElement!.firstChild) {
         rawRemoveChild.call(containerElement, containerElement!.firstChild);
@@ -185,13 +215,19 @@ export async function loadApp<T extends object>(
   const container = 'container' in app ? app.container : undefined;
   const legacyRender = 'render' in app ? app.render : undefined;
 
-  const render = getRender(appContent, container, legacyRender);
+  const render = getRender(appName, appContent, container, legacyRender);
 
   // 第一次加载设置应用可见区域 dom 结构
   // 确保每次应用加载前容器 dom 结构已经设置完毕
-  render({ element, loading: true });
+  render({ element, loading: true }, 'loading');
 
-  const containerGetter = getAppWrapperGetter(appInstanceId, !!legacyRender, strictStyleIsolation, () => element);
+  const containerGetter = getAppWrapperGetter(
+    appName,
+    appInstanceId,
+    !!legacyRender,
+    strictStyleIsolation,
+    () => element,
+  );
 
   let global: Window = window;
   let mountSandbox = () => Promise.resolve();
@@ -238,14 +274,14 @@ export async function loadApp<T extends object>(
       async () => {
         // element would be destroyed after unmounted, we need to recreate it if it not exist
         element = element || createElement(appContent, strictStyleIsolation);
-        render({ element, loading: true });
+        render({ element, loading: true }, 'mounting');
       },
       // exec the chain after rendering to keep the behavior with beforeLoad
       async () => execHooksChain(toArray(beforeMount), app),
       mountSandbox,
       async props => mount({ ...props, container: containerGetter(), setGlobalState, onGlobalStateChange }),
       // 应用 mount 完成后结束 loading
-      async () => render({ element, loading: false }),
+      async () => render({ element, loading: false }, 'mounted'),
       async () => execHooksChain(toArray(afterMount), app),
       // initialize the unmount defer after app mounted and resolve the defer after it unmounted
       async () => {
@@ -260,7 +296,7 @@ export async function loadApp<T extends object>(
       unmountSandbox,
       async () => execHooksChain(toArray(afterUnmount), app),
       async () => {
-        render({ element: null, loading: false });
+        render({ element: null, loading: false }, 'unmounted');
         offGlobalStateChange(appInstanceId);
         // for gc
         element = null;
