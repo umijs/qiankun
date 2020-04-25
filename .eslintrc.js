@@ -15,5 +15,6 @@ module.exports = {
     // see https://github.com/prettier/prettier/issues/3847
     'space-before-function-paren': ['error', { anonymous: 'never', named: 'never', asyncArrow: 'always' }],
     'no-underscore-dangle': 0,
+    'no-plusplus': 0,
   },
 };

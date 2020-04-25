@@ -46,6 +46,8 @@ function setCachedRules(element: HTMLStyleElement, cssRules: CSSRuleList) {
   Object.defineProperty(element, styledComponentSymbol, { value: cssRules, configurable: true, enumerable: false });
 }
 
+let patchCount = 0;
+
 /**
  * Just hijack dynamic head append, that could avoid accidentally hijacking the insertion of elements except in head.
  * Such a case: ReactDOM.createPortal(<style>.test{color:blue}</style>, container),
@@ -65,7 +67,7 @@ export default function patch(
 ): Freer {
   let dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
 
-  HTMLHeadElement.prototype.appendChild = function appendChild<T extends Node>(this: HTMLHeadElement, newChild: T) {
+  function appendChild<T extends Node>(this: HTMLHeadElement, newChild: T) {
     const element = newChild as any;
     if (element.tagName) {
       switch (element.tagName) {
@@ -156,15 +158,25 @@ export default function patch(
     }
 
     return rawHeadAppendChild.call(this, element) as T;
-  };
+  }
 
-  HTMLHeadElement.prototype.removeChild = function removeChild<T extends Node>(this: HTMLHeadElement, child: T) {
+  function removeChild<T extends Node>(this: HTMLHeadElement, child: T) {
     if (appWrapperGetter().contains(child)) {
       return rawRemoveChild.call(appWrapperGetter(), child) as T;
     }
 
     return rawHeadRemoveChild.call(this, child) as T;
-  };
+  }
+
+  // Just overwrite it while it have not been overwrite
+  if (HTMLHeadElement.prototype.appendChild === rawHeadAppendChild) {
+    HTMLHeadElement.prototype.appendChild = appendChild;
+  }
+
+  // Just overwrite it while it have not been overwrite
+  if (HTMLHeadElement.prototype.removeChild === rawHeadRemoveChild) {
+    HTMLHeadElement.prototype.removeChild = removeChild;
+  }
 
   if (!singular) {
     setProxyPropertyGetter(proxy, 'document', () => {
@@ -191,9 +203,16 @@ export default function patch(
     });
   }
 
+  patchCount++;
+
   return function free() {
-    HTMLHeadElement.prototype.appendChild = rawHeadAppendChild;
-    HTMLHeadElement.prototype.removeChild = rawHeadRemoveChild;
+    patchCount--;
+
+    // release the overwrite prototype after all the micro apps unmounted
+    if (patchCount === 0) {
+      HTMLHeadElement.prototype.appendChild = rawHeadAppendChild;
+      HTMLHeadElement.prototype.removeChild = rawHeadRemoveChild;
+    }
 
     dynamicStyleSheetElements.forEach(stylesheetElement => {
       /*
