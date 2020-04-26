@@ -167,6 +167,52 @@ function getNewRemoveChild(...args: any[]) {
   };
 }
 
+function getNewInsertBefore(...args: any[]) {
+  return function insertBefore<T extends Node>(this: HTMLHeadElement, newChild: T, refChild: Node | null): T {
+    const element = newChild as any;
+    if (element.tagName) {
+      // eslint-disable-next-line prefer-const
+      let [appName, appWrapperGetter, singular, dynamicStyleSheetElements] = args;
+
+      const storedContainerInfo = element[attachProxySymbol];
+      if (storedContainerInfo) {
+        // eslint-disable-next-line prefer-destructuring
+        singular = storedContainerInfo.singular;
+        // eslint-disable-next-line prefer-destructuring
+        appWrapperGetter = storedContainerInfo.appWrapperGetter;
+        // eslint-disable-next-line prefer-destructuring
+        dynamicStyleSheetElements = storedContainerInfo.dynamicStyleSheetElements;
+      }
+
+      switch (element.tagName) {
+        case LINK_TAG_NAME:
+        case STYLE_TAG_NAME: {
+          const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
+
+          if (!singular) {
+            // eslint-disable-next-line no-shadow
+            dynamicStyleSheetElements.push(stylesheetElement);
+            return rawAppendChild.call(appWrapperGetter(), stylesheetElement) as T;
+          }
+
+          const activated = checkActivityFunctions(window.location).some(name => name === appName);
+
+          if (activated) {
+            dynamicStyleSheetElements.push(stylesheetElement);
+
+            return rawHeadInsertBefore.call(appWrapperGetter(), stylesheetElement, refChild) as T;
+          }
+
+          return rawHeadInsertBefore.call(this, element, refChild) as T;
+        }
+        default:
+          break;
+      }
+    }
+    return rawHeadInsertBefore.call(this, element, refChild) as T;
+  };
+}
+
 let patchCount = 0;
 
 /**
@@ -228,36 +274,17 @@ export default function patch(
   if (HTMLHeadElement.prototype.removeChild === rawHeadRemoveChild) {
     HTMLHeadElement.prototype.removeChild = getNewRemoveChild(appWrapperGetter);
   }
-  
+
   // `emotion` a css-in-js library insert a style tag use insertBefore, so we also rewrite it like appendChild
   // see https://github.com/umijs/qiankun/issues/420
-  HTMLHeadElement.prototype.insertBefore = function insertBefore<T extends Node>(
-    this: HTMLHeadElement,
-    newChild: T,
-    refChild: Node | null,
-  ): T {
-    const element = newChild as any;
-    if (element.tagName) {
-      switch (element.tagName) {
-        case LINK_TAG_NAME:
-        case STYLE_TAG_NAME: {
-          const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
-          const activated = checkActivityFunctions(window.location).some(name => name === appName);
-
-          if (activated) {
-            dynamicStyleSheetElements.push(stylesheetElement);
-
-            return rawHeadInsertBefore.call(appWrapperGetter(), stylesheetElement, refChild) as T;
-          }
-
-          return rawHeadInsertBefore.call(this, element, refChild) as T;
-        }
-        default:
-          break;
-      }
-    }
-    return rawHeadInsertBefore.call(this, element, refChild) as T;
-  };
+  if (HTMLHeadElement.prototype.insertBefore === rawHeadInsertBefore) {
+    HTMLHeadElement.prototype.insertBefore = getNewInsertBefore(
+      appName,
+      appWrapperGetter,
+      singular,
+      dynamicStyleSheetElements,
+    );
+  }
 
   patchCount++;
 
