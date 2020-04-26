@@ -50,6 +50,8 @@ function createFakeWindow(global: Window): Window {
   return fakeWindow;
 }
 
+let activeSandboxCount = 0;
+
 /**
  * 基于 Proxy 实现的沙箱
  */
@@ -65,6 +67,7 @@ export default class ProxySandbox implements SandBox {
 
   active() {
     this.sandboxRunning = true;
+    activeSandboxCount++;
   }
 
   inactive() {
@@ -74,7 +77,7 @@ export default class ProxySandbox implements SandBox {
       ]);
     }
 
-    clearSystemJsProps(this.updateValueMap);
+    clearSystemJsProps(this.updateValueMap, --activeSandboxCount === 0);
 
     this.sandboxRunning = false;
   }

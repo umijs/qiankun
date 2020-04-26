@@ -20,7 +20,9 @@ export function interceptSystemJsProps(p: PropertyKey, value: any) {
 }
 
 // FIXME see interceptSystemJsProps function
-export function clearSystemJsProps(map: Map<PropertyKey, any>) {
+export function clearSystemJsProps(map: Map<PropertyKey, any>, allInactive: boolean) {
+  if (!allInactive) return;
+
   if (map.has('System')) {
     // @ts-ignore
     delete window.System;
