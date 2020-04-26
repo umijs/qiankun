@@ -113,6 +113,12 @@ export default class ProxySandbox implements SandBox {
           return proxy;
         }
 
+        // never rewrite eval
+        if (p === 'eval') {
+          // eslint-disable-next-line no-eval
+          return eval;
+        }
+
         // proxy.hasOwnProperty would invoke getter firstly, then its value represented as rawWindow.hasOwnProperty
         if (p === 'hasOwnProperty') {
           return (key: PropertyKey) => updateValueMap.has(key) || rawWindow.hasOwnProperty(key);
