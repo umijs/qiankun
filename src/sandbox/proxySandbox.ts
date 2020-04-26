@@ -5,6 +5,7 @@
 import { uniq } from 'lodash';
 import { SandBox } from '../interfaces';
 import { getProxyPropertyGetter, getTargetValue } from './common';
+import { clearSystemJsProps, interceptSystemJsProps } from './noise/systemjs';
 
 // zone.js will overwrite Object.defineProperty
 const rawObjectDefineProperty = Object.defineProperty;
@@ -49,6 +50,8 @@ function createFakeWindow(global: Window): Window {
   return fakeWindow;
 }
 
+let activeSandboxCount = 0;
+
 /**
  * 基于 Proxy 实现的沙箱
  */
@@ -64,6 +67,7 @@ export default class ProxySandbox implements SandBox {
 
   active() {
     this.sandboxRunning = true;
+    activeSandboxCount++;
   }
 
   inactive() {
@@ -72,6 +76,8 @@ export default class ProxySandbox implements SandBox {
         ...this.updateValueMap.keys(),
       ]);
     }
+
+    clearSystemJsProps(this.updateValueMap, --activeSandboxCount === 0);
 
     this.sandboxRunning = false;
   }
@@ -88,6 +94,8 @@ export default class ProxySandbox implements SandBox {
       set(_: Window, p: PropertyKey, value: any): boolean {
         if (sandboxRunning) {
           updateValueMap.set(p, value);
+
+          interceptSystemJsProps(p, value);
 
           return true;
         }
