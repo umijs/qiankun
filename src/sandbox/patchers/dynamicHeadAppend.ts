@@ -20,6 +20,7 @@ declare global {
 }
 
 const rawHeadAppendChild = HTMLHeadElement.prototype.appendChild;
+const rawHeadInsertBefore = HTMLHeadElement.prototype.insertBefore;
 const rawHeadRemoveChild = HTMLHeadElement.prototype.removeChild;
 const rawAppendChild = HTMLElement.prototype.appendChild;
 const rawRemoveChild = HTMLElement.prototype.removeChild;
@@ -227,6 +228,36 @@ export default function patch(
   if (HTMLHeadElement.prototype.removeChild === rawHeadRemoveChild) {
     HTMLHeadElement.prototype.removeChild = getNewRemoveChild(appWrapperGetter);
   }
+  
+  // `emotion` a css-in-js library insert a style tag use insertBefore, so we also rewrite it like appendChild
+  // see https://github.com/umijs/qiankun/issues/420
+  HTMLHeadElement.prototype.insertBefore = function insertBefore<T extends Node>(
+    this: HTMLHeadElement,
+    newChild: T,
+    refChild: Node | null,
+  ): T {
+    const element = newChild as any;
+    if (element.tagName) {
+      switch (element.tagName) {
+        case LINK_TAG_NAME:
+        case STYLE_TAG_NAME: {
+          const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
+          const activated = checkActivityFunctions(window.location).some(name => name === appName);
+
+          if (activated) {
+            dynamicStyleSheetElements.push(stylesheetElement);
+
+            return rawHeadInsertBefore.call(appWrapperGetter(), stylesheetElement, refChild) as T;
+          }
+
+          return rawHeadInsertBefore.call(this, element, refChild) as T;
+        }
+        default:
+          break;
+      }
+    }
+    return rawHeadInsertBefore.call(this, element, refChild) as T;
+  };
 
   patchCount++;
 
@@ -236,6 +267,7 @@ export default function patch(
     // release the overwrite prototype after all the micro apps unmounted
     if (patchCount === 0) {
       HTMLHeadElement.prototype.appendChild = rawHeadAppendChild;
+      HTMLHeadElement.prototype.insertBefore = rawHeadInsertBefore;
       HTMLHeadElement.prototype.removeChild = rawHeadRemoveChild;
     }
 

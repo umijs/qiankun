@@ -41,6 +41,22 @@ test('window.top & window.self & window.window should equals with sandbox', () =
   expect(proxy.window).toBe(proxy);
 });
 
+test('eval should never be represented', () => {
+  const { proxy } = new ProxySandbox('eval-test');
+  // @ts-ignore
+  window.proxy = proxy;
+  const code =
+    ';(function(window){with(window){ var testProp = function(wrequire){ eval("window.testEval=wrequire()"); }; testProp(() => "kuitos");}})(window.proxy)';
+  // eslint-disable-next-line no-eval
+  const geval = eval;
+  geval(code);
+
+  // @ts-ignore
+  expect(proxy.testEval).toBe('kuitos');
+  // @ts-ignore
+  expect(window.testEval).toBeUndefined();
+});
+
 test('hasOwnProperty should works well', () => {
   const { proxy } = new ProxySandbox('unit-test');
 
