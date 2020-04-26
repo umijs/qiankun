@@ -46,43 +46,34 @@ function setCachedRules(element: HTMLStyleElement, cssRules: CSSRuleList) {
   Object.defineProperty(element, styledComponentSymbol, { value: cssRules, configurable: true, enumerable: false });
 }
 
-let patchCount = 0;
-
-/**
- * Just hijack dynamic head append, that could avoid accidentally hijacking the insertion of elements except in head.
- * Such a case: ReactDOM.createPortal(<style>.test{color:blue}</style>, container),
- * this could made we append the style element into app wrapper but it will cause an error while the react portal unmounting, as ReactDOM could not find the style in body children list.
- * @param appName
- * @param appWrapperGetter
- * @param proxy
- * @param mounting
- * @param singular
- */
-export default function patch(
-  appName: string,
-  appWrapperGetter: () => HTMLElement | ShadowRoot,
-  proxy: Window,
-  mounting = true,
-  singular = true,
-): Freer {
-  let dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
-
-  function appendChild<T extends Node>(this: HTMLHeadElement, newChild: T) {
+function getNewAppendChild(...args: any[]) {
+  return function appendChild<T extends Node>(this: HTMLHeadElement, newChild: T) {
     const element = newChild as any;
     if (element.tagName) {
+      // eslint-disable-next-line prefer-const
+      let [appName, appWrapperGetter, proxy, singular, dynamicStyleSheetElements] = args;
+
+      const storedContainerInfo = element[attachProxySymbol];
+      if (storedContainerInfo) {
+        // eslint-disable-next-line prefer-destructuring
+        singular = storedContainerInfo.singular;
+        // eslint-disable-next-line prefer-destructuring
+        appWrapperGetter = storedContainerInfo.appWrapperGetter;
+        // eslint-disable-next-line prefer-destructuring
+        dynamicStyleSheetElements = storedContainerInfo.dynamicStyleSheetElements;
+        // eslint-disable-next-line prefer-destructuring
+        proxy = storedContainerInfo.proxy;
+      }
+
       switch (element.tagName) {
         case LINK_TAG_NAME:
         case STYLE_TAG_NAME: {
           const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
 
           if (!singular) {
-            const storedContainerInfo = element[attachProxySymbol];
-            if (storedContainerInfo) {
-              // eslint-disable-next-line no-shadow
-              const { appWrapperGetter, dynamicStyleSheetElements } = storedContainerInfo;
-              dynamicStyleSheetElements.push(stylesheetElement);
-              return rawAppendChild.call(appWrapperGetter(), stylesheetElement) as T;
-            }
+            // eslint-disable-next-line no-shadow
+            dynamicStyleSheetElements.push(stylesheetElement);
+            return rawAppendChild.call(appWrapperGetter(), stylesheetElement) as T;
           }
 
           // check if the currently specified application is active
@@ -105,19 +96,9 @@ export default function patch(
         case SCRIPT_TAG_NAME: {
           const { src, text } = element as HTMLScriptElement;
 
-          let realAppWrapperGetter = appWrapperGetter;
-          let realProxy = proxy;
-
-          if (!singular) {
-            // eslint-disable-next-line no-shadow
-            const { appWrapperGetter, proxy } = element[attachProxySymbol];
-            realAppWrapperGetter = appWrapperGetter;
-            realProxy = proxy;
-          }
-
           const { fetch } = frameworkConfiguration;
           if (src) {
-            execScripts(null, [src], realProxy, { fetch, strictGlobal: !singular }).then(
+            execScripts(null, [src], proxy, { fetch, strictGlobal: !singular }).then(
               () => {
                 // we need to invoke the onload event manually to notify the event listener that the script was completed
                 // here are the two typical ways of dynamic script loading
@@ -141,15 +122,15 @@ export default function patch(
             );
 
             const dynamicScriptCommentElement = document.createComment(`dynamic script ${src} replaced by qiankun`);
-            return rawAppendChild.call(realAppWrapperGetter(), dynamicScriptCommentElement) as T;
+            return rawAppendChild.call(appWrapperGetter(), dynamicScriptCommentElement) as T;
           }
 
-          execScripts(null, [`<script>${text}</script>`], realProxy, { strictGlobal: !singular }).then(
+          execScripts(null, [`<script>${text}</script>`], proxy, { strictGlobal: !singular }).then(
             element.onload,
             element.onerror,
           );
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
-          return rawAppendChild.call(realAppWrapperGetter(), dynamicInlineScriptCommentElement) as T;
+          return rawAppendChild.call(appWrapperGetter(), dynamicInlineScriptCommentElement) as T;
         }
 
         default:
@@ -158,25 +139,53 @@ export default function patch(
     }
 
     return rawHeadAppendChild.call(this, element) as T;
-  }
+  };
+}
 
-  function removeChild<T extends Node>(this: HTMLHeadElement, child: T) {
-    if (appWrapperGetter().contains(child)) {
-      return rawRemoveChild.call(appWrapperGetter(), child) as T;
+function getNewRemoveChild(...args: any[]) {
+  return function removeChild<T extends Node>(this: HTMLHeadElement, child: T) {
+    let [appWrapperGetter] = args;
+
+    const storedContainerInfo = (child as any)[attachProxySymbol];
+    if (storedContainerInfo) {
+      // eslint-disable-next-line prefer-destructuring
+      appWrapperGetter = storedContainerInfo.appWrapperGetter;
+    }
+
+    try {
+      // container may had been removed while app unmounting
+      const container = appWrapperGetter();
+      if (container.contains(child)) {
+        return rawRemoveChild.call(container, child) as T;
+      }
+    } catch (e) {
+      console.warn(e);
     }
 
     return rawHeadRemoveChild.call(this, child) as T;
-  }
+  };
+}
 
-  // Just overwrite it while it have not been overwrite
-  if (HTMLHeadElement.prototype.appendChild === rawHeadAppendChild) {
-    HTMLHeadElement.prototype.appendChild = appendChild;
-  }
+let patchCount = 0;
 
-  // Just overwrite it while it have not been overwrite
-  if (HTMLHeadElement.prototype.removeChild === rawHeadRemoveChild) {
-    HTMLHeadElement.prototype.removeChild = removeChild;
-  }
+/**
+ * Just hijack dynamic head append, that could avoid accidentally hijacking the insertion of elements except in head.
+ * Such a case: ReactDOM.createPortal(<style>.test{color:blue}</style>, container),
+ * this could made we append the style element into app wrapper but it will cause an error while the react portal unmounting, as ReactDOM could not find the style in body children list.
+ * @param appName
+ * @param appWrapperGetter
+ * @param proxy
+ * @param mounting
+ * @param singular
+ */
+export default function patch(
+  appName: string,
+  appWrapperGetter: () => HTMLElement | ShadowRoot,
+  proxy: Window,
+  mounting = true,
+  singular = true,
+): Freer {
+  let dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
 
   if (!singular) {
     setProxyPropertyGetter(proxy, 'document', () => {
@@ -188,7 +197,7 @@ export default function patch(
 
               if (tagName?.toLowerCase() === 'style' || tagName?.toLowerCase() === 'script') {
                 Object.defineProperty(element, attachProxySymbol, {
-                  value: { name: appName, proxy, appWrapperGetter, dynamicStyleSheetElements },
+                  value: { appName, proxy, appWrapperGetter, dynamicStyleSheetElements },
                   enumerable: false,
                 });
               }
@@ -201,6 +210,22 @@ export default function patch(
         },
       });
     });
+  }
+
+  // Just overwrite it while it have not been overwrite
+  if (HTMLHeadElement.prototype.appendChild === rawHeadAppendChild) {
+    HTMLHeadElement.prototype.appendChild = getNewAppendChild(
+      appName,
+      appWrapperGetter,
+      proxy,
+      singular,
+      dynamicStyleSheetElements,
+    );
+  }
+
+  // Just overwrite it while it have not been overwrite
+  if (HTMLHeadElement.prototype.removeChild === rawHeadRemoveChild) {
+    HTMLHeadElement.prototype.removeChild = getNewRemoveChild(appWrapperGetter);
   }
 
   patchCount++;
