@@ -71,7 +71,8 @@ function getNewAppendChild(...args: any[]) {
         case STYLE_TAG_NAME: {
           const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
 
-          if (!singular) {
+          // have storedContainerInfo means it invoked by a micro app
+          if (storedContainerInfo && !singular) {
             // eslint-disable-next-line no-shadow
             dynamicStyleSheetElements.push(stylesheetElement);
             return rawAppendChild.call(appWrapperGetter(), stylesheetElement) as T;
@@ -189,7 +190,8 @@ function getNewInsertBefore(...args: any[]) {
         case STYLE_TAG_NAME: {
           const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
 
-          if (!singular) {
+          // have storedContainerInfo means it invoked by a micro app
+          if (storedContainerInfo && !singular) {
             // eslint-disable-next-line no-shadow
             dynamicStyleSheetElements.push(stylesheetElement);
             return rawAppendChild.call(appWrapperGetter(), stylesheetElement) as T;
