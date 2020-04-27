@@ -257,6 +257,12 @@ export default function patch(
 
           return getTargetValue(document, (<any>target)[property]);
         },
+
+        set(target: Document, p: PropertyKey, value: any): boolean {
+          // eslint-disable-next-line no-param-reassign
+          (<any>target)[p] = value;
+          return true;
+        },
       });
     });
   }
