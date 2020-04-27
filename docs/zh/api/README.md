@@ -348,7 +348,7 @@
   removeGlobalUncaughtErrorHandler(handler);
   ```
 
-## `initGloabalState(state)`
+## `initGlobalState(state)`
 
 - 参数
 
@@ -372,10 +372,10 @@
 
   主应用：
   ```ts
-  import { initGloabalState, MicroAppStateActions } from 'qiankun';
+  import { initGlobalState, MicroAppStateActions } from 'qiankun';
 
   // 初始化 state
-  const actions: MicroAppStateActions = initGloabalState(state);
+  const actions: MicroAppStateActions = initGlobalState(state);
 
   actions.onGlobalStateChange((state, prev) => {
     // state: 变更后的状态; prev 变更前的状态
