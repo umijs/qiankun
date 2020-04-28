@@ -43,6 +43,7 @@ export type LoadableApp<T extends object = {}> = AppMetadata & { /* props pass t
 
 // for the route-based apps
 export type RegistrableApp<T extends object = {}> = LoadableApp<T> & {
+  loader?: (loading: boolean) => void;
   activeRule: RegisterApplicationConfig['activeWhen'];
 };
 

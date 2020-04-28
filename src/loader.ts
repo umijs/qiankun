@@ -10,7 +10,7 @@ import getAddOns from './addons';
 import { getMicroAppStateActions } from './globalState';
 import { FrameworkConfiguration, FrameworkLifeCycles, HTMLContentRender, LifeCycleFn, LoadableApp } from './interfaces';
 import { createSandbox } from './sandbox';
-import { Deferred, getDefaultTplWrapper, getWrapperId, validateExportLifecycle } from './utils';
+import { Deferred, getDefaultTplWrapper, getWrapperId, toArray, validateExportLifecycle } from './utils';
 
 function assertElementExist(element: Element | null | undefined, msg?: string) {
   if (!element) {
@@ -20,10 +20,6 @@ function assertElementExist(element: Element | null | undefined, msg?: string) {
 
     throw new Error('[qiankun] element not existed!');
   }
-}
-
-function toArray<T>(array: T | T[]): T[] {
-  return Array.isArray(array) ? array : [array];
 }
 
 function execHooksChain<T extends object>(hooks: Array<LifeCycleFn<T>>, app: LoadableApp<T>): Promise<any> {

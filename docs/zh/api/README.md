@@ -61,6 +61,8 @@
 
       浏览器 url 发生变化会调用 activeRule 里的规则，`activeRule` 任意一个返回 `true` 时表明该微应用需要被激活。
 
+    - loader - `(loading: boolean) => void` - 可选，loading 状态发生变化时会调用的方法。
+
     - props - `object` - 可选，主应用需要传递给微应用的数据。
 
   - `LifeCycles`
