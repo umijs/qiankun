@@ -66,13 +66,15 @@ function getNewAppendChild(...args: any[]) {
         proxy = storedContainerInfo.proxy;
       }
 
+      // have storedContainerInfo means it invoked by a micro app
+      const invokedByMicroApp = storedContainerInfo && !singular;
+
       switch (element.tagName) {
         case LINK_TAG_NAME:
         case STYLE_TAG_NAME: {
           const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
 
-          // have storedContainerInfo means it invoked by a micro app
-          if (storedContainerInfo && !singular) {
+          if (invokedByMicroApp) {
             // eslint-disable-next-line no-shadow
             dynamicStyleSheetElements.push(stylesheetElement);
             return rawAppendChild.call(appWrapperGetter(), stylesheetElement) as T;
@@ -96,6 +98,10 @@ function getNewAppendChild(...args: any[]) {
         }
 
         case SCRIPT_TAG_NAME: {
+          if (!invokedByMicroApp) {
+            return rawAppendChild.call(this, element) as T;
+          }
+
           const { src, text } = element as HTMLScriptElement;
 
           const { fetch } = frameworkConfiguration;
@@ -211,6 +217,7 @@ function getNewInsertBefore(...args: any[]) {
           break;
       }
     }
+
     return rawHeadInsertBefore.call(this, element, refChild) as T;
   };
 }
