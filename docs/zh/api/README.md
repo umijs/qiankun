@@ -208,16 +208,22 @@
 
     * sandbox - `boolean` | `{ strictStyleIsolation?: boolean }` - 可选，是否开启沙箱，默认为 `true`。
 
-      当配置为 `{ strictStyleIsolation: true }` 表示开启严格的样式隔离模式。这种模式下 qiankun 会为每个微应用的容器包裹上一个 [shadow dom](https://developer.mozilla.org/zh-CN/docs/Web/Web_Components/Using_shadow_DOM) 节点，从而确保微应用的样式不会对全局造成影响。
+      默认情况下沙箱可以确保单实例场景子应用之间的样式隔离，但是无法确保主应用跟子应用、或者多实例场景的子应用样式隔离。当配置为 `{ strictStyleIsolation: true }` 时表示开启严格的样式隔离模式。这种模式下 qiankun 会为每个微应用的容器包裹上一个 [shadow dom](https://developer.mozilla.org/zh-CN/docs/Web/Web_Components/Using_shadow_DOM) 节点，从而确保微应用的样式不会对全局造成影响。
+
+      ::: warning
+
+      基于 ShadowDOM 的严格样式隔离并不是一个可以无脑使用的方案，大部分情况下都需要接入应用做一些适配后才能正常在 ShadowDOM 中运行起来（比如 react 场景下需要解决这些[问题](https://github.com/facebook/react/issues/10422)），使用者需要清楚开启了 `strictStyleIsolation` 意味着什么。后续 qiankun 会提供更多官方实践文档帮助用户能快速的将应用改造成可以运行在 ShadowDOM 环境的微应用。
+
+      :::
 
     * singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - 可选，是否为单实例场景，默认为 `false`。
-
+  
     * fetch - `Function` - 可选，自定义的 fetch 方法。
-
+    
     * getPublicPath - `(url: string) => string` - 可选
-
+    
     * getTemplate - `(tpl: string) => string` - 可选
-
+  
 * 返回值 - `MicroApp` - 微应用实例
   * mount(): Promise<null>;
   * unmount(): Promise<null>;
