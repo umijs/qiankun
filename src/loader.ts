@@ -41,16 +41,24 @@ async function validateSingularMode<T extends object>(
   return typeof validate === 'function' ? validate(app) : !!validate;
 }
 
+// @ts-ignore
+const supportShadowDOM = document.head.attachShadow || document.head.createShadowRoot;
 function createElement(appContent: string, strictStyleIsolation: boolean): HTMLElement {
   const containerElement = document.createElement('div');
   containerElement.innerHTML = appContent;
   // appContent always wrapped with a singular div
   const appElement = containerElement.firstChild as HTMLElement;
   if (strictStyleIsolation) {
-    const { innerHTML } = appElement;
-    appElement.innerHTML = '';
-    const shadow = appElement.attachShadow({ mode: 'open' });
-    shadow.innerHTML = innerHTML;
+    if (!supportShadowDOM) {
+      console.warn(
+        '[qiankun]: As current browser not support shadow dom, your strictStyleIsolation configuration will be ignored!',
+      );
+    } else {
+      const { innerHTML } = appElement;
+      appElement.innerHTML = '';
+      const shadow = appElement.attachShadow({ mode: 'open' });
+      shadow.innerHTML = innerHTML;
+    }
   }
 
   return appElement;
