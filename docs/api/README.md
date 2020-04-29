@@ -61,6 +61,8 @@ By linking the micro-application to some url rules, the function of automaticall
 
       This function is called when the browser url changes, and `activeRule` returns `true` to indicate that the subapplication needs to be activated.
 
+    - loader - `(loading: boolean) => void` - optional, function will be invoked while the loading state changed.
+
     - props - `object` - optional, data that the primary application needs to pass to the child application.
 
   - `LifeCycles`

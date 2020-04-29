@@ -5,6 +5,10 @@
 
 import { isFunction, snakeCase } from 'lodash';
 
+export function toArray<T>(array: T | T[]): T[] {
+  return Array.isArray(array) ? array : [array];
+}
+
 export function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }

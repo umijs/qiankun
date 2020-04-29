@@ -1,8 +1,9 @@
+import { noop } from 'lodash';
 import { mountRootParcel, registerApplication, start as startSingleSpa } from 'single-spa';
 import { FrameworkConfiguration, FrameworkLifeCycles, LoadableApp, MicroApp, RegistrableApp } from './interfaces';
 import { loadApp } from './loader';
 import { doPrefetchStrategy } from './prefetch';
-import { Deferred } from './utils';
+import { Deferred, toArray } from './utils';
 
 window.__POWERED_BY_QIANKUN__ = true;
 
@@ -22,13 +23,24 @@ export function registerMicroApps<T extends object = {}>(
   microApps = [...microApps, ...unregisteredApps];
 
   unregisteredApps.forEach(app => {
-    const { name, activeRule, props, ...appConfig } = app;
+    const { name, activeRule, loader = noop, props, ...appConfig } = app;
 
     registerApplication({
       name,
       app: async () => {
+        loader(true);
         await frameworkStartedDefer.promise;
-        return loadApp({ name, props, ...appConfig }, frameworkConfiguration, lifeCycles);
+
+        const { mount, ...otherMicroAppConfigs } = await loadApp(
+          { name, props, ...appConfig },
+          frameworkConfiguration,
+          lifeCycles,
+        );
+
+        return {
+          mount: [async () => loader(true), ...toArray(mount), async () => loader(false)],
+          ...otherMicroAppConfigs,
+        };
       },
       activeWhen: activeRule,
       customProps: props,

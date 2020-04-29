@@ -161,7 +161,7 @@ function getNewRemoveChild(...args: any[]) {
     }
 
     try {
-      // container may had been removed while app unmounting
+      // container may had been removed while app unmounting if the removeChild action was async
       const container = appWrapperGetter();
       if (container.contains(child)) {
         return rawRemoveChild.call(container, child) as T;
