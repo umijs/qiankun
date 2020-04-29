@@ -95,7 +95,7 @@ test('descriptor of non-configurable and non-enumerable property existed in raw 
 
   (<any>proxy).nonConfigurableProp = (<any>window).nonConfigurableProp;
   (<any>proxy).nonConfigurablePropWithAccessor = 123;
-  expect((<any>proxy).nonConfigurablePropWithAccessor).toBe(123);
+  expect((<any>proxy).nonConfigurablePropWithAccessor).toBe(undefined);
   expect(Object.keys(proxy)).toEqual(Object.keys(window));
   expect(Object.getOwnPropertyDescriptor(proxy, 'nonConfigurableProp')).toEqual(
     Object.getOwnPropertyDescriptor(window, 'nonConfigurableProp'),
@@ -108,7 +108,44 @@ test('descriptor of non-configurable and non-enumerable property existed in raw 
   expect(Object.keys(proxy)).toEqual(Object.keys(window));
   expect(Object.keys(proxy).includes('nonEnumerableProp')).toBeFalsy();
   expect(Object.keys(proxy).includes('enumerableProp')).toBeTruthy();
-  expect(Object.getOwnPropertyDescriptor(proxy, 'nonEnumerableProp')).toEqual(
-    Object.getOwnPropertyDescriptor(window, 'nonEnumerableProp'),
-  );
+  expect(Object.getOwnPropertyDescriptor(proxy, 'nonEnumerableProp')).toEqual({
+    enumerable: false,
+    writable: true,
+    configurable: false,
+    value: 456,
+  });
+  expect(Object.getOwnPropertyDescriptor(window, 'nonEnumerableProp')).toEqual({
+    enumerable: false,
+    writable: true,
+    configurable: false,
+  });
+});
+
+test('property added by Object.defineProperty should works as expect', () => {
+  const { proxy } = new ProxySandbox('object-define-property-test');
+
+  let v: any;
+  const descriptor = {
+    get(): any {
+      return v;
+    },
+    set(value: any) {
+      v = value;
+    },
+  };
+
+  Object.defineProperty(proxy, 'g_history', descriptor);
+  (<any>proxy).g_history = 'window.g_history';
+
+  expect((<any>proxy).g_history).toBe('window.g_history');
+
+  expect('g_history' in proxy).toBeTruthy();
+
+  expect(Object.keys(proxy)).toEqual(Object.keys(window));
+
+  expect(Object.getOwnPropertyDescriptor(proxy, 'g_history')).toEqual({
+    ...descriptor,
+    configurable: false,
+    enumerable: false,
+  });
 });
