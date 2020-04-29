@@ -7,6 +7,14 @@ import ProxySandbox from '../proxySandbox';
 
 beforeAll(() => {
   Object.defineProperty(window, 'mockTop', { value: window, writable: false, configurable: false, enumerable: false });
+  Object.defineProperty(window, 'mockSafariTop', {
+    get() {
+      return window;
+    },
+    set() {},
+    configurable: false,
+    enumerable: false,
+  });
 });
 
 test('iterator should be worked the same as the raw window', () => {
@@ -36,6 +44,7 @@ test('window.top & window.self & window.window should equals with sandbox', () =
   const { proxy } = new ProxySandbox('unit-test');
 
   expect((<any>proxy).mockTop).toBe(proxy);
+  expect((<any>proxy).mockSafariTop).toBe(proxy);
   expect(proxy.top).toBe(proxy);
   expect(proxy.self).toBe(proxy);
   expect(proxy.window).toBe(proxy);
