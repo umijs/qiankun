@@ -30,8 +30,8 @@ registerMicroApps([
   {
     name: 'brokenSubApp',
     entry: '//localhost:7100',
-    render,
-    activeRule: genActiveRule('/react'),
+    container: '#yourContainer',
+    activeRule: '/react',
   },
 ]);
 ```
@@ -123,21 +123,13 @@ runtime publicPath 主要解决的是微应用动态载入的 脚本、样式、
 通过自己实现的 getTemplate 方法过滤微应用 HTML 模板中的异常脚本
 
 ```js
-import { registerMicroApps, start } from 'qiankun';
+import { start } from 'qiankun';
 
-const customImportConfig = {
+start({
   getTemplate(tpl) {
     return tpl.replace('<script src="/to-be-replaced.js"><script>', '');
   }
-};
-
-registerMicroApps(
-  [{ name: 'app1', entry: '//localhost:8080', render, activeRule: location => location.pathname.startsWith('/react')}],
-  {},
-  customImportConfig,
-);
-
-start(customImportConfig);
+});
 ```
 
 ### 使用自定义的 fetch 方法
@@ -145,26 +137,19 @@ start(customImportConfig);
 通过自己实现的 fetch 方法拦截有问题的脚本
 
 ```js
-import { registerMicroApps, start } from 'qiankun';
+import { start } from 'qiankun';
 
-const customImportConfig = {
+start({
   fetch(url, ...args) {
-    if (url === 'http://to-be-replaced.js')  
-      return {  
+    if (url === 'http://to-be-replaced.js') {
+      return {
         async text() { return '' }
       };
-    
+    }
+
     return window.fetch(url, ...args);
   }
-};
-
-registerMicroApps(
-  [{ name: 'app1', entry: '//localhost:8080', render, activeRule: location => location.pathname.startsWith('/react')}],
-  {},
-  customImportConfig,
-);
-
-start(customImportConfig);
+});
 ```
 
 ### 将微应用的 HTML 的 response content-type 改为 text/plain（终极方案）
@@ -180,8 +165,8 @@ start(customImportConfig);
    ```diff
    registerMicroApps(
      [
-   -    { name: 'app1', entry: '//localhost:8080/index.html', render, activeRule },
-   +    { name: 'app1', entry: '//localhost:8080/index.txt', render, activeRule },
+   -    { name: 'app1', entry: '//localhost:8080/index.html', container, activeRule },
+   +    { name: 'app1', entry: '//localhost:8080/index.txt', container, activeRule },
      ],
    );
    ```
@@ -208,9 +193,9 @@ export const mount = async () => render();
 
 ```js {2,3,7}
 registerMicroApps([
-  { name: 'reactApp', entry: '//localhost:7100', render, activeRule: () => isReactApp() },
-  { name: 'react15App', entry: '//localhost:7102', render, activeRule: () => isReactApp() },
-  { name: 'vueApp', entry: '//localhost:7101', render, activeRule: () => isVueApp() },
+  { name: 'reactApp', entry: '//localhost:7100', container, activeRule: () => isReactApp() },
+  { name: 'react15App', entry: '//localhost:7102', container, activeRule: () => isReactApp() },
+  { name: 'vueApp', entry: '//localhost:7101', container, activeRule: () => isVueApp() },
 ]);
 
 start({ singular: false });

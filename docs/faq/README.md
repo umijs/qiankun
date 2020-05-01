@@ -29,8 +29,8 @@ registerMicroApps([
   {
     name: 'brokenSubApp',
     entry: '//localhost:7100',
-    render,
-    activeRule: genActiveRule('/react'),
+    container: '#yourContainer',
+    activeRule: '/react',
   },
 ]);
 ```
@@ -126,9 +126,9 @@ When the subapp should be active depends on your `activeRule` config, like the e
 ```js {2,3,7}
 registerMicroApps([
   // define the activeRule by your self
-  { name: 'reactApp', entry: '//localhost:7100', render, activeRule: () => window.isReactApp },
-  { name: 'react15App', entry: '//localhost:7102', render, activeRule: () => window.isReactApp },
-  { name: 'vue app', entry: '//localhost:7101', render, activeRule: () => window.isVueApp },
+  { name: 'reactApp', entry: '//localhost:7100', container, activeRule: () => window.isReactApp },
+  { name: 'react15App', entry: '//localhost:7102', container, activeRule: () => window.isReactApp },
+  { name: 'vue app', entry: '//localhost:7101', container, activeRule: () => window.isVueApp },
 ]);
 
 start({ singular: false });
