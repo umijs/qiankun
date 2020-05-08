@@ -207,8 +207,10 @@ function getNewInsertBefore(...args: any[]) {
 
           if (activated) {
             dynamicStyleSheetElements.push(stylesheetElement);
+            const wrapper = appWrapperGetter();
+            const referenceNode = wrapper.contains(refChild) ? refChild : null;
 
-            return rawHeadInsertBefore.call(appWrapperGetter(), stylesheetElement, refChild) as T;
+            return rawHeadInsertBefore.call(wrapper, stylesheetElement, referenceNode) as T;
           }
 
           return rawHeadInsertBefore.call(this, element, refChild) as T;
