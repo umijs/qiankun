@@ -72,6 +72,7 @@ module.exports = {
         nav: [
           { text: '指南', link: '/zh/guide/' },
           { text: 'API', link: '/zh/api/' },
+          { text: '案例', link: '/zh/examples/' },
           { text: '常见问题', link: '/zh/faq/' },
           { text: '发布日志', link: 'https://github.com/umijs/qiankun/releases' },
           { text: '1.x', link: 'https://v1.qiankun.umijs.org/zh/' },
@@ -85,6 +86,13 @@ module.exports = {
             },
           ],
           '/zh/api/': [''],
+          '/zh/examples/': [
+            {
+              title: '基于 qiankun 的微前端最佳实践',
+              collapsable: false,
+              children: ['']
+            },
+          ],
           '/zh/faq/': [''],
         },
       },
