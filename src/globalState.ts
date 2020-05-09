@@ -33,7 +33,7 @@ export function initGlobalState(state: Record<string, any> = {}) {
 export function getMicroAppStateActions(id: string, isMaster?: boolean): MicroAppStateActions {
   return {
     /**
-     * onStateChange 全局依赖监听
+     * onGlobalStateChange 全局依赖监听
      *
      * 收集 setState 时所需要触发的依赖
      *
