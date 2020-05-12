@@ -33,8 +33,13 @@ export async function mount(props) {
   render(props);
 }
 
-export async function unmount() {
-  ReactDOM.unmountComponentAtNode(document.getElementById('root'));
+export async function unmount(props) {
+  const { container } = props;
+  ReactDOM.unmountComponentAtNode(
+    container
+      ? container.querySelector('#root')
+      : document.querySelector('#root')
+  );
 }
 
 // If you want your app to work offline and load faster, you can change
