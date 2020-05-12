@@ -1,15 +1,19 @@
 ---
-home: true
-actionText: Get Started →
-actionLink: /guide/
+title: qiankun
+hero:
+  title: qiankun
+  desc: Probably the most complete micro-frontends solution you ever met🧐 
+  actions:
+    - text: Get Started →
+      link: /guide
 features:
   - title: Simple
-    details: Works with any javascript framework. Build your micro-frontend system just like using with iframe, but not iframe actually.
+    desc: Works with any javascript framework. Build your micro-frontend system just like using with iframe, but not iframe actually.
   - title: Complete
-    details: Includes almost all the basic capabilities required to build a micro-frontend system, such as style isolation, js sandbox, preloading, and so on.
+    desc: Includes almost all the basic capabilities required to build a micro-frontend system, such as style isolation, js sandbox, preloading, and so on.
   - title: Production-Ready
-    details: Had been extensively tested and polished by a large number of online applications both inside and outside of Ant Financial, the robustness is trustworthy.
-footer: MIT Licensed | Copyright © 2019-present
+    desc: Had been extensively tested and polished by a large number of online applications both inside and outside of Ant Financial, the robustness is trustworthy.
+footer: MIT Licensed | Copyright © 2019-present<br />Powered by [dumi](https://d.umijs.org)
 ---
 
 ## 📦 Installation
@@ -36,7 +40,7 @@ registerMicroApps([
 start();
 ```
 
-See details：[Getting Started](/guide/getting-started.html)
+See details：[Getting Started](/guide/getting-started)
 
 ## Community
 

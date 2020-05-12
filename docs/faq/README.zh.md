@@ -1,3 +1,9 @@
+---
+nav:
+  title: 常见问题
+toc: menu
+---
+
 # 常见问题
 
 ## `Application died in status LOADING_SOURCE_CODE: You need to export the functional lifecycles in xxx entry`
@@ -6,9 +12,9 @@ qiankun 抛出这个错误是因为无法从微应用的 entry js 中识别出�
 
 可以通过以下几个步骤解决这个问题：
 
-1. 检查微应用是否已经导出相应的生命周期钩子，参考[文档](/zh/guide/getting-started.html#_1-导出相应的生命周期钩子)。
+1. 检查微应用是否已经导出相应的生命周期钩子，参考[文档](/zh/guide/getting-started#1-导出相应的生命周期钩子)。
 
-2. 检查微应用的 webpack 是否增加了指定的配置，参考[文档](/zh/guide/getting-started.html#_2-配置微应用的打包工具)。
+2. 检查微应用的 webpack 是否增加了指定的配置，参考[文档](/zh/guide/getting-started#2-配置微应用的打包工具)。
 
 3. 检查微应用的 `package.json` 中的 `name` 字段是否是微应用中唯一的。
 
@@ -82,9 +88,9 @@ __webpack_public_path__ = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
 
 关于运行时 publicPath 的技术细节，可以参考 [webpack 文档](https://webpack.js.org/guides/public-path/#on-the-fly)。
 
-::: tip
+<Alert type="info">
 runtime publicPath 主要解决的是微应用动态载入的 脚本、样式、图片 等地址不正确的问题。
-:::
+</Alert>
 
 ### b. 使用 webpack 静态 publicPath 配置
 
@@ -203,9 +209,8 @@ start({ singular: false });
 
 当在 `start` 方法中配置好 `singular: false` 后，只要 `isReactApp()` 返回 `true` 时，`reactApp` 和 `react15App` 将会同时被 mount。
 
-::: warning
-页面上不能同时显示多个依赖于路由的微应用，因为浏览器只有一个 url，如果有多个依赖路由的微应用同时被激活，那么必定会导致其中一个 404。
-:::
+<Alert>页面上不能同时显示多个依赖于路由的微应用，因为浏览器只有一个 url，如果有多个依赖路由的微应用同时被激活，那么必定会导致其中一个 404。
+</Alert>
 
 ## 如何提取出公共的依赖库？
 
@@ -221,7 +226,7 @@ qiankun 2.0 版本将提供一种更智能的方式使其自动化。
 
 但是 IE 环境下（不支持 Proxy 的浏览器）只能使用单实例模式，即 `singular` 配置会被自动置为 `true`。
 
-你可以在[这里](/zh/api/#start-opts)找到 singular 相关说明。
+你可以在[这里](/zh/api#startopts)找到 singular 相关说明。
 
 ## 非 webpack 构建的微应用支持接入 qiankun 么？
 
@@ -242,7 +247,7 @@ qiankun 2.0 版本将提供一种更智能的方式使其自动化。
   <title>Purehtml Example</title>
 </head>
 <body>
-  <div style="display: flex; justify-content: center; align-items: center; height: 200px;">
+  <div>
     Purehtml Example
   </div>
 </body>
@@ -279,4 +284,4 @@ const render = ($) => {
 
 你也可以直接参照 examples 中 purehtml 部分的[代码](https://github.com/umijs/qiankun/tree/master/examples/purehtml)
 
-同时，你也需要开启相关资源的 CORS，具体请参照[此处](/zh/faq/#%E5%AD%90%E5%BA%94%E7%94%A8%E9%9D%99%E6%80%81%E8%B5%84%E6%BA%90%E4%B8%80%E5%AE%9A%E8%A6%81%E6%94%AF%E6%8C%81%E8%B7%A8%E5%9F%9F%E5%90%97%EF%BC%9F)
+同时，你也需要开启相关资源的 CORS，具体请参照[此处](#微应用静态资源一定要支持跨域吗？)

@@ -1,3 +1,10 @@
+---
+nav:
+  title: 指南
+  order: 0
+toc: menu
+---
+
 # 介绍
 
 qiankun 是一个基于 [single-spa](https://github.com/CanopyTax/single-spa) 的[微前端](https://micro-frontends.org/)实现库，旨在帮助大家能更简单、无痛的构建一个生产可用微前端架构系统。
