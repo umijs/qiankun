@@ -90,7 +90,7 @@ module.exports = {
             {
               title: '基于 qiankun 的微前端最佳实践',
               collapsable: false,
-              children: ['']
+              children: ['', 'Start', 'Communication']
             },
           ],
           '/zh/faq/': [''],
