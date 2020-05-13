@@ -1,13 +1,13 @@
 # 应用间通信
 
-在开始介绍 `qiankun` 的应用通信之前，我们需要先了解微前端架构如何划分子应用。
+在开始介绍 `qiankun` 的应用通信之前，我们需要先了解微前端架构如何划分微应用。
 
-在微前端架构中，我们应该按业务划分出对应的子应用，而不是通过功能模块划分子应用。这么做的原因有两个：
+在微前端架构中，我们应该按业务划分出对应的微应用，而不是通过功能模块划分微应用。这么做的原因有两个：
 
-1. 在微前端架构中，子应用并不是一个模块，而是一个独立的应用，我们将子应用按业务划分可以拥有更好的可维护性和解耦性。
-2. 子应用应该具备独立运行的能力，应用间频繁的通信会增加应用的复杂度和耦合度。
+1. 在微前端架构中，微应用并不是一个模块，而是一个独立的应用，我们将微应用按业务划分可以拥有更好的可维护性和解耦性。
+2. 微应用应该具备独立运行的能力，应用间频繁的通信会增加应用的复杂度和耦合度。
 
-综上所述，我们应该从业务的角度出发划分各个子应用，尽可能减少应用间的通信，从而简化整个应用，使得我们的微前端架构可以更加灵活可控。
+综上所述，我们应该从业务的角度出发划分各个微应用，尽可能减少应用间的通信，从而简化整个应用，使得我们的微前端架构可以更加灵活可控。
 
 ## 通信原理
 
@@ -25,7 +25,7 @@
 
 ## 主应用的工作
 
-我们以 [实战案例 - feature-communication 分支](https://github.com/a1029563229/micro-front-template/tree/feature-communication) （案例是以 `Vue` 为基座的主应用，接入 `React` 和 `Vue` 两个子应用） 为例，来介绍一下如何使用 `qiankun` 完成应用间的通信功能。
+我们以 [实战案例 - feature-communication 分支](https://github.com/a1029563229/micro-front-template/tree/feature-communication) （案例是以 `Vue` 为基座的主应用，接入 `React` 和 `Vue` 两个微应用） 为例，来介绍一下如何使用 `qiankun` 完成应用间的通信功能。
 
 > 建议 `clone` [实战案例 - feature-communication 分支](https://github.com/a1029563229/micro-front-template/tree/feature-communication) 分支代码到本地，运行项目查看实际效果。
 
@@ -97,11 +97,11 @@ async login() {
 }
 ```
 
-## 子应用的工作
+## 微应用的工作
 
-我们已经完成了主应用的登录功能，将 `token` 信息记录在了 `globalState` 中。现在，我们进入子应用，使用 `token` 获取用户信息并展示在页面中。
+我们已经完成了主应用的登录功能，将 `token` 信息记录在了 `globalState` 中。现在，我们进入微应用，使用 `token` 获取用户信息并展示在页面中。
 
-我们首先来改造我们的 `Vue` 子应用，首先我们设置一个 `Actions` 实例，代码实现如下：
+我们首先来改造我们的 `Vue` 微应用，首先我们设置一个 `Actions` 实例，代码实现如下：
 
 ```js
 // micro-app-vue/src/shared/actions.js
@@ -151,7 +151,7 @@ export default actions;
 
 /**
  * 渲染函数
- * 主应用生命周期钩子中运行/子应用单独启动时运行
+ * 主应用生命周期钩子中运行/微应用单独启动时运行
  */
 function render(props) {
   if (props) {
@@ -173,9 +173,9 @@ function render(props) {
 }
 ```
 
-从上面的代码可以看出，挂载子应用时将会调用 `render` 方法，我们在 `render` 方法中将主应用的 `actions` 实例注入即可。
+从上面的代码可以看出，挂载微应用时将会调用 `render` 方法，我们在 `render` 方法中将主应用的 `actions` 实例注入即可。
 
-最后我们在子应用的 `通讯页` 获取 `globalState` 中的 `token`，使用 `token` 来获取用户信息，最后在页面中显示用户信息。代码实现如下：
+最后我们在微应用的 `通讯页` 获取 `globalState` 中的 `token`，使用 `token` 来获取用户信息，最后在页面中显示用户信息。代码实现如下：
 
 ```js
 // micro-app-vue/src/pages/communication/index.vue
@@ -224,7 +224,7 @@ export default {
 
 ![micro-app](http://shadows-mall.oss-cn-shenzhen.aliyuncs.com/images/blogs/caddy/9.png)
 
-`React` 子应用的实现也是类似的，实现代码可以参照 [完整 Demo - feature-communication 分支](https://github.com/a1029563229/micro-front-template/tree/feature-communication)，实现效果如下（见下图）
+`React` 微应用的实现也是类似的，实现代码可以参照 [完整 Demo - feature-communication 分支](https://github.com/a1029563229/micro-front-template/tree/feature-communication)，实现效果如下（见下图）
 
 ![micro-app](http://shadows-mall.oss-cn-shenzhen.aliyuncs.com/images/blogs/caddy/10.png)
 
@@ -232,7 +232,7 @@ export default {
 
 到这里，`qiankun` 应用间通信就完成了！
 
-我们在主应用中实现了登录功能，登录拿到 `token` 后存入 `globalState` 状态池中。在进入子应用时，我们使用 `actions` 获取 `token`，再使用 `token` 获取到用户信息，完成页面数据渲染！
+我们在主应用中实现了登录功能，登录拿到 `token` 后存入 `globalState` 状态池中。在进入微应用时，我们使用 `actions` 获取 `token`，再使用 `token` 获取到用户信息，完成页面数据渲染！
 
 最后我们画一张图帮助大家理解这个流程（见下图）。
 
