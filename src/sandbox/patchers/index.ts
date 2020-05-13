@@ -8,6 +8,7 @@ import patchDynamicAppend from './dynamicHeadAppend';
 import patchHistoryListener from './historyListener';
 import patchInterval from './interval';
 import patchWindowListener from './windowListener';
+import patchUIEvent from './UIEvent';
 
 export function patchAtMounting(
   appName: string,
@@ -20,6 +21,7 @@ export function patchAtMounting(
     patchWindowListener(),
     patchHistoryListener(),
     patchDynamicAppend(appName, elementGetter, proxy, true, singular),
+    patchUIEvent(),
   ];
 }
 
