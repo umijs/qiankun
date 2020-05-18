@@ -7,6 +7,12 @@ import { noop } from 'lodash';
 
 const RawMouseEvent = window.MouseEvent;
 
+declare global {
+  interface Window {
+    MouseEvent: typeof MouseEvent;
+  }
+}
+
 class FakeMouseEvent extends MouseEvent {
   constructor(typeArg: string, mouseEventInit?: MouseEventInit) {
     // if UIEvent want to window view, we should replace ProxyWindow with Window
@@ -19,10 +25,10 @@ class FakeMouseEvent extends MouseEvent {
   }
 }
 
-export default function patch() {
-  window.MouseEvent = FakeMouseEvent;
+export default function patch(global: Window) {
+  global.MouseEvent = FakeMouseEvent;
   return function free() {
-    window.MouseEvent = RawMouseEvent;
+    global.MouseEvent = RawMouseEvent;
     return noop;
   };
 }

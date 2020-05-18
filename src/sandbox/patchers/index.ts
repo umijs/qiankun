@@ -21,7 +21,7 @@ export function patchAtMounting(
     patchWindowListener(),
     patchHistoryListener(),
     patchDynamicAppend(appName, elementGetter, proxy, true, singular),
-    patchUIEvent(),
+    patchUIEvent(proxy),
   ];
 }
 

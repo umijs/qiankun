@@ -6,7 +6,7 @@
 import patch from '../UIEvent';
 
 test('patch UIEvent', async () => {
-  const free = patch();
+  const free = patch(window);
 
   const dispatchEventAction = jest.fn();
 
