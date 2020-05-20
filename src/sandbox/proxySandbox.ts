@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 /**
  * @author Kuitos
  * @since 2020-3-31
@@ -10,8 +11,9 @@ import { clearSystemJsProps, interceptSystemJsProps } from './noise/systemjs';
 // zone.js will overwrite Object.defineProperty
 const rawObjectDefineProperty = Object.defineProperty;
 
+type FakeWindow = Window & Record<PropertyKey, any>;
 function createFakeWindow(global: Window): Window {
-  const fakeWindow = {} as Window;
+  const fakeWindow = {} as FakeWindow;
 
   /*
    copy the non-configurable property of global to fakeWindow
@@ -64,8 +66,8 @@ let activeSandboxCount = 0;
  * 基于 Proxy 实现的沙箱
  */
 export default class ProxySandbox implements SandBox {
-  /** window 值变更的记录快照 */
-  private updateValueMap = new Map<PropertyKey, any>();
+  /** window 值变更记录 */
+  private updatedValueSet = new Set<PropertyKey>();
 
   name: string;
 
@@ -81,27 +83,29 @@ export default class ProxySandbox implements SandBox {
   inactive() {
     if (process.env.NODE_ENV === 'development') {
       console.info(`[qiankun:sandbox] ${this.name} modified global properties restore...`, [
-        ...this.updateValueMap.keys(),
+        ...this.updatedValueSet.keys(),
       ]);
     }
 
-    clearSystemJsProps(this.updateValueMap, --activeSandboxCount === 0);
+    clearSystemJsProps(this.proxy, --activeSandboxCount === 0);
 
     this.sandboxRunning = false;
   }
 
   constructor(name: string) {
     this.name = name;
-    const { sandboxRunning, updateValueMap } = this;
+    const { sandboxRunning, updatedValueSet } = this;
 
     // https://github.com/umijs/qiankun/pull/192
     const rawWindow = window;
     const fakeWindow = createFakeWindow(rawWindow);
 
     const proxy = new Proxy(fakeWindow, {
-      set(_: Window, p: PropertyKey, value: any): boolean {
+      set(target: FakeWindow, p: PropertyKey, value: any): boolean {
         if (sandboxRunning) {
-          updateValueMap.set(p, value);
+          // @ts-ignore
+          target[p] = value;
+          updatedValueSet.add(p);
 
           interceptSystemJsProps(p, value);
 
@@ -116,7 +120,7 @@ export default class ProxySandbox implements SandBox {
         return true;
       },
 
-      get(_: Window, p: PropertyKey): any {
+      get(target: FakeWindow, p: PropertyKey): any {
         // avoid who using window.window or window.self to escape the sandbox environment to touch the really window
         // or use window.top to check if an iframe context
         // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
@@ -137,7 +141,7 @@ export default class ProxySandbox implements SandBox {
 
         // proxy.hasOwnProperty would invoke getter firstly, then its value represented as rawWindow.hasOwnProperty
         if (p === 'hasOwnProperty') {
-          return (key: PropertyKey) => updateValueMap.has(key) || rawWindow.hasOwnProperty(key);
+          return (key: PropertyKey) => target.hasOwnProperty(key) || rawWindow.hasOwnProperty(key);
         }
 
         // call proxy getter interceptors
@@ -146,28 +150,17 @@ export default class ProxySandbox implements SandBox {
           return proxyPropertyGetter();
         }
 
-        // Take priority from the updateValueMap, or fallback to window
-        const value = updateValueMap.get(p) || (rawWindow as any)[p];
+        const value = (target as any)[p] || (rawWindow as any)[p];
         return getTargetValue(rawWindow, value);
       },
 
       // trap in operator
       // see https://github.com/styled-components/styled-components/blob/master/packages/styled-components/src/constants.js#L12
-      has(_: Window, p: string | number | symbol): boolean {
-        return updateValueMap.has(p) || p in rawWindow;
+      has(target: FakeWindow, p: string | number | symbol): boolean {
+        return p in target || p in rawWindow;
       },
 
-      getOwnPropertyDescriptor(target: Window, p: string | number | symbol): PropertyDescriptor | undefined {
-        if (updateValueMap.has(p)) {
-          // if the property is existed on raw window, use it original descriptor
-          const descriptor = Object.getOwnPropertyDescriptor(rawWindow, p);
-          if (descriptor) {
-            return descriptor;
-          }
-
-          return { configurable: true, enumerable: true, writable: true, value: updateValueMap.get(p) };
-        }
-
+      getOwnPropertyDescriptor(target: FakeWindow, p: string | number | symbol): PropertyDescriptor | undefined {
         /*
          as the descriptor of top/self/window/mockTop in raw window are configurable but not in proxy target, we need to get it from target to avoid TypeError
          see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/getOwnPropertyDescriptor
@@ -185,13 +178,15 @@ export default class ProxySandbox implements SandBox {
       },
 
       // trap to support iterator with sandbox
-      ownKeys(): PropertyKey[] {
-        return uniq([...Reflect.ownKeys(rawWindow), ...updateValueMap.keys()]);
+      ownKeys(target: FakeWindow): PropertyKey[] {
+        return uniq([...Reflect.ownKeys(rawWindow), ...Reflect.ownKeys(target)]);
       },
 
-      deleteProperty(_: Window, p: string | number | symbol): boolean {
-        if (updateValueMap.has(p)) {
-          updateValueMap.delete(p);
+      deleteProperty(target: FakeWindow, p: string | number | symbol): boolean {
+        if (target.hasOwnProperty(p)) {
+          // @ts-ignore
+          delete target[p];
+          updatedValueSet.delete(p);
 
           return true;
         }
