@@ -5,8 +5,6 @@ import { loadApp } from './loader';
 import { doPrefetchStrategy } from './prefetch';
 import { Deferred, toArray } from './utils';
 
-window.__POWERED_BY_QIANKUN__ = true;
-
 let microApps: RegistrableApp[] = [];
 
 // eslint-disable-next-line import/no-mutable-exports
