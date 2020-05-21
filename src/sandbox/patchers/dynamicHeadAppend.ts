@@ -191,6 +191,11 @@ function getNewInsertBefore(...args: any[]) {
         dynamicStyleSheetElements = storedContainerInfo.dynamicStyleSheetElements;
       }
 
+      // have storedContainerInfo means it invoked by a micro app
+      const invokedByMicroApp = storedContainerInfo && !singular;
+      const wrapper = appWrapperGetter();
+      const referenceNode = wrapper.contains(refChild) ? refChild : null;
+
       switch (element.tagName) {
         case LINK_TAG_NAME:
         case STYLE_TAG_NAME: {
@@ -207,8 +212,6 @@ function getNewInsertBefore(...args: any[]) {
 
           if (activated) {
             dynamicStyleSheetElements.push(stylesheetElement);
-            const wrapper = appWrapperGetter();
-            const referenceNode = wrapper.contains(refChild) ? refChild : null;
 
             return rawHeadInsertBefore.call(wrapper, stylesheetElement, referenceNode) as T;
           }
@@ -216,11 +219,13 @@ function getNewInsertBefore(...args: any[]) {
           return rawHeadInsertBefore.call(this, element, refChild) as T;
         }
         case SCRIPT_TAG_NAME: {
+          if (!invokedByMicroApp) {
+            return rawHeadInsertBefore.call(this, element, referenceNode) as T;
+          }
+
           const { src, text } = element as HTMLScriptElement;
 
           const { fetch } = frameworkConfiguration;
-          const wrapper = appWrapperGetter();
-          const referenceNode = wrapper.contains(refChild) ? refChild : null;
 
           if (src) {
             execScripts(null, [src], proxy, { fetch, strictGlobal: !singular }).then(
