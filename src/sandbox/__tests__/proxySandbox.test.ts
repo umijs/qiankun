@@ -149,3 +149,24 @@ test('property added by Object.defineProperty should works as expect', () => {
     enumerable: false,
   });
 });
+
+test('defineProperty should added to the target where its descriptor from', () => {
+  Object.defineProperty(window, 'propertyInNativeWindow', {
+    get(this: any) {
+      const fromProxyInternalTarget = Object.keys(this).length !== Object.keys(window).length;
+      if (fromProxyInternalTarget) throw new TypeError('illegal invocation');
+      return 'propertyInNativeWindow';
+    },
+    set() {},
+    configurable: true,
+    enumerable: false,
+  });
+
+  // @ts-ignore
+  expect(window.propertyInNativeWindow).toBe('propertyInNativeWindow');
+
+  const { proxy } = new ProxySandbox('object-define-property-target-test');
+  const eventDescriptor = Object.getOwnPropertyDescriptor(proxy, 'propertyInNativeWindow');
+  Object.defineProperty(proxy, 'propertyInNativeWindow', eventDescriptor!);
+  expect((<any>proxy).propertyInNativeWindow).toBe('propertyInNativeWindow');
+});
