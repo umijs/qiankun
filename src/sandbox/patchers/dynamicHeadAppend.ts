@@ -244,7 +244,7 @@ function getNewInsertBefore(...args: any[]) {
             );
 
             const dynamicScriptCommentElement = document.createComment(`dynamic script ${src} replaced by qiankun`);
-            return rawAppendChild.call(appWrapperGetter(), dynamicScriptCommentElement) as T;
+            return rawHeadInsertBefore.call(appWrapperGetter(), dynamicScriptCommentElement, refChild) as T;
           }
 
           execScripts(null, [`<script>${text}</script>`], proxy, { strictGlobal: !singular }).then(
@@ -252,7 +252,7 @@ function getNewInsertBefore(...args: any[]) {
             element.onerror,
           );
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
-          return rawAppendChild.call(appWrapperGetter(), dynamicInlineScriptCommentElement) as T;
+          return rawHeadInsertBefore.call(appWrapperGetter(), dynamicInlineScriptCommentElement, refChild) as T;
         }
         default:
           break;
