@@ -179,7 +179,7 @@ function getNewInsertBefore(...args: any[]) {
     const element = newChild as any;
     if (element.tagName) {
       // eslint-disable-next-line prefer-const
-      let [appName, appWrapperGetter, singular, dynamicStyleSheetElements] = args;
+      let [appName, appWrapperGetter, proxy, singular, dynamicStyleSheetElements] = args;
 
       const storedContainerInfo = element[attachProxySymbol];
       if (storedContainerInfo) {
@@ -214,6 +214,45 @@ function getNewInsertBefore(...args: any[]) {
           }
 
           return rawHeadInsertBefore.call(this, element, refChild) as T;
+        }
+        case SCRIPT_TAG_NAME: {
+          const { src, text } = element as HTMLScriptElement;
+
+          const { fetch } = frameworkConfiguration;
+          if (src) {
+            execScripts(null, [src], proxy, { fetch, strictGlobal: !singular }).then(
+              () => {
+                // we need to invoke the onload event manually to notify the event listener that the script was completed
+                // here are the two typical ways of dynamic script loading
+                // 1. element.onload callback way, which webpack and loadjs used, see https://github.com/muicss/loadjs/blob/master/src/loadjs.js#L138
+                // 2. addEventListener way, which toast-loader used, see https://github.com/pyrsmk/toast/blob/master/src/Toast.ts#L64
+                const loadEvent = new CustomEvent('load');
+                if (isFunction(element.onload)) {
+                  element.onload(loadEvent);
+                } else {
+                  element.dispatchEvent(loadEvent);
+                }
+              },
+              () => {
+                const errorEvent = new CustomEvent('error');
+                if (isFunction(element.onerror)) {
+                  element.onerror(errorEvent);
+                } else {
+                  element.dispatchEvent(errorEvent);
+                }
+              },
+            );
+
+            const dynamicScriptCommentElement = document.createComment(`dynamic script ${src} replaced by qiankun`);
+            return rawAppendChild.call(appWrapperGetter(), dynamicScriptCommentElement) as T;
+          }
+
+          execScripts(null, [`<script>${text}</script>`], proxy, { strictGlobal: !singular }).then(
+            element.onload,
+            element.onerror,
+          );
+          const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
+          return rawAppendChild.call(appWrapperGetter(), dynamicInlineScriptCommentElement) as T;
         }
         default:
           break;
@@ -298,6 +337,7 @@ export default function patch(
     HTMLHeadElement.prototype.insertBefore = getNewInsertBefore(
       appName,
       appWrapperGetter,
+      proxy,
       singular,
       dynamicStyleSheetElements,
     );
