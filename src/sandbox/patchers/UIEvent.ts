@@ -12,7 +12,6 @@ declare global {
     MouseEvent: MouseEvent;
   }
 }
-
 // if ts compile target is es5, the native super/extends has some problems
 // see: https://github.com/microsoft/TypeScript/wiki/FAQ#why-doesnt-extending-built-ins-like-error-array-and-map-work
 class FakeMouseEvent extends RawMouseEvent {
