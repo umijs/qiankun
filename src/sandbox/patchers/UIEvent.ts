@@ -26,8 +26,7 @@ class FakeMouseEvent {
   }
 }
 // set prototype
-Object.setPrototypeOf(FakeMouseEvent, RawMouseEvent.prototype);
-
+Object.setPrototypeOf(FakeMouseEvent, RawMouseEvent);
 
 export default function patch(global: Window) {
   global.MouseEvent = FakeMouseEvent;
