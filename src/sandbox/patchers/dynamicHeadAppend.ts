@@ -194,7 +194,7 @@ function getNewInsertBefore(...args: any[]) {
       // have storedContainerInfo means it invoked by a micro app
       const invokedByMicroApp = storedContainerInfo && !singular;
       const wrapper = appWrapperGetter();
-      const referenceNode = wrapper.contains(refChild) ? refChild : null;
+      let referenceNode = wrapper.contains(refChild) ? refChild : null;
 
       switch (element.tagName) {
         case LINK_TAG_NAME:
@@ -220,6 +220,8 @@ function getNewInsertBefore(...args: any[]) {
         }
         case SCRIPT_TAG_NAME: {
           if (!invokedByMicroApp) {
+            referenceNode = this.contains(refChild) ? refChild : null;
+
             return rawHeadInsertBefore.call(this, element, referenceNode) as T;
           }
 
