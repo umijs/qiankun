@@ -153,9 +153,10 @@ test('property added by Object.defineProperty should works as expect', () => {
 test('defineProperty should added to the target where its descriptor from', () => {
   Object.defineProperty(window, 'propertyInNativeWindow', {
     get(this: any) {
+      // distinguish it from internal target or raw window with property length
       const fromProxyInternalTarget = Object.keys(this).length !== Object.keys(window).length;
       if (fromProxyInternalTarget) throw new TypeError('illegal invocation');
-      return 'propertyInNativeWindow';
+      return 'ifAccessByInternalTargetWillCauseIllegalInvocation';
     },
     set() {},
     configurable: true,
@@ -163,10 +164,10 @@ test('defineProperty should added to the target where its descriptor from', () =
   });
 
   // @ts-ignore
-  expect(window.propertyInNativeWindow).toBe('propertyInNativeWindow');
+  expect(window.propertyInNativeWindow).toBe('ifAccessByInternalTargetWillCauseIllegalInvocation');
 
   const { proxy } = new ProxySandbox('object-define-property-target-test');
   const eventDescriptor = Object.getOwnPropertyDescriptor(proxy, 'propertyInNativeWindow');
   Object.defineProperty(proxy, 'propertyInNativeWindow', eventDescriptor!);
-  expect((<any>proxy).propertyInNativeWindow).toBe('propertyInNativeWindow');
+  expect((<any>proxy).propertyInNativeWindow).toBe('ifAccessByInternalTargetWillCauseIllegalInvocation');
 });
