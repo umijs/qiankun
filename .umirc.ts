@@ -40,5 +40,5 @@ export default defineConfig({
   exportStatic: {
     dynamicRoot: true,
   },
-  styles: ['.__dumi-default-navbar-logo { padding-left: 0 !important; }'],
+  styles: ['.__dumi-default-navbar-logo { padding-left: 0 !important; background: none !important; }'],
 });
