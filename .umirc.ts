@@ -2,6 +2,7 @@ import { defineConfig } from 'dumi';
 
 export default defineConfig({
   mode: 'site',
+  ssr: {},
   resolve: {
     includes: ['docs'],
     previewLangs: [],
