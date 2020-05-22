@@ -1,7 +1,6 @@
 import { defineConfig } from 'dumi';
 
 export default defineConfig({
-  logo: ' ',
   mode: 'site',
   resolve: {
     includes: ['docs'],
@@ -39,4 +38,5 @@ export default defineConfig({
   exportStatic: {
     dynamicRoot: true,
   },
+  styles: ['.__dumi-default-navbar-logo { padding-left: 0 !important; }'],
 });
