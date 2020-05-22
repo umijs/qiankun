@@ -273,11 +273,12 @@ A criterion for judging whether the business is closely related: <strong>Look at
   
   class App extends React.Component {
     
+    containerRef = React.createRef();
     microApp = null;
     
     componentDidMount() {
       this.microApp = loadMicroApp(
-        { name: 'app1', entry: '//localhost:1234', container: '#app1', props: { name: 'qiankun' } },
+        { name: 'app1', entry: '//localhost:1234', container: this.containerRef.current, props: { name: 'qiankun' } },
       );
     }
   
@@ -290,7 +291,7 @@ A criterion for judging whether the business is closely related: <strong>Look at
     }
     
     render() {
-      return <div id="app1"></div>;
+      return <div ref={this.containerRef}></div>;
     }
   }
   ```

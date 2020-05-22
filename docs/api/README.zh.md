@@ -277,11 +277,12 @@ toc: menu
   
   class App extends React.Component {
     
+    containerRef = React.createRef();
     microApp = null;
     
     componentDidMount() {
       this.microApp = loadMicroApp(
-        { name: 'app1', entry: '//localhost:1234', container: '#app1', props: { name: 'qiankun' } },
+        { name: 'app1', entry: '//localhost:1234', container: this.containerRef.current, props: { name: 'qiankun' } },
       );
     }
   
@@ -294,7 +295,7 @@ toc: menu
     }
     
     render() {
-      return <div id="app1"></div>;
+      return <div ref={this.containerRef}></div>;
     }
   }
   ```
