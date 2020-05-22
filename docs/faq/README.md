@@ -1,3 +1,9 @@
+---
+nav:
+  title: FAQ
+toc: menu
+---
+
 # FAQ
 
 ## `Application died in status LOADING_SOURCE_CODE: You need to export the functional lifecycles in xxx entry`
@@ -6,9 +12,9 @@ This error thrown as qiankun could not find the exported lifecycle method from y
 
 To solve the exception, try the following steps:
 
-1. check you have exported the specified lifecycles, see the [doc](/guide/getting-started.html#_1-exports-lifecycles-from-sub-app-entry)
+1. check you have exported the specified lifecycles, see the [doc](/guide/getting-started#1-exports-lifecycles-from-sub-app-entry)
 
-2. check you have set the specified configuration with your bundler, see the [doc](/guide/getting-started.html#_2-config-sub-app-bundler)
+2. check you have set the specified configuration with your bundler, see the [doc](/guide/getting-started#2-config-sub-app-bundler)
 
 3. check your `package.json` name field is unique between sub apps.
 
@@ -79,9 +85,9 @@ __webpack_public_path__ = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
 
 For more details, check the [webpack doc](https://webpack.js.org/guides/public-path/#on-the-fly).
 
-::: tip
+<Alert type="info">
 Runtime publicPath addresses the problem of incorrect scripts, styles, images, and other addresses for dynamically loaded in sub application.
-:::
+</Alert>
 
 ### 2. With webpack static public path config
 
@@ -136,9 +142,9 @@ start({ singular: false });
 
 After setting `singular: false` in `start` method, `reactApp` and `react15App` should be active at the same time once `isReactApp` method returns `true`.
 
-::: warning
+<Alert>
 Notice that no more than one application that relies on router can be displayed on the page at the same time, as the browser has only one url location, if there is more than one routing apps, it will definitely result in one of them to be 404 found.
-:::
+</Alert>
 
 ## How to extract the common library？
 
@@ -154,7 +160,7 @@ Yes.
 
 However, the IE environment (browsers that do not support Proxy) can only use the single-instance pattern, where the `singular` configuration will be set `true` automatically.
 
-You can find the singular usage [here](/api/#start-opts).
+You can find the singular usage [here](/api#startopts).
 
 ## Does qiankun support the subApp without bundler?
 
@@ -175,7 +181,7 @@ example:
   <title>Purehtml Example</title>
 </head>
 <body>
-  <div style="display: flex; justify-content: center; align-items: center; height: 200px;">
+  <div>
     Purehtml Example
   </div>
 </body>
@@ -212,4 +218,4 @@ const render = ($) => {
 
 refer to the [purehtml examples](https://github.com/umijs/qiankun/tree/master/examples/purehtml)
 
-At the same time, [the subApp must support the CORS](/faq/#must-a-sub-app-asset-support-cors)
+At the same time, [the subApp must support the CORS](#must-a-sub-app-asset-support-cors)
