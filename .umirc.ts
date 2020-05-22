@@ -3,6 +3,7 @@ import { defineConfig } from 'dumi';
 export default defineConfig({
   mode: 'site',
   ssr: {},
+  base: process.env.NOW_DEPLOY ? '/' : '/qiankun/',
   resolve: {
     includes: ['docs'],
     previewLangs: [],
