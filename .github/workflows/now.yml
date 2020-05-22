@@ -14,12 +14,12 @@ jobs:
         run: |
           yarn install
           yarn docs:build
-      - uses: amondnet/now-deployment@v18.0.0
-        id: now-deployment-production
+      - uses: amondnet/vercel-action@v19
+        id: vercel-deployment-production
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          zeit-token: ${{ secrets.ZEIT_TOKEN }}
-          now-org-id: ${{ secrets.NOW_ORG_ID }}
-          now-project-id: ${{ secrets.NOW_PROJECT_ID }}
+          vercel-token: ${{ secrets.ZEIT_TOKEN }}
+          vercel-org-id: ${{ secrets.NOW_ORG_ID }}
+          vercel-project-id: ${{ secrets.NOW_PROJECT_ID }}
           working-directory: dist
-          now-args: '--prod'
+          vercel-args: '--prod'
