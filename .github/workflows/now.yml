@@ -14,7 +14,7 @@ jobs:
         run: |
           yarn install
           yarn docs:build
-      - uses: amondnet/now-deployment@v2
+      - uses: amondnet/now-deployment@v18.0.0
         id: now-deployment-production
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
