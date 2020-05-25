@@ -11,6 +11,8 @@ import { clearSystemJsProps, interceptSystemJsProps } from './noise/systemjs';
 // zone.js will overwrite Object.defineProperty
 const rawObjectDefineProperty = Object.defineProperty;
 
+type SymbolTarget = 'target' | 'rawWindow';
+
 type FakeWindow = Window & Record<PropertyKey, any>;
 function createFakeWindow(global: Window): Window {
   const fakeWindow = {} as FakeWindow;
@@ -96,9 +98,10 @@ export default class ProxySandbox implements SandBox {
     this.name = name;
     const { sandboxRunning, updatedValueSet } = this;
 
-    // https://github.com/umijs/qiankun/pull/192
     const rawWindow = window;
     const fakeWindow = createFakeWindow(rawWindow);
+
+    const descriptorTargetMap = new Map<PropertyKey, SymbolTarget>();
 
     const proxy = new Proxy(fakeWindow, {
       set(target: FakeWindow, p: PropertyKey, value: any): boolean {
@@ -167,11 +170,15 @@ export default class ProxySandbox implements SandBox {
          > A property cannot be reported as non-configurable, if it does not exists as an own property of the target object or if it exists as a configurable own property of the target object.
          */
         if (target.hasOwnProperty(p)) {
-          return Object.getOwnPropertyDescriptor(target, p);
+          const descriptor = Object.getOwnPropertyDescriptor(target, p);
+          descriptorTargetMap.set(p, 'target');
+          return descriptor;
         }
 
         if (rawWindow.hasOwnProperty(p)) {
-          return Object.getOwnPropertyDescriptor(rawWindow, p);
+          const descriptor = Object.getOwnPropertyDescriptor(rawWindow, p);
+          descriptorTargetMap.set(p, 'rawWindow');
+          return descriptor;
         }
 
         return undefined;
@@ -180,6 +187,20 @@ export default class ProxySandbox implements SandBox {
       // trap to support iterator with sandbox
       ownKeys(target: FakeWindow): PropertyKey[] {
         return uniq([...Reflect.ownKeys(rawWindow), ...Reflect.ownKeys(target)]);
+      },
+
+      defineProperty(target: Window, p: PropertyKey, attributes: PropertyDescriptor): boolean {
+        const from = descriptorTargetMap.get(p);
+        /*
+         Descriptor must be defined to native window while it comes from native window via Object.getOwnPropertyDescriptor(window, p),
+         otherwise it would cause a TypeError with illegal invocation.
+         */
+        switch (from) {
+          case 'rawWindow':
+            return Reflect.defineProperty(rawWindow, p, attributes);
+          default:
+            return Reflect.defineProperty(target, p, attributes);
+        }
       },
 
       deleteProperty(target: FakeWindow, p: string | number | symbol): boolean {
