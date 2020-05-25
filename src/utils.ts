@@ -55,3 +55,24 @@ class Deferred<T> {
 }
 
 export { Deferred };
+
+const supportsUserTiming =
+  typeof performance !== 'undefined' &&
+  typeof performance.mark === 'function' &&
+  typeof performance.clearMarks === 'function' &&
+  typeof performance.measure === 'function' &&
+  typeof performance.clearMeasures === 'function';
+
+export function performanceMark(markName: string) {
+  if (supportsUserTiming) {
+    performance.mark(markName);
+  }
+}
+
+export function performanceMeasure(measureName: string, markName: string) {
+  if (supportsUserTiming) {
+    performance.measure(measureName, markName);
+    performance.clearMarks(markName);
+    performance.clearMeasures(measureName);
+  }
+}

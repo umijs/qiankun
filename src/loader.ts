@@ -10,7 +10,15 @@ import getAddOns from './addons';
 import { getMicroAppStateActions } from './globalState';
 import { FrameworkConfiguration, FrameworkLifeCycles, HTMLContentRender, LifeCycleFn, LoadableApp } from './interfaces';
 import { createSandbox } from './sandbox';
-import { Deferred, getDefaultTplWrapper, getWrapperId, toArray, validateExportLifecycle } from './utils';
+import {
+  Deferred,
+  getDefaultTplWrapper,
+  getWrapperId,
+  performanceMark,
+  performanceMeasure,
+  toArray,
+  validateExportLifecycle,
+} from './utils';
 
 function assertElementExist(element: Element | null | undefined, msg?: string) {
   if (!element) {
@@ -194,6 +202,13 @@ export async function loadApp<T extends object>(
   lifeCycles?: FrameworkLifeCycles<T>,
 ): Promise<ParcelConfigObject> {
   const { entry, name: appName } = app;
+  const appInstanceId = `${appName}_${+new Date()}`;
+
+  const markName = `[qiankun] App ${appInstanceId} Loading`;
+  if (process.env.NODE_ENV === 'development') {
+    performanceMark(markName);
+  }
+
   const { singular = false, sandbox = true, ...importEntryOpts } = configuration;
 
   // get the entry html content and script executor
@@ -205,8 +220,6 @@ export async function loadApp<T extends object>(
   if (await validateSingularMode(singular, app)) {
     await (prevAppUnmountedDeferred && prevAppUnmountedDeferred.promise);
   }
-
-  const appInstanceId = `${appName}_${+new Date()}`;
 
   const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
 
@@ -288,6 +301,12 @@ export async function loadApp<T extends object>(
       async () => {
         if (await validateSingularMode(singular, app)) {
           prevAppUnmountedDeferred = new Deferred<void>();
+        }
+      },
+      async () => {
+        if (process.env.NODE_ENV === 'development') {
+          const measureName = `[qiankun] App ${appInstanceId} Loading Consuming`;
+          performanceMeasure(measureName, markName);
         }
       },
     ],
