@@ -33,15 +33,16 @@ By linking the micro-application to some url rules, the function of automaticall
 
       * Support direct configuration of string or string array, such as `activeRule: '/app1'` or `activeRule: ['/app1', '/app2']`, when configured as a string, it will directly follow the path part in the url Do a prefix match. A successful match indicates that the current application will be activated.
       * Support to configure an active function or a group of active functions. The function will pass in the current location as a parameter. When the function returns true, it indicates that the current micro application will be activated. Such as `location => location.pathname.startsWith ('/app1')`.
+      * Note that prefix matching here refers to prefix matching in the form of strings, rather than prefix matching on subroutes. For example, for `/app1`, the matching rule is` /app1* `, not` /app1/* ` (` * `is a wildcard).
 
       Example rules:
 
       `'/app1'`
 
       * ✅ https://app.com/app1
-
       * ✅ https://app.com/app1/anything/everything
-
+      * ✅ https://app.com/app1Anything
+      * ✅ https://app.com/app1_anything
       * 🚫 https://app.com/app2
 
       `'/users/:userId/profile'`
