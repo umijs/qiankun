@@ -278,6 +278,15 @@ export async function loadApp<T extends object>(
     bootstrap,
     mount: [
       async () => {
+        if (process.env.NODE_ENV === 'development') {
+          const marks = performance.getEntriesByName(markName, 'mark');
+          // mark length is zero means the app is remounting
+          if (!marks.length) {
+            performanceMark(markName);
+          }
+        }
+      },
+      async () => {
         if ((await validateSingularMode(singular, app)) && prevAppUnmountedDeferred) {
           return prevAppUnmountedDeferred.promise;
         }
