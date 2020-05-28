@@ -25,7 +25,15 @@
         .join("/");
     </script>
     <script>
-      //! umi version: 3.2.2
+      window.publicPath =
+        location.protocol +
+        "//" +
+        location.hostname +
+        (location.port ? ":" + location.port : "") +
+        window.routerBase;
+    </script>
+    <script>
+      //! umi version: 3.2.3
     </script>
     <script>
       var _hmt = _hmt || [];
