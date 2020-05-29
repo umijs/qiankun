@@ -14,12 +14,10 @@ jobs:
         run: |
           yarn install
           yarn docs:build
-      - uses: amondnet/vercel-action@v19
-        id: vercel-deployment-production
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          vercel-token: ${{ secrets.ZEIT_TOKEN }}
-          vercel-org-id: ${{ secrets.NOW_ORG_ID }}
-          vercel-project-id: ${{ secrets.NOW_PROJECT_ID }}
-          working-directory: dist
-          vercel-args: '--prod'
+      - name: deploy
+        timeout-minutes: 3
+         env:
+           BUILD_ID: ${{ github.sha }}
+           ZEIT_TOKEN: ${{ secrets.ZEIT_TOKEN }}
+         run: |
+           now --token=$ZEIT_TOKEN --confirm --prod --force --scope umijs
