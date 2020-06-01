@@ -63,6 +63,18 @@ function createFakeWindow(global: Window): Window {
 }
 
 let activeSandboxCount = 0;
+const unscopables = {
+  undefined: true,
+  Array: true,
+  Object: true,
+  String: true,
+  Boolean: true,
+  Math: true,
+  eval: true,
+  Number: true,
+  Symbol: true,
+  parseFloat: true,
+};
 
 /**
  * 基于 Proxy 实现的沙箱
@@ -102,6 +114,7 @@ export default class ProxySandbox implements SandBox {
     const fakeWindow = createFakeWindow(rawWindow);
 
     const descriptorTargetMap = new Map<PropertyKey, SymbolTarget>();
+    const hasOwnProperty = (key: PropertyKey) => fakeWindow.hasOwnProperty(key) || rawWindow.hasOwnProperty(key);
 
     const proxy = new Proxy(fakeWindow, {
       set(target: FakeWindow, p: PropertyKey, value: any): boolean {
@@ -124,6 +137,8 @@ export default class ProxySandbox implements SandBox {
       },
 
       get(target: FakeWindow, p: PropertyKey): any {
+        if (p === Symbol.unscopables) return unscopables;
+
         // avoid who using window.window or window.self to escape the sandbox environment to touch the really window
         // or use window.top to check if an iframe context
         // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
@@ -136,15 +151,9 @@ export default class ProxySandbox implements SandBox {
           return proxy;
         }
 
-        // never rewrite eval
-        if (p === 'eval') {
-          // eslint-disable-next-line no-eval
-          return eval;
-        }
-
         // proxy.hasOwnProperty would invoke getter firstly, then its value represented as rawWindow.hasOwnProperty
         if (p === 'hasOwnProperty') {
-          return (key: PropertyKey) => target.hasOwnProperty(key) || rawWindow.hasOwnProperty(key);
+          return hasOwnProperty;
         }
 
         // call proxy getter interceptors
@@ -160,7 +169,7 @@ export default class ProxySandbox implements SandBox {
       // trap in operator
       // see https://github.com/styled-components/styled-components/blob/master/packages/styled-components/src/constants.js#L12
       has(target: FakeWindow, p: string | number | symbol): boolean {
-        return p in target || p in rawWindow;
+        return target.hasOwnProperty(p) || p in rawWindow;
       },
 
       getOwnPropertyDescriptor(target: FakeWindow, p: string | number | symbol): PropertyDescriptor | undefined {

@@ -19,7 +19,7 @@ export function isConstructable(fn: () => void | FunctionConstructor) {
 
   // 有 prototype 并且 prototype 上有定义一系列非 constructor 属性，则可以认为是一个构造函数
   return (
-    (fn.prototype && Object.getOwnPropertyNames(fn.prototype).filter(k => k !== 'constructor').length) ||
+    (fn.prototype && fn.prototype.constructor === fn && Object.getOwnPropertyNames.length > 1) ||
     constructableFunctionRegex.test(fn.toString()) ||
     classRegex.test(fn.toString())
   );
