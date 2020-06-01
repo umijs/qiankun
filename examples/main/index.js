@@ -8,8 +8,8 @@ import 'zone.js';
  * 主应用 **可以使用任意技术栈**
  * 以下分别是 React 和 Vue 的示例，可切换尝试
  */
-import render from './render/ReactRender';
-// import render from './render/VueRender'
+// import render from './render/ReactRender';
+import render from './render/VueRender';
 
 /**
  * Step1 初始化应用（可选）
