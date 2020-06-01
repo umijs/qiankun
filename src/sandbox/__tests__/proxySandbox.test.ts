@@ -174,7 +174,7 @@ test('defineProperty should added to the target where its descriptor from', () =
   expect((<any>proxy).propertyInNativeWindow).toBe('ifAccessByInternalTargetWillCauseIllegalInvocation');
 });
 
-test('hasOwnProperty should always return same reference', () => {
+test('hasOwnProperty should always returns same reference', () => {
   const proxy = new ProxySandbox('hasOwnProperty-test').proxy as any;
   proxy.testA = {};
   proxy.testB = {};
