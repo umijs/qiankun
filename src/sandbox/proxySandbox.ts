@@ -11,6 +11,23 @@ import { clearSystemJsProps, interceptSystemJsProps } from './noise/systemjs';
 // zone.js will overwrite Object.defineProperty
 const rawObjectDefineProperty = Object.defineProperty;
 
+/*
+ variables who are impossible to be overwrite need to be escaped from proxy sandbox for performance reasons
+ */
+const unscopables = {
+  undefined: true,
+  Array: true,
+  Object: true,
+  String: true,
+  Boolean: true,
+  Math: true,
+  eval: true,
+  Number: true,
+  Symbol: true,
+  parseFloat: true,
+  Float32Array: true,
+};
+
 type SymbolTarget = 'target' | 'rawWindow';
 
 type FakeWindow = Window & Record<PropertyKey, any>;
@@ -64,18 +81,6 @@ function createFakeWindow(global: Window): Window {
 }
 
 let activeSandboxCount = 0;
-const unscopables = {
-  undefined: true,
-  Array: true,
-  Object: true,
-  String: true,
-  Boolean: true,
-  Math: true,
-  eval: true,
-  Number: true,
-  Symbol: true,
-  parseFloat: true,
-};
 
 /**
  * 基于 Proxy 实现的沙箱
