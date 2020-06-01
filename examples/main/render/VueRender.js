@@ -1,6 +1,6 @@
 import Vue from 'vue/dist/vue.esm';
 
-function vueRender({ appContent, loading }) {
+function vueRender({ loading }) {
   return new Vue({
     template: `
       <div id="subapp-container">
