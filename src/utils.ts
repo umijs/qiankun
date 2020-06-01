@@ -19,10 +19,28 @@ export function isConstructable(fn: () => void | FunctionConstructor) {
 
   // 有 prototype 并且 prototype 上有定义一系列非 constructor 属性，则可以认为是一个构造函数
   return (
-    (fn.prototype && Object.getOwnPropertyNames(fn.prototype).filter(k => k !== 'constructor').length) ||
+    (fn.prototype && fn.prototype.constructor === fn && Object.getOwnPropertyNames(fn.prototype).length > 1) ||
     constructableFunctionRegex.test(fn.toString()) ||
     classRegex.test(fn.toString())
   );
+}
+
+export function isBoundedFunction(fn: CallableFunction) {
+  /*
+   indexOf is faster than startsWith
+   see https://jsperf.com/string-startswith/72
+   */
+  return fn.name.indexOf('bound ') === 0 && !fn.hasOwnProperty('prototype');
+}
+
+/**
+ * fastest(at most time) unique array method
+ * @see https://jsperf.com/array-filter-unique/30
+ */
+export function uniq(array: PropertyKey[]) {
+  return array.filter(function filter(this: string[], element) {
+    return element in this ? false : ((this as any)[element] = true);
+  }, {});
 }
 
 export function getDefaultTplWrapper(id: string) {

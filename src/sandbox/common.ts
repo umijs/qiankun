@@ -3,7 +3,7 @@
  * @since 2020-04-13
  */
 
-import { isConstructable } from '../utils';
+import { isBoundedFunction, isConstructable } from '../utils';
 
 const boundValueSymbol = Symbol('bound value');
 
@@ -12,7 +12,7 @@ export function getTargetValue(target: any, value: any): any {
     仅绑定 !isConstructable && isCallable 的函数对象，如 window.console、window.atob 这类。目前没有完美的检测方式，这里通过 prototype 中是否还有可枚举的拓展方法的方式来判断
     @warning 这里不要随意替换成别的判断方式，因为可能触发一些 edge case（比如在 lodash.isFunction 在 iframe 上下文中可能由于调用了 top window 对象触发的安全异常）
    */
-  if (typeof value === 'function' && !isConstructable(value)) {
+  if (typeof value === 'function' && !isBoundedFunction(value) && !isConstructable(value)) {
     if (value[boundValueSymbol]) {
       return value[boundValueSymbol];
     }
@@ -27,14 +27,30 @@ export function getTargetValue(target: any, value: any): any {
   return value;
 }
 
-const proxyGetterMap = new Map<WindowProxy, Record<PropertyKey, any>>();
+const proxyPropertyGetterMap = new Map<WindowProxy, Record<PropertyKey, CallableFunction>>();
+const getterInvocationResultMap = new Map<CallableFunction, any>();
 
-export function getProxyPropertyGetter(proxy: WindowProxy, property: PropertyKey) {
-  const getters = proxyGetterMap.get(proxy) || ({} as Record<string, any>);
-  return getters[property as string];
+export function getProxyPropertyValue(getter: CallableFunction) {
+  const getterResult = getterInvocationResultMap.get(getter);
+  if (!getterResult) {
+    const result = getter();
+    getterInvocationResultMap.set(getter, result);
+    return result;
+  }
+
+  return getterResult;
+}
+
+export function getProxyPropertyGetter(proxy: WindowProxy, property: PropertyKey): any {
+  const getters = proxyPropertyGetterMap.get(proxy);
+  if (getters) {
+    return getters![property as string];
+  }
+
+  return undefined;
 }
 
 export function setProxyPropertyGetter(proxy: WindowProxy, property: PropertyKey, getter: () => any) {
-  const prevGetters = proxyGetterMap.get(proxy) || {};
-  proxyGetterMap.set(proxy, { ...prevGetters, [property]: getter });
+  const prevGetters = proxyPropertyGetterMap.get(proxy) || {};
+  proxyPropertyGetterMap.set(proxy, { ...prevGetters, [property]: getter });
 }

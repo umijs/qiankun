@@ -3,17 +3,35 @@
  * @author Kuitos
  * @since 2020-3-31
  */
-import { uniq } from 'lodash';
 import { SandBox } from '../interfaces';
-import { getProxyPropertyGetter, getTargetValue } from './common';
+import { uniq } from '../utils';
+import { getProxyPropertyGetter, getProxyPropertyValue, getTargetValue } from './common';
 import { clearSystemJsProps, interceptSystemJsProps } from './noise/systemjs';
 
 // zone.js will overwrite Object.defineProperty
 const rawObjectDefineProperty = Object.defineProperty;
 
+/*
+ variables who are impossible to be overwrite need to be escaped from proxy sandbox for performance reasons
+ */
+const unscopables = {
+  undefined: true,
+  Array: true,
+  Object: true,
+  String: true,
+  Boolean: true,
+  Math: true,
+  eval: true,
+  Number: true,
+  Symbol: true,
+  parseFloat: true,
+  Float32Array: true,
+};
+
 type SymbolTarget = 'target' | 'rawWindow';
 
 type FakeWindow = Window & Record<PropertyKey, any>;
+
 function createFakeWindow(global: Window): Window {
   const fakeWindow = {} as FakeWindow;
 
@@ -102,6 +120,7 @@ export default class ProxySandbox implements SandBox {
     const fakeWindow = createFakeWindow(rawWindow);
 
     const descriptorTargetMap = new Map<PropertyKey, SymbolTarget>();
+    const hasOwnProperty = (key: PropertyKey) => fakeWindow.hasOwnProperty(key) || rawWindow.hasOwnProperty(key);
 
     const proxy = new Proxy(fakeWindow, {
       set(target: FakeWindow, p: PropertyKey, value: any): boolean {
@@ -124,6 +143,8 @@ export default class ProxySandbox implements SandBox {
       },
 
       get(target: FakeWindow, p: PropertyKey): any {
+        if (p === Symbol.unscopables) return unscopables;
+
         // avoid who using window.window or window.self to escape the sandbox environment to touch the really window
         // or use window.top to check if an iframe context
         // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
@@ -136,21 +157,15 @@ export default class ProxySandbox implements SandBox {
           return proxy;
         }
 
-        // never rewrite eval
-        if (p === 'eval') {
-          // eslint-disable-next-line no-eval
-          return eval;
-        }
-
         // proxy.hasOwnProperty would invoke getter firstly, then its value represented as rawWindow.hasOwnProperty
         if (p === 'hasOwnProperty') {
-          return (key: PropertyKey) => target.hasOwnProperty(key) || rawWindow.hasOwnProperty(key);
+          return hasOwnProperty;
         }
 
         // call proxy getter interceptors
         const proxyPropertyGetter = getProxyPropertyGetter(proxy, p);
         if (proxyPropertyGetter) {
-          return proxyPropertyGetter();
+          return getProxyPropertyValue(proxyPropertyGetter);
         }
 
         const value = (target as any)[p] || (rawWindow as any)[p];
@@ -160,7 +175,7 @@ export default class ProxySandbox implements SandBox {
       // trap in operator
       // see https://github.com/styled-components/styled-components/blob/master/packages/styled-components/src/constants.js#L12
       has(target: FakeWindow, p: string | number | symbol): boolean {
-        return p in target || p in rawWindow;
+        return p in unscopables || p in target || p in rawWindow;
       },
 
       getOwnPropertyDescriptor(target: FakeWindow, p: string | number | symbol): PropertyDescriptor | undefined {
@@ -186,7 +201,7 @@ export default class ProxySandbox implements SandBox {
 
       // trap to support iterator with sandbox
       ownKeys(target: FakeWindow): PropertyKey[] {
-        return uniq([...Reflect.ownKeys(rawWindow), ...Reflect.ownKeys(target)]);
+        return uniq(Reflect.ownKeys(rawWindow).concat(Reflect.ownKeys(target)));
       },
 
       defineProperty(target: Window, p: PropertyKey, attributes: PropertyDescriptor): boolean {

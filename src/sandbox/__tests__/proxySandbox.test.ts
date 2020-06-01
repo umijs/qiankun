@@ -3,6 +3,8 @@
  * @since 2020-03-31
  */
 
+import { isBoundedFunction } from '../../utils';
+import { setProxyPropertyGetter } from '../common';
 import ProxySandbox from '../proxySandbox';
 
 beforeAll(() => {
@@ -170,4 +172,39 @@ test('defineProperty should added to the target where its descriptor from', () =
   const eventDescriptor = Object.getOwnPropertyDescriptor(proxy, 'propertyInNativeWindow');
   Object.defineProperty(proxy, 'propertyInNativeWindow', eventDescriptor!);
   expect((<any>proxy).propertyInNativeWindow).toBe('ifAccessByInternalTargetWillCauseIllegalInvocation');
+});
+
+test('hasOwnProperty should always returns same reference', () => {
+  const proxy = new ProxySandbox('hasOwnProperty-test').proxy as any;
+  proxy.testA = {};
+  proxy.testB = {};
+
+  expect(proxy.testA.hasOwnProperty).toBe(proxy.testB.hasOwnProperty);
+});
+
+test('property getter should just called once', () => {
+  const countFn = jest.fn();
+  const proxy = new ProxySandbox('property-getter-test').proxy as any;
+  setProxyPropertyGetter(proxy, 'document', () => {
+    countFn();
+    return document;
+  });
+
+  const d1 = proxy.document;
+  const d2 = proxy.document;
+
+  expect(d1).toBe(d2);
+  expect(countFn).toBeCalledTimes(1);
+});
+
+test('bounded function should not be rebounded', () => {
+  const proxy = new ProxySandbox('bound-fn-test').proxy as any;
+  const fn = () => {};
+  const boundedFn = fn.bind(null);
+  proxy.fn1 = fn;
+  proxy.fn2 = boundedFn;
+
+  expect(proxy.fn1 === fn).toBeFalsy();
+  expect(proxy.fn2 === boundedFn).toBeTruthy();
+  expect(isBoundedFunction(proxy.fn1)).toBeTruthy();
 });
