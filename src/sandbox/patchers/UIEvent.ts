@@ -17,7 +17,7 @@ declare global {
 class FakeMouseEvent extends RawMouseEvent {
   constructor(typeArg: string, mouseEventInit?: MouseEventInit) {
     // if UIEvent want to window view, we should replace ProxyWindow with Window
-    if (mouseEventInit && Object.prototype.toString.call(mouseEventInit.view) === '[object Window]') {
+    if (mouseEventInit && mouseEventInit.view?.top === mouseEventInit.view) {
       // resolve: https://github.com/umijs/qiankun/issues/570
       // eg: https://github.com/apache/incubator-echarts/blob/master/src/component/toolbox/feature/SaveAsImage.js#L63...L75
       mouseEventInit.view = window;

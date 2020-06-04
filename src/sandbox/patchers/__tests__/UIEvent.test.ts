@@ -12,6 +12,7 @@ test('patch UIEvent', async () => {
   // 通过 fake window 先模拟下
   // see: https://github.com/jsdom/jsdom/issues/2973
   const fakeWindow = {} as Window;
+  (fakeWindow as any).top = fakeWindow;
   Object.defineProperty(fakeWindow, Symbol.toStringTag, {
     get() {
       return 'Window';
