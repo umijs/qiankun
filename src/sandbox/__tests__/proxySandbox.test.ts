@@ -208,3 +208,24 @@ test('bounded function should not be rebounded', () => {
   expect(proxy.fn2 === boundedFn).toBeTruthy();
   expect(isBoundedFunction(proxy.fn1)).toBeTruthy();
 });
+
+test('some native window property was defined with getter in safari and firefox, and they will check the caller source', () => {
+  Object.defineProperty(window, 'mockSafariGetterProperty', {
+    get(this: Window) {
+      // distinguish it from internal target or raw window with property length
+      const fromProxyInternalTarget = Object.keys(this).length !== Object.keys(window).length;
+      if (fromProxyInternalTarget) {
+        throw new TypeError('The Window.mockSafariGetterProperty getter can only be used on instances of Window');
+      }
+      return 'getterPropertyInSafariWindow';
+    },
+    set() {},
+    configurable: false,
+    enumerable: false,
+  });
+
+  expect((<any>window).mockSafariGetterProperty).toBe('getterPropertyInSafariWindow');
+
+  const { proxy } = new ProxySandbox('object-define-property-target-test');
+  expect((<any>proxy).mockSafariGetterProperty).toBe('getterPropertyInSafariWindow');
+});

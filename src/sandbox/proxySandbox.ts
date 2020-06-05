@@ -32,7 +32,10 @@ type SymbolTarget = 'target' | 'rawWindow';
 
 type FakeWindow = Window & Record<PropertyKey, any>;
 
-function createFakeWindow(global: Window): Window {
+function createFakeWindow(global: Window) {
+  // map always has the fastest performance in has check scenario
+  // see https://jsperf.com/array-indexof-vs-set-has/23
+  const propertiesWithGetter = new Map<PropertyKey, boolean>();
   const fakeWindow = {} as FakeWindow;
 
   /*
@@ -48,6 +51,8 @@ function createFakeWindow(global: Window): Window {
     .forEach(p => {
       const descriptor = Object.getOwnPropertyDescriptor(global, p);
       if (descriptor) {
+        const hasGetter = Object.prototype.hasOwnProperty.call(descriptor, 'get');
+
         /*
          make top/self/window property configurable and writable, otherwise it will cause TypeError while get trap return.
          see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/get
@@ -66,10 +71,12 @@ function createFakeWindow(global: Window): Window {
             Safari/FF: Object.getOwnPropertyDescriptor(window, 'top') -> {get: function, set: undefined, enumerable: true, configurable: false}
             Chrome: Object.getOwnPropertyDescriptor(window, 'top') -> {value: Window, writable: false, enumerable: true, configurable: false}
            */
-          if (!Object.prototype.hasOwnProperty.call(descriptor, 'get')) {
+          if (!hasGetter) {
             descriptor.writable = true;
           }
         }
+
+        if (hasGetter) propertiesWithGetter.set(p, true);
 
         // freeze the descriptor to avoid being modified by zone.js
         // see https://github.com/angular/zone.js/blob/a5fe09b0fac27ac5df1fa746042f96f05ccb6a00/lib/browser/define-property.ts#L71
@@ -77,7 +84,10 @@ function createFakeWindow(global: Window): Window {
       }
     });
 
-  return fakeWindow;
+  return {
+    fakeWindow,
+    propertiesWithGetter,
+  };
 }
 
 let activeSandboxCount = 0;
@@ -117,7 +127,7 @@ export default class ProxySandbox implements SandBox {
     const { sandboxRunning, updatedValueSet } = this;
 
     const rawWindow = window;
-    const fakeWindow = createFakeWindow(rawWindow);
+    const { fakeWindow, propertiesWithGetter } = createFakeWindow(rawWindow);
 
     const descriptorTargetMap = new Map<PropertyKey, SymbolTarget>();
     const hasOwnProperty = (key: PropertyKey) => fakeWindow.hasOwnProperty(key) || rawWindow.hasOwnProperty(key);
@@ -168,7 +178,8 @@ export default class ProxySandbox implements SandBox {
           return getProxyPropertyValue(proxyPropertyGetter);
         }
 
-        const value = (target as any)[p] || (rawWindow as any)[p];
+        // eslint-disable-next-line no-bitwise
+        const value = propertiesWithGetter.has(p) ? (rawWindow as any)[p] : (target as any)[p] || (rawWindow as any)[p];
         return getTargetValue(rawWindow, value);
       },
 

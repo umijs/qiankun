@@ -25,6 +25,17 @@ export function isConstructable(fn: () => void | FunctionConstructor) {
   );
 }
 
+/**
+ * in safari
+ * typeof document.all === 'undefined' // true
+ * typeof document.all === 'function' // true
+ * We need to discriminate safari for better performance
+ */
+const naughtySafari = typeof document.all === 'function' && typeof document.all === 'undefined';
+export const isCallable = naughtySafari
+  ? (fn: any) => typeof fn === 'function' && typeof fn !== 'undefined'
+  : (fn: any) => typeof fn === 'function';
+
 export function isBoundedFunction(fn: CallableFunction) {
   /*
    indexOf is faster than startsWith
