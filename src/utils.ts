@@ -31,8 +31,8 @@ export function isConstructable(fn: () => void | FunctionConstructor) {
  * typeof document.all === 'function' // true
  * We need to discriminate safari for better performance
  */
-const godDamnSafari = typeof document.all === 'function' && typeof document.all === 'undefined';
-export const isCallable = godDamnSafari
+const naughtySafari = typeof document.all === 'function' && typeof document.all === 'undefined';
+export const isCallable = naughtySafari
   ? (fn: any) => typeof fn === 'function' && typeof fn !== 'undefined'
   : (fn: any) => typeof fn === 'function';
 
