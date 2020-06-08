@@ -357,7 +357,7 @@ export default function patch(
     patchCount--;
 
     // release the overwrite prototype after all the micro apps unmounted
-    if (patchCount === 0) {
+    if (patchCount <= 0) {
       HTMLHeadElement.prototype.appendChild = rawHeadAppendChild;
       HTMLHeadElement.prototype.insertBefore = rawHeadInsertBefore;
       HTMLHeadElement.prototype.removeChild = rawHeadRemoveChild;
