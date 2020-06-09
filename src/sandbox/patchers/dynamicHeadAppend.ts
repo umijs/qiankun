@@ -360,7 +360,6 @@ export default function patch(
       patchCount--;
     }
 
-    console.log('patchCount--', patchCount);
     // release the overwrite prototype after all the micro apps unmounted
     if (patchCount === 0) {
       HTMLHeadElement.prototype.appendChild = rawHeadAppendChild;
