@@ -351,10 +351,14 @@ export default function patch(
     );
   }
 
-  patchCount++;
+  if (mounting) {
+    patchCount++;
+  }
 
   return function free() {
-    patchCount--;
+    if (mounting) {
+      patchCount--;
+    }
 
     // release the overwrite prototype after all the micro apps unmounted
     if (patchCount === 0) {
