@@ -193,8 +193,6 @@ function getNewInsertBefore(...args: any[]) {
 
       // have storedContainerInfo means it invoked by a micro app
       const invokedByMicroApp = storedContainerInfo && !singular;
-      const wrapper = appWrapperGetter();
-      const referenceNode = wrapper.contains(refChild) ? refChild : null;
 
       switch (element.tagName) {
         case LINK_TAG_NAME:
@@ -202,7 +200,7 @@ function getNewInsertBefore(...args: any[]) {
           const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
 
           // have storedContainerInfo means it invoked by a micro app
-          if (storedContainerInfo && !singular) {
+          if (invokedByMicroApp) {
             // eslint-disable-next-line no-shadow
             dynamicStyleSheetElements.push(stylesheetElement);
             return rawAppendChild.call(appWrapperGetter(), stylesheetElement) as T;
@@ -212,7 +210,8 @@ function getNewInsertBefore(...args: any[]) {
 
           if (activated) {
             dynamicStyleSheetElements.push(stylesheetElement);
-
+            const wrapper = appWrapperGetter();
+            const referenceNode = wrapper.contains(refChild) ? refChild : null;
             return rawHeadInsertBefore.call(wrapper, stylesheetElement, referenceNode) as T;
           }
 
@@ -226,6 +225,9 @@ function getNewInsertBefore(...args: any[]) {
           const { src, text } = element as HTMLScriptElement;
 
           const { fetch } = frameworkConfiguration;
+
+          const wrapper = appWrapperGetter();
+          const referenceNode = wrapper.contains(refChild) ? refChild : null;
 
           if (src) {
             execScripts(null, [src], proxy, { fetch, strictGlobal: !singular }).then(
