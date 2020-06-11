@@ -271,7 +271,8 @@ function getNewInsertBefore(...args: any[]) {
   };
 }
 
-let patchCount = 0;
+let bootstrappingPatchCount = 0;
+let mountingPatchCount = 0;
 
 /**
  * Just hijack dynamic head append, that could avoid accidentally hijacking the insertion of elements except in head.
@@ -351,17 +352,16 @@ export default function patch(
     );
   }
 
-  if (mounting) {
-    patchCount++;
-  }
+  if (!mounting) bootstrappingPatchCount++;
+  if (mounting) mountingPatchCount++;
 
   return function free() {
-    if (mounting) {
-      patchCount--;
-    }
+    // bootstrap patch just called once but its freer will be called multiple times
+    if (!mounting && bootstrappingPatchCount !== 0) bootstrappingPatchCount--;
+    if (mounting) mountingPatchCount--;
 
     // release the overwrite prototype after all the micro apps unmounted
-    if (patchCount === 0) {
+    if (mountingPatchCount === 0 && bootstrappingPatchCount === 0) {
       HTMLHeadElement.prototype.appendChild = rawHeadAppendChild;
       HTMLHeadElement.prototype.insertBefore = rawHeadInsertBefore;
       HTMLHeadElement.prototype.removeChild = rawHeadRemoveChild;
