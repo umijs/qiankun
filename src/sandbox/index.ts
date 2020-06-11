@@ -25,11 +25,6 @@ import SnapshotSandbox from './snapshotSandbox';
  * @param singular
  */
 export function createSandbox(appName: string, elementGetter: () => HTMLElement | ShadowRoot, singular: boolean) {
-  // mounting freers are one-off and should be re-init at every mounting time
-  let mountingFreers: Freer[] = [];
-
-  let sideEffectsRebuilders: Rebuilder[] = [];
-
   let sandbox: SandBox;
   if (window.Proxy) {
     sandbox = singular ? new LegacySandbox(appName) : new ProxySandbox(appName);
@@ -39,6 +34,10 @@ export function createSandbox(appName: string, elementGetter: () => HTMLElement 
 
   // some side effect could be be invoked while bootstrapping, such as dynamic stylesheet injection with style-loader, especially during the development phase
   const bootstrappingFreers = patchAtBootstrapping(appName, elementGetter, sandbox.proxy, singular);
+  // mounting freers are one-off and should be re-init at every mounting time
+  let mountingFreers: Freer[] = [];
+
+  let sideEffectsRebuilders: Rebuilder[] = [];
 
   return {
     proxy: sandbox.proxy,
