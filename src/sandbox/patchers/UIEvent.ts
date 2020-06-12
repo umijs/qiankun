@@ -20,6 +20,7 @@ class FakeMouseEvent extends RawMouseEvent {
     if (mouseEventInit && mouseEventInit.view?.top === mouseEventInit.view) {
       // resolve: https://github.com/umijs/qiankun/issues/570
       // eg: https://github.com/apache/incubator-echarts/blob/master/src/component/toolbox/feature/SaveAsImage.js#L63...L75
+      // eslint-disable-next-line no-param-reassign
       mouseEventInit.view = window;
     }
     super(typeArg, mouseEventInit);
@@ -27,8 +28,10 @@ class FakeMouseEvent extends RawMouseEvent {
 }
 
 export default function patch(global: Window) {
+  // eslint-disable-next-line no-param-reassign
   global.MouseEvent = FakeMouseEvent;
   return function free() {
+    // eslint-disable-next-line no-param-reassign
     global.MouseEvent = RawMouseEvent;
     return noop;
   };
