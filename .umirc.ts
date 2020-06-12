@@ -40,5 +40,5 @@ export default defineConfig({
     baidu: '0f738d9b0ac90574c09183ea85bcfa2e',
   },
   exportStatic: {},
-  styles: ['.__dumi-default-navbar-logo { padding-left: 0 !important; background: none !important; }'],
+  logo: false,
 });
