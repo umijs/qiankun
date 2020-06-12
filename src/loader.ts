@@ -30,9 +30,13 @@ function assertElementExist(element: Element | null | undefined, msg?: string) {
   }
 }
 
-function execHooksChain<T extends object>(hooks: Array<LifeCycleFn<T>>, app: LoadableApp<T>): Promise<any> {
+function execHooksChain<T extends object>(
+  hooks: Array<LifeCycleFn<T>>,
+  app: LoadableApp<T>,
+  global = window,
+): Promise<any> {
   if (hooks.length) {
-    return hooks.reduce((chain, hook) => chain.then(() => hook(app)), Promise.resolve());
+    return hooks.reduce((chain, hook) => chain.then(() => hook(app, global)), Promise.resolve());
   }
 
   return Promise.resolve();
@@ -243,13 +247,13 @@ export async function loadApp<T extends object>(
     () => element,
   );
 
-  let global: Window = window;
+  let global = window;
   let mountSandbox = () => Promise.resolve();
   let unmountSandbox = () => Promise.resolve();
   if (sandbox) {
     const sandboxInstance = createSandbox(appName, containerGetter, Boolean(singular));
     // 用沙箱的代理对象作为接下来使用的全局对象
-    global = sandboxInstance.proxy;
+    global = sandboxInstance.proxy as typeof window;
     mountSandbox = sandboxInstance.mount;
     unmountSandbox = sandboxInstance.unmount;
   }
@@ -261,7 +265,7 @@ export async function loadApp<T extends object>(
     (v1, v2) => concat(v1 ?? [], v2 ?? []),
   );
 
-  await execHooksChain(toArray(beforeLoad), app);
+  await execHooksChain(toArray(beforeLoad), app, global);
 
   // get the lifecycle hooks from module exports
   const scriptExports: any = await execScripts(global, !singular);
@@ -300,12 +304,12 @@ export async function loadApp<T extends object>(
         render({ element, loading: true }, 'mounting');
       },
       // exec the chain after rendering to keep the behavior with beforeLoad
-      async () => execHooksChain(toArray(beforeMount), app),
+      async () => execHooksChain(toArray(beforeMount), app, global),
       mountSandbox,
       async props => mount({ ...props, container: containerGetter(), setGlobalState, onGlobalStateChange }),
       // 应用 mount 完成后结束 loading
       async () => render({ element, loading: false }, 'mounted'),
-      async () => execHooksChain(toArray(afterMount), app),
+      async () => execHooksChain(toArray(afterMount), app, global),
       // initialize the unmount defer after app mounted and resolve the defer after it unmounted
       async () => {
         if (await validateSingularMode(singular, app)) {
@@ -320,10 +324,10 @@ export async function loadApp<T extends object>(
       },
     ],
     unmount: [
-      async () => execHooksChain(toArray(beforeUnmount), app),
+      async () => execHooksChain(toArray(beforeUnmount), app, global),
       async props => unmount({ ...props, container: containerGetter() }),
       unmountSandbox,
-      async () => execHooksChain(toArray(afterUnmount), app),
+      async () => execHooksChain(toArray(afterUnmount), app, global),
       async () => {
         render({ element: null, loading: false }, 'unmounted');
         offGlobalStateChange(appInstanceId);
