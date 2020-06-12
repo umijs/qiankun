@@ -2,8 +2,10 @@ import { defineConfig } from 'dumi';
 
 export default defineConfig({
   mode: 'site',
+  hash: true,
   ssr: {},
-  base: process.env.NOW_DEPLOY ? '/' : '/qiankun/',
+  publicPath: process.env.NOW_DEPLOY ? '/' : '/qiankun/',
+  base: process.env.NOW_DEPLOY ? '/' : '/qiankun',
   resolve: {
     includes: ['docs'],
     previewLangs: [],
@@ -37,8 +39,6 @@ export default defineConfig({
     ga: 'UA-157295698-1',
     baidu: '0f738d9b0ac90574c09183ea85bcfa2e',
   },
-  exportStatic: {
-    dynamicRoot: true,
-  },
+  exportStatic: {},
   styles: ['.__dumi-default-navbar-logo { padding-left: 0 !important; background: none !important; }'],
 });
