@@ -48,10 +48,11 @@ export function registerMicroApps<T extends object = {}>(
 
 export function loadMicroApp<T extends object = {}>(
   app: LoadableApp<T>,
-  configuration = frameworkConfiguration,
+  configuration?: FrameworkConfiguration,
+  lifeCycles?: FrameworkLifeCycles<T>,
 ): MicroApp {
-  const { props, ...appConfig } = app;
-  return mountRootParcel(() => loadApp(appConfig, configuration), {
+  const { props } = app;
+  return mountRootParcel(() => loadApp(app, configuration ?? frameworkConfiguration, lifeCycles), {
     domElement: document.createElement('div'),
     ...props,
   });

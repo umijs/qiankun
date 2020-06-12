@@ -69,7 +69,7 @@ type QiankunSpecialOpts = {
 };
 export type FrameworkConfiguration = QiankunSpecialOpts & ImportEntryOpts & StartOpts;
 
-export type LifeCycleFn<T extends object> = (app: LoadableApp<T>) => Promise<any>;
+export type LifeCycleFn<T extends object> = (app: LoadableApp<T>, global: typeof window) => Promise<any>;
 export type FrameworkLifeCycles<T extends object> = {
   beforeLoad?: LifeCycleFn<T> | Array<LifeCycleFn<T>>; // function before app load
   beforeMount?: LifeCycleFn<T> | Array<LifeCycleFn<T>>; // function before app mount
