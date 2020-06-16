@@ -4,7 +4,7 @@
  */
 
 import { Freer } from '../../interfaces';
-import patchDynamicAppend from './dynamicHeadAppend';
+import patchDynamicAppend from './dynamicAppend';
 import patchHistoryListener from './historyListener';
 import patchInterval from './interval';
 import patchWindowListener from './windowListener';

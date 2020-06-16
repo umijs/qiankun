@@ -20,10 +20,14 @@ declare global {
 }
 
 const rawHeadAppendChild = HTMLHeadElement.prototype.appendChild;
-const rawHeadInsertBefore = HTMLHeadElement.prototype.insertBefore;
 const rawHeadRemoveChild = HTMLHeadElement.prototype.removeChild;
+const rawBodyAppendChild = HTMLBodyElement.prototype.appendChild;
+const rawBodyRemoveChild = HTMLBodyElement.prototype.removeChild;
+const rawHeadInsertBefore = HTMLHeadElement.prototype.insertBefore;
+
 const rawAppendChild = HTMLElement.prototype.appendChild;
 const rawRemoveChild = HTMLElement.prototype.removeChild;
+const rawInsertBefore = HTMLElement.prototype.insertBefore;
 
 const SCRIPT_TAG_NAME = 'SCRIPT';
 const LINK_TAG_NAME = 'LINK';
@@ -47,12 +51,20 @@ function setCachedRules(element: HTMLStyleElement, cssRules: CSSRuleList) {
   Object.defineProperty(element, styledComponentSymbol, { value: cssRules, configurable: true, enumerable: false });
 }
 
-function getNewAppendChild(...args: any[]) {
-  return function appendChild<T extends Node>(this: HTMLHeadElement, newChild: T) {
+function getNewAppendChild(args: {
+  appName: string;
+  proxy: WindowProxy;
+  singular: boolean;
+  dynamicStyleSheetElements: HTMLStyleElement[];
+  appWrapperGetter: CallableFunction;
+  headOrBodyAppendChild: typeof HTMLElement.prototype.appendChild;
+}) {
+  return function appendChild<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, newChild: T) {
     const element = newChild as any;
+    const { headOrBodyAppendChild } = args;
     if (element.tagName) {
       // eslint-disable-next-line prefer-const
-      let [appName, appWrapperGetter, proxy, singular, dynamicStyleSheetElements] = args;
+      let { appWrapperGetter, proxy, singular, dynamicStyleSheetElements, appName } = args;
 
       const storedContainerInfo = element[attachProxySymbol];
       if (storedContainerInfo) {
@@ -94,12 +106,12 @@ function getNewAppendChild(...args: any[]) {
             return rawAppendChild.call(appWrapperGetter(), stylesheetElement) as T;
           }
 
-          return rawHeadAppendChild.call(this, element) as T;
+          return headOrBodyAppendChild.call(this, element) as T;
         }
 
         case SCRIPT_TAG_NAME: {
           if (!invokedByMicroApp) {
-            return rawAppendChild.call(this, element) as T;
+            return headOrBodyAppendChild.call(this, element) as T;
           }
 
           const { src, text } = element as HTMLScriptElement;
@@ -146,13 +158,17 @@ function getNewAppendChild(...args: any[]) {
       }
     }
 
-    return rawHeadAppendChild.call(this, element) as T;
+    return headOrBodyAppendChild.call(this, element) as T;
   };
 }
 
-function getNewRemoveChild(...args: any[]) {
-  return function removeChild<T extends Node>(this: HTMLHeadElement, child: T) {
-    let [appWrapperGetter] = args;
+function getNewRemoveChild(args: {
+  appWrapperGetter: CallableFunction;
+  headOrBodyRemoveChild: typeof HTMLElement.prototype.removeChild;
+}) {
+  return function removeChild<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, child: T) {
+    const { headOrBodyRemoveChild } = args;
+    let { appWrapperGetter } = args;
 
     const storedContainerInfo = (child as any)[attachProxySymbol];
     if (storedContainerInfo) {
@@ -170,16 +186,24 @@ function getNewRemoveChild(...args: any[]) {
       console.warn(e);
     }
 
-    return rawHeadRemoveChild.call(this, child) as T;
+    return headOrBodyRemoveChild.call(this, child) as T;
   };
 }
 
-function getNewInsertBefore(...args: any[]) {
+function getNewInsertBefore(args: {
+  appName: string;
+  proxy: WindowProxy;
+  singular: boolean;
+  dynamicStyleSheetElements: HTMLStyleElement[];
+  appWrapperGetter: CallableFunction;
+  headOrBodyInsertBefore: typeof HTMLElement.prototype.insertBefore;
+}) {
   return function insertBefore<T extends Node>(this: HTMLHeadElement, newChild: T, refChild: Node | null): T {
     const element = newChild as any;
+    const { headOrBodyInsertBefore } = args;
     if (element.tagName) {
       // eslint-disable-next-line prefer-const
-      let [appName, appWrapperGetter, proxy, singular, dynamicStyleSheetElements] = args;
+      let { appName, appWrapperGetter, proxy, singular, dynamicStyleSheetElements } = args;
 
       const storedContainerInfo = element[attachProxySymbol];
       if (storedContainerInfo) {
@@ -212,14 +236,14 @@ function getNewInsertBefore(...args: any[]) {
             dynamicStyleSheetElements.push(stylesheetElement);
             const wrapper = appWrapperGetter();
             const referenceNode = wrapper.contains(refChild) ? refChild : null;
-            return rawHeadInsertBefore.call(wrapper, stylesheetElement, referenceNode) as T;
+            return rawInsertBefore.call(wrapper, stylesheetElement, referenceNode) as T;
           }
 
-          return rawHeadInsertBefore.call(this, element, refChild) as T;
+          return headOrBodyInsertBefore.call(this, element, refChild) as T;
         }
         case SCRIPT_TAG_NAME: {
           if (!invokedByMicroApp) {
-            return rawHeadInsertBefore.call(this, element, refChild) as T;
+            return headOrBodyInsertBefore.call(this, element, refChild) as T;
           }
 
           const { src, text } = element as HTMLScriptElement;
@@ -254,7 +278,7 @@ function getNewInsertBefore(...args: any[]) {
             );
 
             const dynamicScriptCommentElement = document.createComment(`dynamic script ${src} replaced by qiankun`);
-            return rawHeadInsertBefore.call(appWrapperGetter(), dynamicScriptCommentElement, referenceNode) as T;
+            return rawInsertBefore.call(appWrapperGetter(), dynamicScriptCommentElement, referenceNode) as T;
           }
 
           execScripts(null, [`<script>${text}</script>`], proxy, { strictGlobal: !singular }).then(
@@ -262,14 +286,14 @@ function getNewInsertBefore(...args: any[]) {
             element.onerror,
           );
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
-          return rawHeadInsertBefore.call(appWrapperGetter(), dynamicInlineScriptCommentElement, referenceNode) as T;
+          return rawInsertBefore.call(appWrapperGetter(), dynamicInlineScriptCommentElement, referenceNode) as T;
         }
         default:
           break;
       }
     }
 
-    return rawHeadInsertBefore.call(this, element, refChild) as T;
+    return headOrBodyInsertBefore.call(this, element, refChild) as T;
   };
 }
 
@@ -327,31 +351,54 @@ export default function patch(
   }
 
   // Just overwrite it while it have not been overwrite
-  if (HTMLHeadElement.prototype.appendChild === rawHeadAppendChild) {
-    HTMLHeadElement.prototype.appendChild = getNewAppendChild(
+  if (
+    HTMLHeadElement.prototype.appendChild === rawHeadAppendChild &&
+    HTMLBodyElement.prototype.appendChild === rawBodyAppendChild
+  ) {
+    HTMLHeadElement.prototype.appendChild = getNewAppendChild({
+      headOrBodyAppendChild: rawHeadAppendChild,
       appName,
       appWrapperGetter,
       proxy,
       singular,
       dynamicStyleSheetElements,
-    );
+    });
+    HTMLBodyElement.prototype.appendChild = getNewAppendChild({
+      headOrBodyAppendChild: rawBodyAppendChild,
+      appName,
+      appWrapperGetter,
+      proxy,
+      singular,
+      dynamicStyleSheetElements,
+    });
   }
 
   // Just overwrite it while it have not been overwrite
-  if (HTMLHeadElement.prototype.removeChild === rawHeadRemoveChild) {
-    HTMLHeadElement.prototype.removeChild = getNewRemoveChild(appWrapperGetter);
+  if (
+    HTMLHeadElement.prototype.removeChild === rawHeadRemoveChild &&
+    HTMLBodyElement.prototype.removeChild === rawBodyRemoveChild
+  ) {
+    HTMLHeadElement.prototype.removeChild = getNewRemoveChild({
+      appWrapperGetter,
+      headOrBodyRemoveChild: rawHeadRemoveChild,
+    });
+    HTMLBodyElement.prototype.removeChild = getNewRemoveChild({
+      appWrapperGetter,
+      headOrBodyRemoveChild: rawBodyRemoveChild,
+    });
   }
 
   // `emotion` a css-in-js library insert a style tag use insertBefore, so we also rewrite it like appendChild
   // see https://github.com/umijs/qiankun/issues/420
   if (HTMLHeadElement.prototype.insertBefore === rawHeadInsertBefore) {
-    HTMLHeadElement.prototype.insertBefore = getNewInsertBefore(
+    HTMLHeadElement.prototype.insertBefore = getNewInsertBefore({
       appName,
       appWrapperGetter,
       proxy,
       singular,
       dynamicStyleSheetElements,
-    );
+      headOrBodyInsertBefore: rawHeadInsertBefore,
+    });
   }
 
   if (!mounting) bootstrappingPatchCount++;
@@ -365,8 +412,11 @@ export default function patch(
     // release the overwrite prototype after all the micro apps unmounted
     if (mountingPatchCount === 0 && bootstrappingPatchCount === 0) {
       HTMLHeadElement.prototype.appendChild = rawHeadAppendChild;
-      HTMLHeadElement.prototype.insertBefore = rawHeadInsertBefore;
       HTMLHeadElement.prototype.removeChild = rawHeadRemoveChild;
+      HTMLBodyElement.prototype.appendChild = rawBodyAppendChild;
+      HTMLBodyElement.prototype.removeChild = rawBodyRemoveChild;
+
+      HTMLHeadElement.prototype.insertBefore = rawHeadInsertBefore;
     }
 
     dynamicStyleSheetElements.forEach(stylesheetElement => {
