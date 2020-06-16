@@ -37,7 +37,7 @@ export function getMicroAppStateActions(id: string, isMaster?: boolean): MicroAp
      *
      * 收集 setState 时所需要触发的依赖
      *
-     * 限制条件：每个子应用只有一个激活状态的全局监听，新监听覆盖旧监听，若只是监听部分属性，请使用 onStateChange
+     * 限制条件：每个子应用只有一个激活状态的全局监听，新监听覆盖旧监听，若只是监听部分属性，请使用 onGlobalStateChange
      *
      * 这么设计是为了减少全局监听滥用导致的内存爆炸
      *
