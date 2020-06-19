@@ -357,7 +357,7 @@ A criterion for judging whether the business is closely related: <strong>Look at
   removeGlobalUncaughtErrorHandler(handler);
   ```
 
-## `initGloabalState(state)`
+## `initGlobalState(state)`
 
 - Parameters
 
@@ -381,10 +381,10 @@ A criterion for judging whether the business is closely related: <strong>Look at
 
   Master:
   ```ts
-  import { initGloabalState, MicroAppStateActions } from 'qiankun';
+  import { initGlobalState, MicroAppStateActions } from 'qiankun';
 
   // Initialize state
-  const actions: MicroAppStateActions = initGloabalState(state);
+  const actions: MicroAppStateActions = initGlobalState(state);
 
   actions.onGlobalStateChange((state, prev) => {
     // state: new state; prev old state

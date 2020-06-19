@@ -28,7 +28,7 @@ test('test master to master actions', () => {
   master.offGlobalStateChange();
 });
 
-// gloabal: { ignore: 'matser', user: 'master' }
+// global: { ignore: 'matser', user: 'master' }
 
 const slaveA = getMicroAppStateActions('slaveA');
 
@@ -53,7 +53,7 @@ test('test master to slave actions', () => {
   slaveA.offGlobalStateChange();
 });
 
-// gloabal: { ignore: 'matser', user: 'master2' }
+// global: { ignore: 'matser', user: 'master2' }
 
 test('test slave to master actions', () => {
   const callback1 = (state: Record<string, any>, prevState: Record<string, any>) => {
@@ -77,7 +77,7 @@ test('test slave to master actions', () => {
   master.offGlobalStateChange();
 });
 
-// gloabal: { ignore: 'slaveA', user: 'slaveA' }
+// global: { ignore: 'slaveA', user: 'slaveA' }
 
 const slaveB = getMicroAppStateActions('slaveB');
 test('test slave to slave actions', () => {
