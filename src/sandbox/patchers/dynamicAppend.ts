@@ -78,35 +78,29 @@ function getNewAppendChild(args: {
         proxy = storedContainerInfo.proxy;
       }
 
-      // have storedContainerInfo means it invoked by a micro app
-      const invokedByMicroApp = storedContainerInfo && !singular;
+      const invokedByMicroApp = singular
+        ? // check if the currently specified application is active
+          // While we switch page from qiankun app to a normal react routing page, the normal one may load stylesheet dynamically while page rendering,
+          // but the url change listener must to wait until the current call stack is flushed.
+          // This scenario may cause we record the stylesheet from react routing page dynamic injection,
+          // and remove them after the url change triggered and qiankun app is unmouting
+          // see https://github.com/ReactTraining/history/blob/master/modules/createHashHistory.js#L222-L230
+          checkActivityFunctions(window.location).some(name => name === appName)
+        : // have storedContainerInfo means it invoked by a micro app in multiply mode
+          !!storedContainerInfo;
 
       switch (element.tagName) {
         case LINK_TAG_NAME:
         case STYLE_TAG_NAME: {
           const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
 
-          if (invokedByMicroApp) {
-            // eslint-disable-next-line no-shadow
-            dynamicStyleSheetElements.push(stylesheetElement);
-            return rawAppendChild.call(appWrapperGetter(), stylesheetElement) as T;
+          if (!invokedByMicroApp) {
+            return headOrBodyAppendChild.call(this, element) as T;
           }
 
-          // check if the currently specified application is active
-          // While we switch page from qiankun app to a normal react routing page, the normal one may load stylesheet dynamically while page rendering,
-          // but the url change listener must to wait until the current call stack is flushed.
-          // This scenario may cause we record the stylesheet from react routing page dynamic injection,
-          // and remove them after the url change triggered and qiankun app is unmouting
-          // see https://github.com/ReactTraining/history/blob/master/modules/createHashHistory.js#L222-L230
-          const activated = checkActivityFunctions(window.location).some(name => name === appName);
-          // only hijack dynamic style injection when app activated
-          if (activated) {
-            dynamicStyleSheetElements.push(stylesheetElement);
-
-            return rawAppendChild.call(appWrapperGetter(), stylesheetElement) as T;
-          }
-
-          return headOrBodyAppendChild.call(this, element) as T;
+          // eslint-disable-next-line no-shadow
+          dynamicStyleSheetElements.push(stylesheetElement);
+          return rawAppendChild.call(appWrapperGetter(), stylesheetElement) as T;
         }
 
         case SCRIPT_TAG_NAME: {
@@ -215,32 +209,25 @@ function getNewInsertBefore(args: {
         dynamicStyleSheetElements = storedContainerInfo.dynamicStyleSheetElements;
       }
 
-      // have storedContainerInfo means it invoked by a micro app
-      const invokedByMicroApp = storedContainerInfo && !singular;
+      const invokedByMicroApp = singular
+        ? checkActivityFunctions(window.location).some(name => name === appName)
+        : !!storedContainerInfo;
 
       switch (element.tagName) {
         case LINK_TAG_NAME:
         case STYLE_TAG_NAME: {
           const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
 
-          // have storedContainerInfo means it invoked by a micro app
-          if (invokedByMicroApp) {
-            // eslint-disable-next-line no-shadow
-            dynamicStyleSheetElements.push(stylesheetElement);
-            return rawAppendChild.call(appWrapperGetter(), stylesheetElement) as T;
+          if (!invokedByMicroApp) {
+            return headOrBodyInsertBefore.call(this, element, refChild) as T;
           }
 
-          const activated = checkActivityFunctions(window.location).some(name => name === appName);
-
-          if (activated) {
-            dynamicStyleSheetElements.push(stylesheetElement);
-            const wrapper = appWrapperGetter();
-            const referenceNode = wrapper.contains(refChild) ? refChild : null;
-            return rawInsertBefore.call(wrapper, stylesheetElement, referenceNode) as T;
-          }
-
-          return headOrBodyInsertBefore.call(this, element, refChild) as T;
+          dynamicStyleSheetElements.push(stylesheetElement);
+          const wrapper = appWrapperGetter();
+          const referenceNode = wrapper.contains(refChild) ? refChild : null;
+          return rawInsertBefore.call(wrapper, stylesheetElement, referenceNode) as T;
         }
+
         case SCRIPT_TAG_NAME: {
           if (!invokedByMicroApp) {
             return headOrBodyInsertBefore.call(this, element, refChild) as T;
