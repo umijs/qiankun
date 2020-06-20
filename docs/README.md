@@ -46,4 +46,4 @@ See details：[Getting Started](/guide/getting-started)
 
 | Github Issue | 钉钉群 |
 | --- | --- |
-| [umijs/qiankun/issues](https://github.com/umijs/qiankun/issues) | <img src="https://gw.alipayobjects.com/mdn/rms_655822/afts/img/A*HMVERqOue-AAAAAAAAAAAABkARQnAQ" width="150" /> |
+| [umijs/qiankun/issues](https://github.com/umijs/qiankun/issues) | <img src="https://cdn.nlark.com/yuque/0/2020/png/200577/1592655335414-8fc60492-46c7-4693-b4ba-a35d52437b2d.png" width="150" /> |
