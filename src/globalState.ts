@@ -6,12 +6,12 @@
 import { cloneDeep } from 'lodash';
 import { OnGlobalStateChangeCallback, MicroAppStateActions } from './interfaces';
 
-let gloabalState: Record<string, any> = {};
+let globalState: Record<string, any> = {};
 
 const deps: Record<string, OnGlobalStateChangeCallback> = {};
 
 // 触发全局监听
-function emitGloabl(state: Record<string, any>, prevState: Record<string, any>) {
+function emitGlobal(state: Record<string, any>, prevState: Record<string, any>) {
   Object.keys(deps).forEach((id: string) => {
     if (deps[id] instanceof Function) {
       deps[id](cloneDeep(state), cloneDeep(prevState));
@@ -20,14 +20,14 @@ function emitGloabl(state: Record<string, any>, prevState: Record<string, any>) 
 }
 
 export function initGlobalState(state: Record<string, any> = {}) {
-  if (state === gloabalState) {
+  if (state === globalState) {
     console.warn('[qiankun] state has not changed！');
   } else {
-    const prevGloabalState = cloneDeep(gloabalState);
-    gloabalState = cloneDeep(state);
-    emitGloabl(gloabalState, prevGloabalState);
+    const prevGlobalState = cloneDeep(globalState);
+    globalState = cloneDeep(state);
+    emitGlobal(globalState, prevGlobalState);
   }
-  return getMicroAppStateActions(`gloabal-${+new Date()}`, true);
+  return getMicroAppStateActions(`global-${+new Date()}`, true);
 }
 
 export function getMicroAppStateActions(id: string, isMaster?: boolean): MicroAppStateActions {
@@ -55,10 +55,10 @@ export function getMicroAppStateActions(id: string, isMaster?: boolean): MicroAp
         return;
       }
       if (deps[id]) {
-        console.warn(`[qiankun] '${id}' gloabal listener already exists before this, new listener will overwrite it.`);
+        console.warn(`[qiankun] '${id}' global listener already exists before this, new listener will overwrite it.`);
       }
       deps[id] = callback;
-      const cloneState = cloneDeep(gloabalState);
+      const cloneState = cloneDeep(globalState);
       if (fireImmediately) {
         callback(cloneState, cloneState);
       }
@@ -73,28 +73,28 @@ export function getMicroAppStateActions(id: string, isMaster?: boolean): MicroAp
      * @param state
      */
     setGlobalState(state: Record<string, any> = {}) {
-      if (state === gloabalState) {
+      if (state === globalState) {
         console.warn('[qiankun] state has not changed！');
         return false;
       }
 
       const changeKeys: string[] = [];
-      const prevGloabalState = cloneDeep(gloabalState);
-      gloabalState = cloneDeep(
-        Object.keys(state).reduce((_gloabalState, changeKey) => {
-          if (isMaster || changeKey in _gloabalState) {
+      const prevGlobalState = cloneDeep(globalState);
+      globalState = cloneDeep(
+        Object.keys(state).reduce((_globalState, changeKey) => {
+          if (isMaster || changeKey in _globalState) {
             changeKeys.push(changeKey);
-            return Object.assign(_gloabalState, { [changeKey]: state[changeKey] });
+            return Object.assign(_globalState, { [changeKey]: state[changeKey] });
           }
           console.warn(`[qiankun] '${changeKey}' not declared when init state！`);
-          return _gloabalState;
-        }, gloabalState),
+          return _globalState;
+        }, globalState),
       );
       if (changeKeys.length === 0) {
         console.warn('[qiankun] state has not changed！');
         return false;
       }
-      emitGloabl(gloabalState, prevGloabalState);
+      emitGlobal(globalState, prevGlobalState);
       return true;
     },
 
