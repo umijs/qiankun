@@ -83,6 +83,9 @@
     "ts-jest": "^25.2.1",
     "typescript": "^3.4.5"
   },
+  "resolutions": {
+    "eslint": "~7.2.0"
+  },
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged",
