@@ -67,4 +67,4 @@ Check this artical [Why Not Iframe](https://www.yuque.com/kuitos/gky7yw/gesexv)
 - 🛡 **Style Isolation**, make sure styles don't interfere with each other.
 - 🧳 **JS Sandbox**, ensure that global variables/events do not conflict between sub-applications.
 - ⚡ **Prefetch Assets**, prefetch unopened sub-application assets during the browser idle time to speed up the sub-application opening speed.
-- 🔌 **Umi Plugin**, [@umijs/plugin-qiankun](https://github.com/umijs/umi-plugin-qiankun) is provided for umi applications to switch to a micro frontends architecture system with one line code.
+- 🔌 **Umi Plugin**, [@umijs/plugin-qiankun](https://github.com/umijs/plugins/tree/master/packages/plugin-qiankun) is provided for umi applications to switch to a micro frontends architecture system with one line code.
