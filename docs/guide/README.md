@@ -57,7 +57,7 @@ TODO
 
 ## Why Not Iframe
 
-Check this artical [Why Not Iframe](https://www.yuque.com/kuitos/gky7yw/gesexv)
+Check this article [Why Not Iframe](https://www.yuque.com/kuitos/gky7yw/gesexv)
 
 ## Features
 
