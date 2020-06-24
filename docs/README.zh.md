@@ -25,19 +25,17 @@ $ yarn add qiankun  # or npm i qiankun -S
 ## 🔨 使用
 
 ```tsx
-import { registerMicroApps, start } from 'qiankun';
+import { loadMicroApp } from 'qiankun';
 
-// 注册微应用
-registerMicroApps([
-  {
-    name: 'reactApp',
-    entry: '//localhost:7100',
-    container: '#container',
-    activeRule: '/react',
+// 加载微应用
+loadMicroApp({
+  name: 'reactApp',
+  entry: '//localhost:7100',
+  container: '#container',
+  props: {
+    slogan: 'Hello Qiankun'
   },
-]);
-
-start();
+});
 ```
 
 参考：[快速上手](/zh/guide/getting-started)。
@@ -46,4 +44,4 @@ start();
 
 | Github Issue | 钉钉群 |
 | --- | --- |
-| [umijs/qiankun/issues](https://github.com/umijs/qiankun/issues) | <img src="https://cdn.nlark.com/yuque/0/2020/png/200577/1592655335414-8fc60492-46c7-4693-b4ba-a35d52437b2d.png" width="150" /> |
+| [umijs/qiankun/issues](https://github.com/umijs/qiankun/issues) | <img src="https://gw.alipayobjects.com/mdn/rms_655822/afts/img/A*AdpES5z40LcAAAAAAAAAAABkARQnAQ" width="150" /> |
