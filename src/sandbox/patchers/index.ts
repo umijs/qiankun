@@ -10,19 +10,20 @@ import patchInterval from './interval';
 import patchWindowListener from './windowListener';
 import patchUIEvent from './UIEvent';
 
-export { QiankunCSSRewriteAttr } from './css';
+import * as css from './css';
 
 export function patchAtMounting(
   appName: string,
   elementGetter: () => HTMLElement | ShadowRoot,
   sandbox: SandBox,
   singular: boolean,
+  scopedCSS: boolean,
 ): Freer[] {
   const basePatchers = [
     () => patchInterval(),
     () => patchWindowListener(),
     () => patchHistoryListener(),
-    () => patchDynamicAppend(appName, elementGetter, sandbox.proxy, true, singular),
+    () => patchDynamicAppend(appName, elementGetter, sandbox.proxy, true, singular, scopedCSS),
   ];
 
   const patchersInSandbox = {
@@ -39,8 +40,9 @@ export function patchAtBootstrapping(
   elementGetter: () => HTMLElement | ShadowRoot,
   sandbox: SandBox,
   singular: boolean,
+  scopedCSS: boolean,
 ): Freer[] {
-  const basePatchers = [() => patchDynamicAppend(appName, elementGetter, sandbox.proxy, false, singular)];
+  const basePatchers = [() => patchDynamicAppend(appName, elementGetter, sandbox.proxy, false, singular, scopedCSS)];
 
   const patchersInSandbox = {
     [SandBoxType.LegacyProxy]: basePatchers,
@@ -50,3 +52,5 @@ export function patchAtBootstrapping(
 
   return patchersInSandbox[sandbox.type]?.map(patch => patch());
 }
+
+export { css };

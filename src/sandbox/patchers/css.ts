@@ -109,7 +109,7 @@ class ScopedCSS {
 
   // eslint-disable-next-line class-methods-use-this
   private ruleStyle(rule: CSSStyleRule, prefix: string) {
-    const rootSelectorRE = /((html)|(body))/g;
+    const rootSelectorRE = /((html)|(body)|(:root))/g;
 
     if (rootSelectorRE.test(rule.selectorText)) {
       return rule.cssText.replace(rootSelectorRE, prefix);
@@ -136,16 +136,12 @@ class ScopedCSS {
 const processor = new ScopedCSS();
 
 export const QiankunCSSRewriteAttr = 'data-qiankun';
-const process = (
-  appWrapper: () => HTMLElement,
-  stylesheetElement: HTMLStyleElement | HTMLLinkElement,
-  appName: string,
-) => {
+const process = (appWrapper: HTMLElement, stylesheetElement: HTMLStyleElement | HTMLLinkElement, appName: string) => {
   if (stylesheetElement.tagName === 'LINK') {
     console.warn('Feature: sandbox.experimentalStyleIsolation is not support for link element yet.');
   }
 
-  const mountDOM = appWrapper();
+  const mountDOM = appWrapper;
   if (!mountDOM) {
     return;
   }

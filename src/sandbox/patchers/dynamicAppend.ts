@@ -8,7 +8,6 @@ import { checkActivityFunctions } from 'single-spa';
 import { frameworkConfiguration } from '../../apis';
 import { Freer } from '../../interfaces';
 import { getTargetValue, setProxyPropertyGetter } from '../common';
-import { isEnableScopedCSS } from '../../utils';
 import * as css from './css';
 
 const styledComponentSymbol = 'Symbol(styled-component-qiankun)';
@@ -60,13 +59,14 @@ function getNewAppendChild(args: {
   dynamicStyleSheetElements: HTMLStyleElement[];
   appWrapperGetter: CallableFunction;
   headOrBodyAppendChild: typeof HTMLElement.prototype.appendChild;
+  scopedCSS: boolean;
 }) {
   return function appendChild<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, newChild: T) {
     const element = newChild as any;
     const { headOrBodyAppendChild } = args;
     if (element.tagName) {
       // eslint-disable-next-line prefer-const
-      let { appWrapperGetter, proxy, singular, dynamicStyleSheetElements, appName } = args;
+      let { appWrapperGetter, proxy, singular, dynamicStyleSheetElements, appName, scopedCSS } = args;
 
       const storedContainerInfo = element[attachProxySymbol];
       if (storedContainerInfo) {
@@ -100,13 +100,15 @@ function getNewAppendChild(args: {
             return headOrBodyAppendChild.call(this, element) as T;
           }
 
-          if (isEnableScopedCSS(frameworkConfiguration)) {
-            css.process(appWrapperGetter as () => HTMLElement, stylesheetElement, appName);
+          const mountDOM = appWrapperGetter();
+
+          if (scopedCSS) {
+            css.process(mountDOM, stylesheetElement, appName);
           }
 
           // eslint-disable-next-line no-shadow
           dynamicStyleSheetElements.push(stylesheetElement);
-          return rawAppendChild.call(appWrapperGetter(), stylesheetElement) as T;
+          return rawAppendChild.call(mountDOM, stylesheetElement) as T;
         }
 
         case SCRIPT_TAG_NAME: {
@@ -117,6 +119,7 @@ function getNewAppendChild(args: {
           const { src, text } = element as HTMLScriptElement;
 
           const { fetch } = frameworkConfiguration;
+          const mountDOM = appWrapperGetter();
           if (src) {
             execScripts(null, [src], proxy, { fetch, strictGlobal: !singular }).then(
               () => {
@@ -142,7 +145,7 @@ function getNewAppendChild(args: {
             );
 
             const dynamicScriptCommentElement = document.createComment(`dynamic script ${src} replaced by qiankun`);
-            return rawAppendChild.call(appWrapperGetter(), dynamicScriptCommentElement) as T;
+            return rawAppendChild.call(mountDOM, dynamicScriptCommentElement) as T;
           }
 
           execScripts(null, [`<script>${text}</script>`], proxy, { strictGlobal: !singular }).then(
@@ -150,7 +153,7 @@ function getNewAppendChild(args: {
             element.onerror,
           );
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
-          return rawAppendChild.call(appWrapperGetter(), dynamicInlineScriptCommentElement) as T;
+          return rawAppendChild.call(mountDOM, dynamicInlineScriptCommentElement) as T;
         }
 
         default:
@@ -197,13 +200,14 @@ function getNewInsertBefore(args: {
   dynamicStyleSheetElements: HTMLStyleElement[];
   appWrapperGetter: CallableFunction;
   headOrBodyInsertBefore: typeof HTMLElement.prototype.insertBefore;
+  scopedCSS: boolean;
 }) {
   return function insertBefore<T extends Node>(this: HTMLHeadElement, newChild: T, refChild: Node | null): T {
     const element = newChild as any;
     const { headOrBodyInsertBefore } = args;
     if (element.tagName) {
       // eslint-disable-next-line prefer-const
-      let { appName, appWrapperGetter, proxy, singular, dynamicStyleSheetElements } = args;
+      let { appName, appWrapperGetter, proxy, singular, dynamicStyleSheetElements, scopedCSS } = args;
 
       const storedContainerInfo = element[attachProxySymbol];
       if (storedContainerInfo) {
@@ -228,14 +232,15 @@ function getNewInsertBefore(args: {
             return headOrBodyInsertBefore.call(this, element, refChild) as T;
           }
 
-          if (isEnableScopedCSS(frameworkConfiguration)) {
-            css.process(appWrapperGetter as () => HTMLElement, stylesheetElement, appName);
+          const mountDOM = appWrapperGetter();
+
+          if (scopedCSS) {
+            css.process(mountDOM, stylesheetElement, appName);
           }
 
           dynamicStyleSheetElements.push(stylesheetElement);
-          const wrapper = appWrapperGetter();
-          const referenceNode = wrapper.contains(refChild) ? refChild : null;
-          return rawInsertBefore.call(wrapper, stylesheetElement, referenceNode) as T;
+          const referenceNode = mountDOM.contains(refChild) ? refChild : null;
+          return rawInsertBefore.call(mountDOM, stylesheetElement, referenceNode) as T;
         }
 
         case SCRIPT_TAG_NAME: {
@@ -247,8 +252,8 @@ function getNewInsertBefore(args: {
 
           const { fetch } = frameworkConfiguration;
 
-          const wrapper = appWrapperGetter();
-          const referenceNode = wrapper.contains(refChild) ? refChild : null;
+          const mountDOM = appWrapperGetter();
+          const referenceNode = mountDOM.contains(refChild) ? refChild : null;
 
           if (src) {
             execScripts(null, [src], proxy, { fetch, strictGlobal: !singular }).then(
@@ -275,7 +280,7 @@ function getNewInsertBefore(args: {
             );
 
             const dynamicScriptCommentElement = document.createComment(`dynamic script ${src} replaced by qiankun`);
-            return rawInsertBefore.call(appWrapperGetter(), dynamicScriptCommentElement, referenceNode) as T;
+            return rawInsertBefore.call(mountDOM, dynamicScriptCommentElement, referenceNode) as T;
           }
 
           execScripts(null, [`<script>${text}</script>`], proxy, { strictGlobal: !singular }).then(
@@ -283,7 +288,7 @@ function getNewInsertBefore(args: {
             element.onerror,
           );
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
-          return rawInsertBefore.call(appWrapperGetter(), dynamicInlineScriptCommentElement, referenceNode) as T;
+          return rawInsertBefore.call(mountDOM, dynamicInlineScriptCommentElement, referenceNode) as T;
         }
         default:
           break;
@@ -313,6 +318,7 @@ export default function patch(
   proxy: Window,
   mounting = true,
   singular = true,
+  scopedCSS = false,
 ): Freer {
   let dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
 
@@ -359,6 +365,7 @@ export default function patch(
       proxy,
       singular,
       dynamicStyleSheetElements,
+      scopedCSS,
     });
     HTMLBodyElement.prototype.appendChild = getNewAppendChild({
       headOrBodyAppendChild: rawBodyAppendChild,
@@ -367,6 +374,7 @@ export default function patch(
       proxy,
       singular,
       dynamicStyleSheetElements,
+      scopedCSS,
     });
   }
 
@@ -395,6 +403,7 @@ export default function patch(
       singular,
       dynamicStyleSheetElements,
       headOrBodyInsertBefore: rawHeadInsertBefore,
+      scopedCSS,
     });
   }
 
