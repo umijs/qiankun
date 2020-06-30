@@ -82,7 +82,7 @@ export function getMicroAppStateActions(id: string, isMaster?: boolean): MicroAp
       const prevGlobalState = cloneDeep(globalState);
       globalState = cloneDeep(
         Object.keys(state).reduce((_globalState, changeKey) => {
-          if (isMaster || changeKey in _globalState) {
+          if (isMaster || _globalState.hasOwnProperty(changeKey)) {
             changeKeys.push(changeKey);
             return Object.assign(_globalState, { [changeKey]: state[changeKey] });
           }
