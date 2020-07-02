@@ -67,7 +67,7 @@ export default class SingularProxySandbox implements SandBox {
 
   constructor(name: string) {
     this.name = name;
-    this.type = SandBoxType.SingularProxy;
+    this.type = SandBoxType.LegacyProxy;
     const {
       sandboxRunning,
       addedPropsMapInSandbox,

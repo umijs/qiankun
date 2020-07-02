@@ -126,7 +126,7 @@ export default class ProxySandbox implements SandBox {
 
   constructor(name: string) {
     this.name = name;
-    this.type = SandBoxType.Snapshot;
+    this.type = SandBoxType.Proxy;
     const { sandboxRunning, updatedValueSet } = this;
 
     const rawWindow = window;

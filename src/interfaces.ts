@@ -90,13 +90,13 @@ export enum SandBoxType {
 
   // for legacy sandbox
   // https://github.com/umijs/qiankun/blob/0d1d3f0c5ed1642f01854f96c3fabf0a2148bd26/src/sandbox/legacy/sandbox.ts#L22...L25
-  SingularProxy = 'SingularProxy',
+  LegacyProxy = 'LegacyProxy',
 }
 
 export interface SandBox {
   /** 沙箱的名字 */
   name: string;
-  /** 沙箱类型  */
+  /** 沙箱的类型 */
   type: SandBoxType;
   /** 沙箱导出的代理实体 */
   proxy: WindowProxy;

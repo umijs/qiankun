@@ -32,7 +32,7 @@ export default class SnapshotSandbox implements SandBox {
   constructor(name: string) {
     this.name = name;
     this.proxy = window;
-    this.type = SandBoxType.Proxy;
+    this.type = SandBoxType.Snapshot;
     this.active();
   }
 
