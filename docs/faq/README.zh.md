@@ -86,7 +86,6 @@ qiankun 主应用根据 `activeRule` 配置激活对应微应用。
 
 当主应用是 history 模式，微应用是 hash 模式，表现完美。
 
-
 ## 为什么微应用加载的资源会 404？
 
 原因是 webpack 加载资源时未使用正确的 `publicPath`。
