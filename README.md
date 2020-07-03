@@ -80,6 +80,8 @@ https://qiankun.umijs.org/faq/
 
 https://qiankun.umijs.org/#community
 
+## 🧑‍💻 Contributors
+
 ## 🎁 Acknowledgements
 
 - [single-spa](https://github.com/CanopyTax/single-spa) What an awesome meta-framework for micro-frontends!
