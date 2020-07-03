@@ -305,9 +305,10 @@ export default function patch(
   singular = true,
 ): Freer {
   let dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
+  let deleteProxyPropertyGetter: Function | null = null;
 
   if (!singular) {
-    setProxyPropertyGetter(proxy, 'document', () => {
+    deleteProxyPropertyGetter = setProxyPropertyGetter(proxy, 'document', () => {
       return new Proxy(document, {
         get(target: Document, property: PropertyKey): any {
           if (property === 'createElement') {
@@ -422,6 +423,11 @@ export default function patch(
       // As now the sub app content all wrapped with a special id container,
       // the dynamic style sheet would be removed automatically while unmoutting
     });
+
+    if (deleteProxyPropertyGetter) {
+      deleteProxyPropertyGetter();
+      deleteProxyPropertyGetter = null;
+    }
 
     return function rebuild() {
       dynamicStyleSheetElements.forEach(stylesheetElement => {

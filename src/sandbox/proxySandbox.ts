@@ -5,7 +5,7 @@
  */
 import { SandBox } from '../interfaces';
 import { uniq } from '../utils';
-import { getProxyPropertyGetter, getProxyPropertyValue, getTargetValue, deleteProxyPropertyGetter } from './common';
+import { getProxyPropertyGetter, getProxyPropertyValue, getTargetValue } from './common';
 import { clearSystemJsProps, interceptSystemJsProps } from './noise/systemjs';
 
 // zone.js will overwrite Object.defineProperty
@@ -116,9 +116,6 @@ export default class ProxySandbox implements SandBox {
         ...this.updatedValueSet.keys(),
       ]);
     }
-
-    this.updatedValueSet.clear();
-    deleteProxyPropertyGetter(this.proxy);
 
     clearSystemJsProps(this.proxy, --activeSandboxCount === 0);
 
