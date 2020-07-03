@@ -3,7 +3,7 @@
  * @since 2019-10-21
  */
 import { execScripts } from 'import-html-entry';
-import { isFunction } from 'lodash';
+import { isFunction, noop } from 'lodash';
 import { checkActivityFunctions } from 'single-spa';
 import { frameworkConfiguration } from '../../apis';
 import { Freer } from '../../interfaces';
@@ -305,7 +305,7 @@ export default function patch(
   singular = true,
 ): Freer {
   let dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
-  let deleteProxyPropertyGetter: Function | null = null;
+  let deleteProxyPropertyGetter: Function = noop;
 
   if (!singular) {
     deleteProxyPropertyGetter = setProxyPropertyGetter(proxy, 'document', () => {
@@ -424,10 +424,8 @@ export default function patch(
       // the dynamic style sheet would be removed automatically while unmoutting
     });
 
-    if (deleteProxyPropertyGetter) {
-      deleteProxyPropertyGetter();
-      deleteProxyPropertyGetter = null;
-    }
+    deleteProxyPropertyGetter();
+    deleteProxyPropertyGetter = noop;
 
     return function rebuild() {
       dynamicStyleSheetElements.forEach(stylesheetElement => {
