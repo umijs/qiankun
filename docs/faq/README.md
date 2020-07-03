@@ -162,6 +162,10 @@ However, the IE environment (browsers that do not support Proxy) can only use th
 
 You can find the singular usage [here](/api#startopts).
 
+## Error `Here is no "fetch" on the window env, you need to polyfill it`
+
+Qiankun use `window.fetch` to get resources of the micro applications, but [some browsers does not support it](https://caniuse.com/#search=fetch), you should get the [polyfill](https://github.com/github/fetch) in the entry.
+
 ## Does qiankun support the subApp without bundler?
 
 > Yes
