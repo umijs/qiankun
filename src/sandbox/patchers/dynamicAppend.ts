@@ -425,7 +425,6 @@ export default function patch(
     });
 
     deleteProxyPropertyGetter();
-    deleteProxyPropertyGetter = noop;
 
     return function rebuild() {
       dynamicStyleSheetElements.forEach(stylesheetElement => {
