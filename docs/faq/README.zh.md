@@ -99,7 +99,7 @@ runtime publicPath 主要解决的是微应用动态载入的 脚本、样式、
 ```js
 {
   output: {
-    publicPath: `//localhost:${port}`;
+    publicPath: `//localhost:${port}`,
   }
 }
 ```
