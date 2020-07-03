@@ -59,6 +59,7 @@ type QiankunSpecialOpts = {
     | boolean
     | {
         strictStyleIsolation?: boolean;
+        experimentalStyleIsolation?: boolean;
         patchers?: Patcher[];
       };
   /*

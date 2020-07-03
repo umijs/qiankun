@@ -4,6 +4,7 @@
  */
 
 import { isFunction, snakeCase } from 'lodash';
+import { FrameworkConfiguration } from './interfaces';
 
 export function toArray<T>(array: T | T[]): T[] {
   return Array.isArray(array) ? array : [array];
@@ -104,4 +105,16 @@ export function performanceMeasure(measureName: string, markName: string) {
     performance.clearMarks(markName);
     performance.clearMeasures(measureName);
   }
+}
+
+export function isEnableScopedCSS(opt: FrameworkConfiguration) {
+  if (typeof opt.sandbox !== 'object') {
+    return false;
+  }
+
+  if (opt.sandbox.strictStyleIsolation) {
+    return false;
+  }
+
+  return !!opt.sandbox.experimentalStyleIsolation;
 }
