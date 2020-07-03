@@ -133,16 +133,35 @@ By linking the micro-application to some url rules, the function of automaticall
 
       If configured as `function`, the timing of all subapplication static resources will be controlled by yourself.
 
-    - sandbox - `boolean` | `{ strictStyleIsolation?: boolean }` - optional, whether to open the js sandbox, default is `true`.
-      
+    - sandbox - `boolean` | `{ strictStyleIsolation?: boolean, experimentalStyleIsolation?: boolean }` - optional, whether to open the js sandbox, default is `true`.
+
       When configured as `{strictStyleIsolation: true}`, qiankun will convert the container dom of each application to a [shadow dom](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_shadow_DOM), to ensure that the style of the application will not leak to the global.
+
+      And qiankun offered an experimental way to support css isolation, when experimentalStyleIsolation is set to true, qiankun will limit their scope of influence by add selector constraint, thereforce styles of sub-app will like following case:
+
+      ```
+      // if app name is react16
+      .app-main {
+        font-size: 14px;
+      }
+
+      div[data-qiankun-react16] .app-main {
+        font-size: 14px;
+      }
+      ```
+
+      notice:
+      @keyframes, @font-face, @import, @page are not supported (i.e. will not be rewritten)
+
+      and in current stage, we're not support the case: add external styles by `<link>` yet, we're consider add this part in the future.
+
 
     - singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - optional，whether is a singular mode，default is `true`.
 
     - fetch - `Function` - optional
-    
+
     - getPublicPath - `(url: string) => string` - optional
-    
+
     - getTemplate - `(tpl: string) => string` - optional
 
 - Usage
@@ -247,7 +266,7 @@ A criterion for judging whether the business is closely related: <strong>Look at
   * bootstrapPromise: Promise&lt;null&gt;;
   * mountPromise: Promise&lt;null&gt;;
   * unmountPromise: Promise&lt;null&gt;;
-  
+
 * Usage
 
   Load a micro application manually.
@@ -258,7 +277,7 @@ A criterion for judging whether the business is closely related: <strong>Look at
   export function mount(props) {
     renderApp(props);
   }
-  
+
   // Added update hook to allow the main application to manually update the micro application
   export function update(props) {
     renderPatch(props);
@@ -270,26 +289,26 @@ A criterion for judging whether the business is closely related: <strong>Look at
   ```jsx
   import { loadMicroApp } from 'qiankun';
   import React from 'react';
-  
+
   class App extends React.Component {
-    
+
     containerRef = React.createRef();
     microApp = null;
-    
+
     componentDidMount() {
       this.microApp = loadMicroApp(
         { name: 'app1', entry: '//localhost:1234', container: this.containerRef.current, props: { name: 'qiankun' } },
       );
     }
-  
+
     componentWillUnmount() {
       this.microApp.unmount();
     }
-  
+
     componentDidUpdate() {
       this.microApp.update({ name: 'kuitos' });
     }
-    
+
     render() {
       return <div ref={this.containerRef}></div>;
     }
@@ -301,21 +320,21 @@ A criterion for judging whether the business is closely related: <strong>Look at
 - Parameters
   - apps - `AppMetadata[]` - Required - list of preloaded apps
   - importEntryOpts - Optional - Load configuration
-  
+
 - Type
   - `AppMetadata`
     - name - `string` - Required - Application name
     - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - Required,The entry address of the microapp
 
 - Usage
-  
+
   Manually preload the specified micro application static resources. Only needed to manually load micro-application scenarios, you can directly configure the `prefetch` attribute based on the route automatic activation scenario.
-  
+
 - Sample
 
   ```ts
   import { prefetchApps } from 'qiankun';
-  
+
   prefetchApps([ { name: 'app1', entry: '//locahost:7001' }, { name: 'app2', entry: '//locahost:7002' } ])
   ```
 
@@ -335,7 +354,7 @@ A criterion for judging whether the business is closely related: <strong>Look at
 
   ```ts
   import { addGlobalUncaughtErrorHandler } from 'qiankun';
-  
+
   addGlobalUncaughtErrorHandler(event => console.log(event));
   ```
 
@@ -353,7 +372,7 @@ A criterion for judging whether the business is closely related: <strong>Look at
 
   ```ts
   import { removeGlobalUncaughtErrorHandler } from 'qiankun';
-  
+
   removeGlobalUncaughtErrorHandler(handler);
   ```
 
@@ -407,7 +426,7 @@ A criterion for judging whether the business is closely related: <strong>Look at
 
     // It will trigger when slave umount,  not necessary to use in non special cases.
     props.offGlobalStateChange();
-    
+
     // ...
   }
   ```
