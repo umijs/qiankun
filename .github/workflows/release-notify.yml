@@ -1,0 +1,23 @@
+name: Release notify
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send dingding notify
+        uses: zcong1993/actions-ding@master
+        with:
+          dingToken: ${{ secrets.DING_TOKEN }}
+          secret: ${{ secrets.DING_SIGN }}
+          body: |
+            {
+              "msgtype": "markdown",
+              "markdown": {
+                  "title": "qiankun ${{github.event.release.tag_name}} 发布公告",
+                  "text": "# qiankun [${{github.event.release.tag_name}}](${{github.event.release.html_url}}) 发布公告\n${{github.event.release.body}}",
+              }
+            }
