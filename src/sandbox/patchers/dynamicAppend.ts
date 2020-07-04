@@ -3,7 +3,7 @@
  * @since 2019-10-21
  */
 import { execScripts } from 'import-html-entry';
-import { isFunction } from 'lodash';
+import { isFunction, noop } from 'lodash';
 import { checkActivityFunctions } from 'single-spa';
 import { frameworkConfiguration } from '../../apis';
 import { Freer } from '../../interfaces';
@@ -321,9 +321,10 @@ export default function patch(
   scopedCSS = false,
 ): Freer {
   let dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
+  let deleteProxyPropertyGetter: Function = noop;
 
   if (!singular) {
-    setProxyPropertyGetter(proxy, 'document', () => {
+    deleteProxyPropertyGetter = setProxyPropertyGetter(proxy, 'document', () => {
       return new Proxy(document, {
         get(target: Document, property: PropertyKey): any {
           if (property === 'createElement') {
@@ -441,6 +442,8 @@ export default function patch(
       // As now the sub app content all wrapped with a special id container,
       // the dynamic style sheet would be removed automatically while unmoutting
     });
+
+    deleteProxyPropertyGetter();
 
     return function rebuild() {
       dynamicStyleSheetElements.forEach(stylesheetElement => {
