@@ -430,3 +430,35 @@ A criterion for judging whether the business is closely related: <strong>Look at
     // ...
   }
   ```
+
+## `getCurrentGlobalState()`
+
+- Parameters
+
+  - None
+
+- Usage
+
+  Get current global state
+
+- Return
+
+  - Result
+
+    - Clone of current global state
+
+- Sample
+
+  Master:
+  ```ts
+  import { getCurrentGlobalState } from 'qiankun';
+
+  console.log(getCurrentGlobalState());
+  ```
+
+  Slave:
+  ```ts
+  import { getCurrentGlobalState } from 'qiankun';
+
+  console.log(getCurrentGlobalState());
+  ```

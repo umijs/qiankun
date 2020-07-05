@@ -3,9 +3,14 @@
  * @since 2020-04-10
  */
 
-import { initGlobalState, getMicroAppStateActions } from '../globalState';
+import { initGlobalState, getMicroAppStateActions, getCurrentGlobalState } from '../globalState';
 
 const master = initGlobalState({ user: 'qiankun' });
+
+test('test master global state', () => {
+  const currentGlobalState = getCurrentGlobalState();
+  expect(currentGlobalState).toEqual({ user: 'qiankun' });
+});
 
 test('test master to master actions', () => {
   const callback1 = (state: Record<string, any>, prevState: Record<string, any>) => {
@@ -97,4 +102,9 @@ test('test slave to slave actions', () => {
     expect(prevState).toEqual({ ignore: 'slaveA', user: 'slaveB' });
   };
   slaveA.onGlobalStateChange(callback2, true);
+});
+
+test('test slave global state', () => {
+  const currentGlobalState = getCurrentGlobalState();
+  expect(currentGlobalState).toEqual({ ignore: 'slaveA', user: 'slaveB' });
 });

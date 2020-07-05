@@ -429,3 +429,35 @@ toc: menu
     props.setGlobalState(state);
   }
   ```
+
+## `getCurrentGlobalState()`
+
+- 参数
+
+  - 无
+
+- 用法
+
+  获取当前的全局状态数据。
+
+- 返回
+
+  - Result
+
+    - 当前全局状态数据的副本
+
+- 示例
+
+  主应用：
+  ```ts
+  import { getCurrentGlobalState } from 'qiankun';
+
+  console.log(getCurrentGlobalState());
+  ```
+
+  微应用：
+  ```ts
+  import { getCurrentGlobalState } from 'qiankun';
+
+  console.log(getCurrentGlobalState());
+  ```
