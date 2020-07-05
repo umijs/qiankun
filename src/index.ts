@@ -4,7 +4,7 @@
  */
 
 export { loadMicroApp, registerMicroApps, start } from './apis';
-export { initGlobalState } from './globalState';
+export { initGlobalState, getCurrentGlobalState } from './globalState';
 export * from './errorHandler';
 export * from './effects';
 export * from './interfaces';

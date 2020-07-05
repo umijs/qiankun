@@ -1,4 +1,11 @@
-import { registerMicroApps, runAfterFirstMounted, setDefaultMountApp, start, initGlobalState } from '../../es';
+import {
+  registerMicroApps,
+  runAfterFirstMounted,
+  setDefaultMountApp,
+  start,
+  initGlobalState,
+  getCurrentGlobalState,
+} from '../../es';
 import './index.less';
 
 // for angular subapp
@@ -105,3 +112,9 @@ start();
 runAfterFirstMounted(() => {
   console.log('[MainApp] first app mounted');
 });
+
+function getGlobalStateHandler() {
+  console.log(getCurrentGlobalState());
+}
+
+window.getGlobalStateHandler = getGlobalStateHandler;

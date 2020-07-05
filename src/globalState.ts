@@ -30,6 +30,11 @@ export function initGlobalState(state: Record<string, any> = {}) {
   return getMicroAppStateActions(`global-${+new Date()}`, true);
 }
 
+export function getCurrentGlobalState() {
+  const clone = cloneDeep(globalState);
+  return Object.freeze(clone);
+}
+
 export function getMicroAppStateActions(id: string, isMaster?: boolean): MicroAppStateActions {
   return {
     /**
