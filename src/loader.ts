@@ -9,7 +9,7 @@ import { LifeCycles, ParcelConfigObject } from 'single-spa';
 import getAddOns from './addons';
 import { getMicroAppStateActions } from './globalState';
 import { FrameworkConfiguration, FrameworkLifeCycles, HTMLContentRender, LifeCycleFn, LoadableApp } from './interfaces';
-import { createSandbox } from './sandbox';
+import { createSandbox, css } from './sandbox';
 import {
   Deferred,
   getDefaultTplWrapper,
@@ -18,6 +18,7 @@ import {
   performanceMeasure,
   toArray,
   validateExportLifecycle,
+  isEnableScopedCSS,
 } from './utils';
 
 function assertElementExist(element: Element | null | undefined, msg?: string) {
@@ -78,11 +79,13 @@ function getAppWrapperGetter(
   appInstanceId: string,
   useLegacyRender: boolean,
   strictStyleIsolation: boolean,
+  enableScopedCSS: boolean,
   elementGetter: () => HTMLElement | null,
 ) {
   return () => {
     if (useLegacyRender) {
       if (strictStyleIsolation) throw new Error('[qiankun]: strictStyleIsolation can not be used with legacy render!');
+      if (enableScopedCSS) throw new Error('[qiankun]: experimentalStyleIsolation can not be used with legacy render!');
 
       const appWrapper = document.getElementById(getWrapperId(appInstanceId));
       assertElementExist(
@@ -97,6 +100,13 @@ function getAppWrapperGetter(
       element,
       `[qiankun] Wrapper element for ${appName} with instance ${appInstanceId} is not existed!`,
     );
+
+    if (enableScopedCSS) {
+      const attr = element!.getAttribute(css.QiankunCSSRewriteAttr);
+      if (!attr) {
+        element!.setAttribute(css.QiankunCSSRewriteAttr, appName);
+      }
+    }
 
     if (strictStyleIsolation) {
       return element!.shadowRoot!;
@@ -226,9 +236,16 @@ export async function loadApp<T extends object>(
   }
 
   const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
+  const enableScopedCSS = isEnableScopedCSS(configuration);
 
   const appContent = getDefaultTplWrapper(appInstanceId)(template);
   let element: HTMLElement | null = createElement(appContent, strictStyleIsolation);
+  if (element && isEnableScopedCSS(configuration)) {
+    const styleNodes = element.querySelectorAll('style') || [];
+    styleNodes.forEach(stylesheetElement => {
+      css.process(element!, stylesheetElement, appName);
+    });
+  }
 
   const container = 'container' in app ? app.container : undefined;
   const legacyRender = 'render' in app ? app.render : undefined;
@@ -244,6 +261,7 @@ export async function loadApp<T extends object>(
     appInstanceId,
     !!legacyRender,
     strictStyleIsolation,
+    enableScopedCSS,
     () => element,
   );
 
@@ -251,7 +269,7 @@ export async function loadApp<T extends object>(
   let mountSandbox = () => Promise.resolve();
   let unmountSandbox = () => Promise.resolve();
   if (sandbox) {
-    const sandboxInstance = createSandbox(appName, containerGetter, Boolean(singular));
+    const sandboxInstance = createSandbox(appName, containerGetter, Boolean(singular), enableScopedCSS);
     // 用沙箱的代理对象作为接下来使用的全局对象
     global = sandboxInstance.proxy as typeof window;
     mountSandbox = sandboxInstance.mount;

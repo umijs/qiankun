@@ -1,6 +1,6 @@
 {
   "name": "qiankun",
-  "version": "2.0.16",
+  "version": "2.0.17-1",
   "description": "An completed implementation of Micro Frontends",
   "keywords": [
     "micro frontend",
@@ -82,9 +82,6 @@
     "rimraf": "^3.0.0",
     "ts-jest": "^25.2.1",
     "typescript": "^3.4.5"
-  },
-  "resolutions": {
-    "eslint": "~7.2.0"
   },
   "husky": {
     "hooks": {

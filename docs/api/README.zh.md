@@ -18,7 +18,7 @@ toc: menu
 
   - apps - `Array<RegistrableApp>` - 必选，微应用的一些注册信息
   - lifeCycles - `LifeCycles` - 可选，全局的微应用生命周期钩子
-  
+
 - 类型
 
   - `RegistrableApp`
@@ -192,7 +192,7 @@ toc: menu
 
   runAfterFirstMounted(() => startMonitor());
   ```
-  
+
 ## 手动加载微应用
 
 适用于需要手动 加载/卸载 一个微应用的场景。
@@ -211,25 +211,43 @@ toc: menu
     * entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - 必选，微应用的 entry 地址。
     * container - `string | HTMLElement` - 必选，微应用的容器节点的选择器或者 Element 实例。如`container: '#root'` 或 `container: document.querySelector('#root')`。
     * props - `object` - 可选，初始化时需要传递给微应用的数据。
-    
+
   * configuration - `Configuration` - 可选，微应用的配置信息
 
-    * sandbox - `boolean` | `{ strictStyleIsolation?: boolean }` - 可选，是否开启沙箱，默认为 `true`。
+    * sandbox - `boolean` | `{ strictStyleIsolation?: boolean, experimentalStyleIsolation?: boolean }` - 可选，是否开启沙箱，默认为 `true`。
 
       默认情况下沙箱可以确保单实例场景子应用之间的样式隔离，但是无法确保主应用跟子应用、或者多实例场景的子应用样式隔离。当配置为 `{ strictStyleIsolation: true }` 时表示开启严格的样式隔离模式。这种模式下 qiankun 会为每个微应用的容器包裹上一个 [shadow dom](https://developer.mozilla.org/zh-CN/docs/Web/Web_Components/Using_shadow_DOM) 节点，从而确保微应用的样式不会对全局造成影响。
-
+      
       <Alert>
-      基于 ShadowDOM 的严格样式隔离并不是一个可以无脑使用的方案，大部分情况下都需要接入应用做一些适配后才能正常在 ShadowDOM 中运行起来（比如 react 场景下需要解决这些 <a target="_blank" href="https://github.com/facebook/react/issues/10422">问题</a>，使用者需要清楚开启了 <code>strictStyleIsolation</code> 意味着什么。后续 qiankun 会提供更多官方实践文档帮助用户能快速的将应用改造成可以运行在 ShadowDOM 环境的微应用。
+        基于 ShadowDOM 的严格样式隔离并不是一个可以无脑使用的方案，大部分情况下都需要接入应用做一些适配后才能正常在 ShadowDOM 中运行起来（比如 react 场景下需要解决这些 <a target="_blank" href="https://github.com/facebook/react/issues/10422">问题</a>，使用者需要清楚开启了 <code>strictStyleIsolation</code> 意味着什么。后续 qiankun 会提供更多官方实践文档帮助用户能快速的将应用改造成可以运行在 ShadowDOM 环境的微应用。
       </Alert>
 
+      除此以外，qiankun 还提供了一个实验性的样式隔离特性，当 experimentalStyleIsolation 被设置为 true 时，qiankun 会改写子应用所添加的样式为所有样式规则增加一个特殊的选择器规则来限定其影响范围，因此改写后的代码会表达类似为如下结构：
+
+      ```
+      // 假设加载的应用名为 react16
+      .app-main {
+        font-size: 14px;
+      }
+
+      div[data-qiankun-react16] .app-main {
+        font-size: 14px;
+      }
+      ```
+
+      注意事项:
+      目前 @keyframes, @font-face, @import, @page 等规则不会支持 (i.e. 不会被改写)
+
+      在目前阶段, 我们还不支持以动态的外联形式 (`<link />`) 形式加入的样式，但我们考虑将来支持这一部分。
+
     * singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - 可选，是否为单实例场景，默认为 `false`。
-  
+
     * fetch - `Function` - 可选，自定义的 fetch 方法。
-    
+
     * getPublicPath - `(url: string) => string` - 可选
-    
+
     * getTemplate - `(tpl: string) => string` - 可选
-  
+
 * 返回值 - `MicroApp` - 微应用实例
   * mount(): Promise&lt;null&gt;;
   * unmount(): Promise&lt;null&gt;;
@@ -251,7 +269,7 @@ toc: menu
   * bootstrapPromise: Promise&lt;null&gt;;
   * mountPromise: Promise&lt;null&gt;;
   * unmountPromise: Promise&lt;null&gt;;
-  
+
 * 用法
 
   手动加载一个微应用。
@@ -262,7 +280,7 @@ toc: menu
   export function mount(props) {
     renderApp(props);
   }
-  
+
   // 增加 update 钩子以便主应用手动更新微应用
   export function update(props) {
     renderPatch(props);
@@ -274,26 +292,26 @@ toc: menu
   ```jsx
   import { loadMicroApp } from 'qiankun';
   import React from 'react';
-  
+
   class App extends React.Component {
-    
+
     containerRef = React.createRef();
     microApp = null;
-    
+
     componentDidMount() {
       this.microApp = loadMicroApp(
         { name: 'app1', entry: '//localhost:1234', container: this.containerRef.current, props: { name: 'qiankun' } },
       );
     }
-  
+
     componentWillUnmount() {
       this.microApp.unmount();
     }
-  
+
     componentDidUpdate() {
       this.microApp.update({ name: 'kuitos' });
     }
-    
+
     render() {
       return <div ref={this.containerRef}></div>;
     }
@@ -305,21 +323,21 @@ toc: menu
 - 参数
   - apps - `AppMetadata[]` - 必选 - 预加载的应用列表
   - importEntryOpts - 可选 - 加载配置
-  
+
 - 类型
   - `AppMetadata`
     - name - `string` - 必选 - 应用名
     - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - 必选，微应用的 entry 地址
 
 - 用法
-  
+
   手动预加载指定的微应用静态资源。仅手动加载微应用场景需要，基于路由自动激活场景直接配置 `prefetch` 属性即可。
-  
+
 - 示例
 
   ```ts
   import { prefetchApps } from 'qiankun';
-  
+
   prefetchApps([ { name: 'app1', entry: '//locahost:7001' }, { name: 'app2', entry: '//locahost:7002' } ])
   ```
 
@@ -339,7 +357,7 @@ toc: menu
 
   ```ts
   import { addGlobalUncaughtErrorHandler } from 'qiankun';
-  
+
   addGlobalUncaughtErrorHandler(event => console.log(event));
   ```
 
@@ -357,7 +375,7 @@ toc: menu
 
   ```ts
   import { removeGlobalUncaughtErrorHandler } from 'qiankun';
-  
+
   removeGlobalUncaughtErrorHandler(handler);
   ```
 
@@ -407,7 +425,7 @@ toc: menu
       // state: 变更后的状态; prev 变更前的状态
       console.log(state, prev);
     });
-  
+
     props.setGlobalState(state);
   }
   ```
