@@ -82,7 +82,7 @@ qiankun 主应用根据 `activeRule` 配置激活对应微应用。
 
 ### b. 主应用是 history 模式
 
-当主应用是 history 模式且微应用也是 history 模式时，表现完美。如果子应用需要添加 base 路径，设置子项目的 [base](https://router.vuejs.org/zh/api/#base) 属性即可。
+当主应用是 history 模式且微应用也是 history 模式时，表现完美。如果微应用需要添加 base 路径，设置子项目的 [base](https://router.vuejs.org/zh/api/#base) 属性即可。
 
 当主应用是 history 模式，微应用是 hash 模式，表现完美。
 
