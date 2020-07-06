@@ -73,7 +73,7 @@ To solve the error, choose one of the options listed below:
 
 ## Tips on Using Vue Router
 
-The qiankun main app activates the corresponding sub app according to the `activeRule` configuration.
+The qiankun main app activates the corresponding sub-app according to the `activeRule` configuration.
 
 ### a. The main app is using Vue Router's hash mode
 
