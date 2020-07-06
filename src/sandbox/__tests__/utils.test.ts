@@ -54,7 +54,7 @@ test('should be able to suspend', async () => {
   const end = new Date().getTime();
 
   const diff = end - start;
-  expect(diff >= 10 && diff < 1000).toBeTruthy();
+  expect(diff >= 10).toBeTruthy();
 });
 
 test('Deferred should worked [1]', async () => {
