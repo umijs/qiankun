@@ -78,7 +78,7 @@ qiankun 主应用根据 `activeRule` 配置激活对应微应用。
 
 ### a. 主应用是 hash 模式
 
-当主应用是 hash 模式时，一般微应用也是 hash 模式。此时主应用的一级 hash 路径会分配给对应的微应用（比如 `#/base1` ），此时微应用如果需要在 base 路径的基础上进行 hash 模式下的二级路径跳转（比如 `#/base1/child1` ），这个场景在当前 VueRouter 的实现方式下需要自己手动实现，给所有路由都添加一个前缀即可。VueRouter 的 hash 模式下的 base 参数[不支持添加 hash 路径 base](https://github.com/vuejs/vue-router/blob/dev/src/index.js#L55-L69)。
+当主应用是 hash 模式时，一般微应用也是 hash 模式。主应用的一级 hash 路径会分配给对应的微应用（比如 `#/base1` ），此时微应用如果需要在 base 路径的基础上进行 hash 模式下的二级路径跳转（比如 `#/base1/child1` ），这个场景在当前 VueRouter 的实现方式下需要自己手动实现，给所有路由都添加一个前缀即可。VueRouter 的 hash 模式下的 base 参数[不支持添加 hash 路径 base](https://github.com/vuejs/vue-router/blob/dev/src/index.js#L55-L69)。
 
 ### b. 主应用是 history 模式
 
