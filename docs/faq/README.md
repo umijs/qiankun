@@ -71,6 +71,21 @@ To solve the error, choose one of the options listed below:
 1. Use bundler to pack `Vue` library, instead of CDN or external module
 2. Rename `Vue` to other name in master application, eg: `window.Vue2 = window.Vue; window.Vue = undefined`
 
+## Tips on Using Vue Router
+
+The qiankun main app activates the corresponding micro app according to the `activeRule` configuration.
+
+### a. The main app is using Vue Router's hash mode
+
+When the main app is in hash mode, generally, micro app is also in hash mode. In this case, the base hash path of the main app is assigned to the corresponding micro app (e.g. `#base`). At this time, if the micro app needs to make a secondary path jump in hash mode (such as `#/base1/child1`) when there is a base path, you just need to add a prefix for each route yourself.     
+The base parameter in VueRouter's hash mode [does not support adding a hash path base](https://github.com/vuejs/vue-router/blob/dev/src/index.js#L55-L69).
+
+### b. The main app is using Vue Router's history mode
+
+When the main app is in history mode and the micro app is also in history mode, it works perfectly. And if the micro app needs to add a base path, just [set the base property](https://router.vuejs.org/api/#base) of the sub item.
+
+When the main app is in history mode and the micro app is in hash mode, it works perfectly.
+
 ## Why dynamic imported assets missing?
 
 Two way to solve that:
