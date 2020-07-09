@@ -238,3 +238,22 @@ const render = ($) => {
 refer to the [purehtml examples](https://github.com/umijs/qiankun/tree/master/examples/purehtml)
 
 At the same time, [the subApp must support the CORS](#must-a-sub-app-asset-support-cors)
+
+## What's wrong with IE
+
+IE doesn't have some runtime APIs of the others modern broswers, such as: `Promise`, `URL`, `fetch`, etc.
+
+Qiankun invoke some of the APIs that IE doesn't support, so developers need to put the polyfill in the project.
+
+Including but not limited:
+
+```javascript
+import 'core-js/stable/promise';
+import 'core-js/stable/symbol';
+import 'core-js/stable/string/starts-with';
+import 'core-js/web/url';
+```
+
+What's [polyfill](https://developer.mozilla.org/en-US/docs/Glossary/Polyfill)
+
+At the same time, because of the other packages that your project depends on will most likely use some of the APIs that IE is missing, so when you has some errors with the IE, please try to provide the smallest reproducible repo in the issue.
