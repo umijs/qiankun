@@ -212,9 +212,19 @@ test('should handle root-level grouping selector [3]', () => {
   expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
 });
 
-test('should not remove special root-level selector when rule is non-standard', () => {
+test('should not remove special root-level selector when rule is non-standard [1]', () => {
   const actualValue = 'html + body {color: #eee;}';
   const expectValue = 'div[data-qiankun=react15] + div[data-qiankun=react15] {color: #eee;}';
+
+  const styleNode = fakeStyleNode(actualValue);
+  CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');
+
+  expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
+});
+
+test('should not remove special root-level selector when rule is non-standard [1]', () => {
+  const actualValue = 'html ~ body {color: #eee;}';
+  const expectValue = 'div[data-qiankun=react15] ~ div[data-qiankun=react15] {color: #eee;}';
 
   const styleNode = fakeStyleNode(actualValue);
   CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');

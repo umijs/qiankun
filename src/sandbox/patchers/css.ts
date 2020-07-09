@@ -125,7 +125,7 @@ class ScopedCSS {
     // handle html body { ... }
     // handle html > body { ... }
     if (rootCombinationRE.test(rule.selectorText)) {
-      const siblingSelectorRE = /(html[^\w{]+)\+/gm;
+      const siblingSelectorRE = /(html[^\w{]+)(\+|~)/gm;
 
       // since html + body is a non-standard rule for html
       // transformer will ignore it
