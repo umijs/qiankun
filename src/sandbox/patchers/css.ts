@@ -109,7 +109,7 @@ class ScopedCSS {
 
   // eslint-disable-next-line class-methods-use-this
   private ruleStyle(rule: CSSStyleRule, prefix: string) {
-    const rootSelectorRE = /((?:[^\w\-._#]|^)(body|html|:root))/gm;
+    const rootSelectorRE = /((?:[^\w\-.#]|^)(body|html|:root))/gm;
     const rootCombinationRE = /(html[^\w{]+)/gm;
 
     const selector = rule.selectorText.trim();
