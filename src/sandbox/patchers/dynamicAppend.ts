@@ -60,13 +60,14 @@ function getNewAppendChild(args: {
   appWrapperGetter: CallableFunction;
   headOrBodyAppendChild: typeof HTMLElement.prototype.appendChild;
   scopedCSS: boolean;
+  whitelistChecker?: Function;
 }) {
   return function appendChild<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, newChild: T) {
     const element = newChild as any;
     const { headOrBodyAppendChild } = args;
     if (element.tagName) {
       // eslint-disable-next-line prefer-const
-      let { appWrapperGetter, proxy, singular, dynamicStyleSheetElements, appName, scopedCSS } = args;
+      let { appWrapperGetter, proxy, singular, dynamicStyleSheetElements, appName, scopedCSS, whitelistChecker } = args;
 
       const storedContainerInfo = element[attachProxySymbol];
       if (storedContainerInfo) {
@@ -94,13 +95,17 @@ function getNewAppendChild(args: {
       switch (element.tagName) {
         case LINK_TAG_NAME:
         case STYLE_TAG_NAME: {
+          const mountDOM = appWrapperGetter();
+          const { src } = element;
+          if (whitelistChecker && src && whitelistChecker(src)) {
+            return rawAppendChild.call(mountDOM, element) as T;
+          }
+
           const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
 
           if (!invokedByMicroApp) {
             return headOrBodyAppendChild.call(this, element) as T;
           }
-
-          const mountDOM = appWrapperGetter();
 
           if (scopedCSS) {
             css.process(mountDOM, stylesheetElement, appName);
@@ -112,14 +117,19 @@ function getNewAppendChild(args: {
         }
 
         case SCRIPT_TAG_NAME: {
+          const mountDOM = appWrapperGetter();
+          const { src, text } = element as HTMLScriptElement;
+
+          // some script like jsonp maybe not support cors which should't use execScripts
+          if (whitelistChecker && src && whitelistChecker(src)) {
+            return rawAppendChild.call(mountDOM, element) as T;
+          }
+
           if (!invokedByMicroApp) {
             return headOrBodyAppendChild.call(this, element) as T;
           }
 
-          const { src, text } = element as HTMLScriptElement;
-
           const { fetch } = frameworkConfiguration;
-          const mountDOM = appWrapperGetter();
           if (src) {
             execScripts(null, [src], proxy, { fetch, strictGlobal: !singular }).then(
               () => {
@@ -319,6 +329,7 @@ export default function patch(
   mounting = true,
   singular = true,
   scopedCSS = false,
+  whitelistChecker?: Function,
 ): Freer {
   let dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
   let deleteProxyPropertyGetter: Function = noop;
@@ -367,6 +378,7 @@ export default function patch(
       singular,
       dynamicStyleSheetElements,
       scopedCSS,
+      whitelistChecker,
     });
     HTMLBodyElement.prototype.appendChild = getNewAppendChild({
       headOrBodyAppendChild: rawBodyAppendChild,
@@ -376,6 +388,7 @@ export default function patch(
       singular,
       dynamicStyleSheetElements,
       scopedCSS,
+      whitelistChecker,
     });
   }
 
