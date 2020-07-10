@@ -72,6 +72,166 @@ test('should replace body correctly', () => {
   expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
 });
 
+test('should replace :root correctly', () => {
+  const actualValue = ':root {--gray: #eee}';
+  const expectValue = 'div[data-qiankun=react15] {--gray: #eee;}';
+
+  const styleNode = fakeStyleNode(actualValue);
+  CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');
+
+  expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
+});
+
+test('should rewrite root-level correctly [1]', () => {
+  const actualValue = 'html + div {font-size: 14px;}';
+  const expectValue = 'div[data-qiankun=react15] + div {font-size: 14px;}';
+
+  const styleNode = fakeStyleNode(actualValue);
+  CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');
+
+  expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
+});
+
+test('should rewrite root-level correctly [2]', () => {
+  const actualValue = 'body + div {font-size: 14px;}';
+  const expectValue = 'div[data-qiankun=react15] + div {font-size: 14px;}';
+
+  const styleNode = fakeStyleNode(actualValue);
+  CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');
+
+  expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
+});
+
+test('should not replace body/html if body is part of class [1]', () => {
+  const actualValue = '.ant-card-body {color: #eee}';
+  const expectValue = 'div[data-qiankun=react15] .ant-card-body {color: #eee;}';
+
+  const styleNode = fakeStyleNode(actualValue);
+  CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');
+
+  expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
+});
+
+test('should not replace body/html if body is part of class [2]', () => {
+  const actualValue = '.ant-card_body {color: #eee}';
+  const expectValue = 'div[data-qiankun=react15] .ant-card_body {color: #eee;}';
+
+  const styleNode = fakeStyleNode(actualValue);
+  CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');
+
+  expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
+});
+
+test('should not replace body/html if body is part of class [3]', () => {
+  const actualValue = '.body {color: #eee}';
+  const expectValue = 'div[data-qiankun=react15] .body {color: #eee;}';
+
+  const styleNode = fakeStyleNode(actualValue);
+  CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');
+
+  expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
+});
+
+test('should not replace body/html if body is part of id [1]', () => {
+  const actualValue = '#body {color: #eee}';
+  const expectValue = 'div[data-qiankun=react15] #body {color: #eee;}';
+
+  const styleNode = fakeStyleNode(actualValue);
+  CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');
+
+  expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
+});
+
+test('should not replace body/html if body is part of id [2]', () => {
+  const actualValue = '#ant-card-body {color: #eee}';
+  const expectValue = 'div[data-qiankun=react15] #ant-card-body {color: #eee;}';
+
+  const styleNode = fakeStyleNode(actualValue);
+  CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');
+
+  expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
+});
+
+test('should not replace body/html if body is part of id [3]', () => {
+  const actualValue = '#ant-card__body {color: #eee}';
+  const expectValue = 'div[data-qiankun=react15] #ant-card__body {color: #eee;}';
+
+  const styleNode = fakeStyleNode(actualValue);
+  CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');
+
+  expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
+});
+
+test('should handle root-level descendant selector [1]', () => {
+  const actualValue = 'html > body {color: #eee;}';
+  const expectValue = 'div[data-qiankun=react15] {color: #eee;}';
+
+  const styleNode = fakeStyleNode(actualValue);
+  CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');
+
+  expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
+});
+
+test('should handle root-level descendant selector [2]', () => {
+  const actualValue = 'html body {color: #eee;}';
+  const expectValue = 'div[data-qiankun=react15] {color: #eee;}';
+
+  const styleNode = fakeStyleNode(actualValue);
+  CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');
+
+  expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
+});
+
+test('should handle root-level grouping selector [1]', () => {
+  const actualValue = 'html,body {color: #eee;}';
+  const expectValue = 'div[data-qiankun=react15] {color: #eee;}';
+
+  const styleNode = fakeStyleNode(actualValue);
+  CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');
+
+  expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
+});
+
+test('should handle root-level grouping selector [2]', () => {
+  const actualValue = 'body,html,div {color: #eee;}';
+  const expectValue = 'div[data-qiankun=react15],div {color: #eee;}';
+
+  const styleNode = fakeStyleNode(actualValue);
+  CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');
+
+  expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
+});
+
+test('should handle root-level grouping selector [3]', () => {
+  const actualValue = 'a,body,html,div {color: #eee;}';
+  const expectValue = 'a,div[data-qiankun=react15],div {color: #eee;}';
+
+  const styleNode = fakeStyleNode(actualValue);
+  CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');
+
+  expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
+});
+
+test('should not remove special root-level selector when rule is non-standard [1]', () => {
+  const actualValue = 'html + body {color: #eee;}';
+  const expectValue = 'div[data-qiankun=react15] + div[data-qiankun=react15] {color: #eee;}';
+
+  const styleNode = fakeStyleNode(actualValue);
+  CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');
+
+  expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
+});
+
+test('should not remove special root-level selector when rule is non-standard [1]', () => {
+  const actualValue = 'html ~ body {color: #eee;}';
+  const expectValue = 'div[data-qiankun=react15] ~ div[data-qiankun=react15] {color: #eee;}';
+
+  const styleNode = fakeStyleNode(actualValue);
+  CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');
+
+  expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
+});
+
 test('should transform @supports', () => {
   const actualValue = '@supports (display: grid) {div{margin: 1cm;}}';
   const expectValue = '@supports (display: grid) {div[data-qiankun=react15] div {margin: 1cm;}}';
