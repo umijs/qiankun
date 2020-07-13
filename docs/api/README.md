@@ -139,7 +139,7 @@ By linking the micro-application to some url rules, the function of automaticall
 
       And qiankun offered an experimental way to support css isolation, when experimentalStyleIsolation is set to true, qiankun will limit their scope of influence by add selector constraint, thereforce styles of sub-app will like following case:
 
-      ```
+      ```javascript
       // if app name is react16
       .app-main {
         font-size: 14px;
@@ -152,9 +152,7 @@ By linking the micro-application to some url rules, the function of automaticall
 
       notice:
       @keyframes, @font-face, @import, @page are not supported (i.e. will not be rewritten)
-
-      and in current stage, we're not support the case: add external styles by `<link>` yet, we're consider add this part in the future.
-
+      P.S: In current stage, we're not support the case: Inserting external styles by `<link>` yet, we're consider add this part in the future.
 
     - singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - optional，whether is a singular mode，default is `true`.
 
