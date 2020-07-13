@@ -223,7 +223,7 @@ export async function loadApp<T extends object>(
     performanceMark(markName);
   }
 
-  const { singular = false, sandbox = true, ...importEntryOpts } = configuration;
+  const { singular = false, sandbox = true, excludeAssetFilter, ...importEntryOpts } = configuration;
 
   // get the entry html content and script executor
   const { template, execScripts, assetPublicPath } = await importEntry(entry, importEntryOpts);
@@ -269,7 +269,13 @@ export async function loadApp<T extends object>(
   let mountSandbox = () => Promise.resolve();
   let unmountSandbox = () => Promise.resolve();
   if (sandbox) {
-    const sandboxInstance = createSandbox(appName, containerGetter, Boolean(singular), enableScopedCSS);
+    const sandboxInstance = createSandbox(
+      appName,
+      containerGetter,
+      Boolean(singular),
+      enableScopedCSS,
+      excludeAssetFilter,
+    );
     // 用沙箱的代理对象作为接下来使用的全局对象
     global = sandboxInstance.proxy as typeof window;
     mountSandbox = sandboxInstance.mount;
