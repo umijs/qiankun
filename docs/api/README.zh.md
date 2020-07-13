@@ -145,7 +145,7 @@ toc: menu
 
     - getTemplate - `(tpl: string) => string` - 可选
 
-    - excludeAssetFilter - `(asset: string) => boolean` - 可选，指定部分特殊的子应用资源（css/js) 不通过 qiankun 劫持加载
+    - excludeAssetFilter - `(asset: string) => boolean` - 可选，指定部分特殊的动态加载的微应用资源（css/js) 不被qiankun 劫持处理
 
 - 用法
 
