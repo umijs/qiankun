@@ -70,7 +70,7 @@ type QiankunSpecialOpts = {
   /**
    * skip some scripts or links intercept, like JSONP
    */
-  whitelistChecker?: (url: string) => boolean;
+  excludeAssetFilter?: (url: string) => boolean;
 };
 export type FrameworkConfiguration = QiankunSpecialOpts & ImportEntryOpts & StartOpts;
 

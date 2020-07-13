@@ -60,14 +60,15 @@ function getNewAppendChild(args: {
   appWrapperGetter: CallableFunction;
   headOrBodyAppendChild: typeof HTMLElement.prototype.appendChild;
   scopedCSS: boolean;
-  whitelistChecker?: Function;
+  excludeAssetFilter?: CallableFunction;
 }) {
   return function appendChild<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, newChild: T) {
     const element = newChild as any;
     const { headOrBodyAppendChild } = args;
     if (element.tagName) {
       // eslint-disable-next-line prefer-const
-      let { appWrapperGetter, proxy, singular, dynamicStyleSheetElements, appName, scopedCSS, whitelistChecker } = args;
+      let { appWrapperGetter, proxy, singular, dynamicStyleSheetElements } = args;
+      const { appName, scopedCSS, excludeAssetFilter } = args;
 
       const storedContainerInfo = element[attachProxySymbol];
       if (storedContainerInfo) {
@@ -95,16 +96,15 @@ function getNewAppendChild(args: {
       switch (element.tagName) {
         case LINK_TAG_NAME:
         case STYLE_TAG_NAME: {
-          const mountDOM = appWrapperGetter();
-          const { src } = element;
-          if (whitelistChecker && src && whitelistChecker(src)) {
-            return rawAppendChild.call(mountDOM, element) as T;
-          }
-
           const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
-
           if (!invokedByMicroApp) {
             return headOrBodyAppendChild.call(this, element) as T;
+          }
+
+          const mountDOM = appWrapperGetter();
+          const { src } = element;
+          if (excludeAssetFilter && src && excludeAssetFilter(src)) {
+            return rawAppendChild.call(mountDOM, element) as T;
           }
 
           if (scopedCSS) {
@@ -117,16 +117,16 @@ function getNewAppendChild(args: {
         }
 
         case SCRIPT_TAG_NAME: {
+          if (!invokedByMicroApp) {
+            return headOrBodyAppendChild.call(this, element) as T;
+          }
+
           const mountDOM = appWrapperGetter();
           const { src, text } = element as HTMLScriptElement;
 
           // some script like jsonp maybe not support cors which should't use execScripts
-          if (whitelistChecker && src && whitelistChecker(src)) {
+          if (excludeAssetFilter && src && excludeAssetFilter(src)) {
             return rawAppendChild.call(mountDOM, element) as T;
-          }
-
-          if (!invokedByMicroApp) {
-            return headOrBodyAppendChild.call(this, element) as T;
           }
 
           const { fetch } = frameworkConfiguration;
@@ -329,7 +329,7 @@ export default function patch(
   mounting = true,
   singular = true,
   scopedCSS = false,
-  whitelistChecker?: Function,
+  excludeAssetFilter?: CallableFunction,
 ): Freer {
   let dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
   let deleteProxyPropertyGetter: Function = noop;
@@ -378,7 +378,7 @@ export default function patch(
       singular,
       dynamicStyleSheetElements,
       scopedCSS,
-      whitelistChecker,
+      excludeAssetFilter,
     });
     HTMLBodyElement.prototype.appendChild = getNewAppendChild({
       headOrBodyAppendChild: rawBodyAppendChild,
@@ -388,7 +388,7 @@ export default function patch(
       singular,
       dynamicStyleSheetElements,
       scopedCSS,
-      whitelistChecker,
+      excludeAssetFilter,
     });
   }
 
