@@ -238,3 +238,8 @@ const render = ($) => {
 refer to the [purehtml examples](https://github.com/umijs/qiankun/tree/master/examples/purehtml)
 
 At the same time, [the subApp must support the CORS](#must-a-sub-app-asset-support-cors)
+
+## How to handle subapplication JSONP cross-domain errors?
+
+qiankun will convert the dynamic script loading (such as JSONP) of the subapplication into a fetch request, so the corresponding back-end service needs to support cross-domain; if the back-end cross-domain causes an error, then you can use the `excludeAssetFilter` parameter to release this part Resource request.
+However, that the request released by this option will escape the sandbox, and the side effects caused by this need to be handled by yourself.

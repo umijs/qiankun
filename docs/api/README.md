@@ -163,6 +163,8 @@ By linking the micro-application to some url rules, the function of automaticall
     - getPublicPath - `(url: string) => string` - optional
 
     - getTemplate - `(tpl: string) => string` - optional
+    
+    - excludeAssetFilter - `(asset: string) => boolean` - optional，some special subapplication resources should be loaded without qiankun hijacking
 
 - Usage
 
