@@ -13,7 +13,7 @@
   },
   "private": true,
   "dependencies": {
-    "@angular-builders/custom-webpack": "^8",
+    "@angular-builders/custom-webpack": "^9.2.0",
     "@angular/animations": "~9.0.2",
     "@angular/common": "~9.0.2",
     "@angular/compiler": "~9.0.2",
@@ -23,7 +23,7 @@
     "@angular/platform-browser-dynamic": "~9.0.2",
     "@angular/router": "~9.0.2",
     "rxjs": "~6.5.4",
-    "single-spa-angular": "^3.1.0",
+    "single-spa-angular": "^4.3.1",
     "tslib": "^1.10.0",
     "zone.js": "~0.10.2"
   },
