@@ -6,7 +6,8 @@ import { execScripts } from 'import-html-entry';
 import { isFunction } from 'lodash';
 import { checkActivityFunctions } from 'single-spa';
 import { Freer, ExecScriptsOpts } from '../interfaces';
-import { getWrapperId } from '../utils';
+import { getWrapperId, getGlobalExcludeAssetFilter } from '../utils';
+
 
 const styledComponentSymbol = Symbol('styled-component');
 
@@ -85,6 +86,11 @@ export default function hijack(
           const activated = checkActivityFunctions(window.location).some(name => name === appName);
           // only hijack dynamic style injection when app activated
           if (activated) {
+            const { href } = stylesheetElement as HTMLLinkElement;
+            if (getGlobalExcludeAssetFilter()(href)) {
+              break;
+            }
+
             dynamicStyleSheetElements.push(stylesheetElement);
 
             const appWrapper = getWrapperElement(appName);
@@ -97,6 +103,9 @@ export default function hijack(
 
         case SCRIPT_TAG_NAME: {
           const { src, text } = element as HTMLScriptElement;
+          if (getGlobalExcludeAssetFilter()(src)) {
+            break;
+          }
 
           if (src) {
             execScripts(null, [src], proxy, execScriptesOpts).then(

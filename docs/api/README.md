@@ -90,6 +90,8 @@
 
     - fetch - `Fetch` - optional, customized fetch function.
 
+    - excludeAssetFilter - `(asset: string) => boolean` - optional，some special dynamic loaded micro app resources should not be handled by qiankun hijacking.
+
 - Usage
 
   Start qiankun.
