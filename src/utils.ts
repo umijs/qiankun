@@ -28,3 +28,15 @@ export function getDefaultTplWrapper(appName: string) {
 export function getWrapperId(appName: string) {
   return `__qiankun_subapp_wrapper_for_${snakeCase(appName)}__`;
 }
+
+type AssetFilter = (url: string) => boolean;
+
+let globalExcludeAssetFilter: AssetFilter = () => true;
+
+export function getGlobalExcludeAssetFilter() {
+  return globalExcludeAssetFilter;
+}
+
+export function setGlobalExcludeAssetFilter(filter: AssetFilter) {
+  globalExcludeAssetFilter = filter;
+}

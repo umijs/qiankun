@@ -32,6 +32,7 @@ export type StartOpts = {
   prefetch?: boolean | 'all';
   jsSandbox?: boolean;
   singular?: boolean | ((app: RegistrableApp<any>) => Promise<boolean>);
+  excludeAssetFilter?: (url: string) => boolean;
 } & ImportEntryOpts;
 
 export type Rebuilder = () => void;

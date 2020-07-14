@@ -5,7 +5,7 @@ import getAddOns from './addons';
 import { RegistrableApp, StartOpts } from './interfaces';
 import { prefetchAfterFirstMounted, prefetchAll } from './prefetch';
 import { genSandbox } from './sandbox';
-import { getDefaultTplWrapper } from './utils';
+import { getDefaultTplWrapper, setGlobalExcludeAssetFilter } from './utils';
 
 type Lifecycle<T extends object> = (app: RegistrableApp<T>) => Promise<any>;
 
@@ -196,7 +196,7 @@ export function registerMicroApps<T extends object = {}>(
 }
 
 export function start(opts: StartOpts = {}) {
-  const { prefetch = true, jsSandbox = true, singular = true, ...importEntryOpts } = opts;
+  const { prefetch = true, jsSandbox = true, singular = true, excludeAssetFilter, ...importEntryOpts } = opts;
 
   switch (prefetch) {
     case true:
@@ -217,6 +217,10 @@ export function start(opts: StartOpts = {}) {
 
   if (singular) {
     singularMode = singular;
+  }
+
+  if (excludeAssetFilter) {
+    setGlobalExcludeAssetFilter(excludeAssetFilter);
   }
 
   startSingleSpa();
