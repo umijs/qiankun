@@ -248,7 +248,7 @@ qiankun 2.0 版本将提供一种更智能的方式使其自动化。
 如果希望 qiankun （或其依赖库、或者您的应用本身）在 IE 下正常运行，你至少需要在应用入口引入以下这些 polyfills：
 
 <Alert type="info">
-什么是 <a href="https://developer.mozilla.org/zh-CN/docs/Glossary/Polyfill">polyfill</a>
+什么是 <a href="https://developer.mozilla.org/zh-CN/docs/Glossary/Polyfill" target="_blank">polyfill</a>
 </Alert>
 
 ```javascript
@@ -262,7 +262,7 @@ import 'core-js/web/url';
 **通常我们建议您直接使用 @babel/preset-env 插件完成自动引入 IE 需要的 polyfill 的能力，所有的操作文档您都可以在 [babel 官方文档](https://babeljs.io/docs/en/babel-preset-env) 找到。**
 
 <Alert type="info">
-您也可以查看<a href="https://www.yuque.com/kuitos/gky7yw/qskte2">这篇文章</a>来获取更多 IE 兼容相关的知识。
+您也可以查看<a href="https://www.yuque.com/kuitos/gky7yw/qskte2" target="_blank">这篇文章</a>来获取更多 IE 兼容相关的知识。
 </Alert>
 
 ## 报错 `Here is no "fetch" on the window env, you need to polyfill it`
