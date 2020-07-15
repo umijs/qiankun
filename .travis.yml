@@ -18,7 +18,7 @@ before_deploy: |
     if [[ "$TRAVIS_TAG" = *"-"* ]]; then
       echo "next"
     else
-      echo "latest"
+      echo "1.x"
     fi
   }
 
