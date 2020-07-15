@@ -262,7 +262,7 @@ import 'core-js/web/url';
 **通常我们建议您直接使用 @babel/preset-env 插件完成自动引入 IE 需要的 polyfill 的能力，所有的操作文档您都可以在 [babel 官方文档](https://babeljs.io/docs/en/babel-preset-env) 找到。**
 
 <Alert type="info">
-您也可以查看[这篇文章](https://www.yuque.com/kuitos/gky7yw/qskte2)来获取更多 IE 兼容相关的知识。
+您也可以查看<a href="https://www.yuque.com/kuitos/gky7yw/qskte2">这篇文章</a>来获取更多 IE 兼容相关的知识。
 </Alert>
 
 ## 报错 `Here is no "fetch" on the window env, you need to polyfill it`
