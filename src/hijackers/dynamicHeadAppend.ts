@@ -64,7 +64,7 @@ export default function hijack(
   appName: string,
   proxy: Window,
   mounting = true,
-  execScriptesOpts: ExecScriptsOpts,
+  execScriptsOpts: ExecScriptsOpts,
 ): Freer {
   let dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
 
@@ -107,7 +107,7 @@ export default function hijack(
           }
 
           if (src) {
-            execScripts(null, [src], proxy, execScriptesOpts).then(
+            execScripts(null, [src], proxy, execScriptsOpts).then(
               () => {
                 // we need to invoke the onload event manually to notify the event listener that the script was completed
                 // here are the two typical ways of dynamic script loading
@@ -136,10 +136,7 @@ export default function hijack(
             return rawAppendChild.call(appWrapper, dynamicScriptCommentElement) as T;
           }
 
-          execScripts(null, [`<script>${text}</script>`], proxy, execScriptesOpts).then(
-            element.onload,
-            element.onerror,
-          );
+          execScripts(null, [`<script>${text}</script>`], proxy, execScriptsOpts).then(element.onload, element.onerror);
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
           const appWrapper = getWrapperElement(appName);
           assertElementExist(appName, appWrapper);
