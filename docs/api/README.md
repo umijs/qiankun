@@ -162,7 +162,7 @@ By linking the micro-application to some url rules, the function of automaticall
 
     - getTemplate - `(tpl: string) => string` - optional
     
-    - excludeAssetFilter - `(asset: string) => boolean` - optional，some special dynamic loaded micro app resources should not be handled by qiankun hijacking
+    - excludeAssetFilter - `(assetUrl: string) => boolean` - optional，some special dynamic loaded micro app resources should not be handled by qiankun hijacking
 
 - Usage
 
@@ -244,6 +244,8 @@ A criterion for judging whether the business is closely related: <strong>Look at
     * getPublicPath - `(url: string) => string` - Optional
 
     * getTemplate - `(tpl: string) => string` - Optional
+    
+    * excludeAssetFilter - `(assetUrl: string) => boolean` - optional，some special dynamic loaded micro app resources should not be handled by qiankun hijacking
 
 * 返回值 - `MicroApp` - Micro application examples
   * mount(): Promise&lt;null&gt;;

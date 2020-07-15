@@ -162,7 +162,7 @@ toc: menu
 
     - getTemplate - `(tpl: string) => string` - 可选
 
-    - excludeAssetFilter - `(asset: string) => boolean` - 可选，指定部分特殊的动态加载的微应用资源（css/js) 不被qiankun 劫持处理
+    - excludeAssetFilter - `(assetUrl: string) => boolean` - 可选，指定部分特殊的动态加载的微应用资源（css/js) 不被qiankun 劫持处理
 
 - 用法
 
@@ -266,6 +266,8 @@ toc: menu
     * getPublicPath - `(url: string) => string` - 可选
 
     * getTemplate - `(tpl: string) => string` - 可选
+    
+    * excludeAssetFilter - `(assetUrl: string) => boolean` - 可选，指定部分特殊的动态加载的微应用资源（css/js) 不被qiankun 劫持处理
 
 * 返回值 - `MicroApp` - 微应用实例
   * mount(): Promise&lt;null&gt;;
