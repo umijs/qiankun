@@ -175,6 +175,8 @@ Yes.
 
 However, the IE environment (browsers that do not support Proxy) can only use the single-instance pattern, where the `singular` configuration will be set `true` automatically by qiankun if IE detected.
 
+You can find the singular usage [here](/api#startopts).
+
 ### How to polyfill IE?
 
 If you want qiankun (or its dependent libraries, or your own application) to work properly in IE, you need to introduce the following polyfills at the portal at least:
