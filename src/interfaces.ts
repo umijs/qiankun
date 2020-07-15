@@ -67,6 +67,10 @@ type QiankunSpecialOpts = {
     it is useful for the scenario that only one sub app shown at one time
   */
   singular?: boolean | ((app: LoadableApp<any>) => Promise<boolean>);
+  /**
+   * skip some scripts or links intercept, like JSONP
+   */
+  excludeAssetFilter?: (url: string) => boolean;
 };
 export type FrameworkConfiguration = QiankunSpecialOpts & ImportEntryOpts & StartOpts;
 

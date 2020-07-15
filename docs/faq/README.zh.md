@@ -326,3 +326,11 @@ const render = ($) => {
 你也可以直接参照 examples 中 purehtml 部分的[代码](https://github.com/umijs/qiankun/tree/master/examples/purehtml)
 
 同时，你也需要开启相关资源的 CORS，具体请参照[此处](#微应用静态资源一定要支持跨域吗？)
+
+## 子应用 JSONP 跨域错误怎么处理？
+
+qiankun 会将子应用的动态 script 加载（例如 JSONP）转化为 fetch 请求，因此需要相应的后端服务支持跨域，否则会导致错误。
+
+在单实例模式下，你可以使用 `excludeAssetFilter` 参数来放行这部分资源请求，但是注意，被该选项放行的资源会逃逸出沙箱，由此带来的副作用需要你自行处理。
+
+若在多实例模式下使用 JSONP，单纯使用 `excludeAssetFilter` 并不能取得好的效果，因为各应用被沙箱所隔离；你可以在主应用提供统一的 JSONP 工具，子应用调用主应用提供的该工具来曲线救国。

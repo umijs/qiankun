@@ -109,13 +109,42 @@ class ScopedCSS {
 
   // eslint-disable-next-line class-methods-use-this
   private ruleStyle(rule: CSSStyleRule, prefix: string) {
-    const rootSelectorRE = /((html)|(body)|(:root))/g;
+    const rootSelectorRE = /((?:[^\w\-.#]|^)(body|html|:root))/gm;
+    const rootCombinationRE = /(html[^\w{]+)/gm;
 
-    if (rootSelectorRE.test(rule.selectorText)) {
-      return rule.cssText.replace(rootSelectorRE, prefix);
+    const selector = rule.selectorText.trim();
+
+    let { cssText } = rule;
+    // handle html { ... }
+    // handle body { ... }
+    // handle :root { ... }
+    if (selector === 'html' || selector === 'body' || selector === ':root') {
+      return cssText.replace(rootSelectorRE, prefix);
     }
 
-    return `${prefix} ${rule.cssText}`;
+    // handle html body { ... }
+    // handle html > body { ... }
+    if (rootCombinationRE.test(rule.selectorText)) {
+      const siblingSelectorRE = /(html[^\w{]+)(\+|~)/gm;
+
+      // since html + body is a non-standard rule for html
+      // transformer will ignore it
+      if (!siblingSelectorRE.test(rule.selectorText)) {
+        cssText = cssText.replace(rootCombinationRE, '');
+      }
+    }
+
+    if (rootSelectorRE.test(rule.selectorText)) {
+      // handle div,body,span { ... }
+      return cssText.replace(rootSelectorRE, m => {
+        if (m && m[0] === ',') {
+          return `,${prefix}`;
+        }
+        return prefix;
+      });
+    }
+
+    return `${prefix} ${cssText}`;
   }
 
   // handle case:

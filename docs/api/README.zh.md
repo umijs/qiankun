@@ -133,9 +133,26 @@ toc: menu
 
       配置为 `function` 则可完全自定义应用的资源加载时机 (首屏应用及次屏应用)
 
-    - sandbox - `boolean` | `{ strictStyleIsolation?: boolean }` - 可选，是否开启沙箱，默认为 `true`。
+    - sandbox - `boolean` | `{ strictStyleIsolation?: boolean, experimentalStyleIsolation?: boolean }` - 可选，是否开启沙箱，默认为 `true`。
 
       当配置为 `{ strictStyleIsolation: true }` 表示开启严格的样式隔离模式。这种模式下 qiankun 会为每个微应用的容器包裹上一个 [shadow dom](https://developer.mozilla.org/zh-CN/docs/Web/Web_Components/Using_shadow_DOM) 节点，从而确保微应用的样式不会对全局造成影响。
+
+      而除此以外，qiankun 还提供了一种实验性的方式来支持样式隔离，当 `experimentalStyleIsolation` 被设置为 true 时，qiankun 将会通过动态改写一个特殊的选择器约束来限制 css 的生效范围，应用的样式会按照如下模式改写：
+
+      ```javascript
+      // 假设应用名是 react16
+      .app-main {
+        font-size: 14px;
+      }
+
+      div[data-qiankun-react16] .app-main {
+        font-size: 14px;
+      }
+      ```
+
+      注意:
+      @keyframes, @font-face, @import, @page 将不被支持 (i.e. 不会被改写)
+      P.S: 在目前的阶段，该功能还不支持动态的、使用 `<link />`标签来插入外联的样式，但考虑在未来支持这部分场景。
 
     - singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - 可选，是否为单实例场景，单实例指的是同一时间只会渲染一个微应用。默认为 `true`。
 
@@ -144,6 +161,8 @@ toc: menu
     - getPublicPath - `(url: string) => string` - 可选
 
     - getTemplate - `(tpl: string) => string` - 可选
+
+    - excludeAssetFilter - `(asset: string) => boolean` - 可选，指定部分特殊的动态加载的微应用资源（css/js) 不被qiankun 劫持处理
 
 - 用法
 
@@ -217,7 +236,7 @@ toc: menu
     * sandbox - `boolean` | `{ strictStyleIsolation?: boolean, experimentalStyleIsolation?: boolean }` - 可选，是否开启沙箱，默认为 `true`。
 
       默认情况下沙箱可以确保单实例场景子应用之间的样式隔离，但是无法确保主应用跟子应用、或者多实例场景的子应用样式隔离。当配置为 `{ strictStyleIsolation: true }` 时表示开启严格的样式隔离模式。这种模式下 qiankun 会为每个微应用的容器包裹上一个 [shadow dom](https://developer.mozilla.org/zh-CN/docs/Web/Web_Components/Using_shadow_DOM) 节点，从而确保微应用的样式不会对全局造成影响。
-      
+
       <Alert>
         基于 ShadowDOM 的严格样式隔离并不是一个可以无脑使用的方案，大部分情况下都需要接入应用做一些适配后才能正常在 ShadowDOM 中运行起来（比如 react 场景下需要解决这些 <a target="_blank" href="https://github.com/facebook/react/issues/10422">问题</a>，使用者需要清楚开启了 <code>strictStyleIsolation</code> 意味着什么。后续 qiankun 会提供更多官方实践文档帮助用户能快速的将应用改造成可以运行在 ShadowDOM 环境的微应用。
       </Alert>

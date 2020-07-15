@@ -18,12 +18,13 @@ export function patchAtMounting(
   sandbox: SandBox,
   singular: boolean,
   scopedCSS: boolean,
+  excludeAssetFilter?: Function,
 ): Freer[] {
   const basePatchers = [
     () => patchInterval(),
     () => patchWindowListener(),
     () => patchHistoryListener(),
-    () => patchDynamicAppend(appName, elementGetter, sandbox.proxy, true, singular, scopedCSS),
+    () => patchDynamicAppend(appName, elementGetter, sandbox.proxy, true, singular, scopedCSS, excludeAssetFilter),
   ];
 
   const patchersInSandbox = {
@@ -41,8 +42,11 @@ export function patchAtBootstrapping(
   sandbox: SandBox,
   singular: boolean,
   scopedCSS: boolean,
+  excludeAssetFilter?: Function,
 ): Freer[] {
-  const basePatchers = [() => patchDynamicAppend(appName, elementGetter, sandbox.proxy, false, singular, scopedCSS)];
+  const basePatchers = [
+    () => patchDynamicAppend(appName, elementGetter, sandbox.proxy, false, singular, scopedCSS, excludeAssetFilter),
+  ];
 
   const patchersInSandbox = {
     [SandBoxType.LegacyProxy]: basePatchers,

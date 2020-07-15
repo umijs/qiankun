@@ -60,13 +60,15 @@ function getNewAppendChild(args: {
   appWrapperGetter: CallableFunction;
   headOrBodyAppendChild: typeof HTMLElement.prototype.appendChild;
   scopedCSS: boolean;
+  excludeAssetFilter?: CallableFunction;
 }) {
   return function appendChild<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, newChild: T) {
     const element = newChild as any;
     const { headOrBodyAppendChild } = args;
     if (element.tagName) {
       // eslint-disable-next-line prefer-const
-      let { appWrapperGetter, proxy, singular, dynamicStyleSheetElements, appName, scopedCSS } = args;
+      let { appWrapperGetter, proxy, singular, dynamicStyleSheetElements } = args;
+      const { appName, scopedCSS, excludeAssetFilter } = args;
 
       const storedContainerInfo = element[attachProxySymbol];
       if (storedContainerInfo) {
@@ -95,12 +97,15 @@ function getNewAppendChild(args: {
         case LINK_TAG_NAME:
         case STYLE_TAG_NAME: {
           const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
-
           if (!invokedByMicroApp) {
             return headOrBodyAppendChild.call(this, element) as T;
           }
 
           const mountDOM = appWrapperGetter();
+          const { href } = stylesheetElement as HTMLLinkElement;
+          if (excludeAssetFilter && href && excludeAssetFilter(href)) {
+            return rawAppendChild.call(mountDOM, element) as T;
+          }
 
           if (scopedCSS) {
             css.process(mountDOM, stylesheetElement, appName);
@@ -116,10 +121,15 @@ function getNewAppendChild(args: {
             return headOrBodyAppendChild.call(this, element) as T;
           }
 
+          const mountDOM = appWrapperGetter();
           const { src, text } = element as HTMLScriptElement;
 
+          // some script like jsonp maybe not support cors which should't use execScripts
+          if (excludeAssetFilter && src && excludeAssetFilter(src)) {
+            return rawAppendChild.call(mountDOM, element) as T;
+          }
+
           const { fetch } = frameworkConfiguration;
-          const mountDOM = appWrapperGetter();
           if (src) {
             execScripts(null, [src], proxy, { fetch, strictGlobal: !singular }).then(
               () => {
@@ -319,6 +329,7 @@ export default function patch(
   mounting = true,
   singular = true,
   scopedCSS = false,
+  excludeAssetFilter?: CallableFunction,
 ): Freer {
   let dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
   let deleteProxyPropertyGetter: Function = noop;
@@ -367,6 +378,7 @@ export default function patch(
       singular,
       dynamicStyleSheetElements,
       scopedCSS,
+      excludeAssetFilter,
     });
     HTMLBodyElement.prototype.appendChild = getNewAppendChild({
       headOrBodyAppendChild: rawBodyAppendChild,
@@ -376,6 +388,7 @@ export default function patch(
       singular,
       dynamicStyleSheetElements,
       scopedCSS,
+      excludeAssetFilter,
     });
   }
 
