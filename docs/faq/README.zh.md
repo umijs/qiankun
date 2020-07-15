@@ -248,7 +248,7 @@ qiankun 2.0 版本将提供一种更智能的方式使其自动化。
 如果希望 qiankun （或其依赖库、或者您的应用本身）在 IE 下正常运行，你至少需要在应用入口引入以下这些 polyfills：
 
 <Alert type="info">
-什么是 [polyfill](https://developer.mozilla.org/zh-CN/docs/Glossary/Polyfill)
+什么是 <a href="https://developer.mozilla.org/zh-CN/docs/Glossary/Polyfill">polyfill</a>
 </Alert>
 
 ```javascript

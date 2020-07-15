@@ -182,7 +182,7 @@ You can find the singular usage [here](/api#startopts).
 If you want qiankun (or its dependent libraries, or your own application) to work properly in IE, you need to introduce the following polyfills at the portal at least:
 
 <Alert type="info">
-What's [polyfill](https://developer.mozilla.org/en-US/docs/Glossary/Polyfill)
+What's <a href="https://developer.mozilla.org/zh-CN/docs/Glossary/Polyfill">polyfill</a>
 </Alert>
 
 ```javascript
