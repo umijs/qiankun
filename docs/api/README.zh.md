@@ -137,7 +137,7 @@ toc: menu
 
       当配置为 `{ strictStyleIsolation: true }` 表示开启严格的样式隔离模式。这种模式下 qiankun 会为每个微应用的容器包裹上一个 [shadow dom](https://developer.mozilla.org/zh-CN/docs/Web/Web_Components/Using_shadow_DOM) 节点，从而确保微应用的样式不会对全局造成影响。
 
-    - singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - 可选，是否为单实例场景，默认为 `true`。
+    - singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - 可选，是否为单实例场景，单实例指的是同一时间只会渲染一个微应用。默认为 `true`。
 
     - fetch - `Function` - 可选，自定义的 fetch 方法。
 
@@ -240,7 +240,7 @@ toc: menu
 
       在目前阶段, 我们还不支持以动态的外联形式 (`<link />`) 形式加入的样式，但我们考虑将来支持这一部分。
 
-    * singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - 可选，是否为单实例场景，默认为 `false`。
+    * singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - 可选，是否为单实例场景，单实例指的是同一时间只会渲染一个微应用。默认为 `false`。
 
     * fetch - `Function` - 可选，自定义的 fetch 方法。
 

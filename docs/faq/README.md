@@ -173,9 +173,25 @@ In the future qiankun will provide a smarter way to make it automatically.
 
 Yes.
 
-However, the IE environment (browsers that do not support Proxy) can only use the single-instance pattern, where the `singular` configuration will be set `true` automatically.
+However, the IE environment (browsers that do not support Proxy) can only use the single-instance pattern, where the `singular` configuration will be set `true` automatically by qiankun if IE detected.
 
-You can find the singular usage [here](/api#startopts).
+### How to polyfill IE?
+
+If you want qiankun (or its dependent libraries, or your own application) to work properly in IE, you need to introduce the following polyfills at the portal at least:
+
+<Alert type="info">
+What's [polyfill](https://developer.mozilla.org/en-US/docs/Glossary/Polyfill)
+</Alert>
+
+```javascript
+import 'whatwg-fetch';
+import 'core-js/stable/promise';
+import 'core-js/stable/symbol';
+import 'core-js/stable/string/starts-with';
+import 'core-js/web/url';
+```
+
+**We recommend that you use @babel/preset-env plugin directly to polyfill IE automatically, all the instructions for @babel/preset-env you can found in [babel official document](https://babeljs.io/docs/en/babel-preset-env).**
 
 ## Error `Here is no "fetch" on the window env, you need to polyfill it`
 
@@ -238,22 +254,3 @@ const render = ($) => {
 refer to the [purehtml examples](https://github.com/umijs/qiankun/tree/master/examples/purehtml)
 
 At the same time, [the subApp must support the CORS](#must-a-sub-app-asset-support-cors)
-
-## What's wrong with IE
-
-IE doesn't have some runtime APIs of the others modern broswers, such as: `Promise`, `URL`, `fetch`, etc.
-
-Qiankun invoke some of the APIs that IE doesn't support, so developers need to put the polyfill in the project.
-
-Including but not limited:
-
-```javascript
-import 'core-js/stable/promise';
-import 'core-js/stable/symbol';
-import 'core-js/stable/string/starts-with';
-import 'core-js/web/url';
-```
-
-What's [polyfill](https://developer.mozilla.org/en-US/docs/Glossary/Polyfill)
-
-At the same time, because of the other packages that your project depends on will most likely use some of the APIs that IE is missing, so when you has some errors with the IE, please try to provide the smallest reproducible repo in the issue.

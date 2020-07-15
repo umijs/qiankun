@@ -156,7 +156,7 @@ By linking the micro-application to some url rules, the function of automaticall
       and in current stage, we're not support the case: add external styles by `<link>` yet, we're consider add this part in the future.
 
 
-    - singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - optional，whether is a singular mode，default is `true`.
+    - singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - Optional, whether it is a singleton scenario, singleton means just rendered one micro app at one time. default is `true`.
 
     - fetch - `Function` - optional
 
@@ -237,7 +237,7 @@ A criterion for judging whether the business is closely related: <strong>Look at
 
       When configured as `{strictStyleIsolation: true}`, it means that strict style isolation mode is enabled. In this mode, qiankun will wrap a [shadow dom](https://developer.mozilla.org/zh-CN/docs/Web/Web_Components/Using_shadow_DOM) node for each micro-application container, so as to ensure that the style of the micro application will not affect the whole world.
 
-    * singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - Optional, whether it is a single instance scenario, the default is `false`.
+    * singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - Optional, whether it is a singleton scenario, singleton means just rendered one micro app at one time. Default is `false`.
 
     * fetch - `Function` - Optional, custom fetch method.
 
