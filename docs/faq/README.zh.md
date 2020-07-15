@@ -239,7 +239,7 @@ qiankun 2.0 版本将提供一种更智能的方式使其自动化。
 
 > 兼容.
 
-但是 IE 环境下（不支持 Proxy 的浏览器）只能使用单实例模式，qiankun 会自动将 `singular` 配置置为 `true`。
+但是 IE 环境下（不支持 Proxy 的浏览器）只能使用单实例模式，qiankun 会自动将 `singular` 配置为 `true`。
 
 你可以在[这里](/zh/api#startopts)找到 singular 相关说明。
 
