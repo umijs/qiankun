@@ -102,8 +102,8 @@ function getNewAppendChild(args: {
           }
 
           const mountDOM = appWrapperGetter();
-          const { src } = element;
-          if (excludeAssetFilter && src && excludeAssetFilter(src)) {
+          const { href } = stylesheetElement as HTMLLinkElement;
+          if (excludeAssetFilter && href && excludeAssetFilter(href)) {
             return rawAppendChild.call(mountDOM, element) as T;
           }
 
