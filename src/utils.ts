@@ -31,7 +31,7 @@ export function getWrapperId(appName: string) {
 
 type AssetFilter = (url: string) => boolean;
 
-let globalExcludeAssetFilter: AssetFilter = () => true;
+let globalExcludeAssetFilter: AssetFilter = () => false;
 
 export function getGlobalExcludeAssetFilter() {
   return globalExcludeAssetFilter;

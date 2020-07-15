@@ -8,7 +8,6 @@ import { checkActivityFunctions } from 'single-spa';
 import { Freer, ExecScriptsOpts } from '../interfaces';
 import { getWrapperId, getGlobalExcludeAssetFilter } from '../utils';
 
-
 const styledComponentSymbol = Symbol('styled-component');
 
 declare global {
@@ -87,7 +86,7 @@ export default function hijack(
           // only hijack dynamic style injection when app activated
           if (activated) {
             const { href } = stylesheetElement as HTMLLinkElement;
-            if (getGlobalExcludeAssetFilter()(href)) {
+            if (href && getGlobalExcludeAssetFilter()(href)) {
               break;
             }
 
@@ -103,7 +102,7 @@ export default function hijack(
 
         case SCRIPT_TAG_NAME: {
           const { src, text } = element as HTMLScriptElement;
-          if (getGlobalExcludeAssetFilter()(src)) {
+          if (src && getGlobalExcludeAssetFilter()(src)) {
             break;
           }
 
