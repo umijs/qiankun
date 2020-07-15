@@ -239,9 +239,31 @@ qiankun 2.0 版本将提供一种更智能的方式使其自动化。
 
 > 兼容.
 
-但是 IE 环境下（不支持 Proxy 的浏览器）只能使用单实例模式，即 `singular` 配置会被自动置为 `true`。
+但是 IE 环境下（不支持 Proxy 的浏览器）只能使用单实例模式，qiankun 会自动将 `singular` 配置为 `true`。
 
 你可以在[这里](/zh/api#startopts)找到 singular 相关说明。
+
+### 如何给 ie 打补丁？
+
+如果希望 qiankun （或其依赖库、或者您的应用本身）在 IE 下正常运行，你至少需要在应用入口引入以下这些 polyfills：
+
+<Alert type="info">
+什么是 [polyfill](https://developer.mozilla.org/zh-CN/docs/Glossary/Polyfill)
+</Alert>
+
+```javascript
+import 'whatwg-fetch';
+import 'core-js/stable/promise';
+import 'core-js/stable/symbol';
+import 'core-js/stable/string/starts-with';
+import 'core-js/web/url';
+```
+
+**通常我们建议您直接使用 @babel/preset-env 插件完成自动引入 IE 需要的 polyfill 的能力，所有的操作文档您都可以在 [babel 官方文档](https://babeljs.io/docs/en/babel-preset-env) 找到。**
+
+<Alert type="info">
+您也可以查看[这篇文章](https://www.yuque.com/kuitos/gky7yw/qskte2)来获取更多 IE 兼容相关的知识。
+</Alert>
 
 ## 报错 `Here is no "fetch" on the window env, you need to polyfill it`
 

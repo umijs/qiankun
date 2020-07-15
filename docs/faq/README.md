@@ -173,9 +173,27 @@ In the future qiankun will provide a smarter way to make it automatically.
 
 Yes.
 
-However, the IE environment (browsers that do not support Proxy) can only use the single-instance pattern, where the `singular` configuration will be set `true` automatically.
+However, the IE environment (browsers that do not support Proxy) can only use the single-instance pattern, where the `singular` configuration will be set `true` automatically by qiankun if IE detected.
 
 You can find the singular usage [here](/api#startopts).
+
+### How to polyfill IE?
+
+If you want qiankun (or its dependent libraries, or your own application) to work properly in IE, you need to introduce the following polyfills at the portal at least:
+
+<Alert type="info">
+What's [polyfill](https://developer.mozilla.org/en-US/docs/Glossary/Polyfill)
+</Alert>
+
+```javascript
+import 'whatwg-fetch';
+import 'core-js/stable/promise';
+import 'core-js/stable/symbol';
+import 'core-js/stable/string/starts-with';
+import 'core-js/web/url';
+```
+
+**We recommend that you use @babel/preset-env plugin directly to polyfill IE automatically, all the instructions for @babel/preset-env you can found in [babel official document](https://babeljs.io/docs/en/babel-preset-env).**
 
 ## Error `Here is no "fetch" on the window env, you need to polyfill it`
 
