@@ -49,7 +49,7 @@ export function registerMicroApps<T extends object = {}>(
 export function unregisterMicroApp(appName: string) {
   return unregisterApplication(appName).then(() => {
     const appIndex = microApps.findIndex(p=> p.name === appName);
-    ~appIndex && microApps.splice(appIndex, 1);
+    (appIndex >= 0) && microApps.splice(appIndex, 1);
   });
 }
 
