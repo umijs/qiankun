@@ -48,8 +48,10 @@ export function registerMicroApps<T extends object = {}>(
 
 export function unregisterMicroApp(appName: string) {
   return unregisterApplication(appName).then(() => {
-    const appIndex = microApps.findIndex(p=> p.name === appName);
-    (appIndex >= 0) && microApps.splice(appIndex, 1);
+    const appIndex = microApps.findIndex(p => p.name === appName);
+    if (appIndex >= 0) {
+      microApps.splice(appIndex, 1);
+    }
   });
 }
 
