@@ -10,7 +10,7 @@ Qiankun is an implementation of [Micro Frontends](https://micro-frontends.org/),
 
 Qiankun hatched from [Ant Financial](https://en.wikipedia.org/wiki/Ant_Financial)’s unified front-end platform for cloud products based on micro-frontends architecture. After full testing and polishing of a number of online applications, we extracted its micro-frontends kernel and open sourced it. We hope to help the systems who has the same requirement more convenient to build its own micro-frontends application in the community. At the same time, with the help of community, qiankun will be polished and improved.
 
-At present qiankun has served more than 100 online applications inside Ant, and it is definitely trustworthy in terms of ease of use and completeness.
+At present qiankun has served more than 200 online applications inside Ant, and it is definitely trustworthy in terms of ease of use and completeness.
 
 ## What Are Micro FrontEnds
 
@@ -57,7 +57,7 @@ TODO
 
 ## Why Not Iframe
 
-Check this artical [Why Not Iframe](https://www.yuque.com/kuitos/gky7yw/gesexv)
+Check this article [Why Not Iframe](https://www.yuque.com/kuitos/gky7yw/gesexv)
 
 ## Features
 
@@ -67,4 +67,4 @@ Check this artical [Why Not Iframe](https://www.yuque.com/kuitos/gky7yw/gesexv)
 - 🛡 **Style Isolation**, make sure styles don't interfere with each other.
 - 🧳 **JS Sandbox**, ensure that global variables/events do not conflict between sub-applications.
 - ⚡ **Prefetch Assets**, prefetch unopened sub-application assets during the browser idle time to speed up the sub-application opening speed.
-- 🔌 **Umi Plugin**, [@umijs/plugin-qiankun](https://github.com/umijs/umi-plugin-qiankun) is provided for umi applications to switch to a micro frontends architecture system with one line code.
+- 🔌 **Umi Plugin**, [@umijs/plugin-qiankun](https://github.com/umijs/plugins/tree/master/packages/plugin-qiankun) is provided for umi applications to switch to a micro frontends architecture system with one line code.

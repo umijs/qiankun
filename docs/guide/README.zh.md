@@ -11,7 +11,7 @@ qiankun 是一个基于 [single-spa](https://github.com/CanopyTax/single-spa) �
 
 qiankun 孵化自蚂蚁金融科技基于微前端架构的云产品统一接入平台，在经过一批线上应用的充分检验及打磨后，我们将其微前端内核抽取出来并开源，希望能同时帮助社区有类似需求的系统更方便的构建自己的微前端系统，同时也希望通过社区的帮助将 qiankun 打磨的更加成熟完善。
 
-目前 qiankun 已在蚂蚁内部服务了超过 100 个线上应用，在易用性及完备性上，绝对是值得信赖的。
+目前 qiankun 已在蚂蚁内部服务了超过 200+ 线上应用，在易用性及完备性上，绝对是值得信赖的。
 
 ## 什么是微前端
 
@@ -69,4 +69,4 @@ TODO
 - 🛡​ **样式隔离**，确保微应用之间样式互相不干扰。
 - 🧳 **JS 沙箱**，确保微应用之间 全局变量/事件 不冲突。
 - ⚡️ **资源预加载**，在浏览器空闲时间预加载未打开的微应用资源，加速微应用打开速度。
-- 🔌 **umi 插件**，提供了 [@umijs/plugin-qiankun](https://github.com/umijs/umi-plugin-qiankun) 供 umi 应用一键切换成微前端架构系统。
+- 🔌 **umi 插件**，提供了 [@umijs/plugin-qiankun](https://github.com/umijs/plugins/tree/master/packages/plugin-qiankun) 供 umi 应用一键切换成微前端架构系统。

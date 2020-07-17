@@ -1,9 +1,6 @@
-const fabric = require('@umijs/fabric');
-
 module.exports = {
-  ...fabric.eslint,
+  extends: [require.resolve('@umijs/fabric/dist/eslint')],
   rules: {
-    ...fabric.eslint.rules,
     '@typescript-eslint/prefer-interface': 0,
     '@typescript-eslint/no-explicit-any': 0,
     '@typescript-eslint/array-type': ['error', { default: 'array-simple' }],

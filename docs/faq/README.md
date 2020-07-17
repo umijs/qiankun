@@ -71,6 +71,21 @@ To solve the error, choose one of the options listed below:
 1. Use bundler to pack `Vue` library, instead of CDN or external module
 2. Rename `Vue` to other name in master application, eg: `window.Vue2 = window.Vue; window.Vue = undefined`
 
+## Tips on Using Vue Router
+
+The qiankun main app activates the corresponding micro app according to the `activeRule` configuration.
+
+### a. The main app is using Vue Router's hash mode
+
+When the main app is in hash mode, generally, micro app is also in hash mode. In this case, the base hash path of the main app is assigned to the corresponding micro app (e.g. `#base`). At this time, if the micro app needs to make a secondary path jump in hash mode (such as `#/base1/child1`) when there is a base path, you just need to add a prefix for each route yourself.     
+The base parameter in VueRouter's hash mode [does not support adding a hash path base](https://github.com/vuejs/vue-router/blob/dev/src/index.js#L55-L69).
+
+### b. The main app is using Vue Router's history mode
+
+When the main app is in history mode and the micro app is also in history mode, it works perfectly. And if the micro app needs to add a base path, just [set the base property](https://router.vuejs.org/api/#base) of the sub item.
+
+When the main app is in history mode and the micro app is in hash mode, it works perfectly.
+
 ## Why dynamic imported assets missing?
 
 Two way to solve that:
@@ -158,9 +173,31 @@ In the future qiankun will provide a smarter way to make it automatically.
 
 Yes.
 
-However, the IE environment (browsers that do not support Proxy) can only use the single-instance pattern, where the `singular` configuration will be set `true` automatically.
+However, the IE environment (browsers that do not support Proxy) can only use the single-instance pattern, where the `singular` configuration will be set `true` automatically by qiankun if IE detected.
 
 You can find the singular usage [here](/api#startopts).
+
+### How to polyfill IE?
+
+If you want qiankun (or its dependent libraries, or your own application) to work properly in IE, you need to introduce the following polyfills at the portal at least:
+
+<Alert type="info">
+What's <a href="https://developer.mozilla.org/en-US/docs/Glossary/Polyfill" target="_blank">polyfill</a>
+</Alert>
+
+```javascript
+import 'whatwg-fetch';
+import 'core-js/stable/promise';
+import 'core-js/stable/symbol';
+import 'core-js/stable/string/starts-with';
+import 'core-js/web/url';
+```
+
+**We recommend that you use @babel/preset-env plugin directly to polyfill IE automatically, all the instructions for @babel/preset-env you can found in [babel official document](https://babeljs.io/docs/en/babel-preset-env).**
+
+## Error `Here is no "fetch" on the window env, you need to polyfill it`
+
+Qiankun use `window.fetch` to get resources of the micro applications, but [some browsers does not support it](https://caniuse.com/#search=fetch), you should get the [polyfill](https://github.com/github/fetch) in the entry.
 
 ## Does qiankun support the subApp without bundler?
 
@@ -219,3 +256,11 @@ const render = ($) => {
 refer to the [purehtml examples](https://github.com/umijs/qiankun/tree/master/examples/purehtml)
 
 At the same time, [the subApp must support the CORS](#must-a-sub-app-asset-support-cors)
+
+## How to handle subapplication JSONP cross-domain errors?
+
+qiankun will convert the dynamic script loading of the subapplication (such as JSONP) into a fetch request, so the corresponding back-end service needs to support cross-domain, otherwise it will cause an error.
+
+In singular mode, you can use the `excludeAssetFilter` parameter to release this part of the resource request, but note that the resources released by this option will escape the sandbox, and the resulting side effects need to be handled by you.
+
+If you use JSONP in not-singular mode, simply using `excludeAssetFilter` does not achieve good results, because each application is isolated by the sandbox; you can provide a unified JSONP tool in the main application, and the subapplication just calls the tool.

@@ -63,7 +63,7 @@ Visit `http://localhost:7099`.
 - 🛡 **Style Isolation**
 - 🧳 **JS Sandbox**
 - ⚡ **Prefetch Assets**
-- 🔌 **[Umi Plugin](https://github.com/umijs/umi-plugin-qiankun) Integration**
+- 🔌 **[Umi Plugin](https://github.com/umijs/plugins/tree/master/packages/plugin-qiankun) Integration**
 
 ## 🎯 Roadmap
 
@@ -79,6 +79,8 @@ https://qiankun.umijs.org/faq/
 ## 👬 Community
 
 https://qiankun.umijs.org/#community
+
+## 🧑‍💻 Contributors
 
 ## 🎁 Acknowledgements
 

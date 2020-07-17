@@ -3,11 +3,12 @@
  * @since 2019-10-21
  */
 import { execScripts } from 'import-html-entry';
-import { isFunction } from 'lodash';
+import { isFunction, noop } from 'lodash';
 import { checkActivityFunctions } from 'single-spa';
 import { frameworkConfiguration } from '../../apis';
 import { Freer } from '../../interfaces';
 import { getTargetValue, setProxyPropertyGetter } from '../common';
+import * as css from './css';
 
 const styledComponentSymbol = 'Symbol(styled-component-qiankun)';
 const attachProxySymbol = 'Symbol(attach-proxy-qiankun)';
@@ -58,13 +59,16 @@ function getNewAppendChild(args: {
   dynamicStyleSheetElements: HTMLStyleElement[];
   appWrapperGetter: CallableFunction;
   headOrBodyAppendChild: typeof HTMLElement.prototype.appendChild;
+  scopedCSS: boolean;
+  excludeAssetFilter?: CallableFunction;
 }) {
   return function appendChild<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, newChild: T) {
     const element = newChild as any;
     const { headOrBodyAppendChild } = args;
     if (element.tagName) {
       // eslint-disable-next-line prefer-const
-      let { appWrapperGetter, proxy, singular, dynamicStyleSheetElements, appName } = args;
+      let { appWrapperGetter, proxy, singular, dynamicStyleSheetElements } = args;
+      const { appName, scopedCSS, excludeAssetFilter } = args;
 
       const storedContainerInfo = element[attachProxySymbol];
       if (storedContainerInfo) {
@@ -78,35 +82,38 @@ function getNewAppendChild(args: {
         proxy = storedContainerInfo.proxy;
       }
 
-      // have storedContainerInfo means it invoked by a micro app
-      const invokedByMicroApp = storedContainerInfo && !singular;
-
-      switch (element.tagName) {
-        case LINK_TAG_NAME:
-        case STYLE_TAG_NAME: {
-          const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
-
-          if (invokedByMicroApp) {
-            // eslint-disable-next-line no-shadow
-            dynamicStyleSheetElements.push(stylesheetElement);
-            return rawAppendChild.call(appWrapperGetter(), stylesheetElement) as T;
-          }
-
-          // check if the currently specified application is active
+      const invokedByMicroApp = singular
+        ? // check if the currently specified application is active
           // While we switch page from qiankun app to a normal react routing page, the normal one may load stylesheet dynamically while page rendering,
           // but the url change listener must to wait until the current call stack is flushed.
           // This scenario may cause we record the stylesheet from react routing page dynamic injection,
           // and remove them after the url change triggered and qiankun app is unmouting
           // see https://github.com/ReactTraining/history/blob/master/modules/createHashHistory.js#L222-L230
-          const activated = checkActivityFunctions(window.location).some(name => name === appName);
-          // only hijack dynamic style injection when app activated
-          if (activated) {
-            dynamicStyleSheetElements.push(stylesheetElement);
+          checkActivityFunctions(window.location).some(name => name === appName)
+        : // have storedContainerInfo means it invoked by a micro app in multiply mode
+          !!storedContainerInfo;
 
-            return rawAppendChild.call(appWrapperGetter(), stylesheetElement) as T;
+      switch (element.tagName) {
+        case LINK_TAG_NAME:
+        case STYLE_TAG_NAME: {
+          const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
+          if (!invokedByMicroApp) {
+            return headOrBodyAppendChild.call(this, element) as T;
           }
 
-          return headOrBodyAppendChild.call(this, element) as T;
+          const mountDOM = appWrapperGetter();
+          const { href } = stylesheetElement as HTMLLinkElement;
+          if (excludeAssetFilter && href && excludeAssetFilter(href)) {
+            return rawAppendChild.call(mountDOM, element) as T;
+          }
+
+          if (scopedCSS) {
+            css.process(mountDOM, stylesheetElement, appName);
+          }
+
+          // eslint-disable-next-line no-shadow
+          dynamicStyleSheetElements.push(stylesheetElement);
+          return rawAppendChild.call(mountDOM, stylesheetElement) as T;
         }
 
         case SCRIPT_TAG_NAME: {
@@ -114,7 +121,13 @@ function getNewAppendChild(args: {
             return headOrBodyAppendChild.call(this, element) as T;
           }
 
+          const mountDOM = appWrapperGetter();
           const { src, text } = element as HTMLScriptElement;
+
+          // some script like jsonp maybe not support cors which should't use execScripts
+          if (excludeAssetFilter && src && excludeAssetFilter(src)) {
+            return rawAppendChild.call(mountDOM, element) as T;
+          }
 
           const { fetch } = frameworkConfiguration;
           if (src) {
@@ -142,7 +155,7 @@ function getNewAppendChild(args: {
             );
 
             const dynamicScriptCommentElement = document.createComment(`dynamic script ${src} replaced by qiankun`);
-            return rawAppendChild.call(appWrapperGetter(), dynamicScriptCommentElement) as T;
+            return rawAppendChild.call(mountDOM, dynamicScriptCommentElement) as T;
           }
 
           execScripts(null, [`<script>${text}</script>`], proxy, { strictGlobal: !singular }).then(
@@ -150,7 +163,7 @@ function getNewAppendChild(args: {
             element.onerror,
           );
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
-          return rawAppendChild.call(appWrapperGetter(), dynamicInlineScriptCommentElement) as T;
+          return rawAppendChild.call(mountDOM, dynamicInlineScriptCommentElement) as T;
         }
 
         default:
@@ -197,13 +210,14 @@ function getNewInsertBefore(args: {
   dynamicStyleSheetElements: HTMLStyleElement[];
   appWrapperGetter: CallableFunction;
   headOrBodyInsertBefore: typeof HTMLElement.prototype.insertBefore;
+  scopedCSS: boolean;
 }) {
   return function insertBefore<T extends Node>(this: HTMLHeadElement, newChild: T, refChild: Node | null): T {
     const element = newChild as any;
     const { headOrBodyInsertBefore } = args;
     if (element.tagName) {
       // eslint-disable-next-line prefer-const
-      let { appName, appWrapperGetter, proxy, singular, dynamicStyleSheetElements } = args;
+      let { appName, appWrapperGetter, proxy, singular, dynamicStyleSheetElements, scopedCSS } = args;
 
       const storedContainerInfo = element[attachProxySymbol];
       if (storedContainerInfo) {
@@ -215,32 +229,30 @@ function getNewInsertBefore(args: {
         dynamicStyleSheetElements = storedContainerInfo.dynamicStyleSheetElements;
       }
 
-      // have storedContainerInfo means it invoked by a micro app
-      const invokedByMicroApp = storedContainerInfo && !singular;
+      const invokedByMicroApp = singular
+        ? checkActivityFunctions(window.location).some(name => name === appName)
+        : !!storedContainerInfo;
 
       switch (element.tagName) {
         case LINK_TAG_NAME:
         case STYLE_TAG_NAME: {
           const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
 
-          // have storedContainerInfo means it invoked by a micro app
-          if (invokedByMicroApp) {
-            // eslint-disable-next-line no-shadow
-            dynamicStyleSheetElements.push(stylesheetElement);
-            return rawAppendChild.call(appWrapperGetter(), stylesheetElement) as T;
+          if (!invokedByMicroApp) {
+            return headOrBodyInsertBefore.call(this, element, refChild) as T;
           }
 
-          const activated = checkActivityFunctions(window.location).some(name => name === appName);
+          const mountDOM = appWrapperGetter();
 
-          if (activated) {
-            dynamicStyleSheetElements.push(stylesheetElement);
-            const wrapper = appWrapperGetter();
-            const referenceNode = wrapper.contains(refChild) ? refChild : null;
-            return rawInsertBefore.call(wrapper, stylesheetElement, referenceNode) as T;
+          if (scopedCSS) {
+            css.process(mountDOM, stylesheetElement, appName);
           }
 
-          return headOrBodyInsertBefore.call(this, element, refChild) as T;
+          dynamicStyleSheetElements.push(stylesheetElement);
+          const referenceNode = mountDOM.contains(refChild) ? refChild : null;
+          return rawInsertBefore.call(mountDOM, stylesheetElement, referenceNode) as T;
         }
+
         case SCRIPT_TAG_NAME: {
           if (!invokedByMicroApp) {
             return headOrBodyInsertBefore.call(this, element, refChild) as T;
@@ -250,8 +262,8 @@ function getNewInsertBefore(args: {
 
           const { fetch } = frameworkConfiguration;
 
-          const wrapper = appWrapperGetter();
-          const referenceNode = wrapper.contains(refChild) ? refChild : null;
+          const mountDOM = appWrapperGetter();
+          const referenceNode = mountDOM.contains(refChild) ? refChild : null;
 
           if (src) {
             execScripts(null, [src], proxy, { fetch, strictGlobal: !singular }).then(
@@ -278,7 +290,7 @@ function getNewInsertBefore(args: {
             );
 
             const dynamicScriptCommentElement = document.createComment(`dynamic script ${src} replaced by qiankun`);
-            return rawInsertBefore.call(appWrapperGetter(), dynamicScriptCommentElement, referenceNode) as T;
+            return rawInsertBefore.call(mountDOM, dynamicScriptCommentElement, referenceNode) as T;
           }
 
           execScripts(null, [`<script>${text}</script>`], proxy, { strictGlobal: !singular }).then(
@@ -286,7 +298,7 @@ function getNewInsertBefore(args: {
             element.onerror,
           );
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
-          return rawInsertBefore.call(appWrapperGetter(), dynamicInlineScriptCommentElement, referenceNode) as T;
+          return rawInsertBefore.call(mountDOM, dynamicInlineScriptCommentElement, referenceNode) as T;
         }
         default:
           break;
@@ -316,11 +328,14 @@ export default function patch(
   proxy: Window,
   mounting = true,
   singular = true,
+  scopedCSS = false,
+  excludeAssetFilter?: CallableFunction,
 ): Freer {
   let dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
+  let deleteProxyPropertyGetter: Function = noop;
 
   if (!singular) {
-    setProxyPropertyGetter(proxy, 'document', () => {
+    deleteProxyPropertyGetter = setProxyPropertyGetter(proxy, 'document', () => {
       return new Proxy(document, {
         get(target: Document, property: PropertyKey): any {
           if (property === 'createElement') {
@@ -362,6 +377,8 @@ export default function patch(
       proxy,
       singular,
       dynamicStyleSheetElements,
+      scopedCSS,
+      excludeAssetFilter,
     });
     HTMLBodyElement.prototype.appendChild = getNewAppendChild({
       headOrBodyAppendChild: rawBodyAppendChild,
@@ -370,6 +387,8 @@ export default function patch(
       proxy,
       singular,
       dynamicStyleSheetElements,
+      scopedCSS,
+      excludeAssetFilter,
     });
   }
 
@@ -398,6 +417,7 @@ export default function patch(
       singular,
       dynamicStyleSheetElements,
       headOrBodyInsertBefore: rawHeadInsertBefore,
+      scopedCSS,
     });
   }
 
@@ -435,6 +455,8 @@ export default function patch(
       // As now the sub app content all wrapped with a special id container,
       // the dynamic style sheet would be removed automatically while unmoutting
     });
+
+    deleteProxyPropertyGetter();
 
     return function rebuild() {
       dynamicStyleSheetElements.forEach(stylesheetElement => {

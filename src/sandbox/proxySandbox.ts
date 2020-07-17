@@ -3,7 +3,7 @@
  * @author Kuitos
  * @since 2020-3-31
  */
-import { SandBox } from '../interfaces';
+import { SandBox, SandBoxType } from '../interfaces';
 import { uniq } from '../utils';
 import { getProxyPropertyGetter, getProxyPropertyValue, getTargetValue } from './common';
 import { clearSystemJsProps, interceptSystemJsProps } from './noise/systemjs';
@@ -103,6 +103,8 @@ export default class ProxySandbox implements SandBox {
 
   proxy: WindowProxy;
 
+  type: SandBoxType;
+
   sandboxRunning = true;
 
   active() {
@@ -124,6 +126,7 @@ export default class ProxySandbox implements SandBox {
 
   constructor(name: string) {
     this.name = name;
+    this.type = SandBoxType.Proxy;
     const { sandboxRunning, updatedValueSet } = this;
 
     const rawWindow = window;

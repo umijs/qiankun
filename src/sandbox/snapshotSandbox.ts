@@ -2,7 +2,7 @@
  * @author Hydrogen
  * @since 2020-3-8
  */
-import { SandBox } from '../interfaces';
+import { SandBox, SandBoxType } from '../interfaces';
 
 function iter(obj: object, callbackFn: (prop: any) => void) {
   // eslint-disable-next-line guard-for-in, no-restricted-syntax
@@ -21,6 +21,8 @@ export default class SnapshotSandbox implements SandBox {
 
   name: string;
 
+  type: SandBoxType;
+
   sandboxRunning = false;
 
   private windowSnapshot!: Window;
@@ -30,6 +32,7 @@ export default class SnapshotSandbox implements SandBox {
   constructor(name: string) {
     this.name = name;
     this.proxy = window;
+    this.type = SandBoxType.Snapshot;
     this.active();
   }
 

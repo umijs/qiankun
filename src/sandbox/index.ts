@@ -8,6 +8,8 @@ import { patchAtBootstrapping, patchAtMounting } from './patchers';
 import ProxySandbox from './proxySandbox';
 import SnapshotSandbox from './snapshotSandbox';
 
+export { css } from './patchers';
+
 /**
  * 生成应用运行时沙箱
  *
@@ -24,7 +26,13 @@ import SnapshotSandbox from './snapshotSandbox';
  * @param elementGetter
  * @param singular
  */
-export function createSandbox(appName: string, elementGetter: () => HTMLElement | ShadowRoot, singular: boolean) {
+export function createSandbox(
+  appName: string,
+  elementGetter: () => HTMLElement | ShadowRoot,
+  singular: boolean,
+  scopedCSS: boolean,
+  excludeAssetFilter?: (url: string) => boolean,
+) {
   let sandbox: SandBox;
   if (window.Proxy) {
     sandbox = singular ? new LegacySandbox(appName) : new ProxySandbox(appName);
@@ -33,7 +41,14 @@ export function createSandbox(appName: string, elementGetter: () => HTMLElement 
   }
 
   // some side effect could be be invoked while bootstrapping, such as dynamic stylesheet injection with style-loader, especially during the development phase
-  const bootstrappingFreers = patchAtBootstrapping(appName, elementGetter, sandbox.proxy, singular);
+  const bootstrappingFreers = patchAtBootstrapping(
+    appName,
+    elementGetter,
+    sandbox,
+    singular,
+    scopedCSS,
+    excludeAssetFilter,
+  );
   // mounting freers are one-off and should be re-init at every mounting time
   let mountingFreers: Freer[] = [];
 
@@ -63,7 +78,7 @@ export function createSandbox(appName: string, elementGetter: () => HTMLElement 
 
       /* ------------------------------------------ 2. 开启全局变量补丁 ------------------------------------------*/
       // render 沙箱启动时开始劫持各类全局监听，尽量不要在应用初始化阶段有 事件监听/定时器 等副作用
-      mountingFreers = patchAtMounting(appName, elementGetter, sandbox.proxy, singular);
+      mountingFreers = patchAtMounting(appName, elementGetter, sandbox, singular, scopedCSS, excludeAssetFilter);
 
       /* ------------------------------------------ 3. 重置一些初始化时的副作用 ------------------------------------------*/
       // 存在 rebuilder 则表明有些副作用需要重建

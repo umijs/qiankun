@@ -50,7 +50,10 @@ export function getProxyPropertyGetter(proxy: WindowProxy, property: PropertyKey
   return undefined;
 }
 
-export function setProxyPropertyGetter(proxy: WindowProxy, property: PropertyKey, getter: () => any) {
+export function setProxyPropertyGetter(proxy: WindowProxy, property: PropertyKey, getter: () => any): Function {
   const prevGetters = proxyPropertyGetterMap.get(proxy) || {};
   proxyPropertyGetterMap.set(proxy, { ...prevGetters, [property]: getter });
+  return function deleteProxyPropertyGetter() {
+    proxyPropertyGetterMap.delete(proxy);
+  };
 }

@@ -2,7 +2,7 @@
  * @author Kuitos
  * @since 2019-04-11
  */
-import { SandBox } from '../../interfaces';
+import { SandBox, SandBoxType } from '../../interfaces';
 import { getTargetValue } from '../common';
 
 function isPropConfigurable(target: object, prop: PropertyKey) {
@@ -37,6 +37,8 @@ export default class SingularProxySandbox implements SandBox {
 
   proxy: WindowProxy;
 
+  type: SandBoxType;
+
   sandboxRunning = true;
 
   active() {
@@ -65,6 +67,7 @@ export default class SingularProxySandbox implements SandBox {
 
   constructor(name: string) {
     this.name = name;
+    this.type = SandBoxType.LegacyProxy;
     const {
       sandboxRunning,
       addedPropsMapInSandbox,
