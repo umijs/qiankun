@@ -1,5 +1,5 @@
 import { noop } from 'lodash';
-import { mountRootParcel, registerApplication, start as startSingleSpa } from 'single-spa';
+import { mountRootParcel, registerApplication, unregisterApplication, start as startSingleSpa } from 'single-spa';
 import { FrameworkConfiguration, FrameworkLifeCycles, LoadableApp, MicroApp, RegistrableApp } from './interfaces';
 import { loadApp } from './loader';
 import { doPrefetchStrategy } from './prefetch';
@@ -43,6 +43,13 @@ export function registerMicroApps<T extends object = {}>(
       activeWhen: activeRule,
       customProps: props,
     });
+  });
+}
+
+export function unregisterMicroApp(appName: string) {
+  return unregisterApplication(appName).then(() => {
+    const appIndex = microApps.findIndex(p=> p.name === appName);
+    ~appIndex && microApps.splice(appIndex, 1);
   });
 }
 
