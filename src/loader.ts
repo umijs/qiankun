@@ -216,7 +216,7 @@ export async function loadApp<T extends object>(
   lifeCycles?: FrameworkLifeCycles<T>,
 ): Promise<ParcelConfigObject> {
   const { entry, name: appName } = app;
-  const appInstanceId = `${appName}_${+new Date()}`;
+  const appInstanceId = `${appName}_${+new Date()}_${Math.floor(Math.random() * 1000)}`;
 
   const markName = `[qiankun] App ${appInstanceId} Loading`;
   if (process.env.NODE_ENV === 'development') {
