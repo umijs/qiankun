@@ -179,7 +179,7 @@ You can find the singular usage [here](/api#startopts).
 
 ### How to polyfill IE?
 
-If you want qiankun (or its dependent libraries, or your own application) to work properly in IE, you need to introduce the following polyfills at the portal at least:
+If you want qiankun (or its dependent libraries, or your own application) to work properly in IE, you need to introduce the following polyfills at the portal **at least**:
 
 <Alert type="info">
 What's <a href="https://developer.mozilla.org/en-US/docs/Glossary/Polyfill" target="_blank">polyfill</a>
@@ -187,6 +187,7 @@ What's <a href="https://developer.mozilla.org/en-US/docs/Glossary/Polyfill" targ
 
 ```javascript
 import 'whatwg-fetch';
+import 'custom-event-polyfill';
 import 'core-js/stable/promise';
 import 'core-js/stable/symbol';
 import 'core-js/stable/string/starts-with';
