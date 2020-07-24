@@ -245,7 +245,7 @@ qiankun 2.0 版本将提供一种更智能的方式使其自动化。
 
 ### 如何给 ie 打补丁？
 
-如果希望 qiankun （或其依赖库、或者您的应用本身）在 IE 下正常运行，你至少需要在应用入口引入以下这些 polyfills：
+如果希望 qiankun （或其依赖库、或者您的应用本身）在 IE 下正常运行，你**至少**需要在应用入口引入以下这些 polyfills：
 
 <Alert type="info">
 什么是 <a href="https://developer.mozilla.org/zh-CN/docs/Glossary/Polyfill" target="_blank">polyfill</a>
@@ -253,6 +253,7 @@ qiankun 2.0 版本将提供一种更智能的方式使其自动化。
 
 ```javascript
 import 'whatwg-fetch';
+import 'custom-event-polyfill';
 import 'core-js/stable/promise';
 import 'core-js/stable/symbol';
 import 'core-js/stable/string/starts-with';
