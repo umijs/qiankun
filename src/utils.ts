@@ -55,8 +55,8 @@ export function uniq(array: PropertyKey[]) {
   }, {});
 }
 
-export function getDefaultTplWrapper(id: string) {
-  return (tpl: string) => `<div id="${getWrapperId(id)}">${tpl}</div>`;
+export function getDefaultTplWrapper(id: string, name: string) {
+  return (tpl: string) => `<div id="${getWrapperId(id)}" data-name="${name}">${tpl}</div>`;
 }
 
 export function getWrapperId(id: string) {
