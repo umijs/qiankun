@@ -10,7 +10,7 @@ enum RuleType {
   MEDIA = 4,
   SUPPORTS = 12,
 
-  // type: value will be keeped
+  // type: value will be kept
   IMPORT = 3,
   FONT_FACE = 5,
   PAGE = 6,
