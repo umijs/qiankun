@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 /**
  * @author Kuitos
  * @since 2019-04-11
@@ -8,26 +9,24 @@ import { noop } from 'lodash';
 const rawWindowInterval = window.setInterval;
 const rawWindowClearInterval = window.clearInterval;
 
-export default function patch() {
+export default function patch(global: Window) {
   let intervals: number[] = [];
 
-  // @ts-ignore
-  window.clearInterval = (intervalId: number) => {
+  global.clearInterval = (intervalId: number) => {
     intervals = intervals.filter(id => id !== intervalId);
     return rawWindowClearInterval(intervalId);
   };
 
-  // @ts-ignore
-  window.setInterval = (handler: Function, timeout?: number, ...args: any[]) => {
+  global.setInterval = (handler: Function, timeout?: number, ...args: any[]) => {
     const intervalId = rawWindowInterval(handler, timeout, ...args);
     intervals = [...intervals, intervalId];
     return intervalId;
   };
 
   return function free() {
-    intervals.forEach(id => window.clearInterval(id));
-    window.setInterval = rawWindowInterval;
-    window.clearInterval = rawWindowClearInterval;
+    intervals.forEach(id => global.clearInterval(id));
+    global.setInterval = rawWindowInterval;
+    global.clearInterval = rawWindowClearInterval;
 
     return noop;
   };
