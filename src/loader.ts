@@ -238,7 +238,7 @@ export async function loadApp<T extends object>(
   const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
   const enableScopedCSS = isEnableScopedCSS(configuration);
 
-  const appContent = getDefaultTplWrapper(appInstanceId)(template);
+  const appContent = getDefaultTplWrapper(appInstanceId, appName)(template);
   let element: HTMLElement | null = createElement(appContent, strictStyleIsolation);
   if (element && isEnableScopedCSS(configuration)) {
     const styleNodes = element.querySelectorAll('style') || [];
