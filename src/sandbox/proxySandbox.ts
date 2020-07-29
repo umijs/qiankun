@@ -80,7 +80,7 @@ function createFakeWindow(global: Window) {
 
         // freeze the descriptor to avoid being modified by zone.js
         // see https://github.com/angular/zone.js/blob/a5fe09b0fac27ac5df1fa746042f96f05ccb6a00/lib/browser/define-property.ts#L71
-        rawObjectDefineProperty(fakeWindow, p, Object.freeze(descriptor!));
+        rawObjectDefineProperty(fakeWindow, p, Object.freeze(descriptor));
       }
     });
 
