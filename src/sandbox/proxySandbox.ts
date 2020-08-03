@@ -62,6 +62,7 @@ function createFakeWindow(global: Window) {
           p === 'top' ||
           p === 'self' ||
           p === 'window' ||
+          p === 'document' ||
           (process.env.NODE_ENV === 'test' && (p === 'mockTop' || p === 'mockSafariTop'))
         ) {
           descriptor.configurable = true;
