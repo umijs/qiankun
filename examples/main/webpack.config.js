@@ -15,6 +15,9 @@ module.exports = {
     historyApiFallback: true,
     overlay: { warnings: false, errors: true },
   },
+  output: {
+    publicPath: '/',
+  },
   mode: 'development',
   resolve: {
     extensions: ['.js', '.jsx', '.ts', '.tsx'],
