@@ -2,10 +2,10 @@
  * @author Kuitos
  * @since 2019-05-16
  */
+import './public-path';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './App';
-import './public-path';
 
 import 'antd/dist/antd.min.css';
 import './index.css';
