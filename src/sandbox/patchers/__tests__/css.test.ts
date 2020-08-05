@@ -72,9 +72,19 @@ test('should replace body correctly', () => {
   expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
 });
 
-test('should replace :root correctly', () => {
+test('should replace :root correctly [1]', () => {
   const actualValue = ':root {--gray: #eee}';
   const expectValue = 'div[data-qiankun=react15] {--gray: #eee;}';
+
+  const styleNode = fakeStyleNode(actualValue);
+  CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');
+
+  expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
+});
+
+test('should replace :root correctly [2]', () => {
+  const actualValue = `svg:not(:root) {overflow: hidden;}`;
+  const expectValue = `svg:not(div[data-qiankun=react15]){overflow:hidden;}`;
 
   const styleNode = fakeStyleNode(actualValue);
   CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');

@@ -137,8 +137,11 @@ class ScopedCSS {
     if (rootSelectorRE.test(rule.selectorText)) {
       // handle div,body,span { ... }
       return cssText.replace(rootSelectorRE, m => {
-        if (m && m[0] === ',') {
-          return `,${prefix}`;
+        // do not discard valid previous character, such as body,html or *:not(:root)
+        const whitePrevChars = [',', '('];
+
+        if (m && whitePrevChars.includes(m[0])) {
+          return `${m[0]}${prefix}`;
         }
         return prefix;
       });
