@@ -134,7 +134,7 @@ class ScopedCSS {
       }
     }
 
-    if (rootSelectorRE.test(rule.selectorText)) {
+    if (rootSelectorRE.test(cssText)) {
       // handle div,body,span { ... }
       return cssText.replace(rootSelectorRE, m => {
         // do not discard valid previous character, such as body,html or *:not(:root)
