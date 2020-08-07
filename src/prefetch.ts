@@ -60,8 +60,9 @@ const isSlowNetwork = navigator.connection
  * @param entry
  * @param opts
  */
-function prefetch(entry: Entry, opts?: ImportEntryOpts): void {
-  if (isMobile || isSlowNetwork) {
+function prefetch(entry: Entry, opts?: ImportEntryOpts, prefetchStrategy?: PrefetchStrategy): void {
+  // always 表示强制开启预请求，不受移动端和网络限制
+  if (prefetchStrategy !== 'always' && (isMobile || isSlowNetwork)) {
     // Don't prefetch if an mobile device or in a slow network.
     return;
   }
@@ -88,12 +89,12 @@ function prefetchAfterFirstMounted(apps: AppMetadata[], opts?: ImportEntryOpts):
   });
 }
 
-export function prefetchImmediately(apps: AppMetadata[], opts?: ImportEntryOpts): void {
+export function prefetchImmediately(apps: AppMetadata[], opts?: ImportEntryOpts, prefetchStrategy?: PrefetchStrategy): void {
   if (process.env.NODE_ENV === 'development') {
     console.log('[qiankun] prefetch starting for apps...', apps);
   }
 
-  apps.forEach(({ entry }) => prefetch(entry, opts));
+  apps.forEach(({ entry }) => prefetch(entry, opts, prefetchStrategy));
 }
 
 export function doPrefetchStrategy(
@@ -119,7 +120,8 @@ export function doPrefetchStrategy(
         break;
 
       case 'all':
-        prefetchImmediately(apps, importEntryOpts);
+      case 'always':
+        prefetchImmediately(apps, importEntryOpts, prefetchStrategy);
         break;
 
       default:

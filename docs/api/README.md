@@ -127,7 +127,9 @@ By linking the micro-application to some url rules, the function of automaticall
 
       A configuration of `true` starts prefetching static resources for other subapplications after the first subapplication mount completes.
 
-      If configured as `'all'`, the main application `start` will begin to preload all subapplication static resources.
+      If configured as `'all'`, the main application `start` will begin to preload all subapplication static resources, it will not prefetch if an mobile device or in a slow network.
+
+      If configuring as `'always'` has the same effect as configuring `'all'`, but it is not limited by mobile device and slow network, which means it will be prefetch in any case.
 
       If configured as `string[]`, starts prefetching static resources for subapplications after the first subapplication mount completes which be declared in this list.
 

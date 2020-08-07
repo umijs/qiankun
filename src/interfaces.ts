@@ -50,6 +50,7 @@ export type RegistrableApp<T extends object = {}> = LoadableApp<T> & {
 export type PrefetchStrategy =
   | boolean
   | 'all'
+  | 'always'
   | string[]
   | ((apps: AppMetadata[]) => { criticalAppNames: string[]; minorAppsName: string[] });
 
