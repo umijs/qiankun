@@ -134,20 +134,29 @@ class ScopedCSS {
       }
     }
 
-    if (rootSelectorRE.test(rule.selectorText)) {
-      // handle div,body,span { ... }
-      return cssText.replace(rootSelectorRE, m => {
-        // do not discard valid previous character, such as body,html or *:not(:root)
-        const whitePrevChars = [',', '('];
+    // handle grouping selector, a,span,p,div { ... }
+    cssText = cssText.replace(/^[^]+{/, selectors =>
+      selectors.replace(/(^|,\n?)([^,]+)/g, (item, p, s) => {
+        // handle div,body,span { ... }
+        if (rootSelectorRE.test(item)) {
+          return item.replace(rootSelectorRE, m => {
+            // do not discard valid previous character, such as body,html or *:not(:root)
+            const whitePrevChars = [',', '('];
 
-        if (m && whitePrevChars.includes(m[0])) {
-          return `${m[0]}${prefix}`;
+            if (m && whitePrevChars.includes(m[0])) {
+              return `${m[0]}${prefix}`;
+            }
+
+            // replace root selector with prefix
+            return prefix;
+          });
         }
-        return prefix;
-      });
-    }
 
-    return `${prefix} ${cssText}`;
+        return `${p}${prefix} ${s}`;
+      }),
+    );
+
+    return cssText;
   }
 
   // handle case:

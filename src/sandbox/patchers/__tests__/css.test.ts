@@ -112,6 +112,16 @@ test('should rewrite root-level correctly [2]', () => {
   expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
 });
 
+test('should rewrite root-level correctly [3]', () => {
+  const actualValue = `html button[type="reset"] {color: #fff}`;
+  const expectValue = `div[data-qiankun=react15] button[type="reset"]{color:#fff;}`;
+
+  const styleNode = fakeStyleNode(actualValue);
+  CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');
+
+  expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
+});
+
 test('should not replace body/html if body is part of class [1]', () => {
   const actualValue = '.ant-card-body {color: #eee}';
   const expectValue = 'div[data-qiankun=react15] .ant-card-body {color: #eee;}';
@@ -204,7 +214,7 @@ test('should handle root-level grouping selector [1]', () => {
 
 test('should handle root-level grouping selector [2]', () => {
   const actualValue = 'body,html,div {color: #eee;}';
-  const expectValue = 'div[data-qiankun=react15],div {color: #eee;}';
+  const expectValue = 'div[data-qiankun=react15],div[data-qiankun=react15]div{color:#eee;}';
 
   const styleNode = fakeStyleNode(actualValue);
   CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');
@@ -214,7 +224,7 @@ test('should handle root-level grouping selector [2]', () => {
 
 test('should handle root-level grouping selector [3]', () => {
   const actualValue = 'a,body,html,div {color: #eee;}';
-  const expectValue = 'a,div[data-qiankun=react15],div {color: #eee;}';
+  const expectValue = 'div[data-qiankun=react15]a,div[data-qiankun=react15],div[data-qiankun=react15]div{color:#eee;}';
 
   const styleNode = fakeStyleNode(actualValue);
   CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');
