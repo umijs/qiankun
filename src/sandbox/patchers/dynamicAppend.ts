@@ -288,7 +288,7 @@ function patchHTMLDynamicAppendPrototypeFunctions(
   };
 }
 
-function patchDocumentCreate(
+function patchDocumentCreateElement(
   appName: string,
   appWrapperGetter: () => HTMLElement | ShadowRoot,
   singular: boolean,
@@ -310,10 +310,12 @@ function patchDocumentCreate(
       const element = rawDocumentCreateElement.call(this, tagName, options);
       if (tagName?.toLowerCase() === 'style' || tagName?.toLowerCase() === 'script') {
         const proxyContainerInfo = sandboxInfoMapper.get(this[attachDocProxySymbol]);
-        Object.defineProperty(element, attachElementContainerSymbol, {
-          value: proxyContainerInfo,
-          enumerable: false,
-        });
+        if (proxyContainerInfo) {
+          Object.defineProperty(element, attachElementContainerSymbol, {
+            value: proxyContainerInfo,
+            enumerable: false,
+          });
+        }
       }
 
       return element;
@@ -354,7 +356,7 @@ export default function patch(
 ): Freer {
   let dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
 
-  const unpatchDocumentCreate = patchDocumentCreate(
+  const unpatchDocumentCreate = patchDocumentCreateElement(
     appName,
     appWrapperGetter,
     singular,
