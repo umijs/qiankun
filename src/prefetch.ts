@@ -28,8 +28,9 @@ declare global {
 
   interface Navigator {
     connection: {
-      saveData: Function;
+      saveData: boolean;
       effectiveType: string;
+      type: 'bluetooth' | 'cellular' | 'ethernet' | 'none' | 'wifi' | 'wimax' | 'other' | 'unknown';
     };
   }
 }
@@ -37,7 +38,7 @@ declare global {
 // RIC and shim for browsers setTimeout() without it
 const requestIdleCallback =
   window.requestIdleCallback ||
-  function requestIdleCallback(cb: Function) {
+  function requestIdleCallback(cb: CallableFunction) {
     const start = Date.now();
     return setTimeout(() => {
       cb({
@@ -50,7 +51,10 @@ const requestIdleCallback =
   };
 
 const isSlowNetwork = navigator.connection
-  ? navigator.connection.saveData || /(2|3)g/.test(navigator.connection.effectiveType)
+  ? navigator.connection.saveData ||
+    (navigator.connection.type !== 'wifi' &&
+      navigator.connection.type !== 'ethernet' &&
+      /(2|3)g/.test(navigator.connection.effectiveType))
   : false;
 
 /**
