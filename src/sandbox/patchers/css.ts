@@ -190,7 +190,7 @@ const process = (appWrapper: HTMLElement, stylesheetElement: HTMLStyleElement | 
   const tag = (mountDOM.tagName || '').toLowerCase();
 
   if (tag && stylesheetElement.tagName === 'STYLE') {
-    const prefix = `${tag}[${QiankunCSSRewriteAttr}=${appName}]`;
+    const prefix = `${tag}[${QiankunCSSRewriteAttr}="${appName}"]`;
     processor.process(stylesheetElement, prefix);
   }
 };
