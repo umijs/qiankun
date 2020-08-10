@@ -33,7 +33,7 @@ const SCRIPT_TAG_NAME = 'SCRIPT';
 const LINK_TAG_NAME = 'LINK';
 const STYLE_TAG_NAME = 'STYLE';
 
-const sandboxInfoMapper = new Map<WindowProxy, Record<string, any>>();
+const proxyContainerInfoMapper = new Map<WindowProxy, Record<string, any>>();
 
 /**
  * Check if a style element is a styled-component liked.
@@ -299,7 +299,7 @@ function patchDocumentCreateElement(
     return noop;
   }
 
-  sandboxInfoMapper.set(proxy, { appName, proxy, appWrapperGetter, dynamicStyleSheetElements, singular });
+  proxyContainerInfoMapper.set(proxy, { appName, proxy, appWrapperGetter, dynamicStyleSheetElements, singular });
 
   if (Document.prototype.createElement === rawDocumentCreateElement) {
     Document.prototype.createElement = function createElement<K extends keyof HTMLElementTagNameMap>(
@@ -309,7 +309,7 @@ function patchDocumentCreateElement(
     ): HTMLElement {
       const element = rawDocumentCreateElement.call(this, tagName, options);
       if (tagName?.toLowerCase() === 'style' || tagName?.toLowerCase() === 'script') {
-        const proxyContainerInfo = sandboxInfoMapper.get(this[attachDocProxySymbol]);
+        const proxyContainerInfo = proxyContainerInfoMapper.get(this[attachDocProxySymbol]);
         if (proxyContainerInfo) {
           Object.defineProperty(element, attachElementContainerSymbol, {
             value: proxyContainerInfo,
@@ -323,7 +323,7 @@ function patchDocumentCreateElement(
   }
 
   return function unpatch(recoverPrototype: boolean) {
-    sandboxInfoMapper.delete(proxy);
+    proxyContainerInfoMapper.delete(proxy);
     if (recoverPrototype) {
       Document.prototype.createElement = rawDocumentCreateElement;
     }
