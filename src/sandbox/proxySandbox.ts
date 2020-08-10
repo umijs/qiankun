@@ -128,8 +128,9 @@ export default class ProxySandbox implements SandBox {
   constructor(name: string) {
     this.name = name;
     this.type = SandBoxType.Proxy;
-    const { sandboxRunning, updatedValueSet } = this;
+    const { updatedValueSet } = this;
 
+    const self = this;
     const rawWindow = window;
     const { fakeWindow, propertiesWithGetter } = createFakeWindow(rawWindow);
 
@@ -138,7 +139,7 @@ export default class ProxySandbox implements SandBox {
 
     const proxy = new Proxy(fakeWindow, {
       set(target: FakeWindow, p: PropertyKey, value: any): boolean {
-        if (sandboxRunning) {
+        if (self.sandboxRunning) {
           // @ts-ignore
           target[p] = value;
           updatedValueSet.add(p);
