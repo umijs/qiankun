@@ -7,11 +7,11 @@ import { isFunction, noop } from 'lodash';
 import { checkActivityFunctions } from 'single-spa';
 import { frameworkConfiguration } from '../../apis';
 import { Freer } from '../../interfaces';
-import { getTargetValue, setProxyPropertyGetter } from '../common';
+import { attachDocProxySymbol } from '../common';
 import * as css from './css';
 
-const styledComponentSymbol = 'Symbol(styled-component-qiankun)';
-const attachProxySymbol = 'Symbol(attach-proxy-qiankun)';
+const styledComponentSymbol = Symbol('styled-component-qiankun');
+const attachElementContainerSymbol = Symbol('attach-proxy-container');
 
 declare global {
   interface HTMLStyleElement {
@@ -27,9 +27,13 @@ const rawBodyRemoveChild = HTMLBodyElement.prototype.removeChild;
 const rawHeadInsertBefore = HTMLHeadElement.prototype.insertBefore;
 const rawRemoveChild = HTMLElement.prototype.removeChild;
 
+const rawDocumentCreateElement = Document.prototype.createElement;
+
 const SCRIPT_TAG_NAME = 'SCRIPT';
 const LINK_TAG_NAME = 'LINK';
 const STYLE_TAG_NAME = 'STYLE';
+
+const sandboxInfoMapper = new Map<WindowProxy, Record<string, any>>();
 
 /**
  * Check if a style element is a styled-component liked.
@@ -68,11 +72,13 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
     const { rawDOMAppendOrInsertBefore } = opts;
     if (element.tagName) {
       // eslint-disable-next-line prefer-const
-      let { appWrapperGetter, proxy, singular, dynamicStyleSheetElements } = opts;
-      const { appName, scopedCSS, excludeAssetFilter } = opts;
+      let { appName, appWrapperGetter, proxy, singular, dynamicStyleSheetElements } = opts;
+      const { scopedCSS, excludeAssetFilter } = opts;
 
-      const storedContainerInfo = element[attachProxySymbol];
+      const storedContainerInfo = element[attachElementContainerSymbol];
       if (storedContainerInfo) {
+        // eslint-disable-next-line prefer-destructuring
+        appName = storedContainerInfo.appName;
         // eslint-disable-next-line prefer-destructuring
         singular = storedContainerInfo.singular;
         // eslint-disable-next-line prefer-destructuring
@@ -187,7 +193,7 @@ function getNewRemoveChild(opts: {
     const { headOrBodyRemoveChild } = opts;
     let { appWrapperGetter } = opts;
 
-    const storedContainerInfo = (child as any)[attachProxySymbol];
+    const storedContainerInfo = (child as any)[attachElementContainerSymbol];
     if (storedContainerInfo) {
       // eslint-disable-next-line prefer-destructuring
       appWrapperGetter = storedContainerInfo.appWrapperGetter;
@@ -207,64 +213,15 @@ function getNewRemoveChild(opts: {
   };
 }
 
-let bootstrappingPatchCount = 0;
-let mountingPatchCount = 0;
-
-/**
- * Just hijack dynamic head append, that could avoid accidentally hijacking the insertion of elements except in head.
- * Such a case: ReactDOM.createPortal(<style>.test{color:blue}</style>, container),
- * this could made we append the style element into app wrapper but it will cause an error while the react portal unmounting, as ReactDOM could not find the style in body children list.
- * @param appName
- * @param appWrapperGetter
- * @param proxy
- * @param mounting
- * @param singular
- * @param scopedCSS
- * @param excludeAssetFilter
- */
-export default function patch(
+function patchHTMLDynamicAppendPrototypeFunctions(
   appName: string,
   appWrapperGetter: () => HTMLElement | ShadowRoot,
   proxy: Window,
-  mounting = true,
   singular = true,
   scopedCSS = false,
+  dynamicStyleSheetElements: HTMLStyleElement[],
   excludeAssetFilter?: CallableFunction,
-): Freer {
-  let dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
-  let deleteProxyPropertyGetter: Function = noop;
-
-  if (!singular) {
-    deleteProxyPropertyGetter = setProxyPropertyGetter(proxy, 'document', () => {
-      return new Proxy(document, {
-        get(target: Document, property: PropertyKey): any {
-          if (property === 'createElement') {
-            return function createElement(tagName: string, options?: any) {
-              const element = document.createElement(tagName, options);
-
-              if (tagName?.toLowerCase() === 'style' || tagName?.toLowerCase() === 'script') {
-                Object.defineProperty(element, attachProxySymbol, {
-                  value: { appName, proxy, appWrapperGetter, dynamicStyleSheetElements },
-                  enumerable: false,
-                });
-              }
-
-              return element;
-            };
-          }
-
-          return getTargetValue(document, (<any>target)[property]);
-        },
-
-        set(target: Document, p: PropertyKey, value: any): boolean {
-          // eslint-disable-next-line no-param-reassign
-          (<any>target)[p] = value;
-          return true;
-        },
-      });
-    });
-  }
-
+) {
   // Just overwrite it while it have not been overwrite
   if (
     HTMLHeadElement.prototype.appendChild === rawHeadAppendChild &&
@@ -319,6 +276,102 @@ export default function patch(
     });
   }
 
+  return function unpatch(recoverPrototype: boolean) {
+    if (recoverPrototype) {
+      HTMLHeadElement.prototype.appendChild = rawHeadAppendChild;
+      HTMLHeadElement.prototype.removeChild = rawHeadRemoveChild;
+      HTMLBodyElement.prototype.appendChild = rawBodyAppendChild;
+      HTMLBodyElement.prototype.removeChild = rawBodyRemoveChild;
+
+      HTMLHeadElement.prototype.insertBefore = rawHeadInsertBefore;
+    }
+  };
+}
+
+function patchDocumentCreate(
+  appName: string,
+  appWrapperGetter: () => HTMLElement | ShadowRoot,
+  singular: boolean,
+  proxy: Window,
+  dynamicStyleSheetElements: HTMLStyleElement[],
+) {
+  if (singular) {
+    return noop;
+  }
+
+  sandboxInfoMapper.set(proxy, { appName, proxy, appWrapperGetter, dynamicStyleSheetElements, singular });
+
+  if (Document.prototype.createElement === rawDocumentCreateElement) {
+    Document.prototype.createElement = function createElement<K extends keyof HTMLElementTagNameMap>(
+      this: Document,
+      tagName: K,
+      options?: ElementCreationOptions,
+    ): HTMLElement {
+      const element = rawDocumentCreateElement.call(this, tagName, options);
+      if (tagName?.toLowerCase() === 'style' || tagName?.toLowerCase() === 'script') {
+        const proxyContainerInfo = sandboxInfoMapper.get(this[attachDocProxySymbol]);
+        Object.defineProperty(element, attachElementContainerSymbol, {
+          value: proxyContainerInfo,
+          enumerable: false,
+        });
+      }
+
+      return element;
+    };
+  }
+
+  return function unpatch(recoverPrototype: boolean) {
+    sandboxInfoMapper.delete(proxy);
+    if (recoverPrototype) {
+      Document.prototype.createElement = rawDocumentCreateElement;
+    }
+  };
+}
+
+let bootstrappingPatchCount = 0;
+let mountingPatchCount = 0;
+
+/**
+ * Just hijack dynamic head append, that could avoid accidentally hijacking the insertion of elements except in head.
+ * Such a case: ReactDOM.createPortal(<style>.test{color:blue}</style>, container),
+ * this could made we append the style element into app wrapper but it will cause an error while the react portal unmounting, as ReactDOM could not find the style in body children list.
+ * @param appName
+ * @param appWrapperGetter
+ * @param proxy
+ * @param mounting
+ * @param singular
+ * @param scopedCSS
+ * @param excludeAssetFilter
+ */
+export default function patch(
+  appName: string,
+  appWrapperGetter: () => HTMLElement | ShadowRoot,
+  proxy: Window,
+  mounting = true,
+  singular = true,
+  scopedCSS = false,
+  excludeAssetFilter?: CallableFunction,
+): Freer {
+  let dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
+
+  const unpatchDocumentCreate = patchDocumentCreate(
+    appName,
+    appWrapperGetter,
+    singular,
+    proxy,
+    dynamicStyleSheetElements,
+  );
+
+  const unpatchDynamicAppendPrototypeFunctions = patchHTMLDynamicAppendPrototypeFunctions(
+    appName,
+    appWrapperGetter,
+    proxy,
+    singular,
+    scopedCSS,
+    dynamicStyleSheetElements,
+    excludeAssetFilter,
+  );
+
   if (!mounting) bootstrappingPatchCount++;
   if (mounting) mountingPatchCount++;
 
@@ -327,15 +380,10 @@ export default function patch(
     if (!mounting && bootstrappingPatchCount !== 0) bootstrappingPatchCount--;
     if (mounting) mountingPatchCount--;
 
+    const allMicroAppUnmounted = mountingPatchCount === 0 && bootstrappingPatchCount === 0;
     // release the overwrite prototype after all the micro apps unmounted
-    if (mountingPatchCount === 0 && bootstrappingPatchCount === 0) {
-      HTMLHeadElement.prototype.appendChild = rawHeadAppendChild;
-      HTMLHeadElement.prototype.removeChild = rawHeadRemoveChild;
-      HTMLBodyElement.prototype.appendChild = rawBodyAppendChild;
-      HTMLBodyElement.prototype.removeChild = rawBodyRemoveChild;
-
-      HTMLHeadElement.prototype.insertBefore = rawHeadInsertBefore;
-    }
+    unpatchDynamicAppendPrototypeFunctions(allMicroAppUnmounted);
+    unpatchDocumentCreate(allMicroAppUnmounted);
 
     dynamicStyleSheetElements.forEach(stylesheetElement => {
       /*
@@ -353,8 +401,6 @@ export default function patch(
       // As now the sub app content all wrapped with a special id container,
       // the dynamic style sheet would be removed automatically while unmoutting
     });
-
-    deleteProxyPropertyGetter();
 
     return function rebuild() {
       dynamicStyleSheetElements.forEach(stylesheetElement => {
