@@ -4,7 +4,7 @@
  */
 import { FrameworkLifeCycles } from '../interfaces';
 
-const rawPublicPath = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__ || '/';
+const rawPublicPath = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
 
 export default function getAddOn(global: Window, publicPath = '/'): FrameworkLifeCycles<any> {
   let hasMountedOnce = false;

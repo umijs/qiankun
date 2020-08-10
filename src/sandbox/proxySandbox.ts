@@ -109,8 +109,8 @@ export default class ProxySandbox implements SandBox {
   sandboxRunning = true;
 
   active() {
+    if (!this.sandboxRunning) activeSandboxCount++;
     this.sandboxRunning = true;
-    activeSandboxCount++;
   }
 
   inactive() {

@@ -23,7 +23,7 @@ export default class SnapshotSandbox implements SandBox {
 
   type: SandBoxType;
 
-  sandboxRunning = false;
+  sandboxRunning = true;
 
   private windowSnapshot!: Window;
 
@@ -33,7 +33,6 @@ export default class SnapshotSandbox implements SandBox {
     this.name = name;
     this.proxy = window;
     this.type = SandBoxType.Snapshot;
-    this.active();
   }
 
   active() {

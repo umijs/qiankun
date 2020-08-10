@@ -327,9 +327,9 @@ export async function loadApp<T extends object>(
         element = element || createElement(appContent, strictStyleIsolation);
         render({ element, loading: true }, 'mounting');
       },
+      mountSandbox,
       // exec the chain after rendering to keep the behavior with beforeLoad
       async () => execHooksChain(toArray(beforeMount), app, global),
-      mountSandbox,
       async props => mount({ ...props, container: containerGetter(), setGlobalState, onGlobalStateChange }),
       // 应用 mount 完成后结束 loading
       async () => render({ element, loading: false }, 'mounted'),
