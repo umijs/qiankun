@@ -25,10 +25,7 @@ const rawHeadRemoveChild = HTMLHeadElement.prototype.removeChild;
 const rawBodyAppendChild = HTMLBodyElement.prototype.appendChild;
 const rawBodyRemoveChild = HTMLBodyElement.prototype.removeChild;
 const rawHeadInsertBefore = HTMLHeadElement.prototype.insertBefore;
-
-const rawAppendChild = HTMLElement.prototype.appendChild;
 const rawRemoveChild = HTMLElement.prototype.removeChild;
-const rawInsertBefore = HTMLElement.prototype.insertBefore;
 
 const SCRIPT_TAG_NAME = 'SCRIPT';
 const LINK_TAG_NAME = 'LINK';
@@ -52,23 +49,27 @@ function setCachedRules(element: HTMLStyleElement, cssRules: CSSRuleList) {
   Object.defineProperty(element, styledComponentSymbol, { value: cssRules, configurable: true, enumerable: false });
 }
 
-function getNewAppendChild(args: {
+function getOverwrittenAppendChildOrInsertBefore(opts: {
   appName: string;
   proxy: WindowProxy;
   singular: boolean;
   dynamicStyleSheetElements: HTMLStyleElement[];
   appWrapperGetter: CallableFunction;
-  headOrBodyAppendChild: typeof HTMLElement.prototype.appendChild;
+  rawDOMAppendOrInsertBefore: <T extends Node>(newChild: T, refChild?: Node | null) => T;
   scopedCSS: boolean;
   excludeAssetFilter?: CallableFunction;
 }) {
-  return function appendChild<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, newChild: T) {
+  return function appendChildOrInsertBefore<T extends Node>(
+    this: HTMLHeadElement | HTMLBodyElement,
+    newChild: T,
+    refChild?: Node | null,
+  ) {
     const element = newChild as any;
-    const { headOrBodyAppendChild } = args;
+    const { rawDOMAppendOrInsertBefore } = opts;
     if (element.tagName) {
       // eslint-disable-next-line prefer-const
-      let { appWrapperGetter, proxy, singular, dynamicStyleSheetElements } = args;
-      const { appName, scopedCSS, excludeAssetFilter } = args;
+      let { appWrapperGetter, proxy, singular, dynamicStyleSheetElements } = opts;
+      const { appName, scopedCSS, excludeAssetFilter } = opts;
 
       const storedContainerInfo = element[attachProxySymbol];
       if (storedContainerInfo) {
@@ -98,13 +99,13 @@ function getNewAppendChild(args: {
         case STYLE_TAG_NAME: {
           const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
           if (!invokedByMicroApp) {
-            return headOrBodyAppendChild.call(this, element) as T;
+            return rawDOMAppendOrInsertBefore.call(this, element, refChild) as T;
           }
 
           const mountDOM = appWrapperGetter();
           const { href } = stylesheetElement as HTMLLinkElement;
           if (excludeAssetFilter && href && excludeAssetFilter(href)) {
-            return rawAppendChild.call(mountDOM, element) as T;
+            return rawDOMAppendOrInsertBefore.call(mountDOM, element, refChild) as T;
           }
 
           if (scopedCSS) {
@@ -113,12 +114,13 @@ function getNewAppendChild(args: {
 
           // eslint-disable-next-line no-shadow
           dynamicStyleSheetElements.push(stylesheetElement);
-          return rawAppendChild.call(mountDOM, stylesheetElement) as T;
+          const referenceNode = mountDOM.contains(refChild) ? refChild : null;
+          return rawDOMAppendOrInsertBefore.call(mountDOM, stylesheetElement, referenceNode);
         }
 
         case SCRIPT_TAG_NAME: {
           if (!invokedByMicroApp) {
-            return headOrBodyAppendChild.call(this, element) as T;
+            return rawDOMAppendOrInsertBefore.call(this, element, refChild) as T;
           }
 
           const mountDOM = appWrapperGetter();
@@ -126,10 +128,12 @@ function getNewAppendChild(args: {
 
           // some script like jsonp maybe not support cors which should't use execScripts
           if (excludeAssetFilter && src && excludeAssetFilter(src)) {
-            return rawAppendChild.call(mountDOM, element) as T;
+            return rawDOMAppendOrInsertBefore.call(mountDOM, element, refChild) as T;
           }
 
           const { fetch } = frameworkConfiguration;
+          const referenceNode = mountDOM.contains(refChild) ? refChild : null;
+
           if (src) {
             execScripts(null, [src], proxy, { fetch, strictGlobal: !singular }).then(
               () => {
@@ -155,7 +159,7 @@ function getNewAppendChild(args: {
             );
 
             const dynamicScriptCommentElement = document.createComment(`dynamic script ${src} replaced by qiankun`);
-            return rawAppendChild.call(mountDOM, dynamicScriptCommentElement) as T;
+            return rawDOMAppendOrInsertBefore.call(mountDOM, dynamicScriptCommentElement, referenceNode);
           }
 
           execScripts(null, [`<script>${text}</script>`], proxy, { strictGlobal: !singular }).then(
@@ -163,7 +167,7 @@ function getNewAppendChild(args: {
             element.onerror,
           );
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
-          return rawAppendChild.call(mountDOM, dynamicInlineScriptCommentElement) as T;
+          return rawDOMAppendOrInsertBefore.call(mountDOM, dynamicInlineScriptCommentElement, referenceNode);
         }
 
         default:
@@ -171,17 +175,17 @@ function getNewAppendChild(args: {
       }
     }
 
-    return headOrBodyAppendChild.call(this, element) as T;
+    return rawDOMAppendOrInsertBefore.call(this, element, refChild);
   };
 }
 
-function getNewRemoveChild(args: {
+function getNewRemoveChild(opts: {
   appWrapperGetter: CallableFunction;
   headOrBodyRemoveChild: typeof HTMLElement.prototype.removeChild;
 }) {
   return function removeChild<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, child: T) {
-    const { headOrBodyRemoveChild } = args;
-    let { appWrapperGetter } = args;
+    const { headOrBodyRemoveChild } = opts;
+    let { appWrapperGetter } = opts;
 
     const storedContainerInfo = (child as any)[attachProxySymbol];
     if (storedContainerInfo) {
@@ -203,112 +207,6 @@ function getNewRemoveChild(args: {
   };
 }
 
-function getNewInsertBefore(args: {
-  appName: string;
-  proxy: WindowProxy;
-  singular: boolean;
-  dynamicStyleSheetElements: HTMLStyleElement[];
-  appWrapperGetter: CallableFunction;
-  headOrBodyInsertBefore: typeof HTMLElement.prototype.insertBefore;
-  scopedCSS: boolean;
-}) {
-  return function insertBefore<T extends Node>(this: HTMLHeadElement, newChild: T, refChild: Node | null): T {
-    const element = newChild as any;
-    const { headOrBodyInsertBefore } = args;
-    if (element.tagName) {
-      // eslint-disable-next-line prefer-const
-      let { appName, appWrapperGetter, proxy, singular, dynamicStyleSheetElements, scopedCSS } = args;
-
-      const storedContainerInfo = element[attachProxySymbol];
-      if (storedContainerInfo) {
-        // eslint-disable-next-line prefer-destructuring
-        singular = storedContainerInfo.singular;
-        // eslint-disable-next-line prefer-destructuring
-        appWrapperGetter = storedContainerInfo.appWrapperGetter;
-        // eslint-disable-next-line prefer-destructuring
-        dynamicStyleSheetElements = storedContainerInfo.dynamicStyleSheetElements;
-      }
-
-      const invokedByMicroApp = singular
-        ? checkActivityFunctions(window.location).some(name => name === appName)
-        : !!storedContainerInfo;
-
-      switch (element.tagName) {
-        case LINK_TAG_NAME:
-        case STYLE_TAG_NAME: {
-          const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
-
-          if (!invokedByMicroApp) {
-            return headOrBodyInsertBefore.call(this, element, refChild) as T;
-          }
-
-          const mountDOM = appWrapperGetter();
-
-          if (scopedCSS) {
-            css.process(mountDOM, stylesheetElement, appName);
-          }
-
-          dynamicStyleSheetElements.push(stylesheetElement);
-          const referenceNode = mountDOM.contains(refChild) ? refChild : null;
-          return rawInsertBefore.call(mountDOM, stylesheetElement, referenceNode) as T;
-        }
-
-        case SCRIPT_TAG_NAME: {
-          if (!invokedByMicroApp) {
-            return headOrBodyInsertBefore.call(this, element, refChild) as T;
-          }
-
-          const { src, text } = element as HTMLScriptElement;
-
-          const { fetch } = frameworkConfiguration;
-
-          const mountDOM = appWrapperGetter();
-          const referenceNode = mountDOM.contains(refChild) ? refChild : null;
-
-          if (src) {
-            execScripts(null, [src], proxy, { fetch, strictGlobal: !singular }).then(
-              () => {
-                // we need to invoke the onload event manually to notify the event listener that the script was completed
-                // here are the two typical ways of dynamic script loading
-                // 1. element.onload callback way, which webpack and loadjs used, see https://github.com/muicss/loadjs/blob/master/src/loadjs.js#L138
-                // 2. addEventListener way, which toast-loader used, see https://github.com/pyrsmk/toast/blob/master/src/Toast.ts#L64
-                const loadEvent = new CustomEvent('load');
-                if (isFunction(element.onload)) {
-                  element.onload(loadEvent);
-                } else {
-                  element.dispatchEvent(loadEvent);
-                }
-              },
-              () => {
-                const errorEvent = new CustomEvent('error');
-                if (isFunction(element.onerror)) {
-                  element.onerror(errorEvent);
-                } else {
-                  element.dispatchEvent(errorEvent);
-                }
-              },
-            );
-
-            const dynamicScriptCommentElement = document.createComment(`dynamic script ${src} replaced by qiankun`);
-            return rawInsertBefore.call(mountDOM, dynamicScriptCommentElement, referenceNode) as T;
-          }
-
-          execScripts(null, [`<script>${text}</script>`], proxy, { strictGlobal: !singular }).then(
-            element.onload,
-            element.onerror,
-          );
-          const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
-          return rawInsertBefore.call(mountDOM, dynamicInlineScriptCommentElement, referenceNode) as T;
-        }
-        default:
-          break;
-      }
-    }
-
-    return headOrBodyInsertBefore.call(this, element, refChild) as T;
-  };
-}
-
 let bootstrappingPatchCount = 0;
 let mountingPatchCount = 0;
 
@@ -321,6 +219,8 @@ let mountingPatchCount = 0;
  * @param proxy
  * @param mounting
  * @param singular
+ * @param scopedCSS
+ * @param excludeAssetFilter
  */
 export default function patch(
   appName: string,
@@ -368,10 +268,11 @@ export default function patch(
   // Just overwrite it while it have not been overwrite
   if (
     HTMLHeadElement.prototype.appendChild === rawHeadAppendChild &&
-    HTMLBodyElement.prototype.appendChild === rawBodyAppendChild
+    HTMLBodyElement.prototype.appendChild === rawBodyAppendChild &&
+    HTMLHeadElement.prototype.insertBefore === rawHeadInsertBefore
   ) {
-    HTMLHeadElement.prototype.appendChild = getNewAppendChild({
-      headOrBodyAppendChild: rawHeadAppendChild,
+    HTMLHeadElement.prototype.appendChild = getOverwrittenAppendChildOrInsertBefore({
+      rawDOMAppendOrInsertBefore: rawHeadAppendChild,
       appName,
       appWrapperGetter,
       proxy,
@@ -379,9 +280,9 @@ export default function patch(
       dynamicStyleSheetElements,
       scopedCSS,
       excludeAssetFilter,
-    });
-    HTMLBodyElement.prototype.appendChild = getNewAppendChild({
-      headOrBodyAppendChild: rawBodyAppendChild,
+    }) as typeof rawHeadAppendChild;
+    HTMLBodyElement.prototype.appendChild = getOverwrittenAppendChildOrInsertBefore({
+      rawDOMAppendOrInsertBefore: rawBodyAppendChild,
       appName,
       appWrapperGetter,
       proxy,
@@ -389,7 +290,18 @@ export default function patch(
       dynamicStyleSheetElements,
       scopedCSS,
       excludeAssetFilter,
-    });
+    }) as typeof rawBodyAppendChild;
+
+    HTMLHeadElement.prototype.insertBefore = getOverwrittenAppendChildOrInsertBefore({
+      rawDOMAppendOrInsertBefore: rawHeadInsertBefore as any,
+      appName,
+      appWrapperGetter,
+      proxy,
+      singular,
+      dynamicStyleSheetElements,
+      scopedCSS,
+      excludeAssetFilter,
+    }) as typeof rawHeadInsertBefore;
   }
 
   // Just overwrite it while it have not been overwrite
@@ -404,20 +316,6 @@ export default function patch(
     HTMLBodyElement.prototype.removeChild = getNewRemoveChild({
       appWrapperGetter,
       headOrBodyRemoveChild: rawBodyRemoveChild,
-    });
-  }
-
-  // `emotion` a css-in-js library insert a style tag use insertBefore, so we also rewrite it like appendChild
-  // see https://github.com/umijs/qiankun/issues/420
-  if (HTMLHeadElement.prototype.insertBefore === rawHeadInsertBefore) {
-    HTMLHeadElement.prototype.insertBefore = getNewInsertBefore({
-      appName,
-      appWrapperGetter,
-      proxy,
-      singular,
-      dynamicStyleSheetElements,
-      headOrBodyInsertBefore: rawHeadInsertBefore,
-      scopedCSS,
     });
   }
 
