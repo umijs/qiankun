@@ -4,7 +4,7 @@
  */
 
 import { isBoundedFunction } from '../../utils';
-import { setProxyPropertyGetter } from '../common';
+import { attachDocProxySymbol } from '../common';
 import ProxySandbox from '../proxySandbox';
 
 beforeAll(() => {
@@ -182,19 +182,17 @@ test('hasOwnProperty should always returns same reference', () => {
   expect(proxy.testA.hasOwnProperty).toBe(proxy.testB.hasOwnProperty);
 });
 
-test('property getter should just called once', () => {
-  const countFn = jest.fn();
-  const proxy = new ProxySandbox('property-getter-test').proxy as any;
-  setProxyPropertyGetter(proxy, 'document', () => {
-    countFn();
-    return document;
-  });
+test('document accessing should modify the attachDocProxySymbol value every time', () => {
+  const proxy1 = new ProxySandbox('doc-access-test1').proxy as any;
+  const proxy2 = new ProxySandbox('doc-access-test2').proxy as any;
 
-  const d1 = proxy.document;
-  const d2 = proxy.document;
+  const d1 = proxy1.document;
+  expect(d1[attachDocProxySymbol]).toBe(proxy1);
+  const d2 = proxy2.document;
+  expect(d2[attachDocProxySymbol]).toBe(proxy2);
 
   expect(d1).toBe(d2);
-  expect(countFn).toBeCalledTimes(1);
+  expect(d1).toBe(document);
 });
 
 test('bounded function should not be rebounded', () => {

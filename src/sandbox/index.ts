@@ -25,6 +25,8 @@ export { css } from './patchers';
  * @param appName
  * @param elementGetter
  * @param singular
+ * @param scopedCSS
+ * @param excludeAssetFilter
  */
 export function createSandbox(
   appName: string,
