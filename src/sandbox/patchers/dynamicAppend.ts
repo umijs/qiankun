@@ -35,6 +35,14 @@ const STYLE_TAG_NAME = 'STYLE';
 
 const proxyContainerInfoMapper = new Map<WindowProxy, Record<string, any>>();
 
+function isHijackingTag(tagName?: string) {
+  return (
+    tagName?.toUpperCase() === LINK_TAG_NAME ||
+    tagName?.toUpperCase() === STYLE_TAG_NAME ||
+    tagName?.toUpperCase() === SCRIPT_TAG_NAME
+  );
+}
+
 /**
  * Check if a style element is a styled-component liked.
  * A styled-components liked element is which not have textContext but keep the rules in its styleSheet.cssRules.
@@ -191,19 +199,22 @@ function getNewRemoveChild(opts: {
 }) {
   return function removeChild<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, child: T) {
     const { headOrBodyRemoveChild } = opts;
-    let { appWrapperGetter } = opts;
-
-    const storedContainerInfo = (child as any)[attachElementContainerSymbol];
-    if (storedContainerInfo) {
-      // eslint-disable-next-line prefer-destructuring
-      appWrapperGetter = storedContainerInfo.appWrapperGetter;
-    }
-
     try {
-      // container may had been removed while app unmounting if the removeChild action was async
-      const container = appWrapperGetter();
-      if (container.contains(child)) {
-        return rawRemoveChild.call(container, child) as T;
+      const { tagName } = child as any;
+      if (isHijackingTag(tagName)) {
+        let { appWrapperGetter } = opts;
+
+        const storedContainerInfo = (child as any)[attachElementContainerSymbol];
+        if (storedContainerInfo) {
+          // eslint-disable-next-line prefer-destructuring
+          appWrapperGetter = storedContainerInfo.appWrapperGetter;
+        }
+
+        // container may had been removed while app unmounting if the removeChild action was async
+        const container = appWrapperGetter();
+        if (container.contains(child)) {
+          return rawRemoveChild.call(container, child) as T;
+        }
       }
     } catch (e) {
       console.warn(e);
@@ -308,7 +319,7 @@ function patchDocumentCreateElement(
       options?: ElementCreationOptions,
     ): HTMLElement {
       const element = rawDocumentCreateElement.call(this, tagName, options);
-      if (tagName?.toLowerCase() === 'style' || tagName?.toLowerCase() === 'script') {
+      if (isHijackingTag(tagName)) {
         const proxyContainerInfo = proxyContainerInfoMapper.get(this[attachDocProxySymbol]);
         if (proxyContainerInfo) {
           Object.defineProperty(element, attachElementContainerSymbol, {
