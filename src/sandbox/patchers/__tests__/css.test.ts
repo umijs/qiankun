@@ -113,8 +113,16 @@ test('should rewrite root-level correctly [2]', () => {
 });
 
 test('should rewrite root-level correctly [3]', () => {
-  const actualValue = `html button[type="reset"] {color: #fff}`;
-  const expectValue = `div[data-qiankun=react15] button[type="reset"]{color:#fff;}`;
+  const actualValue = `[type="reset"],
+[type="submit"],
+button,
+html [type="button"] {
+  -webkit-appearance: button;
+}`;
+  const expectValue = `div[data-qiankun=react15] [type="reset"],
+div[data-qiankun=react15] [type="submit"],
+div[data-qiankun=react15] button,
+div[data-qiankun=react15] [type="button"] {-webkit-appearance: button;}`;
 
   const styleNode = fakeStyleNode(actualValue);
   CSSProcessor.process(styleNode, 'div[data-qiankun=react15]');
