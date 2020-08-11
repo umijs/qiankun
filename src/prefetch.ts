@@ -51,11 +51,13 @@ const requestIdleCallback =
   };
 
 const isSlowNetwork = navigator.connection
-  ? navigator.connection.saveData ||
+  ? !navigator.onLine ||
+    navigator.connection.saveData ||
     (navigator.connection.type !== 'wifi' &&
       navigator.connection.type !== 'ethernet' &&
       /(2|3)g/.test(navigator.connection.effectiveType))
   : false;
+
 
 /**
  * prefetch assets, do nothing while in mobile network
