@@ -44,7 +44,7 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       filename: 'index.html',
-      template: process.env.MODE === 'multiple' ? './multiple' : './index.html',
+      template: process.env.MODE === 'multiple' ? './multiple.html' : './index.html',
       minify: {
         removeComments: true,
         collapseWhitespace: true,
