@@ -5,7 +5,7 @@
  */
 import { SandBox, SandBoxType } from '../interfaces';
 import { uniq } from '../utils';
-import { getProxyPropertyGetter, getProxyPropertyValue, getTargetValue } from './common';
+import { attachDocProxySymbol, getTargetValue } from './common';
 import { clearSystemJsProps, interceptSystemJsProps } from './noise/systemjs';
 
 // zone.js will overwrite Object.defineProperty
@@ -62,7 +62,6 @@ function createFakeWindow(global: Window) {
           p === 'top' ||
           p === 'self' ||
           p === 'window' ||
-          p === 'document' ||
           (process.env.NODE_ENV === 'test' && (p === 'mockTop' || p === 'mockSafariTop'))
         ) {
           descriptor.configurable = true;
@@ -102,15 +101,15 @@ export default class ProxySandbox implements SandBox {
 
   name: string;
 
-  proxy: WindowProxy;
-
   type: SandBoxType;
+
+  proxy: WindowProxy;
 
   sandboxRunning = true;
 
   active() {
+    if (!this.sandboxRunning) activeSandboxCount++;
     this.sandboxRunning = true;
-    activeSandboxCount++;
   }
 
   inactive() {
@@ -128,8 +127,9 @@ export default class ProxySandbox implements SandBox {
   constructor(name: string) {
     this.name = name;
     this.type = SandBoxType.Proxy;
-    const { sandboxRunning, updatedValueSet } = this;
+    const { updatedValueSet } = this;
 
+    const self = this;
     const rawWindow = window;
     const { fakeWindow, propertiesWithGetter } = createFakeWindow(rawWindow);
 
@@ -138,7 +138,7 @@ export default class ProxySandbox implements SandBox {
 
     const proxy = new Proxy(fakeWindow, {
       set(target: FakeWindow, p: PropertyKey, value: any): boolean {
-        if (sandboxRunning) {
+        if (self.sandboxRunning) {
           // @ts-ignore
           target[p] = value;
           updatedValueSet.add(p);
@@ -176,10 +176,10 @@ export default class ProxySandbox implements SandBox {
           return hasOwnProperty;
         }
 
-        // call proxy getter interceptors
-        const proxyPropertyGetter = getProxyPropertyGetter(proxy, p);
-        if (proxyPropertyGetter) {
-          return getProxyPropertyValue(proxyPropertyGetter);
+        // mark the symbol to document while accessing as document.createElement could know is invoked by which sandbox for dynamic append patcher
+        if (p === 'document') {
+          document[attachDocProxySymbol] = proxy;
+          return document;
         }
 
         // eslint-disable-next-line no-bitwise

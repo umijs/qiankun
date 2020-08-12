@@ -25,6 +25,8 @@ export { css } from './patchers';
  * @param appName
  * @param elementGetter
  * @param singular
+ * @param scopedCSS
+ * @param excludeAssetFilter
  */
 export function createSandbox(
   appName: string,
@@ -63,6 +65,11 @@ export function createSandbox(
      * 也可能是从 unmount 之后再次唤醒进入 mount
      */
     async mount() {
+      /* ------------------------------------------ 因为有上下文依赖（window），以下代码执行顺序不能变 ------------------------------------------ */
+
+      /* ------------------------------------------ 1. 启动/恢复 沙箱------------------------------------------ */
+      sandbox.active();
+
       const sideEffectsRebuildersAtBootstrapping = sideEffectsRebuilders.slice(0, bootstrappingFreers.length);
       const sideEffectsRebuildersAtMounting = sideEffectsRebuilders.slice(bootstrappingFreers.length);
 
@@ -70,11 +77,6 @@ export function createSandbox(
       if (sideEffectsRebuildersAtBootstrapping.length) {
         sideEffectsRebuildersAtBootstrapping.forEach(rebuild => rebuild());
       }
-
-      /* ------------------------------------------ 因为有上下文依赖（window），以下代码执行顺序不能变 ------------------------------------------ */
-
-      /* ------------------------------------------ 1. 启动/恢复 沙箱------------------------------------------ */
-      sandbox.active();
 
       /* ------------------------------------------ 2. 开启全局变量补丁 ------------------------------------------*/
       // render 沙箱启动时开始劫持各类全局监听，尽量不要在应用初始化阶段有 事件监听/定时器 等副作用

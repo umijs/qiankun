@@ -5,6 +5,14 @@
 
 import { isBoundedFunction, isCallable, isConstructable } from '../utils';
 
+export const attachDocProxySymbol = Symbol('attach-proxy-container');
+
+declare global {
+  interface Document {
+    [attachDocProxySymbol]: WindowProxy;
+  }
+}
+
 const boundValueSymbol = Symbol('bound value');
 
 export function getTargetValue(target: any, value: any): any {
@@ -27,7 +35,6 @@ export function getTargetValue(target: any, value: any): any {
   return value;
 }
 
-const proxyPropertyGetterMap = new Map<WindowProxy, Record<PropertyKey, CallableFunction>>();
 const getterInvocationResultMap = new Map<CallableFunction, any>();
 
 export function getProxyPropertyValue(getter: CallableFunction) {
@@ -39,21 +46,4 @@ export function getProxyPropertyValue(getter: CallableFunction) {
   }
 
   return getterResult;
-}
-
-export function getProxyPropertyGetter(proxy: WindowProxy, property: PropertyKey): any {
-  const getters = proxyPropertyGetterMap.get(proxy);
-  if (getters) {
-    return getters![property as string];
-  }
-
-  return undefined;
-}
-
-export function setProxyPropertyGetter(proxy: WindowProxy, property: PropertyKey, getter: () => any): Function {
-  const prevGetters = proxyPropertyGetterMap.get(proxy) || {};
-  proxyPropertyGetterMap.set(proxy, { ...prevGetters, [property]: getter });
-  return function deleteProxyPropertyGetter() {
-    proxyPropertyGetterMap.delete(proxy);
-  };
 }

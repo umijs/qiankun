@@ -1,6 +1,6 @@
 {
   "name": "qiankun",
-  "version": "2.0.19",
+  "version": "2.0.20",
   "description": "An completed implementation of Micro Frontends",
   "keywords": [
     "micro frontend",
@@ -17,8 +17,10 @@
   "scripts": {
     "examples:install": "npm-run-all --serial build install:*",
     "examples:start": "npm-run-all --parallel start:*",
+    "examples:start-multiple": "run-p start:main-multiple start:react15 start:vue",
     "install:main": "cd examples/main && yarn",
     "start:main": "cd examples/main && yarn start",
+    "start:main-multiple": "cd examples/main && yarn start:multiple",
     "install:react16": "cd examples/react16 && yarn",
     "start:react16": "cd examples/react16 && yarn start",
     "install:react15": "cd examples/react15 && yarn",
