@@ -176,7 +176,7 @@ toc: menu
   start();
   ```
 
-### setDefaultMountApp(appLink)`
+### setDefaultMountApp(appLink)
 
 - 参数
 
