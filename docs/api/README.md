@@ -276,12 +276,12 @@ A criterion for judging whether the business is closely related: <strong>Look at
   If you need to support the main application to manually update the micro application, you need to export an update hook for the micro application entry:
 
   ```ts
-  export function mount(props) {
+  export async function mount(props) {
     renderApp(props);
   }
 
   // Added update hook to allow the main application to manually update the micro application
-  export function update(props) {
+  export async function update(props) {
     renderPatch(props);
   }
   ```
