@@ -298,12 +298,12 @@ toc: menu
   如果需要能支持主应用手动 update 微应用，需要微应用 entry 再多导出一个 update 钩子：
 
   ```ts
-  export function mount(props) {
+  export async function mount(props) {
     renderApp(props);
   }
 
   // 增加 update 钩子以便主应用手动更新微应用
-  export function update(props) {
+  export async function update(props) {
     renderPatch(props);
   }
   ```
