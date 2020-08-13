@@ -64,7 +64,7 @@ const isSlowNetwork = navigator.connection
  */
 function prefetch(entry: Entry, opts?: ImportEntryOpts): void {
   if (!navigator.onLine || isSlowNetwork) {
-    // Don't prefetch if in a slow network.
+    // Don't prefetch if in a slow network or offline
     return;
   }
 
