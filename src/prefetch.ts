@@ -51,13 +51,11 @@ const requestIdleCallback =
   };
 
 const isSlowNetwork = navigator.connection
-  ? !navigator.onLine ||
-    navigator.connection.saveData ||
+  ? navigator.connection.saveData ||
     (navigator.connection.type !== 'wifi' &&
       navigator.connection.type !== 'ethernet' &&
       /(2|3)g/.test(navigator.connection.effectiveType))
   : false;
-
 
 /**
  * prefetch assets, do nothing while in mobile network
@@ -65,7 +63,7 @@ const isSlowNetwork = navigator.connection
  * @param opts
  */
 function prefetch(entry: Entry, opts?: ImportEntryOpts): void {
-  if (isSlowNetwork) {
+  if (!navigator.onLine || isSlowNetwork) {
     // Don't prefetch if in a slow network.
     return;
   }
