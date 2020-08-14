@@ -60,6 +60,7 @@ function createFakeWindow(global: Window) {
          */
         if (
           p === 'top' ||
+          p === 'parent' ||
           p === 'self' ||
           p === 'window' ||
           (process.env.NODE_ENV === 'test' && (p === 'mockTop' || p === 'mockSafariTop'))
@@ -164,6 +165,7 @@ export default class ProxySandbox implements SandBox {
         // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
         if (
           p === 'top' ||
+          p === 'parent' ||
           p === 'window' ||
           p === 'self' ||
           (process.env.NODE_ENV === 'test' && (p === 'mockTop' || p === 'mockSafariTop'))
