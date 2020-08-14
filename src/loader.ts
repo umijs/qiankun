@@ -65,7 +65,14 @@ function createElement(appContent: string, strictStyleIsolation: boolean): HTMLE
     } else {
       const { innerHTML } = appElement;
       appElement.innerHTML = '';
-      const shadow = appElement.attachShadow({ mode: 'open' });
+      let shadow: ShadowRoot;
+
+      if (appElement.attachShadow) {
+        shadow = appElement.attachShadow({ mode: 'open' });
+      } else {
+        // createShadowRoot was proposed in initial spec, which has then been deprecated
+        shadow = (appElement as any).createShadowRoot();
+      }
       shadow.innerHTML = innerHTML;
     }
   }
