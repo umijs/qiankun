@@ -105,7 +105,7 @@ export default class SingularProxySandbox implements SandBox {
         // avoid who using window.window or window.self to escape the sandbox environment to touch the really window
         // or use window.top to check if an iframe context
         // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
-        if (p === 'top' || p === 'window' || p === 'self') {
+        if (p === 'top' || p === 'parent' || p === 'window' || p === 'self') {
           return proxy;
         }
 
