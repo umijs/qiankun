@@ -125,9 +125,9 @@ toc: menu
 
     - prefetch - `boolean | 'all' | string[] | (( apps: RegistrableApp[] ) => { criticalAppNames: string[]; minorAppsName: string[] })` - 可选，是否开启预加载，默认为 `true`。
 
-      配置为 `true` 则会在第一个微应用 mount 完成后开始预加载其他微应用的静态资源，配置为 `'all'` 则主应用 `start` 后即开始预加载所有微应用静态资源。
+      配置为 `true` 则会在第一个微应用 mount 完成后开始预加载其他微应用的静态资源
 
-      配置为 `'all'` 则主应用 `start` 后即开始预加载所有微应用静态资源。
+      配置为 `'all'` 则主应用 `start` 后即开始预加载所有微应用静态资源
 
       配置为 `string[]` 则会在第一个微应用 mounted 后开始加载数组内的微应用资源
 
