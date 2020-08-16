@@ -149,8 +149,10 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
           const referenceNode = mountDOM.contains(refChild) ? refChild : null;
 
           if (src) {
-            execScripts(null, [src], proxy, { fetch, strictGlobal: !singular }).then(
-              () => {
+            execScripts(null, [src], proxy, {
+              fetch,
+              strictGlobal: !singular,
+              success: () => {
                 // we need to invoke the onload event manually to notify the event listener that the script was completed
                 // here are the two typical ways of dynamic script loading
                 // 1. element.onload callback way, which webpack and loadjs used, see https://github.com/muicss/loadjs/blob/master/src/loadjs.js#L138
@@ -162,7 +164,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
                   element.dispatchEvent(loadEvent);
                 }
               },
-              () => {
+              error: () => {
                 const errorEvent = new CustomEvent('error');
                 if (isFunction(element.onerror)) {
                   element.onerror(errorEvent);
@@ -170,16 +172,17 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
                   element.dispatchEvent(errorEvent);
                 }
               },
-            );
+            });
 
             const dynamicScriptCommentElement = document.createComment(`dynamic script ${src} replaced by qiankun`);
             return rawDOMAppendOrInsertBefore.call(mountDOM, dynamicScriptCommentElement, referenceNode);
           }
 
-          execScripts(null, [`<script>${text}</script>`], proxy, { strictGlobal: !singular }).then(
-            element.onload,
-            element.onerror,
-          );
+          execScripts(null, [`<script>${text}</script>`], proxy, {
+            strictGlobal: !singular,
+            success: element.onload,
+            error: element.onerror,
+          });
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
           return rawDOMAppendOrInsertBefore.call(mountDOM, dynamicInlineScriptCommentElement, referenceNode);
         }
