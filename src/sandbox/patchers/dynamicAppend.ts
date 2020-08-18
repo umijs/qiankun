@@ -7,7 +7,6 @@ import { isFunction, noop } from 'lodash';
 import { checkActivityFunctions } from 'single-spa';
 import { frameworkConfiguration } from '../../apis';
 import { Freer } from '../../interfaces';
-import { attachDocProxySymbol } from '../common';
 import * as css from './css';
 
 const styledComponentSymbol = Symbol('styled-component-qiankun');
@@ -312,35 +311,31 @@ function patchDocumentCreateElement(
   if (singular) {
     return noop;
   }
-
   proxyContainerInfoMapper.set(proxy, { appName, proxy, appWrapperGetter, dynamicStyleSheetElements, singular });
-
-  if (Document.prototype.createElement === rawDocumentCreateElement) {
-    Document.prototype.createElement = function createElement<K extends keyof HTMLElementTagNameMap>(
-      this: Document,
-      tagName: K,
-      options?: ElementCreationOptions,
-    ): HTMLElement {
-      const element = rawDocumentCreateElement.call(this, tagName, options);
-      if (isHijackingTag(tagName)) {
-        const proxyContainerInfo = proxyContainerInfoMapper.get(this[attachDocProxySymbol]);
-        if (proxyContainerInfo) {
-          Object.defineProperty(element, attachElementContainerSymbol, {
-            value: proxyContainerInfo,
-            enumerable: false,
-          });
-        }
-      }
-
-      return element;
-    };
-  }
-
-  return function unpatch(recoverPrototype: boolean) {
+  return function unpatch() {
     proxyContainerInfoMapper.delete(proxy);
-    if (recoverPrototype) {
-      Document.prototype.createElement = rawDocumentCreateElement;
+  };
+}
+
+export function getCreateElement(proxy: WindowProxy) {
+  return function createElement<K extends keyof HTMLElementTagNameMap>(
+    this: Document,
+    tagName: K,
+    options?: ElementCreationOptions,
+  ): HTMLElement {
+    const element = rawDocumentCreateElement.call(this, tagName, options);
+
+    if (isHijackingTag(tagName)) {
+      const proxyContainerInfo = proxyContainerInfoMapper.get(proxy);
+      if (proxyContainerInfo) {
+        Object.defineProperty(element, attachElementContainerSymbol, {
+          value: proxyContainerInfo,
+          enumerable: false,
+        });
+      }
     }
+
+    return element;
   };
 }
 
@@ -399,7 +394,7 @@ export default function patch(
     const allMicroAppUnmounted = mountingPatchCount === 0 && bootstrappingPatchCount === 0;
     // release the overwrite prototype after all the micro apps unmounted
     unpatchDynamicAppendPrototypeFunctions(allMicroAppUnmounted);
-    unpatchDocumentCreate(allMicroAppUnmounted);
+    unpatchDocumentCreate();
 
     dynamicStyleSheetElements.forEach(stylesheetElement => {
       /*

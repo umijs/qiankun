@@ -7,7 +7,7 @@ import { SandBox, SandBoxType } from '../interfaces';
 import { uniq } from '../utils';
 import { attachDocProxySymbol, getTargetValue } from './common';
 import { clearSystemJsProps, interceptSystemJsProps } from './noise/systemjs';
-
+import { getCreateElement } from './patchers/dynamicAppend';
 // zone.js will overwrite Object.defineProperty
 const rawObjectDefineProperty = Object.defineProperty;
 
@@ -31,6 +31,10 @@ const unscopables = {
 type SymbolTarget = 'target' | 'rawWindow';
 
 type FakeWindow = Window & Record<PropertyKey, any>;
+
+type FakeDocument = Document & Record<PropertyKey, any>;
+
+type DocumentProxy = Document;
 
 function createFakeWindow(global: Window) {
   // map always has the fastest performance in has check scenario
@@ -106,6 +110,8 @@ export default class ProxySandbox implements SandBox {
 
   proxy: WindowProxy;
 
+  documentProxy: DocumentProxy;
+
   sandboxRunning = true;
 
   active() {
@@ -121,7 +127,6 @@ export default class ProxySandbox implements SandBox {
     }
 
     clearSystemJsProps(this.proxy, --activeSandboxCount === 0);
-
     this.sandboxRunning = false;
   }
 
@@ -132,10 +137,72 @@ export default class ProxySandbox implements SandBox {
 
     const self = this;
     const rawWindow = window;
+    const rawDocument = document;
     const { fakeWindow, propertiesWithGetter } = createFakeWindow(rawWindow);
+
+    const fakeDocument = {} as FakeDocument;
 
     const descriptorTargetMap = new Map<PropertyKey, SymbolTarget>();
     const hasOwnProperty = (key: PropertyKey) => fakeWindow.hasOwnProperty(key) || rawWindow.hasOwnProperty(key);
+
+    const docHasOwnProperty = (key: PropertyKey) => fakeDocument.hasOwnProperty(key) || rawDocument.hasOwnProperty(key);
+
+    const documentProxy = new Proxy(fakeDocument, {
+      set(target: FakeDocument, p: PropertyKey, value: any): boolean {
+        // 初始化 createElement
+        // @ts-ignore
+        if (p === attachDocProxySymbol && target[p] !== value) {
+          // @ts-ignore
+          target[p] = value;
+          target.createElement = getTargetValue(rawDocument, getCreateElement(value));
+          return true;
+        }
+        /*
+         *  可自定义 createElement 一般行为会回调 初始化的 createElement
+         *  const rawCreateElement = document.createElement;
+         *  document.createElement = function (tabName, options) {
+         *    console.log('自定义 createElement', this);
+         *    return rawCreateElement.call(this, tabName, options);
+         *  };
+         *
+         */
+        if (p === 'createElement') {
+          target.createElement = getTargetValue(rawDocument, value);
+          return true;
+        }
+        return Reflect.set(target, p, value);
+      },
+
+      get(target: FakeDocument, p: PropertyKey): any {
+        if (p === 'hasOwnProperty') {
+          return docHasOwnProperty;
+        }
+        if (p === attachDocProxySymbol || p === 'createElement') {
+          // @ts-ignore
+          return target[p];
+        }
+        // eslint-disable-next-line no-bitwise
+        const value = (rawDocument as any)[p];
+        return getTargetValue(rawDocument, value);
+      },
+
+      has(target: FakeDocument, p: string | number | symbol): boolean {
+        return p in target || p in rawDocument;
+      },
+
+      deleteProperty(target: FakeDocument, p: string | number | symbol): boolean {
+        // 保证该 createElement 删除后，在获取document时重新赋值，与浏览器原生一致
+        if (p === attachDocProxySymbol || p === 'createElement') {
+          // @ts-ignore
+          delete target[p];
+          // @ts-ignore
+          delete target.createElement;
+          return true;
+        }
+
+        return Reflect.deleteProperty(target, p);
+      },
+    });
 
     const proxy = new Proxy(fakeWindow, {
       set(target: FakeWindow, p: PropertyKey, value: any): boolean {
@@ -180,8 +247,8 @@ export default class ProxySandbox implements SandBox {
 
         // mark the symbol to document while accessing as document.createElement could know is invoked by which sandbox for dynamic append patcher
         if (p === 'document') {
-          document[attachDocProxySymbol] = proxy;
-          return document;
+          documentProxy[attachDocProxySymbol] = proxy;
+          return documentProxy;
         }
 
         // eslint-disable-next-line no-bitwise
@@ -249,5 +316,6 @@ export default class ProxySandbox implements SandBox {
     });
 
     this.proxy = proxy;
+    this.documentProxy = documentProxy;
   }
 }
