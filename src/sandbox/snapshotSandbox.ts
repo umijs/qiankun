@@ -33,6 +33,11 @@ export default class SnapshotSandbox implements SandBox {
     this.name = name;
     this.proxy = window;
     this.type = SandBoxType.Snapshot;
+    // 初始化当前快照
+    this.windowSnapshot = {} as Window;
+    iter(window, prop => {
+      this.windowSnapshot[prop] = window[prop];
+    });
   }
 
   active() {
