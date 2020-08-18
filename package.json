@@ -42,7 +42,7 @@
     "docs:dev": "dumi dev",
     "docs:build": "dumi build",
     "ci": "yarn lint && yarn test",
-    "test": "NODE_ENV=test jest"
+    "test": "cross-env NODE_ENV=test jest"
   },
   "repository": {
     "type": "git",
@@ -73,6 +73,7 @@
     "@umijs/fabric": "^2.0.7",
     "babel-plugin-import": "^1.12.1",
     "check-prettier": "^1.0.3",
+    "cross-env": "7.0.2",
     "dumi": "^1.0.24",
     "father-build": "^1.7.0",
     "husky": "^2.3.0",
