@@ -5,6 +5,7 @@
 
 import { isBoundedFunction } from '../../utils';
 import { attachDocProxySymbol } from '../common';
+import './util';
 import ProxySandbox from '../proxySandbox';
 
 beforeAll(() => {
@@ -190,9 +191,10 @@ test('document accessing should modify the attachDocProxySymbol value every time
   expect(d1[attachDocProxySymbol]).toBe(proxy1);
   const d2 = proxy2.document;
   expect(d2[attachDocProxySymbol]).toBe(proxy2);
-
-  expect(d1).toBe(d2);
-  expect(d1).toBe(document);
+  // d1 d2 should be different
+  expect(d1 !== d2).toBeTruthy();
+  // d1 should be different from document
+  expect(d1 !== document).toBeTruthy();
 });
 
 test('bounded function should not be rebounded', () => {
