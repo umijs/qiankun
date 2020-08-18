@@ -6,6 +6,7 @@ import { execScripts } from 'import-html-entry';
 import { isFunction, noop } from 'lodash';
 import { checkActivityFunctions } from 'single-spa';
 import { frameworkConfiguration } from '../../apis';
+import { sleep } from '../../utils';
 import { Freer } from '../../interfaces';
 import * as css from './css';
 
@@ -70,7 +71,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
   scopedCSS: boolean;
   excludeAssetFilter?: CallableFunction;
 }) {
-  return function appendChildOrInsertBefore<T extends Node>(
+  return async function appendChildOrInsertBefore<T extends Node>(
     this: HTMLHeadElement | HTMLBodyElement,
     newChild: T,
     refChild?: Node | null,
@@ -95,7 +96,9 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
         // eslint-disable-next-line prefer-destructuring
         proxy = storedContainerInfo.proxy;
       }
-
+      if (singular) {
+        await sleep(0);
+      }
       const invokedByMicroApp = singular
         ? // check if the currently specified application is active
           // While we switch page from qiankun app to a normal react routing page, the normal one may load stylesheet dynamically while page rendering,
