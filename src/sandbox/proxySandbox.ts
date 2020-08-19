@@ -161,16 +161,22 @@ export default class ProxySandbox implements SandBox {
         if (p === Symbol.unscopables) return unscopables;
 
         // avoid who using window.window or window.self to escape the sandbox environment to touch the really window
-        // or use window.top to check if an iframe context
         // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
+        if (p === 'window' || p === 'self') {
+          return proxy;
+        }
+
         if (
           p === 'top' ||
           p === 'parent' ||
-          p === 'window' ||
-          p === 'self' ||
           (process.env.NODE_ENV === 'test' && (p === 'mockTop' || p === 'mockSafariTop'))
         ) {
-          return proxy;
+          // if your master app in an iframe context, allow these props escape the sandbox
+          if (rawWindow === rawWindow.parent) {
+            return proxy;
+          } 
+            return (rawWindow as any)[p];
+          
         }
 
         // proxy.hasOwnProperty would invoke getter firstly, then its value represented as rawWindow.hasOwnProperty
