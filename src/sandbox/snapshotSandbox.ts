@@ -36,10 +36,6 @@ export default class SnapshotSandbox implements SandBox {
   }
 
   active() {
-    if (this.sandboxRunning) {
-      return;
-    }
-
     // 记录当前快照
     this.windowSnapshot = {} as Window;
     iter(window, prop => {
