@@ -174,9 +174,8 @@ export default class ProxySandbox implements SandBox {
           // if your master app in an iframe context, allow these props escape the sandbox
           if (rawWindow === rawWindow.parent) {
             return proxy;
-          } 
-            return (rawWindow as any)[p];
-          
+          }
+          return (rawWindow as any)[p];
         }
 
         // proxy.hasOwnProperty would invoke getter firstly, then its value represented as rawWindow.hasOwnProperty
