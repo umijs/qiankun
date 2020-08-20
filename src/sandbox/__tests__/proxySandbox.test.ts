@@ -42,14 +42,26 @@ test('iterator should be worked the same as the raw window', () => {
   expect(Object.keys(proxy)).toEqual([...Object.keys(window), 'additionalProp']);
 });
 
-test('window.top & window.self & window.window should equals with sandbox', () => {
+test('window.self & window.window & window.top & window.parent should equals with sandbox', () => {
   const { proxy } = new ProxySandbox('unit-test');
+
+  expect(proxy.self).toBe(proxy);
+  expect(proxy.window).toBe(proxy);
 
   expect((<any>proxy).mockTop).toBe(proxy);
   expect((<any>proxy).mockSafariTop).toBe(proxy);
   expect(proxy.top).toBe(proxy);
-  expect(proxy.self).toBe(proxy);
-  expect(proxy.window).toBe(proxy);
+  expect(proxy.parent).toBe(proxy);
+});
+
+test('allow window.top & window.parent to escape sandbox while in iframe', () => {
+  // change window.parent to cheat ProxySandbox is in iframe
+  Object.defineProperty(window, 'parent', { value: 'parent' });
+  Object.defineProperty(window, 'top', { value: 'top' });
+  const { proxy } = new ProxySandbox('iframe-test');
+
+  expect(proxy.top).toBe('top');
+  expect(proxy.parent).toBe('parent');
 });
 
 test('eval should never be represented', () => {
