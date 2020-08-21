@@ -1,0 +1,26 @@
+name: qiankun - deploy
+on:
+  push:
+    branches:
+      - master
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: build
+        env:
+          NOW_DEPLOY: true
+        run: |
+          yarn install
+          yarn docs:build
+      - uses: amondnet/vercel-action@v19
+        id: vercel-deployment-production
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          vercel-token: ${{ secrets.ZEIT_TOKEN }}
+          vercel-org-id: ${{ secrets.NOW_ORG_ID }}
+          vercel-project-id: ${{ secrets.NOW_PROJECT_ID }}
+          working-directory: dist
+          vercel-args: '--prod'
+          scope: umijs

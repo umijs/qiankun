@@ -1,0 +1,22 @@
+.app-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.app-title {
+  font-size: 30px;
+  margin: 0;
+  margin-bottom: 32px;
+}
+
+.app-lib {
+  font-size: 16px;
+  color: #2c3e50;
+}
+
+.app-nav-item {
+  margin-top: 16px;
+  padding: 12px 24px;
+  border: 2px solid #2c3e50;
+}
