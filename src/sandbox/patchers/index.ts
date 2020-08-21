@@ -8,7 +8,6 @@ import patchDynamicAppend from './dynamicAppend';
 import patchHistoryListener from './historyListener';
 import patchInterval from './interval';
 import patchWindowListener from './windowListener';
-import patchUIEvent from './UIEvent';
 
 import * as css from './css';
 
@@ -28,8 +27,8 @@ export function patchAtMounting(
   ];
 
   const patchersInSandbox = {
-    [SandBoxType.LegacyProxy]: [...basePatchers, () => patchUIEvent(sandbox.proxy)],
-    [SandBoxType.Proxy]: [...basePatchers, () => patchUIEvent(sandbox.proxy)],
+    [SandBoxType.LegacyProxy]: [...basePatchers],
+    [SandBoxType.Proxy]: [...basePatchers],
     [SandBoxType.Snapshot]: basePatchers,
   };
 
