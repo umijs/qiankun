@@ -139,18 +139,17 @@ export default class ProxySandbox implements SandBox {
 
     const proxy = new Proxy(fakeWindow, {
       set(target: FakeWindow, p: PropertyKey, value: any): boolean {
-        if (self.sandboxRunning) {
-          // @ts-ignore
-          target[p] = value;
-          updatedValueSet.add(p);
+        // sandbox should set props whether the app is mounted or not.
+        // @ts-ignore
+        target[p] = value;
+        updatedValueSet.add(p);
 
-          interceptSystemJsProps(p, value);
+        interceptSystemJsProps(p, value);
 
-          return true;
-        }
-
-        if (process.env.NODE_ENV === 'development') {
-          console.warn(`[qiankun] Set window.${p.toString()} while sandbox destroyed or inactive in ${name}!`);
+        if (!self.sandboxRunning) {
+          if (process.env.NODE_ENV === 'development') {
+            console.warn(`[qiankun] Set window.${p.toString()} while sandbox destroyed or inactive in ${name}!`);
+          }
         }
 
         // 在 strict-mode 下，Proxy 的 handler.set 返回 false 会抛出 TypeError，在沙箱卸载的情况下应该忽略错误

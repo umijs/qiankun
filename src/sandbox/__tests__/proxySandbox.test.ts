@@ -239,3 +239,13 @@ test('some native window property was defined with getter in safari and firefox,
   const { proxy } = new ProxySandbox('object-define-property-target-test');
   expect((<any>proxy).mockSafariGetterProperty).toBe('getterPropertyInSafariWindow');
 });
+
+test('prop should be assigned successfully after sandbox is inactive', () => {
+  const sandbox = new ProxySandbox('inactive-test');
+  const proxy = sandbox.proxy as any;
+  sandbox.inactive();
+  proxy.testA = 'abc';
+
+  expect(proxy.hasOwnProperty('testA')).toBeTruthy();
+  expect(proxy.testA === 'abc').toBeTruthy();
+});

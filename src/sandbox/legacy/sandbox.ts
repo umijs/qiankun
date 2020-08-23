@@ -76,25 +76,25 @@ export default class SingularProxySandbox implements SandBox {
 
     const proxy = new Proxy(fakeWindow, {
       set(_: Window, p: PropertyKey, value: any): boolean {
-        if (self.sandboxRunning) {
-          if (!rawWindow.hasOwnProperty(p)) {
-            addedPropsMapInSandbox.set(p, value);
-          } else if (!modifiedPropsOriginalValueMapInSandbox.has(p)) {
-            // 如果当前 window 对象存在该属性，且 record map 中未记录过，则记录该属性初始值
-            const originalValue = (rawWindow as any)[p];
-            modifiedPropsOriginalValueMapInSandbox.set(p, originalValue);
-          }
-
-          currentUpdatedPropsValueMap.set(p, value);
-          // 必须重新设置 window 对象保证下次 get 时能拿到已更新的数据
-          // eslint-disable-next-line no-param-reassign
-          (rawWindow as any)[p] = value;
-
-          return true;
+        // sandbox should set props whether the app is mounted or not.
+        if (!rawWindow.hasOwnProperty(p) || addedPropsMapInSandbox.has(p)) {
+          // judge p is not in rawWindow or p is in addedPropsMap, just in case that set an not existed prop twice
+          addedPropsMapInSandbox.set(p, value);
+        } else if (!modifiedPropsOriginalValueMapInSandbox.has(p)) {
+          // 如果当前 window 对象存在该属性，且 record map 中未记录过，则记录该属性初始值
+          const originalValue = (rawWindow as any)[p];
+          modifiedPropsOriginalValueMapInSandbox.set(p, originalValue);
         }
 
-        if (process.env.NODE_ENV === 'development') {
-          console.warn(`[qiankun] Set window.${p.toString()} while sandbox destroyed or inactive in ${name}!`);
+        currentUpdatedPropsValueMap.set(p, value);
+        // do not need set window prop because get handler return the value in currentUpdatedPropsValueMap in priority.
+        // eslint-disable-next-line no-param-reassign
+        // (rawWindow as any)[p] = value;
+
+        if (!self.sandboxRunning) {
+          if (process.env.NODE_ENV === 'development') {
+            console.warn(`[qiankun] Set window.${p.toString()} while sandbox destroyed or inactive in ${name}!`);
+          }
         }
 
         // 在 strict-mode 下，Proxy 的 handler.set 返回 false 会抛出 TypeError，在沙箱卸载的情况下应该忽略错误
@@ -109,14 +109,21 @@ export default class SingularProxySandbox implements SandBox {
           return proxy;
         }
 
-        const value = (rawWindow as any)[p];
+        let value;
+        // When self app is unmount, we can not read the value from rawWindow that assigned previously.
+        if (currentUpdatedPropsValueMap.has(p)) {
+          value = addedPropsMapInSandbox.get(p);
+        } else {
+          value = (rawWindow as any)[p];
+        }
+
         return getTargetValue(rawWindow, value);
       },
 
       // trap in operator
       // see https://github.com/styled-components/styled-components/blob/master/packages/styled-components/src/constants.js#L12
       has(_: Window, p: string | number | symbol): boolean {
-        return p in rawWindow;
+        return addedPropsMapInSandbox.has(p) || p in rawWindow;
       },
     });
 
