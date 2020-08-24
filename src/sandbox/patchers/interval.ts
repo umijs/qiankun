@@ -13,6 +13,8 @@ export default function patch(global: Window) {
   let intervals: number[] = [];
 
   global.clearInterval = (intervalId: number) => {
+    // for edge issue https://github.com/umijs/qiankun/issues/872
+    if (!intervalId) return undefined;
     intervals = intervals.filter(id => id !== intervalId);
     return rawWindowClearInterval(intervalId);
   };
