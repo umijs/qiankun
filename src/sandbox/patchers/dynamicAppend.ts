@@ -172,7 +172,6 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
                   element.dispatchEvent(loadEvent);
                 }
 
-                // eslint-disable-next-line no-const-assign
                 element = null;
               },
               error: () => {
@@ -183,7 +182,6 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
                   element.dispatchEvent(errorEvent);
                 }
 
-                // eslint-disable-next-line no-const-assign
                 element = null;
               },
             });
