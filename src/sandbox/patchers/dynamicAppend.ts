@@ -76,7 +76,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
     newChild: T,
     refChild?: Node | null,
   ) {
-    const element = newChild as any;
+    let element = newChild as any;
     const { rawDOMAppendOrInsertBefore } = opts;
     if (element.tagName) {
       // eslint-disable-next-line prefer-const
@@ -152,6 +152,14 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
             execScripts(null, [src], proxy, {
               fetch,
               strictGlobal: !singular,
+              beforeExec: () => {
+                Object.defineProperty(document, 'currentScript', {
+                  get(): any {
+                    return element;
+                  },
+                  configurable: true,
+                });
+              },
               success: () => {
                 // we need to invoke the onload event manually to notify the event listener that the script was completed
                 // here are the two typical ways of dynamic script loading
@@ -163,6 +171,8 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
                 } else {
                   element.dispatchEvent(loadEvent);
                 }
+
+                element = null;
               },
               error: () => {
                 const errorEvent = new CustomEvent('error');
@@ -171,6 +181,8 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
                 } else {
                   element.dispatchEvent(errorEvent);
                 }
+
+                element = null;
               },
             });
 
