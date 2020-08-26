@@ -14,6 +14,14 @@ export function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/**
+ * run a callback after next tick
+ * @param cb
+ */
+export function nextTick(cb: () => void): void {
+  Promise.resolve().then(cb);
+}
+
 export function isConstructable(fn: () => void | FunctionConstructor) {
   const constructableFunctionRegex = /^function\b\s[A-Z].*/;
   const classRegex = /^class\b/;

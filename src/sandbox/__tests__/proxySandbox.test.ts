@@ -195,8 +195,8 @@ test('hasOwnProperty should always returns same reference', () => {
 });
 
 test('document accessing should modify the attachDocProxySymbol value every time', () => {
-  const proxy1 = new ProxySandbox('doc-access-test1').proxy as any;
-  const proxy2 = new ProxySandbox('doc-access-test2').proxy as any;
+  const proxy1 = new ProxySandbox('doc-access-test1').proxy;
+  const proxy2 = new ProxySandbox('doc-access-test2').proxy;
 
   const d1 = proxy1.document;
   expect(d1[attachDocProxySymbol]).toBe(proxy1);
@@ -205,6 +205,37 @@ test('document accessing should modify the attachDocProxySymbol value every time
 
   expect(d1).toBe(d2);
   expect(d1).toBe(document);
+});
+
+test('document attachDocProxySymbol mark should be remove before next tasl', done => {
+  const { proxy } = new ProxySandbox('doc-symbol');
+  const d1 = proxy.document;
+  expect(d1[attachDocProxySymbol]).toBe(proxy);
+
+  setTimeout(() => {
+    expect(d1[attachDocProxySymbol]).toBeUndefined();
+    done();
+  });
+});
+
+test('document should work well with MutationObserver', done => {
+  const docProxy = new ProxySandbox('doc').proxy;
+
+  const observer = new MutationObserver(mutations => {
+    if (mutations[0]) {
+      expect(mutations[0].target).toBe(document.body);
+      observer.disconnect();
+      done();
+    }
+  });
+
+  observer.observe(docProxy.document, {
+    attributes: true,
+    subtree: true,
+    childList: true,
+  });
+
+  docProxy.document.body.innerHTML = '<div></div>';
 });
 
 test('bounded function should not be rebounded', () => {
