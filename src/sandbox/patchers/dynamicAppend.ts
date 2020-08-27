@@ -117,9 +117,11 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
           }
 
           const mountDOM = appWrapperGetter();
+          const referenceNode = mountDOM.contains(refChild) ? refChild : null;
+
           const { href } = stylesheetElement as HTMLLinkElement;
           if (excludeAssetFilter && href && excludeAssetFilter(href)) {
-            return rawDOMAppendOrInsertBefore.call(mountDOM, element, refChild) as T;
+            return rawDOMAppendOrInsertBefore.call(mountDOM, element, referenceNode) as T;
           }
 
           if (scopedCSS) {
@@ -128,7 +130,6 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
 
           // eslint-disable-next-line no-shadow
           dynamicStyleSheetElements.push(stylesheetElement);
-          const referenceNode = mountDOM.contains(refChild) ? refChild : null;
           return rawDOMAppendOrInsertBefore.call(mountDOM, stylesheetElement, referenceNode);
         }
 
@@ -140,13 +141,13 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
           const mountDOM = appWrapperGetter();
           const { src, text } = element as HTMLScriptElement;
 
+          const referenceNode = mountDOM.contains(refChild) ? refChild : null;
           // some script like jsonp maybe not support cors which should't use execScripts
           if (excludeAssetFilter && src && excludeAssetFilter(src)) {
-            return rawDOMAppendOrInsertBefore.call(mountDOM, element, refChild) as T;
+            return rawDOMAppendOrInsertBefore.call(mountDOM, element, referenceNode) as T;
           }
 
           const { fetch } = frameworkConfiguration;
-          const referenceNode = mountDOM.contains(refChild) ? refChild : null;
 
           if (src) {
             execScripts(null, [src], proxy, {
