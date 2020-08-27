@@ -112,15 +112,12 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
         case LINK_TAG_NAME:
         case STYLE_TAG_NAME: {
           const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
-          if (!invokedByMicroApp) {
+          const { href } = stylesheetElement as HTMLLinkElement;
+          if (!invokedByMicroApp || (excludeAssetFilter && href && excludeAssetFilter(href))) {
             return rawDOMAppendOrInsertBefore.call(this, element, refChild) as T;
           }
 
           const mountDOM = appWrapperGetter();
-          const { href } = stylesheetElement as HTMLLinkElement;
-          if (excludeAssetFilter && href && excludeAssetFilter(href)) {
-            return rawDOMAppendOrInsertBefore.call(mountDOM, element, refChild) as T;
-          }
 
           if (scopedCSS) {
             css.process(mountDOM, stylesheetElement, appName);
@@ -133,18 +130,13 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
         }
 
         case SCRIPT_TAG_NAME: {
-          if (!invokedByMicroApp) {
+          const { src, text } = element as HTMLScriptElement;
+          // some script like jsonp maybe not support cors which should't use execScripts
+          if (!invokedByMicroApp || (excludeAssetFilter && src && excludeAssetFilter(src))) {
             return rawDOMAppendOrInsertBefore.call(this, element, refChild) as T;
           }
 
           const mountDOM = appWrapperGetter();
-          const { src, text } = element as HTMLScriptElement;
-
-          // some script like jsonp maybe not support cors which should't use execScripts
-          if (excludeAssetFilter && src && excludeAssetFilter(src)) {
-            return rawDOMAppendOrInsertBefore.call(mountDOM, element, refChild) as T;
-          }
-
           const { fetch } = frameworkConfiguration;
           const referenceNode = mountDOM.contains(refChild) ? refChild : null;
 
