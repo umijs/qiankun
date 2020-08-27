@@ -14,7 +14,7 @@ export async function bootstrap() {
   console.log('[react15] react app bootstraped');
 }
 
-export async function mount(props) {
+export async function mount(props = {}) {
   console.log('[react15] props from main framework', props);
   const { container } = props;
   ReactDOM.render(
