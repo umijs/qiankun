@@ -61,6 +61,18 @@ function setCachedRules(element: HTMLStyleElement, cssRules: CSSRuleList) {
   Object.defineProperty(element, styledComponentSymbol, { value: cssRules, configurable: true, enumerable: false });
 }
 
+function patchedCustomEvent(e: CustomEvent, elementGetter: () => HTMLScriptElement | null): CustomEvent {
+  Object.defineProperties(e, {
+    srcElement: {
+      get: elementGetter,
+    },
+    target: {
+      get: elementGetter,
+    },
+  });
+  return e;
+}
+
 function getOverwrittenAppendChildOrInsertBefore(opts: {
   appName: string;
   proxy: WindowProxy;
@@ -159,7 +171,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
                 // 2. addEventListener way, which toast-loader used, see https://github.com/pyrsmk/toast/blob/master/src/Toast.ts#L64
                 const loadEvent = new CustomEvent('load');
                 if (isFunction(element.onload)) {
-                  element.onload(loadEvent);
+                  element.onload(patchedCustomEvent(loadEvent, () => element));
                 } else {
                   element.dispatchEvent(loadEvent);
                 }
@@ -169,7 +181,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
               error: () => {
                 const errorEvent = new CustomEvent('error');
                 if (isFunction(element.onerror)) {
-                  element.onerror(errorEvent);
+                  element.onerror(patchedCustomEvent(errorEvent, () => element));
                 } else {
                   element.dispatchEvent(errorEvent);
                 }
