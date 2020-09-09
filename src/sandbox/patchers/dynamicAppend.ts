@@ -171,7 +171,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
                 // 2. addEventListener way, which toast-loader used, see https://github.com/pyrsmk/toast/blob/master/src/Toast.ts#L64
                 const loadEvent = new CustomEvent('load');
                 if (isFunction(element.onload)) {
-                  element.onload(patchedCustomEvent(loadEvent, () => element));
+                  element.onload(patchCustomEvent(loadEvent, () => element));
                 } else {
                   element.dispatchEvent(loadEvent);
                 }
