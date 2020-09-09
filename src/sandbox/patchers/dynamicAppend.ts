@@ -61,7 +61,7 @@ function setCachedRules(element: HTMLStyleElement, cssRules: CSSRuleList) {
   Object.defineProperty(element, styledComponentSymbol, { value: cssRules, configurable: true, enumerable: false });
 }
 
-function patchedCustomEvent(e: CustomEvent, elementGetter: () => HTMLScriptElement | null): CustomEvent {
+function patchCustomEvent(e: CustomEvent, elementGetter: () => HTMLScriptElement | null): CustomEvent {
   Object.defineProperties(e, {
     srcElement: {
       get: elementGetter,
