@@ -181,7 +181,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
               error: () => {
                 const errorEvent = new CustomEvent('error');
                 if (isFunction(element.onerror)) {
-                  element.onerror(patchedCustomEvent(errorEvent, () => element));
+                  element.onerror(patchCustomEvent(errorEvent, () => element));
                 } else {
                   element.dispatchEvent(errorEvent);
                 }
