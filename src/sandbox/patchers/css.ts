@@ -22,7 +22,7 @@ const arrayify = <T>(list: CSSRuleList | any[]) => {
   return [].slice.call(list, 0) as T[];
 };
 
-class ScopedCSS {
+export class ScopedCSS {
   private static ModifiedTag = 'Symbol(style-modified-qiankun)';
 
   private sheet: StyleSheet;
@@ -174,10 +174,19 @@ class ScopedCSS {
   }
 }
 
-const processor = new ScopedCSS();
+let processor: ScopedCSS;
 
 export const QiankunCSSRewriteAttr = 'data-qiankun';
-const process = (appWrapper: HTMLElement, stylesheetElement: HTMLStyleElement | HTMLLinkElement, appName: string) => {
+export const process = (
+  appWrapper: HTMLElement,
+  stylesheetElement: HTMLStyleElement | HTMLLinkElement,
+  appName: string,
+) => {
+  // lazy singleton pattern
+  if (!processor) {
+    processor = new ScopedCSS();
+  }
+
   if (stylesheetElement.tagName === 'LINK') {
     console.warn('Feature: sandbox.experimentalStyleIsolation is not support for link element yet.');
   }
@@ -194,5 +203,3 @@ const process = (appWrapper: HTMLElement, stylesheetElement: HTMLStyleElement | 
     processor.process(stylesheetElement, prefix);
   }
 };
-
-export { process, processor };
