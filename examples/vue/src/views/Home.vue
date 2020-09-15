@@ -1,8 +1,9 @@
 <template>
   <div class="home">
     <img alt="Vue logo" src="../assets/logo.png"/>
-    <HelloWorld msg="Vue.js Demo"/>
-
+    <HelloWorld v-if="showHello" msg="Vue.js Demo"/>
+    <el-button @click="parentCall" type="text">Say Hello To Main App</el-button>
+    <el-button @click="showHello = true" type="text">Say Hello</el-button>
     <el-button @click="dialogVisible = true" type="text">Open Dialog</el-button>
 
     <el-dialog
@@ -22,7 +23,8 @@
 
 <script>
   // @ is an alias to /src
-  import HelloWorld from '@/components/HelloWorld.vue';
+  // import HelloWorld from '@/components/HelloWorld.vue';
+  const HelloWorld = ()=> import('@/components/HelloWorld.vue').then((res) => res.default).catch(error => 'An error occurred while loading the component')
 
   export default {
     name: 'home',
@@ -32,6 +34,7 @@
     data() {
       return {
         dialogVisible: false,
+        showHello: false,
       };
     },
     methods: {
@@ -43,6 +46,9 @@
           .catch(_ => {
           });
       },
+      parentCall() {
+        window.sayHello('i am from vue.')
+      }
     },
   };
 </script>

@@ -3,7 +3,8 @@
  * @since 2019-04-11
  */
 import { SandBox, SandBoxType } from '../../interfaces';
-import { getTargetValue } from '../common';
+import { getTargetValue, attachDocProxySymbol } from '../common';
+import { nextTick } from '../../utils';
 
 function isPropConfigurable(target: object, prop: PropertyKey) {
   const descriptor = Object.getOwnPropertyDescriptor(target, prop);
@@ -107,6 +108,17 @@ export default class SingularProxySandbox implements SandBox {
         // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
         if (p === 'top' || p === 'parent' || p === 'window' || p === 'self') {
           return proxy;
+        }
+
+        // sync from ../proxySandbox.ts
+        // mark the symbol to document while accessing as document.createElement could know is invoked by which sandbox for dynamic append patcher
+        if (p === 'document') {
+          document[attachDocProxySymbol] = proxy;
+          // remove the mark in next tick, thus we can identify whether it in micro app or not
+          // this approach is just a workaround, it could not cover all the complex scenarios, such as the micro app runs in the same task context with master in som case
+          // fixme if you have any other good ideas
+          nextTick(() => delete document[attachDocProxySymbol]);
+          return document;
         }
 
         const value = (rawWindow as any)[p];

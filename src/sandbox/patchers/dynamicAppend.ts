@@ -3,15 +3,14 @@
  * @since 2019-10-21
  */
 import { execScripts } from 'import-html-entry';
-import { isFunction, noop } from 'lodash';
+import { isFunction } from 'lodash';
 import { checkActivityFunctions } from 'single-spa';
 import { frameworkConfiguration } from '../../apis';
 import { Freer } from '../../interfaces';
-import { attachDocProxySymbol } from '../common';
+import { attachDocProxySymbol, attachElementContainerSymbol } from '../common';
 import * as css from './css';
 
 const styledComponentSymbol = Symbol('styled-component-qiankun');
-const attachElementContainerSymbol = Symbol('attach-proxy-container');
 
 declare global {
   interface HTMLStyleElement {
@@ -109,6 +108,8 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
         proxy = storedContainerInfo.proxy;
       }
 
+      // some action is actually invoke by subapp, but executor context should be main app
+      // eg: webapck chunk, javascript can get parent variable by proto chain but css can't so add especially deal with css
       const invokedByMicroApp = singular
         ? // check if the currently specified application is active
           // While we switch page from qiankun app to a normal react routing page, the normal one may load stylesheet dynamically while page rendering,
@@ -125,7 +126,12 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
         case STYLE_TAG_NAME: {
           const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
           const { href } = stylesheetElement as HTMLLinkElement;
-          if (!invokedByMicroApp || (excludeAssetFilter && href && excludeAssetFilter(href))) {
+          if (
+            !invokedByMicroApp ||
+            (excludeAssetFilter && href && excludeAssetFilter(href)) ||
+            // especially deal css
+            !storedContainerInfo
+          ) {
             return rawDOMAppendOrInsertBefore.call(this, element, refChild) as T;
           }
 
@@ -144,7 +150,12 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
         case SCRIPT_TAG_NAME: {
           const { src, text } = element as HTMLScriptElement;
           // some script like jsonp maybe not support cors which should't use execScripts
-          if (!invokedByMicroApp || (excludeAssetFilter && src && excludeAssetFilter(src))) {
+          if (
+            !invokedByMicroApp ||
+            (excludeAssetFilter && src && excludeAssetFilter(src))
+            // ignore js
+            // || !storedContainerInfo
+          ) {
             return rawDOMAppendOrInsertBefore.call(this, element, refChild) as T;
           }
 
@@ -325,9 +336,10 @@ function patchDocumentCreateElement(
   proxy: Window,
   dynamicStyleSheetElements: HTMLStyleElement[],
 ) {
-  if (singular) {
-    return noop;
-  }
+  // mark document.createElement where is call, main app or subapp
+  // if (singular) {
+  //   return noop;
+  // }
 
   proxyContainerInfoMapper.set(proxy, { appName, proxy, appWrapperGetter, dynamicStyleSheetElements, singular });
 

@@ -7,9 +7,14 @@ import { isBoundedFunction, isCallable, isConstructable } from '../utils';
 
 export const attachDocProxySymbol = Symbol('attach-proxy-container');
 
+export const attachElementContainerSymbol = Symbol('attach-proxy-container');
+
 declare global {
   interface Document {
     [attachDocProxySymbol]: WindowProxy;
+  }
+  interface Element {
+    [attachElementContainerSymbol]: WindowProxy;
   }
 }
 

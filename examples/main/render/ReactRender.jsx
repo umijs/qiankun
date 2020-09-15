@@ -1,18 +1,39 @@
-import React from 'react';
+import React, {Suspense, lazy} from 'react';
 import ReactDOM from 'react-dom';
-
+const Hello = lazy(()=>import(/* webpackChunkName: "OtherComponent" */'./Hello'));
 /**
  * 渲染子应用
  */
-function Render(props) {
-  const { loading } = props;
+class Render extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      showHello: false
+    };
+  }
 
-  return (
-    <>
-      {loading && <h4 className="subapp-loading">Loading...</h4>}
-      <div id="subapp-viewport" />
-    </>
-  );
+  componentDidMount() {
+    window.sayHello = (msg)=>{
+      this.setState({
+        showHello: true,
+        msg: msg || '什么都没有'
+      });
+    }
+  }
+
+  render() {
+    const { loading } = this.props;
+    const { msg } = this.state
+    return (
+      <>
+        {loading && <h4 className="subapp-loading">Loading...</h4>}
+        <Suspense fallback={<div>Loading...</div>}>
+          {this.state.showHello && <Hello msg={msg} />}
+        </Suspense>
+        <div id="subapp-viewport" />
+      </>
+    );
+  }
 }
 
 export default function render({ loading }) {
