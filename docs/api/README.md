@@ -25,8 +25,9 @@ By linking the micro-application to some url rules, the function of automaticall
 
     - name - `string` - required, the name of the child application and must be unique between the child applications.
 
-    - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - required, The entry url of the child application.
-
+    - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - required, The entry of the micro application.
+      - If configured as `string`, it represents the access address of the micro application. If the micro application is deployed in a secondary directory, the last `/` cannot be omitted. For example, the access address of the micro application is: `https://qiankun.umijs.org/guide`, then the `entry` should be `https://qiankun.umijs.org/guide/`.
+      - If configured as `object`, the value of `html` is the html content string of the micro application, not the access address of the micro application. The `publicPath` of the micro application will be set to `/`.
     - container - `string | HTMLElement` - required，A selector or Element instance of the container node of a micro application. Such as `container: '#root'` or `container: document.querySelector('#root')`.
 
     - activeRule -  - `string | (location: Location) => boolean | Array<string | (location: Location) => boolean> ` - required,activation rules for micro-apps.
@@ -158,7 +159,7 @@ By linking the micro-application to some url rules, the function of automaticall
 
     - fetch - `Function` - optional
 
-    - getPublicPath - `(url: string) => string` - optional
+    - getPublicPath - `(enrty: Entry) => string` - optional，The parameter is the entry value of the micro application.
 
     - getTemplate - `(tpl: string) => string` - optional
     
@@ -432,3 +433,16 @@ A criterion for judging whether the business is closely related: <strong>Look at
     // ...
   }
   ```
+
+## Micro application configuration
+
+### `ignore` attribute of `script` and `style` tags
+
+After adding the `ignore` attribute to the `script` and `style` tags of the micro application, it will not be loaded and executed, for example:
+
+```html
+<link ignore rel="stylesheet" href="//cnd.com/antd.css">
+<script ignore src="//cnd.com/antd.js"></script>
+```
+
+What's the use of this? With this attribute, `qiankun` will no longer load this `script`/`style`, and these `script`/`style` can still be loaded when the micro-application is running independently. In this way, it can be achieved: The micro-application reuses the dependency of the main application'.
