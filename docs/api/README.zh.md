@@ -451,3 +451,16 @@ toc: menu
     props.setGlobalState(state);
   }
   ```
+
+## 微应用的配置
+
+### `script` 和 `style` 标签的 `ignore` 属性
+
+给微应用的 `script` 和 `style` 标签增加 `ignore` 属性后，它将不会被加载和执行，例如：
+
+```html
+<link ignore rel="stylesheet" href="//cnd.com/antd.css">
+<script ignore src="//cnd.com/antd.js"></script>
+```
+
+这有什么用？有了这个属性，`qiankun` 便不会再去加载这个 `script`/`style`，而微应用独立运行时，这些 `script`/`style` 仍能被加载，这样，就可以实现：“微应用复用主应用的依赖” 。

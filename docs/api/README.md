@@ -433,3 +433,16 @@ A criterion for judging whether the business is closely related: <strong>Look at
     // ...
   }
   ```
+
+## Micro application configuration
+
+### `ignore` attribute of `script` and `style` tags
+
+After adding the `ignore` attribute to the `script` and `style` tags of the micro application, it will not be loaded and executed, for example:
+
+```html
+<link ignore rel="stylesheet" href="//cnd.com/antd.css">
+<script ignore src="//cnd.com/antd.js"></script>
+```
+
+What's the use of this? With this attribute, `qiankun` will no longer load this `script`/`style`, and these `script`/`style` can still be loaded when the micro-application is running independently. In this way, it can be achieved: The micro-application reuses the dependency of the main application'.
