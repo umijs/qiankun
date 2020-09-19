@@ -228,7 +228,7 @@ A criterion for judging whether the business is closely related: <strong>Look at
 * Parameters
   * app - `LoadableApp` - Required, basic information of micro application
     * name - `string` - Required, the name of the micro application must be unique among the micro applications.
-    * entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - Required, the entry address of the micro application.
+    * entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - Required,  The entry of the micro application(The detailed description is the same as above).
     * container - `string | HTMLElement` - Required, selector or Element instance of the container node of the micro application. Such as `container: '#root'` or `container: document.querySelector('#root')`.
     * props - `object` - Optional, the data that needs to be passed to the micro-application during initialization.
 
@@ -242,7 +242,7 @@ A criterion for judging whether the business is closely related: <strong>Look at
 
     * fetch - `Function` - Optional, custom fetch method.
 
-    * getPublicPath - `(url: string) => string` - Optional
+    * getPublicPath - `(url: string) => string` - Optional，The parameter is the entry value of the micro application.
 
     * getTemplate - `(tpl: string) => string` - Optional
     
