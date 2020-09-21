@@ -25,8 +25,9 @@ toc: menu
 
     - name - `string` - 必选，微应用的名称，微应用之间必须确保唯一。
 
-    - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - 必选，微应用的 entry 地址。
-
+    - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - 必选，微应用的入口。
+      - 配置为字符串时，表示微应用的访问地址。如果微应用部署在二级目录，则最后面的 `/` 不可省略。例如，微应用的访问地址是：`https://qiankun.umijs.org/guide`，那么 `entry` 应该是 `https://qiankun.umijs.org/guide/`。
+      - 配置为对象时，`html` 的值是微应用的 html 内容字符串，而不是微应用的访问地址。微应用的 `publicPath` 将会被设置为 `/`。
     - container - `string | HTMLElement` - 必选，微应用的容器节点的选择器或者 Element 实例。如`container: '#root'` 或 `container: document.querySelector('#root')`。
 
     - activeRule - `string | (location: Location) => boolean | Array<string | (location: Location) => boolean> ` - 必选，微应用的激活规则。
@@ -158,11 +159,11 @@ toc: menu
 
     - fetch - `Function` - 可选，自定义的 fetch 方法。
 
-    - getPublicPath - `(url: string) => string` - 可选
+    - getPublicPath - `(enrty: Entry) => string` - 可选，参数是微应用的 entry 值。
 
     - getTemplate - `(tpl: string) => string` - 可选
 
-    - excludeAssetFilter - `(assetUrl: string) => boolean` - 可选，指定部分特殊的动态加载的微应用资源（css/js) 不被qiankun 劫持处理
+    - excludeAssetFilter - `(assetUrl: string) => boolean` - 可选，指定部分特殊的动态加载的微应用资源（css/js) 不被 qiankun 劫持处理
 
 - 用法
 
@@ -227,7 +228,7 @@ toc: menu
 * 参数
   * app - `LoadableApp` - 必选，微应用的基础信息
     * name - `string` - 必选，微应用的名称，微应用之间必须确保唯一。
-    * entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - 必选，微应用的 entry 地址。
+    * entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - 必选，微应用的入口（详细说明同上）。
     * container - `string | HTMLElement` - 必选，微应用的容器节点的选择器或者 Element 实例。如`container: '#root'` 或 `container: document.querySelector('#root')`。
     * props - `object` - 可选，初始化时需要传递给微应用的数据。
 
@@ -263,7 +264,7 @@ toc: menu
 
     * fetch - `Function` - 可选，自定义的 fetch 方法。
 
-    * getPublicPath - `(url: string) => string` - 可选
+    * getPublicPath - `(entry: Entry) => string` - 可选，参数是微应用的 entry 值。
 
     * getTemplate - `(tpl: string) => string` - 可选
     
