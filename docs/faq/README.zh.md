@@ -294,7 +294,7 @@ qiankun 依赖的 import-html-entry 通过 `window.fetch` 来获取微应用的�
   </div>
 </body>
 
-+ <script src="//yourhost/entry.js" entry></script>
++ <script src="//yourhost/entry.js" entry />
 </html>
 ```
 
