@@ -341,3 +341,46 @@ qiankun 会将微应用的动态 script 加载（例如 JSONP）转化为 fetch 
 具体配置方式参考：
 * [HTML5 History 模式](https://router.vuejs.org/zh/guide/essentials/history-mode.html)
 * [browserHistory](https://react-guide.github.io/react-router-cn/docs/guides/basics/Histories.html#browserHistory)
+
+## 主应用如何配置404页面？
+
+首先不应该写通配符 `*` ，可以将 404 页面注册为一个普通路由页面，比如说 `/404` ，然后在主项目的路由钩子函数里面判断一下，如果既不是主应用路由，也不是微应用，就跳转到 404 页面。
+
+以`vue-router`为例，伪代码如下：
+
+```js
+const childrenPath = ['/app1','/app2'];
+router.beforeEach((to, from, next) => {
+    if(to.name) { // 有 name 属性，说明是主项目的路由
+        next()
+    }
+    if(childrenPath.some(item => to.path.includes(item))){
+        next()
+    }
+    next({ name: '404' })
+})
+```
+
+## 微应用之间如何跳转？
+
+- 主应用和微应用都是 `hash` 模式，主应用根据 `hash` 来判断微应用，则不用考虑这个问题。
+
+- 主应用根据 `path` 来判断微应用
+ 
+  `history` 模式的微应用之间的跳转，或者微应用跳主应用页面，直接使用微应用的路由实例是不行的，原因是微应用的路由实例跳转都基于路由的 `base`。有两种办法可以跳转：
+
+  1. `history.pushState()`：[mdn用法介绍](https://developer.mozilla.org/zh-CN/docs/Web/API/History/pushState)
+  2. 将主应用的路由实例通过 `props` 传给微应用，微应用这个路由实例跳转。
+
+
+## 微应用文件更新之后，访问的还是旧版文件
+
+服务器需要给微应用的 `index.html` 配置一个响应头：`Cache-Control no-cache`，意思就是每次请求都检查是否更新。
+
+以 `Nginx` 为例:
+
+```
+location = /index.html {
+    add_header Cache-Control no-cache;
+}
+```
