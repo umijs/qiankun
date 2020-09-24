@@ -135,6 +135,13 @@ test('descriptor of non-configurable and non-enumerable property existed in raw 
   });
 });
 
+test('A property cannot be reported as non-configurable, if it does not exists as an own property of the target object', () => {
+  const { proxy } = new ProxySandbox('non-configurable');
+  Object.defineProperty(window, 'nonConfigurablePropAfterSandboxCreated', { value: 'test', configurable: false });
+  const descriptor = Object.getOwnPropertyDescriptor(proxy, 'nonConfigurablePropAfterSandboxCreated');
+  expect(descriptor?.configurable).toBeTruthy();
+});
+
 test('property added by Object.defineProperty should works as expect', () => {
   const { proxy } = new ProxySandbox('object-define-property-test');
 
