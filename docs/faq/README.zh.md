@@ -351,13 +351,13 @@ qiankun 会将微应用的动态 script 加载（例如 JSONP）转化为 fetch 
 ```js
 const childrenPath = ['/app1','/app2'];
 router.beforeEach((to, from, next) => {
-    if(to.name) { // 有 name 属性，说明是主项目的路由
-        next()
-    }
-    if(childrenPath.some(item => to.path.includes(item))){
-        next()
-    }
-    next({ name: '404' })
+  if(to.name) { // 有 name 属性，说明是主项目的路由
+    next()
+  }
+  if(childrenPath.some(item => to.path.includes(item))){
+    next()
+  }
+  next({ name: '404' })
 })
 ```
 
@@ -381,6 +381,26 @@ router.beforeEach((to, from, next) => {
 
 ```
 location = /index.html {
-    add_header Cache-Control no-cache;
+  add_header Cache-Control no-cache;
+}
+```
+
+## 微应用打包之后字体文件加载出错
+
+原因是 `qiankun` 将外链样式改成了内联样式，但是字体文件的加载路径是相对路径。
+
+修改一下 `webpack` 打包，给字体文件注入路径前缀即可：
+
+```js
+module.exports = {
+  chainWebpack: (config) => {
+    config.module
+      .rule('fonts')
+      .test(/.(ttf|otf|eot|woff|woff2)$/)
+      .use('url-loader')
+      .loader('url-loader')
+      .tap(options => ({ name: '/fonts/[name].[hash:8].[ext]' }))
+      .end()
+  },
 }
 ```

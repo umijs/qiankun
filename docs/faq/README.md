@@ -314,3 +314,23 @@ location = /index.html {
     add_header Cache-Control no-cache;
 }
 ```
+
+## Font file loading error after micro application packaging
+
+The reason is that `qiankun` changed the external link style to the inline style, but the loading path of the font file is a relative path.
+
+Modify the `webpack` package and inject the path prefix to the font file:
+
+```js
+module.exports = {
+   chainWebpack: (config) => {
+     config.module
+       .rule('fonts')
+       .test(/.(ttf|otf|eot|woff|woff2)$/)
+       .use('url-loader')
+       .loader('url-loader')
+       .tap(options => ({ name:'/fonts/[name].[hash:8].[ext]' }))
+       .end()
+   },
+}
+```

@@ -26,7 +26,7 @@ toc: menu
     - name - `string` - 必选，微应用的名称，微应用之间必须确保唯一。
 
     - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - 必选，微应用的入口。
-      - 配置为字符串时，表示微应用的访问地址。如果微应用部署在二级目录，则最后面的 `/` 不可省略。例如，微应用的访问地址是：`https://qiankun.umijs.org/guide`，那么 `entry` 应该是 `https://qiankun.umijs.org/guide/`。
+      - 配置为字符串时，表示微应用的访问地址，例如 `https://qiankun.umijs.org/guide/`。
       - 配置为对象时，`html` 的值是微应用的 html 内容字符串，而不是微应用的访问地址。微应用的 `publicPath` 将会被设置为 `/`。
     - container - `string | HTMLElement` - 必选，微应用的容器节点的选择器或者 Element 实例。如`container: '#root'` 或 `container: document.querySelector('#root')`。
 
