@@ -1,6 +1,6 @@
 <template>
   <div class="hello">
-    <p>About page query id is: {{query.id}}</p>
+    <p>About page query id is: {{ query.id }}</p>
     Clicked: {{ count }} times, count is {{ evenOrOdd }}.
     <button @click="increment">+</button>
     <button @click="decrement">-</button>
@@ -10,26 +10,26 @@
 </template>
 
 <script>
-import { useStore } from "vuex";
-import { computed } from "vue";
-import { useRoute } from "vue-router";
+import { useStore } from 'vuex';
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
 
 export default {
-  name: "About",
+  name: 'About',
   setup() {
     const store = useStore();
     const route = useRoute();
 
     return {
       count: computed(() => store.state.count.count),
-      evenOrOdd: computed(() => store.getters["count/evenOrOdd"]),
-      increment: () => store.dispatch("count/increment"),
-      decrement: () => store.dispatch("count/decrement"),
-      incrementIfOdd: () => store.dispatch("count/incrementIfOdd"),
-      incrementAsync: () => store.dispatch("count/incrementAsync"),
-      query: route.query
+      evenOrOdd: computed(() => store.getters['count/evenOrOdd']),
+      increment: () => store.dispatch('count/increment'),
+      decrement: () => store.dispatch('count/decrement'),
+      incrementIfOdd: () => store.dispatch('count/incrementIfOdd'),
+      incrementAsync: () => store.dispatch('count/incrementAsync'),
+      query: route.query,
     };
-  }
+  },
 };
 </script>
 

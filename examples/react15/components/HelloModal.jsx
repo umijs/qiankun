@@ -2,7 +2,6 @@ import React from 'react';
 import { Button, Modal } from 'antd';
 
 export default class HelloModal extends React.Component {
-
   constructor() {
     super();
     this.state = {
@@ -16,9 +15,7 @@ export default class HelloModal extends React.Component {
 
     return (
       <div>
-        <Button onClick={() => this.setVisible(true)}>
-          CLICK ME
-        </Button>
+        <Button onClick={() => this.setVisible(true)}>CLICK ME</Button>
         <Modal
           visible={visible}
           closable={false}
@@ -26,7 +23,7 @@ export default class HelloModal extends React.Component {
           onCancel={() => this.setVisible(false)}
           title="Install"
         >
-          <code>$ yarn add qiankun  # or npm i qiankun -S</code>
+          <code>$ yarn add qiankun # or npm i qiankun -S</code>
         </Modal>
       </div>
     );

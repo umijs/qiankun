@@ -1,29 +1,28 @@
 <template>
-  <img alt="Vue logo" src="../assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App" @close="close">
-  </HelloWorld>
+  <img alt="Vue logo" src="../assets/logo.png" />
+  <HelloWorld msg="Welcome to Your Vue.js App" @close="close"> </HelloWorld>
 </template>
 
 <script>
-import HelloWorld from '@/components/HelloWorld.vue'
+import HelloWorld from '@/components/HelloWorld.vue';
 
 export default {
   name: 'App',
   components: {
-    HelloWorld
+    HelloWorld,
   },
   created() {
-    console.log('vue2.0写法 created')
+    console.log('vue2.0写法 created');
   },
   mounted() {
-    console.log(this.$route)
+    console.log(this.$route);
   },
   methods: {
     close() {
-      console.log('close')
-    }
-  }
-}
+      console.log('close');
+    },
+  },
+};
 </script>
 
 <style>

@@ -14,57 +14,53 @@
 </template>
 
 <script>
-import {
-  onMounted,
-  onBeforeUpdate,
-  getCurrentInstance
-} from "vue";
-import { useRouter } from "vue-router";
+import { onMounted, onBeforeUpdate, getCurrentInstance } from 'vue';
+import { useRouter } from 'vue-router';
 
 export default {
-  name: "HelloWorld",
+  name: 'HelloWorld',
   props: {
-    msg: String
+    msg: String,
   },
 
   data() {
     return {
-      nameColor: "orange"
+      nameColor: 'orange',
     };
   },
 
   setup(props, context) {
-    const router = useRouter()
+    const router = useRouter();
     const { ctx } = getCurrentInstance();
 
     const changeGlobalState = () => {
-      if(ctx.$setGlobalState) {
+      if (ctx.$setGlobalState) {
         console.log('此处可设置全局state');
         // ctx.$setGlobalState({name: 'chaunjie'})
       }
-    }
+    };
 
     onMounted(() => {
-      console.log("mounted");
+      console.log('mounted');
     });
 
     onBeforeUpdate(() => {
-      console.log("beforeUpdate");
+      console.log('beforeUpdate');
     });
 
     const pageTo = () => {
       router.push({
-        name: "about",
+        name: 'about',
         query: {
-          id: "SD20200920"
-        }
+          id: 'SD20200920',
+        },
       });
     };
 
     return {
       pageTo,
       changeGlobalState,
-      doEmit: () => context.emit("close")
+      doEmit: () => context.emit('close'),
     };
   },
 };

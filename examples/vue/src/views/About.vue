@@ -5,7 +5,7 @@
 </template>
 
 <style scoped>
-  .about {
-    color: #7265e6;
-  }
+.about {
+  color: #7265e6;
+}
 </style>

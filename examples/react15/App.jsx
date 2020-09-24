@@ -1,8 +1,8 @@
 import React, { version as reactVersion } from 'react';
 import { version as antdVersion } from 'antd';
 
-import Logo from './components/Logo'
-import HelloModal from './components/HelloModal'
+import Logo from './components/Logo';
+import HelloModal from './components/HelloModal';
 
 export default class App extends React.Component {
   render() {
