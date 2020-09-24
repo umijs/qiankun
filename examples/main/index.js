@@ -59,6 +59,13 @@ registerMicroApps(
       loader,
       activeRule: '/purehtml',
     },
+    {
+      name: 'vue3',
+      entry: '//localhost:7105',
+      container: '#subapp-viewport',
+      loader,
+      activeRule: '/vue3',
+    },
   ],
   {
     beforeLoad: [
@@ -95,7 +102,7 @@ setGlobalState({
 /**
  * Step3 设置默认进入的子应用
  */
-setDefaultMountApp('/react16');
+setDefaultMountApp('/vue3');
 
 /**
  * Step4 启动应用
