@@ -1,4 +1,4 @@
-import { getWrapperId, getDefaultTplWrapper, validateExportLifecycle, sleep, Deferred } from '../../utils';
+import { getWrapperId, getDefaultTplWrapper, validateExportLifecycle, sleep, Deferred } from '../utils';
 
 test('should wrap the id [1]', () => {
   const id = 'REACT16';
@@ -14,11 +14,11 @@ test('should wrap the id [2]', () => {
 
 test('should wrap string with div', () => {
   const tpl = '<span>qiankun</span>';
-  const factory = getDefaultTplWrapper('react16');
+  const factory = getDefaultTplWrapper('react16', 'react16');
 
   const ret = factory(tpl);
 
-  expect(ret).toBe(`<div id="__qiankun_microapp_wrapper_for_react_16__">${tpl}</div>`);
+  expect(ret).toBe(`<div id="__qiankun_microapp_wrapper_for_react_16__" data-name="react16">${tpl}</div>`);
 });
 
 test('should be able to validate lifecycle', () => {

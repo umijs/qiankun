@@ -179,7 +179,7 @@ You can find the singular usage [here](/api#startopts).
 
 ### How to polyfill IE?
 
-If you want qiankun (or its dependent libraries, or your own application) to work properly in IE, you need to introduce the following polyfills at the portal at least:
+If you want qiankun (or its dependent libraries, or your own application) to work properly in IE, you need to introduce the following polyfills at the portal **at least**:
 
 <Alert type="info">
 What's <a href="https://developer.mozilla.org/en-US/docs/Glossary/Polyfill" target="_blank">polyfill</a>
@@ -187,6 +187,7 @@ What's <a href="https://developer.mozilla.org/en-US/docs/Glossary/Polyfill" targ
 
 ```javascript
 import 'whatwg-fetch';
+import 'custom-event-polyfill';
 import 'core-js/stable/promise';
 import 'core-js/stable/symbol';
 import 'core-js/stable/string/starts-with';
@@ -264,3 +265,9 @@ qiankun will convert the dynamic script loading of the subapplication (such as J
 In singular mode, you can use the `excludeAssetFilter` parameter to release this part of the resource request, but note that the resources released by this option will escape the sandbox, and the resulting side effects need to be handled by you.
 
 If you use JSONP in not-singular mode, simply using `excludeAssetFilter` does not achieve good results, because each application is isolated by the sandbox; you can provide a unified JSONP tool in the main application, and the subapplication just calls the tool.
+
+## 404 after refresh of child application？
+It is usually because you are routing in Browser mode, which requires the server to open it.
+Specific configuration mode reference:
+* [HTML5 History Mode](https://router.vuejs.org/guide/essentials/history-mode.html)
+* [browserRouter](https://reactrouter.com/web/api/BrowserRouter)

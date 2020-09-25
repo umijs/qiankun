@@ -11,9 +11,8 @@ module.exports = {
   },
 
   devServer: _ => {
-    const config = {};
+    const config = _;
 
-    config.port = '7100';
     config.headers = {
       'Access-Control-Allow-Origin': '*',
     };

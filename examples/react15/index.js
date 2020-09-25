@@ -2,10 +2,10 @@
  * @author Kuitos
  * @since 2019-05-16
  */
+import './public-path';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './App';
-import './public-path';
 
 import 'antd/dist/antd.min.css';
 import './index.css';
@@ -14,7 +14,7 @@ export async function bootstrap() {
   console.log('[react15] react app bootstraped');
 }
 
-export async function mount(props) {
+export async function mount(props = {}) {
   console.log('[react15] props from main framework', props);
   const { container } = props;
   ReactDOM.render(

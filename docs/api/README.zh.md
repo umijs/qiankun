@@ -25,8 +25,9 @@ toc: menu
 
     - name - `string` - 必选，微应用的名称，微应用之间必须确保唯一。
 
-    - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - 必选，微应用的 entry 地址。
-
+    - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - 必选，微应用的入口。
+      - 配置为字符串时，表示微应用的访问地址。如果微应用部署在二级目录，则最后面的 `/` 不可省略。例如，微应用的访问地址是：`https://qiankun.umijs.org/guide`，那么 `entry` 应该是 `https://qiankun.umijs.org/guide/`。
+      - 配置为对象时，`html` 的值是微应用的 html 内容字符串，而不是微应用的访问地址。微应用的 `publicPath` 将会被设置为 `/`。
     - container - `string | HTMLElement` - 必选，微应用的容器节点的选择器或者 Element 实例。如`container: '#root'` 或 `container: document.querySelector('#root')`。
 
     - activeRule - `string | (location: Location) => boolean | Array<string | (location: Location) => boolean> ` - 必选，微应用的激活规则。
@@ -125,9 +126,9 @@ toc: menu
 
     - prefetch - `boolean | 'all' | string[] | (( apps: RegistrableApp[] ) => { criticalAppNames: string[]; minorAppsName: string[] })` - 可选，是否开启预加载，默认为 `true`。
 
-      配置为 `true` 则会在第一个微应用 mount 完成后开始预加载其他微应用的静态资源，配置为 `'all'` 则主应用 `start` 后即开始预加载所有微应用静态资源。
+      配置为 `true` 则会在第一个微应用 mount 完成后开始预加载其他微应用的静态资源
 
-      配置为 `'all'` 则主应用 `start` 后即开始预加载所有微应用静态资源。
+      配置为 `'all'` 则主应用 `start` 后即开始预加载所有微应用静态资源
 
       配置为 `string[]` 则会在第一个微应用 mounted 后开始加载数组内的微应用资源
 
@@ -158,11 +159,11 @@ toc: menu
 
     - fetch - `Function` - 可选，自定义的 fetch 方法。
 
-    - getPublicPath - `(url: string) => string` - 可选
+    - getPublicPath - `(enrty: Entry) => string` - 可选，参数是微应用的 entry 值。
 
     - getTemplate - `(tpl: string) => string` - 可选
 
-    - excludeAssetFilter - `(assetUrl: string) => boolean` - 可选，指定部分特殊的动态加载的微应用资源（css/js) 不被qiankun 劫持处理
+    - excludeAssetFilter - `(assetUrl: string) => boolean` - 可选，指定部分特殊的动态加载的微应用资源（css/js) 不被 qiankun 劫持处理
 
 - 用法
 
@@ -176,7 +177,7 @@ toc: menu
   start();
   ```
 
-### setDefaultMountApp(appLink)`
+### setDefaultMountApp(appLink)
 
 - 参数
 
@@ -227,7 +228,7 @@ toc: menu
 * 参数
   * app - `LoadableApp` - 必选，微应用的基础信息
     * name - `string` - 必选，微应用的名称，微应用之间必须确保唯一。
-    * entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - 必选，微应用的 entry 地址。
+    * entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - 必选，微应用的入口（详细说明同上）。
     * container - `string | HTMLElement` - 必选，微应用的容器节点的选择器或者 Element 实例。如`container: '#root'` 或 `container: document.querySelector('#root')`。
     * props - `object` - 可选，初始化时需要传递给微应用的数据。
 
@@ -263,7 +264,7 @@ toc: menu
 
     * fetch - `Function` - 可选，自定义的 fetch 方法。
 
-    * getPublicPath - `(url: string) => string` - 可选
+    * getPublicPath - `(entry: Entry) => string` - 可选，参数是微应用的 entry 值。
 
     * getTemplate - `(tpl: string) => string` - 可选
     
@@ -298,12 +299,12 @@ toc: menu
   如果需要能支持主应用手动 update 微应用，需要微应用 entry 再多导出一个 update 钩子：
 
   ```ts
-  export function mount(props) {
+  export async function mount(props) {
     renderApp(props);
   }
 
   // 增加 update 钩子以便主应用手动更新微应用
-  export function update(props) {
+  export async function update(props) {
     renderPatch(props);
   }
   ```

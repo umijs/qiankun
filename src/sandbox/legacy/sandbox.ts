@@ -68,19 +68,15 @@ export default class SingularProxySandbox implements SandBox {
   constructor(name: string) {
     this.name = name;
     this.type = SandBoxType.LegacyProxy;
-    const {
-      sandboxRunning,
-      addedPropsMapInSandbox,
-      modifiedPropsOriginalValueMapInSandbox,
-      currentUpdatedPropsValueMap,
-    } = this;
+    const { addedPropsMapInSandbox, modifiedPropsOriginalValueMapInSandbox, currentUpdatedPropsValueMap } = this;
 
+    const self = this;
     const rawWindow = window;
     const fakeWindow = Object.create(null) as Window;
 
     const proxy = new Proxy(fakeWindow, {
       set(_: Window, p: PropertyKey, value: any): boolean {
-        if (sandboxRunning) {
+        if (self.sandboxRunning) {
           if (!rawWindow.hasOwnProperty(p)) {
             addedPropsMapInSandbox.set(p, value);
           } else if (!modifiedPropsOriginalValueMapInSandbox.has(p)) {
@@ -109,7 +105,7 @@ export default class SingularProxySandbox implements SandBox {
         // avoid who using window.window or window.self to escape the sandbox environment to touch the really window
         // or use window.top to check if an iframe context
         // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
-        if (p === 'top' || p === 'window' || p === 'self') {
+        if (p === 'top' || p === 'parent' || p === 'window' || p === 'self') {
           return proxy;
         }
 

@@ -65,7 +65,14 @@ function createElement(appContent: string, strictStyleIsolation: boolean): HTMLE
     } else {
       const { innerHTML } = appElement;
       appElement.innerHTML = '';
-      const shadow = appElement.attachShadow({ mode: 'open' });
+      let shadow: ShadowRoot;
+
+      if (appElement.attachShadow) {
+        shadow = appElement.attachShadow({ mode: 'open' });
+      } else {
+        // createShadowRoot was proposed in initial spec, which has then been deprecated
+        shadow = (appElement as any).createShadowRoot();
+      }
       shadow.innerHTML = innerHTML;
     }
   }
@@ -216,7 +223,7 @@ export async function loadApp<T extends object>(
   lifeCycles?: FrameworkLifeCycles<T>,
 ): Promise<ParcelConfigObject> {
   const { entry, name: appName } = app;
-  const appInstanceId = `${appName}_${+new Date()}`;
+  const appInstanceId = `${appName}_${+new Date()}_${Math.floor(Math.random() * 1000)}`;
 
   const markName = `[qiankun] App ${appInstanceId} Loading`;
   if (process.env.NODE_ENV === 'development') {
@@ -238,7 +245,7 @@ export async function loadApp<T extends object>(
   const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
   const enableScopedCSS = isEnableScopedCSS(configuration);
 
-  const appContent = getDefaultTplWrapper(appInstanceId)(template);
+  const appContent = getDefaultTplWrapper(appInstanceId, appName)(template);
   let element: HTMLElement | null = createElement(appContent, strictStyleIsolation);
   if (element && isEnableScopedCSS(configuration)) {
     const styleNodes = element.querySelectorAll('style') || [];
@@ -327,9 +334,9 @@ export async function loadApp<T extends object>(
         element = element || createElement(appContent, strictStyleIsolation);
         render({ element, loading: true }, 'mounting');
       },
+      mountSandbox,
       // exec the chain after rendering to keep the behavior with beforeLoad
       async () => execHooksChain(toArray(beforeMount), app, global),
-      mountSandbox,
       async props => mount({ ...props, container: containerGetter(), setGlobalState, onGlobalStateChange }),
       // 应用 mount 完成后结束 loading
       async () => render({ element, loading: false }, 'mounted'),

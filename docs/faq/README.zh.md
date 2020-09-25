@@ -245,7 +245,7 @@ qiankun 2.0 版本将提供一种更智能的方式使其自动化。
 
 ### 如何给 ie 打补丁？
 
-如果希望 qiankun （或其依赖库、或者您的应用本身）在 IE 下正常运行，你至少需要在应用入口引入以下这些 polyfills：
+如果希望 qiankun （或其依赖库、或者您的应用本身）在 IE 下正常运行，你**至少**需要在应用入口引入以下这些 polyfills：
 
 <Alert type="info">
 什么是 <a href="https://developer.mozilla.org/zh-CN/docs/Glossary/Polyfill" target="_blank">polyfill</a>
@@ -253,6 +253,7 @@ qiankun 2.0 版本将提供一种更智能的方式使其自动化。
 
 ```javascript
 import 'whatwg-fetch';
+import 'custom-event-polyfill';
 import 'core-js/stable/promise';
 import 'core-js/stable/symbol';
 import 'core-js/stable/string/starts-with';
@@ -327,10 +328,16 @@ const render = ($) => {
 
 同时，你也需要开启相关资源的 CORS，具体请参照[此处](#微应用静态资源一定要支持跨域吗？)
 
-## 子应用 JSONP 跨域错误怎么处理？
+## 微应用 JSONP 跨域错误怎么处理？
 
-qiankun 会将子应用的动态 script 加载（例如 JSONP）转化为 fetch 请求，因此需要相应的后端服务支持跨域，否则会导致错误。
+qiankun 会将微应用的动态 script 加载（例如 JSONP）转化为 fetch 请求，因此需要相应的后端服务支持跨域，否则会导致错误。
 
 在单实例模式下，你可以使用 `excludeAssetFilter` 参数来放行这部分资源请求，但是注意，被该选项放行的资源会逃逸出沙箱，由此带来的副作用需要你自行处理。
 
 若在多实例模式下使用 JSONP，单纯使用 `excludeAssetFilter` 并不能取得好的效果，因为各应用被沙箱所隔离；你可以在主应用提供统一的 JSONP 工具，子应用调用主应用提供的该工具来曲线救国。
+
+## 微应用路径下刷新后 404？
+通常是因为你使用的是 browser 模式的路由，这种路由模式的开启需要服务端配合才行。
+具体配置方式参考：
+* [HTML5 History 模式](https://router.vuejs.org/zh/guide/essentials/history-mode.html)
+* [browserHistory](https://react-guide.github.io/react-router-cn/docs/guides/basics/Histories.html#browserHistory)

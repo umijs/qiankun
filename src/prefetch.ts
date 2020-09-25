@@ -28,8 +28,9 @@ declare global {
 
   interface Navigator {
     connection: {
-      saveData: Function;
+      saveData: boolean;
       effectiveType: string;
+      type: 'bluetooth' | 'cellular' | 'ethernet' | 'none' | 'wifi' | 'wimax' | 'other' | 'unknown';
     };
   }
 }
@@ -37,7 +38,7 @@ declare global {
 // RIC and shim for browsers setTimeout() without it
 const requestIdleCallback =
   window.requestIdleCallback ||
-  function requestIdleCallback(cb: Function) {
+  function requestIdleCallback(cb: CallableFunction) {
     const start = Date.now();
     return setTimeout(() => {
       cb({
@@ -49,10 +50,11 @@ const requestIdleCallback =
     }, 1);
   };
 
-// https://stackoverflow.com/questions/3514784/what-is-the-best-way-to-detect-a-mobile-device
-const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 const isSlowNetwork = navigator.connection
-  ? navigator.connection.saveData || /(2|3)g/.test(navigator.connection.effectiveType)
+  ? navigator.connection.saveData ||
+    (navigator.connection.type !== 'wifi' &&
+      navigator.connection.type !== 'ethernet' &&
+      /(2|3)g/.test(navigator.connection.effectiveType))
   : false;
 
 /**
@@ -61,8 +63,8 @@ const isSlowNetwork = navigator.connection
  * @param opts
  */
 function prefetch(entry: Entry, opts?: ImportEntryOpts): void {
-  if (isMobile || isSlowNetwork) {
-    // Don't prefetch if an mobile device or in a slow network.
+  if (!navigator.onLine || isSlowNetwork) {
+    // Don't prefetch if in a slow network or offline
     return;
   }
 

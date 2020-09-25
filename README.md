@@ -67,8 +67,8 @@ Visit `http://localhost:7099`.
 
 ## 🎯 Roadmap
 
-- [ ] Parcel apps integration (multiple sub apps displayed at the same time, but only one uses router at most)
-- [ ] Communication development kits between master and sub apps
+- [x] Parcel apps integration (multiple sub apps displayed at the same time, but only one uses router at most)
+- [x] Communication development kits between master and sub apps
 - [ ] Custom side effects hijacker
 - [ ] Nested Microfrontends
 
@@ -79,8 +79,6 @@ https://qiankun.umijs.org/faq/
 ## 👬 Community
 
 https://qiankun.umijs.org/#community
-
-## 🧑‍💻 Contributors
 
 ## 🎁 Acknowledgements
 

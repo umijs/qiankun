@@ -4,7 +4,7 @@
  */
 
 import { isBoundedFunction } from '../../utils';
-import { setProxyPropertyGetter } from '../common';
+import { attachDocProxySymbol } from '../common';
 import ProxySandbox from '../proxySandbox';
 
 beforeAll(() => {
@@ -42,14 +42,26 @@ test('iterator should be worked the same as the raw window', () => {
   expect(Object.keys(proxy)).toEqual([...Object.keys(window), 'additionalProp']);
 });
 
-test('window.top & window.self & window.window should equals with sandbox', () => {
+test('window.self & window.window & window.top & window.parent should equals with sandbox', () => {
   const { proxy } = new ProxySandbox('unit-test');
+
+  expect(proxy.self).toBe(proxy);
+  expect(proxy.window).toBe(proxy);
 
   expect((<any>proxy).mockTop).toBe(proxy);
   expect((<any>proxy).mockSafariTop).toBe(proxy);
   expect(proxy.top).toBe(proxy);
-  expect(proxy.self).toBe(proxy);
-  expect(proxy.window).toBe(proxy);
+  expect(proxy.parent).toBe(proxy);
+});
+
+test('allow window.top & window.parent to escape sandbox while in iframe', () => {
+  // change window.parent to cheat ProxySandbox is in iframe
+  Object.defineProperty(window, 'parent', { value: 'parent' });
+  Object.defineProperty(window, 'top', { value: 'top' });
+  const { proxy } = new ProxySandbox('iframe-test');
+
+  expect(proxy.top).toBe('top');
+  expect(proxy.parent).toBe('parent');
 });
 
 test('eval should never be represented', () => {
@@ -123,6 +135,13 @@ test('descriptor of non-configurable and non-enumerable property existed in raw 
   });
 });
 
+test('A property cannot be reported as non-configurable, if it does not exists as an own property of the target object', () => {
+  const { proxy } = new ProxySandbox('non-configurable');
+  Object.defineProperty(window, 'nonConfigurablePropAfterSandboxCreated', { value: 'test', configurable: false });
+  const descriptor = Object.getOwnPropertyDescriptor(proxy, 'nonConfigurablePropAfterSandboxCreated');
+  expect(descriptor?.configurable).toBeTruthy();
+});
+
 test('property added by Object.defineProperty should works as expect', () => {
   const { proxy } = new ProxySandbox('object-define-property-test');
 
@@ -182,19 +201,48 @@ test('hasOwnProperty should always returns same reference', () => {
   expect(proxy.testA.hasOwnProperty).toBe(proxy.testB.hasOwnProperty);
 });
 
-test('property getter should just called once', () => {
-  const countFn = jest.fn();
-  const proxy = new ProxySandbox('property-getter-test').proxy as any;
-  setProxyPropertyGetter(proxy, 'document', () => {
-    countFn();
-    return document;
-  });
+test('document accessing should modify the attachDocProxySymbol value every time', () => {
+  const proxy1 = new ProxySandbox('doc-access-test1').proxy;
+  const proxy2 = new ProxySandbox('doc-access-test2').proxy;
 
-  const d1 = proxy.document;
-  const d2 = proxy.document;
+  const d1 = proxy1.document;
+  expect(d1[attachDocProxySymbol]).toBe(proxy1);
+  const d2 = proxy2.document;
+  expect(d2[attachDocProxySymbol]).toBe(proxy2);
 
   expect(d1).toBe(d2);
-  expect(countFn).toBeCalledTimes(1);
+  expect(d1).toBe(document);
+});
+
+test('document attachDocProxySymbol mark should be remove before next tasl', done => {
+  const { proxy } = new ProxySandbox('doc-symbol');
+  const d1 = proxy.document;
+  expect(d1[attachDocProxySymbol]).toBe(proxy);
+
+  setTimeout(() => {
+    expect(d1[attachDocProxySymbol]).toBeUndefined();
+    done();
+  });
+});
+
+test('document should work well with MutationObserver', done => {
+  const docProxy = new ProxySandbox('doc').proxy;
+
+  const observer = new MutationObserver(mutations => {
+    if (mutations[0]) {
+      expect(mutations[0].target).toBe(document.body);
+      observer.disconnect();
+      done();
+    }
+  });
+
+  observer.observe(docProxy.document, {
+    attributes: true,
+    subtree: true,
+    childList: true,
+  });
+
+  docProxy.document.body.innerHTML = '<div></div>';
 });
 
 test('bounded function should not be rebounded', () => {

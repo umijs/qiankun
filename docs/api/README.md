@@ -25,8 +25,9 @@ By linking the micro-application to some url rules, the function of automaticall
 
     - name - `string` - required, the name of the child application and must be unique between the child applications.
 
-    - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - required, The entry url of the child application.
-
+    - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - required, The entry of the micro application.
+      - If configured as `string`, it represents the access address of the micro application. If the micro application is deployed in a secondary directory, the last `/` cannot be omitted. For example, the access address of the micro application is: `https://qiankun.umijs.org/guide`, then the `entry` should be `https://qiankun.umijs.org/guide/`.
+      - If configured as `object`, the value of `html` is the html content string of the micro application, not the access address of the micro application. The `publicPath` of the micro application will be set to `/`.
     - container - `string | HTMLElement` - required，A selector or Element instance of the container node of a micro application. Such as `container: '#root'` or `container: document.querySelector('#root')`.
 
     - activeRule -  - `string | (location: Location) => boolean | Array<string | (location: Location) => boolean> ` - required,activation rules for micro-apps.
@@ -158,7 +159,7 @@ By linking the micro-application to some url rules, the function of automaticall
 
     - fetch - `Function` - optional
 
-    - getPublicPath - `(url: string) => string` - optional
+    - getPublicPath - `(enrty: Entry) => string` - optional，The parameter is the entry value of the micro application.
 
     - getTemplate - `(tpl: string) => string` - optional
     
@@ -227,7 +228,7 @@ A criterion for judging whether the business is closely related: <strong>Look at
 * Parameters
   * app - `LoadableApp` - Required, basic information of micro application
     * name - `string` - Required, the name of the micro application must be unique among the micro applications.
-    * entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - Required, the entry address of the micro application.
+    * entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - Required,  The entry of the micro application(The detailed description is the same as above).
     * container - `string | HTMLElement` - Required, selector or Element instance of the container node of the micro application. Such as `container: '#root'` or `container: document.querySelector('#root')`.
     * props - `object` - Optional, the data that needs to be passed to the micro-application during initialization.
 
@@ -241,7 +242,7 @@ A criterion for judging whether the business is closely related: <strong>Look at
 
     * fetch - `Function` - Optional, custom fetch method.
 
-    * getPublicPath - `(url: string) => string` - Optional
+    * getPublicPath - `(url: string) => string` - Optional，The parameter is the entry value of the micro application.
 
     * getTemplate - `(tpl: string) => string` - Optional
     
@@ -276,12 +277,12 @@ A criterion for judging whether the business is closely related: <strong>Look at
   If you need to support the main application to manually update the micro application, you need to export an update hook for the micro application entry:
 
   ```ts
-  export function mount(props) {
+  export async function mount(props) {
     renderApp(props);
   }
 
   // Added update hook to allow the main application to manually update the micro application
-  export function update(props) {
+  export async function update(props) {
     renderPatch(props);
   }
   ```

@@ -4,8 +4,8 @@
  * @since 2020-3-31
  */
 import { SandBox, SandBoxType } from '../interfaces';
-import { uniq } from '../utils';
-import { getProxyPropertyGetter, getProxyPropertyValue, getTargetValue } from './common';
+import { nextTick, uniq } from '../utils';
+import { attachDocProxySymbol, getTargetValue } from './common';
 import { clearSystemJsProps, interceptSystemJsProps } from './noise/systemjs';
 
 // zone.js will overwrite Object.defineProperty
@@ -60,6 +60,7 @@ function createFakeWindow(global: Window) {
          */
         if (
           p === 'top' ||
+          p === 'parent' ||
           p === 'self' ||
           p === 'window' ||
           (process.env.NODE_ENV === 'test' && (p === 'mockTop' || p === 'mockSafariTop'))
@@ -80,7 +81,7 @@ function createFakeWindow(global: Window) {
 
         // freeze the descriptor to avoid being modified by zone.js
         // see https://github.com/angular/zone.js/blob/a5fe09b0fac27ac5df1fa746042f96f05ccb6a00/lib/browser/define-property.ts#L71
-        rawObjectDefineProperty(fakeWindow, p, Object.freeze(descriptor!));
+        rawObjectDefineProperty(fakeWindow, p, Object.freeze(descriptor));
       }
     });
 
@@ -101,15 +102,15 @@ export default class ProxySandbox implements SandBox {
 
   name: string;
 
-  proxy: WindowProxy;
-
   type: SandBoxType;
+
+  proxy: WindowProxy;
 
   sandboxRunning = true;
 
   active() {
+    if (!this.sandboxRunning) activeSandboxCount++;
     this.sandboxRunning = true;
-    activeSandboxCount++;
   }
 
   inactive() {
@@ -127,8 +128,9 @@ export default class ProxySandbox implements SandBox {
   constructor(name: string) {
     this.name = name;
     this.type = SandBoxType.Proxy;
-    const { sandboxRunning, updatedValueSet } = this;
+    const { updatedValueSet } = this;
 
+    const self = this;
     const rawWindow = window;
     const { fakeWindow, propertiesWithGetter } = createFakeWindow(rawWindow);
 
@@ -137,7 +139,7 @@ export default class ProxySandbox implements SandBox {
 
     const proxy = new Proxy(fakeWindow, {
       set(target: FakeWindow, p: PropertyKey, value: any): boolean {
-        if (sandboxRunning) {
+        if (self.sandboxRunning) {
           // @ts-ignore
           target[p] = value;
           updatedValueSet.add(p);
@@ -159,15 +161,21 @@ export default class ProxySandbox implements SandBox {
         if (p === Symbol.unscopables) return unscopables;
 
         // avoid who using window.window or window.self to escape the sandbox environment to touch the really window
-        // or use window.top to check if an iframe context
         // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
+        if (p === 'window' || p === 'self') {
+          return proxy;
+        }
+
         if (
           p === 'top' ||
-          p === 'window' ||
-          p === 'self' ||
+          p === 'parent' ||
           (process.env.NODE_ENV === 'test' && (p === 'mockTop' || p === 'mockSafariTop'))
         ) {
-          return proxy;
+          // if your master app in an iframe context, allow these props escape the sandbox
+          if (rawWindow === rawWindow.parent) {
+            return proxy;
+          }
+          return (rawWindow as any)[p];
         }
 
         // proxy.hasOwnProperty would invoke getter firstly, then its value represented as rawWindow.hasOwnProperty
@@ -175,10 +183,14 @@ export default class ProxySandbox implements SandBox {
           return hasOwnProperty;
         }
 
-        // call proxy getter interceptors
-        const proxyPropertyGetter = getProxyPropertyGetter(proxy, p);
-        if (proxyPropertyGetter) {
-          return getProxyPropertyValue(proxyPropertyGetter);
+        // mark the symbol to document while accessing as document.createElement could know is invoked by which sandbox for dynamic append patcher
+        if (p === 'document') {
+          document[attachDocProxySymbol] = proxy;
+          // remove the mark in next tick, thus we can identify whether it in micro app or not
+          // this approach is just a workaround, it could not cover all the complex scenarios, such as the micro app runs in the same task context with master in som case
+          // fixme if you have any other good ideas
+          nextTick(() => delete document[attachDocProxySymbol]);
+          return document;
         }
 
         // eslint-disable-next-line no-bitwise
@@ -207,6 +219,10 @@ export default class ProxySandbox implements SandBox {
         if (rawWindow.hasOwnProperty(p)) {
           const descriptor = Object.getOwnPropertyDescriptor(rawWindow, p);
           descriptorTargetMap.set(p, 'rawWindow');
+          // A property cannot be reported as non-configurable, if it does not exists as an own property of the target object
+          if (descriptor && !descriptor.configurable) {
+            descriptor.configurable = true;
+          }
           return descriptor;
         }
 

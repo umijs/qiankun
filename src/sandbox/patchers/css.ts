@@ -10,7 +10,7 @@ enum RuleType {
   MEDIA = 4,
   SUPPORTS = 12,
 
-  // type: value will be keeped
+  // type: value will be kept
   IMPORT = 3,
   FONT_FACE = 5,
   PAGE = 6,
@@ -22,7 +22,7 @@ const arrayify = <T>(list: CSSRuleList | any[]) => {
   return [].slice.call(list, 0) as T[];
 };
 
-class ScopedCSS {
+export class ScopedCSS {
   private static ModifiedTag = 'Symbol(style-modified-qiankun)';
 
   private sheet: StyleSheet;
@@ -110,7 +110,7 @@ class ScopedCSS {
   // eslint-disable-next-line class-methods-use-this
   private ruleStyle(rule: CSSStyleRule, prefix: string) {
     const rootSelectorRE = /((?:[^\w\-.#]|^)(body|html|:root))/gm;
-    const rootCombinationRE = /(html[^\w{]+)/gm;
+    const rootCombinationRE = /(html[^\w{[]+)/gm;
 
     const selector = rule.selectorText.trim();
 
@@ -134,17 +134,29 @@ class ScopedCSS {
       }
     }
 
-    if (rootSelectorRE.test(rule.selectorText)) {
-      // handle div,body,span { ... }
-      return cssText.replace(rootSelectorRE, m => {
-        if (m && m[0] === ',') {
-          return `,${prefix}`;
-        }
-        return prefix;
-      });
-    }
+    // handle grouping selector, a,span,p,div { ... }
+    cssText = cssText.replace(/^[\s\S]+{/, selectors =>
+      selectors.replace(/(^|,\n?)([^,]+)/g, (item, p, s) => {
+        // handle div,body,span { ... }
+        if (rootSelectorRE.test(item)) {
+          return item.replace(rootSelectorRE, m => {
+            // do not discard valid previous character, such as body,html or *:not(:root)
+            const whitePrevChars = [',', '('];
 
-    return `${prefix} ${cssText}`;
+            if (m && whitePrevChars.includes(m[0])) {
+              return `${m[0]}${prefix}`;
+            }
+
+            // replace root selector with prefix
+            return prefix;
+          });
+        }
+
+        return `${p}${prefix} ${s.replace(/^ */, '')}`;
+      }),
+    );
+
+    return cssText;
   }
 
   // handle case:
@@ -162,10 +174,19 @@ class ScopedCSS {
   }
 }
 
-const processor = new ScopedCSS();
+let processor: ScopedCSS;
 
 export const QiankunCSSRewriteAttr = 'data-qiankun';
-const process = (appWrapper: HTMLElement, stylesheetElement: HTMLStyleElement | HTMLLinkElement, appName: string) => {
+export const process = (
+  appWrapper: HTMLElement,
+  stylesheetElement: HTMLStyleElement | HTMLLinkElement,
+  appName: string,
+) => {
+  // lazy singleton pattern
+  if (!processor) {
+    processor = new ScopedCSS();
+  }
+
   if (stylesheetElement.tagName === 'LINK') {
     console.warn('Feature: sandbox.experimentalStyleIsolation is not support for link element yet.');
   }
@@ -178,9 +199,7 @@ const process = (appWrapper: HTMLElement, stylesheetElement: HTMLStyleElement | 
   const tag = (mountDOM.tagName || '').toLowerCase();
 
   if (tag && stylesheetElement.tagName === 'STYLE') {
-    const prefix = `${tag}[${QiankunCSSRewriteAttr}=${appName}]`;
+    const prefix = `${tag}[${QiankunCSSRewriteAttr}="${appName}"]`;
     processor.process(stylesheetElement, prefix);
   }
 };
-
-export { process, processor };

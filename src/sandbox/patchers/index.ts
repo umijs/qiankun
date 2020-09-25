@@ -8,7 +8,6 @@ import patchDynamicAppend from './dynamicAppend';
 import patchHistoryListener from './historyListener';
 import patchInterval from './interval';
 import patchWindowListener from './windowListener';
-import patchUIEvent from './UIEvent';
 
 import * as css from './css';
 
@@ -21,15 +20,15 @@ export function patchAtMounting(
   excludeAssetFilter?: Function,
 ): Freer[] {
   const basePatchers = [
-    () => patchInterval(),
-    () => patchWindowListener(),
+    () => patchInterval(sandbox.proxy),
+    () => patchWindowListener(sandbox.proxy),
     () => patchHistoryListener(),
     () => patchDynamicAppend(appName, elementGetter, sandbox.proxy, true, singular, scopedCSS, excludeAssetFilter),
   ];
 
   const patchersInSandbox = {
-    [SandBoxType.LegacyProxy]: [...basePatchers, () => patchUIEvent(sandbox.proxy)],
-    [SandBoxType.Proxy]: [...basePatchers, () => patchUIEvent(sandbox.proxy)],
+    [SandBoxType.LegacyProxy]: [...basePatchers],
+    [SandBoxType.Proxy]: [...basePatchers],
     [SandBoxType.Snapshot]: basePatchers,
   };
 

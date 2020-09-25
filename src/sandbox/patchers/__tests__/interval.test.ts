@@ -7,7 +7,7 @@ import { sleep } from '../../../utils';
 import patch from '../interval';
 
 test('patch setInterval', async () => {
-  const free = patch();
+  const free = patch(window);
 
   const clearedListener = jest.fn();
   const unclearedListener = jest.fn();
