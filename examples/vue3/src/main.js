@@ -1,19 +1,24 @@
-import { createApp } from 'vue';
-import App from './App.vue';
-import routerObj from './router';
-import store from './store';
 import './public-path';
+import { createApp } from 'vue';
+import { createRouter, createWebHistory } from 'vue-router';
+import App from './App.vue';
+import routes from './router';
+import store from './store';
 
 let router = null;
 let instance = null;
 
-function render() {
-  router = routerObj;
+function render(props = {}) {
+  const { container } = props;
+  router = createRouter({
+    history: createWebHistory(window.__POWERED_BY_QIANKUN__ ? '/vue3' : '/'),
+    routes,
+  });
 
   instance = createApp(App);
   instance.use(router);
   instance.use(store);
-  instance.mount('#app8');
+  instance.mount(container ? container.querySelector('#app') : '#app');
 }
 
 if (!window.__POWERED_BY_QIANKUN__) {
@@ -21,7 +26,7 @@ if (!window.__POWERED_BY_QIANKUN__) {
 }
 
 export async function bootstrap() {
-  console.log('%c%s', 'color: green;', 'vue3.0 app bootstraped');
+  console.log('%c ', 'color: green;', 'vue3.0 app bootstraped');
 }
 
 function storeTest(props) {
@@ -48,6 +53,7 @@ export async function mount(props) {
 
 export async function unmount() {
   instance.$destroy();
+  instance.$el.innerHTML = '';
   instance = null;
   router = null;
 }
