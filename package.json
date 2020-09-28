@@ -17,7 +17,7 @@
   "scripts": {
     "examples:install": "npm-run-all --serial build install:*",
     "examples:start": "npm-run-all --parallel start:*",
-    "examples:start-multiple": "run-p start:main-multiple start:react15 start:vue",
+    "examples:start-multiple": "run-p start:main-multiple start:react15 start:vue start:vue3",
     "install:main": "cd examples/main && yarn",
     "start:main": "cd examples/main && yarn start",
     "start:main-multiple": "cd examples/main && yarn start:multiple",

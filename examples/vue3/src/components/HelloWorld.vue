@@ -1,21 +1,12 @@
 <template>
-  <div class="hello">
-    <div>
-      <button @click="changeGlobalState">更改GlobalState</button>
-    </div>
-    <div>
-      <button @click="doEmit">组件事件回调</button>
-    </div>
-    <div>
-      <button @click="pageTo">切换页面</button>
-    </div>
-    <slot name="tips" />
+  <div class="hello-content">
+    <h1>{{ msg }}</h1>
+    <p>Vue version: {{ version }}</p>
   </div>
 </template>
 
 <script>
-import { onMounted, onBeforeUpdate, getCurrentInstance } from 'vue';
-import { useRouter } from 'vue-router';
+import { onMounted, onBeforeUpdate, getCurrentInstance, version } from 'vue';
 
 export default {
   name: 'HelloWorld',
@@ -29,8 +20,7 @@ export default {
     };
   },
 
-  setup(props, context) {
-    const router = useRouter();
+  setup() {
     const { ctx } = getCurrentInstance();
 
     const changeGlobalState = () => {
@@ -48,19 +38,9 @@ export default {
       console.log('beforeUpdate');
     });
 
-    const pageTo = () => {
-      router.push({
-        name: 'about',
-        query: {
-          id: 'SD20200920',
-        },
-      });
-    };
-
     return {
-      pageTo,
       changeGlobalState,
-      doEmit: () => context.emit('close'),
+      version,
     };
   },
 };
@@ -87,5 +67,8 @@ li {
 }
 a {
   color: #42b983;
+}
+h1 {
+  color: #64b587;
 }
 </style>

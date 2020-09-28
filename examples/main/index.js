@@ -102,7 +102,7 @@ setGlobalState({
 /**
  * Step3 设置默认进入的子应用
  */
-setDefaultMountApp('/vue3');
+setDefaultMountApp('/react16');
 
 /**
  * Step4 启动应用
