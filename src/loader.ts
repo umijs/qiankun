@@ -4,7 +4,7 @@
  */
 
 import { importEntry } from 'import-html-entry';
-import { concat, mergeWith } from 'lodash';
+import { concat, mergeWith, forEach } from 'lodash';
 import { LifeCycles, ParcelConfigObject } from 'single-spa';
 import getAddOns from './addons';
 import { getMicroAppStateActions } from './globalState';
@@ -249,7 +249,7 @@ export async function loadApp<T extends object>(
   let element: HTMLElement | null = createElement(appContent, strictStyleIsolation);
   if (element && isEnableScopedCSS(configuration)) {
     const styleNodes = element.querySelectorAll('style') || [];
-    styleNodes.forEach(stylesheetElement => {
+    forEach(styleNodes, (stylesheetElement: HTMLStyleElement) => {
       css.process(element!, stylesheetElement, appName);
     });
   }
