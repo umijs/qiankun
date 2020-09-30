@@ -294,7 +294,7 @@ qiankun 依赖的 import-html-entry 通过 `window.fetch` 来获取微应用的�
   </div>
 </body>
 
-+ <script src="//yourhost/entry.js" entry />
++ <script src="//yourhost/entry.js" entry></script>
 </html>
 ```
 
@@ -399,7 +399,10 @@ module.exports = {
       .test(/.(ttf|otf|eot|woff|woff2)$/)
       .use('url-loader')
       .loader('url-loader')
-      .tap(options => ({ name: '/fonts/[name].[hash:8].[ext]' }))
+      .tap(options => ({ 
+        name: '/fonts/[name].[hash:8].[ext]',
+        limit: 4096, // 小于4KB的字体将会被打包成 base64
+      }))
       .end()
   },
 }

@@ -281,13 +281,13 @@ Take `vue-router` as an example, the pseudo code is as follows:
 ```js
 const childrenPath = ['/app1','/app2'];
 router.beforeEach((to, from, next) => {
-    if(to.name) {// There is a name attribute, indicating that it is the route of the main project
-        next()
-    }
-    if(childrenPath.some(item => to.path.includes(item))){
-        next()
-    }
-    next({ name: '404' })
+  if(to.name) {// There is a name attribute, indicating that it is the route of the main project
+    next()
+  }
+  if(childrenPath.some(item => to.path.includes(item))){
+    next()
+  }
+  next({ name: '404' })
 })
 ```
 
@@ -311,7 +311,7 @@ Take `Nginx` as an example:
 
 ```
 location = /index.html {
-    add_header Cache-Control no-cache;
+  add_header Cache-Control no-cache;
 }
 ```
 
@@ -323,14 +323,17 @@ Modify the `webpack` package and inject the path prefix to the font file:
 
 ```js
 module.exports = {
-   chainWebpack: (config) => {
-     config.module
-       .rule('fonts')
-       .test(/.(ttf|otf|eot|woff|woff2)$/)
-       .use('url-loader')
-       .loader('url-loader')
-       .tap(options => ({ name:'/fonts/[name].[hash:8].[ext]' }))
-       .end()
-   },
+  chainWebpack: (config) => {
+    config.module
+      .rule('fonts')
+      .test(/.(ttf|otf|eot|woff|woff2)$/)
+      .use('url-loader')
+      .loader('url-loader')
+      .tap(options => ({ 
+        name:'/fonts/[name].[hash:8].[ext]',
+        limit: 4096, // Fonts smaller than 4KB will be packaged as base64
+      }))
+      .end()
+  },
 }
 ```
