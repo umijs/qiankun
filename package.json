@@ -74,7 +74,7 @@
     "babel-plugin-import": "^1.12.1",
     "check-prettier": "^1.0.3",
     "cross-env": "^7.0.2",
-    "dumi": "^1.0.24",
+    "dumi": "^1.1.0-beta.24",
     "father-build": "^1.7.0",
     "husky": "^2.3.0",
     "jest": "^25.2.2",
