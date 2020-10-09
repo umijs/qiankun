@@ -22,16 +22,22 @@ export function nextTick(cb: () => void): void {
   Promise.resolve().then(cb);
 }
 
-export function isConstructable(fn: () => void | FunctionConstructor) {
+const constructableMap = new WeakMap<Function, boolean>();
+export function isConstructable(fn: () => any | FunctionConstructor) {
+  if (constructableMap.has(fn)) {
+    return constructableMap.get(fn);
+  }
+
   const constructableFunctionRegex = /^function\b\s[A-Z].*/;
   const classRegex = /^class\b/;
 
   // 有 prototype 并且 prototype 上有定义一系列非 constructor 属性，则可以认为是一个构造函数
-  return (
+  const constructable =
     (fn.prototype && fn.prototype.constructor === fn && Object.getOwnPropertyNames(fn.prototype).length > 1) ||
     constructableFunctionRegex.test(fn.toString()) ||
-    classRegex.test(fn.toString())
-  );
+    classRegex.test(fn.toString());
+  constructableMap.set(fn, constructable);
+  return constructable;
 }
 
 /**
@@ -45,12 +51,18 @@ export const isCallable = naughtySafari
   ? (fn: any) => typeof fn === 'function' && typeof fn !== 'undefined'
   : (fn: any) => typeof fn === 'function';
 
+const boundedMap = new WeakMap<CallableFunction, boolean>();
 export function isBoundedFunction(fn: CallableFunction) {
+  if (boundedMap.has(fn)) {
+    return boundedMap.get(fn);
+  }
   /*
    indexOf is faster than startsWith
    see https://jsperf.com/string-startswith/72
    */
-  return fn.name.indexOf('bound ') === 0 && !fn.hasOwnProperty('prototype');
+  const bounded = fn.name.indexOf('bound ') === 0 && !fn.hasOwnProperty('prototype');
+  boundedMap.set(fn, bounded);
+  return bounded;
 }
 
 /**

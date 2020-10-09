@@ -33,7 +33,7 @@ const SCRIPT_TAG_NAME = 'SCRIPT';
 const LINK_TAG_NAME = 'LINK';
 const STYLE_TAG_NAME = 'STYLE';
 
-const proxyContainerInfoMapper = new Map<WindowProxy, Record<string, any>>();
+const proxyContainerInfoMapper = new WeakMap<WindowProxy, Record<string, any>>();
 
 function isHijackingTag(tagName?: string) {
   return (
