@@ -1,6 +1,6 @@
 {
   "name": "qiankun",
-  "version": "2.0.26",
+  "version": "2.0.25",
   "description": "An completed implementation of Micro Frontends",
   "keywords": [
     "micro frontend",
@@ -31,6 +31,8 @@
     "start:angular9": "cd examples/angular9 && yarn serve:qiankun",
     "install:purehtml": "cd examples/purehtml && yarn",
     "start:purehtml": "cd examples/purehtml && yarn start",
+    "install:vue3": "cd examples/vue3 && yarn",
+    "start:vue3": "cd examples/vue3 && yarn start",
     "build": "father-build",
     "release": "np --no-cleanup --yolo --no-publish",
     "prepublishOnly": "yarn lint && yarn test && yarn build",
@@ -74,7 +76,7 @@
     "babel-plugin-import": "^1.12.1",
     "check-prettier": "^1.0.3",
     "cross-env": "^7.0.2",
-    "dumi": "^1.1.0-beta.24",
+    "dumi": "^1.0.24",
     "father-build": "^1.7.0",
     "husky": "^2.3.0",
     "jest": "^25.2.2",
