@@ -12,7 +12,6 @@ import * as css from './css';
 
 const styledComponentSymbol = Symbol('styled-component-qiankun');
 const attachElementContainerSymbol = Symbol('attach-proxy-container');
-const attachOriginalElementSymbol = Symbol('attach-comment-script');
 
 declare global {
   interface HTMLStyleElement {
@@ -83,6 +82,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
   rawDOMAppendOrInsertBefore: <T extends Node>(newChild: T, refChild?: Node | null) => T;
   scopedCSS: boolean;
   excludeAssetFilter?: CallableFunction;
+  elementAttachmentMap: WeakMap<HTMLElement, Node>;
 }) {
   return function appendChildOrInsertBefore<T extends Node>(
     this: HTMLHeadElement | HTMLBodyElement,
@@ -192,8 +192,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
             });
 
             const dynamicScriptCommentElement = document.createComment(`dynamic script ${src} replaced by qiankun`);
-            // attach the comment element to script reference, thus we can find which comment should be remove while we actually removing the script element
-            element[attachOriginalElementSymbol] = dynamicScriptCommentElement;
+            opts.elementAttachmentMap.set(element, dynamicScriptCommentElement);
             return rawDOMAppendOrInsertBefore.call(mountDOM, dynamicScriptCommentElement, referenceNode);
           }
 
@@ -203,7 +202,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
             error: element.onerror,
           });
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
-          element[attachOriginalElementSymbol] = dynamicInlineScriptCommentElement;
+          opts.elementAttachmentMap.set(element, dynamicInlineScriptCommentElement);
           return rawDOMAppendOrInsertBefore.call(mountDOM, dynamicInlineScriptCommentElement, referenceNode);
         }
 
@@ -219,6 +218,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
 function getNewRemoveChild(opts: {
   appWrapperGetter: CallableFunction;
   headOrBodyRemoveChild: typeof HTMLElement.prototype.removeChild;
+  elementAttachmentMap: WeakMap<HTMLElement, Node>;
 }) {
   return function removeChild<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, child: T) {
     const { headOrBodyRemoveChild } = opts;
@@ -235,7 +235,7 @@ function getNewRemoveChild(opts: {
 
         // container may had been removed while app unmounting if the removeChild action was async
         const container = appWrapperGetter();
-        const attachedElement = (child as any)[attachOriginalElementSymbol] || child;
+        const attachedElement = opts.elementAttachmentMap.get(child as any) || child;
         if (container.contains(attachedElement)) {
           return rawRemoveChild.call(container, attachedElement) as T;
         }
@@ -257,6 +257,8 @@ function patchHTMLDynamicAppendPrototypeFunctions(
   dynamicStyleSheetElements: HTMLStyleElement[],
   excludeAssetFilter?: CallableFunction,
 ) {
+  const elementAttachmentMap = new WeakMap();
+
   // Just overwrite it while it have not been overwrite
   if (
     HTMLHeadElement.prototype.appendChild === rawHeadAppendChild &&
@@ -272,6 +274,7 @@ function patchHTMLDynamicAppendPrototypeFunctions(
       dynamicStyleSheetElements,
       scopedCSS,
       excludeAssetFilter,
+      elementAttachmentMap,
     }) as typeof rawHeadAppendChild;
     HTMLBodyElement.prototype.appendChild = getOverwrittenAppendChildOrInsertBefore({
       rawDOMAppendOrInsertBefore: rawBodyAppendChild,
@@ -282,6 +285,7 @@ function patchHTMLDynamicAppendPrototypeFunctions(
       dynamicStyleSheetElements,
       scopedCSS,
       excludeAssetFilter,
+      elementAttachmentMap,
     }) as typeof rawBodyAppendChild;
 
     HTMLHeadElement.prototype.insertBefore = getOverwrittenAppendChildOrInsertBefore({
@@ -293,6 +297,7 @@ function patchHTMLDynamicAppendPrototypeFunctions(
       dynamicStyleSheetElements,
       scopedCSS,
       excludeAssetFilter,
+      elementAttachmentMap,
     }) as typeof rawHeadInsertBefore;
   }
 
@@ -304,10 +309,12 @@ function patchHTMLDynamicAppendPrototypeFunctions(
     HTMLHeadElement.prototype.removeChild = getNewRemoveChild({
       appWrapperGetter,
       headOrBodyRemoveChild: rawHeadRemoveChild,
+      elementAttachmentMap,
     });
     HTMLBodyElement.prototype.removeChild = getNewRemoveChild({
       appWrapperGetter,
       headOrBodyRemoveChild: rawBodyRemoveChild,
+      elementAttachmentMap,
     });
   }
 
