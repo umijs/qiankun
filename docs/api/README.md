@@ -26,7 +26,7 @@ By linking the micro-application to some url rules, the function of automaticall
     - name - `string` - required, the name of the child application and must be unique between the child applications.
 
     - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - required, The entry of the micro application.
-      - If configured as `string`, it represents the access address of the micro application. If the micro application is deployed in a secondary directory, the last `/` cannot be omitted. For example, the access address of the micro application is: `https://qiankun.umijs.org/guide`, then the `entry` should be `https://qiankun.umijs.org/guide/`.
+      - If configured as `string`, it represents the access address of the micro application. such as `https://qiankun.umijs.org/guide/`.
       - If configured as `object`, the value of `html` is the html content string of the micro application, not the access address of the micro application. The `publicPath` of the micro application will be set to `/`.
     - container - `string | HTMLElement` - required，A selector or Element instance of the container node of a micro application. Such as `container: '#root'` or `container: document.querySelector('#root')`.
 
