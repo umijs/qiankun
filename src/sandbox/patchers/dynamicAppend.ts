@@ -12,6 +12,7 @@ import * as css from './css';
 
 const styledComponentSymbol = Symbol('styled-component-qiankun');
 const attachElementContainerSymbol = Symbol('attach-proxy-container');
+const attachOriginalElementSymbol = Symbol('attach-comment-script');
 
 declare global {
   interface HTMLStyleElement {
@@ -191,6 +192,8 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
             });
 
             const dynamicScriptCommentElement = document.createComment(`dynamic script ${src} replaced by qiankun`);
+            // attach the comment element to script reference, thus we can find which comment should be remove while we actually removing the script element
+            element[attachOriginalElementSymbol] = dynamicScriptCommentElement;
             return rawDOMAppendOrInsertBefore.call(mountDOM, dynamicScriptCommentElement, referenceNode);
           }
 
@@ -200,6 +203,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
             error: element.onerror,
           });
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
+          element[attachOriginalElementSymbol] = dynamicInlineScriptCommentElement;
           return rawDOMAppendOrInsertBefore.call(mountDOM, dynamicInlineScriptCommentElement, referenceNode);
         }
 
@@ -231,8 +235,9 @@ function getNewRemoveChild(opts: {
 
         // container may had been removed while app unmounting if the removeChild action was async
         const container = appWrapperGetter();
-        if (container.contains(child)) {
-          return rawRemoveChild.call(container, child) as T;
+        const attachedElement = (child as any)[attachOriginalElementSymbol] || child;
+        if (container.contains(attachedElement)) {
+          return rawRemoveChild.call(container, attachedElement) as T;
         }
       }
     } catch (e) {
