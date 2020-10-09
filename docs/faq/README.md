@@ -271,3 +271,69 @@ It is usually because you are routing in Browser mode, which requires the server
 Specific configuration mode reference:
 * [HTML5 History Mode](https://router.vuejs.org/guide/essentials/history-mode.html)
 * [browserRouter](https://reactrouter.com/web/api/BrowserRouter)
+
+## How to configure the 404 page in the main application?
+
+First of all, you cannot use the wildcard `*`. You can register the 404 page as a normal routing page, such as `/404`, and then judge in the routing hook function of the main project, if it is neither the main application routing nor the micro application , Then jump to the 404 page.
+
+Take `vue-router` as an example, the pseudo code is as follows:
+
+```js
+const childrenPath = ['/app1','/app2'];
+router.beforeEach((to, from, next) => {
+  if(to.name) {// There is a name attribute, indicating that it is the route of the main project
+    next()
+  }
+  if(childrenPath.some(item => to.path.includes(item))){
+    next()
+  }
+  next({ name: '404' })
+})
+```
+
+## How to jump between micro apps?
+
+-Both the main application and the micro application are in the `hash` mode. The main application judges the micro application based on the `hash`, so this issue is not considered.
+
+-The main application judges the micro application based on the `path`
+ 
+  It is not possible to directly use the routing instance of the micro-application to jump between micro-applications in the `history` mode or to jump to the main application page. The reason is that the routing instance jumps of the micro-application are all based on the `base` of the route. There are two ways to jump:
+
+  1. `history.pushState()`: [mdn usage introduction](https://developer.mozilla.org/zh-CN/docs/Web/API/History/pushState)
+  2. Pass the routing instance of the main application to the micro application through `props`, and the micro application will jump to this routing instance.
+
+
+## After the microapp file is updated, the old version of the file is still accessed
+
+The server needs to configure a response header for the `index.html` of the micro application: `Cache-Control no-cache`, which means to check whether it is updated every time it requests.
+
+Take `Nginx` as an example:
+
+```
+location = /index.html {
+  add_header Cache-Control no-cache;
+}
+```
+
+## Font file loading error after micro application packaging
+
+The reason is that `qiankun` changed the external link style to the inline style, but the loading path of the font file is a relative path.
+
+Modify the `webpack` package and inject the path prefix to the font file:
+
+```js
+module.exports = {
+  chainWebpack: (config) => {
+    config.module
+      .rule('fonts')
+      .test(/.(ttf|otf|eot|woff|woff2)$/)
+      .use('url-loader')
+      .loader('url-loader')
+      .tap(options => ({ 
+        name:'/fonts/[name].[hash:8].[ext]',
+        limit: 4096, // Fonts smaller than 4KB will be packaged as base64
+      }))
+      .end()
+  },
+}
+```
