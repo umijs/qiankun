@@ -319,7 +319,7 @@ location = /index.html {
 
 The reason is that `qiankun` changed the external link style to the inline style, but the loading path of the font file is a relative path.
 
-Modify the `webpack` package and inject the path prefix to the font file:
+Modify the `webpack` package and pack the font file into `base64`:
 
 ```js
 module.exports = {
@@ -329,14 +329,13 @@ module.exports = {
       .test(/.(ttf|otf|eot|woff|woff2)$/)
       .use('url-loader')
       .loader('url-loader')
-      .tap(options => ({ 
-        name:'/fonts/[name].[hash:8].[ext]',
-        limit: 4096, // Fonts smaller than 4KB will be packaged as base64
-      }))
+      .options({})
       .end()
   },
 }
 ```
+
+For some large font files, it is recommended to upload them to the CDN and use the absolute path directly.
 
 ## micro app styles was lost when using config entry
 

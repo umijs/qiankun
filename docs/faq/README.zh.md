@@ -389,7 +389,7 @@ location = /index.html {
 
 原因是 `qiankun` 将外链样式改成了内联样式，但是字体文件的加载路径是相对路径。
 
-修改一下 `webpack` 打包，给字体文件注入路径前缀即可：
+修改一下 `webpack` 打包，将字体文件打包成 `base64` 即可：
 
 ```js
 module.exports = {
@@ -399,14 +399,13 @@ module.exports = {
       .test(/.(ttf|otf|eot|woff|woff2)$/)
       .use('url-loader')
       .loader('url-loader')
-      .tap(options => ({ 
-        name: '/fonts/[name].[hash:8].[ext]',
-        limit: 4096, // 小于4KB的字体将会被打包成 base64
-      }))
+      .options({})
       .end()
   },
 }
 ```
+
+对于一些体积较大的字体文件，建议上传到 CDN ，直接使用绝对路径。
 
 ## 使用 config entry 时微应用样式丢失
 
