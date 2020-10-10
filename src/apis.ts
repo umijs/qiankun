@@ -1,9 +1,9 @@
 import { noop } from 'lodash';
-import { mountRootParcel, registerApplication, start as startSingleSpa } from 'single-spa';
+import { mountRootParcel, ParcelConfigObject, registerApplication, start as startSingleSpa } from 'single-spa';
 import { FrameworkConfiguration, FrameworkLifeCycles, LoadableApp, MicroApp, RegistrableApp } from './interfaces';
 import { loadApp } from './loader';
 import { doPrefetchStrategy } from './prefetch';
-import { Deferred, toArray } from './utils';
+import { Deferred, getXPathForElement, toArray } from './utils';
 
 let microApps: RegistrableApp[] = [];
 
@@ -46,16 +46,55 @@ export function registerMicroApps<T extends object = {}>(
   });
 }
 
+const appConfigMap = new Map<string, Promise<ParcelConfigObject>>();
+
 export function loadMicroApp<T extends object = {}>(
   app: LoadableApp<T>,
   configuration?: FrameworkConfiguration,
   lifeCycles?: FrameworkLifeCycles<T>,
 ): MicroApp {
-  const { props } = app;
-  return mountRootParcel(() => loadApp(app, configuration ?? frameworkConfiguration, lifeCycles), {
-    domElement: document.createElement('div'),
-    ...props,
-  });
+  const { props, name } = app;
+
+  const getContainerXpath = (container: string | HTMLElement): string | void => {
+    const containerElement = typeof container === 'string' ? document.querySelector(container) : container;
+    if (containerElement) {
+      return getXPathForElement(containerElement, document);
+    }
+
+    return undefined;
+  };
+
+  /**
+   * using name + container xpath as the micro app instance id,
+   * it means if you rendering a micro app to a dom which have been rendered before,
+   * the micro app would not load and evaluate its lifecycles again
+   */
+  const memorizedLoadingFn = async (): Promise<ParcelConfigObject> => {
+    const container = 'container' in app ? app.container : undefined;
+    if (container) {
+      const xpath = getContainerXpath(container);
+      if (xpath) {
+        const parcelConfig = appConfigMap.get(`${name}-${xpath}`);
+        if (parcelConfig) return parcelConfig;
+      }
+    }
+
+    const parcelConfig = loadApp(app, configuration ?? frameworkConfiguration, lifeCycles);
+
+    if (container) {
+      const xpath = getContainerXpath(container);
+      if (xpath)
+        appConfigMap.set(
+          `${name}-${xpath}`,
+          // empty bootstrap hook which should not run twice while it calling from cached micro app
+          parcelConfig.then(config => ({ ...config, bootstrap: () => Promise.resolve() })),
+        );
+    }
+
+    return parcelConfig;
+  };
+
+  return mountRootParcel(memorizedLoadingFn, { domElement: document.createElement('div'), ...props });
 }
 
 export function start(opts: FrameworkConfiguration = {}) {
