@@ -366,7 +366,7 @@ router.beforeEach((to, from, next) => {
 - 主应用和微应用都是 `hash` 模式，主应用根据 `hash` 来判断微应用，则不用考虑这个问题。
 
 - 主应用根据 `path` 来判断微应用
- 
+
   `history` 模式的微应用之间的跳转，或者微应用跳主应用页面，直接使用微应用的路由实例是不行的，原因是微应用的路由实例跳转都基于路由的 `base`。有两种办法可以跳转：
 
   1. `history.pushState()`：[mdn用法介绍](https://developer.mozilla.org/zh-CN/docs/Web/API/History/pushState)
@@ -407,3 +407,50 @@ module.exports = {
   },
 }
 ```
+
+## 使用 config entry 时微应用样式丢失
+
+有些场景下我们会使用 config entry 的方式加载微应用（**不推荐**）：
+
+```js
+loadMicroApp({
+  name: 'configEntry',
+  entry: {
+    scripts: ['//t.com/t.js'],
+    styles: ['//t.com/t.css']
+  }
+});
+```
+
+微应用的 entry js 由于没有附属的 html，mount 钩子直接这么写的：
+
+```js
+export async function mount(props) {
+  ReactDOM.render(<App/>, props.container);
+}
+```
+
+因为 `props.container` 并不是一个空的容器，里面会包含微应用通过 styles 配置注册进来的样式表等信息，所以当我们直接以`props.container` 为 react 应用的容器渲染时，会把容器里原来的所有 dom 结构全部覆盖掉，从而导致样式表丢失。
+
+我们需要给使用 config entry 的微应用构造一个空的渲染容器，专门用来挂载 react 应用：
+
+```diff
+loadMicroApp({
+  name: 'configEntry',
+  entry: {
++   html: '<div id="root"></div>',
+    scripts: ['//t.com/t.js'],
+    styles: ['//t.com/t.css']
+  }
+});
+```
+
+mount 钩子里不是直接渲染到 `props.container` ，而是渲染到其 `root` 节点里：
+
+```diff
+export async function mount(props) {
+- ReactDOM.render(<App/>, props.container);
++ ReactDOM.render(<App/>, props.container.querySelector('#root'));
+}
+```
+

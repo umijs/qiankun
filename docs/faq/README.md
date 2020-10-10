@@ -337,3 +337,48 @@ module.exports = {
   },
 }
 ```
+
+## micro app styles was lost when using config entry
+
+Some scenarios we had to use config entry to load micro app (** not recommended **): 
+
+```js
+loadMicroApp({
+  name: 'configEntry',
+  entry: {
+    scripts: ['//t.com/t.js'],
+    styles: ['//t.com/t.css']
+  }
+});
+```
+
+Since there is no HTML attached to entry JS for microapp, the mount hook simply says:
+
+```js
+export async function mount(props) {
+  ReactDOM.render(<App/>, props.container);
+}
+```
+As `props.container` is not an empty container and will contain information such as the style sheet that the microapp registers through the styles configuration, when we render directly for the container that the react application is applying with 'props.container', all the original DOM structures in the container will be overwritten, causing the style sheet to be lost.
+
+We need to build an empty render container for micro applications that use Config Entry to mount react applications:
+
+```diff
+loadMicroApp({
+  name: 'configEntry',
+  entry: {
++   html: '<div id="root"></div>',
+    scripts: ['//t.com/t.js'],
+    styles: ['//t.com/t.css']
+  }
+});
+```
+
+The mount hook is not directly render to `props.container`, but to its 'root' node:
+
+```diff
+export async function mount(props) {
+- ReactDOM.render(<App/>, props.container);
++ ReactDOM.render(<App/>, props.container.querySelector('#root'));
+}
+```
