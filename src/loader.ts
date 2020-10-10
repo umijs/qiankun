@@ -4,7 +4,7 @@
  */
 
 import { importEntry } from 'import-html-entry';
-import { concat, mergeWith, forEach } from 'lodash';
+import { concat, forEach, mergeWith } from 'lodash';
 import { LifeCycles, ParcelConfigObject } from 'single-spa';
 import getAddOns from './addons';
 import { getMicroAppStateActions } from './globalState';
@@ -14,11 +14,11 @@ import {
   Deferred,
   getDefaultTplWrapper,
   getWrapperId,
+  isEnableScopedCSS,
   performanceMark,
   performanceMeasure,
   toArray,
   validateExportLifecycle,
-  isEnableScopedCSS,
 } from './utils';
 
 function assertElementExist(element: Element | null | undefined, msg?: string) {
@@ -246,11 +246,11 @@ export async function loadApp<T extends object>(
   const enableScopedCSS = isEnableScopedCSS(configuration);
 
   const appContent = getDefaultTplWrapper(appInstanceId, appName)(template);
-  let element: HTMLElement | null = createElement(appContent, strictStyleIsolation);
-  if (element && isEnableScopedCSS(configuration)) {
-    const styleNodes = element.querySelectorAll('style') || [];
+  let appWrapperElement: HTMLElement | null = createElement(appContent, strictStyleIsolation);
+  if (appWrapperElement && isEnableScopedCSS(configuration)) {
+    const styleNodes = appWrapperElement.querySelectorAll('style') || [];
     forEach(styleNodes, (stylesheetElement: HTMLStyleElement) => {
-      css.process(element!, stylesheetElement, appName);
+      css.process(appWrapperElement!, stylesheetElement, appName);
     });
   }
 
@@ -261,15 +261,15 @@ export async function loadApp<T extends object>(
 
   // 第一次加载设置应用可见区域 dom 结构
   // 确保每次应用加载前容器 dom 结构已经设置完毕
-  render({ element, loading: true }, 'loading');
+  render({ element: appWrapperElement, loading: true }, 'loading');
 
-  const containerGetter = getAppWrapperGetter(
+  const appWrapperGetter = getAppWrapperGetter(
     appName,
     appInstanceId,
     !!legacyRender,
     strictStyleIsolation,
     enableScopedCSS,
-    () => element,
+    () => appWrapperElement,
   );
 
   let global = window;
@@ -278,7 +278,7 @@ export async function loadApp<T extends object>(
   if (sandbox) {
     const sandboxInstance = createSandbox(
       appName,
-      containerGetter,
+      appWrapperGetter,
       Boolean(singular),
       enableScopedCSS,
       excludeAssetFilter,
@@ -331,15 +331,15 @@ export async function loadApp<T extends object>(
       // 添加 mount hook, 确保每次应用加载前容器 dom 结构已经设置完毕
       async () => {
         // element would be destroyed after unmounted, we need to recreate it if it not exist
-        element = element || createElement(appContent, strictStyleIsolation);
-        render({ element, loading: true }, 'mounting');
+        appWrapperElement = appWrapperElement || createElement(appContent, strictStyleIsolation);
+        render({ element: appWrapperElement, loading: true }, 'mounting');
       },
       mountSandbox,
       // exec the chain after rendering to keep the behavior with beforeLoad
       async () => execHooksChain(toArray(beforeMount), app, global),
-      async props => mount({ ...props, container: containerGetter(), setGlobalState, onGlobalStateChange }),
-      // 应用 mount 完成后结束 loading
-      async () => render({ element, loading: false }, 'mounted'),
+      async props => mount({ ...props, container: appWrapperGetter(), setGlobalState, onGlobalStateChange }),
+      // finish loading after app mounted
+      async () => render({ element: appWrapperElement, loading: false }, 'mounted'),
       async () => execHooksChain(toArray(afterMount), app, global),
       // initialize the unmount defer after app mounted and resolve the defer after it unmounted
       async () => {
@@ -356,14 +356,14 @@ export async function loadApp<T extends object>(
     ],
     unmount: [
       async () => execHooksChain(toArray(beforeUnmount), app, global),
-      async props => unmount({ ...props, container: containerGetter() }),
+      async props => unmount({ ...props, container: appWrapperGetter() }),
       unmountSandbox,
       async () => execHooksChain(toArray(afterUnmount), app, global),
       async () => {
         render({ element: null, loading: false }, 'unmounted');
         offGlobalStateChange(appInstanceId);
         // for gc
-        element = null;
+        appWrapperElement = null;
       },
       async () => {
         if ((await validateSingularMode(singular, app)) && prevAppUnmountedDeferred) {
