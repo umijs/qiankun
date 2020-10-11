@@ -118,6 +118,216 @@ runtime publicPath 主要解决的是微应用动态载入的 脚本、样式、
 }
 ```
 
+### 微应用打包之后字体文件和背景图片加载404
+
+原因是 `qiankun` 将外链样式改成了内联样式，但是字体文件和背景图片的加载路径是相对路径。
+
+而 `css` 文件一旦打包完成，就无法通过动态修改 `publicPath` 来修正其中的字体文件和背景图片的路径。
+
+主要有以下几个解决方案：
+
+1. 借助 `webpack` 的 `url-loader` 将字体文件和图片打包成 `base64`（适用于字体文件和图片体积小的项目）
+
+  ```js
+  module.exports = {
+    module: {
+      rules: [
+        {
+          test: /\.(png|jpe?g|gif|webp|woff2?|eot|ttf|otf)$/i,
+          use: [
+            {
+              loader: 'url-loader',
+              options: {},
+            },
+          ],
+        },
+      ],
+    },
+  };
+  ```
+
+  `vue-cli3` 项目写法：
+
+  ```js
+  module.exports = {
+    chainWebpack: (config) => {
+      config.module
+        .rule('fonts')
+        .use('url-loader')
+        .loader('url-loader')
+        .options({})
+        .end()
+      config.module
+        .rule('images')
+        .use('url-loader')
+        .loader('url-loader')
+        .options({})
+        .end()
+    },
+  }
+  ```
+
+2. 借助 `webpack` 的 `file-loader` ，在打包时给其注入完整路径（适用于字体文件和图片体积比较大的项目）
+
+  ```js
+  const publicPath = process.env.NODE_ENV === "production" ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+  module.exports = {
+    module: {
+      rules: [
+        {
+          test: /\.(png|jpe?g|gif|webp)$/i,
+          use: [
+            {
+              loader: 'file-loader',
+              options: {
+                name: 'img/[name].[hash:8].[ext]',
+                publicPath
+              },
+            },
+          ],
+        },
+        {
+          test: /\.(woff2?|eot|ttf|otf)$/i,
+          use: [
+            {
+              loader: 'file-loader',
+              options: {
+                name: 'fonts/[name].[hash:8].[ext]',
+                publicPath
+              },
+            },
+          ],
+        },
+      ],
+    },
+  };
+  ```
+
+  `vue-cli3` 项目写法：
+
+  ```js
+  const publicPath = process.env.NODE_ENV === "production" ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+  module.exports = {
+    chainWebpack: (config) => {
+      const fontRule = config.module.rule('fonts');
+      fontRule.uses.clear();
+      fontRule
+        .use('file-loader')
+        .loader('file-loader')
+        .options({
+          name: 'fonts/[name].[hash:8].[ext]',
+          publicPath
+        })
+        .end()
+      const imgRule = config.module.rule('images');
+      imgRule.uses.clear();
+      imgRule
+        .use('file-loader')
+        .loader('file-loader')
+        .options({
+          name: 'img/[name].[hash:8].[ext]',
+          publicPath
+        })
+        .end()
+    },
+  }
+  ```
+
+3. 将两种方案结合起来，小文件转 `base64` ，大文件注入路径前缀
+
+  ```js
+  const publicPath = process.env.NODE_ENV === "production" ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+  module.exports = {
+    module: {
+      rules: [
+        {
+          test: /\.(png|jpe?g|gif|webp)$/i,
+          use: [
+            {
+              loader: 'url-loader',
+              options: {},
+              fallback: {
+                loader: 'file-loader',
+                options: {
+                  name: 'img/[name].[hash:8].[ext]',
+                  publicPath
+                }
+              }
+            },
+          ],
+        },
+        {
+          test: /\.(woff2?|eot|ttf|otf)$/i,
+          use: [
+            {
+              loader: 'url-loader',
+              options: {},
+              fallback: {
+                loader: 'file-loader',
+                options: {
+                  name: 'fonts/[name].[hash:8].[ext]',
+                  publicPath
+                }
+              }
+            },
+          ],
+        },
+      ],
+    },
+  };
+  ```
+
+  `vue-cli3` 项目写法：
+
+  ```js
+  const publicPath = process.env.NODE_ENV === "production" ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+  module.exports = {
+    chainWebpack: (config) => {
+      config.module.rule('fonts')
+        .use('url-loader')
+        .loader('url-loader')
+        .options({
+          limit: 4096, // 小于4kb将会被打包成 base64
+          fallback: {
+            loader: 'file-loader',
+            options: {
+              name: 'fonts/[name].[hash:8].[ext]',
+              publicPath
+            }
+          }
+        })
+        .end();
+      config.module.rule('images')
+        .use('url-loader')
+        .loader('url-loader')
+        .options({
+          limit: 4096, // 小于4kb将会被打包成 base64
+          fallback: {
+            loader: 'file-loader',
+            options: {
+              name: 'img/[name].[hash:8].[ext]',
+              publicPath
+            }
+          }
+        })
+    },
+  }
+  ```
+
+4. `vue-cli3` 项目可以将 `css` 打包到 `js`里面，不单独生成文件(适用于 `css` 较少的项目)
+
+  配置参考 [vue-cli3 官网](https://cli.vuejs.org/zh/config/#css-extract):
+
+  ```js
+  module.exports = {
+    css: {
+      extract: false
+    },
+  }
+  ```
+
+如果以上方法都不太适用，建议将字体文件和图片上传到 `CDN`，使用时直接使用完整路径。
+
 ## 微应用静态资源一定要支持跨域吗？
 
 是的。
@@ -384,28 +594,6 @@ location = /index.html {
   add_header Cache-Control no-cache;
 }
 ```
-
-## 微应用打包之后字体文件加载出错
-
-原因是 `qiankun` 将外链样式改成了内联样式，但是字体文件的加载路径是相对路径。
-
-修改一下 `webpack` 打包，将字体文件打包成 `base64` 即可：
-
-```js
-module.exports = {
-  chainWebpack: (config) => {
-    config.module
-      .rule('fonts')
-      .test(/.(ttf|otf|eot|woff|woff2)$/)
-      .use('url-loader')
-      .loader('url-loader')
-      .options({})
-      .end()
-  },
-}
-```
-
-对于一些体积较大的字体文件，建议上传到 CDN ，直接使用绝对路径。
 
 ## 使用 config entry 时微应用样式丢失
 
