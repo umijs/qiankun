@@ -124,7 +124,7 @@ Once the `css` file is packaged, you cannot modify the path of the font file and
 
 There are mainly the following solutions:
 
-1. Upload all static resources such as pictures to `cdn`, and directly quote the address of `cdn` in `css` (**recommended**)
+1. Upload all static resources such as pictures to `cdn`, and directly reference the address of `cdn` in `css` (**recommended**)
 
 2. Use the `url-loader` of `webpack` to package font files and images as `base64` (suitable for projects with small font files and images)(**recommended**)
 
