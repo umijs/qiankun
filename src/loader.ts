@@ -12,6 +12,7 @@ import { FrameworkConfiguration, FrameworkLifeCycles, HTMLContentRender, LifeCyc
 import { createSandbox, css } from './sandbox';
 import {
   Deferred,
+  getContainer,
   getDefaultTplWrapper,
   getWrapperId,
   isEnableScopedCSS,
@@ -126,7 +127,7 @@ function getAppWrapperGetter(
 const rawAppendChild = HTMLElement.prototype.appendChild;
 const rawRemoveChild = HTMLElement.prototype.removeChild;
 type ElementRender = (
-  props: { element: HTMLElement | null; loading: boolean },
+  props: { element: HTMLElement | null; loading: boolean; remountContainer?: string | HTMLElement },
   phase: 'loading' | 'mounting' | 'mounted' | 'unmounted',
 ) => any;
 
@@ -144,7 +145,7 @@ function getRender(
   container?: string | HTMLElement,
   legacyRender?: HTMLContentRender,
 ) {
-  const render: ElementRender = ({ element, loading }, phase) => {
+  const render: ElementRender = ({ element, loading, remountContainer }, phase) => {
     if (legacyRender) {
       if (process.env.NODE_ENV === 'development') {
         console.warn(
@@ -155,7 +156,7 @@ function getRender(
       return legacyRender({ loading, appContent: element ? appContent : '' });
     }
 
-    const containerElement = typeof container === 'string' ? document.querySelector(container) : container;
+    const containerElement = getContainer(remountContainer || container!);
 
     // The container might have be removed after micro app unmounted.
     // Such as the micro app unmount lifecycle called by a react componentWillUnmount lifecycle, after micro app unmounted, the react component might also be removed
@@ -217,11 +218,12 @@ function getLifecyclesFromExports(scriptExports: LifeCycles<any>, appName: strin
 
 let prevAppUnmountedDeferred: Deferred<void>;
 
+export type ParcelConfigObjectGetter = (remountContainer?: string | HTMLElement) => ParcelConfigObject;
 export async function loadApp<T extends object>(
   app: LoadableApp<T>,
   configuration: FrameworkConfiguration = {},
   lifeCycles?: FrameworkLifeCycles<T>,
-): Promise<ParcelConfigObject> {
+): Promise<ParcelConfigObjectGetter> {
   const { entry, name: appName } = app;
   const appInstanceId = `${appName}_${+new Date()}_${Math.floor(Math.random() * 1000)}`;
 
@@ -308,74 +310,78 @@ export async function loadApp<T extends object>(
     offGlobalStateChange,
   }: Record<string, Function> = getMicroAppStateActions(appInstanceId);
 
-  const parcelConfig: ParcelConfigObject = {
-    name: appInstanceId,
-    bootstrap,
-    mount: [
-      async () => {
-        if (process.env.NODE_ENV === 'development') {
-          const marks = performance.getEntriesByName(markName, 'mark');
-          // mark length is zero means the app is remounting
-          if (!marks.length) {
-            performanceMark(markName);
+  const parcelConfigGetter: ParcelConfigObjectGetter = remountContainer => {
+    const parcelConfig: ParcelConfigObject = {
+      name: appInstanceId,
+      bootstrap,
+      mount: [
+        async () => {
+          if (process.env.NODE_ENV === 'development') {
+            const marks = performance.getEntriesByName(markName, 'mark');
+            // mark length is zero means the app is remounting
+            if (!marks.length) {
+              performanceMark(markName);
+            }
           }
-        }
-      },
-      async () => {
-        if ((await validateSingularMode(singular, app)) && prevAppUnmountedDeferred) {
-          return prevAppUnmountedDeferred.promise;
-        }
+        },
+        async () => {
+          if ((await validateSingularMode(singular, app)) && prevAppUnmountedDeferred) {
+            return prevAppUnmountedDeferred.promise;
+          }
 
-        return undefined;
-      },
-      // 添加 mount hook, 确保每次应用加载前容器 dom 结构已经设置完毕
-      async () => {
-        // element would be destroyed after unmounted, we need to recreate it if it not exist
-        appWrapperElement = appWrapperElement || createElement(appContent, strictStyleIsolation);
-        render({ element: appWrapperElement, loading: true }, 'mounting');
-      },
-      mountSandbox,
-      // exec the chain after rendering to keep the behavior with beforeLoad
-      async () => execHooksChain(toArray(beforeMount), app, global),
-      async props => mount({ ...props, container: appWrapperGetter(), setGlobalState, onGlobalStateChange }),
-      // finish loading after app mounted
-      async () => render({ element: appWrapperElement, loading: false }, 'mounted'),
-      async () => execHooksChain(toArray(afterMount), app, global),
-      // initialize the unmount defer after app mounted and resolve the defer after it unmounted
-      async () => {
-        if (await validateSingularMode(singular, app)) {
-          prevAppUnmountedDeferred = new Deferred<void>();
-        }
-      },
-      async () => {
-        if (process.env.NODE_ENV === 'development') {
-          const measureName = `[qiankun] App ${appInstanceId} Loading Consuming`;
-          performanceMeasure(measureName, markName);
-        }
-      },
-    ],
-    unmount: [
-      async () => execHooksChain(toArray(beforeUnmount), app, global),
-      async props => unmount({ ...props, container: appWrapperGetter() }),
-      unmountSandbox,
-      async () => execHooksChain(toArray(afterUnmount), app, global),
-      async () => {
-        render({ element: null, loading: false }, 'unmounted');
-        offGlobalStateChange(appInstanceId);
-        // for gc
-        appWrapperElement = null;
-      },
-      async () => {
-        if ((await validateSingularMode(singular, app)) && prevAppUnmountedDeferred) {
-          prevAppUnmountedDeferred.resolve();
-        }
-      },
-    ],
+          return undefined;
+        },
+        // 添加 mount hook, 确保每次应用加载前容器 dom 结构已经设置完毕
+        async () => {
+          // element would be destroyed after unmounted, we need to recreate it if it not exist
+          appWrapperElement = appWrapperElement || createElement(appContent, strictStyleIsolation);
+          render({ element: appWrapperElement, loading: true, remountContainer }, 'mounting');
+        },
+        mountSandbox,
+        // exec the chain after rendering to keep the behavior with beforeLoad
+        async () => execHooksChain(toArray(beforeMount), app, global),
+        async props => mount({ ...props, container: appWrapperGetter(), setGlobalState, onGlobalStateChange }),
+        // finish loading after app mounted
+        async () => render({ element: appWrapperElement, loading: false, remountContainer }, 'mounted'),
+        async () => execHooksChain(toArray(afterMount), app, global),
+        // initialize the unmount defer after app mounted and resolve the defer after it unmounted
+        async () => {
+          if (await validateSingularMode(singular, app)) {
+            prevAppUnmountedDeferred = new Deferred<void>();
+          }
+        },
+        async () => {
+          if (process.env.NODE_ENV === 'development') {
+            const measureName = `[qiankun] App ${appInstanceId} Loading Consuming`;
+            performanceMeasure(measureName, markName);
+          }
+        },
+      ],
+      unmount: [
+        async () => execHooksChain(toArray(beforeUnmount), app, global),
+        async props => unmount({ ...props, container: appWrapperGetter() }),
+        unmountSandbox,
+        async () => execHooksChain(toArray(afterUnmount), app, global),
+        async () => {
+          render({ element: null, loading: false, remountContainer }, 'unmounted');
+          offGlobalStateChange(appInstanceId);
+          // for gc
+          appWrapperElement = null;
+        },
+        async () => {
+          if ((await validateSingularMode(singular, app)) && prevAppUnmountedDeferred) {
+            prevAppUnmountedDeferred.resolve();
+          }
+        },
+      ],
+    };
+
+    if (typeof update === 'function') {
+      parcelConfig.update = update;
+    }
+
+    return parcelConfig;
   };
 
-  if (typeof update === 'function') {
-    parcelConfig.update = update;
-  }
-
-  return parcelConfig;
+  return parcelConfigGetter;
 }
