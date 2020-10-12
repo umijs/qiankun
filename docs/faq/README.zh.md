@@ -118,7 +118,7 @@ runtime publicPath 主要解决的是微应用动态载入的 脚本、样式、
 }
 ```
 
-### 微应用打包之后字体文件和背景图片加载404
+### 微应用打包之后 css 中的字体文件和图片加载 404
 
 原因是 `qiankun` 将外链样式改成了内联样式，但是字体文件和背景图片的加载路径是相对路径。
 
@@ -126,7 +126,9 @@ runtime publicPath 主要解决的是微应用动态载入的 脚本、样式、
 
 主要有以下几个解决方案：
 
-1. 借助 `webpack` 的 `url-loader` 将字体文件和图片打包成 `base64`（适用于字体文件和图片体积小的项目）
+1. 所有图片等静态资源上传至 `cdn`，`css` 中直接引用 `cdn` 地址（**推荐**）
+
+2. 借助 `webpack` 的 `url-loader` 将字体文件和图片打包成 `base64`（适用于字体文件和图片体积小的项目）（**推荐**）
 
   ```js
   module.exports = {
@@ -167,7 +169,7 @@ runtime publicPath 主要解决的是微应用动态载入的 脚本、样式、
   }
   ```
 
-2. 借助 `webpack` 的 `file-loader` ，在打包时给其注入完整路径（适用于字体文件和图片体积比较大的项目）
+3. 借助 `webpack` 的 `file-loader` ，在打包时给其注入完整路径（适用于字体文件和图片体积比较大的项目）
 
   ```js
   const publicPath = process.env.NODE_ENV === "production" ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
@@ -233,7 +235,7 @@ runtime publicPath 主要解决的是微应用动态载入的 脚本、样式、
   }
   ```
 
-3. 将两种方案结合起来，小文件转 `base64` ，大文件注入路径前缀
+4. 将两种方案结合起来，小文件转 `base64` ，大文件注入路径前缀
 
   ```js
   const publicPath = process.env.NODE_ENV === "production" ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
@@ -314,7 +316,7 @@ runtime publicPath 主要解决的是微应用动态载入的 脚本、样式、
   }
   ```
 
-4. `vue-cli3` 项目可以将 `css` 打包到 `js`里面，不单独生成文件(适用于 `css` 较少的项目)
+5. `vue-cli3` 项目可以将 `css` 打包到 `js`里面，不单独生成文件(不推荐，仅适用于 `css` 较少的项目)
 
   配置参考 [vue-cli3 官网](https://cli.vuejs.org/zh/config/#css-extract):
 
@@ -325,8 +327,6 @@ runtime publicPath 主要解决的是微应用动态载入的 脚本、样式、
     },
   }
   ```
-
-如果以上方法都不太适用，建议将字体文件和图片上传到 `CDN`，使用时直接使用完整路径。
 
 ## 微应用静态资源一定要支持跨域吗？
 

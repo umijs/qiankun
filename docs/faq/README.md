@@ -116,7 +116,7 @@ You need to set your publicPath configuration to an absolute url, and in develop
 }
 ```
 
-### After the micro-app is packaged, the font file and background image load 404
+### After the micro-app is packaged, the font files and images in the css load 404
 
 The reason is that `qiankun` changed the external link style to the inline style, but the loading path of the font file and background image is a relative path.
 
@@ -124,7 +124,9 @@ Once the `css` file is packaged, you cannot modify the path of the font file and
 
 There are mainly the following solutions:
 
-1. Use the `url-loader` of `webpack` to package font files and images as `base64` (suitable for projects with small font files and images)
+1. Upload all static resources such as pictures to `cdn`, and directly quote the address of `cdn` in `css` (**recommended**)
+
+2. Use the `url-loader` of `webpack` to package font files and images as `base64` (suitable for projects with small font files and images)(**recommended**)
 
   ```js
   module.exports = {
@@ -164,7 +166,7 @@ There are mainly the following solutions:
     },
   }
 
-2. Use the `file-loader` of `webpack` to inject the full path when packaging it (suitable for projects with large font files and images)
+3. Use the `file-loader` of `webpack` to inject the full path when packaging it (suitable for projects with large font files and images)
 
   ```js
   const publicPath = process.env.NODE_ENV === "production" ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
@@ -230,7 +232,7 @@ There are mainly the following solutions:
   }
   ```
 
-3. Combine the two schemes, convert small files to `base64`, and inject path prefixes for large files
+4. Combine the two schemes, convert small files to `base64`, and inject path prefixes for large files
 
   ```js
   const publicPath = process.env.NODE_ENV === "production" ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
@@ -311,7 +313,7 @@ There are mainly the following solutions:
   }
   ```
 
-4. The `vue-cli3` project can package `css` into `js` without generating files separately (suitable for projects with less `css`)
+5. The `vue-cli3` project can package `css` into `js` without generating files separately (not recommended, only suitable for projects with less `css`)
 
   Configuration reference [vue-cli3 official website](https://cli.vuejs.org/zh/config/#css-extract):
 
@@ -322,8 +324,6 @@ There are mainly the following solutions:
     },
   }
   ```
-
-If none of the above methods are applicable, it is recommended to upload font files and pictures to `CDN`, and use the full path directly.
 
 ## Must a sub app asset support cors?
 
