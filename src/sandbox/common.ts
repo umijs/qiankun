@@ -27,7 +27,12 @@ export function getTargetValue(target: any, value: any): any {
 
     const boundValue = value.bind(target);
     // some callable function has custom fields, we need to copy the enumerable props to boundValue. such as moment function.
-    Object.keys(value).forEach(key => (boundValue[key] = value[key]));
+    // use for..in rather than Object.keys.forEach for performance reason
+    // eslint-disable-next-line guard-for-in,no-restricted-syntax
+    for (const key in value) {
+      boundValue[key] = value[key];
+    }
+
     // copy prototype, for performance reason, we use in operator to check rather than hasOwnProperty
     if ('prototype' in value) boundValue.prototype = value.prototype;
     Object.defineProperty(value, boundValueSymbol, { enumerable: false, value: boundValue });
@@ -37,7 +42,7 @@ export function getTargetValue(target: any, value: any): any {
   return value;
 }
 
-const getterInvocationResultMap = new Map<CallableFunction, any>();
+const getterInvocationResultMap = new WeakMap<CallableFunction, any>();
 
 export function getProxyPropertyValue(getter: CallableFunction) {
   const getterResult = getterInvocationResultMap.get(getter);
