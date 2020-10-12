@@ -126,3 +126,40 @@ export function isEnableScopedCSS(opt: FrameworkConfiguration) {
 
   return !!opt.sandbox.experimentalStyleIsolation;
 }
+
+/**
+ * copy from https://developer.mozilla.org/zh-CN/docs/Using_XPath
+ * @param el
+ * @param xml
+ */
+export function getXPathForElement(el: Node, xml: Document) {
+  let xpath = '';
+  let pos;
+  let tmpEle;
+  let element = el;
+
+  while (element !== xml.documentElement) {
+    pos = 0;
+    tmpEle = element;
+    while (tmpEle) {
+      if (tmpEle.nodeType === 1 && tmpEle.nodeName === element.nodeName) {
+        // If it is ELEMENT_NODE of the same name
+        pos += 1;
+      }
+      tmpEle = tmpEle.previousSibling;
+    }
+
+    xpath = `*[name()='${element.nodeName}' and namespace-uri()='${
+      element.namespaceURI === null ? '' : element.namespaceURI
+    }'][${pos}]/${xpath}`;
+
+    element = element.parentNode!;
+  }
+
+  xpath = `/*[name()='${xml.documentElement.nodeName}' and namespace-uri()='${
+    element.namespaceURI === null ? '' : element.namespaceURI
+  }']/${xpath}`;
+  xpath = xpath.replace(/\/$/, '');
+
+  return xpath;
+}
