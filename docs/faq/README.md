@@ -116,6 +116,215 @@ You need to set your publicPath configuration to an absolute url, and in develop
 }
 ```
 
+### After the micro-app is bundled, the font files and images in the css load 404
+
+The reason is that `qiankun` changed the external link style to the inline style, but the loading path of the font file and background image is a relative path.
+
+Once the `css` file is packaged, you cannot modify the path of the font file and background image by dynamically modifying the `publicPath`.
+
+There are mainly the following solutions:
+
+1. Upload all static resources such as pictures to `cdn`, and directly reference the address of `cdn` in `css` (**recommended**)
+
+2. Use the `url-loader` of `webpack` to package font files and images as `base64` (suitable for projects with small font files and images)(**recommended**)
+
+  ```js
+  module.exports = {
+    module: {
+      rules: [
+        {
+          test: /\.(png|jpe?g|gif|webp|woff2?|eot|ttf|otf)$/i,
+          use: [
+            {
+              loader: 'url-loader',
+              options: {},
+            },
+          ],
+        },
+      ],
+    },
+  };
+  ```
+
+  `vue-cli3` project:
+
+  ```js
+  module.exports = {
+    chainWebpack: (config) => {
+      config.module
+        .rule('fonts')
+        .use('url-loader')
+        .loader('url-loader')
+        .options({})
+        .end()
+      config.module
+        .rule('images')
+        .use('url-loader')
+        .loader('url-loader')
+        .options({})
+        .end()
+    },
+  }
+
+3. Use the `file-loader` of `webpack` to inject the full path when packaging it (suitable for projects with large font files and images)
+
+  ```js
+  const publicPath = process.env.NODE_ENV === "production" ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+  module.exports = {
+    module: {
+      rules: [
+        {
+          test: /\.(png|jpe?g|gif|webp)$/i,
+          use: [
+            {
+              loader: 'file-loader',
+              options: {
+                name: 'img/[name].[hash:8].[ext]',
+                publicPath
+              },
+            },
+          ],
+        },
+        {
+          test: /\.(woff2?|eot|ttf|otf)$/i,
+          use: [
+            {
+              loader: 'file-loader',
+              options: {
+                name: 'fonts/[name].[hash:8].[ext]',
+                publicPath
+              },
+            },
+          ],
+        },
+      ],
+    },
+  };
+  ```
+
+  `vue-cli3` project:
+
+  ```js
+  const publicPath = process.env.NODE_ENV === "production" ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+  module.exports = {
+    chainWebpack: (config) => {
+      const fontRule = config.module.rule('fonts');
+      fontRule.uses.clear();
+      fontRule
+        .use('file-loader')
+        .loader('file-loader')
+        .options({
+          name: 'fonts/[name].[hash:8].[ext]',
+          publicPath
+        })
+        .end()
+      const imgRule = config.module.rule('images');
+      imgRule.uses.clear();
+      imgRule
+        .use('file-loader')
+        .loader('file-loader')
+        .options({
+          name: 'img/[name].[hash:8].[ext]',
+          publicPath
+        })
+        .end()
+    },
+  }
+  ```
+
+4. Combine the two schemes, convert small files to `base64`, and inject path prefixes for large files
+
+  ```js
+  const publicPath = process.env.NODE_ENV === "production" ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+  module.exports = {
+    module: {
+      rules: [
+        {
+          test: /\.(png|jpe?g|gif|webp)$/i,
+          use: [
+            {
+              loader: 'url-loader',
+              options: {},
+              fallback: {
+                loader: 'file-loader',
+                options: {
+                  name: 'img/[name].[hash:8].[ext]',
+                  publicPath
+                }
+              }
+            },
+          ],
+        },
+        {
+          test: /\.(woff2?|eot|ttf|otf)$/i,
+          use: [
+            {
+              loader: 'url-loader',
+              options: {},
+              fallback: {
+                loader: 'file-loader',
+                options: {
+                  name: 'fonts/[name].[hash:8].[ext]',
+                  publicPath
+                }
+              }
+            },
+          ],
+        },
+      ],
+    },
+  };
+  ```
+
+  `vue-cli3` project：
+
+  ```js
+  const publicPath = process.env.NODE_ENV === "production" ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+  module.exports = {
+    chainWebpack: (config) => {
+      config.module.rule('fonts')
+        .use('url-loader')
+        .loader('url-loader')
+        .options({
+          limit: 4096, // Less than 4kb will be packaged as base64
+          fallback: {
+            loader: 'file-loader',
+            options: {
+              name: 'fonts/[name].[hash:8].[ext]',
+              publicPath
+            }
+          }
+        })
+        .end();
+      config.module.rule('images')
+        .use('url-loader')
+        .loader('url-loader')
+        .options({
+          limit: 4096, // Less than 4kb will be packaged as base64
+          fallback: {
+            loader: 'file-loader',
+            options: {
+              name: 'img/[name].[hash:8].[ext]',
+              publicPath
+            }
+          }
+        })
+    },
+  }
+  ```
+
+5. The `vue-cli3` project can package `css` into `js` without generating files separately (not recommended, only suitable for projects with less `css`)
+
+  Configuration reference [vue-cli3 official website](https://cli.vuejs.org/zh/config/#css-extract):
+
+  ```js
+  module.exports = {
+    css: {
+      extract: false
+    },
+  }
+  ```
+
 ## Must a sub app asset support cors?
 
 Yes it is.
@@ -312,29 +521,6 @@ Take `Nginx` as an example:
 ```
 location = /index.html {
   add_header Cache-Control no-cache;
-}
-```
-
-## Font file loading error after micro application packaging
-
-The reason is that `qiankun` changed the external link style to the inline style, but the loading path of the font file is a relative path.
-
-Modify the `webpack` package and inject the path prefix to the font file:
-
-```js
-module.exports = {
-  chainWebpack: (config) => {
-    config.module
-      .rule('fonts')
-      .test(/.(ttf|otf|eot|woff|woff2)$/)
-      .use('url-loader')
-      .loader('url-loader')
-      .tap(options => ({ 
-        name:'/fonts/[name].[hash:8].[ext]',
-        limit: 4096, // Fonts smaller than 4KB will be packaged as base64
-      }))
-      .end()
-  },
 }
 ```
 
