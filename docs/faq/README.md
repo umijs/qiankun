@@ -116,7 +116,7 @@ You need to set your publicPath configuration to an absolute url, and in develop
 }
 ```
 
-### After the micro-app is packaged, the font files and images in the css load 404
+### After the micro-app is bundled, the font files and images in the css load 404
 
 The reason is that `qiankun` changed the external link style to the inline style, but the loading path of the font file and background image is a relative path.
 
