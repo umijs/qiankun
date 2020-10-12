@@ -142,15 +142,20 @@ export function isEnableScopedCSS(opt: FrameworkConfiguration) {
 /**
  * copy from https://developer.mozilla.org/zh-CN/docs/Using_XPath
  * @param el
- * @param xml
+ * @param document
  */
-export function getXPathForElement(el: Node, xml: Document) {
+export function getXPathForElement(el: Node, document: Document): string | void {
+  // not support that if el not existed in document yet(such as it not append to document before it mounted)
+  if (!document.contains(el)) {
+    return undefined;
+  }
+
   let xpath = '';
   let pos;
   let tmpEle;
   let element = el;
 
-  while (element !== xml.documentElement) {
+  while (element !== document.documentElement) {
     pos = 0;
     tmpEle = element;
     while (tmpEle) {
@@ -168,7 +173,7 @@ export function getXPathForElement(el: Node, xml: Document) {
     element = element.parentNode!;
   }
 
-  xpath = `/*[name()='${xml.documentElement.nodeName}' and namespace-uri()='${
+  xpath = `/*[name()='${document.documentElement.nodeName}' and namespace-uri()='${
     element.namespaceURI === null ? '' : element.namespaceURI
   }']/${xpath}`;
   xpath = xpath.replace(/\/$/, '');

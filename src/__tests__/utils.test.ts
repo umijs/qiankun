@@ -111,4 +111,8 @@ test('should getXPathForElement work well', () => {
     // eslint-disable-next-line max-len
     `/*[name()='HTML' and namespace-uri()='http://www.w3.org/1999/xhtml']/*[name()='BODY' and namespace-uri()='http://www.w3.org/1999/xhtml'][1]/*[name()='ARTICLE' and namespace-uri()='http://www.w3.org/1999/xhtml'][1]/*[name()='DIV' and namespace-uri()='http://www.w3.org/1999/xhtml'][1]/*[name()='DIV' and namespace-uri()='http://www.w3.org/1999/xhtml'][2]`,
   );
+
+  const virtualDOM = document.createElement('div');
+  const xpath1 = getXPathForElement(virtualDOM, document);
+  expect(xpath1).toBeUndefined();
 });
