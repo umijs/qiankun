@@ -1,9 +1,9 @@
 import { noop } from 'lodash';
 import { mountRootParcel, ParcelConfigObject, registerApplication, start as startSingleSpa } from 'single-spa';
 import { FrameworkConfiguration, FrameworkLifeCycles, LoadableApp, MicroApp, RegistrableApp } from './interfaces';
-import { loadApp } from './loader';
+import { loadApp, ParcelConfigObjectGetter } from './loader';
 import { doPrefetchStrategy } from './prefetch';
-import { Deferred, getXPathForElement, toArray } from './utils';
+import { Deferred, getContainer, getXPathForElement, toArray } from './utils';
 
 let microApps: RegistrableApp[] = [];
 
@@ -29,11 +29,9 @@ export function registerMicroApps<T extends object = {}>(
         loader(true);
         await frameworkStartedDefer.promise;
 
-        const { mount, ...otherMicroAppConfigs } = await loadApp(
-          { name, props, ...appConfig },
-          frameworkConfiguration,
-          lifeCycles,
-        );
+        const { mount, ...otherMicroAppConfigs } = (
+          await loadApp({ name, props, ...appConfig }, frameworkConfiguration, lifeCycles)
+        )();
 
         return {
           mount: [async () => loader(true), ...toArray(mount), async () => loader(false)],
@@ -46,7 +44,7 @@ export function registerMicroApps<T extends object = {}>(
   });
 }
 
-const appConfigMap = new Map<string, Promise<ParcelConfigObject>>();
+const appConfigPormiseGetterMap = new Map<string, Promise<ParcelConfigObjectGetter>>();
 
 export function loadMicroApp<T extends object = {}>(
   app: LoadableApp<T>,
@@ -56,7 +54,7 @@ export function loadMicroApp<T extends object = {}>(
   const { props, name } = app;
 
   const getContainerXpath = (container: string | HTMLElement): string | void => {
-    const containerElement = typeof container === 'string' ? document.querySelector(container) : container;
+    const containerElement = getContainer(container);
     if (containerElement) {
       return getXPathForElement(containerElement, document);
     }
@@ -74,24 +72,26 @@ export function loadMicroApp<T extends object = {}>(
     if (container) {
       const xpath = getContainerXpath(container);
       if (xpath) {
-        const parcelConfig = appConfigMap.get(`${name}-${xpath}`);
-        if (parcelConfig) return parcelConfig;
+        const parcelConfigGetterPromise = appConfigPormiseGetterMap.get(`${name}-${xpath}`);
+        if (parcelConfigGetterPromise) {
+          const parcelConfig = (await parcelConfigGetterPromise)(container);
+          return {
+            ...parcelConfig,
+            // empty bootstrap hook which should not run twice while it calling from cached micro app
+            bootstrap: () => Promise.resolve(),
+          };
+        }
       }
     }
 
-    const parcelConfig = loadApp(app, configuration ?? frameworkConfiguration, lifeCycles);
+    const parcelConfigObjectGetterPromise = loadApp(app, configuration ?? frameworkConfiguration, lifeCycles);
 
     if (container) {
       const xpath = getContainerXpath(container);
-      if (xpath)
-        appConfigMap.set(
-          `${name}-${xpath}`,
-          // empty bootstrap hook which should not run twice while it calling from cached micro app
-          parcelConfig.then(config => ({ ...config, bootstrap: () => Promise.resolve() })),
-        );
+      if (xpath) appConfigPormiseGetterMap.set(`${name}-${xpath}`, parcelConfigObjectGetterPromise);
     }
 
-    return parcelConfig;
+    return (await parcelConfigObjectGetterPromise)(container);
   };
 
   return mountRootParcel(memorizedLoadingFn, { domElement: document.createElement('div'), ...props });
