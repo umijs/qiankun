@@ -248,7 +248,7 @@ toc: menu
 
       除此以外，qiankun 还提供了一个实验性的样式隔离特性，当 experimentalStyleIsolation 被设置为 true 时，qiankun 会改写子应用所添加的样式为所有样式规则增加一个特殊的选择器规则来限定其影响范围，因此改写后的代码会表达类似为如下结构：
 
-      ```javascript
+      ```css
       // 假设应用名是 react16
       .app-main {
         font-size: 14px;
