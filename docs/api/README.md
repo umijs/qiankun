@@ -159,7 +159,7 @@ By linking the micro-application to some url rules, the function of automaticall
 
     - fetch - `Function` - optional
 
-    - getPublicPath - `(enrty: Entry) => string` - optional，The parameter is the entry value of the micro application.
+    - getPublicPath - `(entry: Entry) => string` - optional，The parameter is the entry value of the micro application.
 
     - getTemplate - `(tpl: string) => string` - optional
     

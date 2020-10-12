@@ -136,9 +136,13 @@ toc: menu
 
     - sandbox - `boolean` | `{ strictStyleIsolation?: boolean, experimentalStyleIsolation?: boolean }` - 可选，是否开启沙箱，默认为 `true`。
 
-      当配置为 `{ strictStyleIsolation: true }` 表示开启严格的样式隔离模式。这种模式下 qiankun 会为每个微应用的容器包裹上一个 [shadow dom](https://developer.mozilla.org/zh-CN/docs/Web/Web_Components/Using_shadow_DOM) 节点，从而确保微应用的样式不会对全局造成影响。
+      默认情况下沙箱可以确保单实例场景子应用之间的样式隔离，但是无法确保主应用跟子应用、或者多实例场景的子应用样式隔离。当配置为 `{ strictStyleIsolation: true }` 时表示开启严格的样式隔离模式。这种模式下 qiankun 会为每个微应用的容器包裹上一个 [shadow dom](https://developer.mozilla.org/zh-CN/docs/Web/Web_Components/Using_shadow_DOM) 节点，从而确保微应用的样式不会对全局造成影响。
 
-      而除此以外，qiankun 还提供了一种实验性的方式来支持样式隔离，当 `experimentalStyleIsolation` 被设置为 true 时，qiankun 将会通过动态改写一个特殊的选择器约束来限制 css 的生效范围，应用的样式会按照如下模式改写：
+      <Alert>
+        基于 ShadowDOM 的严格样式隔离并不是一个可以无脑使用的方案，大部分情况下都需要接入应用做一些适配后才能正常在 ShadowDOM 中运行起来（比如 react 场景下需要解决这些 <a target="_blank" href="https://github.com/facebook/react/issues/10422">问题</a>，使用者需要清楚开启了 <code>strictStyleIsolation</code> 意味着什么。后续 qiankun 会提供更多官方实践文档帮助用户能快速的将应用改造成可以运行在 ShadowDOM 环境的微应用。
+      </Alert>
+
+      除此以外，qiankun 还提供了一个实验性的样式隔离特性，当 experimentalStyleIsolation 被设置为 true 时，qiankun 会改写子应用所添加的样式为所有样式规则增加一个特殊的选择器规则来限定其影响范围，因此改写后的代码会表达类似为如下结构：
 
       ```javascript
       // 假设应用名是 react16
@@ -159,11 +163,11 @@ toc: menu
 
     - fetch - `Function` - 可选，自定义的 fetch 方法。
 
-    - getPublicPath - `(enrty: Entry) => string` - 可选，参数是微应用的 entry 值。
+    - getPublicPath - `(entry: Entry) => string` - 可选，参数是微应用的 entry 值。
 
-    - getTemplate - `(tpl: string) => string` - 可选
+    - getTemplate - `(tpl: string) => string` - 可选。
 
-    - excludeAssetFilter - `(assetUrl: string) => boolean` - 可选，指定部分特殊的动态加载的微应用资源（css/js) 不被 qiankun 劫持处理
+    - excludeAssetFilter - `(assetUrl: string) => boolean` - 可选，指定部分特殊的动态加载的微应用资源（css/js) 不被 qiankun 劫持处理。
 
 - 用法
 
@@ -244,8 +248,8 @@ toc: menu
 
       除此以外，qiankun 还提供了一个实验性的样式隔离特性，当 experimentalStyleIsolation 被设置为 true 时，qiankun 会改写子应用所添加的样式为所有样式规则增加一个特殊的选择器规则来限定其影响范围，因此改写后的代码会表达类似为如下结构：
 
-      ```
-      // 假设加载的应用名为 react16
+      ```javascript
+      // 假设应用名是 react16
       .app-main {
         font-size: 14px;
       }
