@@ -348,7 +348,13 @@ toc: menu
 
 - 参数
   - apps - `AppMetadata[]` - 必选 - 预加载的应用列表
-  - importEntryOpts - 可选 - 加载配置
+  - importEntryOpts - 可选 - 加载配置，默认值为一个空对象。
+    - 传入为函数类型的时候，直接作为 `fetch` 使用
+    - 传入为对象类型的时候，对象属性用于解析 `html` 模版。如果不配置，模版内置默认属性。详见[import-html-entry 的 importHTML 函数](https://github.com/kuitos/import-html-entry/blob/master/src/index.js)
+      - fetch - `(url: string) => promise` - 可选，自定义的 fetch 方法, 用于获取远端的脚本和样式文件内容。 -  默认：浏览器 `fetch`
+      - getPublicPath - `(url: string) => publicPath:string` - 可选，用于获取静态资源 `publicPath`，将模板中外部资源为相对路径的，转换为绝对路径。- 默认：当前 `location.href` 为 `publicPath`。
+      - getDomain - `(url: string) => publicPath:string` - 可选，同 `getPublicPath` 。如果没有提供 `getPublicPath` 参数，则使用 `getDomain` ，两者都没有提供的时候，使用默认 `getPublicPath`。- 默认：无。
+      - getTemplate - `(html: string) => html:string` - 可选，用于在模板解析前，做一次处理。 - 默认：无处理
 
 - 类型
   - `AppMetadata`

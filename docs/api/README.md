@@ -248,7 +248,7 @@ A criterion for judging whether the business is closely related: <strong>Look at
     
     * excludeAssetFilter - `(assetUrl: string) => boolean` - optional，some special dynamic loaded micro app resources should not be handled by qiankun hijacking
 
-* 返回值 - `MicroApp` - Micro application examples
+* Return - `MicroApp` - Micro application examples
   * mount(): Promise&lt;null&gt;;
   * unmount(): Promise&lt;null&gt;;
   * update(customProps: object): Promise&lt;any&gt;;
@@ -322,7 +322,13 @@ A criterion for judging whether the business is closely related: <strong>Look at
 
 - Parameters
   - apps - `AppMetadata[]` - Required - list of preloaded apps
-  - importEntryOpts - Optional - Load configuration
+  - importEntryOpts - Optional - Load configuration, the default value is an empty object.
+    - When passed as a function type, use it directly as `fetch`
+    - When the object type is passed in, the object attribute is used to parse the `html` template. If not configured, the template has built-in default attributes. For details, please refer to [importHTML function of import-html-entry](https://github.com/kuitos/import-html-entry/blob/master/src/index.js)
+      - fetch - `(url: string) => promise` - Optional, custom fetch method, used to get remote script and style file content. - Default: browser `fetch`
+      - getPublicPath - `(url: string) => publicPath:string` - Optional, used to obtain static resources `publicPath`, and convert external resources in the template as relative paths to absolute paths. - Default: the current `location.href` is `publicPath`.
+      - getDomain - `(url: string) => publicPath:string` - Optional, same as `getPublicPath`. If the `getPublicPath` parameter is not provided, then `getDomain` is used. When neither is provided, the default `getPublicPath` is used. -Default: None.
+      - getTemplate - `(html: string) => html:string` - Optional, used to do a process before template parsing. - Default: no processing
 
 - Type
   - `AppMetadata`
