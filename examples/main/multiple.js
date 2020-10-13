@@ -1,28 +1,16 @@
 import { loadMicroApp } from '../../es';
 
-const app1 = loadMicroApp(
-  { name: 'react15', entry: '//localhost:7102', container: '#react15' },
-  {
-    sandbox: {
-      // strictStyleIsolation: true,
-    },
-  },
-);
+let app;
 
-// for cached scenario
-setTimeout(() => {
-  app1.unmount();
+function mount() {
+  app = loadMicroApp({ name: 'react15', entry: '//localhost:7102', container: '#react15' });
+}
 
-  setTimeout(() => {
-    loadMicroApp({ name: 'react15', entry: '//localhost:7102', container: '#react15' });
-  }, 1000 * 5);
-}, 1000 * 5);
+function unmount() {
+  app.unmount();
+}
 
-const app2 = loadMicroApp(
-  { name: 'vue', entry: '//localhost:7101', container: '#vue' },
-  {
-    sandbox: {
-      // strictStyleIsolation: true,
-    },
-  },
-);
+document.querySelector('#mount').addEventListener('click', mount);
+document.querySelector('#unmount').addEventListener('click', unmount);
+
+loadMicroApp({ name: 'vue', entry: '//localhost:7101', container: '#vue' });

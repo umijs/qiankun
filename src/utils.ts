@@ -65,16 +65,6 @@ export function isBoundedFunction(fn: CallableFunction) {
   return bounded;
 }
 
-/**
- * fastest(at most time) unique array method
- * @see https://jsperf.com/array-filter-unique/30
- */
-export function uniq(array: PropertyKey[]) {
-  return array.filter(function filter(this: string[], element) {
-    return element in this ? false : ((this as any)[element] = true);
-  }, {});
-}
-
 export function getDefaultTplWrapper(id: string, name: string) {
   return (tpl: string) => `<div id="${getWrapperId(id)}" data-name="${name}">${tpl}</div>`;
 }
@@ -120,7 +110,7 @@ export function performanceMark(markName: string) {
 }
 
 export function performanceMeasure(measureName: string, markName: string) {
-  if (supportsUserTiming) {
+  if (supportsUserTiming && performance.getEntriesByName(markName, 'mark').length) {
     performance.measure(measureName, markName);
     performance.clearMarks(markName);
     performance.clearMeasures(measureName);

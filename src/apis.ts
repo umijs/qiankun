@@ -108,6 +108,7 @@ export function start(opts: FrameworkConfiguration = {}) {
   if (sandbox) {
     if (!window.Proxy) {
       console.warn('[qiankun] Miss window.Proxy, proxySandbox will degenerate into snapshotSandbox');
+      frameworkConfiguration.useLooseSandbox = true;
       // 快照沙箱不支持非 singular 模式
       if (!singular) {
         console.error('[qiankun] singular is forced to be true when sandbox enable but proxySandbox unavailable');

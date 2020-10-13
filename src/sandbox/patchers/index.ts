@@ -4,7 +4,7 @@
  */
 
 import { Freer, SandBox, SandBoxType } from '../../interfaces';
-import patchDynamicAppend from './dynamicAppend';
+import { patchNonProxySandbox, patchProxySandbox } from './dynamicAppend';
 import patchHistoryListener from './historyListener';
 import patchInterval from './interval';
 import patchWindowListener from './windowListener';
@@ -15,7 +15,6 @@ export function patchAtMounting(
   appName: string,
   elementGetter: () => HTMLElement | ShadowRoot,
   sandbox: SandBox,
-  singular: boolean,
   scopedCSS: boolean,
   excludeAssetFilter?: Function,
 ): Freer[] {
@@ -23,13 +22,21 @@ export function patchAtMounting(
     () => patchInterval(sandbox.proxy),
     () => patchWindowListener(sandbox.proxy),
     () => patchHistoryListener(),
-    () => patchDynamicAppend(appName, elementGetter, sandbox.proxy, true, singular, scopedCSS, excludeAssetFilter),
   ];
 
   const patchersInSandbox = {
-    [SandBoxType.LegacyProxy]: [...basePatchers],
-    [SandBoxType.Proxy]: [...basePatchers],
-    [SandBoxType.Snapshot]: basePatchers,
+    [SandBoxType.LegacyProxy]: [
+      ...basePatchers,
+      () => patchNonProxySandbox(appName, elementGetter, sandbox.proxy, true, scopedCSS, excludeAssetFilter),
+    ],
+    [SandBoxType.Proxy]: [
+      ...basePatchers,
+      () => patchProxySandbox(appName, elementGetter, sandbox.proxy, true, scopedCSS, excludeAssetFilter),
+    ],
+    [SandBoxType.Snapshot]: [
+      ...basePatchers,
+      () => patchNonProxySandbox(appName, elementGetter, sandbox.proxy, true, scopedCSS, excludeAssetFilter),
+    ],
   };
 
   return patchersInSandbox[sandbox.type]?.map(patch => patch());
@@ -39,18 +46,19 @@ export function patchAtBootstrapping(
   appName: string,
   elementGetter: () => HTMLElement | ShadowRoot,
   sandbox: SandBox,
-  singular: boolean,
   scopedCSS: boolean,
   excludeAssetFilter?: Function,
 ): Freer[] {
-  const basePatchers = [
-    () => patchDynamicAppend(appName, elementGetter, sandbox.proxy, false, singular, scopedCSS, excludeAssetFilter),
-  ];
-
   const patchersInSandbox = {
-    [SandBoxType.LegacyProxy]: basePatchers,
-    [SandBoxType.Proxy]: basePatchers,
-    [SandBoxType.Snapshot]: basePatchers,
+    [SandBoxType.LegacyProxy]: [
+      () => patchNonProxySandbox(appName, elementGetter, sandbox.proxy, false, scopedCSS, excludeAssetFilter),
+    ],
+    [SandBoxType.Proxy]: [
+      () => patchProxySandbox(appName, elementGetter, sandbox.proxy, false, scopedCSS, excludeAssetFilter),
+    ],
+    [SandBoxType.Snapshot]: [
+      () => patchNonProxySandbox(appName, elementGetter, sandbox.proxy, false, scopedCSS, excludeAssetFilter),
+    ],
   };
 
   return patchersInSandbox[sandbox.type]?.map(patch => patch());

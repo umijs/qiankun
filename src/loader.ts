@@ -232,7 +232,13 @@ export async function loadApp<T extends object>(
     performanceMark(markName);
   }
 
-  const { singular = false, sandbox = true, excludeAssetFilter, ...importEntryOpts } = configuration;
+  const {
+    singular = false,
+    sandbox = true,
+    excludeAssetFilter,
+    useLooseSandbox = false,
+    ...importEntryOpts
+  } = configuration;
 
   // get the entry html content and script executor
   const { template, execScripts, assetPublicPath } = await importEntry(entry, importEntryOpts);
@@ -281,8 +287,8 @@ export async function loadApp<T extends object>(
     const sandboxInstance = createSandbox(
       appName,
       appWrapperGetter,
-      Boolean(singular),
       enableScopedCSS,
+      useLooseSandbox,
       excludeAssetFilter,
     );
     // 用沙箱的代理对象作为接下来使用的全局对象
@@ -301,7 +307,7 @@ export async function loadApp<T extends object>(
   await execHooksChain(toArray(beforeLoad), app, global);
 
   // get the lifecycle hooks from module exports
-  const scriptExports: any = await execScripts(global, !singular);
+  const scriptExports: any = await execScripts(global, !useLooseSandbox);
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(scriptExports, appName, global);
 
   const {

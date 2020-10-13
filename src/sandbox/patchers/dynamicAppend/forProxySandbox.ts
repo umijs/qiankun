@@ -1,0 +1,107 @@
+/**
+ * @author Kuitos
+ * @since 2020-10-13
+ */
+
+import { Freer } from '../../../interfaces';
+import { attachDocProxySymbol } from '../../common';
+import {
+  ContainerConfig,
+  isHijackingTag,
+  patchHTMLDynamicAppendPrototypeFunctions,
+  rawHeadAppendChild,
+  rebuildCSSRules,
+  recordStyledComponentsCSSRules,
+} from './common';
+
+const rawDocumentCreateElement = Document.prototype.createElement;
+const proxyAttachContainerConfigMap = new WeakMap<WindowProxy, ContainerConfig>();
+
+const elementAttachContainerConfigMap = new WeakMap<HTMLElement, ContainerConfig>();
+function patchDocumentCreateElement() {
+  if (Document.prototype.createElement === rawDocumentCreateElement) {
+    Document.prototype.createElement = function createElement<K extends keyof HTMLElementTagNameMap>(
+      this: Document,
+      tagName: K,
+      options?: ElementCreationOptions,
+    ): HTMLElement {
+      const element = rawDocumentCreateElement.call(this, tagName, options);
+      if (isHijackingTag(tagName)) {
+        const proxyContainerConfig = proxyAttachContainerConfigMap.get(this[attachDocProxySymbol]);
+        if (proxyContainerConfig) {
+          elementAttachContainerConfigMap.set(element, proxyContainerConfig);
+        }
+      }
+
+      return element;
+    };
+  }
+
+  return function unpatch() {
+    Document.prototype.createElement = rawDocumentCreateElement;
+  };
+}
+
+let bootstrappingPatchCount = 0;
+let mountingPatchCount = 0;
+
+export function patchProxySandbox(
+  appName: string,
+  appWrapperGetter: () => HTMLElement | ShadowRoot,
+  proxy: Window,
+  mounting = true,
+  scopedCSS = false,
+  excludeAssetFilter?: CallableFunction,
+): Freer {
+  let containerConfig = proxyAttachContainerConfigMap.get(proxy);
+  if (!containerConfig) {
+    containerConfig = {
+      appName,
+      proxy,
+      appWrapperGetter,
+      dynamicStyleSheetElements: [],
+      strictGlobal: true,
+      excludeAssetFilter,
+      scopedCSS,
+    };
+    proxyAttachContainerConfigMap.set(proxy, containerConfig);
+  }
+  // all dynamic style sheets are stored in proxy container
+  const { dynamicStyleSheetElements } = containerConfig;
+
+  const unpatchDocumentCreate = patchDocumentCreateElement();
+
+  const unpatchDynamicAppendPrototypeFunctions = patchHTMLDynamicAppendPrototypeFunctions(
+    element => elementAttachContainerConfigMap.has(element),
+    element => elementAttachContainerConfigMap.get(element)!,
+  );
+
+  if (!mounting) bootstrappingPatchCount++;
+  if (mounting) mountingPatchCount++;
+
+  return function free() {
+    // bootstrap patch just called once but its freer will be called multiple times
+    if (!mounting && bootstrappingPatchCount !== 0) bootstrappingPatchCount--;
+    if (mounting) mountingPatchCount--;
+
+    const allMicroAppUnmounted = mountingPatchCount === 0 && bootstrappingPatchCount === 0;
+    // release the overwrite prototype after all the micro apps unmounted
+    if (allMicroAppUnmounted) {
+      unpatchDynamicAppendPrototypeFunctions();
+      unpatchDocumentCreate();
+    }
+
+    proxyAttachContainerConfigMap.delete(proxy);
+
+    recordStyledComponentsCSSRules(dynamicStyleSheetElements);
+
+    // As now the sub app content all wrapped with a special id container,
+    // the dynamic style sheet would be removed automatically while unmoutting
+
+    return function rebuild() {
+      rebuildCSSRules(dynamicStyleSheetElements, stylesheetElement =>
+        rawHeadAppendChild.call(appWrapperGetter(), stylesheetElement),
+      );
+    };
+  };
+}
