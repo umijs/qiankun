@@ -108,10 +108,11 @@ export function start(opts: FrameworkConfiguration = {}) {
   if (sandbox) {
     if (!window.Proxy) {
       console.warn('[qiankun] Miss window.Proxy, proxySandbox will degenerate into snapshotSandbox');
-      // 快照沙箱不支持非 singular 模式
+      frameworkConfiguration.sandbox = typeof sandbox === 'object' ? { ...sandbox, loose: true } : { loose: true };
       if (!singular) {
-        console.error('[qiankun] singular is forced to be true when sandbox enable but proxySandbox unavailable');
-        frameworkConfiguration.singular = true;
+        console.warn(
+          '[qiankun] Setting singular as false may cause unexpected behavior while your browser not support window.Proxy',
+        );
       }
     }
   }

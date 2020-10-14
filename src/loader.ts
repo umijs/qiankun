@@ -244,12 +244,12 @@ export async function loadApp<T extends object>(
     await (prevAppUnmountedDeferred && prevAppUnmountedDeferred.promise);
   }
 
-  const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
-  const enableScopedCSS = isEnableScopedCSS(configuration);
-
   const appContent = getDefaultTplWrapper(appInstanceId, appName)(template);
+
+  const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
   let appWrapperElement: HTMLElement | null = createElement(appContent, strictStyleIsolation);
-  if (appWrapperElement && isEnableScopedCSS(configuration)) {
+  const enableScopedCSS = isEnableScopedCSS(sandbox);
+  if (appWrapperElement && enableScopedCSS) {
     const styleNodes = appWrapperElement.querySelectorAll('style') || [];
     forEach(styleNodes, (stylesheetElement: HTMLStyleElement) => {
       css.process(appWrapperElement!, stylesheetElement, appName);
@@ -277,12 +277,13 @@ export async function loadApp<T extends object>(
   let global = window;
   let mountSandbox = () => Promise.resolve();
   let unmountSandbox = () => Promise.resolve();
+  const useLooseSandbox = typeof sandbox === 'object' && !!sandbox.loose;
   if (sandbox) {
     const sandboxInstance = createSandbox(
       appName,
       appWrapperGetter,
-      Boolean(singular),
       enableScopedCSS,
+      useLooseSandbox,
       excludeAssetFilter,
     );
     // 用沙箱的代理对象作为接下来使用的全局对象
@@ -301,7 +302,7 @@ export async function loadApp<T extends object>(
   await execHooksChain(toArray(beforeLoad), app, global);
 
   // get the lifecycle hooks from module exports
-  const scriptExports: any = await execScripts(global, !singular);
+  const scriptExports: any = await execScripts(global, !useLooseSandbox);
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(scriptExports, appName, global);
 
   const {

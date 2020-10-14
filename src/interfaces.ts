@@ -60,6 +60,10 @@ type QiankunSpecialOpts = {
     | {
         strictStyleIsolation?: boolean;
         experimentalStyleIsolation?: boolean;
+        /**
+         * @deprecated We use strict mode by default
+         */
+        loose?: boolean;
         patchers?: Patcher[];
       };
   /*
