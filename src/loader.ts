@@ -232,13 +232,7 @@ export async function loadApp<T extends object>(
     performanceMark(markName);
   }
 
-  const {
-    singular = false,
-    sandbox = true,
-    excludeAssetFilter,
-    useLooseSandbox = false,
-    ...importEntryOpts
-  } = configuration;
+  const { singular = false, sandbox = true, excludeAssetFilter, ...importEntryOpts } = configuration;
 
   // get the entry html content and script executor
   const { template, execScripts, assetPublicPath } = await importEntry(entry, importEntryOpts);
@@ -250,12 +244,12 @@ export async function loadApp<T extends object>(
     await (prevAppUnmountedDeferred && prevAppUnmountedDeferred.promise);
   }
 
-  const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
-  const enableScopedCSS = isEnableScopedCSS(configuration);
-
   const appContent = getDefaultTplWrapper(appInstanceId, appName)(template);
+
+  const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
   let appWrapperElement: HTMLElement | null = createElement(appContent, strictStyleIsolation);
-  if (appWrapperElement && isEnableScopedCSS(configuration)) {
+  const enableScopedCSS = isEnableScopedCSS(sandbox);
+  if (appWrapperElement && enableScopedCSS) {
     const styleNodes = appWrapperElement.querySelectorAll('style') || [];
     forEach(styleNodes, (stylesheetElement: HTMLStyleElement) => {
       css.process(appWrapperElement!, stylesheetElement, appName);
@@ -283,6 +277,7 @@ export async function loadApp<T extends object>(
   let global = window;
   let mountSandbox = () => Promise.resolve();
   let unmountSandbox = () => Promise.resolve();
+  const useLooseSandbox = typeof sandbox === 'object' && !!sandbox.loose;
   if (sandbox) {
     const sandboxInstance = createSandbox(
       appName,

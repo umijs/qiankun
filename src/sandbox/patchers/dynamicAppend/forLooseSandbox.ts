@@ -21,7 +21,7 @@ let mountingPatchCount = 0;
  * @param scopedCSS
  * @param excludeAssetFilter
  */
-export function patchNonProxySandbox(
+export function patchLooseSandbox(
   appName: string,
   appWrapperGetter: () => HTMLElement | ShadowRoot,
   proxy: Window,

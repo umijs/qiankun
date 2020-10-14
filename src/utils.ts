@@ -117,16 +117,16 @@ export function performanceMeasure(measureName: string, markName: string) {
   }
 }
 
-export function isEnableScopedCSS(opt: FrameworkConfiguration) {
-  if (typeof opt.sandbox !== 'object') {
+export function isEnableScopedCSS(sandbox: FrameworkConfiguration['sandbox']) {
+  if (typeof sandbox !== 'object') {
     return false;
   }
 
-  if (opt.sandbox.strictStyleIsolation) {
+  if (sandbox.strictStyleIsolation) {
     return false;
   }
 
-  return !!opt.sandbox.experimentalStyleIsolation;
+  return !!sandbox.experimentalStyleIsolation;
 }
 
 /**

@@ -4,12 +4,11 @@
  */
 
 import { Freer, SandBox, SandBoxType } from '../../interfaces';
-import { patchNonProxySandbox, patchProxySandbox } from './dynamicAppend';
+import * as css from './css';
+import { patchLooseSandbox, patchStrictSandbox } from './dynamicAppend';
 import patchHistoryListener from './historyListener';
 import patchInterval from './interval';
 import patchWindowListener from './windowListener';
-
-import * as css from './css';
 
 export function patchAtMounting(
   appName: string,
@@ -27,15 +26,15 @@ export function patchAtMounting(
   const patchersInSandbox = {
     [SandBoxType.LegacyProxy]: [
       ...basePatchers,
-      () => patchNonProxySandbox(appName, elementGetter, sandbox.proxy, true, scopedCSS, excludeAssetFilter),
+      () => patchLooseSandbox(appName, elementGetter, sandbox.proxy, true, scopedCSS, excludeAssetFilter),
     ],
     [SandBoxType.Proxy]: [
       ...basePatchers,
-      () => patchProxySandbox(appName, elementGetter, sandbox.proxy, true, scopedCSS, excludeAssetFilter),
+      () => patchStrictSandbox(appName, elementGetter, sandbox.proxy, true, scopedCSS, excludeAssetFilter),
     ],
     [SandBoxType.Snapshot]: [
       ...basePatchers,
-      () => patchNonProxySandbox(appName, elementGetter, sandbox.proxy, true, scopedCSS, excludeAssetFilter),
+      () => patchLooseSandbox(appName, elementGetter, sandbox.proxy, true, scopedCSS, excludeAssetFilter),
     ],
   };
 
@@ -51,13 +50,13 @@ export function patchAtBootstrapping(
 ): Freer[] {
   const patchersInSandbox = {
     [SandBoxType.LegacyProxy]: [
-      () => patchNonProxySandbox(appName, elementGetter, sandbox.proxy, false, scopedCSS, excludeAssetFilter),
+      () => patchLooseSandbox(appName, elementGetter, sandbox.proxy, false, scopedCSS, excludeAssetFilter),
     ],
     [SandBoxType.Proxy]: [
-      () => patchProxySandbox(appName, elementGetter, sandbox.proxy, false, scopedCSS, excludeAssetFilter),
+      () => patchStrictSandbox(appName, elementGetter, sandbox.proxy, false, scopedCSS, excludeAssetFilter),
     ],
     [SandBoxType.Snapshot]: [
-      () => patchNonProxySandbox(appName, elementGetter, sandbox.proxy, false, scopedCSS, excludeAssetFilter),
+      () => patchLooseSandbox(appName, elementGetter, sandbox.proxy, false, scopedCSS, excludeAssetFilter),
     ],
   };
 

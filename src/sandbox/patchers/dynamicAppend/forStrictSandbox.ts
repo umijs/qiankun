@@ -45,7 +45,7 @@ function patchDocumentCreateElement() {
 let bootstrappingPatchCount = 0;
 let mountingPatchCount = 0;
 
-export function patchProxySandbox(
+export function patchStrictSandbox(
   appName: string,
   appWrapperGetter: () => HTMLElement | ShadowRoot,
   proxy: Window,

@@ -60,6 +60,10 @@ type QiankunSpecialOpts = {
     | {
         strictStyleIsolation?: boolean;
         experimentalStyleIsolation?: boolean;
+        /**
+         * @deprecated We use strict mode by default
+         */
+        loose?: boolean;
         patchers?: Patcher[];
       };
   /*
@@ -71,10 +75,6 @@ type QiankunSpecialOpts = {
    * skip some scripts or links intercept, like JSONP
    */
   excludeAssetFilter?: (url: string) => boolean;
-  /**
-   * @deprecated
-   */
-  useLooseSandbox?: boolean;
 };
 export type FrameworkConfiguration = QiankunSpecialOpts & ImportEntryOpts & StartOpts;
 
