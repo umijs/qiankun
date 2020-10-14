@@ -4,9 +4,19 @@
  * @since 2020-3-31
  */
 import { SandBox, SandBoxType } from '../interfaces';
-import { nextTick, uniq } from '../utils';
+import { nextTick } from '../utils';
 import { attachDocProxySymbol, getTargetValue } from './common';
 import { clearSystemJsProps, interceptSystemJsProps } from './noise/systemjs';
+
+/**
+ * fastest(at most time) unique array method
+ * @see https://jsperf.com/array-filter-unique/30
+ */
+function uniq(array: PropertyKey[]) {
+  return array.filter(function filter(this: PropertyKey[], element) {
+    return element in this ? false : ((this as any)[element] = true);
+  }, {});
+}
 
 // zone.js will overwrite Object.defineProperty
 const rawObjectDefineProperty = Object.defineProperty;
