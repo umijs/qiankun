@@ -4,7 +4,7 @@
  */
 
 import { isBoundedFunction } from '../../utils';
-import { attachDocProxySymbol } from '../common';
+import { documentAttachProxyMap } from '../common';
 import ProxySandbox from '../proxySandbox';
 
 beforeAll(() => {
@@ -206,9 +206,9 @@ test('document accessing should modify the attachDocProxySymbol value every time
   const proxy2 = new ProxySandbox('doc-access-test2').proxy;
 
   const d1 = proxy1.document;
-  expect(d1[attachDocProxySymbol]).toBe(proxy1);
+  expect(documentAttachProxyMap.get(d1)).toBe(proxy1);
   const d2 = proxy2.document;
-  expect(d2[attachDocProxySymbol]).toBe(proxy2);
+  expect(documentAttachProxyMap.get(d2)).toBe(proxy2);
 
   expect(d1).toBe(d2);
   expect(d1).toBe(document);
@@ -217,10 +217,10 @@ test('document accessing should modify the attachDocProxySymbol value every time
 test('document attachDocProxySymbol mark should be remove before next tasl', done => {
   const { proxy } = new ProxySandbox('doc-symbol');
   const d1 = proxy.document;
-  expect(d1[attachDocProxySymbol]).toBe(proxy);
+  expect(documentAttachProxyMap.get(d1)).toBe(proxy);
 
   setTimeout(() => {
-    expect(d1[attachDocProxySymbol]).toBeUndefined();
+    expect(documentAttachProxyMap.get(d1)).toBeUndefined();
     done();
   });
 });
