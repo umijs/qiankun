@@ -165,6 +165,7 @@ There are mainly the following solutions:
         .end()
     },
   }
+  ```
 
 3. Use the `file-loader` of `webpack` to inject the full path when packaging it (suitable for projects with large font files and images)
 
@@ -337,6 +338,36 @@ See [Enable Nginx Cors](https://enable-cors.org/server_nginx.html).
 
 Qiankun will isolate stylesheet between your sub apps automatically, you can manually ensure isolation between master and child applications. Such as add a prefix to all classes in the master application, and if you are using [ant-design](https://ant.design), you can follow [this doc](https://ant.design/docs/react/customize-theme) to make it works.
 
+Example for antd：
+
+1. use webpack to modify antd less variable
+
+   ```diff
+   {
+     loader: 'less-loader',
+   +   options: {
+   +     modifyVars: {
+   +       '@ant-prefix': 'yourPrefix',
+   +     },
+   +     javascriptEnabled: true,
+   +   },
+   }
+   ```
+
+2. set antd [ConfigProvider](https://ant.design/components/config-provider-cn/)
+
+   ```jsx
+   import { ConfigProvider } from 'antd';
+   
+   export const MyApp = () => (
+     <ConfigProvider prefixCls="yourPrefix">
+       <App />
+     </ConfigProvider>
+   );
+   ```
+
+Detailed documentation pls check [antd official guide](https://ant.design/docs/react/customize-theme).
+
 ## How to make sub app to run independently?
 
 Use the builtin global variable to identify the environment which provided by qiankun master:
@@ -505,7 +536,7 @@ router.beforeEach((to, from, next) => {
 -Both the main application and the micro application are in the `hash` mode. The main application judges the micro application based on the `hash`, so this issue is not considered.
 
 -The main application judges the micro application based on the `path`
- 
+
   It is not possible to directly use the routing instance of the micro-application to jump between micro-applications in the `history` mode or to jump to the main application page. The reason is that the routing instance jumps of the micro-application are all based on the `base` of the route. There are two ways to jump:
 
   1. `history.pushState()`: [mdn usage introduction](https://developer.mozilla.org/zh-CN/docs/Web/API/History/pushState)
