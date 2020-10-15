@@ -38,7 +38,7 @@ export default class SnapshotSandbox implements SandBox {
   active() {
     // 记录当前快照
     this.windowSnapshot = {} as Window;
-    iter(window, prop => {
+    iter(window, (prop) => {
       this.windowSnapshot[prop] = window[prop];
     });
 
@@ -53,7 +53,7 @@ export default class SnapshotSandbox implements SandBox {
   inactive() {
     this.modifyPropsMap = {};
 
-    iter(window, prop => {
+    iter(window, (prop) => {
       if (window[prop] !== this.windowSnapshot[prop]) {
         // 记录变更，恢复环境
         this.modifyPropsMap[prop] = window[prop];

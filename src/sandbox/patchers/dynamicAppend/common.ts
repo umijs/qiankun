@@ -44,7 +44,7 @@ const styledComponentCSSRulesMap = new WeakMap<HTMLStyleElement, CSSRuleList>();
 const dynamicScriptAttachedCommentMap = new WeakMap<HTMLScriptElement, Comment>();
 
 export function recordStyledComponentsCSSRules(styleElements: HTMLStyleElement[]): void {
-  styleElements.forEach(styleElement => {
+  styleElements.forEach((styleElement) => {
     /*
      With a styled-components generated style element, we need to record its cssRules for restore next re-mounting time.
      We're doing this because the sheet of style element is going to be cleaned automatically by browser after the style element dom removed from document.
@@ -267,11 +267,11 @@ export function patchHTMLDynamicAppendPrototypeFunctions(
   ) {
     HTMLHeadElement.prototype.removeChild = getNewRemoveChild(
       rawHeadRemoveChild,
-      element => containerConfigGetter(element).appWrapperGetter,
+      (element) => containerConfigGetter(element).appWrapperGetter,
     );
     HTMLBodyElement.prototype.removeChild = getNewRemoveChild(
       rawBodyRemoveChild,
-      element => containerConfigGetter(element).appWrapperGetter,
+      (element) => containerConfigGetter(element).appWrapperGetter,
     );
   }
 
@@ -289,7 +289,7 @@ export function rebuildCSSRules(
   styleSheetElements: HTMLStyleElement[],
   reAppendElement: (stylesheetElement: HTMLStyleElement) => void,
 ) {
-  styleSheetElements.forEach(stylesheetElement => {
+  styleSheetElements.forEach((stylesheetElement) => {
     // re-append the dynamic stylesheet to sub-app container
     // Using document.head.appendChild ensures that appendChild invocation can also directly use the HTMLHeadElement.prototype.appendChild method which is overwritten at mounting phase
     reAppendElement(stylesheetElement);

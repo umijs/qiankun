@@ -73,11 +73,11 @@ function createFakeWindow(global: Window) {
    > A property cannot be reported as non-configurable, if it does not exists as an own property of the target object or if it exists as a configurable own property of the target object.
    */
   Object.getOwnPropertyNames(global)
-    .filter(p => {
+    .filter((p) => {
       const descriptor = Object.getOwnPropertyDescriptor(global, p);
       return !descriptor?.configurable;
     })
-    .forEach(p => {
+    .forEach((p) => {
       const descriptor = Object.getOwnPropertyDescriptor(global, p);
       if (descriptor) {
         const hasGetter = Object.prototype.hasOwnProperty.call(descriptor, 'get');
@@ -150,7 +150,7 @@ export default class ProxySandbox implements SandBox {
     }
 
     if (--activeSandboxCount === 0) {
-      variableWhiteList.forEach(p => {
+      variableWhiteList.forEach((p) => {
         if (this.proxy.hasOwnProperty(p)) {
           // @ts-ignore
           delete window[p];

@@ -311,7 +311,7 @@ export async function loadApp<T extends object>(
     offGlobalStateChange,
   }: Record<string, Function> = getMicroAppStateActions(appInstanceId);
 
-  const parcelConfigGetter: ParcelConfigObjectGetter = remountContainer => {
+  const parcelConfigGetter: ParcelConfigObjectGetter = (remountContainer) => {
     const parcelConfig: ParcelConfigObject = {
       name: appInstanceId,
       bootstrap,
@@ -341,7 +341,7 @@ export async function loadApp<T extends object>(
         mountSandbox,
         // exec the chain after rendering to keep the behavior with beforeLoad
         async () => execHooksChain(toArray(beforeMount), app, global),
-        async props => mount({ ...props, container: appWrapperGetter(), setGlobalState, onGlobalStateChange }),
+        async (props) => mount({ ...props, container: appWrapperGetter(), setGlobalState, onGlobalStateChange }),
         // finish loading after app mounted
         async () => render({ element: appWrapperElement, loading: false, remountContainer }, 'mounted'),
         async () => execHooksChain(toArray(afterMount), app, global),
@@ -360,7 +360,7 @@ export async function loadApp<T extends object>(
       ],
       unmount: [
         async () => execHooksChain(toArray(beforeUnmount), app, global),
-        async props => unmount({ ...props, container: appWrapperGetter() }),
+        async (props) => unmount({ ...props, container: appWrapperGetter() }),
         unmountSandbox,
         async () => execHooksChain(toArray(afterUnmount), app, global),
         async () => {

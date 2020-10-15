@@ -13,7 +13,7 @@ export default function patch(global: Window) {
   let intervals: number[] = [];
 
   global.clearInterval = (intervalId: number) => {
-    intervals = intervals.filter(id => id !== intervalId);
+    intervals = intervals.filter((id) => id !== intervalId);
     return rawWindowClearInterval(intervalId);
   };
 
@@ -24,7 +24,7 @@ export default function patch(global: Window) {
   };
 
   return function free() {
-    intervals.forEach(id => global.clearInterval(id));
+    intervals.forEach((id) => global.clearInterval(id));
     global.setInterval = rawWindowInterval;
     global.clearInterval = rawWindowClearInterval;
 

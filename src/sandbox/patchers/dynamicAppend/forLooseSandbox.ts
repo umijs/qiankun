@@ -40,7 +40,7 @@ export function patchLooseSandbox(
       and remove them after the url change triggered and qiankun app is unmouting
       see https://github.com/ReactTraining/history/blob/master/modules/createHashHistory.js#L222-L230
      */
-    () => checkActivityFunctions(window.location).some(name => name === appName),
+    () => checkActivityFunctions(window.location).some((name) => name === appName),
     () => ({
       appName,
       appWrapperGetter,
@@ -70,7 +70,7 @@ export function patchLooseSandbox(
     // the dynamic style sheet would be removed automatically while unmoutting
 
     return function rebuild() {
-      rebuildCSSRules(dynamicStyleSheetElements, stylesheetElement =>
+      rebuildCSSRules(dynamicStyleSheetElements, (stylesheetElement) =>
         // Using document.head.appendChild ensures that appendChild invocation can also directly use the HTMLHeadElement.prototype.appendChild method which is overwritten at mounting phase
         document.head.appendChild.call(appWrapperGetter(), stylesheetElement),
       );
