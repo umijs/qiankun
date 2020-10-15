@@ -68,7 +68,7 @@ export function createSandbox(
 
       // must rebuild the side effects which added at bootstrapping firstly to recovery to nature state
       if (sideEffectsRebuildersAtBootstrapping.length) {
-        sideEffectsRebuildersAtBootstrapping.forEach(rebuild => rebuild());
+        sideEffectsRebuildersAtBootstrapping.forEach((rebuild) => rebuild());
       }
 
       /* ------------------------------------------ 2. 开启全局变量补丁 ------------------------------------------*/
@@ -78,7 +78,7 @@ export function createSandbox(
       /* ------------------------------------------ 3. 重置一些初始化时的副作用 ------------------------------------------*/
       // 存在 rebuilder 则表明有些副作用需要重建
       if (sideEffectsRebuildersAtMounting.length) {
-        sideEffectsRebuildersAtMounting.forEach(rebuild => rebuild());
+        sideEffectsRebuildersAtMounting.forEach((rebuild) => rebuild());
       }
 
       // clean up rebuilders
@@ -91,7 +91,7 @@ export function createSandbox(
     async unmount() {
       // record the rebuilders of window side effects (event listeners or timers)
       // note that the frees of mounting phase are one-off as it will be re-init at next mounting
-      sideEffectsRebuilders = [...bootstrappingFreers, ...mountingFreers].map(free => free());
+      sideEffectsRebuilders = [...bootstrappingFreers, ...mountingFreers].map((free) => free());
 
       sandbox.inactive();
     },

@@ -4,3 +4,6 @@
 /docs
 /es
 /lib
+/coverage
+.cache
+examples

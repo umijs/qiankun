@@ -38,7 +38,7 @@ export function patchAtMounting(
     ],
   };
 
-  return patchersInSandbox[sandbox.type]?.map(patch => patch());
+  return patchersInSandbox[sandbox.type]?.map((patch) => patch());
 }
 
 export function patchAtBootstrapping(
@@ -60,7 +60,7 @@ export function patchAtBootstrapping(
     ],
   };
 
-  return patchersInSandbox[sandbox.type]?.map(patch => patch());
+  return patchersInSandbox[sandbox.type]?.map((patch) => patch());
 }
 
 export { css };

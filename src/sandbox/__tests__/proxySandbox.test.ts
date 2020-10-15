@@ -214,7 +214,7 @@ test('document accessing should modify the attachDocProxySymbol value every time
   expect(d1).toBe(document);
 });
 
-test('document attachDocProxySymbol mark should be remove before next tasl', done => {
+test('document attachDocProxySymbol mark should be remove before next tasl', (done) => {
   const { proxy } = new ProxySandbox('doc-symbol');
   const d1 = proxy.document;
   expect(documentAttachProxyMap.get(d1)).toBe(proxy);
@@ -225,10 +225,10 @@ test('document attachDocProxySymbol mark should be remove before next tasl', don
   });
 });
 
-test('document should work well with MutationObserver', done => {
+test('document should work well with MutationObserver', (done) => {
   const docProxy = new ProxySandbox('doc').proxy;
 
-  const observer = new MutationObserver(mutations => {
+  const observer = new MutationObserver((mutations) => {
     if (mutations[0]) {
       expect(mutations[0].target).toBe(document.body);
       observer.disconnect();
