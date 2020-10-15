@@ -4,7 +4,7 @@
  */
 
 import { Freer } from '../../../interfaces';
-import { attachDocProxySymbol } from '../../common';
+import { documentAttachProxyMap } from '../../common';
 import {
   ContainerConfig,
   isHijackingTag,
@@ -27,9 +27,12 @@ function patchDocumentCreateElement() {
     ): HTMLElement {
       const element = rawDocumentCreateElement.call(this, tagName, options);
       if (isHijackingTag(tagName)) {
-        const proxyContainerConfig = proxyAttachContainerConfigMap.get(this[attachDocProxySymbol]);
-        if (proxyContainerConfig) {
-          elementAttachContainerConfigMap.set(element, proxyContainerConfig);
+        const attachProxy = documentAttachProxyMap.get(this);
+        if (attachProxy) {
+          const proxyContainerConfig = proxyAttachContainerConfigMap.get(attachProxy);
+          if (proxyContainerConfig) {
+            elementAttachContainerConfigMap.set(element, proxyContainerConfig);
+          }
         }
       }
 
