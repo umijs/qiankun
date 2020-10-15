@@ -6,7 +6,6 @@
 import { SandBox, SandBoxType } from '../interfaces';
 import { nextTick } from '../utils';
 import { attachDocProxySymbol, getTargetValue } from './common';
-import { clearSystemJsProps, interceptSystemJsProps } from './noise/systemjs';
 
 /**
  * fastest(at most time) unique array method
@@ -20,6 +19,26 @@ function uniq(array: PropertyKey[]) {
 
 // zone.js will overwrite Object.defineProperty
 const rawObjectDefineProperty = Object.defineProperty;
+
+const variableWhiteListInDev =
+  process.env.NODE_ENV === 'development'
+    ? [
+        // for react hot reload
+        // see https://github.com/facebook/create-react-app/blob/66bf7dfc43350249e2f09d138a20840dae8a0a4a/packages/react-error-overlay/src/index.js#L180
+        '__REACT_ERROR_OVERLAY_GLOBAL_HOOK__',
+      ]
+    : [];
+// who could escape the sandbox
+const variableWhiteList: PropertyKey[] = [
+  // FIXME System.js used a indirect call with eval, which would make it scope escape to global
+  // To make System.js works well, we write it back to global window temporary
+  // see https://github.com/systemjs/systemjs/blob/457f5b7e8af6bd120a279540477552a07d5de086/src/evaluate.js#L106
+  'System',
+
+  // see https://github.com/systemjs/systemjs/blob/457f5b7e8af6bd120a279540477552a07d5de086/src/instantiate.js#L357
+  '__cjsWrapper',
+  ...variableWhiteListInDev,
+];
 
 /*
  variables who are impossible to be overwrite need to be escaped from proxy sandbox for performance reasons
@@ -130,7 +149,14 @@ export default class ProxySandbox implements SandBox {
       ]);
     }
 
-    clearSystemJsProps(this.proxy, --activeSandboxCount === 0);
+    if (--activeSandboxCount === 0) {
+      variableWhiteList.forEach(p => {
+        if (this.proxy.hasOwnProperty(p)) {
+          // @ts-ignore
+          delete window[p];
+        }
+      });
+    }
 
     this.sandboxRunning = false;
   }
@@ -154,7 +180,10 @@ export default class ProxySandbox implements SandBox {
           target[p] = value;
           updatedValueSet.add(p);
 
-          interceptSystemJsProps(p, value);
+          if (variableWhiteList.indexOf(p) !== -1) {
+            // @ts-ignore
+            rawWindow[p] = value;
+          }
 
           return true;
         }
