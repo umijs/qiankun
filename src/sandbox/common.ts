@@ -5,24 +5,18 @@
 
 import { isBoundedFunction, isCallable, isConstructable } from '../utils';
 
-export const attachDocProxySymbol = Symbol('attach-proxy-container');
+export const documentAttachProxyMap = new WeakMap<HTMLDocument, WindowProxy>();
 
-declare global {
-  interface Document {
-    [attachDocProxySymbol]: WindowProxy;
-  }
-}
-
-const boundValueSymbol = Symbol('bound value');
-
+const functionBoundedValueMap = new WeakMap<Function, Function>();
 export function getTargetValue(target: any, value: any): any {
   /*
     仅绑定 isCallable && !isBoundedFunction && !isConstructable 的函数对象，如 window.console、window.atob 这类。目前没有完美的检测方式，这里通过 prototype 中是否还有可枚举的拓展方法的方式来判断
     @warning 这里不要随意替换成别的判断方式，因为可能触发一些 edge case（比如在 lodash.isFunction 在 iframe 上下文中可能由于调用了 top window 对象触发的安全异常）
    */
   if (isCallable(value) && !isBoundedFunction(value) && !isConstructable(value)) {
-    if (value[boundValueSymbol]) {
-      return value[boundValueSymbol];
+    const cachedBoundValue = functionBoundedValueMap.get(value);
+    if (cachedBoundValue) {
+      return cachedBoundValue;
     }
 
     const boundValue = value.bind(target);
@@ -35,7 +29,7 @@ export function getTargetValue(target: any, value: any): any {
 
     // copy prototype, for performance reason, we use in operator to check rather than hasOwnProperty
     if ('prototype' in value) boundValue.prototype = value.prototype;
-    Object.defineProperty(value, boundValueSymbol, { enumerable: false, value: boundValue });
+    functionBoundedValueMap.set(value, boundValue);
     return boundValue;
   }
 

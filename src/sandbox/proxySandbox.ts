@@ -5,7 +5,7 @@
  */
 import { SandBox, SandBoxType } from '../interfaces';
 import { nextTick } from '../utils';
-import { attachDocProxySymbol, getTargetValue } from './common';
+import { documentAttachProxyMap, getTargetValue } from './common';
 
 /**
  * fastest(at most time) unique array method
@@ -224,11 +224,11 @@ export default class ProxySandbox implements SandBox {
 
         // mark the symbol to document while accessing as document.createElement could know is invoked by which sandbox for dynamic append patcher
         if (p === 'document') {
-          document[attachDocProxySymbol] = proxy;
+          documentAttachProxyMap.set(document, proxy);
           // remove the mark in next tick, thus we can identify whether it in micro app or not
           // this approach is just a workaround, it could not cover all the complex scenarios, such as the micro app runs in the same task context with master in som case
           // fixme if you have any other good ideas
-          nextTick(() => delete document[attachDocProxySymbol]);
+          nextTick(() => documentAttachProxyMap.delete(document));
           return document;
         }
 
