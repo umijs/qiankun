@@ -345,12 +345,12 @@ Example for antd：
    ```diff
    {
      loader: 'less-loader',
-   +   options: {
-   +     modifyVars: {
-   +       '@ant-prefix': 'yourPrefix',
-   +     },
-   +     javascriptEnabled: true,
+   + options: {
+   +   modifyVars: {
+   +     '@ant-prefix': 'yourPrefix',
    +   },
+   +   javascriptEnabled: true,
+   + },
    }
    ```
 
