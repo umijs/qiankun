@@ -77,7 +77,7 @@ function prefetch(entry: Entry, opts?: ImportEntryOpts): void {
 
 function prefetchAfterFirstMounted(apps: AppMetadata[], opts?: ImportEntryOpts): void {
   window.addEventListener('single-spa:first-mount', function listener() {
-    const notLoadedApps = apps.filter(app => getAppStatus(app.name) === NOT_LOADED);
+    const notLoadedApps = apps.filter((app) => getAppStatus(app.name) === NOT_LOADED);
 
     if (process.env.NODE_ENV === 'development') {
       const mountedApps = getMountedApps();
@@ -103,7 +103,7 @@ export function doPrefetchStrategy(
   prefetchStrategy: PrefetchStrategy,
   importEntryOpts?: ImportEntryOpts,
 ) {
-  const appsName2Apps = (names: string[]): AppMetadata[] => apps.filter(app => names.includes(app.name));
+  const appsName2Apps = (names: string[]): AppMetadata[] => apps.filter((app) => names.includes(app.name));
 
   if (Array.isArray(prefetchStrategy)) {
     prefetchAfterFirstMounted(appsName2Apps(prefetchStrategy as string[]), importEntryOpts);

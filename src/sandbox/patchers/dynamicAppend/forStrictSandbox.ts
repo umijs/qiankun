@@ -75,8 +75,8 @@ export function patchStrictSandbox(
   const unpatchDocumentCreate = patchDocumentCreateElement();
 
   const unpatchDynamicAppendPrototypeFunctions = patchHTMLDynamicAppendPrototypeFunctions(
-    element => elementAttachContainerConfigMap.has(element),
-    element => elementAttachContainerConfigMap.get(element)!,
+    (element) => elementAttachContainerConfigMap.has(element),
+    (element) => elementAttachContainerConfigMap.get(element)!,
   );
 
   if (!mounting) bootstrappingPatchCount++;
@@ -102,7 +102,7 @@ export function patchStrictSandbox(
     // the dynamic style sheet would be removed automatically while unmoutting
 
     return function rebuild() {
-      rebuildCSSRules(dynamicStyleSheetElements, stylesheetElement =>
+      rebuildCSSRules(dynamicStyleSheetElements, (stylesheetElement) =>
         rawHeadAppendChild.call(appWrapperGetter(), stylesheetElement),
       );
     };

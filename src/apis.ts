@@ -16,11 +16,11 @@ export function registerMicroApps<T extends object = {}>(
   lifeCycles?: FrameworkLifeCycles<T>,
 ) {
   // Each app only needs to be registered once
-  const unregisteredApps = apps.filter(app => !microApps.some(registeredApp => registeredApp.name === app.name));
+  const unregisteredApps = apps.filter((app) => !microApps.some((registeredApp) => registeredApp.name === app.name));
 
   microApps = [...microApps, ...unregisteredApps];
 
-  unregisteredApps.forEach(app => {
+  unregisteredApps.forEach((app) => {
     const { name, activeRule, loader = noop, props, ...appConfig } = app;
 
     registerApplication({

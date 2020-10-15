@@ -41,12 +41,12 @@ export default function patch() {
     if (historyListeners.length) {
       rebuild = () => {
         // 必须使用 window.g_history.listen 的方式重新绑定 listener，从而能保证 rebuild 这部分也能被捕获到，否则在应用卸载后无法正确的移除这部分副作用
-        historyListeners.forEach(listener => (window as any).g_history.listen(listener));
+        historyListeners.forEach((listener) => (window as any).g_history.listen(listener));
       };
     }
 
     // 卸载余下的 listener
-    historyUnListens.forEach(unListen => unListen());
+    historyUnListens.forEach((unListen) => unListen());
 
     // restore
     if ((window as any).g_history && isFunction((window as any).g_history.listen)) {
