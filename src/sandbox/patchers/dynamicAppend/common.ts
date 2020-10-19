@@ -40,8 +40,29 @@ export function isStyledComponentsLike(element: HTMLStyleElement) {
   );
 }
 
+function convertLinkAsStyle(
+  element: HTMLLinkElement,
+  postProcess: (styleElement: HTMLStyleElement) => void,
+  fetchFn = fetch,
+): HTMLStyleElement {
+  const styleElement = document.createElement('style');
+  const { href } = element;
+  // add source link element href
+  styleElement.dataset.qiankunHref = href;
+
+  fetchFn(href)
+    .then((res: any) => res.text())
+    .then((styleContext: string) => {
+      styleElement.appendChild(document.createTextNode(styleContext));
+      postProcess(styleElement);
+    });
+
+  return styleElement;
+}
+
 const styledComponentCSSRulesMap = new WeakMap<HTMLStyleElement, CSSRuleList>();
 const dynamicScriptAttachedCommentMap = new WeakMap<HTMLScriptElement, Comment>();
+const dynamicLinkAttachedInlineStyleMap = new WeakMap<HTMLLinkElement, HTMLStyleElement>();
 
 export function recordStyledComponentsCSSRules(styleElements: HTMLStyleElement[]): void {
   styleElements.forEach((styleElement) => {
@@ -116,7 +137,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
       switch (element.tagName) {
         case LINK_TAG_NAME:
         case STYLE_TAG_NAME: {
-          const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
+          let stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
           const { href } = stylesheetElement as HTMLLinkElement;
           if (excludeAssetFilter && href && excludeAssetFilter(href)) {
             return rawDOMAppendOrInsertBefore.call(this, element, refChild) as T;
@@ -125,7 +146,17 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
           const mountDOM = appWrapperGetter();
 
           if (scopedCSS) {
-            css.process(mountDOM, stylesheetElement, appName);
+            if (element.tagName === LINK_TAG_NAME) {
+              const { fetch } = frameworkConfiguration;
+              stylesheetElement = convertLinkAsStyle(
+                element,
+                (styleElement) => css.process(mountDOM, styleElement, appName),
+                fetch,
+              );
+              dynamicLinkAttachedInlineStyleMap.set(element, stylesheetElement);
+            } else {
+              css.process(mountDOM, stylesheetElement, appName);
+            }
           }
 
           // eslint-disable-next-line no-shadow
@@ -212,17 +243,32 @@ function getNewRemoveChild(
   appWrapperGetterGetter: (element: HTMLElement) => ContainerConfig['appWrapperGetter'],
 ) {
   return function removeChild<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, child: T) {
-    try {
-      const { tagName } = child as any;
-      if (isHijackingTag(tagName)) {
-        const appWrapperGetter = appWrapperGetterGetter(child as any);
+    const { tagName } = child as any;
+    if (!isHijackingTag(tagName)) return headOrBodyRemoveChild.call(this, child) as T;
 
-        // container may had been removed while app unmounting if the removeChild action was async
-        const container = appWrapperGetter();
-        const attachedElement = dynamicScriptAttachedCommentMap.get(child as any) || child;
-        if (container.contains(attachedElement)) {
-          return rawRemoveChild.call(container, attachedElement) as T;
+    try {
+      let attachedElement: Node;
+      switch (tagName) {
+        case LINK_TAG_NAME: {
+          attachedElement = (dynamicLinkAttachedInlineStyleMap.get(child as any) as Node) || child;
+          break;
         }
+
+        case SCRIPT_TAG_NAME: {
+          attachedElement = (dynamicScriptAttachedCommentMap.get(child as any) as Node) || child;
+          break;
+        }
+
+        default: {
+          attachedElement = child;
+        }
+      }
+
+      // container may had been removed while app unmounting if the removeChild action was async
+      const appWrapperGetter = appWrapperGetterGetter(child as any);
+      const container = appWrapperGetter();
+      if (container.contains(attachedElement)) {
+        return rawRemoveChild.call(container, attachedElement) as T;
       }
     } catch (e) {
       console.warn(e);
