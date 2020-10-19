@@ -40,24 +40,24 @@ export function isStyledComponentsLike(element: HTMLStyleElement) {
   );
 }
 
-function convertAndLoadLinkAsInlineStyle(
+function convertLinkAsStyle(
   element: HTMLLinkElement,
-  process: (styleElement: HTMLStyleElement) => void,
+  postProcess: (styleElement: HTMLStyleElement) => void,
   fetchFn = fetch,
 ): HTMLStyleElement {
-  const inlineStyleElement = document.createElement('style');
+  const styleElement = document.createElement('style');
   const { href } = element;
   // add source link element href
-  inlineStyleElement.dataset.qiankunHref = href;
+  styleElement.dataset.qiankunHref = href;
 
   fetchFn(href)
     .then((res: any) => res.text())
     .then((styleContext: string) => {
-      inlineStyleElement.appendChild(document.createTextNode(styleContext));
-      process(inlineStyleElement);
+      styleElement.appendChild(document.createTextNode(styleContext));
+      postProcess(styleElement);
     });
 
-  return inlineStyleElement;
+  return styleElement;
 }
 
 const styledComponentCSSRulesMap = new WeakMap<HTMLStyleElement, CSSRuleList>();
@@ -148,7 +148,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
           if (scopedCSS) {
             if (element.tagName === LINK_TAG_NAME) {
               const { fetch } = frameworkConfiguration;
-              stylesheetElement = convertAndLoadLinkAsInlineStyle(
+              stylesheetElement = convertLinkAsStyle(
                 element,
                 (styleElement) => css.process(mountDOM, styleElement, appName),
                 fetch,
