@@ -22,6 +22,8 @@ const arrayify = <T>(list: CSSRuleList | any[]) => {
   return [].slice.call(list, 0) as T[];
 };
 
+const rawDocumentBodyAppend = document.body.appendChild;
+
 export class ScopedCSS {
   private static ModifiedTag = 'Symbol(style-modified-qiankun)';
 
@@ -31,7 +33,7 @@ export class ScopedCSS {
 
   constructor() {
     const styleNode = document.createElement('style');
-    document.body.appendChild(styleNode);
+    rawDocumentBodyAppend.call(document.body, styleNode);
 
     this.swapNode = styleNode;
     this.sheet = styleNode.sheet!;
@@ -181,7 +183,7 @@ export const process = (
   appWrapper: HTMLElement,
   stylesheetElement: HTMLStyleElement | HTMLLinkElement,
   appName: string,
-) => {
+): void => {
   // lazy singleton pattern
   if (!processor) {
     processor = new ScopedCSS();
