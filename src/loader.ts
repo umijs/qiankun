@@ -84,6 +84,11 @@ function createElement(
   }
 
   if (scopedCSS) {
+    const attr = appElement.getAttribute(css.QiankunCSSRewriteAttr);
+    if (!attr) {
+      appElement.setAttribute(css.QiankunCSSRewriteAttr, appName);
+    }
+
     const styleNodes = appElement.querySelectorAll('style') || [];
     forEach(styleNodes, (stylesheetElement: HTMLStyleElement) => {
       css.process(appElement!, stylesheetElement, appName);
@@ -120,13 +125,6 @@ function getAppWrapperGetter(
       element,
       `[qiankun] Wrapper element for ${appName} with instance ${appInstanceId} is not existed!`,
     );
-
-    if (scopedCSS) {
-      const attr = element!.getAttribute(css.QiankunCSSRewriteAttr);
-      if (!attr) {
-        element!.setAttribute(css.QiankunCSSRewriteAttr, appName);
-      }
-    }
 
     if (strictStyleIsolation) {
       return element!.shadowRoot!;
