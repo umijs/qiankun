@@ -40,6 +40,46 @@ export function isStyledComponentsLike(element: HTMLStyleElement) {
   );
 }
 
+function patchCustomEvent(
+  e: CustomEvent,
+  elementGetter: () => HTMLScriptElement | HTMLLinkElement | null,
+): CustomEvent {
+  Object.defineProperties(e, {
+    srcElement: {
+      get: elementGetter,
+    },
+    target: {
+      get: elementGetter,
+    },
+  });
+
+  return e;
+}
+
+function manualInvokeElementOnLoad(element: HTMLLinkElement | HTMLScriptElement) {
+  // we need to invoke the onload event manually to notify the event listener that the script was completed
+  // here are the two typical ways of dynamic script loading
+  // 1. element.onload callback way, which webpack and loadjs used, see https://github.com/muicss/loadjs/blob/master/src/loadjs.js#L138
+  // 2. addEventListener way, which toast-loader used, see https://github.com/pyrsmk/toast/blob/master/src/Toast.ts#L64
+  const loadEvent = new CustomEvent('load');
+  const patchedEvent = patchCustomEvent(loadEvent, () => element);
+  if (isFunction(element.onload)) {
+    element.onload(patchedEvent);
+  } else {
+    element.dispatchEvent(patchedEvent);
+  }
+}
+
+function manualInvokeElementOnError(element: HTMLLinkElement | HTMLScriptElement) {
+  const errorEvent = new CustomEvent('error');
+  const patchedEvent = patchCustomEvent(errorEvent, () => element);
+  if (isFunction(element.onerror)) {
+    element.onerror(patchedEvent);
+  } else {
+    element.dispatchEvent(patchedEvent);
+  }
+}
+
 function convertLinkAsStyle(
   element: HTMLLinkElement,
   postProcess: (styleElement: HTMLStyleElement) => void,
@@ -55,7 +95,9 @@ function convertLinkAsStyle(
     .then((styleContext: string) => {
       styleElement.appendChild(document.createTextNode(styleContext));
       postProcess(styleElement);
-    });
+      manualInvokeElementOnLoad(element);
+    })
+    .catch(() => manualInvokeElementOnError(element));
 
   return styleElement;
 }
@@ -84,18 +126,6 @@ export function getStyledElementCSSRules(styledElement: HTMLStyleElement): CSSRu
   return styledComponentCSSRulesMap.get(styledElement);
 }
 
-function patchCustomEvent(e: CustomEvent, elementGetter: () => HTMLScriptElement | null): CustomEvent {
-  Object.defineProperties(e, {
-    srcElement: {
-      get: elementGetter,
-    },
-    target: {
-      get: elementGetter,
-    },
-  });
-  return e;
-}
-
 export type ContainerConfig = {
   appName: string;
   proxy: WindowProxy;
@@ -118,7 +148,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
   ) {
     let element = newChild as any;
     const { rawDOMAppendOrInsertBefore, isInvokedByMicroApp, containerConfigGetter } = opts;
-    if (!isInvokedByMicroApp(element)) {
+    if (!isHijackingTag(element.tagName) || !isInvokedByMicroApp(element)) {
       return rawDOMAppendOrInsertBefore.call(this, element, refChild) as T;
     }
 
@@ -146,7 +176,12 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
           const mountDOM = appWrapperGetter();
 
           if (scopedCSS) {
-            if (element.tagName === LINK_TAG_NAME) {
+            // exclude link elements like <link rel="icon" href="favicon.ico">
+            const linkElementUsingStylesheet =
+              element.tagName?.toUpperCase() === LINK_TAG_NAME &&
+              (element as HTMLLinkElement).rel === 'stylesheet' &&
+              (element as HTMLLinkElement).href;
+            if (linkElementUsingStylesheet) {
               const { fetch } = frameworkConfiguration;
               stylesheetElement = convertLinkAsStyle(
                 element,
@@ -189,27 +224,11 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
                 });
               },
               success: () => {
-                // we need to invoke the onload event manually to notify the event listener that the script was completed
-                // here are the two typical ways of dynamic script loading
-                // 1. element.onload callback way, which webpack and loadjs used, see https://github.com/muicss/loadjs/blob/master/src/loadjs.js#L138
-                // 2. addEventListener way, which toast-loader used, see https://github.com/pyrsmk/toast/blob/master/src/Toast.ts#L64
-                const loadEvent = new CustomEvent('load');
-                if (isFunction(element.onload)) {
-                  element.onload(patchCustomEvent(loadEvent, () => element));
-                } else {
-                  element.dispatchEvent(loadEvent);
-                }
-
+                manualInvokeElementOnLoad(element);
                 element = null;
               },
               error: () => {
-                const errorEvent = new CustomEvent('error');
-                if (isFunction(element.onerror)) {
-                  element.onerror(patchCustomEvent(errorEvent, () => element));
-                } else {
-                  element.dispatchEvent(errorEvent);
-                }
-
+                manualInvokeElementOnError(element);
                 element = null;
               },
             });
@@ -219,11 +238,8 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
             return rawDOMAppendOrInsertBefore.call(mountDOM, dynamicScriptCommentElement, referenceNode);
           }
 
-          execScripts(null, [`<script>${text}</script>`], proxy, {
-            strictGlobal,
-            success: element.onload,
-            error: element.onerror,
-          });
+          // inline script never trigger the onload and onerror event
+          execScripts(null, [`<script>${text}</script>`], proxy, { strictGlobal });
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
           dynamicScriptAttachedCommentMap.set(element, dynamicInlineScriptCommentElement);
           return rawDOMAppendOrInsertBefore.call(mountDOM, dynamicInlineScriptCommentElement, referenceNode);
