@@ -53,7 +53,12 @@ async function validateSingularMode<T extends object>(
 
 // @ts-ignore
 const supportShadowDOM = document.head.attachShadow || document.head.createShadowRoot;
-function createElement(appContent: string, strictStyleIsolation: boolean): HTMLElement {
+function createElement(
+  appContent: string,
+  strictStyleIsolation: boolean,
+  scopedCSS: boolean,
+  appName: string,
+): HTMLElement {
   const containerElement = document.createElement('div');
   containerElement.innerHTML = appContent;
   // appContent always wrapped with a singular div
@@ -78,6 +83,18 @@ function createElement(appContent: string, strictStyleIsolation: boolean): HTMLE
     }
   }
 
+  if (scopedCSS) {
+    const attr = appElement.getAttribute(css.QiankunCSSRewriteAttr);
+    if (!attr) {
+      appElement.setAttribute(css.QiankunCSSRewriteAttr, appName);
+    }
+
+    const styleNodes = appElement.querySelectorAll('style') || [];
+    forEach(styleNodes, (stylesheetElement: HTMLStyleElement) => {
+      css.process(appElement!, stylesheetElement, appName);
+    });
+  }
+
   return appElement;
 }
 
@@ -87,13 +104,13 @@ function getAppWrapperGetter(
   appInstanceId: string,
   useLegacyRender: boolean,
   strictStyleIsolation: boolean,
-  enableScopedCSS: boolean,
+  scopedCSS: boolean,
   elementGetter: () => HTMLElement | null,
 ) {
   return () => {
     if (useLegacyRender) {
       if (strictStyleIsolation) throw new Error('[qiankun]: strictStyleIsolation can not be used with legacy render!');
-      if (enableScopedCSS) throw new Error('[qiankun]: experimentalStyleIsolation can not be used with legacy render!');
+      if (scopedCSS) throw new Error('[qiankun]: experimentalStyleIsolation can not be used with legacy render!');
 
       const appWrapper = document.getElementById(getWrapperId(appInstanceId));
       assertElementExist(
@@ -108,13 +125,6 @@ function getAppWrapperGetter(
       element,
       `[qiankun] Wrapper element for ${appName} with instance ${appInstanceId} is not existed!`,
     );
-
-    if (enableScopedCSS) {
-      const attr = element!.getAttribute(css.QiankunCSSRewriteAttr);
-      if (!attr) {
-        element!.setAttribute(css.QiankunCSSRewriteAttr, appName);
-      }
-    }
 
     if (strictStyleIsolation) {
       return element!.shadowRoot!;
@@ -247,14 +257,8 @@ export async function loadApp<T extends object>(
   const appContent = getDefaultTplWrapper(appInstanceId, appName)(template);
 
   const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
-  let appWrapperElement: HTMLElement | null = createElement(appContent, strictStyleIsolation);
-  const enableScopedCSS = isEnableScopedCSS(sandbox);
-  if (appWrapperElement && enableScopedCSS) {
-    const styleNodes = appWrapperElement.querySelectorAll('style') || [];
-    forEach(styleNodes, (stylesheetElement: HTMLStyleElement) => {
-      css.process(appWrapperElement!, stylesheetElement, appName);
-    });
-  }
+  const scopedCSS = isEnableScopedCSS(sandbox);
+  let appWrapperElement: HTMLElement | null = createElement(appContent, strictStyleIsolation, scopedCSS, appName);
 
   const container = 'container' in app ? app.container : undefined;
   const legacyRender = 'render' in app ? app.render : undefined;
@@ -270,7 +274,7 @@ export async function loadApp<T extends object>(
     appInstanceId,
     !!legacyRender,
     strictStyleIsolation,
-    enableScopedCSS,
+    scopedCSS,
     () => appWrapperElement,
   );
 
@@ -279,13 +283,7 @@ export async function loadApp<T extends object>(
   let unmountSandbox = () => Promise.resolve();
   const useLooseSandbox = typeof sandbox === 'object' && !!sandbox.loose;
   if (sandbox) {
-    const sandboxInstance = createSandbox(
-      appName,
-      appWrapperGetter,
-      enableScopedCSS,
-      useLooseSandbox,
-      excludeAssetFilter,
-    );
+    const sandboxInstance = createSandbox(appName, appWrapperGetter, scopedCSS, useLooseSandbox, excludeAssetFilter);
     // 用沙箱的代理对象作为接下来使用的全局对象
     global = sandboxInstance.proxy as typeof window;
     mountSandbox = sandboxInstance.mount;
@@ -335,7 +333,7 @@ export async function loadApp<T extends object>(
         // 添加 mount hook, 确保每次应用加载前容器 dom 结构已经设置完毕
         async () => {
           // element would be destroyed after unmounted, we need to recreate it if it not exist
-          appWrapperElement = appWrapperElement || createElement(appContent, strictStyleIsolation);
+          appWrapperElement = appWrapperElement || createElement(appContent, strictStyleIsolation, scopedCSS, appName);
           render({ element: appWrapperElement, loading: true, remountContainer }, 'mounting');
         },
         mountSandbox,
