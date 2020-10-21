@@ -157,7 +157,6 @@ toc: menu
 
       注意:
       @keyframes, @font-face, @import, @page 将不被支持 (i.e. 不会被改写)
-      P.S: 在目前的阶段，该功能还不支持动态的、使用 `<link />`标签来插入外联的样式，但考虑在未来支持这部分场景。
 
     - singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - 可选，是否为单实例场景，单实例指的是同一时间只会渲染一个微应用。默认为 `true`。
 
@@ -261,8 +260,6 @@ toc: menu
 
       注意事项:
       目前 @keyframes, @font-face, @import, @page 等规则不会支持 (i.e. 不会被改写)
-
-      在目前阶段, 我们还不支持以动态的外联形式 (`<link />`) 形式加入的样式，但我们考虑将来支持这一部分。
 
     * singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - 可选，是否为单实例场景，单实例指的是同一时间只会渲染一个微应用。默认为 `false`。
 
