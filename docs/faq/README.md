@@ -368,6 +368,11 @@ Example for antd：
 
 Detailed documentation pls check [antd official guide](https://ant.design/docs/react/customize-theme).
 
+<Alert type="info">
+In the latest version, you can also try to config ` {scope: {experimentalStyleIsolation: true}} ` to open the runtime scoped CSS feature, thus solving the problem of the style of the isolation between applications.
+PS: Currently, this feature is still in the experimental stage, if encounter some problems please submit an [issue](https://github.com/umijs/qiankun/issues/new?assignees=&labels=&template=bug_report.md&title=) to help us improve together.
+</Alert>
+
 ## How to make sub app to run independently?
 
 Use the builtin global variable to identify the environment which provided by qiankun master:
