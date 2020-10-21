@@ -140,7 +140,7 @@ By linking the micro-application to some url rules, the function of automaticall
 
       And qiankun offered an experimental way to support css isolation, when experimentalStyleIsolation is set to true, qiankun will limit their scope of influence by add selector constraint, thereforce styles of sub-app will like following case:
 
-      ```javascript
+      ```css
       // if app name is react16
       .app-main {
         font-size: 14px;
@@ -153,7 +153,6 @@ By linking the micro-application to some url rules, the function of automaticall
 
       notice:
       @keyframes, @font-face, @import, @page are not supported (i.e. will not be rewritten)
-      P.S: In current stage, we're not support the case: Inserting external styles by `<link>` yet, we're consider add this part in the future.
 
     - singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - Optional, whether it is a singleton scenario, singleton means just rendered one micro app at one time. default is `true`.
 
@@ -234,20 +233,36 @@ A criterion for judging whether the business is closely related: <strong>Look at
 
   * configuration - `Configuration` - Optional, configuration information of the micro application
 
-    * sandbox - `boolean` | `{ strictStyleIsolation?: boolean }` - Optional, whether to enable the sandbox, the default is `true`.
+    * sandbox - `boolean` | `{ strictStyleIsolation?: boolean, experimentalStyleIsolation?: boolean }` - optional, whether to open the js sandbox, default is `true`.
 
-      When configured as `{strictStyleIsolation: true}`, it means that strict style isolation mode is enabled. In this mode, qiankun will wrap a [shadow dom](https://developer.mozilla.org/zh-CN/docs/Web/Web_Components/Using_shadow_DOM) node for each micro-application container, so as to ensure that the style of the micro application will not affect the whole world.
+      When configured as `{strictStyleIsolation: true}`, qiankun will convert the container dom of each application to a [shadow dom](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_shadow_DOM), to ensure that the style of the application will not leak to the global.
 
+      And qiankun offered an experimental way to support css isolation, when experimentalStyleIsolation is set to true, qiankun will limit their scope of influence by add selector constraint, thereforce styles of sub-app will like following case:
+
+      ```css
+      // if app name is react16
+      .app-main {
+        font-size: 14px;
+      }
+      
+      div[data-qiankun-react16] .app-main {
+        font-size: 14px;
+      }
+      ```
+      
+      notice:
+      @keyframes, @font-face, @import, @page are not supported (i.e. will not be rewritten)
+    
     * singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - Optional, whether it is a singleton scenario, singleton means just rendered one micro app at one time. Default is `false`.
-
+    
     * fetch - `Function` - Optional, custom fetch method.
-
+    
     * getPublicPath - `(url: string) => string` - Optional，The parameter is the entry value of the micro application.
-
+    
     * getTemplate - `(tpl: string) => string` - Optional
     
     * excludeAssetFilter - `(assetUrl: string) => boolean` - optional，some special dynamic loaded micro app resources should not be handled by qiankun hijacking
-
+  
 * 返回值 - `MicroApp` - Micro application examples
   * mount(): Promise&lt;null&gt;;
   * unmount(): Promise&lt;null&gt;;

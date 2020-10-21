@@ -42,7 +42,7 @@ Sub applications do not need to install any additional dependencies to integrate
 
 The child application needs to export `bootstrap`,`mount`, `unmount` three lifecycle hooks in its own entry js (usually the entry js of webpack you configure) for the main application to call at the appropriate time.
 
-```ts
+```jsx
 /**
  * The bootstrap will only be called once when the child application is initialized.
  * The next time the child application re-enters, the mount hook will be called directly, and bootstrap will not be triggered repeatedly.
@@ -58,16 +58,22 @@ export async function bootstrap() {
  * usually we trigger the application's rendering method here.
  */
 export async function mount(props) {
-  console.log(props);
-  ReactDOM.render(<App />, document.getElementById('react15Root'));
+  ReactDOM.render(<App />, props.container ? props.container.querySelector('#root') : document.getElementById('root'));
 }
 
 /**
  * Methods that are called each time the application is switched/unloaded,
  * usually in this case we uninstall the application instance of the subapplication.
  */
-export async function unmount() {
-  ReactDOM.unmountComponentAtNode(document.getElementById('react15Root'));
+export async function unmount(props) {
+  ReactDOM.unmountComponentAtNode(props.container ? props.container.querySelector('#root') : document.getElementById('root'));
+}
+
+/**
+ * Optional lifecycle，just available with loadMicroApp way
+ */
+export async function update(props) {
+  console.log('update props', props);
 }
 ```
 
