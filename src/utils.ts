@@ -136,7 +136,7 @@ export function isEnableScopedCSS(sandbox: FrameworkConfiguration['sandbox']) {
  */
 export function getXPathForElement(el: Node, document: Document): string | void {
   // not support that if el not existed in document yet(such as it not append to document before it mounted)
-  if (!document.contains(el)) {
+  if (!document.body.contains(el)) {
     return undefined;
   }
 
