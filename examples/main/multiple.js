@@ -3,7 +3,10 @@ import { loadMicroApp } from '../../es';
 let app;
 
 function mount() {
-  app = loadMicroApp({ name: 'react15', entry: '//localhost:7102', container: '#react15' });
+  app = loadMicroApp(
+    { name: 'react15', entry: '//localhost:7102', container: '#react15' },
+    { sandbox: { experimentalStyleIsolation: true } },
+  );
 }
 
 function unmount() {

@@ -353,7 +353,6 @@ export function rebuildCSSRules(
 ) {
   styleSheetElements.forEach((stylesheetElement) => {
     // re-append the dynamic stylesheet to sub-app container
-    // Using document.head.appendChild ensures that appendChild invocation can also directly use the HTMLHeadElement.prototype.appendChild method which is overwritten at mounting phase
     reAppendElement(stylesheetElement);
 
     /*
