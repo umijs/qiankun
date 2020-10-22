@@ -54,6 +54,10 @@ export type PrefetchStrategy =
   | ((apps: AppMetadata[]) => { criticalAppNames: string[]; minorAppsName: string[] });
 
 type QiankunSpecialOpts = {
+  /**
+   * @deprecated internal api, don't used it as normal, might be removed after next version
+   */
+  $$cacheLifecycleByAppName?: boolean;
   prefetch?: PrefetchStrategy;
   sandbox?:
     | boolean
