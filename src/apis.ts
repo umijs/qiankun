@@ -44,7 +44,7 @@ export function registerMicroApps<T extends object = {}>(
   });
 }
 
-const appConfigPormiseGetterMap = new Map<string, Promise<ParcelConfigObjectGetter>>();
+const appConfigPromiseGetterMap = new Map<string, Promise<ParcelConfigObjectGetter>>();
 
 export function loadMicroApp<T extends object = {}>(
   app: LoadableApp<T>,
@@ -62,33 +62,46 @@ export function loadMicroApp<T extends object = {}>(
     return undefined;
   };
 
+  const wrapParcelConfigForRemount = (config: ParcelConfigObject): ParcelConfigObject => {
+    return {
+      ...config,
+      // empty bootstrap hook which should not run twice while it calling from cached micro app
+      bootstrap: () => Promise.resolve(),
+    };
+  };
+
   /**
    * using name + container xpath as the micro app instance id,
    * it means if you rendering a micro app to a dom which have been rendered before,
    * the micro app would not load and evaluate its lifecycles again
    */
   const memorizedLoadingFn = async (): Promise<ParcelConfigObject> => {
+    const { $$cacheLifecycleByAppName } = configuration ?? frameworkConfiguration;
     const container = 'container' in app ? app.container : undefined;
+
     if (container) {
+      // using appName as cache for internal experimental scenario
+      if ($$cacheLifecycleByAppName) {
+        const parcelConfigGetterPromise = appConfigPromiseGetterMap.get(name);
+        if (parcelConfigGetterPromise) return wrapParcelConfigForRemount((await parcelConfigGetterPromise)(container));
+      }
+
       const xpath = getContainerXpath(container);
       if (xpath) {
-        const parcelConfigGetterPromise = appConfigPormiseGetterMap.get(`${name}-${xpath}`);
-        if (parcelConfigGetterPromise) {
-          const parcelConfig = (await parcelConfigGetterPromise)(container);
-          return {
-            ...parcelConfig,
-            // empty bootstrap hook which should not run twice while it calling from cached micro app
-            bootstrap: () => Promise.resolve(),
-          };
-        }
+        const parcelConfigGetterPromise = appConfigPromiseGetterMap.get(`${name}-${xpath}`);
+        if (parcelConfigGetterPromise) return wrapParcelConfigForRemount((await parcelConfigGetterPromise)(container));
       }
     }
 
     const parcelConfigObjectGetterPromise = loadApp(app, configuration ?? frameworkConfiguration, lifeCycles);
 
     if (container) {
-      const xpath = getContainerXpath(container);
-      if (xpath) appConfigPormiseGetterMap.set(`${name}-${xpath}`, parcelConfigObjectGetterPromise);
+      if ($$cacheLifecycleByAppName) {
+        appConfigPromiseGetterMap.set(name, parcelConfigObjectGetterPromise);
+      } else {
+        const xpath = getContainerXpath(container);
+        if (xpath) appConfigPromiseGetterMap.set(`${name}-${xpath}`, parcelConfigObjectGetterPromise);
+      }
     }
 
     return (await parcelConfigObjectGetterPromise)(container);
