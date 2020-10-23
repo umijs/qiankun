@@ -137,7 +137,7 @@ function getAppWrapperGetter(
 const rawAppendChild = HTMLElement.prototype.appendChild;
 const rawRemoveChild = HTMLElement.prototype.removeChild;
 type ElementRender = (
-  props: { element: HTMLElement | null; loading: boolean; remountContainer?: string | HTMLElement },
+  props: { element: HTMLElement | null; loading: boolean; container?: string | HTMLElement },
   phase: 'loading' | 'mounting' | 'mounted' | 'unmounted',
 ) => any;
 
@@ -146,16 +146,10 @@ type ElementRender = (
  * If the legacy render function is provide, used as it, otherwise we will insert the app element to target container by qiankun
  * @param appName
  * @param appContent
- * @param container
  * @param legacyRender
  */
-function getRender(
-  appName: string,
-  appContent: string,
-  container?: string | HTMLElement,
-  legacyRender?: HTMLContentRender,
-) {
-  const render: ElementRender = ({ element, loading, remountContainer }, phase) => {
+function getRender(appName: string, appContent: string, legacyRender?: HTMLContentRender) {
+  const render: ElementRender = ({ element, loading, container }, phase) => {
     if (legacyRender) {
       if (process.env.NODE_ENV === 'development') {
         console.warn(
@@ -166,7 +160,7 @@ function getRender(
       return legacyRender({ loading, appContent: element ? appContent : '' });
     }
 
-    const containerElement = getContainer(remountContainer || container!);
+    const containerElement = getContainer(container!);
 
     // The container might have be removed after micro app unmounted.
     // Such as the micro app unmount lifecycle called by a react componentWillUnmount lifecycle, after micro app unmounted, the react component might also be removed
@@ -258,24 +252,29 @@ export async function loadApp<T extends object>(
 
   const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
   const scopedCSS = isEnableScopedCSS(sandbox);
-  let appWrapperElement: HTMLElement | null = createElement(appContent, strictStyleIsolation, scopedCSS, appName);
+  const initialAppWrapperElement: HTMLElement | null = createElement(
+    appContent,
+    strictStyleIsolation,
+    scopedCSS,
+    appName,
+  );
 
-  const container = 'container' in app ? app.container : undefined;
+  const initialContainer = 'container' in app ? app.container : undefined;
   const legacyRender = 'render' in app ? app.render : undefined;
 
-  const render = getRender(appName, appContent, container, legacyRender);
+  const render = getRender(appName, appContent, legacyRender);
 
   // 第一次加载设置应用可见区域 dom 结构
   // 确保每次应用加载前容器 dom 结构已经设置完毕
-  render({ element: appWrapperElement, loading: true }, 'loading');
+  render({ element: initialAppWrapperElement, loading: true, container: initialContainer }, 'loading');
 
-  const appWrapperGetter = getAppWrapperGetter(
+  const initialAppWrapperGetter = getAppWrapperGetter(
     appName,
     appInstanceId,
     !!legacyRender,
     strictStyleIsolation,
     scopedCSS,
-    () => appWrapperElement,
+    () => initialAppWrapperElement,
   );
 
   let global = window;
@@ -283,7 +282,14 @@ export async function loadApp<T extends object>(
   let unmountSandbox = () => Promise.resolve();
   const useLooseSandbox = typeof sandbox === 'object' && !!sandbox.loose;
   if (sandbox) {
-    const sandboxInstance = createSandbox(appName, appWrapperGetter, scopedCSS, useLooseSandbox, excludeAssetFilter);
+    const sandboxInstance = createSandbox(
+      appName,
+      // FIXME should use a strict sandbox logic while remount, see https://github.com/umijs/qiankun/issues/518
+      initialAppWrapperGetter,
+      scopedCSS,
+      useLooseSandbox,
+      excludeAssetFilter,
+    );
     // 用沙箱的代理对象作为接下来使用的全局对象
     global = sandboxInstance.proxy as typeof window;
     mountSandbox = sandboxInstance.mount;
@@ -309,7 +315,17 @@ export async function loadApp<T extends object>(
     offGlobalStateChange,
   }: Record<string, Function> = getMicroAppStateActions(appInstanceId);
 
-  const parcelConfigGetter: ParcelConfigObjectGetter = (remountContainer) => {
+  const parcelConfigGetter: ParcelConfigObjectGetter = (remountContainer = initialContainer) => {
+    let appWrapperElement: HTMLElement | null = initialAppWrapperElement;
+    const appWrapperGetter = getAppWrapperGetter(
+      appName,
+      appInstanceId,
+      !!legacyRender,
+      strictStyleIsolation,
+      scopedCSS,
+      () => appWrapperElement,
+    );
+
     const parcelConfig: ParcelConfigObject = {
       name: appInstanceId,
       bootstrap,
@@ -332,16 +348,21 @@ export async function loadApp<T extends object>(
         },
         // 添加 mount hook, 确保每次应用加载前容器 dom 结构已经设置完毕
         async () => {
-          // element would be destroyed after unmounted, we need to recreate it if it not exist
-          appWrapperElement = appWrapperElement || createElement(appContent, strictStyleIsolation, scopedCSS, appName);
-          render({ element: appWrapperElement, loading: true, remountContainer }, 'mounting');
+          const useNewContainer = remountContainer !== initialContainer;
+          if (useNewContainer || !appWrapperElement) {
+            // element will be destroyed after unmounted, we need to recreate it if it not exist
+            // or we try to remount into a new container
+            appWrapperElement = createElement(appContent, strictStyleIsolation, scopedCSS, appName);
+          }
+
+          render({ element: appWrapperElement, loading: true, container: remountContainer }, 'mounting');
         },
         mountSandbox,
         // exec the chain after rendering to keep the behavior with beforeLoad
         async () => execHooksChain(toArray(beforeMount), app, global),
         async (props) => mount({ ...props, container: appWrapperGetter(), setGlobalState, onGlobalStateChange }),
         // finish loading after app mounted
-        async () => render({ element: appWrapperElement, loading: false, remountContainer }, 'mounted'),
+        async () => render({ element: appWrapperElement, loading: false, container: remountContainer }, 'mounted'),
         async () => execHooksChain(toArray(afterMount), app, global),
         // initialize the unmount defer after app mounted and resolve the defer after it unmounted
         async () => {
@@ -362,7 +383,7 @@ export async function loadApp<T extends object>(
         unmountSandbox,
         async () => execHooksChain(toArray(afterUnmount), app, global),
         async () => {
-          render({ element: null, loading: false, remountContainer }, 'unmounted');
+          render({ element: null, loading: false, container: remountContainer }, 'unmounted');
           offGlobalStateChange(appInstanceId);
           // for gc
           appWrapperElement = null;
