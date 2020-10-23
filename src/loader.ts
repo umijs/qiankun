@@ -252,7 +252,7 @@ export async function loadApp<T extends object>(
 
   const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
   const scopedCSS = isEnableScopedCSS(sandbox);
-  const initialAppWrapperElement: HTMLElement | null = createElement(
+  let initialAppWrapperElement: HTMLElement | null = createElement(
     appContent,
     strictStyleIsolation,
     scopedCSS,
@@ -315,6 +315,9 @@ export async function loadApp<T extends object>(
     offGlobalStateChange,
   }: Record<string, Function> = getMicroAppStateActions(appInstanceId);
 
+  // FIXME temporary way
+  const syncAppWrapperElement2Sandbox = (element: HTMLElement | null) => (initialAppWrapperElement = element);
+
   const parcelConfigGetter: ParcelConfigObjectGetter = (remountContainer = initialContainer) => {
     let appWrapperElement: HTMLElement | null = initialAppWrapperElement;
     const appWrapperGetter = getAppWrapperGetter(
@@ -353,6 +356,7 @@ export async function loadApp<T extends object>(
             // element will be destroyed after unmounted, we need to recreate it if it not exist
             // or we try to remount into a new container
             appWrapperElement = createElement(appContent, strictStyleIsolation, scopedCSS, appName);
+            syncAppWrapperElement2Sandbox(appWrapperElement);
           }
 
           render({ element: appWrapperElement, loading: true, container: remountContainer }, 'mounting');
@@ -387,6 +391,7 @@ export async function loadApp<T extends object>(
           offGlobalStateChange(appInstanceId);
           // for gc
           appWrapperElement = null;
+          syncAppWrapperElement2Sandbox(appWrapperElement);
         },
         async () => {
           if ((await validateSingularMode(singular, app)) && prevAppUnmountedDeferred) {
