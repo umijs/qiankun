@@ -58,6 +58,8 @@ registerMicroApps(
       container: '#subapp-viewport',
       loader,
       activeRule: '/purehtml',
+      // 需要重新load | eval
+      reload: true
     },
     {
       name: 'vue3',

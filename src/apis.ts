@@ -73,13 +73,14 @@ export function loadMicroApp<T extends object = {}>(
   /**
    * using name + container xpath as the micro app instance id,
    * it means if you rendering a micro app to a dom which have been rendered before,
-   * the micro app would not load and evaluate its lifecycles again
+   * when reload is false, the micro app would not load and evaluate its lifecycles again
    */
   const memorizedLoadingFn = async (): Promise<ParcelConfigObject> => {
     const { $$cacheLifecycleByAppName } = configuration ?? frameworkConfiguration;
+    const { reload } = app;
     const container = 'container' in app ? app.container : undefined;
 
-    if (container) {
+    if (container && !reload) {
       // using appName as cache for internal experimental scenario
       if ($$cacheLifecycleByAppName) {
         const parcelConfigGetterPromise = appConfigPromiseGetterMap.get(name);

@@ -6,12 +6,29 @@
   <title>Purehtml Example</title>
   <script src="//cdn.bootcss.com/jquery/3.4.1/jquery.min.js">
   </script>
+  <script src="//cdn.bootcdn.net/ajax/libs/vue/2.6.12/vue.min.js">
+  </script>
 </head>
 <body>
   <div style="display: flex; justify-content: center; align-items: center; height: 200px;">
     Purehtml Example
   </div>
   <div id="purehtml-container" style="text-align:center"></div>
+  <div id="root">
+    <toolbar></toolbar>
+  </div>
   <script src="//localhost:7104/entry.js" entry></script>
+  <script>
+    // 当使用outHtml做为模板时
+    new Vue({
+      components: {
+        toolbar: {
+          render: function(h){
+            return h('div', {}, ['toolbar'])
+          }
+        }
+      }
+    }).$mount('#root')
+  </script>
 </body>
 </html>

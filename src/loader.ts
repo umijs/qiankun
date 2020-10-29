@@ -5,7 +5,7 @@
 
 import { importEntry } from 'import-html-entry';
 import { concat, forEach, mergeWith } from 'lodash';
-import { LifeCycles, ParcelConfigObject } from 'single-spa';
+import { LifeCycles, ParcelConfigObject, unloadApplication } from 'single-spa';
 import getAddOns from './addons';
 import { getMicroAppStateActions } from './globalState';
 import { FrameworkConfiguration, FrameworkLifeCycles, HTMLContentRender, LifeCycleFn, LoadableApp } from './interfaces';
@@ -397,6 +397,9 @@ export async function loadApp<T extends object>(
           if ((await validateSingularMode(singular, app)) && prevAppUnmountedDeferred) {
             prevAppUnmountedDeferred.resolve();
           }
+        },
+        async () => {
+          if (app.reload) unloadApplication(app.name, { waitForUnmount: true });
         },
       ],
     };

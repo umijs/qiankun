@@ -27,6 +27,8 @@ export type AppMetadata = {
   name: string;
   // app entry
   entry: Entry;
+  // app reload
+  reload: boolean
 };
 
 // just for manual loaded apps, in single-spa it called parcel
