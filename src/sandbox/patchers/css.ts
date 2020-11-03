@@ -22,7 +22,7 @@ const arrayify = <T>(list: CSSRuleList | any[]) => {
   return [].slice.call(list, 0) as T[];
 };
 
-const rawDocumentBodyAppend = document.body.appendChild;
+const rawDocumentBodyAppend = HTMLBodyElement.prototype.appendChild;
 
 export class ScopedCSS {
   private static ModifiedTag = 'Symbol(style-modified-qiankun)';
