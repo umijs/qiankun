@@ -25,9 +25,12 @@ function patchDocumentCreateElement() {
       tagName: K,
       options?: ElementCreationOptions,
     ): HTMLElement {
+      // 这里必须使用this，因为原生的createElement方法调用上下文必须是原始的document对象，否则会出现`Uncaught TypeError: Illegal invocation`
       const element = rawDocumentCreateElement.call(this, tagName, options);
       if (isHijackingTag(tagName)) {
-        const attachProxy = documentAttachProxyMap.get(this);
+        // 这里使用document来获取比this更加健壮，因为之前set的时候是传入的document：
+        // 因为document不一定是原生的document，这种情况出现在qiankun本身就在另一个沙箱下运行的情况，而那个沙箱可能连document都重写了。
+        const attachProxy = documentAttachProxyMap.get(document);
         if (attachProxy) {
           const proxyContainerConfig = proxyAttachContainerConfigMap.get(attachProxy);
           if (proxyContainerConfig) {
