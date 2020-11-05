@@ -5,7 +5,7 @@
  */
 import { SandBox, SandBoxType } from '../interfaces';
 import { nextTick } from '../utils';
-import { documentAttachProxyMap, getTargetValue } from './common';
+import { getTargetValue, setCurrentRunningSandboxProxy } from './common';
 
 /**
  * fastest(at most time) unique array method
@@ -50,7 +50,6 @@ const unscopables = {
   String: true,
   Boolean: true,
   Math: true,
-  eval: true,
   Number: true,
   Symbol: true,
   parseFloat: true,
@@ -223,13 +222,20 @@ export default class ProxySandbox implements SandBox {
         }
 
         // mark the symbol to document while accessing as document.createElement could know is invoked by which sandbox for dynamic append patcher
-        if (p === 'document') {
-          documentAttachProxyMap.set(document, proxy);
+        if (p === 'document' || p === 'eval') {
+          setCurrentRunningSandboxProxy(proxy);
+          // FIXME if you have any other good ideas
           // remove the mark in next tick, thus we can identify whether it in micro app or not
-          // this approach is just a workaround, it could not cover all the complex scenarios, such as the micro app runs in the same task context with master in som case
-          // fixme if you have any other good ideas
-          nextTick(() => documentAttachProxyMap.delete(document));
-          return document;
+          // this approach is just a workaround, it could not cover all complex cases, such as the micro app runs in the same task context with master in some case
+          nextTick(() => setCurrentRunningSandboxProxy(null));
+          switch (p) {
+            case 'document':
+              return document;
+            case 'eval':
+              // eslint-disable-next-line no-eval
+              return eval;
+            // no default
+          }
         }
 
         // eslint-disable-next-line no-bitwise

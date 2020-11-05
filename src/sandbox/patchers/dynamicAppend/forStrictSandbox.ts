@@ -4,7 +4,7 @@
  */
 
 import { Freer } from '../../../interfaces';
-import { documentAttachProxyMap } from '../../common';
+import { getCurrentRunningSandboxProxy } from '../../common';
 import {
   ContainerConfig,
   isHijackingTag,
@@ -27,11 +27,9 @@ function patchDocumentCreateElement() {
     ): HTMLElement {
       const element = rawDocumentCreateElement.call(this, tagName, options);
       if (isHijackingTag(tagName)) {
-        // 这里使用document来获取比this更加健壮，因为之前set的时候是传入的document：
-        // 因为document不一定是原生的document，这种情况出现在qiankun本身就在另一个沙箱下运行的情况，而那个沙箱可能连document都重写了。
-        const attachProxy = documentAttachProxyMap.get(document);
-        if (attachProxy) {
-          const proxyContainerConfig = proxyAttachContainerConfigMap.get(attachProxy);
+        const currentRunningSandboxProxy = getCurrentRunningSandboxProxy();
+        if (currentRunningSandboxProxy) {
+          const proxyContainerConfig = proxyAttachContainerConfigMap.get(currentRunningSandboxProxy);
           if (proxyContainerConfig) {
             elementAttachContainerConfigMap.set(element, proxyContainerConfig);
           }
