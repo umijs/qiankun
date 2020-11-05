@@ -70,10 +70,16 @@ export function patchLooseSandbox(
     // the dynamic style sheet would be removed automatically while unmoutting
 
     return function rebuild() {
-      rebuildCSSRules(dynamicStyleSheetElements, (stylesheetElement) =>
-        // Using document.head.appendChild ensures that appendChild invocation can also directly use the HTMLHeadElement.prototype.appendChild method which is overwritten at mounting phase
-        document.head.appendChild.call(appWrapperGetter(), stylesheetElement),
-      );
+      rebuildCSSRules(dynamicStyleSheetElements, (stylesheetElement) => {
+        const appWrapper = appWrapperGetter();
+        if (!appWrapper.contains(stylesheetElement)) {
+          // Using document.head.appendChild ensures that appendChild invocation can also directly use the HTMLHeadElement.prototype.appendChild method which is overwritten at mounting phase
+          document.head.appendChild.call(appWrapper, stylesheetElement);
+          return true;
+        }
+
+        return false;
+      });
 
       // As the patcher will be invoked every mounting phase, we could release the cache for gc after rebuilding
       if (mounting) {
