@@ -25,7 +25,6 @@ function patchDocumentCreateElement() {
       tagName: K,
       options?: ElementCreationOptions,
     ): HTMLElement {
-      // 这里必须使用this，因为原生的createElement方法调用上下文必须是原始的document对象，否则会出现`Uncaught TypeError: Illegal invocation`
       const element = rawDocumentCreateElement.call(this, tagName, options);
       if (isHijackingTag(tagName)) {
         // 这里使用document来获取比this更加健壮，因为之前set的时候是传入的document：
