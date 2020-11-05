@@ -27,7 +27,9 @@ function patchDocumentCreateElement() {
     ): HTMLElement {
       const element = rawDocumentCreateElement.call(this, tagName, options);
       if (isHijackingTag(tagName)) {
-        const attachProxy = documentAttachProxyMap.get(this);
+        // 这里使用document来获取比this更加健壮，因为之前set的时候是传入的document：
+        // 因为document不一定是原生的document，这种情况出现在qiankun本身就在另一个沙箱下运行的情况，而那个沙箱可能连document都重写了。
+        const attachProxy = documentAttachProxyMap.get(document);
         if (attachProxy) {
           const proxyContainerConfig = proxyAttachContainerConfigMap.get(attachProxy);
           if (proxyContainerConfig) {
