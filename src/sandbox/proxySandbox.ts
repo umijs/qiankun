@@ -175,14 +175,29 @@ export default class ProxySandbox implements SandBox {
     const proxy = new Proxy(fakeWindow, {
       set(target: FakeWindow, p: PropertyKey, value: any): boolean {
         if (self.sandboxRunning) {
-          // @ts-ignore
-          target[p] = value;
-          updatedValueSet.add(p);
+          // We must kept its description while the property existed in rawWindow before
+          if (!target.hasOwnProperty(p) && rawWindow.hasOwnProperty(p)) {
+            const descriptor = Object.getOwnPropertyDescriptor(rawWindow, p);
+            const { writable, configurable, enumerable } = descriptor!;
+            if (writable) {
+              Object.defineProperty(target, p, {
+                configurable,
+                enumerable,
+                writable,
+                value,
+              });
+            }
+          } else {
+            // @ts-ignore
+            target[p] = value;
+          }
 
           if (variableWhiteList.indexOf(p) !== -1) {
             // @ts-ignore
             rawWindow[p] = value;
           }
+
+          updatedValueSet.add(p);
 
           return true;
         }
@@ -280,7 +295,8 @@ export default class ProxySandbox implements SandBox {
 
       // trap to support iterator with sandbox
       ownKeys(target: FakeWindow): PropertyKey[] {
-        return uniq(Reflect.ownKeys(rawWindow).concat(Reflect.ownKeys(target)));
+        const keys = uniq(Reflect.ownKeys(rawWindow).concat(Reflect.ownKeys(target)));
+        return keys;
       },
 
       defineProperty(target: Window, p: PropertyKey, attributes: PropertyDescriptor): boolean {
