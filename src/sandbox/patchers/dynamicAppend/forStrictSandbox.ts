@@ -94,17 +94,21 @@ export function patchStrictSandbox(
       unpatchDocumentCreate();
     }
 
-    proxyAttachContainerConfigMap.delete(proxy);
-
     recordStyledComponentsCSSRules(dynamicStyleSheetElements);
 
     // As now the sub app content all wrapped with a special id container,
     // the dynamic style sheet would be removed automatically while unmoutting
 
     return function rebuild() {
-      rebuildCSSRules(dynamicStyleSheetElements, (stylesheetElement) =>
-        rawHeadAppendChild.call(appWrapperGetter(), stylesheetElement),
-      );
+      rebuildCSSRules(dynamicStyleSheetElements, (stylesheetElement) => {
+        const appWrapper = appWrapperGetter();
+        if (!appWrapper.contains(stylesheetElement)) {
+          rawHeadAppendChild.call(appWrapper, stylesheetElement);
+          return true;
+        }
+
+        return false;
+      });
     };
   };
 }

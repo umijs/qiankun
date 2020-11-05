@@ -349,24 +349,25 @@ export function patchHTMLDynamicAppendPrototypeFunctions(
 
 export function rebuildCSSRules(
   styleSheetElements: HTMLStyleElement[],
-  reAppendElement: (stylesheetElement: HTMLStyleElement) => void,
+  reAppendElement: (stylesheetElement: HTMLStyleElement) => boolean,
 ) {
   styleSheetElements.forEach((stylesheetElement) => {
     // re-append the dynamic stylesheet to sub-app container
-    reAppendElement(stylesheetElement);
-
-    /*
-    get the stored css rules from styled-components generated element, and the re-insert rules for them.
-    note that we must do this after style element had been added to document, which stylesheet would be associated to the document automatically.
-    check the spec https://www.w3.org/TR/cssom-1/#associated-css-style-sheet
-     */
-    if (stylesheetElement instanceof HTMLStyleElement && isStyledComponentsLike(stylesheetElement)) {
-      const cssRules = getStyledElementCSSRules(stylesheetElement);
-      if (cssRules) {
-        // eslint-disable-next-line no-plusplus
-        for (let i = 0; i < cssRules.length; i++) {
-          const cssRule = cssRules[i];
-          (stylesheetElement.sheet as CSSStyleSheet).insertRule(cssRule.cssText);
+    const appendSuccess = reAppendElement(stylesheetElement);
+    if (appendSuccess) {
+      /*
+      get the stored css rules from styled-components generated element, and the re-insert rules for them.
+      note that we must do this after style element had been added to document, which stylesheet would be associated to the document automatically.
+      check the spec https://www.w3.org/TR/cssom-1/#associated-css-style-sheet
+       */
+      if (stylesheetElement instanceof HTMLStyleElement && isStyledComponentsLike(stylesheetElement)) {
+        const cssRules = getStyledElementCSSRules(stylesheetElement);
+        if (cssRules) {
+          // eslint-disable-next-line no-plusplus
+          for (let i = 0; i < cssRules.length; i++) {
+            const cssRule = cssRules[i];
+            (stylesheetElement.sheet as CSSStyleSheet).insertRule(cssRule.cssText);
+          }
         }
       }
     }
