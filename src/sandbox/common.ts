@@ -5,7 +5,14 @@
 
 import { isBoundedFunction, isCallable, isConstructable } from '../utils';
 
-export const documentAttachProxyMap = new WeakMap<HTMLDocument, WindowProxy>();
+let currentRunningSandboxProxy: WindowProxy | null;
+export function getCurrentRunningSandboxProxy() {
+  return currentRunningSandboxProxy;
+}
+
+export function setCurrentRunningSandboxProxy(proxy: WindowProxy | null) {
+  currentRunningSandboxProxy = proxy;
+}
 
 const functionBoundedValueMap = new WeakMap<Function, Function>();
 export function getTargetValue(target: any, value: any): any {
