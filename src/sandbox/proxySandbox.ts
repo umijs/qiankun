@@ -238,8 +238,12 @@ export default class ProxySandbox implements SandBox {
           }
         }
 
-        // eslint-disable-next-line no-bitwise
-        const value = propertiesWithGetter.has(p) ? (rawWindow as any)[p] : (target as any)[p] || (rawWindow as any)[p];
+        // eslint-disable-next-line no-nested-ternary
+        const value = propertiesWithGetter.has(p)
+          ? (rawWindow as any)[p]
+          : p in target
+          ? (target as any)[p]
+          : (rawWindow as any)[p];
         return getTargetValue(rawWindow, value);
       },
 
