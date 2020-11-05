@@ -7,6 +7,12 @@ import { isBoundedFunction } from '../../utils';
 import { getCurrentRunningSandboxProxy } from '../common';
 import ProxySandbox from '../proxySandbox';
 
+declare global {
+  interface Window {
+    [p: string]: any;
+  }
+}
+
 beforeAll(() => {
   Object.defineProperty(window, 'mockTop', { value: window, writable: false, configurable: false, enumerable: false });
   Object.defineProperty(window, 'mockSafariTop', {
@@ -215,10 +221,8 @@ test('document and eval accessing should modify the attachDocProxySymbol value e
   expect(d1).toBe(d2);
   expect(d1).toBe(document);
 
-  // @ts-ignore
   const eval1 = proxy3.eval;
   expect(getCurrentRunningSandboxProxy()).toBe(proxy3);
-  // @ts-ignore
   const eval2 = proxy4.eval;
   expect(getCurrentRunningSandboxProxy()).toBe(proxy4);
 
@@ -292,4 +296,14 @@ test('some native window property was defined with getter in safari and firefox,
 
   const { proxy } = new ProxySandbox('object-define-property-target-test');
   expect((<any>proxy).mockSafariGetterProperty).toBe('getterPropertyInSafariWindow');
+});
+
+test('falsy values should return as expected', () => {
+  const { proxy } = new ProxySandbox('falsy-value-test');
+  proxy.falsevar = false;
+  proxy.nullvar = null;
+  proxy.zero = 0;
+  expect(proxy.falsevar).toBe(false);
+  expect(proxy.nullvar).toBeNull();
+  expect(proxy.zero).toBe(0);
 });
