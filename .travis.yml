@@ -3,6 +3,9 @@ node_js:
   - lts/*
 install:
   - yarn install
+cache:
+  directories:
+    - node_modules
 script:
   - yarn ci
   - yarn docs:build
