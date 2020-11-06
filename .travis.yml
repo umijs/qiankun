@@ -4,6 +4,7 @@ node_js:
 install:
   - yarn install
 cache:
+  yarn: true
   directories:
     - node_modules
 script:
