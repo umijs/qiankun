@@ -26,9 +26,19 @@ beforeAll(() => {
 });
 
 test('iterator should be worked the same as the raw window', () => {
+  Object.defineProperty(window, 'nonEnumerableValue', {
+    enumerable: false,
+    value: 1,
+    writable: true,
+    configurable: true,
+  });
+
   const { proxy } = new ProxySandbox('unit-test');
   expect(Object.keys(proxy)).toEqual(Object.keys(window));
   expect(Object.getOwnPropertyNames(proxy)).toEqual(Object.getOwnPropertyNames(window));
+
+  proxy.nonEnumerableValue = window.nonEnumerableValue;
+  proxy.parseFloat = window.parseFloat;
 
   // test the iterator order
   const sandboxKeys = [];
@@ -37,14 +47,14 @@ test('iterator should be worked the same as the raw window', () => {
   for (const p in proxy) {
     sandboxKeys.push(p);
   }
-  const rawKeys = [];
+  const rawWindowKeys = [];
   // eslint-disable-next-line guard-for-in,no-restricted-syntax
   for (const p in window) {
-    rawKeys.push(p);
+    rawWindowKeys.push(p);
   }
-  expect(sandboxKeys).toEqual(rawKeys);
+  expect(sandboxKeys).toEqual(rawWindowKeys);
 
-  (<any>proxy).additionalProp = 'kuitos';
+  proxy.additionalProp = 'kuitos';
   expect(Object.keys(proxy)).toEqual([...Object.keys(window), 'additionalProp']);
 });
 
@@ -54,8 +64,8 @@ test('window.self & window.window & window.top & window.parent should equals wit
   expect(proxy.self).toBe(proxy);
   expect(proxy.window).toBe(proxy);
 
-  expect((<any>proxy).mockTop).toBe(proxy);
-  expect((<any>proxy).mockSafariTop).toBe(proxy);
+  expect(proxy.mockTop).toBe(proxy);
+  expect(proxy.mockSafariTop).toBe(proxy);
   expect(proxy.top).toBe(proxy);
   expect(proxy.parent).toBe(proxy);
 });
@@ -89,8 +99,8 @@ test('eval should never be represented', () => {
 test('hasOwnProperty should works well', () => {
   const { proxy } = new ProxySandbox('unit-test');
 
-  (<any>proxy).testName = 'kuitos';
-  expect((<any>proxy).testName).toBe('kuitos');
+  proxy.testName = 'kuitos';
+  expect(proxy.testName).toBe('kuitos');
   expect((<any>window).testName).toBeUndefined();
 
   expect(proxy.hasOwnProperty('testName')).toBeTruthy();
@@ -113,18 +123,18 @@ test('descriptor of non-configurable and non-enumerable property existed in raw 
 
   const { proxy } = new ProxySandbox('unit-test');
 
-  (<any>proxy).nonConfigurableProp = (<any>window).nonConfigurableProp;
-  (<any>proxy).nonConfigurablePropWithAccessor = 123;
-  expect((<any>proxy).nonConfigurablePropWithAccessor).toBe(undefined);
+  proxy.nonConfigurableProp = (<any>window).nonConfigurableProp;
+  proxy.nonConfigurablePropWithAccessor = 123;
+  expect(proxy.nonConfigurablePropWithAccessor).toBe(undefined);
   expect(Object.keys(proxy)).toEqual(Object.keys(window));
   expect(Object.getOwnPropertyDescriptor(proxy, 'nonConfigurableProp')).toEqual(
     Object.getOwnPropertyDescriptor(window, 'nonConfigurableProp'),
   );
 
-  (<any>proxy).enumerableProp = 123;
-  (<any>proxy).nonEnumerableProp = 456;
-  expect((<any>proxy).enumerableProp).toBe(123);
-  expect((<any>proxy).nonEnumerableProp).toBe(456);
+  proxy.enumerableProp = 123;
+  proxy.nonEnumerableProp = 456;
+  expect(proxy.enumerableProp).toBe(123);
+  expect(proxy.nonEnumerableProp).toBe(456);
   expect(Object.keys(proxy)).toEqual(Object.keys(window));
   expect(Object.keys(proxy).includes('nonEnumerableProp')).toBeFalsy();
   expect(Object.keys(proxy).includes('enumerableProp')).toBeTruthy();
@@ -162,9 +172,9 @@ test('property added by Object.defineProperty should works as expect', () => {
   };
 
   Object.defineProperty(proxy, 'g_history', descriptor);
-  (<any>proxy).g_history = 'window.g_history';
+  proxy.g_history = 'window.g_history';
 
-  expect((<any>proxy).g_history).toBe('window.g_history');
+  expect(proxy.g_history).toBe('window.g_history');
 
   expect('g_history' in proxy).toBeTruthy();
 
@@ -196,7 +206,7 @@ test('defineProperty should added to the target where its descriptor from', () =
   const { proxy } = new ProxySandbox('object-define-property-target-test');
   const eventDescriptor = Object.getOwnPropertyDescriptor(proxy, 'propertyInNativeWindow');
   Object.defineProperty(proxy, 'propertyInNativeWindow', eventDescriptor!);
-  expect((<any>proxy).propertyInNativeWindow).toBe('ifAccessByInternalTargetWillCauseIllegalInvocation');
+  expect(proxy.propertyInNativeWindow).toBe('ifAccessByInternalTargetWillCauseIllegalInvocation');
 });
 
 test('hasOwnProperty should always returns same reference', () => {
@@ -295,7 +305,7 @@ test('some native window property was defined with getter in safari and firefox,
   expect((<any>window).mockSafariGetterProperty).toBe('getterPropertyInSafariWindow');
 
   const { proxy } = new ProxySandbox('object-define-property-target-test');
-  expect((<any>proxy).mockSafariGetterProperty).toBe('getterPropertyInSafariWindow');
+  expect(proxy.mockSafariGetterProperty).toBe('getterPropertyInSafariWindow');
 });
 
 test('falsy values should return as expected', () => {
