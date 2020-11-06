@@ -28,7 +28,7 @@ export { css } from './patchers';
  * @param useLooseSandbox
  * @param excludeAssetFilter
  */
-export function createSandbox(
+export function createSandboxContainer(
   appName: string,
   elementGetter: () => HTMLElement | ShadowRoot,
   scopedCSS: boolean,
@@ -50,7 +50,7 @@ export function createSandbox(
   let sideEffectsRebuilders: Rebuilder[] = [];
 
   return {
-    proxy: sandbox.proxy,
+    instance: sandbox,
 
     /**
      * 沙箱被 mount

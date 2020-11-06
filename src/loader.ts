@@ -9,7 +9,7 @@ import { LifeCycles, ParcelConfigObject } from 'single-spa';
 import getAddOns from './addons';
 import { getMicroAppStateActions } from './globalState';
 import { FrameworkConfiguration, FrameworkLifeCycles, HTMLContentRender, LifeCycleFn, LoadableApp } from './interfaces';
-import { createSandbox, css } from './sandbox';
+import { createSandboxContainer, css } from './sandbox';
 import {
   Deferred,
   getContainer,
@@ -53,6 +53,7 @@ async function validateSingularMode<T extends object>(
 
 // @ts-ignore
 const supportShadowDOM = document.head.attachShadow || document.head.createShadowRoot;
+
 function createElement(
   appContent: string,
   strictStyleIsolation: boolean,
@@ -199,9 +200,22 @@ function getRender(appName: string, appContent: string, legacyRender?: HTMLConte
   return render;
 }
 
-function getLifecyclesFromExports(scriptExports: LifeCycles<any>, appName: string, global: WindowProxy) {
+function getLifecyclesFromExports(
+  scriptExports: LifeCycles<any>,
+  appName: string,
+  global: WindowProxy,
+  globalLatestSetProp?: PropertyKey | null,
+) {
   if (validateExportLifecycle(scriptExports)) {
     return scriptExports;
+  }
+
+  // fallback to sandbox latest set property if it had
+  if (globalLatestSetProp) {
+    const lifecycles = (<any>global)[globalLatestSetProp];
+    if (validateExportLifecycle(lifecycles)) {
+      return lifecycles;
+    }
   }
 
   if (process.env.NODE_ENV === 'development') {
@@ -223,6 +237,7 @@ function getLifecyclesFromExports(scriptExports: LifeCycles<any>, appName: strin
 let prevAppUnmountedDeferred: Deferred<void>;
 
 export type ParcelConfigObjectGetter = (remountContainer?: string | HTMLElement) => ParcelConfigObject;
+
 export async function loadApp<T extends object>(
   app: LoadableApp<T>,
   configuration: FrameworkConfiguration = {},
@@ -281,8 +296,9 @@ export async function loadApp<T extends object>(
   let mountSandbox = () => Promise.resolve();
   let unmountSandbox = () => Promise.resolve();
   const useLooseSandbox = typeof sandbox === 'object' && !!sandbox.loose;
+  let sandboxContainer;
   if (sandbox) {
-    const sandboxInstance = createSandbox(
+    sandboxContainer = createSandboxContainer(
       appName,
       // FIXME should use a strict sandbox logic while remount, see https://github.com/umijs/qiankun/issues/518
       initialAppWrapperGetter,
@@ -291,9 +307,9 @@ export async function loadApp<T extends object>(
       excludeAssetFilter,
     );
     // 用沙箱的代理对象作为接下来使用的全局对象
-    global = sandboxInstance.proxy as typeof window;
-    mountSandbox = sandboxInstance.mount;
-    unmountSandbox = sandboxInstance.unmount;
+    global = sandboxContainer.instance.proxy as typeof window;
+    mountSandbox = sandboxContainer.mount;
+    unmountSandbox = sandboxContainer.unmount;
   }
 
   const { beforeUnmount = [], afterUnmount = [], afterMount = [], beforeMount = [], beforeLoad = [] } = mergeWith(
@@ -307,7 +323,12 @@ export async function loadApp<T extends object>(
 
   // get the lifecycle hooks from module exports
   const scriptExports: any = await execScripts(global, !useLooseSandbox);
-  const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(scriptExports, appName, global);
+  const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
+    scriptExports,
+    appName,
+    global,
+    sandboxContainer?.instance?.latestSetProp,
+  );
 
   const {
     onGlobalStateChange,
