@@ -115,6 +115,8 @@ export interface SandBox {
   proxy: WindowProxy;
   /** 沙箱是否在运行中 */
   sandboxRunning: boolean;
+  /** latest set property */
+  latestSetProp?: PropertyKey | null;
   /** 启动沙箱 */
   active(): void;
   /** 关闭沙箱 */

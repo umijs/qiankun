@@ -136,6 +136,8 @@ export default class ProxySandbox implements SandBox {
 
   sandboxRunning = true;
 
+  latestSetProp: PropertyKey | null = null;
+
   active() {
     if (!this.sandboxRunning) activeSandboxCount++;
     this.sandboxRunning = true;
@@ -198,6 +200,8 @@ export default class ProxySandbox implements SandBox {
           }
 
           updatedValueSet.add(p);
+
+          self.latestSetProp = p;
 
           return true;
         }
