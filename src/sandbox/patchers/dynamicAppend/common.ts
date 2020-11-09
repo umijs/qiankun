@@ -197,6 +197,25 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
           // eslint-disable-next-line no-shadow
           dynamicStyleSheetElements.push(stylesheetElement);
           const referenceNode = mountDOM.contains(refChild) ? refChild : null;
+
+          {
+            const callback = (mutationsList: MutationRecord[], observer:MutationObserver) => {
+              for (let mutation of mutationsList) {
+                if (mutation.type === 'childList') {
+                  observer.disconnect();
+                  insertFontFace4ShadowDom.call(mountDOM, stylesheetElement);
+                  break;
+                }
+              }
+            };
+            const observer = new MutationObserver(callback);
+            observer.observe(stylesheetElement, {
+              attributes: false,
+              childList: true,
+              subtree: false
+            });
+          }
+
           return rawDOMAppendOrInsertBefore.call(mountDOM, stylesheetElement, referenceNode);
         }
 
@@ -372,4 +391,17 @@ export function rebuildCSSRules(
       }
     }
   });
+}
+
+export function insertFontFace4ShadowDom(this: HTMLElement | ShadowRoot , stylesheetElement: HTMLStyleElement) {
+  //shadow dom模式下需要将@font-face取出注册到head中
+  if (this instanceof ShadowRoot) {
+    const reg = /@font-face ?\{([^\}]|\r|\n)+\}/gi;
+    const host = this.host;
+    (stylesheetElement.innerText.match(reg) || []).forEach((fontFace:string )=> {
+      const style = document.createElement('style');
+      style.innerText = fontFace;
+      host.appendChild(style);
+    });
+  }
 }

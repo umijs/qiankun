@@ -5,7 +5,7 @@
 
 import { checkActivityFunctions } from 'single-spa';
 import { Freer } from '../../../interfaces';
-import { patchHTMLDynamicAppendPrototypeFunctions, rebuildCSSRules, recordStyledComponentsCSSRules } from './common';
+import { patchHTMLDynamicAppendPrototypeFunctions, rebuildCSSRules, insertFontFace4ShadowDom, recordStyledComponentsCSSRules } from './common';
 
 let bootstrappingPatchCount = 0;
 let mountingPatchCount = 0;
@@ -74,6 +74,7 @@ export function patchLooseSandbox(
         const appWrapper = appWrapperGetter();
         if (!appWrapper.contains(stylesheetElement)) {
           // Using document.head.appendChild ensures that appendChild invocation can also directly use the HTMLHeadElement.prototype.appendChild method which is overwritten at mounting phase
+          insertFontFace4ShadowDom.call(appWrapper, stylesheetElement);
           document.head.appendChild.call(appWrapper, stylesheetElement);
           return true;
         }
