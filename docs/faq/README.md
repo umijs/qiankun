@@ -116,6 +116,216 @@ You need to set your publicPath configuration to an absolute url, and in develop
 }
 ```
 
+### After the micro-app is bundled, the font files and images in the css load 404
+
+The reason is that `qiankun` changed the external link style to the inline style, but the loading path of the font file and background image is a relative path.
+
+Once the `css` file is packaged, you cannot modify the path of the font file and background image by dynamically modifying the `publicPath`.
+
+There are mainly the following solutions:
+
+1. Upload all static resources such as pictures to `cdn`, and directly reference the address of `cdn` in `css` (**recommended**)
+
+2. Use the `url-loader` of `webpack` to package font files and images as `base64` (suitable for projects with small font files and images)(**recommended**)
+
+  ```js
+  module.exports = {
+    module: {
+      rules: [
+        {
+          test: /\.(png|jpe?g|gif|webp|woff2?|eot|ttf|otf)$/i,
+          use: [
+            {
+              loader: 'url-loader',
+              options: {},
+            },
+          ],
+        },
+      ],
+    },
+  };
+  ```
+
+  `vue-cli3` project:
+
+  ```js
+  module.exports = {
+    chainWebpack: (config) => {
+      config.module
+        .rule('fonts')
+        .use('url-loader')
+        .loader('url-loader')
+        .options({})
+        .end()
+      config.module
+        .rule('images')
+        .use('url-loader')
+        .loader('url-loader')
+        .options({})
+        .end()
+    },
+  }
+  ```
+
+3. Use the `file-loader` of `webpack` to inject the full path when packaging it (suitable for projects with large font files and images)
+
+  ```js
+  const publicPath = process.env.NODE_ENV === "production" ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+  module.exports = {
+    module: {
+      rules: [
+        {
+          test: /\.(png|jpe?g|gif|webp)$/i,
+          use: [
+            {
+              loader: 'file-loader',
+              options: {
+                name: 'img/[name].[hash:8].[ext]',
+                publicPath
+              },
+            },
+          ],
+        },
+        {
+          test: /\.(woff2?|eot|ttf|otf)$/i,
+          use: [
+            {
+              loader: 'file-loader',
+              options: {
+                name: 'fonts/[name].[hash:8].[ext]',
+                publicPath
+              },
+            },
+          ],
+        },
+      ],
+    },
+  };
+  ```
+
+  `vue-cli3` project:
+
+  ```js
+  const publicPath = process.env.NODE_ENV === "production" ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+  module.exports = {
+    chainWebpack: (config) => {
+      const fontRule = config.module.rule('fonts');
+      fontRule.uses.clear();
+      fontRule
+        .use('file-loader')
+        .loader('file-loader')
+        .options({
+          name: 'fonts/[name].[hash:8].[ext]',
+          publicPath
+        })
+        .end()
+      const imgRule = config.module.rule('images');
+      imgRule.uses.clear();
+      imgRule
+        .use('file-loader')
+        .loader('file-loader')
+        .options({
+          name: 'img/[name].[hash:8].[ext]',
+          publicPath
+        })
+        .end()
+    },
+  }
+  ```
+
+4. Combine the two schemes, convert small files to `base64`, and inject path prefixes for large files
+
+  ```js
+  const publicPath = process.env.NODE_ENV === "production" ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+  module.exports = {
+    module: {
+      rules: [
+        {
+          test: /\.(png|jpe?g|gif|webp)$/i,
+          use: [
+            {
+              loader: 'url-loader',
+              options: {},
+              fallback: {
+                loader: 'file-loader',
+                options: {
+                  name: 'img/[name].[hash:8].[ext]',
+                  publicPath
+                }
+              }
+            },
+          ],
+        },
+        {
+          test: /\.(woff2?|eot|ttf|otf)$/i,
+          use: [
+            {
+              loader: 'url-loader',
+              options: {},
+              fallback: {
+                loader: 'file-loader',
+                options: {
+                  name: 'fonts/[name].[hash:8].[ext]',
+                  publicPath
+                }
+              }
+            },
+          ],
+        },
+      ],
+    },
+  };
+  ```
+
+  `vue-cli3` project：
+
+  ```js
+  const publicPath = process.env.NODE_ENV === "production" ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+  module.exports = {
+    chainWebpack: (config) => {
+      config.module.rule('fonts')
+        .use('url-loader')
+        .loader('url-loader')
+        .options({
+          limit: 4096, // Less than 4kb will be packaged as base64
+          fallback: {
+            loader: 'file-loader',
+            options: {
+              name: 'fonts/[name].[hash:8].[ext]',
+              publicPath
+            }
+          }
+        })
+        .end();
+      config.module.rule('images')
+        .use('url-loader')
+        .loader('url-loader')
+        .options({
+          limit: 4096, // Less than 4kb will be packaged as base64
+          fallback: {
+            loader: 'file-loader',
+            options: {
+              name: 'img/[name].[hash:8].[ext]',
+              publicPath
+            }
+          }
+        })
+    },
+  }
+  ```
+
+5. The `vue-cli3` project can package `css` into `js` without generating files separately (not recommended, only suitable for projects with less `css`)
+
+  Configuration reference [vue-cli3 official website](https://cli.vuejs.org/zh/config/#css-extract):
+
+  ```js
+  module.exports = {
+    css: {
+      extract: false
+    },
+  }
+  ```
+
 ## Must a sub app asset support cors?
 
 Yes it is.
@@ -127,6 +337,41 @@ See [Enable Nginx Cors](https://enable-cors.org/server_nginx.html).
 ## How to guarantee the main app stylesheet isolated with sub apps?
 
 Qiankun will isolate stylesheet between your sub apps automatically, you can manually ensure isolation between master and child applications. Such as add a prefix to all classes in the master application, and if you are using [ant-design](https://ant.design), you can follow [this doc](https://ant.design/docs/react/customize-theme) to make it works.
+
+Example for antd：
+
+1. use webpack to modify antd less variable
+
+   ```diff
+   {
+     loader: 'less-loader',
+   + options: {
+   +   modifyVars: {
+   +     '@ant-prefix': 'yourPrefix',
+   +   },
+   +   javascriptEnabled: true,
+   + },
+   }
+   ```
+
+2. set antd [ConfigProvider](https://ant.design/components/config-provider-cn/)
+
+   ```jsx
+   import { ConfigProvider } from 'antd';
+   
+   export const MyApp = () => (
+     <ConfigProvider prefixCls="yourPrefix">
+       <App />
+     </ConfigProvider>
+   );
+   ```
+
+Detailed documentation pls check [antd official guide](https://ant.design/docs/react/customize-theme).
+
+<Alert type="info">
+In the latest version, you can also try to config ` {scope: {experimentalStyleIsolation: true}} ` to open the runtime scoped CSS feature, thus solving the problem of the style of the isolation between applications.
+PS: Currently, this feature is still in the experimental stage, if encounter some problems please submit an <a href="https://github.com/umijs/qiankun/issues/new?assignees=&labels=&template=bug_report.md&title=" target="_blank">issue</a> to help us improve together.
+</Alert>
 
 ## How to make sub app to run independently?
 
@@ -271,3 +516,91 @@ It is usually because you are routing in Browser mode, which requires the server
 Specific configuration mode reference:
 * [HTML5 History Mode](https://router.vuejs.org/guide/essentials/history-mode.html)
 * [browserRouter](https://reactrouter.com/web/api/BrowserRouter)
+
+## How to configure the 404 page in the main application?
+
+First of all, you cannot use the wildcard `*`. You can register the 404 page as a normal routing page, such as `/404`, and then judge in the routing hook function of the main project, if it is neither the main application routing nor the micro application , Then jump to the 404 page.
+
+Take `vue-router` as an example, the pseudo code is as follows:
+
+```js
+const childrenPath = ['/app1','/app2'];
+router.beforeEach((to, from, next) => {
+  if(to.name) {// There is a name attribute, indicating that it is the route of the main project
+    next()
+  }
+  if(childrenPath.some(item => to.path.includes(item))){
+    next()
+  }
+  next({ name: '404' })
+})
+```
+
+## How to jump between micro apps?
+
+-Both the main application and the micro application are in the `hash` mode. The main application judges the micro application based on the `hash`, so this issue is not considered.
+
+-The main application judges the micro application based on the `path`
+
+  It is not possible to directly use the routing instance of the micro-application to jump between micro-applications in the `history` mode or to jump to the main application page. The reason is that the routing instance jumps of the micro-application are all based on the `base` of the route. There are two ways to jump:
+
+  1. `history.pushState()`: [mdn usage introduction](https://developer.mozilla.org/zh-CN/docs/Web/API/History/pushState)
+  2. Pass the routing instance of the main application to the micro application through `props`, and the micro application will jump to this routing instance.
+
+
+## After the microapp file is updated, the old version of the file is still accessed
+
+The server needs to configure a response header for the `index.html` of the micro application: `Cache-Control no-cache`, which means to check whether it is updated every time it requests.
+
+Take `Nginx` as an example:
+
+```
+location = /index.html {
+  add_header Cache-Control no-cache;
+}
+```
+
+## micro app styles was lost when using config entry
+
+Some scenarios we had to use config entry to load micro app (** not recommended **): 
+
+```js
+loadMicroApp({
+  name: 'configEntry',
+  entry: {
+    scripts: ['//t.com/t.js'],
+    styles: ['//t.com/t.css']
+  }
+});
+```
+
+Since there is no HTML attached to entry JS for microapp, the mount hook simply says:
+
+```js
+export async function mount(props) {
+  ReactDOM.render(<App/>, props.container);
+}
+```
+As `props.container` is not an empty container and will contain information such as the style sheet that the microapp registers through the styles configuration, when we render directly for the container that the react application is applying with 'props.container', all the original DOM structures in the container will be overwritten, causing the style sheet to be lost.
+
+We need to build an empty render container for micro applications that use Config Entry to mount react applications:
+
+```diff
+loadMicroApp({
+  name: 'configEntry',
+  entry: {
++   html: '<div id="root"></div>',
+    scripts: ['//t.com/t.js'],
+    styles: ['//t.com/t.css']
+  }
+});
+```
+
+The mount hook is not directly render to `props.container`, but to its 'root' node:
+
+```diff
+export async function mount(props) {
+- ReactDOM.render(<App/>, props.container);
++ ReactDOM.render(<App/>, props.container.querySelector('#root'));
+}
+```

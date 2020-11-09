@@ -4,12 +4,41 @@
  * @since 2020-3-31
  */
 import { SandBox, SandBoxType } from '../interfaces';
-import { nextTick, uniq } from '../utils';
-import { attachDocProxySymbol, getTargetValue } from './common';
-import { clearSystemJsProps, interceptSystemJsProps } from './noise/systemjs';
+import { nextTick } from '../utils';
+import { getTargetValue, setCurrentRunningSandboxProxy } from './common';
+
+/**
+ * fastest(at most time) unique array method
+ * @see https://jsperf.com/array-filter-unique/30
+ */
+function uniq(array: PropertyKey[]) {
+  return array.filter(function filter(this: PropertyKey[], element) {
+    return element in this ? false : ((this as any)[element] = true);
+  }, {});
+}
 
 // zone.js will overwrite Object.defineProperty
 const rawObjectDefineProperty = Object.defineProperty;
+
+const variableWhiteListInDev =
+  process.env.NODE_ENV === 'development' || window.__QIANKUN_DEVELOPMENT__
+    ? [
+        // for react hot reload
+        // see https://github.com/facebook/create-react-app/blob/66bf7dfc43350249e2f09d138a20840dae8a0a4a/packages/react-error-overlay/src/index.js#L180
+        '__REACT_ERROR_OVERLAY_GLOBAL_HOOK__',
+      ]
+    : [];
+// who could escape the sandbox
+const variableWhiteList: PropertyKey[] = [
+  // FIXME System.js used a indirect call with eval, which would make it scope escape to global
+  // To make System.js works well, we write it back to global window temporary
+  // see https://github.com/systemjs/systemjs/blob/457f5b7e8af6bd120a279540477552a07d5de086/src/evaluate.js#L106
+  'System',
+
+  // see https://github.com/systemjs/systemjs/blob/457f5b7e8af6bd120a279540477552a07d5de086/src/instantiate.js#L357
+  '__cjsWrapper',
+  ...variableWhiteListInDev,
+];
 
 /*
  variables who are impossible to be overwrite need to be escaped from proxy sandbox for performance reasons
@@ -21,7 +50,6 @@ const unscopables = {
   String: true,
   Boolean: true,
   Math: true,
-  eval: true,
   Number: true,
   Symbol: true,
   parseFloat: true,
@@ -44,11 +72,11 @@ function createFakeWindow(global: Window) {
    > A property cannot be reported as non-configurable, if it does not exists as an own property of the target object or if it exists as a configurable own property of the target object.
    */
   Object.getOwnPropertyNames(global)
-    .filter(p => {
+    .filter((p) => {
       const descriptor = Object.getOwnPropertyDescriptor(global, p);
       return !descriptor?.configurable;
     })
-    .forEach(p => {
+    .forEach((p) => {
       const descriptor = Object.getOwnPropertyDescriptor(global, p);
       if (descriptor) {
         const hasGetter = Object.prototype.hasOwnProperty.call(descriptor, 'get');
@@ -108,6 +136,8 @@ export default class ProxySandbox implements SandBox {
 
   sandboxRunning = true;
 
+  latestSetProp: PropertyKey | null = null;
+
   active() {
     if (!this.sandboxRunning) activeSandboxCount++;
     this.sandboxRunning = true;
@@ -120,7 +150,14 @@ export default class ProxySandbox implements SandBox {
       ]);
     }
 
-    clearSystemJsProps(this.proxy, --activeSandboxCount === 0);
+    if (--activeSandboxCount === 0) {
+      variableWhiteList.forEach((p) => {
+        if (this.proxy.hasOwnProperty(p)) {
+          // @ts-ignore
+          delete window[p];
+        }
+      });
+    }
 
     this.sandboxRunning = false;
   }
@@ -140,11 +177,31 @@ export default class ProxySandbox implements SandBox {
     const proxy = new Proxy(fakeWindow, {
       set(target: FakeWindow, p: PropertyKey, value: any): boolean {
         if (self.sandboxRunning) {
-          // @ts-ignore
-          target[p] = value;
+          // We must kept its description while the property existed in rawWindow before
+          if (!target.hasOwnProperty(p) && rawWindow.hasOwnProperty(p)) {
+            const descriptor = Object.getOwnPropertyDescriptor(rawWindow, p);
+            const { writable, configurable, enumerable } = descriptor!;
+            if (writable) {
+              Object.defineProperty(target, p, {
+                configurable,
+                enumerable,
+                writable,
+                value,
+              });
+            }
+          } else {
+            // @ts-ignore
+            target[p] = value;
+          }
+
+          if (variableWhiteList.indexOf(p) !== -1) {
+            // @ts-ignore
+            rawWindow[p] = value;
+          }
+
           updatedValueSet.add(p);
 
-          interceptSystemJsProps(p, value);
+          self.latestSetProp = p;
 
           return true;
         }
@@ -184,17 +241,28 @@ export default class ProxySandbox implements SandBox {
         }
 
         // mark the symbol to document while accessing as document.createElement could know is invoked by which sandbox for dynamic append patcher
-        if (p === 'document') {
-          document[attachDocProxySymbol] = proxy;
+        if (p === 'document' || p === 'eval') {
+          setCurrentRunningSandboxProxy(proxy);
+          // FIXME if you have any other good ideas
           // remove the mark in next tick, thus we can identify whether it in micro app or not
-          // this approach is just a workaround, it could not cover all the complex scenarios, such as the micro app runs in the same task context with master in som case
-          // fixme if you have any other good ideas
-          nextTick(() => delete document[attachDocProxySymbol]);
-          return document;
+          // this approach is just a workaround, it could not cover all complex cases, such as the micro app runs in the same task context with master in some case
+          nextTick(() => setCurrentRunningSandboxProxy(null));
+          switch (p) {
+            case 'document':
+              return document;
+            case 'eval':
+              // eslint-disable-next-line no-eval
+              return eval;
+            // no default
+          }
         }
 
-        // eslint-disable-next-line no-bitwise
-        const value = propertiesWithGetter.has(p) ? (rawWindow as any)[p] : (target as any)[p] || (rawWindow as any)[p];
+        // eslint-disable-next-line no-nested-ternary
+        const value = propertiesWithGetter.has(p)
+          ? (rawWindow as any)[p]
+          : p in target
+          ? (target as any)[p]
+          : (rawWindow as any)[p];
         return getTargetValue(rawWindow, value);
       },
 
@@ -231,7 +299,8 @@ export default class ProxySandbox implements SandBox {
 
       // trap to support iterator with sandbox
       ownKeys(target: FakeWindow): PropertyKey[] {
-        return uniq(Reflect.ownKeys(rawWindow).concat(Reflect.ownKeys(target)));
+        const keys = uniq(Reflect.ownKeys(rawWindow).concat(Reflect.ownKeys(target)));
+        return keys;
       },
 
       defineProperty(target: Window, p: PropertyKey, attributes: PropertyDescriptor): boolean {

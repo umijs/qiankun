@@ -41,6 +41,8 @@ export default class SingularProxySandbox implements SandBox {
 
   sandboxRunning = true;
 
+  latestSetProp: PropertyKey | null = null;
+
   active() {
     if (!this.sandboxRunning) {
       this.currentUpdatedPropsValueMap.forEach((v, p) => setWindowProp(p, v));
@@ -89,6 +91,8 @@ export default class SingularProxySandbox implements SandBox {
           // 必须重新设置 window 对象保证下次 get 时能拿到已更新的数据
           // eslint-disable-next-line no-param-reassign
           (rawWindow as any)[p] = value;
+
+          self.latestSetProp = p;
 
           return true;
         }

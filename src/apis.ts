@@ -1,9 +1,9 @@
 import { noop } from 'lodash';
-import { mountRootParcel, registerApplication, start as startSingleSpa } from 'single-spa';
+import { mountRootParcel, ParcelConfigObject, registerApplication, start as startSingleSpa } from 'single-spa';
 import { FrameworkConfiguration, FrameworkLifeCycles, LoadableApp, MicroApp, RegistrableApp } from './interfaces';
-import { loadApp } from './loader';
+import { loadApp, ParcelConfigObjectGetter } from './loader';
 import { doPrefetchStrategy } from './prefetch';
-import { Deferred, toArray } from './utils';
+import { Deferred, getContainer, getXPathForElement, toArray } from './utils';
 
 let microApps: RegistrableApp[] = [];
 
@@ -16,11 +16,11 @@ export function registerMicroApps<T extends object = {}>(
   lifeCycles?: FrameworkLifeCycles<T>,
 ) {
   // Each app only needs to be registered once
-  const unregisteredApps = apps.filter(app => !microApps.some(registeredApp => registeredApp.name === app.name));
+  const unregisteredApps = apps.filter((app) => !microApps.some((registeredApp) => registeredApp.name === app.name));
 
   microApps = [...microApps, ...unregisteredApps];
 
-  unregisteredApps.forEach(app => {
+  unregisteredApps.forEach((app) => {
     const { name, activeRule, loader = noop, props, ...appConfig } = app;
 
     registerApplication({
@@ -29,11 +29,9 @@ export function registerMicroApps<T extends object = {}>(
         loader(true);
         await frameworkStartedDefer.promise;
 
-        const { mount, ...otherMicroAppConfigs } = await loadApp(
-          { name, props, ...appConfig },
-          frameworkConfiguration,
-          lifeCycles,
-        );
+        const { mount, ...otherMicroAppConfigs } = (
+          await loadApp({ name, props, ...appConfig }, frameworkConfiguration, lifeCycles)
+        )();
 
         return {
           mount: [async () => loader(true), ...toArray(mount), async () => loader(false)],
@@ -46,16 +44,70 @@ export function registerMicroApps<T extends object = {}>(
   });
 }
 
+const appConfigPromiseGetterMap = new Map<string, Promise<ParcelConfigObjectGetter>>();
+
 export function loadMicroApp<T extends object = {}>(
   app: LoadableApp<T>,
   configuration?: FrameworkConfiguration,
   lifeCycles?: FrameworkLifeCycles<T>,
 ): MicroApp {
-  const { props } = app;
-  return mountRootParcel(() => loadApp(app, configuration ?? frameworkConfiguration, lifeCycles), {
-    domElement: document.createElement('div'),
-    ...props,
-  });
+  const { props, name } = app;
+
+  const getContainerXpath = (container: string | HTMLElement): string | void => {
+    const containerElement = getContainer(container);
+    if (containerElement) {
+      return getXPathForElement(containerElement, document);
+    }
+
+    return undefined;
+  };
+
+  const wrapParcelConfigForRemount = (config: ParcelConfigObject): ParcelConfigObject => {
+    return {
+      ...config,
+      // empty bootstrap hook which should not run twice while it calling from cached micro app
+      bootstrap: () => Promise.resolve(),
+    };
+  };
+
+  /**
+   * using name + container xpath as the micro app instance id,
+   * it means if you rendering a micro app to a dom which have been rendered before,
+   * the micro app would not load and evaluate its lifecycles again
+   */
+  const memorizedLoadingFn = async (): Promise<ParcelConfigObject> => {
+    const { $$cacheLifecycleByAppName } = configuration ?? frameworkConfiguration;
+    const container = 'container' in app ? app.container : undefined;
+
+    if (container) {
+      // using appName as cache for internal experimental scenario
+      if ($$cacheLifecycleByAppName) {
+        const parcelConfigGetterPromise = appConfigPromiseGetterMap.get(name);
+        if (parcelConfigGetterPromise) return wrapParcelConfigForRemount((await parcelConfigGetterPromise)(container));
+      }
+
+      const xpath = getContainerXpath(container);
+      if (xpath) {
+        const parcelConfigGetterPromise = appConfigPromiseGetterMap.get(`${name}-${xpath}`);
+        if (parcelConfigGetterPromise) return wrapParcelConfigForRemount((await parcelConfigGetterPromise)(container));
+      }
+    }
+
+    const parcelConfigObjectGetterPromise = loadApp(app, configuration ?? frameworkConfiguration, lifeCycles);
+
+    if (container) {
+      if ($$cacheLifecycleByAppName) {
+        appConfigPromiseGetterMap.set(name, parcelConfigObjectGetterPromise);
+      } else {
+        const xpath = getContainerXpath(container);
+        if (xpath) appConfigPromiseGetterMap.set(`${name}-${xpath}`, parcelConfigObjectGetterPromise);
+      }
+    }
+
+    return (await parcelConfigObjectGetterPromise)(container);
+  };
+
+  return mountRootParcel(memorizedLoadingFn, { domElement: document.createElement('div'), ...props });
 }
 
 export function start(opts: FrameworkConfiguration = {}) {
@@ -69,10 +121,11 @@ export function start(opts: FrameworkConfiguration = {}) {
   if (sandbox) {
     if (!window.Proxy) {
       console.warn('[qiankun] Miss window.Proxy, proxySandbox will degenerate into snapshotSandbox');
-      // 快照沙箱不支持非 singular 模式
+      frameworkConfiguration.sandbox = typeof sandbox === 'object' ? { ...sandbox, loose: true } : { loose: true };
       if (!singular) {
-        console.error('[qiankun] singular is forced to be true when sandbox enable but proxySandbox unavailable');
-        frameworkConfiguration.singular = true;
+        console.warn(
+          '[qiankun] Setting singular as false may cause unexpected behavior while your browser not support window.Proxy',
+        );
       }
     }
   }

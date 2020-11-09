@@ -11,7 +11,7 @@ export function toArray<T>(array: T | T[]): T[] {
 }
 
 export function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -22,16 +22,22 @@ export function nextTick(cb: () => void): void {
   Promise.resolve().then(cb);
 }
 
-export function isConstructable(fn: () => void | FunctionConstructor) {
+const constructableMap = new WeakMap<Function, boolean>();
+export function isConstructable(fn: () => any | FunctionConstructor) {
+  if (constructableMap.has(fn)) {
+    return constructableMap.get(fn);
+  }
+
   const constructableFunctionRegex = /^function\b\s[A-Z].*/;
   const classRegex = /^class\b/;
 
   // 有 prototype 并且 prototype 上有定义一系列非 constructor 属性，则可以认为是一个构造函数
-  return (
+  const constructable =
     (fn.prototype && fn.prototype.constructor === fn && Object.getOwnPropertyNames(fn.prototype).length > 1) ||
     constructableFunctionRegex.test(fn.toString()) ||
-    classRegex.test(fn.toString())
-  );
+    classRegex.test(fn.toString());
+  constructableMap.set(fn, constructable);
+  return constructable;
 }
 
 /**
@@ -45,22 +51,18 @@ export const isCallable = naughtySafari
   ? (fn: any) => typeof fn === 'function' && typeof fn !== 'undefined'
   : (fn: any) => typeof fn === 'function';
 
+const boundedMap = new WeakMap<CallableFunction, boolean>();
 export function isBoundedFunction(fn: CallableFunction) {
+  if (boundedMap.has(fn)) {
+    return boundedMap.get(fn);
+  }
   /*
    indexOf is faster than startsWith
    see https://jsperf.com/string-startswith/72
    */
-  return fn.name.indexOf('bound ') === 0 && !fn.hasOwnProperty('prototype');
-}
-
-/**
- * fastest(at most time) unique array method
- * @see https://jsperf.com/array-filter-unique/30
- */
-export function uniq(array: PropertyKey[]) {
-  return array.filter(function filter(this: string[], element) {
-    return element in this ? false : ((this as any)[element] = true);
-  }, {});
+  const bounded = fn.name.indexOf('bound ') === 0 && !fn.hasOwnProperty('prototype');
+  boundedMap.set(fn, bounded);
+  return bounded;
 }
 
 export function getDefaultTplWrapper(id: string, name: string) {
@@ -108,21 +110,67 @@ export function performanceMark(markName: string) {
 }
 
 export function performanceMeasure(measureName: string, markName: string) {
-  if (supportsUserTiming) {
+  if (supportsUserTiming && performance.getEntriesByName(markName, 'mark').length) {
     performance.measure(measureName, markName);
     performance.clearMarks(markName);
     performance.clearMeasures(measureName);
   }
 }
 
-export function isEnableScopedCSS(opt: FrameworkConfiguration) {
-  if (typeof opt.sandbox !== 'object') {
+export function isEnableScopedCSS(sandbox: FrameworkConfiguration['sandbox']) {
+  if (typeof sandbox !== 'object') {
     return false;
   }
 
-  if (opt.sandbox.strictStyleIsolation) {
+  if (sandbox.strictStyleIsolation) {
     return false;
   }
 
-  return !!opt.sandbox.experimentalStyleIsolation;
+  return !!sandbox.experimentalStyleIsolation;
+}
+
+/**
+ * copy from https://developer.mozilla.org/zh-CN/docs/Using_XPath
+ * @param el
+ * @param document
+ */
+export function getXPathForElement(el: Node, document: Document): string | void {
+  // not support that if el not existed in document yet(such as it not append to document before it mounted)
+  if (!document.body.contains(el)) {
+    return undefined;
+  }
+
+  let xpath = '';
+  let pos;
+  let tmpEle;
+  let element = el;
+
+  while (element !== document.documentElement) {
+    pos = 0;
+    tmpEle = element;
+    while (tmpEle) {
+      if (tmpEle.nodeType === 1 && tmpEle.nodeName === element.nodeName) {
+        // If it is ELEMENT_NODE of the same name
+        pos += 1;
+      }
+      tmpEle = tmpEle.previousSibling;
+    }
+
+    xpath = `*[name()='${element.nodeName}' and namespace-uri()='${
+      element.namespaceURI === null ? '' : element.namespaceURI
+    }'][${pos}]/${xpath}`;
+
+    element = element.parentNode!;
+  }
+
+  xpath = `/*[name()='${document.documentElement.nodeName}' and namespace-uri()='${
+    element.namespaceURI === null ? '' : element.namespaceURI
+  }']/${xpath}`;
+  xpath = xpath.replace(/\/$/, '');
+
+  return xpath;
+}
+
+export function getContainer(container: string | HTMLElement): HTMLElement | null {
+  return typeof container === 'string' ? document.querySelector(container) : container;
 }

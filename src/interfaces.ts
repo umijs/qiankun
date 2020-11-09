@@ -9,6 +9,7 @@ declare global {
   interface Window {
     __POWERED_BY_QIANKUN__?: boolean;
     __INJECTED_PUBLIC_PATH_BY_QIANKUN__?: string;
+    __QIANKUN_DEVELOPMENT__?: boolean;
   }
 }
 
@@ -54,12 +55,20 @@ export type PrefetchStrategy =
   | ((apps: AppMetadata[]) => { criticalAppNames: string[]; minorAppsName: string[] });
 
 type QiankunSpecialOpts = {
+  /**
+   * @deprecated internal api, don't used it as normal, might be removed after next version
+   */
+  $$cacheLifecycleByAppName?: boolean;
   prefetch?: PrefetchStrategy;
   sandbox?:
     | boolean
     | {
         strictStyleIsolation?: boolean;
         experimentalStyleIsolation?: boolean;
+        /**
+         * @deprecated We use strict mode by default
+         */
+        loose?: boolean;
         patchers?: Patcher[];
       };
   /*
@@ -107,6 +116,8 @@ export interface SandBox {
   proxy: WindowProxy;
   /** 沙箱是否在运行中 */
   sandboxRunning: boolean;
+  /** latest set property */
+  latestSetProp?: PropertyKey | null;
   /** 启动沙箱 */
   active(): void;
   /** 关闭沙箱 */
