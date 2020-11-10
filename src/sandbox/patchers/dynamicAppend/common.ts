@@ -204,7 +204,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
                 const mutation = mutationsList[index];
                 if (mutation.type === 'childList') {
                   observer.disconnect();
-                  insertFontFace4ShadowDom.call(mountDOM, stylesheetElement.innerText);
+                  insertFontFace4ShadowDom.call(mountDOM, stylesheetElement);
                   break;
                 }
               }
@@ -405,15 +405,20 @@ export function rebuildCSSRules(
   });
 }
 
-export function insertFontFace4ShadowDom(this: HTMLElement | ShadowRoot, styleText: string) {
+export function insertFontFace4ShadowDom(this: HTMLElement | ShadowRoot, element: HTMLElement | ShadowRoot | string) {
   // shadow dom模式下需要将@font-face取出注册到head中
   if (this instanceof ShadowRoot) {
-    const reg = /@font-face ?\{([^}]|\r|\n)+/gi;
+    const reg = /@font-face ?\{([^}]|\r|\n)+\}/gi;
     const { host } = this;
-    (styleText.match(reg) || []).forEach((fontFace: string) => {
+    const html = typeof element === 'string' ? element : element.innerHTML;
+    (html.match(reg) || []).forEach((fontFace: string) => {
       const style = document.createElement('style');
       style.innerText = fontFace;
       host.appendChild(style);
     });
+    if (typeof element !== 'string') {
+      const e = element;
+      e.innerHTML = html.replace(reg, '');
+    }
   }
 }

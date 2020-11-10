@@ -194,7 +194,7 @@ function getRender(appName: string, appContent: string, legacyRender?: HTMLConte
       if (element) {
         const { shadowRoot } = element;
         if (shadowRoot) {
-          insertFontFace4ShadowDom.call(shadowRoot, shadowRoot.innerHTML);
+          insertFontFace4ShadowDom.call(shadowRoot, shadowRoot);
         }
         rawAppendChild.call(containerElement, element);
       }
