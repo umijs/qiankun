@@ -212,7 +212,14 @@ function getLifecyclesFromExports(scriptExports: LifeCycles<any>, appName: strin
     return globalVariableExports;
   }
 
-  throw new Error(`[qiankun] You need to export lifecycle functions in ${appName} entry`);
+  // throw new Error(`[qiankun] You need to export lifecycle functions in ${appName} entry`);
+  console.error(`[qiankun] You need to export lifecycle functions in ${appName} entry`);
+  return {
+    bootstrap: function () { return Promise.resolve(); },
+    mount: function () { return Promise.resolve(); },
+    update: function () { return Promise.resolve(); },
+    unmount: function () { return Promise.resolve(); }
+  };
 }
 
 let prevAppUnmountedDeferred: Deferred<void>;
