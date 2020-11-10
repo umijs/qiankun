@@ -199,8 +199,9 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
           const referenceNode = mountDOM.contains(refChild) ? refChild : null;
 
           if (element.tagName === STYLE_TAG_NAME) {
-            const callback = (mutationsList: MutationRecord[], observer:MutationObserver) => {
-              for (let mutation of mutationsList) {
+            const callback = (mutationsList: MutationRecord[], observer: MutationObserver) => {
+              for (let index = 0, { length } = mutationsList; index < length; index++) {
+                const mutation = mutationsList[index];
                 if (mutation.type === 'childList') {
                   observer.disconnect();
                   insertFontFace4ShadowDom.call(mountDOM, stylesheetElement.innerText);
@@ -212,15 +213,19 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
             observer.observe(stylesheetElement, {
               attributes: false,
               childList: true,
-              subtree: false
+              subtree: false,
             });
           } else if (element.tagName === LINK_TAG_NAME) {
-            const _fetch:typeof fetch = frameworkConfiguration.fetch || fetch;
-            href && _fetch(href)
-              .then(function (res) { return res.text(); })
-              .then(function (data) {
-                insertFontFace4ShadowDom.call(mountDOM, data);
-              });
+            const _fetch = frameworkConfiguration.fetch || fetch;
+            if (href) {
+              _fetch(href)
+                .then((res) => {
+                  return res.text();
+                })
+                .then((data) => {
+                  insertFontFace4ShadowDom.call(mountDOM, data);
+                });
+            }
           }
 
           return rawDOMAppendOrInsertBefore.call(mountDOM, stylesheetElement, referenceNode);
@@ -400,12 +405,12 @@ export function rebuildCSSRules(
   });
 }
 
-export function insertFontFace4ShadowDom(this: HTMLElement | ShadowRoot , styleText: string) {
-  //shadow dom模式下需要将@font-face取出注册到head中
+export function insertFontFace4ShadowDom(this: HTMLElement | ShadowRoot, styleText: string) {
+  // shadow dom模式下需要将@font-face取出注册到head中
   if (this instanceof ShadowRoot) {
-    const reg = /@font-face ?\{([^\}]|\r|\n)+\}/gi;
-    const host = this.host;
-    (styleText.match(reg) || []).forEach((fontFace:string )=> {
+    const reg = /@font-face ?\{([^}]|\r|\n)+/gi;
+    const { host } = this;
+    (styleText.match(reg) || []).forEach((fontFace: string) => {
       const style = document.createElement('style');
       style.innerText = fontFace;
       host.appendChild(style);

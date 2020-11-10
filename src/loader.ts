@@ -22,6 +22,8 @@ import {
   validateExportLifecycle,
 } from './utils';
 
+import { insertFontFace4ShadowDom } from './sandbox/patchers/dynamicAppend/common';
+
 function assertElementExist(element: Element | null | undefined, msg?: string) {
   if (!element) {
     if (msg) {
@@ -190,6 +192,10 @@ function getRender(appName: string, appContent: string, legacyRender?: HTMLConte
 
       // append the element to container if it exist
       if (element) {
+        const { shadowRoot } = element;
+        if (shadowRoot) {
+          insertFontFace4ShadowDom.call(shadowRoot, shadowRoot.innerHTML);
+        }
         rawAppendChild.call(containerElement, element);
       }
     }
