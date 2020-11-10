@@ -216,7 +216,6 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
             });
           } else if (element.tagName === LINK_TAG_NAME) {
             const _fetch:typeof fetch = frameworkConfiguration.fetch || fetch;
-            const { href } = (stylesheetElement as HTMLLinkElement);
             href && _fetch(href)
               .then(function (res) { return res.text(); })
               .then(function (data) {
