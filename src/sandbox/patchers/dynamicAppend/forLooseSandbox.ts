@@ -74,7 +74,7 @@ export function patchLooseSandbox(
         const appWrapper = appWrapperGetter();
         if (!appWrapper.contains(stylesheetElement)) {
           // Using document.head.appendChild ensures that appendChild invocation can also directly use the HTMLHeadElement.prototype.appendChild method which is overwritten at mounting phase
-          insertFontFace4ShadowDom.call(appWrapper, stylesheetElement);
+          insertFontFace4ShadowDom.call(appWrapper, stylesheetElement.innerText);
           document.head.appendChild.call(appWrapper, stylesheetElement);
           return true;
         }
