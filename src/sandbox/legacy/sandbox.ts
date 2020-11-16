@@ -122,6 +122,10 @@ export default class SingularProxySandbox implements SandBox {
       has(_: Window, p: string | number | symbol): boolean {
         return p in rawWindow;
       },
+
+      getOwnPropertyDescriptor(_: Window, p: string | number | symbol): PropertyDescriptor | undefined {
+        return Object.getOwnPropertyDescriptor(rawWindow, p);
+      },
     });
 
     this.proxy = proxy;
