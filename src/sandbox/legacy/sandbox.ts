@@ -123,7 +123,7 @@ export default class SingularProxySandbox implements SandBox {
         return p in rawWindow;
       },
 
-      getOwnPropertyDescriptor(_: Window, p: string | number | symbol): PropertyDescriptor | undefined {
+      getOwnPropertyDescriptor(_: Window, p: PropertyKey): PropertyDescriptor | undefined {
         return Object.getOwnPropertyDescriptor(rawWindow, p);
       },
     });
