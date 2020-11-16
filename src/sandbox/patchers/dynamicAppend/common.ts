@@ -406,7 +406,7 @@ export function rebuildCSSRules(
 }
 
 export function insertFontFace4ShadowDom(this: HTMLElement | ShadowRoot, element: HTMLElement | ShadowRoot | string) {
-  // shadow dom模式下需要将@font-face取出注册到head中
+  // In shadow dom mode, @font-face needs to be taken out and registered in the head
   if (this instanceof ShadowRoot) {
     const reg = /@font-face ?\{([^}]|\r|\n)+\}/gi;
     const { host } = this;
@@ -416,9 +416,10 @@ export function insertFontFace4ShadowDom(this: HTMLElement | ShadowRoot, element
       style.innerText = fontFace;
       host.appendChild(style);
     });
-    if (typeof element !== 'string') {
-      const e = element;
-      e.innerHTML = html.replace(reg, '');
-    }
+    // The note is because the second opening will cause the registered icon to be lost
+    // if (typeof element !== 'string') {
+    //   const e = element;
+    //   e.innerHTML = html.replace(reg, '');
+    // }
   }
 }
