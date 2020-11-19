@@ -61,6 +61,7 @@ function createElement(
   appName: string,
 ): HTMLElement {
   const containerElement = document.createElement('div');
+  containerElement.className = '__qiankun_main_container';
   containerElement.innerHTML = appContent;
   // appContent always wrapped with a singular div
   const appElement = containerElement.firstChild as HTMLElement;
