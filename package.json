@@ -88,6 +88,9 @@
     "ts-jest": "^25.2.1",
     "typescript": "^3.4.5"
   },
+  "resolutions": {
+    "@types/react": "^16.x"
+  },
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged",
