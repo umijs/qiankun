@@ -25,6 +25,8 @@ To solve the exception, try the following steps:
    <script src="https://www.google.com/analytics.js"></script>
    ```
 
+5. If the development environment is OK but the production environment is not, check whether the `index.html` and `entry js` of the micro app are returned normally, for example, `404.html` is returned.
+
 If it still not works after the steps above, this is usually due to browser compatibility issues. Try to **set the webpack `output.library` of the broken sub app the same with your main app registration for your app**, such as:
 
 Such as here is the main configuration:
@@ -53,6 +55,104 @@ module.exports = {
   },
 };
 ```
+
+## `Application died in status NOT_MOUNTED: Target container with #container not existed after xxx mounted!`
+
+This error thrown as the container DOM does not exist after the micro app is loaded. The possible reasons are:
+
+1. The root id of the micro app conflicts with other DOM, and the solution is to modify the search range of the root id.
+    
+    `vue` micro app:
+    ```js
+    function render(props = {}) {
+      const { container } = props;
+      instance = new Vue({
+        router,
+        store,
+        render: h => h(App),
+      }).$mount(container ? container.querySelector('#app') : '#app');
+    }
+    export async function mount(props) {
+      render(props);
+    }
+    ```
+
+    `react` micro app：
+    ```js
+    function render(props) {
+      const { container } = props;
+      ReactDOM.render(<App />, container ? container.querySelector('#root') : document.querySelector('#root'));
+    }
+    export async function mount(props) {
+      render(props);
+    }
+    export async function unmount(props) {
+      const { container } = props;
+      ReactDOM.unmountComponentAtNode(container ? container.querySelector('#root') : document.querySelector('#root'));
+    }
+    ```
+    
+2. Some js of micro app use `document.write`, such as AMAP 1.x version, Tencent Map 2.x version.
+
+    If it is caused by the map js, see if the upgrade can be resolved, for example, upgrade the AMAP map to version 2.x.
+
+    If the upgrade cannot be resolved, it is recommended to put the map on the main app to load. The micro app also introduces this map js (used in run independently), but add the `ignore` attribute to the `<script>` tag:
+
+     ```html
+     <script src="https://map.qq.com/api/gljs?v=1.exp" ignore></script>
+     ```
+
+     In other cases, please do not use `document.write`.
+
+## `Application died in status NOT_MOUNTED: Target container with #container not existed while xxx loading!`
+
+Similar to the above error, This error thrown as the container DOM does not exist when the micro app is loaded. Generally, it is caused by incorrect calling timing of the `start` function, just adjust the calling timing of the `start` function.
+
+How to determine the completion of the container DOM loading? The vue app can be called during the `mounted` life cycle, and the react app can be called during the `componentDidMount` life cycle.
+
+If it still reports an error, check whether the container DOM is placed on a routing page of the main app, please refer to [How to load micro apps on a routing page of the main app](#How to load micro apps on a routing page of the main app)
+
+## How to load micro apps on a routing page of the main app
+
+It must be ensured that the routing page of the main app is also loaded when the micro app is loaded.
+
+`vue` + `vue-router` main app:
+
+1. When the main app registers this route, add a `*` to `path`, **Note: If this route has other sub-routes, you need to register another route, just use this component**.
+     ```js
+    const routes = [
+      {
+        path: '/portal/*',
+        name: 'portal',
+        component: () => import('../views/Portal.vue'),
+      }
+    ]
+    ```
+2. The `activeRule` of the micro app needs to include the route `path` of the main app.
+    ```js
+    registerMicroApps([
+      { 
+        name: 'app1', 
+        entry: 'http://localhost:8080', 
+        container: '#container', 
+        activeRule: '/portal/app1', 
+      },
+    ]);
+    ```
+3. Call the `start` function in the `mounted` cycle of the `Portal.vue` component, **be careful not to call it repeatedly**.
+    ```js
+    import { start } from 'qiankun';
+    export default {
+      mounted() {
+        if (!window.qiankunStarted) {
+          window.qiankunStarted = true;
+          start();
+        }
+      },
+    }
+    ```
+
+`react` + `react-router` main app：only need to make the activeRule of the sub app include the route of the main app.
 
 ## Vue Router Error - `Uncaught TypeError: Cannot redefine property: $router`
 
