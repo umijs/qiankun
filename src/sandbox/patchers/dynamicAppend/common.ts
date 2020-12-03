@@ -182,7 +182,10 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
               (element as HTMLLinkElement).rel === 'stylesheet' &&
               (element as HTMLLinkElement).href;
             if (linkElementUsingStylesheet) {
-              const { fetch } = frameworkConfiguration;
+              const fetch =
+                typeof frameworkConfiguration.fetch === 'function'
+                  ? frameworkConfiguration.fetch
+                  : frameworkConfiguration.fetch?.fn;
               stylesheetElement = convertLinkAsStyle(
                 element,
                 (styleElement) => css.process(mountDOM, styleElement, appName),
