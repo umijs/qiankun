@@ -46,9 +46,9 @@ export default {
 };
 </script>
 
-<style vars="{nameColor}">
+<style>
 .name {
-  color: var(--nameColor);
+  color: v-bind(nameColor);
 }
 </style>
 
