@@ -14,7 +14,7 @@ export default {
     HelloWorld,
   },
   created() {
-    console.log('vue2.0写法 created');
+    console.log('vue3.0写法 created');
   },
   mounted() {
     console.log(this.$route);
