@@ -35,8 +35,11 @@ export function getTargetValue(target: any, value: any): any {
       boundValue[key] = value[key];
     }
 
-    // copy prototype, for performance reason, we use in operator to check rather than hasOwnProperty
-    if ('prototype' in value) boundValue.prototype = value.prototype;
+    // copy prototype if bound function not have
+    // mostly a bound function have no own prototype, but it not absolute in some old version browser, see https://github.com/umijs/qiankun/issues/1121
+    if (value.hasOwnProperty('prototype') && !boundValue.hasOwnProperty('prototype'))
+      boundValue.prototype = value.prototype;
+
     functionBoundedValueMap.set(value, boundValue);
     return boundValue;
   }

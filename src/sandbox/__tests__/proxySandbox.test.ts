@@ -287,6 +287,15 @@ test('bounded function should not be rebounded', () => {
   expect(isBoundedFunction(proxy.fn1)).toBeTruthy();
 });
 
+test('the prototype should be kept while we create a function with prototype on proxy', () => {
+  const proxy = new ProxySandbox('new-function').proxy as any;
+
+  function test() {}
+  proxy.fn = test;
+  expect(proxy.fn === test).toBeFalsy();
+  expect(proxy.fn.prototype).toBe(test.prototype);
+});
+
 test('some native window property was defined with getter in safari and firefox, and they will check the caller source', () => {
   Object.defineProperty(window, 'mockSafariGetterProperty', {
     get(this: Window) {
