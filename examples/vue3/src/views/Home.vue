@@ -1,6 +1,8 @@
 <template>
-  <img alt="Vue logo" src="../assets/logo.png" />
-  <HelloWorld msg="Vue.js Demo" @close="close"> </HelloWorld>
+  <div>
+    <img alt="Vue logo" src="../assets/logo.png" />
+    <HelloWorld msg="Vue.js Demo" @close="close"> </HelloWorld>
+  </div>
 </template>
 
 <script>
