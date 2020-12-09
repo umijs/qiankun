@@ -2,7 +2,7 @@
  * @author Kuitos
  * @since 2019-04-11
  */
-import { Freer, Rebuilder, SandBox } from '../interfaces';
+import { Freer, Rebuilder, SandBox, ProxyWindow } from '../interfaces';
 import LegacySandbox from './legacy/sandbox';
 import { patchAtBootstrapping, patchAtMounting } from './patchers';
 import ProxySandbox from './proxySandbox';
@@ -25,7 +25,7 @@ export { css } from './patchers';
  * @param appName
  * @param elementGetter
  * @param scopedCSS
- * @param useLooseSandbox
+ * @param {boolean} useLooseSandbox = false
  * @param excludeAssetFilter
  */
 export function createSandboxContainer(
@@ -34,9 +34,17 @@ export function createSandboxContainer(
   scopedCSS: boolean,
   useLooseSandbox?: boolean,
   excludeAssetFilter?: (url: string) => boolean,
+  customizeProxyProperty?: (win: ProxyWindow ,key: PropertyKey,  appName: string) => void,
 ) {
   let sandbox: SandBox;
   if (window.Proxy) {
+
+    // 自定义属性拦截注入
+    if (customizeProxyProperty) {
+      ProxySandbox.customizeProxyProperty = customizeProxyProperty;
+      LegacySandbox.customizeProxyProperty = customizeProxyProperty;
+    }
+
     sandbox = useLooseSandbox ? new LegacySandbox(appName) : new ProxySandbox(appName);
   } else {
     sandbox = new SnapshotSandbox(appName);

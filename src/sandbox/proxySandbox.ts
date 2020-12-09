@@ -3,7 +3,7 @@
  * @author Kuitos
  * @since 2020-3-31
  */
-import { SandBox, SandBoxType } from '../interfaces';
+import { ProxyWindow, SandBox, SandBoxType } from '../interfaces';
 import { nextTick } from '../utils';
 import { getTargetValue, setCurrentRunningSandboxProxy } from './common';
 
@@ -138,6 +138,8 @@ export default class ProxySandbox implements SandBox {
 
   latestSetProp: PropertyKey | null = null;
 
+  static customizeProxyProperty?: (win: ProxyWindow ,key: PropertyKey,  appName: string) => void;
+
   active() {
     if (!this.sandboxRunning) activeSandboxCount++;
     this.sandboxRunning = true;
@@ -256,6 +258,9 @@ export default class ProxySandbox implements SandBox {
             // no default
           }
         }
+
+        // 自定义属性拦截处理
+        if(ProxySandbox.customizeProxyProperty) ProxySandbox.customizeProxyProperty(target, p, name);
 
         // eslint-disable-next-line no-nested-ternary
         const value = propertiesWithGetter.has(p)

@@ -2,7 +2,7 @@
  * @author Kuitos
  * @since 2019-04-11
  */
-import { SandBox, SandBoxType } from '../../interfaces';
+import { ProxyWindow, SandBox, SandBoxType } from '../../interfaces';
 import { getTargetValue } from '../common';
 
 function isPropConfigurable(target: object, prop: PropertyKey) {
@@ -42,6 +42,8 @@ export default class SingularProxySandbox implements SandBox {
   sandboxRunning = true;
 
   latestSetProp: PropertyKey | null = null;
+
+  static customizeProxyProperty?: (win: ProxyWindow ,key: PropertyKey,  appName: string) => void;
 
   active() {
     if (!this.sandboxRunning) {
@@ -112,6 +114,8 @@ export default class SingularProxySandbox implements SandBox {
         if (p === 'top' || p === 'parent' || p === 'window' || p === 'self') {
           return proxy;
         }
+         // 自定义属性拦截处理
+        if(SingularProxySandbox.customizeProxyProperty) SingularProxySandbox.customizeProxyProperty(_, p, name);
 
         const value = (rawWindow as any)[p];
         return getTargetValue(rawWindow, value);

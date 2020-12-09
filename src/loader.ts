@@ -251,7 +251,13 @@ export async function loadApp<T extends object>(
     performanceMark(markName);
   }
 
-  const { singular = false, sandbox = true, excludeAssetFilter, ...importEntryOpts } = configuration;
+  const {
+    singular = false,
+    sandbox = true,
+    excludeAssetFilter,
+    customizeProxyProperty,
+    ...importEntryOpts
+  } = configuration;
 
   // get the entry html content and script executor
   const { template, execScripts, assetPublicPath } = await importEntry(entry, importEntryOpts);
@@ -305,6 +311,7 @@ export async function loadApp<T extends object>(
       scopedCSS,
       useLooseSandbox,
       excludeAssetFilter,
+      customizeProxyProperty,
     );
     // 用沙箱的代理对象作为接下来使用的全局对象
     global = sandboxContainer.instance.proxy as typeof window;
@@ -321,8 +328,28 @@ export async function loadApp<T extends object>(
 
   await execHooksChain(toArray(beforeLoad), app, global);
 
+  /**
+   * @description scripts执行 hook 注入
+   */
+
+  const {
+    beforeExec = () => {},
+    afterExec = () => {},
+  } = importEntryOpts.execScriptsHooks || {};
+
+  const decorateExecHooks = (fn: Function)=>{
+    return (...args: any)=>{
+      fn(...args, app);
+    };
+  };
+
+  const execScriptsHooks= {
+    beforeExec: decorateExecHooks(beforeExec),
+    afterExec: decorateExecHooks(afterExec),
+  };
+
+  const scriptExports: any = await execScripts(global, !useLooseSandbox, execScriptsHooks);
   // get the lifecycle hooks from module exports
-  const scriptExports: any = await execScripts(global, !useLooseSandbox);
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
     scriptExports,
     appName,

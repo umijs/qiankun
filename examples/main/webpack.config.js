@@ -1,5 +1,6 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const { name } = require('./package');
+const  path =  require('path');
+// const { name } = require('./package');
 
 module.exports = {
   entry: process.env.MODE === 'multiple' ? './multiple.js' : './index.js',
@@ -17,6 +18,8 @@ module.exports = {
     overlay: { warnings: false, errors: true },
   },
   output: {
+    path: path.resolve(__dirname, './dist/'),
+    filename: '[name].js',
     publicPath: '/',
   },
   mode: 'development',
@@ -30,10 +33,6 @@ module.exports = {
         exclude: /node_modules/,
         use: {
           loader: 'babel-loader',
-          options: {
-            presets: ['@babel/preset-env'],
-            plugins: ['@babel/plugin-transform-react-jsx'],
-          },
         },
       },
       {

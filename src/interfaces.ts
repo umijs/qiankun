@@ -80,6 +80,10 @@ type QiankunSpecialOpts = {
    * skip some scripts or links intercept, like JSONP
    */
   excludeAssetFilter?: (url: string) => boolean;
+  /**
+   * @description 自定义沙箱属性处理
+   */
+  customizeProxyProperty?: (win: ProxyWindow ,key: PropertyKey, appName: string) => void;
 };
 export type FrameworkConfiguration = QiankunSpecialOpts & ImportEntryOpts & StartOpts;
 
@@ -122,6 +126,9 @@ export interface SandBox {
   active(): void;
   /** 关闭沙箱 */
   inactive(): void;
+
+  customizeProxyProperty?: (win: ProxyWindow ,key: PropertyKey,  appName: string) => void;
+
 }
 
 export type OnGlobalStateChangeCallback = (state: Record<string, any>, prevState: Record<string, any>) => void;
@@ -131,3 +138,6 @@ export type MicroAppStateActions = {
   setGlobalState: (state: Record<string, any>) => boolean;
   offGlobalStateChange: () => boolean;
 };
+
+
+export type ProxyWindow = Window & Record<PropertyKey, any> | Window

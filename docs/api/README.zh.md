@@ -168,6 +168,53 @@ toc: menu
 
     - excludeAssetFilter - `(assetUrl: string) => boolean` - 可选，指定部分特殊的动态加载的微应用资源（css/js) 不被 qiankun 劫持处理。
 
+    - execScriptsHooks - {
+      // 每个脚本执行之前触发，如果返回的是非空string， 那么将把返回值替换code执行
+	    beforeExec?: (code: string, script: string, proxy: Window) => string | void;
+	    // 每个脚本执行完毕后触发，如果脚本执行报错，那么就不会触发
+	    afterExec?: (code: string, script: string, proxy: Window) => void;
+    }
+      ```javascript
+        // 子应用umd sdk 挂载隔离
+        const originGlobalThis = globalThis || self
+
+        const unRegistGlobalSDKS = ['sdk1','sdk2']
+
+        start({
+          execScriptsHooks: {
+            beforeExec:(inlineScript, scriptSrc, proxy)=>{
+              if(unRegistGlobalSDKS.includes(scriptSrc)){
+                globalThis = self = proxy
+              }
+            },
+            afterExec: ()=>{
+              // sdk 解析结束后需要恢复原有全局变量
+              globalThis = self = originGlobalThis
+            }
+          }
+        })
+
+      ```
+    - customizeProxyProperty - `(win: ProxyWindow ,key: PropertyKey, appName: string) => void`; 微应用全局属性拦截定制处理hook
+      ```javascript
+      // examples
+      // 自定义子应用localStorage
+      start({
+        customizeProxyProperty: (target, key, appName)=>{
+          if(key === 'localStorage'){
+            target[key] = target[key] || {}
+            target[key].setItem = (key, value)=>{
+              localStorage.setItem(`${appName}_${key}`, value)
+            }
+            target[key].getItem = (key)=>{
+              return localStorage.getItem(`${appName}_${key}`)
+            }
+          }
+        }
+      })
+
+      ```
+
 - 用法
 
   启动 qiankun。
