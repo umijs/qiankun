@@ -138,7 +138,7 @@ export default class ProxySandbox implements SandBox {
 
   latestSetProp: PropertyKey | null = null;
 
-  static customizeProxyProperty?: (win: ProxyWindow ,key: PropertyKey,  appName: string) => void;
+  static customizeProxyProperty?: (win: ProxyWindow, key: PropertyKey, appName: string) => void;
 
   active() {
     if (!this.sandboxRunning) activeSandboxCount++;
@@ -260,7 +260,7 @@ export default class ProxySandbox implements SandBox {
         }
 
         // 自定义属性拦截处理
-        if(ProxySandbox.customizeProxyProperty) ProxySandbox.customizeProxyProperty(target, p, name);
+        if (ProxySandbox.customizeProxyProperty) ProxySandbox.customizeProxyProperty(target, p, name);
 
         // eslint-disable-next-line no-nested-ternary
         const value = propertiesWithGetter.has(p)

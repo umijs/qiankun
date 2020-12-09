@@ -34,11 +34,10 @@ export function createSandboxContainer(
   scopedCSS: boolean,
   useLooseSandbox?: boolean,
   excludeAssetFilter?: (url: string) => boolean,
-  customizeProxyProperty?: (win: ProxyWindow ,key: PropertyKey,  appName: string) => void,
+  customizeProxyProperty?: (win: ProxyWindow, key: PropertyKey, appName: string) => void,
 ) {
   let sandbox: SandBox;
   if (window.Proxy) {
-
     // 自定义属性拦截注入
     if (customizeProxyProperty) {
       ProxySandbox.customizeProxyProperty = customizeProxyProperty;

@@ -43,7 +43,7 @@ export default class SingularProxySandbox implements SandBox {
 
   latestSetProp: PropertyKey | null = null;
 
-  static customizeProxyProperty?: (win: ProxyWindow ,key: PropertyKey,  appName: string) => void;
+  static customizeProxyProperty?: (win: ProxyWindow, key: PropertyKey, appName: string) => void;
 
   active() {
     if (!this.sandboxRunning) {
@@ -114,8 +114,8 @@ export default class SingularProxySandbox implements SandBox {
         if (p === 'top' || p === 'parent' || p === 'window' || p === 'self') {
           return proxy;
         }
-         // 自定义属性拦截处理
-        if(SingularProxySandbox.customizeProxyProperty) SingularProxySandbox.customizeProxyProperty(_, p, name);
+        // 自定义属性拦截处理
+        if (SingularProxySandbox.customizeProxyProperty) SingularProxySandbox.customizeProxyProperty(_, p, name);
 
         const value = (rawWindow as any)[p];
         return getTargetValue(rawWindow, value);

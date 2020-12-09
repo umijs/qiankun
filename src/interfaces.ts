@@ -83,7 +83,7 @@ type QiankunSpecialOpts = {
   /**
    * @description 自定义沙箱属性处理
    */
-  customizeProxyProperty?: (win: ProxyWindow ,key: PropertyKey, appName: string) => void;
+  customizeProxyProperty?: (win: ProxyWindow, key: PropertyKey, appName: string) => void;
 };
 export type FrameworkConfiguration = QiankunSpecialOpts & ImportEntryOpts & StartOpts;
 
@@ -127,8 +127,7 @@ export interface SandBox {
   /** 关闭沙箱 */
   inactive(): void;
 
-  customizeProxyProperty?: (win: ProxyWindow ,key: PropertyKey,  appName: string) => void;
-
+  customizeProxyProperty?: (win: ProxyWindow, key: PropertyKey, appName: string) => void;
 }
 
 export type OnGlobalStateChangeCallback = (state: Record<string, any>, prevState: Record<string, any>) => void;
@@ -139,5 +138,4 @@ export type MicroAppStateActions = {
   offGlobalStateChange: () => boolean;
 };
 
-
-export type ProxyWindow = Window & Record<PropertyKey, any> | Window
+export type ProxyWindow = (Window & Record<PropertyKey, any>) | Window;

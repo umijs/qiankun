@@ -332,18 +332,15 @@ export async function loadApp<T extends object>(
    * @description scripts执行 hook 注入
    */
 
-  const {
-    beforeExec = () => {},
-    afterExec = () => {},
-  } = importEntryOpts.execScriptsHooks || {};
+  const { beforeExec = () => {}, afterExec = () => {} } = importEntryOpts.execScriptsHooks || {};
 
-  const decorateExecHooks = (fn: Function)=>{
-    return (...args: any)=>{
+  const decorateExecHooks = (fn: Function) => {
+    return (...args: any) => {
       fn(...args, app);
     };
   };
 
-  const execScriptsHooks= {
+  const execScriptsHooks = {
     beforeExec: decorateExecHooks(beforeExec),
     afterExec: decorateExecHooks(afterExec),
   };
