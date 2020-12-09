@@ -33,7 +33,7 @@ export default {
       window.localStorage.setItem('NAME',address);
       V.ajax({
         method: 'POST',
-        url: '/gateway/api/sonoperation/' + address,
+        url: '/api/example/route/' + address,
         data: {
           data: { module: 'common', action: 'get_UTC_time' },
           game_id: 104,

@@ -9,58 +9,58 @@
 
 <script>
 export default {
-  name: "Page1",
+  name: 'Page1',
   data() {
     return {
-      address: "",
+      address: '',
       conf: V.conf,
-      visible: false
+      visible: false,
     };
   },
   mounted() {
     const { address } = this;
     V.ajax({
-      method: "POST",
-      url: "/gateway/api/sonoperation/" + address,
+      method: 'POST',
+      url: '/api/example/route/' + address,
       data: {
-        data: { module: "common", action: "get_UTC_time" },
-        game_id: 104
+        data: { module: 'common', action: 'get_UTC_time' },
+        game_id: 104,
       },
       headers: {
-        Token: V.conf.Authorization
-      }
+        Token: V.conf.Authorization,
+      },
     });
   },
   methods: {
     modifyConf() {
       const { address } = this;
       V.conf.setState({
-        baseURL: address
+        baseURL: address,
       });
-      if (!Object.prototype.hasOwnProperty.call(V.conf, "Authorization")) {
-        V.conf.add("Authorization", `Bearer ${address}`);
-      }else{
+      if (!Object.prototype.hasOwnProperty.call(V.conf, 'Authorization')) {
+        V.conf.add('Authorization', `Bearer ${address}`);
+      } else {
         V.conf.setState({
-          Authorization: `Bearer ${address}`
-        })
+          Authorization: `Bearer ${address}`,
+        });
       }
-      localStorage.setItem('NAME',address);
+      localStorage.setItem('NAME', address);
       setTimeout(() => {
-        console.log('child-app-1 [NAME] ',localStorage.getItem('NAME'));
+        console.log('child-app-1 [NAME] ', localStorage.getItem('NAME'));
       });
       V.ajax({
-        method: "POST",
-        url: "/gateway/api/sonoperation/" + address,
+        method: 'POST',
+        url: '/api/example/route/' + address,
         data: {
-          data: { module: "common", action: "get_UTC_time" },
-          game_id: 104
+          data: { module: 'common', action: 'get_UTC_time' },
+          game_id: 104,
         },
         headers: {
-          Token: V.conf.Authorization
-        }
+          Token: V.conf.Authorization,
+        },
       });
-    }
-  }
+    },
+  },
 };
 </script>
 

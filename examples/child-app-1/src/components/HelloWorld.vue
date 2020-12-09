@@ -9,20 +9,20 @@
 </template>
 
 <script>
-import ElementUI from "element-ui";
-import Vue from "vue";
+import ElementUI from 'element-ui';
+import Vue from 'vue';
 
 export default {
-  name: "HelloWorld",
+  name: 'HelloWorld',
   props: {
-    msg: String
+    msg: String,
   },
   data() {
     return {
       vueVersion: Vue.version,
-      elementVersion: ElementUI.version
+      elementVersion: ElementUI.version,
     };
-  }
+  },
 };
 </script>
 

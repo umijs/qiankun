@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <h1>child-app-1</h1>
-    <h2>window.CHILD_APP_NAME_TEST : {{CHILD_APP_NAME_TEST}}</h2>
+    <h2>window.CHILD_APP_NAME_TEST : {{ CHILD_APP_NAME_TEST }}</h2>
     <router-view />
   </div>
 </template>
@@ -10,23 +10,23 @@
 export default {
   data() {
     return {
-      CHILD_APP_NAME_TEST: window.CHILD_APP_NAME_TEST
+      CHILD_APP_NAME_TEST: window.CHILD_APP_NAME_TEST,
     };
   },
   computed: {},
   methods: {
     clickPush(path) {
       this.$router.push({
-        path
+        path,
       });
-    }
-  }
+    },
+  },
 };
 </script>
 
 <style scoped>
 #app {
-  font-family: "Avenir", Helvetica, Arial, sans-serif;
+  font-family: 'Avenir', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;

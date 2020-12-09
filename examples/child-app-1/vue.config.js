@@ -1,5 +1,5 @@
-const path = require("path");
-const { name } = require("./package");
+const path = require('path');
+const { name } = require('./package');
 
 function resolve(dir) {
   return path.join(__dirname, dir);
@@ -15,37 +15,37 @@ module.exports = {
    * In most cases please use '/' !!!
    * Detail: https://cli.vuejs.org/config/#publicpath
    */
-  publicPath:`//localhost:${port}`,
-  outputDir: "dist",
-  assetsDir: "static",
+  publicPath: `//localhost:${port}`,
+  outputDir: 'dist',
+  assetsDir: 'static',
   filenameHashing: true,
   // tweak internal webpack configuration.
   // see https://github.com/vuejs/vue-cli/blob/dev/docs/webpack.md
   devServer: {
-    host: "0.0.0.0",
+    host: '0.0.0.0',
     port,
     hot: true,
     disableHostCheck: true,
     overlay: {
       warnings: false,
-      errors: true
+      errors: true,
     },
     headers: {
-      "Access-Control-Allow-Origin": "*"
-    }
+      'Access-Control-Allow-Origin': '*',
+    },
   },
   // 自定义webpack配置
   configureWebpack: {
     resolve: {
       alias: {
-        "@": resolve("src")
-      }
+        '@': resolve('src'),
+      },
     },
     output: {
       // 把子应用打包成 umd 库格式
       library: `${name}-[name]`,
-      libraryTarget: "umd",
-      jsonpFunction: `webpackJsonp_${name}`
-    }
-  }
+      libraryTarget: 'umd',
+      jsonpFunction: `webpackJsonp_${name}`,
+    },
+  },
 };
