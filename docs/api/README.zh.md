@@ -168,21 +168,24 @@ toc: menu
 
     - excludeAssetFilter - `(assetUrl: string) => boolean` - 可选，指定部分特殊的动态加载的微应用资源（css/js) 不被 qiankun 劫持处理。
 
-    - execScriptsHooks - {
-      // 每个脚本执行之前触发，如果返回的是非空string， 那么将把返回值替换code执行
-	    beforeExec?: (code: string, script: string, proxy: Window) => string | void;
-	    // 每个脚本执行完毕后触发，如果脚本执行报错，那么就不会触发
-	    afterExec?: (code: string, script: string, proxy: Window) => void;
-    }
-      ```javascript
-        // 子应用umd sdk 挂载隔离
-        const originGlobalThis = globalThis || self
+    - execScriptsHooks - `{`
+	    -  `beforeExec?: (proxy: Window, app:RegistrableApp<any>, code: string, script: string) => string | void`; 每个脚本执行之前触发，如果返回的是非空string， 那么将把返回值替换code执行； 
 
+	    - `afterExec?: (proxy: Window, app:RegistrableApp<any>, code: string, script: string) => void`;
+	      每个脚本执行完毕后触发，如果脚本执行报错，那么就不会触发
+      `}`
+
+      ```javascript
+        // examples 
+        // 子应用 umd sdk 挂载隔离
+
+        const originGlobalThis = globalThis || self
+        // 仅注册在子应用的sdk
         const unRegistGlobalSDKS = ['sdk1','sdk2']
 
         start({
           execScriptsHooks: {
-            beforeExec:(inlineScript, scriptSrc, proxy)=>{
+            beforeExec:(proxy, app,inlineScript, scriptSrc)=>{
               if(unRegistGlobalSDKS.includes(scriptSrc)){
                 globalThis = self = proxy
               }
@@ -197,16 +200,16 @@ toc: menu
       ```
     - customizeProxyProperty - `(win: ProxyWindow ,key: PropertyKey, appName: string) => void`; 微应用全局属性拦截定制处理hook
       ```javascript
-      // examples
+      // examples 
       // 自定义子应用localStorage
       start({
-        customizeProxyProperty: (target, key, appName)=>{
-          if(key === 'localStorage'){
+        customizeProxyProperty: (target, key, appName) => {
+          if (key === 'localStorage') {
             target[key] = target[key] || {}
-            target[key].setItem = (key, value)=>{
+            target[key].setItem = (key, value) => {
               localStorage.setItem(`${appName}_${key}`, value)
             }
-            target[key].getItem = (key)=>{
+            target[key].getItem = (key) => {
               return localStorage.getItem(`${appName}_${key}`)
             }
           }

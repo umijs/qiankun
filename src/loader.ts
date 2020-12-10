@@ -331,12 +331,12 @@ export async function loadApp<T extends object>(
   /**
    * @description scripts执行 hook 注入
    */
-
   const { beforeExec = () => {}, afterExec = () => {} } = importEntryOpts.execScriptsHooks || {};
 
+  // 添加当前沙箱对象global, 微应用app参数
   const decorateExecHooks = (fn: Function) => {
     return (...args: any) => {
-      fn(...args, app);
+      fn(global, app, ...args);
     };
   };
 

@@ -43,8 +43,8 @@ export default {
         }
       },
       execScriptsHooks: {
-        beforeExec:(inlineScript, scriptSrc, proxy, app)=>{
-          console.log(`beforeExec:--->  `, scriptSrc, proxy, globalThis, self, app);
+        beforeExec:(proxy, app,inlineScript, scriptSrc)=>{
+          console.log(`beforeExec:--->  `, proxy, app, scriptSrc, globalThis);
           if(scriptSrc.includes('vizier')){
             globalThis = self = proxy
           // }else{
