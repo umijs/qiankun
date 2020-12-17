@@ -369,7 +369,8 @@ export function rebuildCSSRules(
           // eslint-disable-next-line no-plusplus
           for (let i = 0; i < cssRules.length; i++) {
             const cssRule = cssRules[i];
-            (stylesheetElement.sheet as CSSStyleSheet).insertRule(cssRule.cssText);
+            const cssStyleSheetElement = stylesheetElement.sheet as CSSStyleSheet;
+            cssStyleSheetElement.insertRule(cssRule.cssText, cssStyleSheetElement.cssRules.length);
           }
         }
       }
