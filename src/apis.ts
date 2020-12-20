@@ -52,7 +52,7 @@ export function loadMicroApp<T extends object = {}>(
   lifeCycles?: FrameworkLifeCycles<T>,
 ): MicroApp {
   const { props, name } = app;
-
+  
   const getContainerXpath = (container: string | HTMLElement): string | void => {
     const containerElement = getContainer(container);
     if (containerElement) {
@@ -76,6 +76,7 @@ export function loadMicroApp<T extends object = {}>(
    * the micro app would not load and evaluate its lifecycles again
    */
   const memorizedLoadingFn = async (): Promise<ParcelConfigObject> => {
+    frameworkConfiguration.singular = false;
     const { $$cacheLifecycleByAppName } = configuration ?? frameworkConfiguration;
     const container = 'container' in app ? app.container : undefined;
 
