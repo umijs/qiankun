@@ -1,6 +1,6 @@
 {
-  "name": "@dustess/qiankun",
-  "version": "2.3.5",
+  "name": "qiankun",
+  "version": "2.3.4",
   "description": "An completed implementation of Micro Frontends",
   "keywords": [
     "micro frontend",
@@ -99,6 +99,9 @@
   "lint-staged": {
     "**/*.{js,ts,json,css,md}": [
       "prettier -w"
+    ],
+    "**/*.{js,ts}": [
+      "yarn lint:fix"
     ]
   },
   "jest": {
