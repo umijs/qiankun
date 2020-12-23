@@ -3,7 +3,8 @@
  * @author Kuitos
  * @since 2020-3-31
  */
-import { SandBox, SandBoxType } from '../interfaces';
+import type { SandBox } from '../interfaces';
+import { SandBoxType } from '../interfaces';
 import { nextTick } from '../utils';
 import { getTargetValue, setCurrentRunningSandboxProxy } from './common';
 
@@ -167,7 +168,6 @@ export default class ProxySandbox implements SandBox {
     this.type = SandBoxType.Proxy;
     const { updatedValueSet } = this;
 
-    const self = this;
     const rawWindow = window;
     const { fakeWindow, propertiesWithGetter } = createFakeWindow(rawWindow);
 
@@ -175,8 +175,8 @@ export default class ProxySandbox implements SandBox {
     const hasOwnProperty = (key: PropertyKey) => fakeWindow.hasOwnProperty(key) || rawWindow.hasOwnProperty(key);
 
     const proxy = new Proxy(fakeWindow, {
-      set(target: FakeWindow, p: PropertyKey, value: any): boolean {
-        if (self.sandboxRunning) {
+      set: (target: FakeWindow, p: PropertyKey, value: any): boolean => {
+        if (this.sandboxRunning) {
           // We must kept its description while the property existed in rawWindow before
           if (!target.hasOwnProperty(p) && rawWindow.hasOwnProperty(p)) {
             const descriptor = Object.getOwnPropertyDescriptor(rawWindow, p);
@@ -201,7 +201,7 @@ export default class ProxySandbox implements SandBox {
 
           updatedValueSet.add(p);
 
-          self.latestSetProp = p;
+          this.latestSetProp = p;
 
           return true;
         }
