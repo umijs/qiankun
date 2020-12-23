@@ -52,7 +52,7 @@ export function loadMicroApp<T extends object = {}>(
   lifeCycles?: FrameworkLifeCycles<T>,
 ): MicroApp {
   const { props, name } = app;
-  
+
   const getContainerXpath = (container: string | HTMLElement): string | void => {
     const containerElement = getContainer(container);
     if (containerElement) {
