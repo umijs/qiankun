@@ -79,7 +79,8 @@ export function loadMicroApp<T extends ObjectType>(
    * the micro app would not load and evaluate its lifecycles again
    */
   const memorizedLoadingFn = async (): Promise<ParcelConfigObject> => {
-    const { $$cacheLifecycleByAppName } = configuration ?? frameworkConfiguration;
+    const userConfiguration = configuration ?? { ...frameworkConfiguration, singular: false };
+    const { $$cacheLifecycleByAppName } = userConfiguration;
     const container = 'container' in app ? app.container : undefined;
 
     if (container) {
@@ -96,7 +97,7 @@ export function loadMicroApp<T extends ObjectType>(
       }
     }
 
-    const parcelConfigObjectGetterPromise = loadApp(app, configuration ?? frameworkConfiguration, lifeCycles);
+    const parcelConfigObjectGetterPromise = loadApp(app, userConfiguration, lifeCycles);
 
     if (container) {
       if ($$cacheLifecycleByAppName) {
