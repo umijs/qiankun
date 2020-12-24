@@ -2,7 +2,7 @@
  * @author Kuitos
  * @since 2019-04-11
  */
-import { Freer, Rebuilder, SandBox } from '../interfaces';
+import type { Freer, Rebuilder, SandBox } from '../interfaces';
 import LegacySandbox from './legacy/sandbox';
 import { patchAtBootstrapping, patchAtMounting } from './patchers';
 import ProxySandbox from './proxySandbox';

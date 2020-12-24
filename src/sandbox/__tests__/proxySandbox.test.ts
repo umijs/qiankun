@@ -8,8 +8,9 @@ import { getCurrentRunningSandboxProxy } from '../common';
 import ProxySandbox from '../proxySandbox';
 
 declare global {
-  interface Window {
-    [p: string]: any;
+  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+  interface Window extends Record<string, any> {
+    nonEnumerableValue: string;
   }
 }
 

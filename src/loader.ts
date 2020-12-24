@@ -5,10 +5,17 @@
 
 import { importEntry } from 'import-html-entry';
 import { concat, forEach, mergeWith } from 'lodash';
-import { LifeCycles, ParcelConfigObject } from 'single-spa';
+import type { LifeCycles, ParcelConfigObject } from 'single-spa';
 import getAddOns from './addons';
 import { getMicroAppStateActions } from './globalState';
-import { FrameworkConfiguration, FrameworkLifeCycles, HTMLContentRender, LifeCycleFn, LoadableApp } from './interfaces';
+import type {
+  FrameworkConfiguration,
+  FrameworkLifeCycles,
+  HTMLContentRender,
+  LifeCycleFn,
+  LoadableApp,
+  ObjectType,
+} from './interfaces';
 import { createSandboxContainer, css } from './sandbox';
 import {
   Deferred,
@@ -33,7 +40,7 @@ function assertElementExist(element: Element | null | undefined, msg?: string) {
   }
 }
 
-function execHooksChain<T extends object>(
+function execHooksChain<T extends ObjectType>(
   hooks: Array<LifeCycleFn<T>>,
   app: LoadableApp<T>,
   global = window,
@@ -45,7 +52,7 @@ function execHooksChain<T extends object>(
   return Promise.resolve();
 }
 
-async function validateSingularMode<T extends object>(
+async function validateSingularMode<T extends ObjectType>(
   validate: FrameworkConfiguration['singular'],
   app: LoadableApp<T>,
 ): Promise<boolean> {
@@ -239,7 +246,7 @@ let prevAppUnmountedDeferred: Deferred<void>;
 
 export type ParcelConfigObjectGetter = (remountContainer?: string | HTMLElement) => ParcelConfigObject;
 
-export async function loadApp<T extends object>(
+export async function loadApp<T extends ObjectType>(
   app: LoadableApp<T>,
   configuration: FrameworkConfiguration = {},
   lifeCycles?: FrameworkLifeCycles<T>,
@@ -335,7 +342,7 @@ export async function loadApp<T extends object>(
     onGlobalStateChange,
     setGlobalState,
     offGlobalStateChange,
-  }: Record<string, Function> = getMicroAppStateActions(appInstanceId);
+  }: Record<string, CallableFunction> = getMicroAppStateActions(appInstanceId);
 
   // FIXME temporary way
   const syncAppWrapperElement2Sandbox = (element: HTMLElement | null) => (initialAppWrapperElement = element);
