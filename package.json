@@ -43,7 +43,7 @@
     "prettier": "prettier --write ./src/**/*",
     "docs:dev": "dumi dev",
     "docs:build": "dumi build",
-    "ci": "yarn lint && yarn test",
+    "ci": "yarn lint && yarn build && yarn test",
     "test": "cross-env NODE_ENV=test jest"
   },
   "repository": {
