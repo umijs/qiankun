@@ -28,7 +28,6 @@ import {
   performanceGetEntriesByName,
   toArray,
   validateExportLifecycle,
-  performanceGetEntriesByName
 } from './utils';
 
 function assertElementExist(element: Element | null | undefined, msg?: string) {
