@@ -3,7 +3,8 @@
  * @since 2019-04-11
  */
 
-import { Freer, SandBox, SandBoxType } from '../../interfaces';
+import type { Freer, SandBox } from '../../interfaces';
+import { SandBoxType } from '../../interfaces';
 import * as css from './css';
 import { patchLooseSandbox, patchStrictSandbox } from './dynamicAppend';
 import patchHistoryListener from './historyListener';
@@ -15,7 +16,7 @@ export function patchAtMounting(
   elementGetter: () => HTMLElement | ShadowRoot,
   sandbox: SandBox,
   scopedCSS: boolean,
-  excludeAssetFilter?: Function,
+  excludeAssetFilter?: CallableFunction,
 ): Freer[] {
   const basePatchers = [
     () => patchInterval(sandbox.proxy),
@@ -46,7 +47,7 @@ export function patchAtBootstrapping(
   elementGetter: () => HTMLElement | ShadowRoot,
   sandbox: SandBox,
   scopedCSS: boolean,
-  excludeAssetFilter?: Function,
+  excludeAssetFilter?: CallableFunction,
 ): Freer[] {
   const patchersInSandbox = {
     [SandBoxType.LegacyProxy]: [

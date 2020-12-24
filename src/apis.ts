@@ -1,17 +1,20 @@
 import { noop } from 'lodash';
-import { mountRootParcel, ParcelConfigObject, registerApplication, start as startSingleSpa } from 'single-spa';
-import { FrameworkConfiguration, FrameworkLifeCycles, LoadableApp, MicroApp, RegistrableApp } from './interfaces';
-import { loadApp, ParcelConfigObjectGetter } from './loader';
+import type { ParcelConfigObject } from 'single-spa';
+import { mountRootParcel, registerApplication, start as startSingleSpa } from 'single-spa';
+import type { ObjectType } from './interfaces';
+import type { FrameworkConfiguration, FrameworkLifeCycles, LoadableApp, MicroApp, RegistrableApp } from './interfaces';
+import type { ParcelConfigObjectGetter } from './loader';
+import { loadApp } from './loader';
 import { doPrefetchStrategy } from './prefetch';
 import { Deferred, getContainer, getXPathForElement, toArray } from './utils';
 
-let microApps: RegistrableApp[] = [];
+let microApps: Array<RegistrableApp<Record<string, unknown>>> = [];
 
 // eslint-disable-next-line import/no-mutable-exports
 export let frameworkConfiguration: FrameworkConfiguration = {};
 const frameworkStartedDefer = new Deferred<void>();
 
-export function registerMicroApps<T extends object = {}>(
+export function registerMicroApps<T extends ObjectType>(
   apps: Array<RegistrableApp<T>>,
   lifeCycles?: FrameworkLifeCycles<T>,
 ) {
@@ -46,7 +49,7 @@ export function registerMicroApps<T extends object = {}>(
 
 const appConfigPromiseGetterMap = new Map<string, Promise<ParcelConfigObjectGetter>>();
 
-export function loadMicroApp<T extends object = {}>(
+export function loadMicroApp<T extends ObjectType>(
   app: LoadableApp<T>,
   configuration?: FrameworkConfiguration,
   lifeCycles?: FrameworkLifeCycles<T>,
