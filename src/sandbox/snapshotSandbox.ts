@@ -2,9 +2,10 @@
  * @author Hydrogen
  * @since 2020-3-8
  */
-import { SandBox, SandBoxType } from '../interfaces';
+import type { ObjectType, SandBox } from '../interfaces';
+import { SandBoxType } from '../interfaces';
 
-function iter(obj: object, callbackFn: (prop: any) => void) {
+function iter(obj: ObjectType, callbackFn: (prop: any) => void) {
   // eslint-disable-next-line guard-for-in, no-restricted-syntax
   for (const prop in obj) {
     if (obj.hasOwnProperty(prop)) {

@@ -14,7 +14,7 @@ export function setCurrentRunningSandboxProxy(proxy: WindowProxy | null) {
   currentRunningSandboxProxy = proxy;
 }
 
-const functionBoundedValueMap = new WeakMap<Function, Function>();
+const functionBoundedValueMap = new WeakMap<CallableFunction, CallableFunction>();
 export function getTargetValue(target: any, value: any): any {
   const cachedBoundFunction = functionBoundedValueMap.get(value);
   if (cachedBoundFunction) {

@@ -2,7 +2,7 @@
  * @author Kuitos
  * @since 2019-11-12
  */
-import { FrameworkLifeCycles } from '../interfaces';
+import type { FrameworkLifeCycles } from '../interfaces';
 
 const rawPublicPath = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
 

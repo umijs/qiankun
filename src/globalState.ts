@@ -4,7 +4,7 @@
  */
 
 import { cloneDeep } from 'lodash';
-import { OnGlobalStateChangeCallback, MicroAppStateActions } from './interfaces';
+import type { OnGlobalStateChangeCallback, MicroAppStateActions } from './interfaces';
 
 let globalState: Record<string, any> = {};
 
