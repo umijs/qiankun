@@ -4,7 +4,7 @@
  */
 
 import { checkActivityFunctions } from 'single-spa';
-import { Freer } from '../../../interfaces';
+import type { Freer } from '../../../interfaces';
 import { patchHTMLDynamicAppendPrototypeFunctions, rebuildCSSRules, recordStyledComponentsCSSRules } from './common';
 
 let bootstrappingPatchCount = 0;

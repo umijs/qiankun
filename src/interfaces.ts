@@ -2,16 +2,19 @@
  * @author kuitos
  * @since 2019-05-16
  */
-import { ImportEntryOpts } from 'import-html-entry';
-import { RegisterApplicationConfig, StartOpts, Parcel } from 'single-spa';
+import type { ImportEntryOpts } from 'import-html-entry';
+import type { RegisterApplicationConfig, StartOpts, Parcel } from 'single-spa';
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   interface Window {
     __POWERED_BY_QIANKUN__?: boolean;
     __INJECTED_PUBLIC_PATH_BY_QIANKUN__?: string;
     __QIANKUN_DEVELOPMENT__?: boolean;
   }
 }
+
+export type ObjectType = Record<string, unknown>;
 
 export type Entry =
   | string
@@ -31,7 +34,9 @@ export type AppMetadata = {
 };
 
 // just for manual loaded apps, in single-spa it called parcel
-export type LoadableApp<T extends object = {}> = AppMetadata & { /* props pass through to app */ props?: T } & (
+export type LoadableApp<T extends ObjectType> = AppMetadata & {
+  /* props pass through to app */ props?: T;
+} & (
     | {
         // legacy mode, the render function all handled by user
         render: HTMLContentRender;
@@ -43,7 +48,7 @@ export type LoadableApp<T extends object = {}> = AppMetadata & { /* props pass t
   );
 
 // for the route-based apps
-export type RegistrableApp<T extends object = {}> = LoadableApp<T> & {
+export type RegistrableApp<T extends ObjectType> = LoadableApp<T> & {
   loader?: (loading: boolean) => void;
   activeRule: RegisterApplicationConfig['activeWhen'];
 };
@@ -83,8 +88,8 @@ type QiankunSpecialOpts = {
 };
 export type FrameworkConfiguration = QiankunSpecialOpts & ImportEntryOpts & StartOpts;
 
-export type LifeCycleFn<T extends object> = (app: LoadableApp<T>, global: typeof window) => Promise<any>;
-export type FrameworkLifeCycles<T extends object> = {
+export type LifeCycleFn<T extends ObjectType> = (app: LoadableApp<T>, global: typeof window) => Promise<any>;
+export type FrameworkLifeCycles<T extends ObjectType> = {
   beforeLoad?: LifeCycleFn<T> | Array<LifeCycleFn<T>>; // function before app load
   beforeMount?: LifeCycleFn<T> | Array<LifeCycleFn<T>>; // function before app mount
   afterMount?: LifeCycleFn<T> | Array<LifeCycleFn<T>>; // function after app mount
@@ -107,7 +112,7 @@ export enum SandBoxType {
   LegacyProxy = 'LegacyProxy',
 }
 
-export interface SandBox {
+export type SandBox = {
   /** 沙箱的名字 */
   name: string;
   /** 沙箱的类型 */
@@ -119,10 +124,10 @@ export interface SandBox {
   /** latest set property */
   latestSetProp?: PropertyKey | null;
   /** 启动沙箱 */
-  active(): void;
+  active: () => void;
   /** 关闭沙箱 */
-  inactive(): void;
-}
+  inactive: () => void;
+};
 
 export type OnGlobalStateChangeCallback = (state: Record<string, any>, prevState: Record<string, any>) => void;
 

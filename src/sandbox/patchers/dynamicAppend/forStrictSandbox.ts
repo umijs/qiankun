@@ -3,10 +3,10 @@
  * @since 2020-10-13
  */
 
-import { Freer } from '../../../interfaces';
+import type { Freer } from '../../../interfaces';
 import { getCurrentRunningSandboxProxy } from '../../common';
+import type { ContainerConfig } from './common';
 import {
-  ContainerConfig,
   isHijackingTag,
   patchHTMLDynamicAppendPrototypeFunctions,
   rawHeadAppendChild,
