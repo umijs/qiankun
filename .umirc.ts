@@ -18,13 +18,25 @@ export default defineConfig({
     en: [
       null,
       { title: 'Changelog', path: 'https://github.com/umijs/qiankun/releases' },
-      { title: '1.x', path: 'https://v1.qiankun.umijs.org/' },
+      { 
+        title: 'other version',
+        children: [
+          { title: '1.x version', path: 'https://v1.qiankun.umijs.org/' },
+          { title: 'upgrade guide', path: '/cookbook#upgrade-from-1x-version-to-2x-version' },
+        ]
+      },
       { title: 'GitHub', path: 'https://github.com/umijs/qiankun' },
     ],
     zh: [
       null,
       { title: '发布日志', path: 'https://github.com/umijs/qiankun/releases' },
-      { title: '1.x', path: 'https://v1.qiankun.umijs.org/zh/' },
+      {
+        title: '其他版本',
+        children: [
+          { title: '1.x 版本', path: 'https://v1.qiankun.umijs.org/zh/' },
+          { title: '升级指南', path: '/zh/cookbook#从-1x-版本升级到-2x-版本' },
+        ]
+      },
       { title: 'GitHub', path: 'https://github.com/umijs/qiankun' },
     ],
   },
