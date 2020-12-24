@@ -25,6 +25,7 @@ import {
   isEnableScopedCSS,
   performanceMark,
   performanceMeasure,
+  performanceGetEntriesByName,
   toArray,
   validateExportLifecycle,
 } from './utils';
@@ -363,9 +364,9 @@ export async function loadApp<T extends ObjectType>(
       mount: [
         async () => {
           if (process.env.NODE_ENV === 'development') {
-            const marks = performance.getEntriesByName(markName, 'mark');
+            const marks = performanceGetEntriesByName(markName, 'mark');
             // mark length is zero means the app is remounting
-            if (!marks.length) {
+            if (marks && !marks.length) {
               performanceMark(markName);
             }
           }
