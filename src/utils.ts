@@ -104,6 +104,14 @@ const supportsUserTiming =
   typeof performance.clearMeasures === 'function' &&
   typeof performance.getEntriesByName === 'function';
 
+export function performanceGetEntriesByName(markName: string, type?: string | undefined) {
+  let marks = null
+  if (supportsUserTiming) {
+    marks = performance.getEntriesByName(markName, type)
+  }
+  return marks
+}
+
 export function performanceMark(markName: string) {
   if (supportsUserTiming) {
     performance.mark(markName);

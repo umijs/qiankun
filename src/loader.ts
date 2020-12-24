@@ -20,6 +20,7 @@ import {
   performanceMeasure,
   toArray,
   validateExportLifecycle,
+  performanceGetEntriesByName
 } from './utils';
 
 function assertElementExist(element: Element | null | undefined, msg?: string) {
@@ -355,10 +356,10 @@ export async function loadApp<T extends object>(
       bootstrap,
       mount: [
         async () => {
-          if (process.env.NODE_ENV === 'development' && performance.getEntriesByName) {
-            const marks = performance.getEntriesByName(markName, 'mark');
+          if (process.env.NODE_ENV === 'development') {
+            const marks = performanceGetEntriesByName(markName, 'mark');
             // mark length is zero means the app is remounting
-            if (!marks.length) {
+            if (marks && !marks.length) {
               performanceMark(markName);
             }
           }
