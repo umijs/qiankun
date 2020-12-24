@@ -2,11 +2,11 @@
  * @author Kuitos
  * @since 2019-04-11
  */
-import type { ObjectType, SandBox } from '../../interfaces';
+import type { SandBox } from '../../interfaces';
 import { SandBoxType } from '../../interfaces';
 import { getTargetValue } from '../common';
 
-function isPropConfigurable(target: ObjectType, prop: PropertyKey) {
+function isPropConfigurable(target: typeof window, prop: PropertyKey) {
   const descriptor = Object.getOwnPropertyDescriptor(target, prop);
   return descriptor ? descriptor.configurable : true;
 }
