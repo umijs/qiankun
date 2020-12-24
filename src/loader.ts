@@ -25,6 +25,7 @@ import {
   isEnableScopedCSS,
   performanceMark,
   performanceMeasure,
+  performanceGetEntriesByName,
   toArray,
   validateExportLifecycle,
   performanceGetEntriesByName
