@@ -172,20 +172,6 @@ if (inBrowser && window.Vue) {
 1. 在主应用中不使用 CDN 等 external 的方式来加载 `Vue` 框架，使用前端打包软件来加载模块
 2. 在主应用中，将 `window.Vue` 变量改个名称，例如 `window.Vue2 = window.Vue; window.Vue = undefined`
 
-## Vue 框架下使用 Vue Router 的注意点
-
-qiankun 主应用根据 `activeRule` 配置激活对应微应用。
-
-### a. 主应用是 hash 模式
-
-当主应用是 hash 模式时，一般微应用也是 hash 模式。主应用的一级 hash 路径会分配给对应的微应用（比如 `#/base1` ），此时微应用如果需要在 base 路径的基础上进行 hash 模式下的二级路径跳转（比如 `#/base1/child1` ），这个场景在当前 VueRouter 的实现方式下需要自己手动实现，给所有路由都添加一个前缀即可。VueRouter 的 hash 模式下的 base 参数[不支持添加 hash 路径 base](https://github.com/vuejs/vue-router/blob/dev/src/index.js#L55-L69)。
-
-### b. 主应用是 history 模式
-
-当主应用是 history 模式且微应用也是 history 模式时，表现完美。如果微应用需要添加 base 路径，设置微应用的 [base](https://router.vuejs.org/zh/api/#base) 属性即可。
-
-当主应用是 history 模式，微应用是 hash 模式，表现完美。
-
 ## 为什么微应用加载的资源会 404？
 
 原因是 webpack 加载资源时未使用正确的 `publicPath`。
@@ -614,64 +600,6 @@ import 'core-js/web/url';
 ## 报错 `Here is no "fetch" on the window env, you need to polyfill it`
 
 qiankun 依赖的 import-html-entry 通过 `window.fetch` 来获取微应用的资源，部分[不支持 fetch 的浏览器](https://caniuse.com/#search=fetch)需要在入口处打上相应的 [polyfill](https://github.com/github/fetch)
-
-## 非 webpack 构建的微应用支持接入 qiankun 么？
-
-> 支持
-
-需要额外声明一个 `script`，用于 `export` 相对应的 `lifecycles`
-
-例如:
-
-1. 声明 entry 入口
-
-```diff
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Purehtml Example</title>
-</head>
-<body>
-  <div>
-    Purehtml Example
-  </div>
-</body>
-
-+ <script src="//yourhost/entry.js" entry></script>
-</html>
-```
-
-2. 在 entry js 里声明 lifecycles
-
-```javascript
-const render = ($) => {
-  $('#purehtml-container').html("Hello, render with jQuery");
-  return Promise.resolve();
-}
-
-(global => {
-  global['purehtml'] = {
-    bootstrap: () => {
-      console.log('purehtml bootstrap');
-      return Promise.resolve();
-    },
-    mount: () => {
-      console.log('purehtml mount');
-      return render($);
-    },
-    unmount: () => {
-      console.log('purehtml unmount');
-      return Promise.resolve();
-    },
-  };
-})(window);
-```
-
-你也可以直接参照 examples 中 purehtml 部分的[代码](https://github.com/umijs/qiankun/tree/master/examples/purehtml)
-
-同时，你也需要开启相关资源的 CORS，具体请参照[此处](#微应用静态资源一定要支持跨域吗？)
 
 ## 微应用 JSONP 跨域错误怎么处理？
 
