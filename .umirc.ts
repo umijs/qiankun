@@ -33,7 +33,7 @@ export default defineConfig({
         title: '版本公告',
         children: [
           { title: '发布日志', path: 'https://github.com/umijs/qiankun/releases' },
-          { title: '1.x 版本', path: 'https://v1.qiankun.umijs.org/zh/' },
+          { title: '升级指南', path: '/zh/cookbook#从-1x-版本升级到-2x-版本' },
           { title: '升级指南', path: '/zh/cookbook#从-1x-版本升级到-2x-版本' },
         ],
       },
