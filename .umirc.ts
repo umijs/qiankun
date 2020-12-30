@@ -30,7 +30,7 @@ export default defineConfig({
     zh: [
       null,
       {
-        title: '其他版本',
+        title: '版本公告',
         children: [
           { title: '发布日志', path: 'https://github.com/umijs/qiankun/releases' },
           { title: '1.x 版本', path: 'https://v1.qiankun.umijs.org/zh/' },
