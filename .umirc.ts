@@ -29,7 +29,6 @@ export default defineConfig({
     ],
     zh: [
       null,
-      { title: '发布日志', path: 'https://github.com/umijs/qiankun/releases' },
       {
         title: '其他版本',
         children: [
