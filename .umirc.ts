@@ -20,6 +20,7 @@ export default defineConfig({
       {
         title: 'Version Notice',
         children: [
+          { title: 'Changelog', path: 'https://github.com/umijs/qiankun/releases' },
           { title: '1.x version', path: 'https://v1.qiankun.umijs.org/' },
           { title: 'Upgrade Guide', path: '/cookbook#upgrade-from-1x-version-to-2x-version' },
         ],
