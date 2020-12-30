@@ -17,7 +17,6 @@ export default defineConfig({
   navs: {
     en: [
       null,
-      { title: 'Changelog', path: 'https://github.com/umijs/qiankun/releases' },
       {
         title: 'Version Notice',
         children: [
