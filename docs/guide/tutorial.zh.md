@@ -55,7 +55,7 @@ start();
     注意：运行时的 publicPath 和构建时的 publicPath 是不同的，两者不能等价替代。
     </Alert>
 
-2. `history` 路由需要设置路由 `base`，值和它的 `activeRule` 是一样的，此时 `hash` 模式无需设置路由 `base`（当使用 `hash` 来区分微应用时，`hash` 路由才需要设置路由 `base`）。
+2. 子应用建议使用 `history` 模式的路由，需要设置路由 `base`，值和它的 `activeRule` 是一样的。
 3. 在入口文件最顶部引入 `public-path.js`，修改并导出三个生命周期函数。
 4. 修改 `webpack` 打包，允许开发环境跨域和 `umd` 打包。
 
@@ -77,7 +77,6 @@ start();
 2. 设置 `history` 模式路由的 `base`：
 
     ```html
-    <!-- hash 模式不需要 -->
     <BrowserRouter basename={window.__POWERED_BY_QIANKUN__ ? '/app-react' : '/'}>
     ```
 
@@ -94,16 +93,6 @@ start();
       ReactDOM.render(<App />, container ? container.querySelector('#root') : document.querySelector('#root'));
     }
 
-    function storeTest(props) {
-      props.onGlobalStateChange((value, prev) => console.log(`[onGlobalStateChange - ${props.name}]:`, value, prev), true);
-      props.setGlobalState({
-        ignore: props.name,
-        user: {
-          name: props.name,
-        },
-      });
-    }
-
     if (!window.__POWERED_BY_QIANKUN__) {
       render({});
     }
@@ -114,7 +103,6 @@ start();
 
     export async function mount(props) {
       console.log('[react16] props from main framework', props);
-      storeTest(props);
       render(props);
     }
 
@@ -200,7 +188,6 @@ start();
     function render(props = {}) {
       const { container } = props;
       router = new VueRouter({
-        // hash 模式不需要设置 base
         base: window.__POWERED_BY_QIANKUN__ ? '/app-vue/' : '/',
         mode: 'history',
         routes,
@@ -218,27 +205,11 @@ start();
       render();
     }
 
-    function storeTest(props) {
-      props.onGlobalStateChange &&
-        props.onGlobalStateChange(
-          (value, prev) => console.log(`[onGlobalStateChange - ${props.name}]:`, value, prev),
-          true,
-        );
-      props.setGlobalState &&
-        props.setGlobalState({
-          ignore: props.name,
-          user: {
-            name: props.name,
-          },
-        });
-    }
-
     export async function bootstrap() {
       console.log('[vue] vue app bootstraped');
     }
     export async function mount(props) {
       console.log('[vue] props from main framework', props);
-      storeTest(props); // 测试双向传递数据
       render(props);
     }
     export async function unmount() {
