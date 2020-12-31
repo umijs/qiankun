@@ -181,7 +181,7 @@ export default class ProxySandbox implements SandBox {
           if (!target.hasOwnProperty(p) && rawWindow.hasOwnProperty(p)) {
             const descriptor = Object.getOwnPropertyDescriptor(rawWindow, p);
             const { writable, configurable, enumerable } = descriptor!;
-            if (writable) {
+            if (writable || typeof writable === 'undefined') {
               Object.defineProperty(target, p, {
                 configurable,
                 enumerable,
