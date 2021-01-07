@@ -14,7 +14,7 @@ declare global {
   }
 }
 
-export type ObjectType = Record<string, unknown>;
+export type ObjectType = Record<string, any>;
 
 export type Entry =
   | string
