@@ -20,7 +20,7 @@
     "examples:start-multiple": "run-p start:main-multiple start:react15 start:vue",
     "install:main": "cd examples/main && yarn",
     "start:main": "cd examples/main && yarn start",
-    "start:main-multiple": "cd examples/main && yarn start:multiple",
+    "start-main-multiple": "cd examples/main && yarn start:multiple",
     "install:react16": "cd examples/react16 && yarn",
     "start:react16": "cd examples/react16 && yarn start",
     "install:react15": "cd examples/react15 && yarn",

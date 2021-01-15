@@ -331,5 +331,7 @@ export default class ProxySandbox implements SandBox {
     });
 
     this.proxy = proxy;
+
+    activeSandboxCount++;
   }
 }
