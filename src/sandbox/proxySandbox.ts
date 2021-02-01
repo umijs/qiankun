@@ -223,6 +223,11 @@ export default class ProxySandbox implements SandBox {
           return proxy;
         }
 
+        // hijack global accessing with globalThis keyword
+        if (p === 'globalThis') {
+          return proxy;
+        }
+
         if (
           p === 'top' ||
           p === 'parent' ||
