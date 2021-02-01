@@ -71,6 +71,11 @@ test('window.self & window.window & window.top & window.parent should equals wit
   expect(proxy.parent).toBe(proxy);
 });
 
+test('globalThis should equals with sandbox', () => {
+  const { proxy } = new ProxySandbox('globalThis');
+  expect(proxy.globalThis).toBe(proxy);
+});
+
 test('allow window.top & window.parent to escape sandbox while in iframe', () => {
   // change window.parent to cheat ProxySandbox is in iframe
   Object.defineProperty(window, 'parent', { value: 'parent' });
