@@ -15,10 +15,29 @@ import {
 } from './common';
 
 const rawDocumentCreateElement = Document.prototype.createElement;
-const proxyAttachContainerConfigMap = new WeakMap<WindowProxy, ContainerConfig>();
+const rawDOMParserParseFromString = DOMParser.prototype.parseFromString;
+export const proxyAttachContainerConfigMap = new WeakMap<WindowProxy, ContainerConfig>();
+export const elementAttachContainerConfigMap = new WeakMap<HTMLElement, ContainerConfig>();
 
-const elementAttachContainerConfigMap = new WeakMap<HTMLElement, ContainerConfig>();
-function patchDocumentCreateElement() {
+function addElementToMap(node: HTMLElement) {
+  if (isHijackingTag(node.tagName)) {
+    const currentRunningSandboxProxy = getCurrentRunningSandboxProxy();
+    if (currentRunningSandboxProxy) {
+      const proxyContainerConfig = proxyAttachContainerConfigMap.get(currentRunningSandboxProxy);
+      if (proxyContainerConfig) {
+        elementAttachContainerConfigMap.set(node, proxyContainerConfig);
+      }
+    }
+  }
+
+  if (node.children?.length) {
+    for (let i = 0; i < node.children.length; i++) {
+      addElementToMap(node.children[i] as HTMLElement);
+    }
+  }
+}
+
+export function patchDocumentCreateElement() {
   if (Document.prototype.createElement === rawDocumentCreateElement) {
     Document.prototype.createElement = function createElement<K extends keyof HTMLElementTagNameMap>(
       this: Document,
@@ -26,15 +45,19 @@ function patchDocumentCreateElement() {
       options?: ElementCreationOptions,
     ): HTMLElement {
       const element = rawDocumentCreateElement.call(this, tagName, options);
-      if (isHijackingTag(tagName)) {
-        const currentRunningSandboxProxy = getCurrentRunningSandboxProxy();
-        if (currentRunningSandboxProxy) {
-          const proxyContainerConfig = proxyAttachContainerConfigMap.get(currentRunningSandboxProxy);
-          if (proxyContainerConfig) {
-            elementAttachContainerConfigMap.set(element, proxyContainerConfig);
+
+      const rawInnerHTMLDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+      Object.defineProperty(element, 'innerHTML', {
+        ...rawInnerHTMLDescriptor,
+        set(value) {
+          rawInnerHTMLDescriptor!.set!.call(this, value);
+          for (let i = 0; i < this.children.length; i++) {
+            addElementToMap(this.children[i] as HTMLElement);
           }
-        }
-      }
+        },
+      });
+
+      addElementToMap(element);
 
       return element;
     };
@@ -42,6 +65,27 @@ function patchDocumentCreateElement() {
 
   return function unpatch() {
     Document.prototype.createElement = rawDocumentCreateElement;
+  };
+}
+
+export function patchDOMParserParseFromString() {
+  if (DOMParser.prototype.parseFromString === rawDOMParserParseFromString) {
+    DOMParser.prototype.parseFromString = function parseFromString(
+      string: string,
+      type: DOMParserSupportedType,
+    ): Document {
+      const resDocument = rawDOMParserParseFromString.call(this, string, type);
+
+      if (type === 'text/html') {
+        addElementToMap((resDocument as unknown) as HTMLElement);
+      }
+
+      return resDocument;
+    };
+  }
+
+  return function unpatch() {
+    DOMParser.prototype.parseFromString = rawDOMParserParseFromString;
   };
 }
 
@@ -73,6 +117,7 @@ export function patchStrictSandbox(
   const { dynamicStyleSheetElements } = containerConfig;
 
   const unpatchDocumentCreate = patchDocumentCreateElement();
+  const unpatchDOMParserParseFromString = patchDOMParserParseFromString();
 
   const unpatchDynamicAppendPrototypeFunctions = patchHTMLDynamicAppendPrototypeFunctions(
     (element) => elementAttachContainerConfigMap.has(element),
@@ -92,6 +137,7 @@ export function patchStrictSandbox(
     if (allMicroAppUnmounted) {
       unpatchDynamicAppendPrototypeFunctions();
       unpatchDocumentCreate();
+      unpatchDOMParserParseFromString();
     }
 
     recordStyledComponentsCSSRules(dynamicStyleSheetElements);
