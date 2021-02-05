@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: help wanted
-        if: github.event.label.name == 'pr Welcome' || github.event.label.name == 'help wanted'
+        if: github.event.label.name == 'pr welcome' || github.event.label.name == 'help wanted'
         uses: actions-cool/issues-helper@v2.0.0
         with:
           actions: 'create-comment'
