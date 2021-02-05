@@ -28,6 +28,6 @@ jobs:
           body: |
             Hello @${{ github.event.issue.user.login }}. In order to facilitate location and troubleshooting, we need you to provide a realistic example. Please forking these link [codesandbox](https://codesandbox.io/) or clone [qiankun examples](https://github.com/umijs/qiankun/tree/master/examples) to your GitHub repository.
 
-            你好 @${{ github.event.issue.user.login }}, 为了方便定位和排查问题，我们需要你提供一个重现实例，请提供一个尽可能精简的链接 [codesandbox](https://codesandbox.io/) 或也可以直接 clone [qiankun examples](https://github.com/umijs/qiankun/tree/master/examples)，并上传到你的 GitHub 仓库。
+            你好 @${{ github.event.issue.user.login }}, 为了方便定位和排查问题，我们需要你提供一个重现实例，请提供一个尽可能精简的链接 [codesandbox](https://codesandbox.io/) 或直接 clone [qiankun examples](https://github.com/umijs/qiankun/tree/master/examples)，并上传到你的 GitHub 仓库。
 
             ![](https://gw.alipayobjects.com/zos/antfincdn/y9kwg7DVCd/reproduce.gif)
