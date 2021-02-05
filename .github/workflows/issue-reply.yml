@@ -30,8 +30,8 @@ jobs:
 
             你好 @${{ github.event.issue.user.login }}，为节约大家的时间，请使用 issue 模板反馈问题。该 issue 将要被关闭。
 
-      - name: Need Reproduce
-        if: github.event.label.name == 'Need Reproduce'
+      - name: Need Reproduction
+        if: github.event.label.name == 'Need Reproduction'
         uses: actions-cool/issues-helper@v2.0.0
         with:
           actions: 'create-comment'
