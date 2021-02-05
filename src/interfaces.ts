@@ -31,7 +31,11 @@ export type AppMetadata = {
   name: string;
   // app entry
   entry: Entry;
+  // fetch options
+  fetchOptions?: FetchOptions;
 };
+
+export type FetchOptions = Pick<RequestInit, 'credentials' | 'mode'>;
 
 // just for manual loaded apps, in single-spa it called parcel
 export type LoadableApp<T extends ObjectType> = AppMetadata & {

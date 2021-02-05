@@ -3,12 +3,14 @@
  * @since 2020-04-01
  */
 
+import type { ImportEntryOpts } from 'import-html-entry';
 import { importEntry } from 'import-html-entry';
 import { concat, forEach, mergeWith } from 'lodash';
 import type { LifeCycles, ParcelConfigObject } from 'single-spa';
 import getAddOns from './addons';
 import { getMicroAppStateActions } from './globalState';
 import type {
+  FetchOptions,
   FrameworkConfiguration,
   FrameworkLifeCycles,
   HTMLContentRender,
@@ -246,12 +248,44 @@ let prevAppUnmountedDeferred: Deferred<void>;
 
 export type ParcelConfigObjectGetter = (remountContainer?: string | HTMLElement) => ParcelConfigObject;
 
+function getWrapperFetch(originalFetch: typeof window.fetch, fetchOptions: FetchOptions): typeof window.fetch {
+  return (url, opts) => {
+    return originalFetch(url, {
+      ...fetchOptions,
+      ...opts,
+    });
+  };
+}
+
+export function mergeFetchOptions(
+  originalImportEntryOpts: ImportEntryOpts | undefined,
+  fetchOptions: FetchOptions | undefined,
+): ImportEntryOpts | undefined {
+  if (!fetchOptions) {
+    return originalImportEntryOpts;
+  }
+  const importEntryOpts = {
+    ...originalImportEntryOpts,
+  };
+  if (typeof importEntryOpts.fetch === 'function') {
+    importEntryOpts.fetch = getWrapperFetch(importEntryOpts.fetch, fetchOptions);
+  } else if (typeof importEntryOpts.fetch === 'object' && importEntryOpts.fetch.fn) {
+    importEntryOpts.fetch = {
+      ...importEntryOpts.fetch,
+      fn: getWrapperFetch(importEntryOpts.fetch.fn, fetchOptions),
+    };
+  } else {
+    importEntryOpts.fetch = getWrapperFetch(window.fetch, fetchOptions);
+  }
+  return importEntryOpts;
+}
+
 export async function loadApp<T extends ObjectType>(
   app: LoadableApp<T>,
   configuration: FrameworkConfiguration = {},
   lifeCycles?: FrameworkLifeCycles<T>,
 ): Promise<ParcelConfigObjectGetter> {
-  const { entry, name: appName } = app;
+  const { entry, name: appName, fetchOptions } = app;
   const appInstanceId = `${appName}_${+new Date()}_${Math.floor(Math.random() * 1000)}`;
 
   const markName = `[qiankun] App ${appInstanceId} Loading`;
@@ -262,7 +296,10 @@ export async function loadApp<T extends ObjectType>(
   const { singular = false, sandbox = true, excludeAssetFilter, ...importEntryOpts } = configuration;
 
   // get the entry html content and script executor
-  const { template, execScripts, assetPublicPath } = await importEntry(entry, importEntryOpts);
+  const { template, execScripts, assetPublicPath } = await importEntry(
+    entry,
+    mergeFetchOptions(importEntryOpts, fetchOptions),
+  );
 
   // as single-spa load and bootstrap new app parallel with other apps unmounting
   // (see https://github.com/CanopyTax/single-spa/blob/master/src/navigation/reroute.js#L74)

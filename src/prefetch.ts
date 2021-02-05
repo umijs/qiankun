@@ -8,6 +8,7 @@ import { importEntry } from 'import-html-entry';
 import { isFunction } from 'lodash';
 import { getAppStatus, getMountedApps, NOT_LOADED } from 'single-spa';
 import type { AppMetadata, PrefetchStrategy } from './interfaces';
+import { mergeFetchOptions } from './loader';
 
 type RequestIdleCallbackHandle = any;
 type RequestIdleCallbackOptions = {
@@ -87,7 +88,9 @@ function prefetchAfterFirstMounted(apps: AppMetadata[], opts?: ImportEntryOpts):
       console.log(`[qiankun] prefetch starting after ${mountedApps} mounted...`, notLoadedApps);
     }
 
-    notLoadedApps.forEach(({ entry }) => prefetch(entry, opts));
+    notLoadedApps.forEach(({ entry, fetchOptions }) => {
+      prefetch(entry, mergeFetchOptions(opts, fetchOptions));
+    });
 
     window.removeEventListener('single-spa:first-mount', listener);
   });

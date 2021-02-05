@@ -72,6 +72,8 @@ By linking the micro-application to some url rules, the function of automaticall
 
     - props - `object` - optional, data that the primary application needs to pass to the child application.
 
+    - fetchOptions - `object` - optional，second parameter pass to window.fetch，normally set `{ mode: 'cors', credential: 'includes' }` to fetch a  sub app html which is cross domain and need auth cookie
+
   - `LifeCycles`
 
     ```ts
@@ -161,7 +163,7 @@ By linking the micro-application to some url rules, the function of automaticall
     - getPublicPath - `(entry: Entry) => string` - optional，The parameter is the entry value of the micro application.
 
     - getTemplate - `(tpl: string) => string` - optional
-    
+
     - excludeAssetFilter - `(assetUrl: string) => boolean` - optional，some special dynamic loaded micro app resources should not be handled by qiankun hijacking
 
 - Usage
@@ -244,25 +246,25 @@ A criterion for judging whether the business is closely related: <strong>Look at
       .app-main {
         font-size: 14px;
       }
-      
+
       div[data-qiankun-react16] .app-main {
         font-size: 14px;
       }
       ```
-      
+
       notice:
       @keyframes, @font-face, @import, @page are not supported (i.e. will not be rewritten)
-    
+
     * singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - Optional, whether it is a singleton scenario, singleton means just rendered one micro app at one time. Default is `false`.
-    
+
     * fetch - `Function` - Optional, custom fetch method.
-    
+
     * getPublicPath - `(url: string) => string` - Optional，The parameter is the entry value of the micro application.
-    
+
     * getTemplate - `(tpl: string) => string` - Optional
-    
+
     * excludeAssetFilter - `(assetUrl: string) => boolean` - optional，some special dynamic loaded micro app resources should not be handled by qiankun hijacking
-  
+
 * 返回值 - `MicroApp` - Micro application examples
   * mount(): Promise&lt;null&gt;;
   * unmount(): Promise&lt;null&gt;;

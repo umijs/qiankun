@@ -72,6 +72,8 @@ toc: menu
 
     - props - `object` - 可选，主应用需要传递给微应用的数据。
 
+    - fetchOptions - `object` - 可选，window.fetch 的第二个参数，一般可以配置 `{ mode: 'cors', credential: 'includes' }` 来实现拉取子应用 html 的时候跨域且 cookie
+
   - `LifeCycles`
 
     ```ts
@@ -268,7 +270,7 @@ toc: menu
     * getPublicPath - `(entry: Entry) => string` - 可选，参数是微应用的 entry 值。
 
     * getTemplate - `(tpl: string) => string` - 可选
-    
+
     * excludeAssetFilter - `(assetUrl: string) => boolean` - 可选，指定部分特殊的动态加载的微应用资源（css/js) 不被qiankun 劫持处理
 
 * 返回值 - `MicroApp` - 微应用实例
