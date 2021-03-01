@@ -10,12 +10,23 @@
       name="keywords"
       content="microfrontend, micro frontend, micro frontends, micro-frontend, micro-frontends, microservice, javascript"
     />
-    <link rel="stylesheet" href="/qiankun/umi.9e127424.css" />
+    <link rel="stylesheet" href="/qiankun/umi.675eced1.css" />
     <script>
       window.routerBase = "/qiankun";
     </script>
     <script>
-      //! umi version: 3.3.7
+      //! umi version: 3.3.9
+    </script>
+    <script>
+      !(function () {
+        var e = localStorage.getItem("dumi:prefers-color"),
+          t = window.matchMedia("(prefers-color-scheme: dark)").matches,
+          r = ["light", "dark", "auto"];
+        document.documentElement.setAttribute(
+          "data-prefers-color",
+          e === r[2] ? (t ? r[1] : r[0]) : r.includes(e) ? e : r[0]
+        );
+      })();
     </script>
     <script>
       var _hmt = _hmt || [];
@@ -59,6 +70,6 @@
         }
       })();
     </script>
-    <script src="/qiankun/umi.f24c2118.js"></script>
+    <script src="/qiankun/umi.b12e5109.js"></script>
   </body>
 </html>
