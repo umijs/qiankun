@@ -12,7 +12,7 @@ import { getTargetValue, setCurrentRunningSandboxProxy } from './common';
  * fastest(at most time) unique array method
  * @see https://jsperf.com/array-filter-unique/30
  */
-function uniq(array: PropertyKey[]) {
+function uniq(array: Array<string | symbol>) {
   return array.filter(function filter(this: PropertyKey[], element) {
     return element in this ? false : ((this as any)[element] = true);
   }, Object.create(null));
@@ -303,9 +303,8 @@ export default class ProxySandbox implements SandBox {
       },
 
       // trap to support iterator with sandbox
-      ownKeys(target: FakeWindow): PropertyKey[] {
-        const keys = uniq(Reflect.ownKeys(rawWindow).concat(Reflect.ownKeys(target)));
-        return keys;
+      ownKeys(target: FakeWindow): ArrayLike<string | symbol> {
+        return uniq(Reflect.ownKeys(rawWindow).concat(Reflect.ownKeys(target)));
       },
 
       defineProperty(target: Window, p: PropertyKey, attributes: PropertyDescriptor): boolean {
