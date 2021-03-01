@@ -91,7 +91,7 @@ export async function update(props) {
 qiankun 基于 single-spa，所以你可以在[这里](https://single-spa.js.org/docs/building-applications.html#registered-application-lifecycle)找到更多关于微应用生命周期相关的文档说明。
 
 
-无 webpack 等构建工具的应用接入方式请见[这里](/zh/faq#非-webpack-构建的微应用支持接入-qiankun-么？)
+无 webpack 等构建工具的应用接入方式请见[这里](/zh/guide/tutorial#%E9%9D%9E-webpack-%E6%9E%84%E5%BB%BA%E7%9A%84%E5%BE%AE%E5%BA%94%E7%94%A8)
 
 ### 2. 配置微应用的打包工具
 
