@@ -39,5 +39,5 @@ export type Rebuilder = () => void;
 export type Freer = () => Rebuilder;
 
 export interface ExecScriptsOpts {
-  fetch?: Function;
+  fetch?: ImportEntryOpts['fetch'];
 }
