@@ -86,7 +86,8 @@
     "prettier": "^2.1.2",
     "rimraf": "^3.0.0",
     "ts-jest": "^25.2.1",
-    "typescript": "^4.1.2"
+    "typescript": "^4.1.2",
+    "umi-plugin-hire": "^1.0.3"
   },
   "resolutions": {
     "@types/react": "^16.x"
