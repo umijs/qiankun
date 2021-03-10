@@ -5,7 +5,7 @@
 
 import { importEntry } from 'import-html-entry';
 import { concat, forEach, mergeWith } from 'lodash';
-import type { LifeCycles, ParcelConfigObject } from 'single-spa';
+import type { AppProps, LifeCycles, ParcelConfigObject } from 'single-spa';
 import getAddOns from './addons';
 import { getMicroAppStateActions } from './globalState';
 import type {
@@ -44,9 +44,10 @@ function execHooksChain<T extends ObjectType>(
   hooks: Array<LifeCycleFn<T>>,
   app: LoadableApp<T>,
   global = window,
+  props?: AppProps,
 ): Promise<any> {
   if (hooks.length) {
-    return hooks.reduce((chain, hook) => chain.then(() => hook(app, global)), Promise.resolve());
+    return hooks.reduce((chain, hook) => chain.then(() => hook(app, global, props)), Promise.resolve());
   }
 
   return Promise.resolve();
@@ -392,11 +393,11 @@ export async function loadApp<T extends ObjectType>(
         },
         mountSandbox,
         // exec the chain after rendering to keep the behavior with beforeLoad
-        async () => execHooksChain(toArray(beforeMount), app, global),
+        async (props) => execHooksChain(toArray(beforeMount), app, global, props),
         async (props) => mount({ ...props, container: appWrapperGetter(), setGlobalState, onGlobalStateChange }),
         // finish loading after app mounted
         async () => render({ element: appWrapperElement, loading: false, container: remountContainer }, 'mounted'),
-        async () => execHooksChain(toArray(afterMount), app, global),
+        async (props) => execHooksChain(toArray(afterMount), app, global, props),
         // initialize the unmount defer after app mounted and resolve the defer after it unmounted
         async () => {
           if (await validateSingularMode(singular, app)) {
@@ -411,10 +412,10 @@ export async function loadApp<T extends ObjectType>(
         },
       ],
       unmount: [
-        async () => execHooksChain(toArray(beforeUnmount), app, global),
+        async (props) => execHooksChain(toArray(beforeUnmount), app, global, props),
         async (props) => unmount({ ...props, container: appWrapperGetter() }),
         unmountSandbox,
-        async () => execHooksChain(toArray(afterUnmount), app, global),
+        async (props) => execHooksChain(toArray(afterUnmount), app, global, props),
         async () => {
           render({ element: null, loading: false, container: remountContainer }, 'unmounted');
           offGlobalStateChange(appInstanceId);

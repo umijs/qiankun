@@ -3,7 +3,7 @@
  * @since 2019-05-16
  */
 import type { ImportEntryOpts } from 'import-html-entry';
-import type { RegisterApplicationConfig, StartOpts, Parcel } from 'single-spa';
+import type { RegisterApplicationConfig, StartOpts, Parcel, AppProps } from 'single-spa';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
@@ -88,7 +88,11 @@ type QiankunSpecialOpts = {
 };
 export type FrameworkConfiguration = QiankunSpecialOpts & ImportEntryOpts & StartOpts;
 
-export type LifeCycleFn<T extends ObjectType> = (app: LoadableApp<T>, global: typeof window) => Promise<any>;
+export type LifeCycleFn<T extends ObjectType> = (
+  app: LoadableApp<T>,
+  global: typeof window,
+  props?: AppProps,
+) => Promise<any>;
 export type FrameworkLifeCycles<T extends ObjectType> = {
   beforeLoad?: LifeCycleFn<T> | Array<LifeCycleFn<T>>; // function before app load
   beforeMount?: LifeCycleFn<T> | Array<LifeCycleFn<T>>; // function before app mount
