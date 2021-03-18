@@ -631,3 +631,49 @@ export async function mount(props) {
 + ReactDOM.render(<App/>, props.container.querySelector('#root'));
 }
 ```
+
+## How to solve the problem that cookies are not carried when pulling micro-app entries
+
+As the requests to pull micro-app entry are all cross-domain, when your micro-app relies on cookies (such as authentication), you need to customize the fetch method to enable the cors mode:
+
+* If you load the microapps through [registerMicroApps](/api#registermicroappsapps-lifecycles), you need to configure a custom fetch in the start method, such as:
+
+  ```js
+  import { start } from 'qiankun';
+  
+  start({ 
+    fetch(url, ...args) {
+      // Enable cors mode for the specified microapp
+      if (url === 'http://app.alipay.com/entry.html') {
+        return window.fetch(url, {
+          ...args,
+          mode: 'cors',
+          credentials: 'include',
+        });
+      }
+  
+      return window.fetch(url, ...args);
+    }
+  });
+  ```
+
+* If you load the microapp via [loadMicroApp](/api#loadmicroappapp-configuration), you need to configure a custom fetch when invoking, such as:
+
+  ```js
+  import { loadMicroApp } from 'qiankun';
+  
+  loadMicroApp(app, {
+    fetch(url, ...args) {
+      // Enable cors mode for the specified microapp
+      if (url === 'http://app.alipay.com/entry.html') {
+        return window.fetch(url, {
+          ...args,
+          mode: 'cors',
+          credentials: 'include',
+        });
+      }
+  
+      return window.fetch(url, ...args);
+    }
+  });
+  ```
