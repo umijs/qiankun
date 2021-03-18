@@ -704,3 +704,53 @@ export async function mount(props) {
 }
 ```
 
+## 如何解决拉取微应用 entry 时 cookie 未携带的问题
+
+因为拉取微应用 entry 的请求都是跨域的，所以当你的微应用是依赖 cookie (如登陆鉴权)的情况下，你需要通过自定义 fetch 的方式，开启 fetch 的 cors 模式：
+
+* 如果你是通过 [registerMicroApps](/zh/api#registermicroappsapps-lifecycles) 加载微应用的，你需要在 start 方法里配置自定义 fetch，如：
+
+  ```js
+  import { start } from 'qiankun';
+  
+  start({ 
+    fetch(url, ...args) {
+      // 给指定的微应用 entry 开启跨域请求
+      if (url === 'http://app.alipay.com/entry.html') {
+        return window.fetch(url, {
+          ...args,
+          mode: 'cors',
+          credentials: 'include',
+        });
+      }
+  
+      return window.fetch(url, ...args);
+    }
+  });
+  ```
+
+* 如果你是通过 [loadMicroApp](/zh/api#loadmicroappapp-configuration) 加载微应用的，你需要在调用时配置自定义 fetch，如：
+
+  ```js
+  import { loadMicroApp } from 'qiankun';
+  
+  loadMicroApp(app, {
+    fetch(url, ...args) {
+      // 给指定的微应用 entry 开启跨域请求
+      if (url === 'http://app.alipay.com/entry.html') {
+        return window.fetch(url, {
+          ...args,
+          mode: 'cors',
+          credentials: 'include',
+        });
+      }
+  
+      return window.fetch(url, ...args);
+    }
+  });
+  ```
+
+  
+
+
+
