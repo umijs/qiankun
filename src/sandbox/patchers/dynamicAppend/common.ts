@@ -234,6 +234,9 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
                 manualInvokeElementOnError(element);
                 element = null;
               },
+            }).catch(() => {
+              manualInvokeElementOnError(element);
+              element = null;
             });
 
             const dynamicScriptCommentElement = document.createComment(`dynamic script ${src} replaced by qiankun`);
