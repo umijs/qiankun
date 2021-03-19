@@ -750,6 +750,24 @@ export async function mount(props) {
   });
   ```
 
+* 如果你是通过 [umi plugin](https://umijs.org/zh-CN/plugins/plugin-qiankun) 来使用 qiankun 的，那么你只需要给对应的微应用开启 credentials 配置即可：
+
+  ```diff
+  export default {
+    qiankun: {
+      master: {
+        apps: [
+          {
+            name: 'app',
+            entry: '//app.alipay.com/entry.html',
+  +         credentials: true,
+          }
+        ]
+      }
+    }
+  }
+  ```
+
   
 
 
