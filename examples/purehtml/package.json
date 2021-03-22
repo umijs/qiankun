@@ -1,5 +1,5 @@
 {
-  "name": "purehtml",
+  "name": "@example/purehtml",
   "version": "1.0.0",
   "description": "",
   "main": "index.html",
@@ -12,5 +12,8 @@
   "devDependencies": {
     "cross-env": "^7.0.2",
     "http-server": "^0.12.1"
+  },
+  "dependencies": {
+    "qiankun": "^2.4.0"
   }
 }

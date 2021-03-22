@@ -18,11 +18,11 @@ When registering micro apps, `activeRule` needs to be written like this:
 
 ```js
 registerMicroApps([
-  { 
-    name: 'app', 
-    entry: 'http://localhost:8080', 
-    container: '#container', 
-    activeRule: '/app', 
+  {
+    name: 'app',
+    entry: 'http://localhost:8080',
+    container: '#container',
+    activeRule: '/app',
   },
 ]);
 ```
@@ -31,33 +31,37 @@ registerMicroApps([
 
 2. When the micro app is in the `hash` mode, the performance of the three routes is inconsistent
 
-    | routing        | main app jump `/app/#/about`   | special configuration     |
-    | ---------------| -------------------------------| --------------------------|
-    | vue-router     | Response `about` routing       | none                      |
-    | react-router   | not responding `about` routing | none                      |
-    | angular-router | Response `about` routing       | need to set `--base-href` |
+   | routing        | main app jump `/app/#/about`   | special configuration     |
+   | -------------- | ------------------------------ | ------------------------- |
+   | vue-router     | Response `about` routing       | none                      |
+   | react-router   | not responding `about` routing | none                      |
+   | angular-router | Response `about` routing       | need to set `--base-href` |
 
-    `Angular` app set `--base-href` in `package.json`:
-    ```diff
-    - "start": "ng serve",
-    + "start": "ng serve --base-href /angular9",
-    - "build": "ng build",
-    + "build": "ng build --base-href /angular9",
-    ```
+   `Angular` app set `--base-href` in `package.json`:
 
-    After bundled and deployed, the `angular` micro app can be accessed by the main app, but the lazy-loaded route during independent access will report an error and the path is incorrect. There are two solutions:
+   ```diff
+   - "start": "ng serve",
+   + "start": "ng serve --base-href /angular9",
+   - "build": "ng build",
+   + "build": "ng build --base-href /angular9",
+   ```
 
-    - Solution 1: Modify `public-path.js` to:
+   After bundled and deployed, the `angular` micro app can be accessed by the main app, but the lazy-loaded route during independent access will report an error and the path is incorrect. There are two solutions:
 
-        ```js
-        __webpack_public_path__ = window.__POWERED_BY_QIANKUN__ ? window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__ : `http://${ip}:${port}/`; // Fill in your actual deployment address
-        ```
-    - Solution 2: Modify the bundling command and deploy the micro app in the `angular9` directory:
+   - Solution 1: Modify `public-path.js` to:
 
-        ```diff
-        - "build": "ng build",
-        + "build": "ng build --base-href /angular9 --deploy-url /angular9/",
-        ```
+     ```js
+     __webpack_public_path__ = window.__POWERED_BY_QIANKUN__
+       ? window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__
+       : `http://${ip}:${port}/`; // Fill in your actual deployment address
+     ```
+
+   - Solution 2: Modify the bundling command and deploy the micro app in the `angular9` directory:
+
+     ```diff
+     - "build": "ng build",
+     + "build": "ng build --base-href /angular9 --deploy-url /angular9/",
+     ```
 
 ### activeRule uses hash to distinguish micro apps
 
@@ -66,13 +70,13 @@ When the micro apps are all in the `hash` mode, `hash` can be used to distinguis
 When registering micro apps, `activeRule` needs to be written like this:
 
 ```js
-const getActiveRule = hash => location => location.hash.startsWith(hash);
+const getActiveRule = (hash) => (location) => location.hash.startsWith(hash);
 registerMicroApps([
-  { 
-    name: 'app-hash', 
-    entry: 'http://localhost:8080', 
-    container: '#container', 
-    activeRule: getActiveRule('#/app-hash'), 
+  {
+    name: 'app-hash',
+    entry: 'http://localhost:8080',
+    container: '#container',
+    activeRule: getActiveRule('#/app-hash'),
     // Here you can also write `activeRule:'#/app-hash'` directly,
     // but if the main app is in history mode or the main app is deployed in a non-root directory, this writing will not take effect.
   },
@@ -91,9 +95,9 @@ const routes = [
     component: Home,
     children: [
       // All other routes are written here
-    ]
-  }
-]
+    ],
+  },
+];
 ```
 
 ### When there are multiple micro apps at the same time
@@ -148,7 +152,7 @@ Suppose we have a main app and 6 micro apps ( respectively `vue-hash`, `vue-hist
 At this time, you need to set the `publicPath` and the route `base` of the `history` mode when the micro app is built, and then bundle them into the corresponding directory.
 
 | app             | routing base            | publicPath              | real access path                             |
-| --------------- | ------------------------| ------------------------| ---------------------------------------------|
+| --------------- | ----------------------- | ----------------------- | -------------------------------------------- |
 | vue-hash        | none                    | /child/vue-hash/        | http://localhost:8080/child/vue-hash/        |
 | vue-history     | /child/vue-history/     | /child/vue-history/     | http://localhost:8080/child/vue-history/     |
 | react-hash      | none                    | /child/react-hash/      | http://localhost:8080/child/react-hash/      |
@@ -158,61 +162,72 @@ At this time, you need to set the `publicPath` and the route `base` of the `hist
 
 - `vue-history` micro app
 
-    Routing's base configuration:
-    ```js
-    base: window.__POWERED_BY_QIANKUN__ ? '/app-vue/' : '/child/vue-history/',
-    ```
-    Webpack's publicPath configuration（`vue.config.js`）:
-    ```js
-    module.exports = {
-      publicPath: '/child/vue-history/'
-    }
-    ```
+  Routing's base configuration:
+
+  ```js
+  base: window.__POWERED_BY_QIANKUN__ ? '/app-vue/' : '/child/vue-history/',
+  ```
+
+  Webpack's publicPath configuration（`vue.config.js`）:
+
+  ```js
+  module.exports = {
+    publicPath: '/child/vue-history/',
+  };
+  ```
 
 - `react-history` micro app
 
-    Routing's base configuration:
-    ```html
-    <BrowserRouter basename={window.__POWERED_BY_QIANKUN__ ? '/app-react' : '/child/react-history/'}>
-    ```
-    Webpack's publicPath configuration:
-    ```js
-    module.exports = {
-      output: {
-        publicPath: '/child/react-history/',
-      }
-    }
-    ```
+  Routing's base configuration:
+
+  ```html
+  <BrowserRouter basename={window.__POWERED_BY_QIANKUN__ ? '/app-react' : '/child/react-history/'}>
+  ```
+
+  Webpack's publicPath configuration:
+
+  ```js
+  module.exports = {
+    output: {
+      publicPath: '/child/react-history/',
+    },
+  };
+  ```
 
 - `angular-history` micro app
 
-    Routing's base configuration:
-    ```js
-    providers: [{ 
-      provide: APP_BASE_HREF, 
-      useValue: window.__POWERED_BY_QIANKUN__ ? '/app-angular/' : '/child/angular-history/' 
-    }]
-    ```
-    The `publicPath` of webpack is set by `deploy-url`, modify `package.json`:
-    ```diff
-    - "build": "ng build",
-    + "build": "ng build --deploy-url /child/angular-history/",
-    ```
+  Routing's base configuration:
+
+  ```js
+  providers: [
+    {
+      provide: APP_BASE_HREF,
+      useValue: window.__POWERED_BY_QIANKUN__ ? '/app-angular/' : '/child/angular-history/',
+    },
+  ];
+  ```
+
+  The `publicPath` of webpack is set by `deploy-url`, modify `package.json`:
+
+  ```diff
+  - "build": "ng build",
+  + "build": "ng build --deploy-url /child/angular-history/",
+  ```
 
 Then the `registerMicroApps` function at this time is like this (you need to ensure that `activeRule` and `entry` are different):
 
 ```js
 registerMicroApps([
   {
-    name: 'app-vue-hash', 
+    name: 'app-vue-hash',
     entry: '/child/vue-hash/', // http://localhost:8080/child/vue-hash/
-    container: '#container', 
-    activeRule: '/app-vue-hash', 
+    container: '#container',
+    activeRule: '/app-vue-hash',
   },
-  { 
+  {
     name: 'app-vue-history',
     entry: '/child/vue-history/', // http://localhost:8080/child/vue-history/
-    container: '#container', 
+    container: '#container',
     activeRule: '/app-vue-history',
   },
   // angular and react same as above
@@ -270,7 +285,7 @@ the `Nginx` proxy configuration of the main app is：
 ```
 /app1/ {
   proxy_pass http://www.b.com/app1/;
-  proxy_set_header Host $host:$server_port;    
+  proxy_set_header Host $host:$server_port;
 }
 ```
 
@@ -279,10 +294,10 @@ When the main app registers micro apps, `entry` can be a relative path, and `act
 ```js
 registerMicroApps([
   {
-    name: 'app1', 
+    name: 'app1',
     entry: '/app1/', // http://localhost:8080/app1/
-    container: '#container', 
-    activeRule: '/child-app1', 
+    container: '#container',
+    activeRule: '/child-app1',
   },
 ],
 ```
@@ -293,8 +308,8 @@ For micro apps bundled by `webpack`, the `publicPath` bundled by the micro app's
 module.exports = {
   output: {
     publicPath: `/app1/`,
-  }
-}
+  },
+};
 ```
 
 After adding `/app1/` to the `publicPath` of the micro app, it must be deployed in the `/app1` directory, otherwise it cannot be accessed independently.

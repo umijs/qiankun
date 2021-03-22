@@ -2,7 +2,7 @@
 title: qiankun
 hero:
   title: qiankun
-  desc: Probably the most complete micro-frontends solution you ever met🧐 
+  desc: Probably the most complete micro-frontends solution you ever met🧐
   actions:
     - text: Get Started →
       link: /guide
@@ -33,7 +33,7 @@ loadMicroApp({
   entry: '//localhost:7100',
   container: '#container',
   props: {
-    slogan: 'Hello Qiankun'
+    slogan: 'Hello Qiankun',
   },
 });
 ```

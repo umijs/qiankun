@@ -1,9 +1,9 @@
 /test/fixtures
 **/*.gif
-/dist
-/docs
-/es
-/lib
+packages/docs
+packages/examples
+packages/**/dist
+packages/**/es
+packages/**/lib
 /coverage
 .cache
-examples

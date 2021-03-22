@@ -1,7 +1,7 @@
 const { name } = require('./package');
 
 module.exports = {
-  webpack: config => {
+  webpack: (config) => {
     config.output.library = `${name}-[name]`;
     config.output.libraryTarget = 'umd';
     config.output.jsonpFunction = `webpackJsonp_${name}`;
@@ -10,7 +10,7 @@ module.exports = {
     return config;
   },
 
-  devServer: _ => {
+  devServer: (_) => {
     const config = _;
 
     config.headers = {
