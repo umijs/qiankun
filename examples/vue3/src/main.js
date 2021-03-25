@@ -7,11 +7,14 @@ import store from './store';
 
 let router = null;
 let instance = null;
+let history = null;
+
 
 function render(props = {}) {
   const { container } = props;
+  history = createWebHistory(window.__POWERED_BY_QIANKUN__ ? '/vue3' : '/');
   router = createRouter({
-    history: createWebHistory(window.__POWERED_BY_QIANKUN__ ? '/vue3' : '/'),
+    history,
     routes,
   });
 
@@ -56,4 +59,5 @@ export async function unmount() {
   instance._container.innerHTML = '';
   instance = null;
   router = null;
+  history.destroy();
 }
