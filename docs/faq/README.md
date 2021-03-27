@@ -16,17 +16,20 @@ To solve the exception, try the following steps:
 
 2. check you have set the specified configuration with your bundler, see the [doc](/guide/getting-started#2-config-sub-app-bundler)
 
-3. check your `package.json` name field is unique between sub apps.
+3. Check the webpack of the micro app is configured `output.globalObject`, please use default value.
 
-4. Check if the entry js in the sub-app's entry HTML is the last script to load. If not, move the order to make it be the last, or manually mark the entry js as `entry` in the HTML, such as:
+4. check your `package.json` name field is unique between sub apps.
+
+5. Check if the entry js in the sub-app's entry HTML is the last script to load. If not, move the order to make it be the last, or manually mark the entry js as `entry` in the HTML, such as:
    ```html {2}
    <script src="/antd.js"></script>
    <script src="/appEntry.js" entry></script>
    <script src="https://www.google.com/analytics.js"></script>
    ```
 
-5. If the development environment is OK but the production environment is not, check whether the `index.html` and `entry js` of the micro app are returned normally, for example, `404.html` is returned.
+6. If the development environment is OK but the production environment is not, check whether the `index.html` and `entry js` of the micro app are returned normally, for example, `404.html` is returned.
 
+7. If you're using webpack5, please see [here](https://github.com/umijs/qiankun/issues/1092)
 If it still not works after the steps above, this is usually due to browser compatibility issues. Try to **set the webpack `output.library` of the broken sub app the same with your main app registration for your app**, such as:
 
 Such as here is the main configuration:
@@ -104,6 +107,10 @@ This error thrown as the container DOM does not exist after the micro app is loa
 
      In other cases, please do not use `document.write`.
 
+## `Application died in status NOT_MOUNTED: Target container with #container not existed while xxx mounting!`
+
+This error usually occurs when the main app is Vue, and the container is written on a routing page and uses the routing transition effect. Some special transition effect caused the container not to exist in the mounting process of the micro app. The solution is to use other transition effects, or remove the routing transition.
+
 ## `Application died in status NOT_MOUNTED: Target container with #container not existed while xxx loading!`
 
 Similar to the above error, This error thrown as the container DOM does not exist when the micro app is loaded. Generally, it is caused by incorrect calling timing of the `start` function, just adjust the calling timing of the `start` function.
@@ -153,6 +160,45 @@ It must be ensured that the routing page of the main app is also loaded when the
     ```
 
 `react` + `react-router` main app：only need to make the activeRule of the sub app include the route of the main app.
+
+`angular` + `angular-router` main app，similar to the Vue app：
+
+1. The main app registers a wildcard sub route for this route, and the content is empty.
+
+    ```ts
+    const routes: Routes = [
+      { 
+        path: 'portal', 
+        component: PortalComponent,
+        children: [
+          { path: '**', component: EmptyComponent },
+        ],
+      },
+    ];
+    ```
+2. The `activeRule` of the micro app needs to include the route `path` of the main app.
+    ```js
+    registerMicroApps([
+      { 
+        name: 'app1', 
+        entry: 'http://localhost:8080', 
+        container: '#container', 
+        activeRule: '/portal/app1', 
+      },
+    ]);
+    ```
+3. Call the `start` function in the `ngAfterViewInit` cycle of this routing component, **be careful not to call it repeatedly**.
+    ```ts
+    import { start } from 'qiankun';
+    export class PortalComponent implements AfterViewInit {
+      ngAfterViewInit(): void {
+        if (!window.qiankunStarted) {
+          window.qiankunStarted = true;
+          start();
+        }
+      }
+    }
+    ```
 
 ## Vue Router Error - `Uncaught TypeError: Cannot redefine property: $router`
 
