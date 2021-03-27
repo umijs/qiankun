@@ -323,7 +323,7 @@ toc: menu
 
     componentDidMount() {
       this.microApp = loadMicroApp(
-        { name: 'app1', entry: '//localhost:1234', container: this.containerRef.current, props: { name: 'qiankun' } },
+        { name: 'app1', entry: '//localhost:1234', container: this.containerRef.current, props: { brand: 'qiankun' } },
       );
     }
 

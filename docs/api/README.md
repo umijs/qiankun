@@ -315,7 +315,7 @@ A criterion for judging whether the business is closely related: <strong>Look at
 
     componentDidMount() {
       this.microApp = loadMicroApp(
-        { name: 'app1', entry: '//localhost:1234', container: this.containerRef.current, props: { name: 'qiankun' } },
+        { name: 'app1', entry: '//localhost:1234', container: this.containerRef.current, props: { brand: 'qiankun' } },
       );
     }
 
