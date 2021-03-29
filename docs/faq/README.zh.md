@@ -16,7 +16,7 @@ qiankun 抛出这个错误是因为无法从微应用的 entry js 中识别出�
 
 2. 检查微应用的 webpack 是否增加了指定的配置，参考[文档](/zh/guide/getting-started#2-配置微应用的打包工具)。
 
-3. 检查微应用的 webpack 是否配置了 `output.globalObject` 的值，请使用默认值。
+3. 检查微应用的 webpack 是否配置了 `output.globalObject` 的值，如果有请确保其值为 `window`，或者移除该配置从而使用默认值。
 
 4. 检查微应用的 `package.json` 中的 `name` 字段是否是微应用中唯一的。
 
@@ -815,6 +815,5 @@ export async function mount(props) {
   ```
 
   
-
 
 
