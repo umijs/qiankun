@@ -18,7 +18,7 @@ To solve the exception, try the following steps:
 
 3. Check the webpack of the micro app is configured `output.globalObject`, please use default value.
 
-4. check your `package.json` name field is unique between sub apps.
+4. Check your `package.json` name field is unique between sub apps.
 
 5. Check if the entry js in the sub-app's entry HTML is the last script to load. If not, move the order to make it be the last, or manually mark the entry js as `entry` in the HTML, such as:
    ```html {2}
