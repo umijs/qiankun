@@ -16,7 +16,7 @@ To solve the exception, try the following steps:
 
 2. check you have set the specified configuration with your bundler, see the [doc](/guide/getting-started#2-config-sub-app-bundler)
 
-3. Check the webpack of the micro app is configured `output.globalObject`, please use default value.
+3. Check the webpack of micro app whether it configured with `output.globalObject` or not, be sure its value was `window` if it had, or remove it to use default value.
 
 4. Check your `package.json` name field is unique between sub apps.
 
