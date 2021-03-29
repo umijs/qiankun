@@ -55,7 +55,7 @@ start();
     注意：运行时的 publicPath 和构建时的 publicPath 是不同的，两者不能等价替代。
     </Alert>
 
-2. 子应用建议使用 `history` 模式的路由，需要设置路由 `base`，值和它的 `activeRule` 是一样的。
+2. 微应用建议使用 `history` 模式的路由，需要设置路由 `base`，值和它的 `activeRule` 是一样的。
 3. 在入口文件最顶部引入 `public-path.js`，修改并导出三个生命周期函数。
 4. 修改 `webpack` 打包，允许开发环境跨域和 `umd` 打包。
 
@@ -389,6 +389,35 @@ start();
     ```
 
 当然，也可以选择使用 `single-spa-angular` 插件，参考[ single-spa-angular 的官网](https://single-spa.js.org/docs/ecosystem-angular) 和 [angular demo](https://github.com/umijs/qiankun/tree/master/examples/angular9)
+
+（**补充**）angular7 项目除了第4步以外，其他的步骤和 angular9 一模一样。angular7 修改 `webpack` 打包配置的步骤如下：
+
+除了安装 `angular-builders/custom-webpack` 插件的 7.x 版本外，还需要安装 `angular-builders/dev-server`。
+
+```bash
+npm i @angular-builders/custom-webpack@7 -D
+npm i @angular-builders/dev-server -D
+```
+
+在根目录增加 `custom-webpack.config.js` ，内容同上。
+
+修改 `angular.json`， `[packageName] > architect > build > builder` 的修改和 angular9 一样， `[packageName] > architect > serve > builder` 的修改和 angular9 不同。
+
+```diff
+- "builder": "@angular-devkit/build-angular:browser",
++ "builder": "@angular-builders/custom-webpack:browser",
+  "options": {
++    "customWebpackConfig": {
++      "path": "./custom-webpack.config.js"
++    }
+  }
+
+```
+
+```diff
+- "builder": "@angular-devkit/build-angular:dev-server",
++ "builder": "@angular-builders/dev-server:generic",
+```
 
 ### 非 webpack 构建的微应用
 
