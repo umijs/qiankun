@@ -4,10 +4,7 @@
     "module": "esnext",
     "lib": ["es2018", "dom"],
     "declaration": true,
-    "outDir": "./esm",
-    "rootDir": "./src",
     "importHelpers": true,
-    "downlevelIteration": true,
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
@@ -21,10 +18,9 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "moduleResolution": "node",
-    "typeRoots": ["typings", "node_modules/@types"],
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "experimentalDecorators": true
   },
-  "exclude": ["node_modules", "examples"]
+  "exclude": ["node_modules"]
 }

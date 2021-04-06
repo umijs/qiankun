@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   target: 'browser',
   esm: 'babel',
   cjs: 'babel',

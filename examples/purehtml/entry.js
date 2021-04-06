@@ -1,9 +1,9 @@
-const render = $ => {
+const render = ($) => {
   $('#purehtml-container').html('Hello, render with jQuery');
   return Promise.resolve();
 };
 
-(global => {
+((global) => {
   global['purehtml'] = {
     bootstrap: () => {
       console.log('purehtml bootstrap');

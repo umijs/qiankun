@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./esm",
+    "rootDir": "./src",
+    "downlevelIteration": true,
+    "typeRoots": ["typings", "node_modules/@types"]
+  }
+}

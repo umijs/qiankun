@@ -30,41 +30,41 @@ By linking the micro-application to some url rules, the function of automaticall
       - If configured as `object`, the value of `html` is the html content string of the micro application, not the access address of the micro application. The `publicPath` of the micro application will be set to `/`.
     - container - `string | HTMLElement` - required，A selector or Element instance of the container node of a micro application. Such as `container: '#root'` or `container: document.querySelector('#root')`.
 
-    - activeRule -  - `string | (location: Location) => boolean | Array<string | (location: Location) => boolean> ` - required,activation rules for micro-apps.
+    - activeRule - - `string | (location: Location) => boolean | Array<string | (location: Location) => boolean> ` - required,activation rules for micro-apps.
 
-      * Support direct configuration of string or string array, such as `activeRule: '/app1'` or `activeRule: ['/app1', '/app2']`, when configured as a string, it will directly follow the path part in the url Do a prefix match. A successful match indicates that the current application will be activated.
-      * Support to configure an active function or a group of active functions. The function will pass in the current location as a parameter. When the function returns true, it indicates that the current micro application will be activated. Such as `location => location.pathname.startsWith ('/app1')`.
+      - Support direct configuration of string or string array, such as `activeRule: '/app1'` or `activeRule: ['/app1', '/app2']`, when configured as a string, it will directly follow the path part in the url Do a prefix match. A successful match indicates that the current application will be activated.
+      - Support to configure an active function or a group of active functions. The function will pass in the current location as a parameter. When the function returns true, it indicates that the current micro application will be activated. Such as `location => location.pathname.startsWith ('/app1')`.
 
       Example rules:
 
       `'/app1'`
 
-      * ✅ https://app.com/app1
+      - ✅ https://app.com/app1
 
-      * ✅ https://app.com/app1/anything/everything
+      - ✅ https://app.com/app1/anything/everything
 
-      * 🚫 https://app.com/app2
+      - 🚫 https://app.com/app2
 
       `'/users/:userId/profile'`
 
-      * ✅ https://app.com/users/123/profile
-      * ✅ https://app.com/users/123/profile/sub-profile/
-      * 🚫 https://app.com/users//profile/sub-profile/
-      * 🚫 https://app.com/users/profile/sub-profile/
+      - ✅ https://app.com/users/123/profile
+      - ✅ https://app.com/users/123/profile/sub-profile/
+      - 🚫 https://app.com/users//profile/sub-profile/
+      - 🚫 https://app.com/users/profile/sub-profile/
 
       `'/pathname/#/hash'`
 
-      * ✅ https://app.com/pathname/#/hash
-      * ✅ https://app.com/pathname/#/hash/route/nested
-      * 🚫 https://app.com/pathname#/hash/route/nested
-      * 🚫 https://app.com/pathname#/another-hash
+      - ✅ https://app.com/pathname/#/hash
+      - ✅ https://app.com/pathname/#/hash/route/nested
+      - 🚫 https://app.com/pathname#/hash/route/nested
+      - 🚫 https://app.com/pathname#/another-hash
 
       `['/pathname/#/hash', '/app1']`
 
-      * ✅ https://app.com/pathname/#/hash/route/nested
-      * ✅ https://app.com/app1/anything/everything
-      * 🚫 https://app.com/pathname/app1
-      * 🚫 https://app.com/app2
+      - ✅ https://app.com/pathname/#/hash/route/nested
+      - ✅ https://app.com/app1/anything/everything
+      - 🚫 https://app.com/pathname/app1
+      - 🚫 https://app.com/app2
 
       This function is called when the browser url changes, and `activeRule` returns `true` to indicate that the subapplication needs to be activated.
 
@@ -102,14 +102,12 @@ By linking the micro-application to some url rules, the function of automaticall
         activeRule: '/react',
         props: {
           name: 'kuitos',
-        }
-      }
+        },
+      },
     ],
     {
-      beforeLoad: app => console.log('before load', app.name),
-      beforeMount: [
-        app => console.log('before mount', app.name),
-      ],
+      beforeLoad: (app) => console.log('before load', app.name),
+      beforeMount: [(app) => console.log('before mount', app.name)],
     },
   );
   ```
@@ -151,8 +149,7 @@ By linking the micro-application to some url rules, the function of automaticall
       }
       ```
 
-      notice:
-      @keyframes, @font-face, @import, @page are not supported (i.e. will not be rewritten)
+      notice: @keyframes, @font-face, @import, @page are not supported (i.e. will not be rewritten)
 
     - singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - Optional, whether it is a singleton scenario, singleton means just rendered one micro app at one time. default is `true`.
 
@@ -161,7 +158,7 @@ By linking the micro-application to some url rules, the function of automaticall
     - getPublicPath - `(entry: Entry) => string` - optional，The parameter is the entry value of the micro application.
 
     - getTemplate - `(tpl: string) => string` - optional
-    
+
     - excludeAssetFilter - `(assetUrl: string) => boolean` - optional，some special dynamic loaded micro app resources should not be handled by qiankun hijacking
 
 - Usage
@@ -224,16 +221,18 @@ A criterion for judging whether the business is closely related: <strong>Look at
 
 ### `loadMicroApp(app, configuration?)`
 
-* Parameters
-  * app - `LoadableApp` - Required, basic information of micro application
-    * name - `string` - Required, the name of the micro application must be unique among the micro applications.
-    * entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - Required,  The entry of the micro application(The detailed description is the same as above).
-    * container - `string | HTMLElement` - Required, selector or Element instance of the container node of the micro application. Such as `container: '#root'` or `container: document.querySelector('#root')`.
-    * props - `object` - Optional, the data that needs to be passed to the micro-application during initialization.
+- Parameters
 
-  * configuration - `Configuration` - Optional, configuration information of the micro application
+  - app - `LoadableApp` - Required, basic information of micro application
 
-    * sandbox - `boolean` | `{ strictStyleIsolation?: boolean, experimentalStyleIsolation?: boolean }` - optional, whether to open the js sandbox, default is `true`.
+    - name - `string` - Required, the name of the micro application must be unique among the micro applications.
+    - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - Required, The entry of the micro application(The detailed description is the same as above).
+    - container - `string | HTMLElement` - Required, selector or Element instance of the container node of the micro application. Such as `container: '#root'` or `container: document.querySelector('#root')`.
+    - props - `object` - Optional, the data that needs to be passed to the micro-application during initialization.
+
+  - configuration - `Configuration` - Optional, configuration information of the micro application
+
+    - sandbox - `boolean` | `{ strictStyleIsolation?: boolean, experimentalStyleIsolation?: boolean }` - optional, whether to open the js sandbox, default is `true`.
 
       When configured as `{strictStyleIsolation: true}`, qiankun will convert the container dom of each application to a [shadow dom](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_shadow_DOM), to ensure that the style of the application will not leak to the global.
 
@@ -244,48 +243,36 @@ A criterion for judging whether the business is closely related: <strong>Look at
       .app-main {
         font-size: 14px;
       }
-      
+
       div[data-qiankun-react16] .app-main {
         font-size: 14px;
       }
       ```
-      
-      notice:
-      @keyframes, @font-face, @import, @page are not supported (i.e. will not be rewritten)
-    
-    * singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - Optional, whether it is a singleton scenario, singleton means just rendered one micro app at one time. Default is `false`.
-    
-    * fetch - `Function` - Optional, custom fetch method.
-    
-    * getPublicPath - `(url: string) => string` - Optional，The parameter is the entry value of the micro application.
-    
-    * getTemplate - `(tpl: string) => string` - Optional
-    
-    * excludeAssetFilter - `(assetUrl: string) => boolean` - optional，some special dynamic loaded micro app resources should not be handled by qiankun hijacking
-  
-* 返回值 - `MicroApp` - Micro application examples
-  * mount(): Promise&lt;null&gt;;
-  * unmount(): Promise&lt;null&gt;;
-  * update(customProps: object): Promise&lt;any&gt;;
-  * getStatus():
-      | "NOT_LOADED"
-      | "LOADING_SOURCE_CODE"
-      | "NOT_BOOTSTRAPPED"
-      | "BOOTSTRAPPING"
-      | "NOT_MOUNTED"
-      | "MOUNTING"
-      | "MOUNTED"
-      | "UPDATING"
-      | "UNMOUNTING"
-      | "UNLOADING"
-      | "SKIP_BECAUSE_BROKEN"
-      | "LOAD_ERROR";
-  * loadPromise: Promise&lt;null&gt;;
-  * bootstrapPromise: Promise&lt;null&gt;;
-  * mountPromise: Promise&lt;null&gt;;
-  * unmountPromise: Promise&lt;null&gt;;
 
-* Usage
+      notice: @keyframes, @font-face, @import, @page are not supported (i.e. will not be rewritten)
+
+    - singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - Optional, whether it is a singleton scenario, singleton means just rendered one micro app at one time. Default is `false`.
+
+    - fetch - `Function` - Optional, custom fetch method.
+
+    - getPublicPath - `(url: string) => string` - Optional，The parameter is the entry value of the micro application.
+
+    - getTemplate - `(tpl: string) => string` - Optional
+
+    - excludeAssetFilter - `(assetUrl: string) => boolean` - optional，some special dynamic loaded micro app resources should not be handled by qiankun hijacking
+
+- 返回值 - `MicroApp` - Micro application examples
+
+  - mount(): Promise&lt;null&gt;;
+  - unmount(): Promise&lt;null&gt;;
+  - update(customProps: object): Promise&lt;any&gt;;
+  - getStatus(): | "NOT_LOADED" | "LOADING_SOURCE_CODE" | "NOT_BOOTSTRAPPED" | "BOOTSTRAPPING" | "NOT_MOUNTED" | "MOUNTING" | "MOUNTED" | "UPDATING" | "UNMOUNTING" | "UNLOADING" | "SKIP_BECAUSE_BROKEN" | "LOAD_ERROR";
+  - loadPromise: Promise&lt;null&gt;;
+  - bootstrapPromise: Promise&lt;null&gt;;
+  - mountPromise: Promise&lt;null&gt;;
+  - unmountPromise: Promise&lt;null&gt;;
+
+- Usage
 
   Load a micro application manually.
 
@@ -302,21 +289,23 @@ A criterion for judging whether the business is closely related: <strong>Look at
   }
   ```
 
-* Sample
+- Sample
 
   ```jsx
   import { loadMicroApp } from 'qiankun';
   import React from 'react';
 
   class App extends React.Component {
-
     containerRef = React.createRef();
     microApp = null;
 
     componentDidMount() {
-      this.microApp = loadMicroApp(
-        { name: 'app1', entry: '//localhost:1234', container: this.containerRef.current, props: { name: 'qiankun' } },
-      );
+      this.microApp = loadMicroApp({
+        name: 'app1',
+        entry: '//localhost:1234',
+        container: this.containerRef.current,
+        props: { name: 'qiankun' },
+      });
     }
 
     componentWillUnmount() {
@@ -336,10 +325,12 @@ A criterion for judging whether the business is closely related: <strong>Look at
 ### `prefetchApps(apps, importEntryOpts?)`
 
 - Parameters
+
   - apps - `AppMetadata[]` - Required - list of preloaded apps
   - importEntryOpts - Optional - Load configuration
 
 - Type
+
   - `AppMetadata`
     - name - `string` - Required - Application name
     - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - Required,The entry address of the microapp
@@ -353,7 +344,10 @@ A criterion for judging whether the business is closely related: <strong>Look at
   ```ts
   import { prefetchApps } from 'qiankun';
 
-  prefetchApps([ { name: 'app1', entry: '//locahost:7001' }, { name: 'app2', entry: '//locahost:7002' } ])
+  prefetchApps([
+    { name: 'app1', entry: '//locahost:7001' },
+    { name: 'app2', entry: '//locahost:7002' },
+  ]);
   ```
 
 ## [addErrorHandler/removeErrorHandler](https://single-spa.js.org/docs/api#adderrorhandler)
@@ -373,7 +367,7 @@ A criterion for judging whether the business is closely related: <strong>Look at
   ```ts
   import { addGlobalUncaughtErrorHandler } from 'qiankun';
 
-  addGlobalUncaughtErrorHandler(event => console.log(event));
+  addGlobalUncaughtErrorHandler((event) => console.log(event));
   ```
 
 ## `removeGlobalUncaughtErrorHandler(handler)`
@@ -417,6 +411,7 @@ A criterion for judging whether the business is closely related: <strong>Look at
 - Sample
 
   Master:
+
   ```ts
   import { initGlobalState, MicroAppStateActions } from 'qiankun';
 
@@ -432,10 +427,10 @@ A criterion for judging whether the business is closely related: <strong>Look at
   ```
 
   Slave:
+
   ```ts
   // get actions from mount
   export function mount(props) {
-
     props.onGlobalStateChange((state, prev) => {
       // state: new state; prev old state
       console.log(state, prev);

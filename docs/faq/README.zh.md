@@ -63,47 +63,49 @@ qiankun 抛出这个错误是因为微应用加载后容器 DOM 节点不存在�
 
 1. 微应用的根 `id` 与其他 DOM 冲突。解决办法是：修改根 `id` 的查找范围。
 
-    `vue` 微应用：
-    ```js
-    function render(props = {}) {
-      const { container } = props;
-      instance = new Vue({
-        router,
-        store,
-        render: h => h(App),
-      }).$mount(container ? container.querySelector('#app') : '#app');
-    }
-    export async function mount(props) {
-      render(props);
-    }
-    ```
+   `vue` 微应用：
 
-    `react` 微应用：
-    ```js
-    function render(props) {
-      const { container } = props;
-      ReactDOM.render(<App />, container ? container.querySelector('#root') : document.querySelector('#root'));
-    }
-    export async function mount(props) {
-      render(props);
-    }
-    export async function unmount(props) {
-      const { container } = props;
-      ReactDOM.unmountComponentAtNode(container ? container.querySelector('#root') : document.querySelector('#root'));
-    }
-    ```
+   ```js
+   function render(props = {}) {
+     const { container } = props;
+     instance = new Vue({
+       router,
+       store,
+       render: (h) => h(App),
+     }).$mount(container ? container.querySelector('#app') : '#app');
+   }
+   export async function mount(props) {
+     render(props);
+   }
+   ```
+
+   `react` 微应用：
+
+   ```js
+   function render(props) {
+     const { container } = props;
+     ReactDOM.render(<App />, container ? container.querySelector('#root') : document.querySelector('#root'));
+   }
+   export async function mount(props) {
+     render(props);
+   }
+   export async function unmount(props) {
+     const { container } = props;
+     ReactDOM.unmountComponentAtNode(container ? container.querySelector('#root') : document.querySelector('#root'));
+   }
+   ```
 
 2. 微应用的某些 js 里面使用了 `document.write`，比如高德地图 1.x 版本，腾讯地图 2.x 版本。
 
-    如果是地图 js 导致的，先看看升级能否解决，比如说高德地图升级到 2.x 版本即可。
+   如果是地图 js 导致的，先看看升级能否解决，比如说高德地图升级到 2.x 版本即可。
 
-    如果升级无法解决，建议将地图放到主应用加载，微应用也引入这个地图 js（独立运行时使用），但是给 `<script>` 标签加上 `ignore` 属性：
+   如果升级无法解决，建议将地图放到主应用加载，微应用也引入这个地图 js（独立运行时使用），但是给 `<script>` 标签加上 `ignore` 属性：
 
-    ```html
-    <script src="https://map.qq.com/api/gljs?v=1.exp" ignore></script>
-    ```
+   ```html
+   <script src="https://map.qq.com/api/gljs?v=1.exp" ignore></script>
+   ```
 
-    如果是其他的情况，请不要使用 `document.write` 。
+   如果是其他的情况，请不要使用 `document.write` 。
 
 ## `Application died in status NOT_MOUNTED: Target container with #container not existed while xxx loading!`
 
@@ -120,38 +122,38 @@ qiankun 抛出这个错误是因为微应用加载后容器 DOM 节点不存在�
 `vue` + `vue-router` 技术栈的主应用：
 
 1. 主应用注册这个路由时给 `path` 加一个 `*`，**注意：如果这个路由有其他子路由，需要另外注册一个路由，任然使用这个组件即可**。
-    ```js
-    const routes = [
-      {
-        path: '/portal/*',
-        name: 'portal',
-        component: () => import('../views/Portal.vue'),
-      }
-    ]
-    ```
+   ```js
+   const routes = [
+     {
+       path: '/portal/*',
+       name: 'portal',
+       component: () => import('../views/Portal.vue'),
+     },
+   ];
+   ```
 2. 微应用的 `activeRule` 需要包含主应用的这个路由 `path`。
-    ```js
-    registerMicroApps([
-      { 
-        name: 'app1', 
-        entry: 'http://localhost:8080', 
-        container: '#container', 
-        activeRule: '/portal/app1', 
-      },
-    ]);
-    ```
+   ```js
+   registerMicroApps([
+     {
+       name: 'app1',
+       entry: 'http://localhost:8080',
+       container: '#container',
+       activeRule: '/portal/app1',
+     },
+   ]);
+   ```
 3. 在 `Portal.vue` 这个组件的 `mounted` 周期调用 `start` 函数，**注意不要重复调用**。
-    ```js
-    import { start } from 'qiankun';
-    export default {
-      mounted() {
-        if (!window.qiankunStarted) {
-          window.qiankunStarted = true;
-          start();
-        }
-      },
-    }
-    ```
+   ```js
+   import { start } from 'qiankun';
+   export default {
+     mounted() {
+       if (!window.qiankunStarted) {
+         window.qiankunStarted = true;
+         start();
+       }
+     },
+   };
+   ```
 
 `react` + `react-router` 技术栈的主应用：只需要让微应用的 `activeRule` 包含主应用的这个路由即可。
 
@@ -163,7 +165,7 @@ qiankun 中的代码使用 Proxy 去代理父页面的 window，来实现的沙�
 
 ```javascript
 if (inBrowser && window.Vue) {
-  window.Vue.use(VueRouter)
+  window.Vue.use(VueRouter);
 }
 ```
 
@@ -216,203 +218,195 @@ runtime publicPath 主要解决的是微应用动态载入的 脚本、样式、
 
 2. 借助 `webpack` 的 `url-loader` 将字体文件和图片打包成 `base64`（适用于字体文件和图片体积小的项目）（**推荐**）
 
-  ```js
-  module.exports = {
-    module: {
-      rules: [
-        {
-          test: /\.(png|jpe?g|gif|webp|woff2?|eot|ttf|otf)$/i,
-          use: [
-            {
-              loader: 'url-loader',
-              options: {},
-            },
-          ],
-        },
-      ],
-    },
-  };
-  ```
+```js
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.(png|jpe?g|gif|webp|woff2?|eot|ttf|otf)$/i,
+        use: [
+          {
+            loader: 'url-loader',
+            options: {},
+          },
+        ],
+      },
+    ],
+  },
+};
+```
 
-  `vue-cli3` 项目写法：
+`vue-cli3` 项目写法：
 
-  ```js
-  module.exports = {
-    chainWebpack: (config) => {
-      config.module
-        .rule('fonts')
-        .use('url-loader')
-        .loader('url-loader')
-        .options({})
-        .end()
-      config.module
-        .rule('images')
-        .use('url-loader')
-        .loader('url-loader')
-        .options({})
-        .end()
-    },
-  }
-  ```
+```js
+module.exports = {
+  chainWebpack: (config) => {
+    config.module.rule('fonts').use('url-loader').loader('url-loader').options({}).end();
+    config.module.rule('images').use('url-loader').loader('url-loader').options({}).end();
+  },
+};
+```
 
 3. 借助 `webpack` 的 `file-loader` ，在打包时给其注入完整路径（适用于字体文件和图片体积比较大的项目）
 
-  ```js
-  const publicPath = process.env.NODE_ENV === "production" ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
-  module.exports = {
-    module: {
-      rules: [
-        {
-          test: /\.(png|jpe?g|gif|webp)$/i,
-          use: [
-            {
-              loader: 'file-loader',
-              options: {
-                name: 'img/[name].[hash:8].[ext]',
-                publicPath
-              },
-            },
-          ],
-        },
-        {
-          test: /\.(woff2?|eot|ttf|otf)$/i,
-          use: [
-            {
-              loader: 'file-loader',
-              options: {
-                name: 'fonts/[name].[hash:8].[ext]',
-                publicPath
-              },
-            },
-          ],
-        },
-      ],
-    },
-  };
-  ```
-
-  `vue-cli3` 项目写法：
-
-  ```js
-  const publicPath = process.env.NODE_ENV === "production" ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
-  module.exports = {
-    chainWebpack: (config) => {
-      const fontRule = config.module.rule('fonts');
-      fontRule.uses.clear();
-      fontRule
-        .use('file-loader')
-        .loader('file-loader')
-        .options({
-          name: 'fonts/[name].[hash:8].[ext]',
-          publicPath
-        })
-        .end()
-      const imgRule = config.module.rule('images');
-      imgRule.uses.clear();
-      imgRule
-        .use('file-loader')
-        .loader('file-loader')
-        .options({
-          name: 'img/[name].[hash:8].[ext]',
-          publicPath
-        })
-        .end()
-    },
-  }
-  ```
-
-4. 将两种方案结合起来，小文件转 `base64` ，大文件注入路径前缀
-
-  ```js
-  const publicPath = process.env.NODE_ENV === "production" ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
-  module.exports = {
-    module: {
-      rules: [
-        {
-          test: /\.(png|jpe?g|gif|webp)$/i,
-          use: [
-            {
-              loader: 'url-loader',
-              options: {},
-              fallback: {
-                loader: 'file-loader',
-                options: {
-                  name: 'img/[name].[hash:8].[ext]',
-                  publicPath
-                }
-              }
-            },
-          ],
-        },
-        {
-          test: /\.(woff2?|eot|ttf|otf)$/i,
-          use: [
-            {
-              loader: 'url-loader',
-              options: {},
-              fallback: {
-                loader: 'file-loader',
-                options: {
-                  name: 'fonts/[name].[hash:8].[ext]',
-                  publicPath
-                }
-              }
-            },
-          ],
-        },
-      ],
-    },
-  };
-  ```
-
-  `vue-cli3` 项目写法：
-
-  ```js
-  const publicPath = process.env.NODE_ENV === "production" ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
-  module.exports = {
-    chainWebpack: (config) => {
-      config.module.rule('fonts')
-        .use('url-loader')
-        .loader('url-loader')
-        .options({
-          limit: 4096, // 小于4kb将会被打包成 base64
-          fallback: {
-            loader: 'file-loader',
-            options: {
-              name: 'fonts/[name].[hash:8].[ext]',
-              publicPath
-            }
-          }
-        })
-        .end();
-      config.module.rule('images')
-        .use('url-loader')
-        .loader('url-loader')
-        .options({
-          limit: 4096, // 小于4kb将会被打包成 base64
-          fallback: {
+```js
+const publicPath = process.env.NODE_ENV === 'production' ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.(png|jpe?g|gif|webp)$/i,
+        use: [
+          {
             loader: 'file-loader',
             options: {
               name: 'img/[name].[hash:8].[ext]',
-              publicPath
-            }
-          }
-        })
-    },
-  }
-  ```
+              publicPath,
+            },
+          },
+        ],
+      },
+      {
+        test: /\.(woff2?|eot|ttf|otf)$/i,
+        use: [
+          {
+            loader: 'file-loader',
+            options: {
+              name: 'fonts/[name].[hash:8].[ext]',
+              publicPath,
+            },
+          },
+        ],
+      },
+    ],
+  },
+};
+```
+
+`vue-cli3` 项目写法：
+
+```js
+const publicPath = process.env.NODE_ENV === 'production' ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+module.exports = {
+  chainWebpack: (config) => {
+    const fontRule = config.module.rule('fonts');
+    fontRule.uses.clear();
+    fontRule
+      .use('file-loader')
+      .loader('file-loader')
+      .options({
+        name: 'fonts/[name].[hash:8].[ext]',
+        publicPath,
+      })
+      .end();
+    const imgRule = config.module.rule('images');
+    imgRule.uses.clear();
+    imgRule
+      .use('file-loader')
+      .loader('file-loader')
+      .options({
+        name: 'img/[name].[hash:8].[ext]',
+        publicPath,
+      })
+      .end();
+  },
+};
+```
+
+4. 将两种方案结合起来，小文件转 `base64` ，大文件注入路径前缀
+
+```js
+const publicPath = process.env.NODE_ENV === 'production' ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.(png|jpe?g|gif|webp)$/i,
+        use: [
+          {
+            loader: 'url-loader',
+            options: {},
+            fallback: {
+              loader: 'file-loader',
+              options: {
+                name: 'img/[name].[hash:8].[ext]',
+                publicPath,
+              },
+            },
+          },
+        ],
+      },
+      {
+        test: /\.(woff2?|eot|ttf|otf)$/i,
+        use: [
+          {
+            loader: 'url-loader',
+            options: {},
+            fallback: {
+              loader: 'file-loader',
+              options: {
+                name: 'fonts/[name].[hash:8].[ext]',
+                publicPath,
+              },
+            },
+          },
+        ],
+      },
+    ],
+  },
+};
+```
+
+`vue-cli3` 项目写法：
+
+```js
+const publicPath = process.env.NODE_ENV === 'production' ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+module.exports = {
+  chainWebpack: (config) => {
+    config.module
+      .rule('fonts')
+      .use('url-loader')
+      .loader('url-loader')
+      .options({
+        limit: 4096, // 小于4kb将会被打包成 base64
+        fallback: {
+          loader: 'file-loader',
+          options: {
+            name: 'fonts/[name].[hash:8].[ext]',
+            publicPath,
+          },
+        },
+      })
+      .end();
+    config.module
+      .rule('images')
+      .use('url-loader')
+      .loader('url-loader')
+      .options({
+        limit: 4096, // 小于4kb将会被打包成 base64
+        fallback: {
+          loader: 'file-loader',
+          options: {
+            name: 'img/[name].[hash:8].[ext]',
+            publicPath,
+          },
+        },
+      });
+  },
+};
+```
 
 5. `vue-cli3` 项目可以将 `css` 打包到 `js`里面，不单独生成文件(不推荐，仅适用于 `css` 较少的项目)
 
-  配置参考 [vue-cli3 官网](https://cli.vuejs.org/zh/config/#css-extract):
+配置参考 [vue-cli3 官网](https://cli.vuejs.org/zh/config/#css-extract):
 
-  ```js
-  module.exports = {
-    css: {
-      extract: false
-    },
-  }
-  ```
+```js
+module.exports = {
+  css: {
+    extract: false,
+  },
+};
+```
 
 ## 微应用静态资源一定要支持跨域吗？
 
@@ -444,7 +438,7 @@ import { start } from 'qiankun';
 start({
   getTemplate(tpl) {
     return tpl.replace('<script src="/to-be-replaced.js"><script>', '');
-  }
+  },
 });
 ```
 
@@ -459,12 +453,14 @@ start({
   fetch(url, ...args) {
     if (url === 'http://to-be-replaced.js') {
       return {
-        async text() { return '' }
+        async text() {
+          return '';
+        },
       };
     }
 
     return window.fetch(url, ...args);
-  }
+  },
 });
 ```
 
@@ -511,7 +507,7 @@ qiankun 将会自动隔离微应用之间的样式（开启沙箱的情况下）
 
    ```jsx
    import { ConfigProvider } from 'antd';
-   
+
    export const MyApp = () => (
      <ConfigProvider prefixCls="yourPrefix">
        <App />
@@ -599,7 +595,7 @@ import 'core-js/web/url';
 
 ## 报错 `Here is no "fetch" on the window env, you need to polyfill it`
 
-qiankun 依赖的 import-html-entry 通过 `window.fetch` 来获取微应用的资源，部分[不支持 fetch 的浏览器](https://caniuse.com/#search=fetch)需要在入口处打上相应的 [polyfill](https://github.com/github/fetch)
+qiankun 依赖的 import-html-entry 通过 `window.fetch` 来获取微应用的资源， 部分[不支持 fetch 的浏览器](https://caniuse.com/#search=fetch)需要在入口处打上相应的 [polyfill](https://github.com/github/fetch)
 
 ## 微应用 JSONP 跨域错误怎么处理？
 
@@ -610,28 +606,30 @@ qiankun 会将微应用的动态 script 加载（例如 JSONP）转化为 fetch 
 若在多实例模式下使用 JSONP，单纯使用 `excludeAssetFilter` 并不能取得好的效果，因为各应用被沙箱所隔离；你可以在主应用提供统一的 JSONP 工具，微应用调用主应用提供的该工具来曲线救国。
 
 ## 微应用路径下刷新后 404？
-通常是因为你使用的是 browser 模式的路由，这种路由模式的开启需要服务端配合才行。
-具体配置方式参考：
-* [HTML5 History 模式](https://router.vuejs.org/zh/guide/essentials/history-mode.html)
-* [browserHistory](https://react-guide.github.io/react-router-cn/docs/guides/basics/Histories.html#browserHistory)
 
-## 主应用如何配置404页面？
+通常是因为你使用的是 browser 模式的路由，这种路由模式的开启需要服务端配合才行。具体配置方式参考：
+
+- [HTML5 History 模式](https://router.vuejs.org/zh/guide/essentials/history-mode.html)
+- [browserHistory](https://react-guide.github.io/react-router-cn/docs/guides/basics/Histories.html#browserHistory)
+
+## 主应用如何配置 404 页面？
 
 首先不应该写通配符 `*` ，可以将 404 页面注册为一个普通路由页面，比如说 `/404` ，然后在主应用的路由钩子函数里面判断一下，如果既不是主应用路由，也不是微应用，就跳转到 404 页面。
 
 以`vue-router`为例，伪代码如下：
 
 ```js
-const childrenPath = ['/app1','/app2'];
+const childrenPath = ['/app1', '/app2'];
 router.beforeEach((to, from, next) => {
-  if(to.name) { // 有 name 属性，说明是主应用的路由
-    next()
+  if (to.name) {
+    // 有 name 属性，说明是主应用的路由
+    next();
   }
-  if(childrenPath.some(item => to.path.includes(item))){
-    next()
+  if (childrenPath.some((item) => to.path.includes(item))) {
+    next();
   }
-  next({ name: '404' })
-})
+  next({ name: '404' });
+});
 ```
 
 ## 微应用之间如何跳转？
@@ -642,9 +640,8 @@ router.beforeEach((to, from, next) => {
 
   `history` 模式的微应用之间的跳转，或者微应用跳主应用页面，直接使用微应用的路由实例是不行的，原因是微应用的路由实例跳转都基于路由的 `base`。有两种办法可以跳转：
 
-  1. `history.pushState()`：[mdn用法介绍](https://developer.mozilla.org/zh-CN/docs/Web/API/History/pushState)
+  1. `history.pushState()`：[mdn 用法介绍](https://developer.mozilla.org/zh-CN/docs/Web/API/History/pushState)
   2. 将主应用的路由实例通过 `props` 传给微应用，微应用这个路由实例跳转。
-
 
 ## 微应用文件更新之后，访问的还是旧版文件
 
@@ -667,8 +664,8 @@ loadMicroApp({
   name: 'configEntry',
   entry: {
     scripts: ['//t.com/t.js'],
-    styles: ['//t.com/t.css']
-  }
+    styles: ['//t.com/t.css'],
+  },
 });
 ```
 
@@ -676,7 +673,7 @@ loadMicroApp({
 
 ```js
 export async function mount(props) {
-  ReactDOM.render(<App/>, props.container);
+  ReactDOM.render(<App />, props.container);
 }
 ```
 
@@ -703,4 +700,3 @@ export async function mount(props) {
 + ReactDOM.render(<App/>, props.container.querySelector('#root'));
 }
 ```
-

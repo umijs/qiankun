@@ -1,93 +1,51 @@
 {
-  "name": "qiankun",
-  "version": "2.4.0",
-  "description": "An completed implementation of Micro Frontends",
-  "keywords": [
-    "micro frontend",
-    "microfrontend",
-    "micro frontends",
-    "micro-frontend",
-    "micro-frontends",
-    "microservice"
-  ],
-  "main": "./lib/index.js",
-  "module": "./es/index.js",
-  "types": "./es/index.d.ts",
-  "sideEffects": false,
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "packages/**",
+      "examples/**"
+    ],
+    "nohoist": [
+      "**/@types/**",
+      "**/@jest/**",
+      "**/ts-jest/**",
+      "**/@vue/**",
+      "**/@umijs/**"
+    ]
+  },
   "scripts": {
-    "examples:install": "npm-run-all --serial build install:*",
-    "examples:start": "npm-run-all --parallel start:*",
-    "examples:start-multiple": "run-p start:main-multiple start:react15 start:vue",
-    "install:main": "cd examples/main && yarn",
-    "start:main": "cd examples/main && yarn start",
-    "start-main-multiple": "cd examples/main && yarn start:multiple",
-    "install:react16": "cd examples/react16 && yarn",
-    "start:react16": "cd examples/react16 && yarn start",
-    "install:react15": "cd examples/react15 && yarn",
-    "start:react15": "cd examples/react15 && yarn start",
-    "install:vue": "cd examples/vue && yarn",
-    "start:vue": "cd examples/vue && yarn start",
-    "install:angular9": "cd examples/angular9 && yarn",
-    "start:angular9": "cd examples/angular9 && yarn serve:qiankun",
-    "install:purehtml": "cd examples/purehtml && yarn",
-    "start:purehtml": "cd examples/purehtml && yarn start",
-    "install:vue3": "cd examples/vue3 && yarn",
-    "start:vue3": "cd examples/vue3 && yarn start",
-    "build": "father-build",
+    "examples:start": "lerna run start --scope \"@example/*\"",
+    "examples:start-multiple": "lerna run start:multiple --scope \"@example/*\"",
+    "build": "yarn run build:qiankun",
+    "build:qiankun": "lerna run build --scope qiankun",
     "release": "np --no-cleanup --yolo --no-publish",
     "prepublishOnly": "yarn lint && yarn test && yarn build",
-    "lint": "yarn lint:js && yarn lint:prettier",
-    "lint:js": "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty ./src",
-    "lint:fix": "yarn lint:js -- --fix",
-    "lint:prettier": "prettier -c ./src/**/*",
-    "prettier": "prettier --write ./src/**/*",
+    "lint": "yarn workspace qiankun run lint",
+    "lint:js": "yarn workspace qiankun run lint:js",
+    "lint:fix": "yarn workspace qiankun run lint:fix",
+    "lint:prettier": "yarn workspace qiankun run lint:prettier",
+    "prettier": "yarn workspace qiankun run prettier",
     "docs:dev": "dumi dev",
     "docs:build": "dumi build",
     "ci": "yarn lint && yarn build && yarn test",
-    "test": "cross-env NODE_ENV=test jest"
+    "test": "cross-env NODE_ENV=test lerna run test --scope qiankun"
+  },
+  "dependencies": {
+    "dumi": "^1.1.0-beta.24",
+    "dumi-theme-default": "^1.0.10",
+    "husky": "^2.3.0",
+    "lint-staged": "^9.4.2",
+    "prettier": "^2.1.2"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kuitos/qiankun.git"
   },
-  "files": [
-    "dist",
-    "es",
-    "lib"
-  ],
-  "author": "Kuitos",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/kuitos/qiankun/issues"
   },
   "homepage": "https://github.com/kuitos/qiankun#readme",
-  "dependencies": {
-    "@babel/runtime": "^7.10.5",
-    "import-html-entry": "^1.9.0",
-    "lodash": "^4.17.11",
-    "single-spa": "5.8.1",
-    "tslib": "^1.10.0"
-  },
-  "devDependencies": {
-    "@types/jest": "^25.1.4",
-    "@types/lodash": "^4.14.129",
-    "@types/vfile-message": "1.x",
-    "@umijs/fabric": "^2.0.7",
-    "babel-plugin-import": "^1.12.1",
-    "cross-env": "^7.0.2",
-    "dumi": "^1.1.0-beta.24",
-    "father-build": "^1.7.0",
-    "husky": "^2.3.0",
-    "jest": "^25.2.2",
-    "levenary": "^1.1.1",
-    "lint-staged": "^9.4.2",
-    "np": "^5.0.3",
-    "npm-run-all": "^4.1.5",
-    "prettier": "^2.1.2",
-    "rimraf": "^3.0.0",
-    "ts-jest": "^25.2.1",
-    "typescript": "^4.1.2"
-  },
   "resolutions": {
     "@types/react": "^16.x"
   },
@@ -101,29 +59,11 @@
     "**/*.{js,ts,json,css,md}": [
       "prettier -w"
     ],
-    "**/*.{js,ts}": [
+    "packages/qiankun/**/*.{js,ts}": [
       "yarn lint:fix"
     ]
   },
-  "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "ts"
-    ],
-    "testMatch": [
-      "<rootDir>/src/**/__tests__/**/*.test.ts"
-    ],
-    "testPathIgnorePatterns": [
-      "/node_modules/",
-      "/fixtures/"
-    ],
-    "transform": {
-      "^.+\\.ts$": "<rootDir>/node_modules/ts-jest"
-    },
-    "coveragePathIgnorePatterns": [
-      "/node_modules/",
-      "/__tests__/",
-      "/dist/"
-    ]
+  "devDependencies": {
+    "lerna": "^4.0.0"
   }
 }

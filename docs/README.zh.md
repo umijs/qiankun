@@ -2,9 +2,9 @@
 title: qiankun
 hero:
   title: qiankun
-  desc: 可能是你见过最完善的微前端解决方案🧐 
+  desc: 可能是你见过最完善的微前端解决方案🧐
   actions:
-    - text:  快速开始 →
+    - text: 快速开始 →
       link: /zh/guide
 features:
   - title: 简单
@@ -33,7 +33,7 @@ loadMicroApp({
   entry: '//localhost:7100',
   container: '#container',
   props: {
-    slogan: 'Hello Qiankun'
+    slogan: 'Hello Qiankun',
   },
 });
 ```

@@ -1,5 +1,5 @@
 {
-  "name": "main",
+  "name": "@example/main",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -27,6 +27,7 @@
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "vue": "^2.6.11",
-    "zone.js": "^0.10.2"
+    "zone.js": "^0.10.2",
+    "qiankun": "^2.4.0"
   }
 }
