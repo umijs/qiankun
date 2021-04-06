@@ -16,6 +16,7 @@
   "scripts": {
     "examples:start": "lerna run start --scope \"@example/*\"",
     "examples:start-multiple": "lerna run start:multiple --scope \"@example/*\"",
+    "build": "yarn run build:qiankun",
     "build:qiankun": "lerna run build --scope qiankun",
     "release": "np --no-cleanup --yolo --no-publish",
     "prepublishOnly": "yarn lint && yarn test && yarn build",
@@ -24,12 +25,14 @@
     "lint:fix": "yarn workspace qiankun run lint:fix",
     "lint:prettier": "yarn workspace qiankun run lint:prettier",
     "prettier": "yarn workspace qiankun run prettier",
-    "docs:dev": "lerna run dev --scope website",
-    "docs:build": "lerna run build --scope website",
+    "docs:dev": "dumi dev",
+    "docs:build": "dumi build",
     "ci": "yarn lint && yarn build && yarn test",
     "test": "cross-env NODE_ENV=test lerna run test --scope qiankun"
   },
   "dependencies": {
+    "dumi": "^1.1.0-beta.24",
+    "dumi-theme-default": "^1.0.10",
     "husky": "^2.3.0",
     "lint-staged": "^9.4.2",
     "prettier": "^2.1.2"
