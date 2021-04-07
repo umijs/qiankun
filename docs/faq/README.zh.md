@@ -16,9 +16,11 @@ qiankun 抛出这个错误是因为无法从微应用的 entry js 中识别出�
 
 2. 检查微应用的 webpack 是否增加了指定的配置，参考[文档](/zh/guide/getting-started#2-配置微应用的打包工具)。
 
-3. 检查微应用的 `package.json` 中的 `name` 字段是否是微应用中唯一的。
+3. 检查微应用的 webpack 是否配置了 `output.globalObject` 的值，如果有请确保其值为 `window`，或者移除该配置从而使用默认值。
 
-4. 检查微应用的 entry html 中入口的 js 是不是最后一个加载的脚本。如果不是，需要移动顺序将其变成最后一个加载的 js，或者在 html 中将入口 js 手动标记为 `entry`，如：
+4. 检查微应用的 `package.json` 中的 `name` 字段是否是微应用中唯一的。
+
+5. 检查微应用的 entry html 中入口的 js 是不是最后一个加载的脚本。如果不是，需要移动顺序将其变成最后一个加载的 js，或者在 html 中将入口 js 手动标记为 `entry`，如：
 
    ```html {2}
    <script src="/antd.js"></script>
@@ -26,7 +28,9 @@ qiankun 抛出这个错误是因为无法从微应用的 entry js 中识别出�
    <script src="https://www.google.com/analytics.js"></script>
    ```
 
-5. 如果开发环境可以，生产环境不行，检查微应用的 `index.html` 和 `entry js` 是否正常返回，比如说返回了 `404.html`。
+6. 如果开发环境可以，生产环境不行，检查微应用的 `index.html` 和 `entry js` 是否正常返回，比如说返回了 `404.html`。
+
+7. 如果你正在使用 webpack5，请看[这个issues](https://github.com/umijs/qiankun/issues/1092)
 
 如果在上述步骤完成后仍有问题，通常说明是浏览器兼容性问题导致的。可以尝试 **将有问题的微应用的 webpack `output.library` 配置成跟主应用中注册的 `name` 字段一致**，如：
 
@@ -107,6 +111,10 @@ qiankun 抛出这个错误是因为微应用加载后容器 DOM 节点不存在�
 
    如果是其他的情况，请不要使用 `document.write` 。
 
+## `Application died in status NOT_MOUNTED: Target container with #container not existed while xxx mounting!`
+
+这个报错通常出现在主应用为 vue 时，容器写在了路由页面并且使用了路由过渡效果，一些特殊的过渡效果会导致微应用在 mounting 的过程中容器不存在，解决办法就是换成其他的过渡效果，或者去掉路由过渡。
+
 ## `Application died in status NOT_MOUNTED: Target container with #container not existed while xxx loading!`
 
 与上面的报错类似，这个报错是因为微应用加载时容器 DOM 不存在。一般是因为 `start` 函数调用时机不正确导致的，调整 `start` 函数调用时机即可。
@@ -121,16 +129,16 @@ qiankun 抛出这个错误是因为微应用加载后容器 DOM 节点不存在�
 
 `vue` + `vue-router` 技术栈的主应用：
 
-1. 主应用注册这个路由时给 `path` 加一个 `*`，**注意：如果这个路由有其他子路由，需要另外注册一个路由，任然使用这个组件即可**。
-   ```js
-   const routes = [
-     {
-       path: '/portal/*',
-       name: 'portal',
-       component: () => import('../views/Portal.vue'),
-     },
-   ];
-   ```
+1. 主应用注册这个路由时给 `path` 加一个 `*`，**注意：如果这个路由有其他子路由，需要另外注册一个路由，仍然使用这个组件即可**。
+    ```js
+    const routes = [
+      {
+        path: '/portal/*',
+        name: 'portal',
+        component: () => import('../views/Portal.vue'),
+      }
+    ]
+    ```
 2. 微应用的 `activeRule` 需要包含主应用的这个路由 `path`。
    ```js
    registerMicroApps([
@@ -157,6 +165,44 @@ qiankun 抛出这个错误是因为微应用加载后容器 DOM 节点不存在�
 
 `react` + `react-router` 技术栈的主应用：只需要让微应用的 `activeRule` 包含主应用的这个路由即可。
 
+`angular` + `angular-router` 技术栈的主应用，与 vue 项目类似：
+
+1. 主应用给这个路由注册一个通配符的子路由，内容为空。
+
+    ```ts
+    const routes: Routes = [
+      { 
+        path: 'portal', 
+        component: PortalComponent,
+        children: [
+          { path: '**', component: EmptyComponent },
+        ],
+      },
+    ];
+    ```
+2. 微应用的 `activeRule` 需要包含主应用的这个路由 `path`。
+    ```js
+    registerMicroApps([
+      { 
+        name: 'app1', 
+        entry: 'http://localhost:8080', 
+        container: '#container', 
+        activeRule: '/portal/app1', 
+      },
+    ]);
+    ```
+3. 在这个路由组件的 `ngAfterViewInit` 周期调用 `start` 函数，**注意不要重复调用**。
+    ```ts
+    import { start } from 'qiankun';
+    export class PortalComponent implements AfterViewInit {
+      ngAfterViewInit(): void {
+        if (!window.qiankunStarted) {
+          window.qiankunStarted = true;
+          start();
+        }
+      }
+    }
+    ```
 ## Vue Router 报错 `Uncaught TypeError: Cannot redefine property: $router`
 
 qiankun 中的代码使用 Proxy 去代理父页面的 window，来实现的沙箱，在微应用中访问 `window.Vue` 时，会先在自己的 window 里查找有没有 `Vue` 属性，如果没有就去父应用里查找。
@@ -700,3 +746,71 @@ export async function mount(props) {
 + ReactDOM.render(<App/>, props.container.querySelector('#root'));
 }
 ```
+
+## 如何解决拉取微应用 entry 时 cookie 未携带的问题
+
+因为拉取微应用 entry 的请求都是跨域的，所以当你的微应用是依赖 cookie (如登陆鉴权)的情况下，你需要通过自定义 fetch 的方式，开启 fetch 的 cors 模式：
+
+* 如果你是通过 [registerMicroApps](/zh/api#registermicroappsapps-lifecycles) 加载微应用的，你需要在 start 方法里配置自定义 fetch，如：
+
+  ```js
+  import { start } from 'qiankun';
+  
+  start({ 
+    fetch(url, ...args) {
+      // 给指定的微应用 entry 开启跨域请求
+      if (url === 'http://app.alipay.com/entry.html') {
+        return window.fetch(url, {
+          ...args,
+          mode: 'cors',
+          credentials: 'include',
+        });
+      }
+  
+      return window.fetch(url, ...args);
+    }
+  });
+  ```
+
+* 如果你是通过 [loadMicroApp](/zh/api#loadmicroappapp-configuration) 加载微应用的，你需要在调用时配置自定义 fetch，如：
+
+  ```js
+  import { loadMicroApp } from 'qiankun';
+  
+  loadMicroApp(app, {
+    fetch(url, ...args) {
+      // 给指定的微应用 entry 开启跨域请求
+      if (url === 'http://app.alipay.com/entry.html') {
+        return window.fetch(url, {
+          ...args,
+          mode: 'cors',
+          credentials: 'include',
+        });
+      }
+  
+      return window.fetch(url, ...args);
+    }
+  });
+  ```
+
+* 如果你是通过 [umi plugin](https://umijs.org/zh-CN/plugins/plugin-qiankun) 来使用 qiankun 的，那么你只需要给对应的微应用开启 credentials 配置即可：
+
+  ```diff
+  export default {
+    qiankun: {
+      master: {
+        apps: [
+          {
+            name: 'app',
+            entry: '//app.alipay.com/entry.html',
+  +         credentials: true,
+          }
+        ]
+      }
+    }
+  }
+  ```
+
+  
+
+

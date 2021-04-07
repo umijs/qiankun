@@ -308,12 +308,9 @@ toc: menu
     microApp = null;
 
     componentDidMount() {
-      this.microApp = loadMicroApp({
-        name: 'app1',
-        entry: '//localhost:1234',
-        container: this.containerRef.current,
-        props: { name: 'qiankun' },
-      });
+      this.microApp = loadMicroApp(
+        { name: 'app1', entry: '//localhost:1234', container: this.containerRef.current, props: { brand: 'qiankun' } },
+      );
     }
 
     componentWillUnmount() {
