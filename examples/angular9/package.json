@@ -1,10 +1,9 @@
 {
-  "name": "@example/angular9",
+  "name": "angular9",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "dev": "ng serve",
-    "start": "yarn run serve:qiankun",
+    "start": "ng serve",
     "build": "ng build",
     "test": "ng test",
     "lint": "ng lint",
@@ -23,7 +22,6 @@
     "@angular/platform-browser": "~9.0.2",
     "@angular/platform-browser-dynamic": "~9.0.2",
     "@angular/router": "~9.0.2",
-    "qiankun": "^2.4.0",
     "rxjs": "~6.5.4",
     "single-spa-angular": "^4.3.1",
     "tslib": "^1.10.0",

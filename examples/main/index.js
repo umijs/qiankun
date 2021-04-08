@@ -14,7 +14,7 @@ import render from './render/ReactRender';
  */
 render({ loading: true });
 
-const loader = (loading) => render({ loading });
+const loader = loading => render({ loading });
 
 /**
  * Step2 注册子应用
@@ -67,17 +67,17 @@ registerMicroApps(
   ],
   {
     beforeLoad: [
-      (app) => {
+      app => {
         console.log('[LifeCycle] before load %c%s', 'color: green;', app.name);
       },
     ],
     beforeMount: [
-      (app) => {
+      app => {
         console.log('[LifeCycle] before mount %c%s', 'color: green;', app.name);
       },
     ],
     afterUnmount: [
-      (app) => {
+      app => {
         console.log('[LifeCycle] after unmount %c%s', 'color: green;', app.name);
       },
     ],

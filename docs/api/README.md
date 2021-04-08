@@ -91,24 +91,24 @@ By linking the micro-application to some url rules, the function of automaticall
 - Sample
 
   ```tsx
-  import { registerMicroApps } from "qiankun";
+  import { registerMicroApps } from 'qiankun';
 
   registerMicroApps(
     [
       {
-        name: "app1",
-        entry: "//localhost:8080",
-        container: "#container",
-        activeRule: "/react",
+        name: 'app1',
+        entry: '//localhost:8080',
+        container: '#container',
+        activeRule: '/react',
         props: {
-          name: "kuitos",
+          name: 'kuitos',
         },
       },
     ],
     {
-      beforeLoad: (app) => console.log("before load", app.name),
-      beforeMount: [(app) => console.log("before mount", app.name)],
-    }
+      beforeLoad: (app) => console.log('before load', app.name),
+      beforeMount: [(app) => console.log('before mount', app.name)],
+    },
   );
   ```
 
@@ -168,7 +168,7 @@ By linking the micro-application to some url rules, the function of automaticall
 - Sample
 
   ```ts
-  import { start } from "qiankun";
+  import { start } from 'qiankun';
 
   start();
   ```
@@ -186,9 +186,9 @@ By linking the micro-application to some url rules, the function of automaticall
 - Sample
 
   ```ts
-  import { setDefaultMountApp } from "qiankun";
+  import { setDefaultMountApp } from 'qiankun';
 
-  setDefaultMountApp("/homeApp");
+  setDefaultMountApp('/homeApp');
   ```
 
 ### `runAfterFirstMounted(effect)`
@@ -204,7 +204,7 @@ By linking the micro-application to some url rules, the function of automaticall
 - Sample
 
   ```ts
-  import { runAfterFirstMounted } from "qiankun";
+  import { runAfterFirstMounted } from 'qiankun';
 
   runAfterFirstMounted(() => startMonitor());
   ```
@@ -292,8 +292,8 @@ A criterion for judging whether the business is closely related: <strong>Look at
 - Sample
 
   ```jsx
-  import { loadMicroApp } from "qiankun";
-  import React from "react";
+  import { loadMicroApp } from 'qiankun';
+  import React from 'react';
 
   class App extends React.Component {
     containerRef = React.createRef();
@@ -301,10 +301,10 @@ A criterion for judging whether the business is closely related: <strong>Look at
 
     componentDidMount() {
       this.microApp = loadMicroApp({
-        name: "app1",
-        entry: "//localhost:1234",
+        name: 'app1',
+        entry: '//localhost:1234',
         container: this.containerRef.current,
-        props: { brand: "qiankun" },
+        props: { brand: 'qiankun' },
       });
     }
 
@@ -313,7 +313,7 @@ A criterion for judging whether the business is closely related: <strong>Look at
     }
 
     componentDidUpdate() {
-      this.microApp.update({ name: "kuitos" });
+      this.microApp.update({ name: 'kuitos' });
     }
 
     render() {
@@ -342,11 +342,11 @@ A criterion for judging whether the business is closely related: <strong>Look at
 - Sample
 
   ```ts
-  import { prefetchApps } from "qiankun";
+  import { prefetchApps } from 'qiankun';
 
   prefetchApps([
-    { name: "app1", entry: "//locahost:7001" },
-    { name: "app2", entry: "//locahost:7002" },
+    { name: 'app1', entry: '//locahost:7001' },
+    { name: 'app2', entry: '//locahost:7002' },
   ]);
   ```
 
@@ -365,7 +365,7 @@ A criterion for judging whether the business is closely related: <strong>Look at
 - Sample
 
   ```ts
-  import { addGlobalUncaughtErrorHandler } from "qiankun";
+  import { addGlobalUncaughtErrorHandler } from 'qiankun';
 
   addGlobalUncaughtErrorHandler((event) => console.log(event));
   ```
@@ -383,7 +383,7 @@ A criterion for judging whether the business is closely related: <strong>Look at
 - Sample
 
   ```ts
-  import { removeGlobalUncaughtErrorHandler } from "qiankun";
+  import { removeGlobalUncaughtErrorHandler } from 'qiankun';
 
   removeGlobalUncaughtErrorHandler(handler);
   ```
@@ -413,7 +413,7 @@ A criterion for judging whether the business is closely related: <strong>Look at
   Master:
 
   ```ts
-  import { initGlobalState, MicroAppStateActions } from "qiankun";
+  import { initGlobalState, MicroAppStateActions } from 'qiankun';
 
   // Initialize state
   const actions: MicroAppStateActions = initGlobalState(state);

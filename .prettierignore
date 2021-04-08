@@ -7,3 +7,4 @@ packages/**/es
 packages/**/lib
 /coverage
 .cache
+examples

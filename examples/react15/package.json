@@ -1,19 +1,17 @@
 {
-  "name": "@example/react15",
+  "name": "react15",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "start": "webpack-dev-server",
-    "start:multiple": "yarn run start",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "dependencies": {
     "antd": "2.13.14",
     "react": "15.6.2",
-    "react-dom": "15.6.2",
-    "qiankun": "^2.4.0"
+    "react-dom": "15.6.2"
   },
   "devDependencies": {
     "@babel/core": "^7.7.2",

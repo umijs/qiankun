@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Modal } from 'antd';
 
-export default function () {
+export default function() {
   const [visible, setVisible] = useState(false);
   return (
     <>

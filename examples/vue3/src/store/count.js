@@ -4,7 +4,7 @@ export default {
     count: 0,
   },
   getters: {
-    evenOrOdd: (state) => (state.count % 2 === 0 ? 'even' : 'odd'),
+    evenOrOdd: state => (state.count % 2 === 0 ? 'even' : 'odd'),
   },
   mutations: {
     increment(state) {
@@ -23,7 +23,7 @@ export default {
       }
     },
     incrementAsync({ commit }) {
-      return new Promise((resolve) => {
+      return new Promise(resolve => {
         setTimeout(() => {
           commit('increment');
           resolve();

@@ -15,20 +15,20 @@ $ yarn add qiankun # 或者 npm i qiankun -S
 ### 2. 在主应用中注册微应用
 
 ```ts
-import { registerMicroApps, start } from "qiankun";
+import { registerMicroApps, start } from 'qiankun';
 
 registerMicroApps([
   {
-    name: "react app", // app name registered
-    entry: "//localhost:7100",
-    container: "#yourContainer",
-    activeRule: "/yourActiveRule",
+    name: 'react app', // app name registered
+    entry: '//localhost:7100',
+    container: '#yourContainer',
+    activeRule: '/yourActiveRule',
   },
   {
-    name: "vue app",
-    entry: { scripts: ["//localhost:7100/main.js"] },
-    container: "#yourContainer2",
-    activeRule: "/yourActiveRule2",
+    name: 'vue app',
+    entry: { scripts: ['//localhost:7100/main.js'] },
+    container: '#yourContainer2',
+    activeRule: '/yourActiveRule2',
   },
 ]);
 
@@ -40,12 +40,12 @@ start();
 如果微应用不是直接跟路由关联的时候，你也可以选择手动加载微应用的方式：
 
 ```ts
-import { loadMicroApp } from "qiankun";
+import { loadMicroApp } from 'qiankun';
 
 loadMicroApp({
-  name: "app",
-  entry: "//localhost:7100",
-  container: "#yourContainer",
+  name: 'app',
+  entry: '//localhost:7100',
+  container: '#yourContainer',
 });
 ```
 
@@ -63,19 +63,14 @@ loadMicroApp({
  * 通常我们可以在这里做一些全局变量的初始化，比如不会在 unmount 阶段被销毁的应用级别的缓存等。
  */
 export async function bootstrap() {
-  console.log("react app bootstraped");
+  console.log('react app bootstraped');
 }
 
 /**
  * 应用每次进入都会调用 mount 方法，通常我们在这里触发应用的渲染方法
  */
 export async function mount(props) {
-  ReactDOM.render(
-    <App />,
-    props.container
-      ? props.container.querySelector("#root")
-      : document.getElementById("root")
-  );
+  ReactDOM.render(<App />, props.container ? props.container.querySelector('#root') : document.getElementById('root'));
 }
 
 /**
@@ -83,9 +78,7 @@ export async function mount(props) {
  */
 export async function unmount(props) {
   ReactDOM.unmountComponentAtNode(
-    props.container
-      ? props.container.querySelector("#root")
-      : document.getElementById("root")
+    props.container ? props.container.querySelector('#root') : document.getElementById('root'),
   );
 }
 
@@ -93,7 +86,7 @@ export async function unmount(props) {
  * 可选生命周期钩子，仅使用 loadMicroApp 方式加载微应用时生效
  */
 export async function update(props) {
-  console.log("update props", props);
+  console.log('update props', props);
 }
 ```
 
@@ -108,12 +101,12 @@ qiankun 基于 single-spa，所以你可以在[这里](https://single-spa.js.org
 #### webpack:
 
 ```js
-const packageName = require("./package.json").name;
+const packageName = require('./package.json').name;
 
 module.exports = {
   output: {
     library: `${packageName}-[name]`,
-    libraryTarget: "umd",
+    libraryTarget: 'umd',
     jsonpFunction: `webpackJsonp_${packageName}`,
   },
 };

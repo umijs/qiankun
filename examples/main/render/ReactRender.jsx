@@ -6,7 +6,7 @@ import ReactDOM from 'react-dom';
  */
 function Render(props) {
   const { loading } = props;
-console.log('render')
+
   return (
     <>
       {loading && <h4 className="subapp-loading">Loading...</h4>}

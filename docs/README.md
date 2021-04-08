@@ -25,15 +25,15 @@ $ yarn add qiankun  # or npm i qiankun -S
 ## 🔨 Getting Started
 
 ```tsx
-import { loadMicroApp } from "qiankun";
+import { loadMicroApp } from 'qiankun';
 
 // load micro app
 loadMicroApp({
-  name: "reactApp",
-  entry: "//localhost:7100",
-  container: "#container",
+  name: 'reactApp',
+  entry: '//localhost:7100',
+  container: '#container',
   props: {
-    slogan: "Hello Qiankun",
+    slogan: 'Hello Qiankun',
   },
 });
 ```
@@ -42,6 +42,6 @@ See details：[Getting Started](/guide/getting-started)
 
 ## Community
 
-| Github Issue                                                    | 钉钉群                                                                                                          |
-| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Github Issue | 钉钉群 |
+| --- | --- |
 | [umijs/qiankun/issues](https://github.com/umijs/qiankun/issues) | <img src="https://gw.alipayobjects.com/mdn/rms_655822/afts/img/A*9UhaS65mywQAAAAAAAAAAAAAARQnAQ" width="150" /> |
