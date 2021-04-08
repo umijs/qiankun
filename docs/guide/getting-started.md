@@ -5,6 +5,7 @@ toc: menu
 # Getting Started
 
 ## Master Application
+
 ### 1. Installation
 
 ```bash
@@ -37,7 +38,9 @@ start();
 After the sub-application information is registered, the matching logic of the qiankun will be automatically triggered once the browser url changes, and all the render methods corresponding to the subapplications whose activeRule methods returns `true` will be called, at the same time the subapplications' exposed lifecycle hooks will be called in turn.
 
 ## Sub Application
+
 Sub applications do not need to install any additional dependencies to integrate to qiankun master application.
+
 ### 1. Exports Lifecycles From Sub App Entry
 
 The child application needs to export `bootstrap`,`mount`, `unmount` three lifecycle hooks in its own entry js (usually the entry js of webpack you configure) for the main application to call at the appropriate time.
@@ -66,7 +69,9 @@ export async function mount(props) {
  * usually in this case we uninstall the application instance of the subapplication.
  */
 export async function unmount(props) {
-  ReactDOM.unmountComponentAtNode(props.container ? props.container.querySelector('#root') : document.getElementById('root'));
+  ReactDOM.unmountComponentAtNode(
+    props.container ? props.container.querySelector('#root') : document.getElementById('root'),
+  );
 }
 
 /**
