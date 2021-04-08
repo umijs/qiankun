@@ -5,6 +5,7 @@ toc: menu
 # 快速上手
 
 ## 主应用
+
 ### 1. 安装 qiankun
 
 ```bash
@@ -41,16 +42,15 @@ start();
 ```ts
 import { loadMicroApp } from 'qiankun';
 
-loadMicroApp(
-  { 
-    name: 'app', 
-   	entry: '//localhost:7100',
-    container: '#yourContainer', 
-  }
-);
+loadMicroApp({
+  name: 'app',
+  entry: '//localhost:7100',
+  container: '#yourContainer',
+});
 ```
 
 ## 微应用
+
 微应用不需要额外安装任何其他依赖即可接入 qiankun 主应用。
 
 ### 1. 导出相应的生命周期钩子
@@ -77,7 +77,9 @@ export async function mount(props) {
  * 应用每次 切出/卸载 会调用的方法，通常在这里我们会卸载微应用的应用实例
  */
 export async function unmount(props) {
-  ReactDOM.unmountComponentAtNode(props.container ? props.container.querySelector('#root') : document.getElementById('root'));
+  ReactDOM.unmountComponentAtNode(
+    props.container ? props.container.querySelector('#root') : document.getElementById('root'),
+  );
 }
 
 /**
@@ -89,7 +91,6 @@ export async function update(props) {
 ```
 
 qiankun 基于 single-spa，所以你可以在[这里](https://single-spa.js.org/docs/building-applications.html#registered-application-lifecycle)找到更多关于微应用生命周期相关的文档说明。
-
 
 无 webpack 等构建工具的应用接入方式请见[这里](/zh/guide/tutorial#%E9%9D%9E-webpack-%E6%9E%84%E5%BB%BA%E7%9A%84%E5%BE%AE%E5%BA%94%E7%94%A8)
 
