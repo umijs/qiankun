@@ -19,10 +19,10 @@ toc: menu
 ```js
 registerMicroApps([
   {
-    name: 'app',
-    entry: 'http://localhost:8080',
-    container: '#container',
-    activeRule: '/app',
+    name: "app",
+    entry: "http://localhost:8080",
+    container: "#container",
+    activeRule: "/app",
   },
 ]);
 ```
@@ -73,10 +73,10 @@ registerMicroApps([
 const getActiveRule = (hash) => (location) => location.hash.startsWith(hash);
 registerMicroApps([
   {
-    name: 'app-hash',
-    entry: 'http://localhost:8080',
-    container: '#container',
-    activeRule: getActiveRule('#/app-hash'),
+    name: "app-hash",
+    entry: "http://localhost:8080",
+    container: "#container",
+    activeRule: getActiveRule("#/app-hash"),
     // 这里也可以直接写 activeRule: '#/app-hash'，但是如果主应用是 history 模式或者主应用部署在非根目录，这样写不会生效。
   },
 ]);
@@ -89,8 +89,8 @@ registerMicroApps([
 ```js
 const routes = [
   {
-    path: '/app-vue-hash',
-    name: 'Home',
+    path: "/app-vue-hash",
+    name: "Home",
     component: Home,
     children: [
       // 其他的路由都写到这里
@@ -171,7 +171,7 @@ const routes = [
 
   ```js
   module.exports = {
-    publicPath: '/child/vue-history/',
+    publicPath: "/child/vue-history/",
   };
   ```
 
@@ -180,7 +180,8 @@ const routes = [
   路由设置：
 
   ```html
-  <BrowserRouter basename={window.__POWERED_BY_QIANKUN__ ? '/app-react' : '/child/react-history/'}>
+  <BrowserRouter basename={window.__POWERED_BY_QIANKUN__ ? '/app-react' :
+  '/child/react-history/'}>
   ```
 
   webpack 打包 publicPath 配置：
@@ -188,7 +189,7 @@ const routes = [
   ```js
   module.exports = {
     output: {
-      publicPath: '/child/react-history/',
+      publicPath: "/child/react-history/",
     },
   };
   ```
@@ -201,7 +202,9 @@ const routes = [
   providers: [
     {
       provide: APP_BASE_HREF,
-      useValue: window.__POWERED_BY_QIANKUN__ ? '/app-angular/' : '/child/angular-history/',
+      useValue: window.__POWERED_BY_QIANKUN__
+        ? "/app-angular/"
+        : "/child/angular-history/",
     },
   ];
   ```

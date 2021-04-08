@@ -19,10 +19,10 @@ When registering micro apps, `activeRule` needs to be written like this:
 ```js
 registerMicroApps([
   {
-    name: 'app',
-    entry: 'http://localhost:8080',
-    container: '#container',
-    activeRule: '/app',
+    name: "app",
+    entry: "http://localhost:8080",
+    container: "#container",
+    activeRule: "/app",
   },
 ]);
 ```
@@ -73,10 +73,10 @@ When registering micro apps, `activeRule` needs to be written like this:
 const getActiveRule = (hash) => (location) => location.hash.startsWith(hash);
 registerMicroApps([
   {
-    name: 'app-hash',
-    entry: 'http://localhost:8080',
-    container: '#container',
-    activeRule: getActiveRule('#/app-hash'),
+    name: "app-hash",
+    entry: "http://localhost:8080",
+    container: "#container",
+    activeRule: getActiveRule("#/app-hash"),
     // Here you can also write `activeRule:'#/app-hash'` directly,
     // but if the main app is in history mode or the main app is deployed in a non-root directory, this writing will not take effect.
   },
@@ -90,8 +90,8 @@ In the `hash` mode of the `vue-router` app, the `base` for routing is not suppor
 ```js
 const routes = [
   {
-    path: '/app-vue-hash',
-    name: 'Home',
+    path: "/app-vue-hash",
+    name: "Home",
     component: Home,
     children: [
       // All other routes are written here
@@ -172,7 +172,7 @@ At this time, you need to set the `publicPath` and the route `base` of the `hist
 
   ```js
   module.exports = {
-    publicPath: '/child/vue-history/',
+    publicPath: "/child/vue-history/",
   };
   ```
 
@@ -181,7 +181,8 @@ At this time, you need to set the `publicPath` and the route `base` of the `hist
   Routing's base configuration:
 
   ```html
-  <BrowserRouter basename={window.__POWERED_BY_QIANKUN__ ? '/app-react' : '/child/react-history/'}>
+  <BrowserRouter basename={window.__POWERED_BY_QIANKUN__ ? '/app-react' :
+  '/child/react-history/'}>
   ```
 
   Webpack's publicPath configuration:
@@ -189,7 +190,7 @@ At this time, you need to set the `publicPath` and the route `base` of the `hist
   ```js
   module.exports = {
     output: {
-      publicPath: '/child/react-history/',
+      publicPath: "/child/react-history/",
     },
   };
   ```
@@ -202,7 +203,9 @@ At this time, you need to set the `publicPath` and the route `base` of the `hist
   providers: [
     {
       provide: APP_BASE_HREF,
-      useValue: window.__POWERED_BY_QIANKUN__ ? '/app-angular/' : '/child/angular-history/',
+      useValue: window.__POWERED_BY_QIANKUN__
+        ? "/app-angular/"
+        : "/child/angular-history/",
     },
   ];
   ```

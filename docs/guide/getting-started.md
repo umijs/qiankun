@@ -15,20 +15,20 @@ $ yarn add qiankun # or npm i qiankun -S
 ### 2. Register Sub Apps In Master Application
 
 ```ts
-import { registerMicroApps, start } from 'qiankun';
+import { registerMicroApps, start } from "qiankun";
 
 registerMicroApps([
   {
-    name: 'react app', // app name registered
-    entry: '//localhost:7100',
-    container: '#yourContainer',
-    activeRule: '/yourActiveRule',
+    name: "react app", // app name registered
+    entry: "//localhost:7100",
+    container: "#yourContainer",
+    activeRule: "/yourActiveRule",
   },
   {
-    name: 'vue app',
-    entry: { scripts: ['//localhost:7100/main.js'] },
-    container: '#yourContainer2',
-    activeRule: '/yourActiveRule2',
+    name: "vue app",
+    entry: { scripts: ["//localhost:7100/main.js"] },
+    container: "#yourContainer2",
+    activeRule: "/yourActiveRule2",
   },
 ]);
 
@@ -53,7 +53,7 @@ The child application needs to export `bootstrap`,`mount`, `unmount` three lifec
  * such as application-level caches that will not be destroyed during the unmount phase.
  */
 export async function bootstrap() {
-  console.log('react app bootstraped');
+  console.log("react app bootstraped");
 }
 
 /**
@@ -61,7 +61,12 @@ export async function bootstrap() {
  * usually we trigger the application's rendering method here.
  */
 export async function mount(props) {
-  ReactDOM.render(<App />, props.container ? props.container.querySelector('#root') : document.getElementById('root'));
+  ReactDOM.render(
+    <App />,
+    props.container
+      ? props.container.querySelector("#root")
+      : document.getElementById("root")
+  );
 }
 
 /**
@@ -70,7 +75,9 @@ export async function mount(props) {
  */
 export async function unmount(props) {
   ReactDOM.unmountComponentAtNode(
-    props.container ? props.container.querySelector('#root') : document.getElementById('root'),
+    props.container
+      ? props.container.querySelector("#root")
+      : document.getElementById("root")
   );
 }
 
@@ -78,7 +85,7 @@ export async function unmount(props) {
  * Optional lifecycle，just available with loadMicroApp way
  */
 export async function update(props) {
-  console.log('update props', props);
+  console.log("update props", props);
 }
 ```
 
@@ -93,12 +100,12 @@ In addition to exposing the corresponding life-cycle hooks in the code, in order
 #### webpack:
 
 ```js
-const packageName = require('./package.json').name;
+const packageName = require("./package.json").name;
 
 module.exports = {
   output: {
     library: `${packageName}-[name]`,
-    libraryTarget: 'umd',
+    libraryTarget: "umd",
     jsonpFunction: `webpackJsonp_${packageName}`,
   },
 };
