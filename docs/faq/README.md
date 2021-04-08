@@ -21,6 +21,7 @@ To solve the exception, try the following steps:
 4. Check your `package.json` name field is unique between sub apps.
 
 5. Check if the entry js in the sub-app's entry HTML is the last script to load. If not, move the order to make it be the last, or manually mark the entry js as `entry` in the HTML, such as:
+
    ```html {2}
    <script src="/antd.js"></script>
    <script src="/appEntry.js" entry></script>
@@ -29,8 +30,7 @@ To solve the exception, try the following steps:
 
 6. If the development environment is OK but the production environment is not, check whether the `index.html` and `entry js` of the micro app are returned normally, for example, `404.html` is returned.
 
-7. If you're using webpack5, please see [here](https://github.com/umijs/qiankun/issues/1092)
-If it still not works after the steps above, this is usually due to browser compatibility issues. Try to **set the webpack `output.library` of the broken sub app the same with your main app registration for your app**, such as:
+7. If you're using webpack5, please see [here](https://github.com/umijs/qiankun/issues/1092) If it still not works after the steps above, this is usually due to browser compatibility issues. Try to **set the webpack `output.library` of the broken sub app the same with your main app registration for your app**, such as:
 
 Such as here is the main configuration:
 
@@ -38,10 +38,10 @@ Such as here is the main configuration:
 // main app
 registerMicroApps([
   {
-    name: 'brokenSubApp',
-    entry: '//localhost:7100',
-    container: '#yourContainer',
-    activeRule: '/react',
+    name: "brokenSubApp",
+    entry: "//localhost:7100",
+    container: "#yourContainer",
+    activeRule: "/react",
   },
 ]);
 ```
@@ -52,8 +52,8 @@ Set the `output.library` the same with main app registration:
 module.exports = {
   output: {
     // Keep the same with the registration in main app
-    library: 'brokenSubApp',
-    libraryTarget: 'umd',
+    library: "brokenSubApp",
+    libraryTarget: "umd",
     jsonpFunction: `webpackJsonp_${packageName}`,
   },
 };
@@ -74,7 +74,7 @@ This error thrown as the container DOM does not exist after the micro app is loa
        router,
        store,
        render: (h) => h(App),
-     }).$mount(container ? container.querySelector('#app') : '#app');
+     }).$mount(container ? container.querySelector("#app") : "#app");
    }
    export async function mount(props) {
      render(props);
@@ -86,14 +86,23 @@ This error thrown as the container DOM does not exist after the micro app is loa
    ```js
    function render(props) {
      const { container } = props;
-     ReactDOM.render(<App />, container ? container.querySelector('#root') : document.querySelector('#root'));
+     ReactDOM.render(
+       <App />,
+       container
+         ? container.querySelector("#root")
+         : document.querySelector("#root")
+     );
    }
    export async function mount(props) {
      render(props);
    }
    export async function unmount(props) {
      const { container } = props;
-     ReactDOM.unmountComponentAtNode(container ? container.querySelector('#root') : document.querySelector('#root'));
+     ReactDOM.unmountComponentAtNode(
+       container
+         ? container.querySelector("#root")
+         : document.querySelector("#root")
+     );
    }
    ```
 
@@ -131,9 +140,9 @@ It must be ensured that the routing page of the main app is also loaded when the
    ```js
    const routes = [
      {
-       path: '/portal/*',
-       name: 'portal',
-       component: () => import('../views/Portal.vue'),
+       path: "/portal/*",
+       name: "portal",
+       component: () => import("../views/Portal.vue"),
      },
    ];
    ```
@@ -141,16 +150,16 @@ It must be ensured that the routing page of the main app is also loaded when the
    ```js
    registerMicroApps([
      {
-       name: 'app1',
-       entry: 'http://localhost:8080',
-       container: '#container',
-       activeRule: '/portal/app1',
+       name: "app1",
+       entry: "http://localhost:8080",
+       container: "#container",
+       activeRule: "/portal/app1",
      },
    ]);
    ```
 3. Call the `start` function in the `mounted` cycle of the `Portal.vue` component, **be careful not to call it repeatedly**.
    ```js
-   import { start } from 'qiankun';
+   import { start } from "qiankun";
    export default {
      mounted() {
        if (!window.qiankunStarted) {
@@ -167,40 +176,39 @@ It must be ensured that the routing page of the main app is also loaded when the
 
 1. The main app registers a wildcard sub route for this route, and the content is empty.
 
-    ```ts
-    const routes: Routes = [
-      { 
-        path: 'portal', 
-        component: PortalComponent,
-        children: [
-          { path: '**', component: EmptyComponent },
-        ],
-      },
-    ];
-    ```
+   ```ts
+   const routes: Routes = [
+     {
+       path: "portal",
+       component: PortalComponent,
+       children: [{ path: "**", component: EmptyComponent }],
+     },
+   ];
+   ```
+
 2. The `activeRule` of the micro app needs to include the route `path` of the main app.
-    ```js
-    registerMicroApps([
-      { 
-        name: 'app1', 
-        entry: 'http://localhost:8080', 
-        container: '#container', 
-        activeRule: '/portal/app1', 
-      },
-    ]);
-    ```
+   ```js
+   registerMicroApps([
+     {
+       name: "app1",
+       entry: "http://localhost:8080",
+       container: "#container",
+       activeRule: "/portal/app1",
+     },
+   ]);
+   ```
 3. Call the `start` function in the `ngAfterViewInit` cycle of this routing component, **be careful not to call it repeatedly**.
-    ```ts
-    import { start } from 'qiankun';
-    export class PortalComponent implements AfterViewInit {
-      ngAfterViewInit(): void {
-        if (!window.qiankunStarted) {
-          window.qiankunStarted = true;
-          start();
-        }
-      }
-    }
-    ```
+   ```ts
+   import { start } from "qiankun";
+   export class PortalComponent implements AfterViewInit {
+     ngAfterViewInit(): void {
+       if (!window.qiankunStarted) {
+         window.qiankunStarted = true;
+         start();
+       }
+     }
+   }
+   ```
 
 ## Vue Router Error - `Uncaught TypeError: Cannot redefine property: $router`
 
@@ -269,7 +277,7 @@ module.exports = {
         test: /\.(png|jpe?g|gif|webp|woff2?|eot|ttf|otf)$/i,
         use: [
           {
-            loader: 'url-loader',
+            loader: "url-loader",
             options: {},
           },
         ],
@@ -284,8 +292,18 @@ module.exports = {
 ```js
 module.exports = {
   chainWebpack: (config) => {
-    config.module.rule('fonts').use('url-loader').loader('url-loader').options({}).end();
-    config.module.rule('images').use('url-loader').loader('url-loader').options({}).end();
+    config.module
+      .rule("fonts")
+      .use("url-loader")
+      .loader("url-loader")
+      .options({})
+      .end();
+    config.module
+      .rule("images")
+      .use("url-loader")
+      .loader("url-loader")
+      .options({})
+      .end();
   },
 };
 ```
@@ -293,7 +311,10 @@ module.exports = {
 3. Use the `file-loader` of `webpack` to inject the full path when packaging it (suitable for projects with large font files and images)
 
 ```js
-const publicPath = process.env.NODE_ENV === 'production' ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+const publicPath =
+  process.env.NODE_ENV === "production"
+    ? "https://qiankun.umijs.org/"
+    : `http://localhost:${port}`;
 module.exports = {
   module: {
     rules: [
@@ -301,9 +322,9 @@ module.exports = {
         test: /\.(png|jpe?g|gif|webp)$/i,
         use: [
           {
-            loader: 'file-loader',
+            loader: "file-loader",
             options: {
-              name: 'img/[name].[hash:8].[ext]',
+              name: "img/[name].[hash:8].[ext]",
               publicPath,
             },
           },
@@ -313,9 +334,9 @@ module.exports = {
         test: /\.(woff2?|eot|ttf|otf)$/i,
         use: [
           {
-            loader: 'file-loader',
+            loader: "file-loader",
             options: {
-              name: 'fonts/[name].[hash:8].[ext]',
+              name: "fonts/[name].[hash:8].[ext]",
               publicPath,
             },
           },
@@ -329,26 +350,29 @@ module.exports = {
 `vue-cli3` project:
 
 ```js
-const publicPath = process.env.NODE_ENV === 'production' ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+const publicPath =
+  process.env.NODE_ENV === "production"
+    ? "https://qiankun.umijs.org/"
+    : `http://localhost:${port}`;
 module.exports = {
   chainWebpack: (config) => {
-    const fontRule = config.module.rule('fonts');
+    const fontRule = config.module.rule("fonts");
     fontRule.uses.clear();
     fontRule
-      .use('file-loader')
-      .loader('file-loader')
+      .use("file-loader")
+      .loader("file-loader")
       .options({
-        name: 'fonts/[name].[hash:8].[ext]',
+        name: "fonts/[name].[hash:8].[ext]",
         publicPath,
       })
       .end();
-    const imgRule = config.module.rule('images');
+    const imgRule = config.module.rule("images");
     imgRule.uses.clear();
     imgRule
-      .use('file-loader')
-      .loader('file-loader')
+      .use("file-loader")
+      .loader("file-loader")
       .options({
-        name: 'img/[name].[hash:8].[ext]',
+        name: "img/[name].[hash:8].[ext]",
         publicPath,
       })
       .end();
@@ -359,7 +383,10 @@ module.exports = {
 4. Combine the two schemes, convert small files to `base64`, and inject path prefixes for large files
 
 ```js
-const publicPath = process.env.NODE_ENV === 'production' ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+const publicPath =
+  process.env.NODE_ENV === "production"
+    ? "https://qiankun.umijs.org/"
+    : `http://localhost:${port}`;
 module.exports = {
   module: {
     rules: [
@@ -367,12 +394,12 @@ module.exports = {
         test: /\.(png|jpe?g|gif|webp)$/i,
         use: [
           {
-            loader: 'url-loader',
+            loader: "url-loader",
             options: {},
             fallback: {
-              loader: 'file-loader',
+              loader: "file-loader",
               options: {
-                name: 'img/[name].[hash:8].[ext]',
+                name: "img/[name].[hash:8].[ext]",
                 publicPath,
               },
             },
@@ -383,12 +410,12 @@ module.exports = {
         test: /\.(woff2?|eot|ttf|otf)$/i,
         use: [
           {
-            loader: 'url-loader',
+            loader: "url-loader",
             options: {},
             fallback: {
-              loader: 'file-loader',
+              loader: "file-loader",
               options: {
-                name: 'fonts/[name].[hash:8].[ext]',
+                name: "fonts/[name].[hash:8].[ext]",
                 publicPath,
               },
             },
@@ -403,34 +430,37 @@ module.exports = {
 `vue-cli3` project：
 
 ```js
-const publicPath = process.env.NODE_ENV === 'production' ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+const publicPath =
+  process.env.NODE_ENV === "production"
+    ? "https://qiankun.umijs.org/"
+    : `http://localhost:${port}`;
 module.exports = {
   chainWebpack: (config) => {
     config.module
-      .rule('fonts')
-      .use('url-loader')
-      .loader('url-loader')
+      .rule("fonts")
+      .use("url-loader")
+      .loader("url-loader")
       .options({
         limit: 4096, // Less than 4kb will be packaged as base64
         fallback: {
-          loader: 'file-loader',
+          loader: "file-loader",
           options: {
-            name: 'fonts/[name].[hash:8].[ext]',
+            name: "fonts/[name].[hash:8].[ext]",
             publicPath,
           },
         },
       })
       .end();
     config.module
-      .rule('images')
-      .use('url-loader')
-      .loader('url-loader')
+      .rule("images")
+      .use("url-loader")
+      .loader("url-loader")
       .options({
         limit: 4096, // Less than 4kb will be packaged as base64
         fallback: {
-          loader: 'file-loader',
+          loader: "file-loader",
           options: {
-            name: 'img/[name].[hash:8].[ext]',
+            name: "img/[name].[hash:8].[ext]",
             publicPath,
           },
         },
@@ -482,7 +512,7 @@ Example for antd：
 2. set antd [ConfigProvider](https://ant.design/components/config-provider-cn/)
 
    ```jsx
-   import { ConfigProvider } from 'antd';
+   import { ConfigProvider } from "antd";
 
    export const MyApp = () => (
      <ConfigProvider prefixCls="yourPrefix">
@@ -517,9 +547,24 @@ When the subapp should be active depends on your `activeRule` config, like the e
 ```js {2,3,7}
 registerMicroApps([
   // define the activeRule by your self
-  { name: 'reactApp', entry: '//localhost:7100', container, activeRule: () => window.isReactApp },
-  { name: 'react15App', entry: '//localhost:7102', container, activeRule: () => window.isReactApp },
-  { name: 'vue app', entry: '//localhost:7101', container, activeRule: () => window.isVueApp },
+  {
+    name: "reactApp",
+    entry: "//localhost:7100",
+    container,
+    activeRule: () => window.isReactApp,
+  },
+  {
+    name: "react15App",
+    entry: "//localhost:7102",
+    container,
+    activeRule: () => window.isReactApp,
+  },
+  {
+    name: "vue app",
+    entry: "//localhost:7101",
+    container,
+    activeRule: () => window.isVueApp,
+  },
 ]);
 
 start({ singular: false });
@@ -556,12 +601,12 @@ What's <a href="https://developer.mozilla.org/en-US/docs/Glossary/Polyfill" targ
 </Alert>
 
 ```javascript
-import 'whatwg-fetch';
-import 'custom-event-polyfill';
-import 'core-js/stable/promise';
-import 'core-js/stable/symbol';
-import 'core-js/stable/string/starts-with';
-import 'core-js/web/url';
+import "whatwg-fetch";
+import "custom-event-polyfill";
+import "core-js/stable/promise";
+import "core-js/stable/symbol";
+import "core-js/stable/string/starts-with";
+import "core-js/web/url";
 ```
 
 **We recommend that you use @babel/preset-env plugin directly to polyfill IE automatically, all the instructions for @babel/preset-env you can found in [babel official document](https://babeljs.io/docs/en/babel-preset-env).**
@@ -592,7 +637,7 @@ First of all, you cannot use the wildcard `*`. You can register the 404 page as 
 Take `vue-router` as an example, the pseudo code is as follows:
 
 ```js
-const childrenPath = ['/app1', '/app2'];
+const childrenPath = ["/app1", "/app2"];
 router.beforeEach((to, from, next) => {
   if (to.name) {
     // There is a name attribute, indicating that it is the route of the main project
@@ -601,7 +646,7 @@ router.beforeEach((to, from, next) => {
   if (childrenPath.some((item) => to.path.includes(item))) {
     next();
   }
-  next({ name: '404' });
+  next({ name: "404" });
 });
 ```
 
@@ -634,10 +679,10 @@ Some scenarios we had to use config entry to load micro app (** not recommended 
 
 ```js
 loadMicroApp({
-  name: 'configEntry',
+  name: "configEntry",
   entry: {
-    scripts: ['//t.com/t.js'],
-    styles: ['//t.com/t.css'],
+    scripts: ["//t.com/t.js"],
+    styles: ["//t.com/t.css"],
   },
 });
 ```
@@ -678,44 +723,44 @@ export async function mount(props) {
 
 As the requests to pull micro-app entry are all cross-domain, when your micro-app relies on cookies (such as authentication), you need to customize the fetch method to enable the cors mode:
 
-* If you load the microapps through [registerMicroApps](/api#registermicroappsapps-lifecycles), you need to configure a custom fetch in the start method, such as:
+- If you load the microapps through [registerMicroApps](/api#registermicroappsapps-lifecycles), you need to configure a custom fetch in the start method, such as:
 
   ```js
-  import { start } from 'qiankun';
-  
-  start({ 
+  import { start } from "qiankun";
+
+  start({
     fetch(url, ...args) {
       // Enable cors mode for the specified microapp
-      if (url === 'http://app.alipay.com/entry.html') {
+      if (url === "http://app.alipay.com/entry.html") {
         return window.fetch(url, {
           ...args,
-          mode: 'cors',
-          credentials: 'include',
+          mode: "cors",
+          credentials: "include",
         });
       }
-  
+
       return window.fetch(url, ...args);
-    }
+    },
   });
   ```
 
-* If you load the microapp via [loadMicroApp](/api#loadmicroappapp-configuration), you need to configure a custom fetch when invoking, such as:
+- If you load the microapp via [loadMicroApp](/api#loadmicroappapp-configuration), you need to configure a custom fetch when invoking, such as:
 
   ```js
-  import { loadMicroApp } from 'qiankun';
-  
+  import { loadMicroApp } from "qiankun";
+
   loadMicroApp(app, {
     fetch(url, ...args) {
       // Enable cors mode for the specified microapp
-      if (url === 'http://app.alipay.com/entry.html') {
+      if (url === "http://app.alipay.com/entry.html") {
         return window.fetch(url, {
           ...args,
-          mode: 'cors',
-          credentials: 'include',
+          mode: "cors",
+          credentials: "include",
         });
       }
-  
+
       return window.fetch(url, ...args);
-    }
+    },
   });
   ```

@@ -19,26 +19,26 @@ $ yarn add qiankun # 或者 npm i qiankun -S
 注册微应用并启动：
 
 ```js
-import { registerMicroApps, start } from 'qiankun';
+import { registerMicroApps, start } from "qiankun";
 
 registerMicroApps([
   {
-    name: 'reactApp',
-    entry: '//localhost:3000',
-    container: '#container',
-    activeRule: '/app-react',
+    name: "reactApp",
+    entry: "//localhost:3000",
+    container: "#container",
+    activeRule: "/app-react",
   },
   {
-    name: 'vueApp',
-    entry: '//localhost:8080',
-    container: '#container',
-    activeRule: '/app-vue',
+    name: "vueApp",
+    entry: "//localhost:8080",
+    container: "#container",
+    activeRule: "/app-vue",
   },
   {
-    name: 'angularApp',
-    entry: '//localhost:4200',
-    container: '#container',
-    activeRule: '/app-angular',
+    name: "angularApp",
+    entry: "//localhost:4200",
+    container: "#container",
+    activeRule: "/app-angular",
   },
 ]);
 // 启动 qiankun
@@ -84,14 +84,19 @@ start();
 3. 入口文件 `index.js` 修改，为了避免根 id `#root` 与其他的 DOM 冲突，需要限制查找范围。
 
    ```js
-   import './public-path';
-   import React from 'react';
-   import ReactDOM from 'react-dom';
-   import App from './App';
+   import "./public-path";
+   import React from "react";
+   import ReactDOM from "react-dom";
+   import App from "./App";
 
    function render(props) {
      const { container } = props;
-     ReactDOM.render(<App />, container ? container.querySelector('#root') : document.querySelector('#root'));
+     ReactDOM.render(
+       <App />,
+       container
+         ? container.querySelector("#root")
+         : document.querySelector("#root")
+     );
    }
 
    if (!window.__POWERED_BY_QIANKUN__) {
@@ -99,17 +104,21 @@ start();
    }
 
    export async function bootstrap() {
-     console.log('[react16] react app bootstraped');
+     console.log("[react16] react app bootstraped");
    }
 
    export async function mount(props) {
-     console.log('[react16] props from main framework', props);
+     console.log("[react16] props from main framework", props);
      render(props);
    }
 
    export async function unmount(props) {
      const { container } = props;
-     ReactDOM.unmountComponentAtNode(container ? container.querySelector('#root') : document.querySelector('#root'));
+     ReactDOM.unmountComponentAtNode(
+       container
+         ? container.querySelector("#root")
+         : document.querySelector("#root")
+     );
    }
    ```
 
@@ -124,14 +133,14 @@ start();
    根目录新增 `.rescriptsrc.js`：
 
    ```js
-   const { name } = require('./package');
+   const { name } = require("./package");
 
    module.exports = {
      webpack: (config) => {
        config.output.library = `${name}-[name]`;
-       config.output.libraryTarget = 'umd';
+       config.output.libraryTarget = "umd";
        config.output.jsonpFunction = `webpackJsonp_${name}`;
-       config.output.globalObject = 'window';
+       config.output.globalObject = "window";
 
        return config;
      },
@@ -140,7 +149,7 @@ start();
        const config = _;
 
        config.headers = {
-         'Access-Control-Allow-Origin': '*',
+         "Access-Control-Allow-Origin": "*",
        };
        config.historyApiFallback = true;
        config.hot = false;
@@ -179,12 +188,12 @@ start();
 2. 入口文件 `main.js` 修改，为了避免根 id `#app` 与其他的 DOM 冲突，需要限制查找范围。
 
    ```js
-   import './public-path';
-   import Vue from 'vue';
-   import VueRouter from 'vue-router';
-   import App from './App.vue';
-   import routes from './router';
-   import store from './store';
+   import "./public-path";
+   import Vue from "vue";
+   import VueRouter from "vue-router";
+   import App from "./App.vue";
+   import routes from "./router";
+   import store from "./store";
 
    Vue.config.productionTip = false;
 
@@ -193,8 +202,8 @@ start();
    function render(props = {}) {
      const { container } = props;
      router = new VueRouter({
-       base: window.__POWERED_BY_QIANKUN__ ? '/app-vue/' : '/',
-       mode: 'history',
+       base: window.__POWERED_BY_QIANKUN__ ? "/app-vue/" : "/",
+       mode: "history",
        routes,
      });
 
@@ -202,7 +211,7 @@ start();
        router,
        store,
        render: (h) => h(App),
-     }).$mount(container ? container.querySelector('#app') : '#app');
+     }).$mount(container ? container.querySelector("#app") : "#app");
    }
 
    // 独立运行时
@@ -211,15 +220,15 @@ start();
    }
 
    export async function bootstrap() {
-     console.log('[vue] vue app bootstraped');
+     console.log("[vue] vue app bootstraped");
    }
    export async function mount(props) {
-     console.log('[vue] props from main framework', props);
+     console.log("[vue] props from main framework", props);
      render(props);
    }
    export async function unmount() {
      instance.$destroy();
-     instance.$el.innerHTML = '';
+     instance.$el.innerHTML = "";
      instance = null;
      router = null;
    }
@@ -228,17 +237,17 @@ start();
 3. 打包配置修改（`vue.config.js`）：
 
    ```js
-   const { name } = require('./package');
+   const { name } = require("./package");
    module.exports = {
      devServer: {
        headers: {
-         'Access-Control-Allow-Origin': '*',
+         "Access-Control-Allow-Origin": "*",
        },
      },
      configureWebpack: {
        output: {
          library: `${name}-[name]`,
-         libraryTarget: 'umd', // 把微应用打包成 umd 库格式
+         libraryTarget: "umd", // 把微应用打包成 umd 库格式
          jsonpFunction: `webpackJsonp_${name}`,
        },
      },
@@ -274,11 +283,11 @@ start();
 3. 修改入口文件，`src/main.ts` 文件。
 
    ```ts
-   import './public-path';
-   import { enableProdMode, NgModuleRef } from '@angular/core';
-   import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
-   import { AppModule } from './app/app.module';
-   import { environment } from './environments/environment';
+   import "./public-path";
+   import { enableProdMode, NgModuleRef } from "@angular/core";
+   import { platformBrowserDynamic } from "@angular/platform-browser-dynamic";
+   import { AppModule } from "./app/app.module";
+   import { environment } from "./environments/environment";
 
    if (environment.production) {
      enableProdMode();
@@ -320,16 +329,16 @@ start();
    在根目录增加 `custom-webpack.config.js` ，内容为：
 
    ```js
-   const appName = require('./package.json').name;
+   const appName = require("./package.json").name;
    module.exports = {
      devServer: {
        headers: {
-         'Access-Control-Allow-Origin': '*',
+         "Access-Control-Allow-Origin": "*",
        },
      },
      output: {
        library: `${appName}-[name]`,
-       libraryTarget: 'umd',
+       libraryTarget: "umd",
        jsonpFunction: `webpackJsonp_${appName}`,
      },
    };
@@ -397,7 +406,7 @@ start();
 
 当然，也可以选择使用 `single-spa-angular` 插件，参考[ single-spa-angular 的官网](https://single-spa.js.org/docs/ecosystem-angular) 和 [angular demo](https://github.com/umijs/qiankun/tree/master/examples/angular9)
 
-（**补充**）angular7 项目除了第4步以外，其他的步骤和 angular9 一模一样。angular7 修改 `webpack` 打包配置的步骤如下：
+（**补充**）angular7 项目除了第 4 步以外，其他的步骤和 angular9 一模一样。angular7 修改 `webpack` 打包配置的步骤如下：
 
 除了安装 `angular-builders/custom-webpack` 插件的 7.x 版本外，还需要安装 `angular-builders/dev-server`。
 
@@ -458,22 +467,22 @@ npm i @angular-builders/dev-server -D
 
    ```js
    const render = ($) => {
-     $('#purehtml-container').html('Hello, render with jQuery');
+     $("#purehtml-container").html("Hello, render with jQuery");
      return Promise.resolve();
    };
 
    ((global) => {
-     global['purehtml'] = {
+     global["purehtml"] = {
        bootstrap: () => {
-         console.log('purehtml bootstrap');
+         console.log("purehtml bootstrap");
          return Promise.resolve();
        },
        mount: () => {
-         console.log('purehtml mount');
+         console.log("purehtml mount");
          return render($);
        },
        unmount: () => {
-         console.log('purehtml unmount');
+         console.log("purehtml unmount");
          return Promise.resolve();
        },
      };

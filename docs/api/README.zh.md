@@ -91,24 +91,24 @@ toc: menu
 - 示例
 
   ```tsx
-  import { registerMicroApps } from 'qiankun';
+  import { registerMicroApps } from "qiankun";
 
   registerMicroApps(
     [
       {
-        name: 'app1',
-        entry: '//localhost:8080',
-        container: '#container',
-        activeRule: '/react',
+        name: "app1",
+        entry: "//localhost:8080",
+        container: "#container",
+        activeRule: "/react",
         props: {
-          name: 'kuitos',
+          name: "kuitos",
         },
       },
     ],
     {
-      beforeLoad: (app) => console.log('before load', app.name),
-      beforeMount: [(app) => console.log('before mount', app.name)],
-    },
+      beforeLoad: (app) => console.log("before load", app.name),
+      beforeMount: [(app) => console.log("before mount", app.name)],
+    }
   );
   ```
 
@@ -172,7 +172,7 @@ toc: menu
 - 示例
 
   ```ts
-  import { start } from 'qiankun';
+  import { start } from "qiankun";
 
   start();
   ```
@@ -190,9 +190,9 @@ toc: menu
 - 示例
 
   ```ts
-  import { setDefaultMountApp } from 'qiankun';
+  import { setDefaultMountApp } from "qiankun";
 
-  setDefaultMountApp('/homeApp');
+  setDefaultMountApp("/homeApp");
   ```
 
 ### `runAfterFirstMounted(effect)`
@@ -208,7 +208,7 @@ toc: menu
 - 示例
 
   ```ts
-  import { runAfterFirstMounted } from 'qiankun';
+  import { runAfterFirstMounted } from "qiankun";
 
   runAfterFirstMounted(() => startMonitor());
   ```
@@ -300,17 +300,20 @@ toc: menu
 - 示例
 
   ```jsx
-  import { loadMicroApp } from 'qiankun';
-  import React from 'react';
+  import { loadMicroApp } from "qiankun";
+  import React from "react";
 
   class App extends React.Component {
     containerRef = React.createRef();
     microApp = null;
 
     componentDidMount() {
-      this.microApp = loadMicroApp(
-        { name: 'app1', entry: '//localhost:1234', container: this.containerRef.current, props: { brand: 'qiankun' } },
-      );
+      this.microApp = loadMicroApp({
+        name: "app1",
+        entry: "//localhost:1234",
+        container: this.containerRef.current,
+        props: { brand: "qiankun" },
+      });
     }
 
     componentWillUnmount() {
@@ -318,7 +321,7 @@ toc: menu
     }
 
     componentDidUpdate() {
-      this.microApp.update({ name: 'kuitos' });
+      this.microApp.update({ name: "kuitos" });
     }
 
     render() {
@@ -347,11 +350,11 @@ toc: menu
 - 示例
 
   ```ts
-  import { prefetchApps } from 'qiankun';
+  import { prefetchApps } from "qiankun";
 
   prefetchApps([
-    { name: 'app1', entry: '//locahost:7001' },
-    { name: 'app2', entry: '//locahost:7002' },
+    { name: "app1", entry: "//locahost:7001" },
+    { name: "app2", entry: "//locahost:7002" },
   ]);
   ```
 
@@ -370,7 +373,7 @@ toc: menu
 - 示例
 
   ```ts
-  import { addGlobalUncaughtErrorHandler } from 'qiankun';
+  import { addGlobalUncaughtErrorHandler } from "qiankun";
 
   addGlobalUncaughtErrorHandler((event) => console.log(event));
   ```
@@ -388,7 +391,7 @@ toc: menu
 - 示例
 
   ```ts
-  import { removeGlobalUncaughtErrorHandler } from 'qiankun';
+  import { removeGlobalUncaughtErrorHandler } from "qiankun";
 
   removeGlobalUncaughtErrorHandler(handler);
   ```
@@ -418,7 +421,7 @@ toc: menu
   主应用：
 
   ```ts
-  import { initGlobalState, MicroAppStateActions } from 'qiankun';
+  import { initGlobalState, MicroAppStateActions } from "qiankun";
 
   // 初始化 state
   const actions: MicroAppStateActions = initGlobalState(state);

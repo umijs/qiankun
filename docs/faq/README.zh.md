@@ -30,7 +30,7 @@ qiankun 抛出这个错误是因为无法从微应用的 entry js 中识别出�
 
 6. 如果开发环境可以，生产环境不行，检查微应用的 `index.html` 和 `entry js` 是否正常返回，比如说返回了 `404.html`。
 
-7. 如果你正在使用 webpack5，请看[这个issues](https://github.com/umijs/qiankun/issues/1092)
+7. 如果你正在使用 webpack5，请看[这个 issues](https://github.com/umijs/qiankun/issues/1092)
 
 如果在上述步骤完成后仍有问题，通常说明是浏览器兼容性问题导致的。可以尝试 **将有问题的微应用的 webpack `output.library` 配置成跟主应用中注册的 `name` 字段一致**，如：
 
@@ -40,10 +40,10 @@ qiankun 抛出这个错误是因为无法从微应用的 entry js 中识别出�
 // 主应用
 registerMicroApps([
   {
-    name: 'brokenSubApp',
-    entry: '//localhost:7100',
-    container: '#yourContainer',
-    activeRule: '/react',
+    name: "brokenSubApp",
+    entry: "//localhost:7100",
+    container: "#yourContainer",
+    activeRule: "/react",
   },
 ]);
 ```
@@ -54,8 +54,8 @@ registerMicroApps([
 module.exports = {
   output: {
     // 这里改成跟主应用中注册的一致
-    library: 'brokenSubApp',
-    libraryTarget: 'umd',
+    library: "brokenSubApp",
+    libraryTarget: "umd",
     jsonpFunction: `webpackJsonp_${packageName}`,
   },
 };
@@ -76,7 +76,7 @@ qiankun 抛出这个错误是因为微应用加载后容器 DOM 节点不存在�
        router,
        store,
        render: (h) => h(App),
-     }).$mount(container ? container.querySelector('#app') : '#app');
+     }).$mount(container ? container.querySelector("#app") : "#app");
    }
    export async function mount(props) {
      render(props);
@@ -88,14 +88,23 @@ qiankun 抛出这个错误是因为微应用加载后容器 DOM 节点不存在�
    ```js
    function render(props) {
      const { container } = props;
-     ReactDOM.render(<App />, container ? container.querySelector('#root') : document.querySelector('#root'));
+     ReactDOM.render(
+       <App />,
+       container
+         ? container.querySelector("#root")
+         : document.querySelector("#root")
+     );
    }
    export async function mount(props) {
      render(props);
    }
    export async function unmount(props) {
      const { container } = props;
-     ReactDOM.unmountComponentAtNode(container ? container.querySelector('#root') : document.querySelector('#root'));
+     ReactDOM.unmountComponentAtNode(
+       container
+         ? container.querySelector("#root")
+         : document.querySelector("#root")
+     );
    }
    ```
 
@@ -130,29 +139,29 @@ qiankun 抛出这个错误是因为微应用加载后容器 DOM 节点不存在�
 `vue` + `vue-router` 技术栈的主应用：
 
 1. 主应用注册这个路由时给 `path` 加一个 `*`，**注意：如果这个路由有其他子路由，需要另外注册一个路由，仍然使用这个组件即可**。
-    ```js
-    const routes = [
-      {
-        path: '/portal/*',
-        name: 'portal',
-        component: () => import('../views/Portal.vue'),
-      }
-    ]
-    ```
+   ```js
+   const routes = [
+     {
+       path: "/portal/*",
+       name: "portal",
+       component: () => import("../views/Portal.vue"),
+     },
+   ];
+   ```
 2. 微应用的 `activeRule` 需要包含主应用的这个路由 `path`。
    ```js
    registerMicroApps([
      {
-       name: 'app1',
-       entry: 'http://localhost:8080',
-       container: '#container',
-       activeRule: '/portal/app1',
+       name: "app1",
+       entry: "http://localhost:8080",
+       container: "#container",
+       activeRule: "/portal/app1",
      },
    ]);
    ```
 3. 在 `Portal.vue` 这个组件的 `mounted` 周期调用 `start` 函数，**注意不要重复调用**。
    ```js
-   import { start } from 'qiankun';
+   import { start } from "qiankun";
    export default {
      mounted() {
        if (!window.qiankunStarted) {
@@ -169,40 +178,40 @@ qiankun 抛出这个错误是因为微应用加载后容器 DOM 节点不存在�
 
 1. 主应用给这个路由注册一个通配符的子路由，内容为空。
 
-    ```ts
-    const routes: Routes = [
-      { 
-        path: 'portal', 
-        component: PortalComponent,
-        children: [
-          { path: '**', component: EmptyComponent },
-        ],
-      },
-    ];
-    ```
+   ```ts
+   const routes: Routes = [
+     {
+       path: "portal",
+       component: PortalComponent,
+       children: [{ path: "**", component: EmptyComponent }],
+     },
+   ];
+   ```
+
 2. 微应用的 `activeRule` 需要包含主应用的这个路由 `path`。
-    ```js
-    registerMicroApps([
-      { 
-        name: 'app1', 
-        entry: 'http://localhost:8080', 
-        container: '#container', 
-        activeRule: '/portal/app1', 
-      },
-    ]);
-    ```
+   ```js
+   registerMicroApps([
+     {
+       name: "app1",
+       entry: "http://localhost:8080",
+       container: "#container",
+       activeRule: "/portal/app1",
+     },
+   ]);
+   ```
 3. 在这个路由组件的 `ngAfterViewInit` 周期调用 `start` 函数，**注意不要重复调用**。
-    ```ts
-    import { start } from 'qiankun';
-    export class PortalComponent implements AfterViewInit {
-      ngAfterViewInit(): void {
-        if (!window.qiankunStarted) {
-          window.qiankunStarted = true;
-          start();
-        }
-      }
-    }
-    ```
+   ```ts
+   import { start } from "qiankun";
+   export class PortalComponent implements AfterViewInit {
+     ngAfterViewInit(): void {
+       if (!window.qiankunStarted) {
+         window.qiankunStarted = true;
+         start();
+       }
+     }
+   }
+   ```
+
 ## Vue Router 报错 `Uncaught TypeError: Cannot redefine property: $router`
 
 qiankun 中的代码使用 Proxy 去代理父页面的 window，来实现的沙箱，在微应用中访问 `window.Vue` 时，会先在自己的 window 里查找有没有 `Vue` 属性，如果没有就去父应用里查找。
@@ -272,7 +281,7 @@ module.exports = {
         test: /\.(png|jpe?g|gif|webp|woff2?|eot|ttf|otf)$/i,
         use: [
           {
-            loader: 'url-loader',
+            loader: "url-loader",
             options: {},
           },
         ],
@@ -287,8 +296,18 @@ module.exports = {
 ```js
 module.exports = {
   chainWebpack: (config) => {
-    config.module.rule('fonts').use('url-loader').loader('url-loader').options({}).end();
-    config.module.rule('images').use('url-loader').loader('url-loader').options({}).end();
+    config.module
+      .rule("fonts")
+      .use("url-loader")
+      .loader("url-loader")
+      .options({})
+      .end();
+    config.module
+      .rule("images")
+      .use("url-loader")
+      .loader("url-loader")
+      .options({})
+      .end();
   },
 };
 ```
@@ -296,7 +315,10 @@ module.exports = {
 3. 借助 `webpack` 的 `file-loader` ，在打包时给其注入完整路径（适用于字体文件和图片体积比较大的项目）
 
 ```js
-const publicPath = process.env.NODE_ENV === 'production' ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+const publicPath =
+  process.env.NODE_ENV === "production"
+    ? "https://qiankun.umijs.org/"
+    : `http://localhost:${port}`;
 module.exports = {
   module: {
     rules: [
@@ -304,9 +326,9 @@ module.exports = {
         test: /\.(png|jpe?g|gif|webp)$/i,
         use: [
           {
-            loader: 'file-loader',
+            loader: "file-loader",
             options: {
-              name: 'img/[name].[hash:8].[ext]',
+              name: "img/[name].[hash:8].[ext]",
               publicPath,
             },
           },
@@ -316,9 +338,9 @@ module.exports = {
         test: /\.(woff2?|eot|ttf|otf)$/i,
         use: [
           {
-            loader: 'file-loader',
+            loader: "file-loader",
             options: {
-              name: 'fonts/[name].[hash:8].[ext]',
+              name: "fonts/[name].[hash:8].[ext]",
               publicPath,
             },
           },
@@ -332,26 +354,29 @@ module.exports = {
 `vue-cli3` 项目写法：
 
 ```js
-const publicPath = process.env.NODE_ENV === 'production' ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+const publicPath =
+  process.env.NODE_ENV === "production"
+    ? "https://qiankun.umijs.org/"
+    : `http://localhost:${port}`;
 module.exports = {
   chainWebpack: (config) => {
-    const fontRule = config.module.rule('fonts');
+    const fontRule = config.module.rule("fonts");
     fontRule.uses.clear();
     fontRule
-      .use('file-loader')
-      .loader('file-loader')
+      .use("file-loader")
+      .loader("file-loader")
       .options({
-        name: 'fonts/[name].[hash:8].[ext]',
+        name: "fonts/[name].[hash:8].[ext]",
         publicPath,
       })
       .end();
-    const imgRule = config.module.rule('images');
+    const imgRule = config.module.rule("images");
     imgRule.uses.clear();
     imgRule
-      .use('file-loader')
-      .loader('file-loader')
+      .use("file-loader")
+      .loader("file-loader")
       .options({
-        name: 'img/[name].[hash:8].[ext]',
+        name: "img/[name].[hash:8].[ext]",
         publicPath,
       })
       .end();
@@ -362,7 +387,10 @@ module.exports = {
 4. 将两种方案结合起来，小文件转 `base64` ，大文件注入路径前缀
 
 ```js
-const publicPath = process.env.NODE_ENV === 'production' ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+const publicPath =
+  process.env.NODE_ENV === "production"
+    ? "https://qiankun.umijs.org/"
+    : `http://localhost:${port}`;
 module.exports = {
   module: {
     rules: [
@@ -370,12 +398,12 @@ module.exports = {
         test: /\.(png|jpe?g|gif|webp)$/i,
         use: [
           {
-            loader: 'url-loader',
+            loader: "url-loader",
             options: {},
             fallback: {
-              loader: 'file-loader',
+              loader: "file-loader",
               options: {
-                name: 'img/[name].[hash:8].[ext]',
+                name: "img/[name].[hash:8].[ext]",
                 publicPath,
               },
             },
@@ -386,12 +414,12 @@ module.exports = {
         test: /\.(woff2?|eot|ttf|otf)$/i,
         use: [
           {
-            loader: 'url-loader',
+            loader: "url-loader",
             options: {},
             fallback: {
-              loader: 'file-loader',
+              loader: "file-loader",
               options: {
-                name: 'fonts/[name].[hash:8].[ext]',
+                name: "fonts/[name].[hash:8].[ext]",
                 publicPath,
               },
             },
@@ -406,34 +434,37 @@ module.exports = {
 `vue-cli3` 项目写法：
 
 ```js
-const publicPath = process.env.NODE_ENV === 'production' ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
+const publicPath =
+  process.env.NODE_ENV === "production"
+    ? "https://qiankun.umijs.org/"
+    : `http://localhost:${port}`;
 module.exports = {
   chainWebpack: (config) => {
     config.module
-      .rule('fonts')
-      .use('url-loader')
-      .loader('url-loader')
+      .rule("fonts")
+      .use("url-loader")
+      .loader("url-loader")
       .options({
         limit: 4096, // 小于4kb将会被打包成 base64
         fallback: {
-          loader: 'file-loader',
+          loader: "file-loader",
           options: {
-            name: 'fonts/[name].[hash:8].[ext]',
+            name: "fonts/[name].[hash:8].[ext]",
             publicPath,
           },
         },
       })
       .end();
     config.module
-      .rule('images')
-      .use('url-loader')
-      .loader('url-loader')
+      .rule("images")
+      .use("url-loader")
+      .loader("url-loader")
       .options({
         limit: 4096, // 小于4kb将会被打包成 base64
         fallback: {
-          loader: 'file-loader',
+          loader: "file-loader",
           options: {
-            name: 'img/[name].[hash:8].[ext]',
+            name: "img/[name].[hash:8].[ext]",
             publicPath,
           },
         },
@@ -479,11 +510,11 @@ module.exports = {
 通过自己实现的 getTemplate 方法过滤微应用 HTML 模板中的异常脚本
 
 ```js
-import { start } from 'qiankun';
+import { start } from "qiankun";
 
 start({
   getTemplate(tpl) {
-    return tpl.replace('<script src="/to-be-replaced.js"><script>', '');
+    return tpl.replace('<script src="/to-be-replaced.js"><script>', "");
   },
 });
 ```
@@ -493,14 +524,14 @@ start({
 通过自己实现的 fetch 方法拦截有问题的脚本
 
 ```js
-import { start } from 'qiankun';
+import { start } from "qiankun";
 
 start({
   fetch(url, ...args) {
-    if (url === 'http://to-be-replaced.js') {
+    if (url === "http://to-be-replaced.js") {
       return {
         async text() {
-          return '';
+          return "";
         },
       };
     }
@@ -552,7 +583,7 @@ qiankun 将会自动隔离微应用之间的样式（开启沙箱的情况下）
 2. 配置 antd [ConfigProvider](https://ant.design/components/config-provider-cn/)
 
    ```jsx
-   import { ConfigProvider } from 'antd';
+   import { ConfigProvider } from "antd";
 
    export const MyApp = () => (
      <ConfigProvider prefixCls="yourPrefix">
@@ -586,9 +617,24 @@ export const mount = async () => render();
 
 ```js {2,3,7}
 registerMicroApps([
-  { name: 'reactApp', entry: '//localhost:7100', container, activeRule: () => isReactApp() },
-  { name: 'react15App', entry: '//localhost:7102', container, activeRule: () => isReactApp() },
-  { name: 'vueApp', entry: '//localhost:7101', container, activeRule: () => isVueApp() },
+  {
+    name: "reactApp",
+    entry: "//localhost:7100",
+    container,
+    activeRule: () => isReactApp(),
+  },
+  {
+    name: "react15App",
+    entry: "//localhost:7102",
+    container,
+    activeRule: () => isReactApp(),
+  },
+  {
+    name: "vueApp",
+    entry: "//localhost:7101",
+    container,
+    activeRule: () => isVueApp(),
+  },
 ]);
 
 start({ singular: false });
@@ -625,12 +671,12 @@ qiankun 2.0 版本将提供一种更智能的方式使其自动化。
 </Alert>
 
 ```javascript
-import 'whatwg-fetch';
-import 'custom-event-polyfill';
-import 'core-js/stable/promise';
-import 'core-js/stable/symbol';
-import 'core-js/stable/string/starts-with';
-import 'core-js/web/url';
+import "whatwg-fetch";
+import "custom-event-polyfill";
+import "core-js/stable/promise";
+import "core-js/stable/symbol";
+import "core-js/stable/string/starts-with";
+import "core-js/web/url";
 ```
 
 **通常我们建议您直接使用 @babel/preset-env 插件完成自动引入 IE 需要的 polyfill 的能力，所有的操作文档您都可以在 [babel 官方文档](https://babeljs.io/docs/en/babel-preset-env) 找到。**
@@ -665,7 +711,7 @@ qiankun 会将微应用的动态 script 加载（例如 JSONP）转化为 fetch 
 以`vue-router`为例，伪代码如下：
 
 ```js
-const childrenPath = ['/app1', '/app2'];
+const childrenPath = ["/app1", "/app2"];
 router.beforeEach((to, from, next) => {
   if (to.name) {
     // 有 name 属性，说明是主应用的路由
@@ -674,7 +720,7 @@ router.beforeEach((to, from, next) => {
   if (childrenPath.some((item) => to.path.includes(item))) {
     next();
   }
-  next({ name: '404' });
+  next({ name: "404" });
 });
 ```
 
@@ -707,10 +753,10 @@ location = /index.html {
 
 ```js
 loadMicroApp({
-  name: 'configEntry',
+  name: "configEntry",
   entry: {
-    scripts: ['//t.com/t.js'],
-    styles: ['//t.com/t.css'],
+    scripts: ["//t.com/t.js"],
+    styles: ["//t.com/t.css"],
   },
 });
 ```
@@ -751,49 +797,49 @@ export async function mount(props) {
 
 因为拉取微应用 entry 的请求都是跨域的，所以当你的微应用是依赖 cookie (如登陆鉴权)的情况下，你需要通过自定义 fetch 的方式，开启 fetch 的 cors 模式：
 
-* 如果你是通过 [registerMicroApps](/zh/api#registermicroappsapps-lifecycles) 加载微应用的，你需要在 start 方法里配置自定义 fetch，如：
+- 如果你是通过 [registerMicroApps](/zh/api#registermicroappsapps-lifecycles) 加载微应用的，你需要在 start 方法里配置自定义 fetch，如：
 
   ```js
-  import { start } from 'qiankun';
-  
-  start({ 
+  import { start } from "qiankun";
+
+  start({
     fetch(url, ...args) {
       // 给指定的微应用 entry 开启跨域请求
-      if (url === 'http://app.alipay.com/entry.html') {
+      if (url === "http://app.alipay.com/entry.html") {
         return window.fetch(url, {
           ...args,
-          mode: 'cors',
-          credentials: 'include',
+          mode: "cors",
+          credentials: "include",
         });
       }
-  
+
       return window.fetch(url, ...args);
-    }
+    },
   });
   ```
 
-* 如果你是通过 [loadMicroApp](/zh/api#loadmicroappapp-configuration) 加载微应用的，你需要在调用时配置自定义 fetch，如：
+- 如果你是通过 [loadMicroApp](/zh/api#loadmicroappapp-configuration) 加载微应用的，你需要在调用时配置自定义 fetch，如：
 
   ```js
-  import { loadMicroApp } from 'qiankun';
-  
+  import { loadMicroApp } from "qiankun";
+
   loadMicroApp(app, {
     fetch(url, ...args) {
       // 给指定的微应用 entry 开启跨域请求
-      if (url === 'http://app.alipay.com/entry.html') {
+      if (url === "http://app.alipay.com/entry.html") {
         return window.fetch(url, {
           ...args,
-          mode: 'cors',
-          credentials: 'include',
+          mode: "cors",
+          credentials: "include",
         });
       }
-  
+
       return window.fetch(url, ...args);
-    }
+    },
   });
   ```
 
-* 如果你是通过 [umi plugin](https://umijs.org/zh-CN/plugins/plugin-qiankun) 来使用 qiankun 的，那么你只需要给对应的微应用开启 credentials 配置即可：
+- 如果你是通过 [umi plugin](https://umijs.org/zh-CN/plugins/plugin-qiankun) 来使用 qiankun 的，那么你只需要给对应的微应用开启 credentials 配置即可：
 
   ```diff
   export default {
@@ -810,7 +856,3 @@ export async function mount(props) {
     }
   }
   ```
-
-  
-
-
