@@ -30,13 +30,6 @@
     "ci": "yarn lint && yarn build && yarn test",
     "test": "cross-env NODE_ENV=test lerna run test --scope qiankun"
   },
-  "dependencies": {
-    "dumi": "^1.1.0-beta.24",
-    "dumi-theme-default": "^1.0.10",
-    "husky": "^2.3.0",
-    "lint-staged": "^9.4.2",
-    "prettier": "^2.1.2"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kuitos/qiankun.git"
@@ -64,6 +57,11 @@
     ]
   },
   "devDependencies": {
+    "dumi": "^1.1.0-beta.24",
+    "dumi-theme-default": "^1.0.10",
+    "husky": "^2.3.0",
+    "lint-staged": "^9.4.2",
+    "prettier": "^2.1.2",
     "umi-plugin-hire": "^1.0.3",
     "lerna": "^4.0.0"
   }
