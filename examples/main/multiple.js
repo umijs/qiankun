@@ -1,4 +1,4 @@
-import { loadMicroApp } from 'qiankun/lib';
+import { loadMicroApp } from 'qiankun';
 
 let app;
 
