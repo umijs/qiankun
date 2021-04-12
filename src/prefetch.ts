@@ -28,7 +28,6 @@ declare global {
     cancelIdleCallback: (handle: RequestIdleCallbackHandle) => void;
   }
 
-  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   interface Navigator {
     connection: {
       saveData: boolean;

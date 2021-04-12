@@ -14,13 +14,7 @@ export function setCurrentRunningSandboxProxy(proxy: WindowProxy | null) {
   currentRunningSandboxProxy = proxy;
 }
 
-const functionBoundedValueMap = new WeakMap<CallableFunction, CallableFunction>();
 export function getTargetValue(target: any, value: any): any {
-  const cachedBoundFunction = functionBoundedValueMap.get(value);
-  if (cachedBoundFunction) {
-    return cachedBoundFunction;
-  }
-
   /*
     仅绑定 isCallable && !isBoundedFunction && !isConstructable 的函数对象，如 window.console、window.atob 这类。目前没有完美的检测方式，这里通过 prototype 中是否还有可枚举的拓展方法的方式来判断
     @warning 这里不要随意替换成别的判断方式，因为可能触发一些 edge case（比如在 lodash.isFunction 在 iframe 上下文中可能由于调用了 top window 对象触发的安全异常）
@@ -37,10 +31,10 @@ export function getTargetValue(target: any, value: any): any {
 
     // copy prototype if bound function not have
     // mostly a bound function have no own prototype, but it not absolute in some old version browser, see https://github.com/umijs/qiankun/issues/1121
-    if (value.hasOwnProperty('prototype') && !boundValue.hasOwnProperty('prototype'))
+    if (value.hasOwnProperty('prototype') && !boundValue.hasOwnProperty('prototype')) {
       boundValue.prototype = value.prototype;
+    }
 
-    functionBoundedValueMap.set(value, boundValue);
     return boundValue;
   }
 
