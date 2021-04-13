@@ -3,7 +3,6 @@
     "target": "es6",
     "module": "esnext",
     "lib": ["es2018", "dom"],
-    "declaration": true,
     "importHelpers": true,
     "strict": true,
     "noImplicitAny": true,

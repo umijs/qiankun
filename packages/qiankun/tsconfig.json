@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "declaration": true,
     "outDir": "./esm",
     "rootDir": "./src",
     "downlevelIteration": true,
