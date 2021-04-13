@@ -22,21 +22,34 @@ export function nextTick(cb: () => void): void {
   Promise.resolve().then(cb);
 }
 
-const constructableMap = new WeakMap<any | FunctionConstructor, boolean>();
+const fnRegexCheckCacheMap = new WeakMap<any | FunctionConstructor, boolean>();
 export function isConstructable(fn: () => any | FunctionConstructor) {
-  if (constructableMap.has(fn)) {
-    return constructableMap.get(fn);
+  // prototype methods might be added while code running, so we need check it every time
+  const hasPrototypeMethods =
+    fn.prototype && fn.prototype.constructor === fn && Object.getOwnPropertyNames(fn.prototype).length > 1;
+
+  if (hasPrototypeMethods) return true;
+
+  if (fnRegexCheckCacheMap.has(fn)) {
+    return fnRegexCheckCacheMap.get(fn);
   }
 
-  const constructableFunctionRegex = /^function\b\s[A-Z].*/;
-  const classRegex = /^class\b/;
+  /*
+    1. 有 prototype 并且 prototype 上有定义一系列非 constructor 属性
+    2. 函数名大写开头
+    3. class 函数
+    满足其一则可认定为构造函数
+   */
+  let constructable = hasPrototypeMethods;
+  if (!constructable) {
+    // fn.toString has a significant performance overhead, if hasPrototypeMethods check not passed, we will check the function string with regex
+    const fnString = fn.toString();
+    const constructableFunctionRegex = /^function\b\s[A-Z].*/;
+    const classRegex = /^class\b/;
+    constructable = constructableFunctionRegex.test(fnString) || classRegex.test(fnString);
+  }
 
-  // 有 prototype 并且 prototype 上有定义一系列非 constructor 属性，则可以认为是一个构造函数
-  const constructable =
-    (fn.prototype && fn.prototype.constructor === fn && Object.getOwnPropertyNames(fn.prototype).length > 1) ||
-    constructableFunctionRegex.test(fn.toString()) ||
-    classRegex.test(fn.toString());
-  constructableMap.set(fn, constructable);
+  fnRegexCheckCacheMap.set(fn, constructable);
   return constructable;
 }
 
@@ -47,9 +60,18 @@ export function isConstructable(fn: () => any | FunctionConstructor) {
  * We need to discriminate safari for better performance
  */
 const naughtySafari = typeof document.all === 'function' && typeof document.all === 'undefined';
-export const isCallable = naughtySafari
-  ? (fn: any) => typeof fn === 'function' && typeof fn !== 'undefined'
-  : (fn: any) => typeof fn === 'function';
+const callableFnCacheMap = new WeakMap<CallableFunction, boolean>();
+export const isCallable = (fn: any) => {
+  if (callableFnCacheMap.has(fn)) {
+    return true;
+  }
+
+  const callable = naughtySafari ? typeof fn === 'function' && typeof fn !== 'undefined' : typeof fn === 'function';
+  if (callable) {
+    callableFnCacheMap.set(fn, callable);
+  }
+  return callable;
+};
 
 const boundedMap = new WeakMap<CallableFunction, boolean>();
 export function isBoundedFunction(fn: CallableFunction) {
