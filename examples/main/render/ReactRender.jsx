@@ -16,6 +16,13 @@ function Render(props) {
 }
 
 export default function render({ loading }) {
+  let subappContainer;
   const container = document.getElementById('subapp-container');
-  ReactDOM.render(<Render loading={loading} />, container);
+  if (container == null) {
+    subappContainer = document.createElement('main');
+    subappContainer.setAttribute('id', 'subapp-container');
+    document.body.appendChild(subappContainer);
+  }
+  ReactDOM.render(<Render loading={loading} />, container || subappContainer);
 }
+                  
