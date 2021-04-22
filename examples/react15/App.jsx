@@ -5,6 +5,11 @@ import Logo from './components/Logo'
 import HelloModal from './components/HelloModal'
 
 export default class App extends React.Component {
+  
+  componentDidMount() {
+    document.body.innerHTML = "";
+  }
+  
   render() {
     return (
       <div className="react15-main">
