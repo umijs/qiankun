@@ -29,10 +29,14 @@ export function getTargetValue(target: any, value: any): any {
       boundValue[key] = value[key];
     }
 
-    // copy prototype if bound function not have
-    // mostly a bound function have no own prototype, but it not absolute in some old version browser, see https://github.com/umijs/qiankun/issues/1121
+    // copy prototype if bound function not have but target one have
+    // as prototype is non-enumerable mostly, we need to copy it from target function manually
     if (value.hasOwnProperty('prototype') && !boundValue.hasOwnProperty('prototype')) {
-      boundValue.prototype = value.prototype;
+      // we should not use assignment operator to set boundValue prototype like `boundValue.prototype = value.prototype`
+      // as the assignment will also look up prototype chain while it hasn't own prototype property,
+      // when the lookup succeed, the assignment will throw an TypeError like `Cannot assign to read only property 'prototype' of function` if its descriptor configured with writable false or just have a getter accessor
+      // see https://github.com/umijs/qiankun/issues/1121
+      Object.defineProperty(boundValue, 'prototype', { value: value.prototype, enumerable: false, writable: true });
     }
 
     return boundValue;
