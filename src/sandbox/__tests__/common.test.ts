@@ -40,4 +40,21 @@ describe('getTargetValue', () => {
     // window.field not be affected
     expect(window.field).toEqual('123');
   });
+
+  it('should work well while value have a readonly prototype on its prototype chain', () => {
+    function callableFunction() {}
+
+    const functionWithReadonlyPrototype = () => {};
+    Object.defineProperty(functionWithReadonlyPrototype, 'prototype', {
+      writable: false,
+      enumerable: false,
+      configurable: false,
+      value: 123,
+    });
+
+    Object.setPrototypeOf(callableFunction, functionWithReadonlyPrototype);
+
+    const boundFn = getTargetValue(window, callableFunction);
+    expect(boundFn.prototype).toBe(callableFunction.prototype);
+  });
 });

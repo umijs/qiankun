@@ -24,7 +24,7 @@ export function nextTick(cb: () => void): void {
 
 const fnRegexCheckCacheMap = new WeakMap<any | FunctionConstructor, boolean>();
 export function isConstructable(fn: () => any | FunctionConstructor) {
-  // prototype methods might be added while code running, so we need check it every time
+  // prototype methods might be changed while code running, so we need check it every time
   const hasPrototypeMethods =
     fn.prototype && fn.prototype.constructor === fn && Object.getOwnPropertyNames(fn.prototype).length > 1;
 
