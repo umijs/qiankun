@@ -4,12 +4,12 @@ on:
   pull_request:
   push:
     branches:
-      - $default-branch
+      - master
       - next
       - 1.x
 
 jobs:
-  ci:
+  check:
     runs-on: ubuntu-latest
 
     strategy:
