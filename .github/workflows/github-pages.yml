@@ -1,4 +1,4 @@
-name: Qiankun Doc Deploy
+name: Qiankun Github Pages Deploy
 on:
   push:
     branches:
