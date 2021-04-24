@@ -1,9 +1,7 @@
-name: Publish LATEST VERSION
+name: Publish Latest Version
 
 on:
   push:
-    branches:
-      - master
     tags:
       - v2.*
 

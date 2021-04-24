@@ -1,9 +1,7 @@
-name: Publish NEXT VERSION
+name: Publish Next Version
 
 on:
   push:
-    branches:
-      - next
     tags:
       - v3.*
 
