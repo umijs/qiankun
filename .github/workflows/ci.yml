@@ -1,12 +1,8 @@
 name: CI
 
 on:
-  push:
-    branches:
-      - master
-      - next
-      - 1.x
   pull_request:
+  push:
     branches:
       - master
       - next
