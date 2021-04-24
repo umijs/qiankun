@@ -6,10 +6,8 @@ on:
       - v3.*
 
 jobs:
-  build:
-
+  publish:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v2
 

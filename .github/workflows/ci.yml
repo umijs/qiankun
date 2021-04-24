@@ -9,8 +9,7 @@ on:
       - 1.x
 
 jobs:
-  build:
-
+  ci:
     runs-on: ubuntu-latest
 
     strategy:
