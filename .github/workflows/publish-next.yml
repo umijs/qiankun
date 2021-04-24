@@ -1,17 +1,13 @@
-name: Publish NEXT VERSION
+name: Publish Next Version
 
 on:
   push:
-    branches:
-      - next
     tags:
       - v3.*
 
 jobs:
-  build:
-
+  publish:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v2
 

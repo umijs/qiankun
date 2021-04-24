@@ -1,14 +1,15 @@
 name: CI
 
 on:
-  push:
-    branches: [ $default-branch ]
   pull_request:
-    branches: [ $default-branch ]
+  push:
+    branches:
+      - $default-branch
+      - next
+      - 1.x
 
 jobs:
-  build:
-
+  ci:
     runs-on: ubuntu-latest
 
     strategy:

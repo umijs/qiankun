@@ -1,14 +1,12 @@
-name: Publish 1.x VERSION
+name: Publish 1.x Version
 
 on:
   push:
-    branches:
-      - 1.x
     tags:
       - v1.*
 
 jobs:
-  build:
+  publish:
 
     runs-on: ubuntu-latest
 

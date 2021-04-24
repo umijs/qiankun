@@ -1,11 +1,11 @@
-name: Release notify
+name: Release Notify
 
 on:
   release:
     types: [published]
 
 jobs:
-  build:
+  notify:
     runs-on: ubuntu-latest
     steps:
       - name: Send DingGroup1 Notify
