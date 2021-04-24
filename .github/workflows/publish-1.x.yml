@@ -1,4 +1,4 @@
-name: Publish LATEST NPM Package
+name: Publish 1.x VERSION
 
 on:
   push:
