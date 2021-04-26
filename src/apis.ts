@@ -12,6 +12,10 @@ let microApps: Array<RegistrableApp<Record<string, unknown>>> = [];
 
 // eslint-disable-next-line import/no-mutable-exports
 export let frameworkConfiguration: FrameworkConfiguration = {};
+
+let started = false;
+const defaultUrlRerouteOnly = true;
+
 const frameworkStartedDefer = new Deferred<void>();
 
 export function registerMicroApps<T extends ObjectType>(
@@ -111,12 +115,26 @@ export function loadMicroApp<T extends ObjectType>(
     return (await parcelConfigObjectGetterPromise)(container);
   };
 
+  if (!started) {
+    // We need to invoke start method of single-spa as the popstate event should be dispatched while the main app calling pushState/replaceState automatically,
+    // but in single-spa it will check the start status before it dispatch popstate
+    // see https://github.com/single-spa/single-spa/blob/f28b5963be1484583a072c8145ac0b5a28d91235/src/navigation/navigation-events.js#L101
+    // ref https://github.com/umijs/qiankun/pull/1071
+    startSingleSpa({ urlRerouteOnly: frameworkConfiguration.urlRerouteOnly ?? defaultUrlRerouteOnly });
+  }
+
   return mountRootParcel(memorizedLoadingFn, { domElement: document.createElement('div'), ...props });
 }
 
 export function start(opts: FrameworkConfiguration = {}) {
   frameworkConfiguration = { prefetch: true, singular: true, sandbox: true, ...opts };
-  const { prefetch, sandbox, singular, urlRerouteOnly, ...importEntryOpts } = frameworkConfiguration;
+  const {
+    prefetch,
+    sandbox,
+    singular,
+    urlRerouteOnly = defaultUrlRerouteOnly,
+    ...importEntryOpts
+  } = frameworkConfiguration;
 
   if (prefetch) {
     doPrefetchStrategy(microApps, prefetch, importEntryOpts);
@@ -135,6 +153,7 @@ export function start(opts: FrameworkConfiguration = {}) {
   }
 
   startSingleSpa({ urlRerouteOnly });
+  started = true;
 
   frameworkStartedDefer.resolve();
 }
