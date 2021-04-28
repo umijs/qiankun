@@ -42,6 +42,6 @@ loadMicroApp({
 
 ## 社区
 
-| Github Issue | 钉钉群 |
+| Github Discussions | 钉钉群 |
 | --- | --- |
-| [umijs/qiankun/issues](https://github.com/umijs/qiankun/issues) | <img src="https://gw.alipayobjects.com/mdn/rms_655822/afts/img/A*9UhaS65mywQAAAAAAAAAAAAAARQnAQ" width="150" /> |
+| [qiankun discussions](https://github.com/umijs/qiankun/discussions) | <img src="https://gw.alipayobjects.com/mdn/rms_655822/afts/img/A*9UhaS65mywQAAAAAAAAAAAAAARQnAQ" width="150" /> |
