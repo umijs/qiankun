@@ -23,8 +23,8 @@ export function initGlobalState(state: Record<string, any> = {}) {
   if (state === globalState) {
     console.warn('[qiankun] state has not changed！');
   } else {
-    const prevGlobalState = cloneDeep(globalState);
-    globalState = cloneDeep(state);
+    const prevGlobalState = globalState;
+    globalState = state;
     emitGlobal(globalState, prevGlobalState);
   }
   return getMicroAppStateActions(`global-${+new Date()}`, true);
@@ -58,8 +58,8 @@ export function getMicroAppStateActions(id: string, isMaster?: boolean): MicroAp
         console.warn(`[qiankun] '${id}' global listener already exists before this, new listener will overwrite it.`);
       }
       deps[id] = callback;
-      const cloneState = cloneDeep(globalState);
       if (fireImmediately) {
+        const cloneState = cloneDeep(globalState);
         callback(cloneState, cloneState);
       }
     },
@@ -80,16 +80,14 @@ export function getMicroAppStateActions(id: string, isMaster?: boolean): MicroAp
 
       const changeKeys: string[] = [];
       const prevGlobalState = cloneDeep(globalState);
-      globalState = cloneDeep(
-        Object.keys(state).reduce((_globalState, changeKey) => {
-          if (isMaster || _globalState.hasOwnProperty(changeKey)) {
-            changeKeys.push(changeKey);
-            return Object.assign(_globalState, { [changeKey]: state[changeKey] });
-          }
-          console.warn(`[qiankun] '${changeKey}' not declared when init state！`);
-          return _globalState;
-        }, globalState),
-      );
+      globalState = Object.keys(state).reduce((_globalState, changeKey) => {
+        if (isMaster || _globalState.hasOwnProperty(changeKey)) {
+          changeKeys.push(changeKey);
+          return Object.assign(_globalState, { [changeKey]: state[changeKey] });
+        }
+        console.warn(`[qiankun] '${changeKey}' not declared when init state！`);
+        return _globalState;
+      }, globalState);
       if (changeKeys.length === 0) {
         console.warn('[qiankun] state has not changed！');
         return false;
