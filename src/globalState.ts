@@ -58,8 +58,8 @@ export function getMicroAppStateActions(id: string, isMaster?: boolean): MicroAp
         console.warn(`[qiankun] '${id}' global listener already exists before this, new listener will overwrite it.`);
       }
       deps[id] = callback;
-      const cloneState = cloneDeep(globalState);
       if (fireImmediately) {
+        const cloneState = cloneDeep(globalState);
         callback(cloneState, cloneState);
       }
     },
