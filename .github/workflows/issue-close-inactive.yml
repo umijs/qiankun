@@ -27,3 +27,13 @@ jobs:
           body: |
             Since the issue was labeled with `pls use issue template`, but no response in 30 days. This issue will be close. If you have any questions, you can comment and reply.
             由于该 issue 被标记为需要使用模板，却 30 天未收到回应。现关闭 issue，若有任何问题，可评论回复。
+
+      - name: close inactive issue
+        uses: actions-cool/issues-helper@v2.2.1
+        with:
+          actions: 'close-issues'
+          labels: 'inactive'
+          inactive-day: 7
+          body: |
+            Since the issue was labeled with `inactive`, but no response in 7 days. This issue will be close. If you have any questions, you can comment and reply.
+            由于该 issue 被标记为不活跃，且 7 天未收到回应。现关闭 issue，若有任何问题，可评论回复。
