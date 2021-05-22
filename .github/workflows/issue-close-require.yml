@@ -1,4 +1,4 @@
-name: Issue Close Require
+name: Close Inactive Issue
 
 on:
   schedule:
