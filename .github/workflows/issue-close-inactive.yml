@@ -1,4 +1,4 @@
-name: Close Inactive Issue
+name: Issue Close Inactive
 
 on:
   schedule:
