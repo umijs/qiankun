@@ -219,12 +219,18 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
               fetch,
               strictGlobal,
               beforeExec: () => {
-                Object.defineProperty(document, 'currentScript', {
-                  get(): any {
-                    return element;
-                  },
-                  configurable: true,
-                });
+                const isCurrentScriptConfigurable = () => {
+                  const descriptor = Object.getOwnPropertyDescriptor(document, 'currentScript');
+                  return !descriptor || descriptor.configurable;
+                };
+                if (isCurrentScriptConfigurable()) {
+                  Object.defineProperty(document, 'currentScript', {
+                    get(): any {
+                      return element;
+                    },
+                    configurable: true,
+                  });
+                }
               },
               success: () => {
                 manualInvokeElementOnLoad(element);
