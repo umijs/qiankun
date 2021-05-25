@@ -20,7 +20,6 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - run: yarn
-      - run: yarn ci
       - run: yarn publish --tag latest
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
