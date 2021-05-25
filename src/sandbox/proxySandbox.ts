@@ -332,6 +332,11 @@ export default class ProxySandbox implements SandBox {
 
         return true;
       },
+
+      // makes sure `window instanceof Window` returns truthy in micro app
+      getPrototypeOf() {
+        return Reflect.getPrototypeOf(rawWindow);
+      },
     });
 
     this.proxy = proxy;
