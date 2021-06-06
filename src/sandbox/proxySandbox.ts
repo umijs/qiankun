@@ -215,17 +215,34 @@ export default class ProxySandbox implements SandBox {
       },
 
       get(target: FakeWindow, p: PropertyKey): any {
-        if (p === Symbol.unscopables) return unscopables;
+        setCurrentRunningSandboxProxy(proxy);
+        // FIXME if you have any other good ideas
+        // remove the mark in next tick, thus we can identify whether it in micro app or not
+        // this approach is just a workaround, it could not cover all complex cases, such as the micro app runs in the same task context with master in some case
+        nextTick(() => setCurrentRunningSandboxProxy(null));
 
-        // avoid who using window.window or window.self to escape the sandbox environment to touch the really window
-        // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
-        if (p === 'window' || p === 'self') {
-          return proxy;
-        }
+        // eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check
+        switch (p) {
+          case Symbol.unscopables:
+            return unscopables;
 
-        // hijack global accessing with globalThis keyword
-        if (p === 'globalThis') {
-          return proxy;
+          // avoid who using window.window or window.self to escape the sandbox environment to touch the really window
+          // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
+          case 'window':
+          case 'self':
+          case 'globalThis':
+            return proxy;
+
+          // proxy.hasOwnProperty would invoke getter firstly, then its value represented as rawWindow.hasOwnProperty
+          case 'hasOwnProperty':
+            return hasOwnProperty;
+
+          case 'document':
+            return document;
+          case 'eval':
+            // eslint-disable-next-line no-eval
+            return eval;
+          // no default
         }
 
         if (
@@ -238,28 +255,6 @@ export default class ProxySandbox implements SandBox {
             return proxy;
           }
           return (rawWindow as any)[p];
-        }
-
-        // proxy.hasOwnProperty would invoke getter firstly, then its value represented as rawWindow.hasOwnProperty
-        if (p === 'hasOwnProperty') {
-          return hasOwnProperty;
-        }
-
-        // mark the symbol to document while accessing as document.createElement could know is invoked by which sandbox for dynamic append patcher
-        if (p === 'document' || p === 'eval') {
-          setCurrentRunningSandboxProxy(proxy);
-          // FIXME if you have any other good ideas
-          // remove the mark in next tick, thus we can identify whether it in micro app or not
-          // this approach is just a workaround, it could not cover all complex cases, such as the micro app runs in the same task context with master in some case
-          nextTick(() => setCurrentRunningSandboxProxy(null));
-          switch (p) {
-            case 'document':
-              return document;
-            case 'eval':
-              // eslint-disable-next-line no-eval
-              return eval;
-            // no default
-          }
         }
 
         // eslint-disable-next-line no-nested-ternary
