@@ -5,7 +5,7 @@
 
 import { isBoundedFunction, isCallable, isConstructable } from '../utils';
 
-let currentRunningSandboxProxy: WindowProxy | null;
+let currentRunningSandboxProxy: WindowProxy | null = null;
 export function getCurrentRunningSandboxProxy() {
   return currentRunningSandboxProxy;
 }
