@@ -8,7 +8,6 @@ import { noop } from 'lodash';
 
 const rawWindowInterval = window.setInterval;
 // 兼容ie10、11下，非全局clearInterval,报调用的对象无效，
-// 可能跟垃圾回收有关和定时器机制有关。
 window.rawWindowClearInterval = window.clearInterval;
 
 export default function patch(global: Window) {
