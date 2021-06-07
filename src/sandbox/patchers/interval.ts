@@ -7,14 +7,16 @@
 import { noop } from 'lodash';
 
 const rawWindowInterval = window.setInterval;
-const rawWindowClearInterval = window.clearInterval;
+// 兼容ie10、11下，非全局clearInterval,报调用的对象无效，
+// 可能跟垃圾回收有关和定时器机制有关。
+window.rawWindowClearInterval = window.clearInterval;
 
 export default function patch(global: Window) {
   let intervals: number[] = [];
 
   global.clearInterval = (intervalId: number) => {
     intervals = intervals.filter((id) => id !== intervalId);
-    return rawWindowClearInterval(intervalId);
+    return window.rawWindowClearInterval(intervalId);
   };
 
   global.setInterval = (handler: CallableFunction, timeout?: number, ...args: any[]) => {
@@ -26,7 +28,7 @@ export default function patch(global: Window) {
   return function free() {
     intervals.forEach((id) => global.clearInterval(id));
     global.setInterval = rawWindowInterval;
-    global.clearInterval = rawWindowClearInterval;
+    global.clearInterval = window.rawWindowClearInterval;
 
     return noop;
   };

@@ -8,9 +8,10 @@ import { SandBoxType } from '../interfaces';
 function iter(obj: typeof window, callbackFn: (prop: any) => void) {
   // eslint-disable-next-line guard-for-in, no-restricted-syntax
   for (const prop in obj) {
-    if (obj.hasOwnProperty(prop)) {
+    // ie10,11下默认hasOwnProperty不包括clearInterval等
+    // if (obj.hasOwnProperty(prop)) {
       callbackFn(prop);
-    }
+    // }
   }
 }
 
