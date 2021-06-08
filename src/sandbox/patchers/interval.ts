@@ -8,6 +8,7 @@ import { noop } from 'lodash';
 
 const rawWindowInterval = window.setInterval;
 // 兼容ie10、11下，非全局clearInterval,报调用的对象无效，
+// @ts-ignore
 window.rawWindowClearInterval = window.clearInterval;
 
 export default function patch(global: Window) {
@@ -15,6 +16,7 @@ export default function patch(global: Window) {
 
   global.clearInterval = (intervalId: number) => {
     intervals = intervals.filter((id) => id !== intervalId);
+    // @ts-ignore
     return window.rawWindowClearInterval(intervalId);
   };
 
@@ -27,6 +29,7 @@ export default function patch(global: Window) {
   return function free() {
     intervals.forEach((id) => global.clearInterval(id));
     global.setInterval = rawWindowInterval;
+    // @ts-ignore
     global.clearInterval = window.rawWindowClearInterval;
 
     return noop;
