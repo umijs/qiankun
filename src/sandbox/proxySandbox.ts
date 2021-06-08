@@ -21,7 +21,7 @@ function uniq(array: Array<string | symbol>) {
 // zone.js will overwrite Object.defineProperty
 const rawObjectDefineProperty = Object.defineProperty;
 
-const variableWhiteListInDev =
+const variableSetterWhiteListInDev =
   process.env.NODE_ENV === 'development' || window.__QIANKUN_DEVELOPMENT__
     ? [
         // for react hot reload
@@ -29,8 +29,8 @@ const variableWhiteListInDev =
         '__REACT_ERROR_OVERLAY_GLOBAL_HOOK__',
       ]
     : [];
-// who could escape the sandbox
-const variableWhiteList: PropertyKey[] = [
+// Who can escape from the current sandbox to the outside
+const variableSetterWhiteList: PropertyKey[] = [
   // FIXME System.js used a indirect call with eval, which would make it scope escape to global
   // To make System.js works well, we write it back to global window temporary
   // see https://github.com/systemjs/systemjs/blob/457f5b7e8af6bd120a279540477552a07d5de086/src/evaluate.js#L106
@@ -38,8 +38,21 @@ const variableWhiteList: PropertyKey[] = [
 
   // see https://github.com/systemjs/systemjs/blob/457f5b7e8af6bd120a279540477552a07d5de086/src/instantiate.js#L357
   '__cjsWrapper',
-  ...variableWhiteListInDev,
+  ...variableSetterWhiteListInDev,
 ];
+const variableInSetterWhiteList = (p: PropertyKey) => variableSetterWhiteList.indexOf(p) !== -1;
+
+const variableGetterWhiteListInDev =
+  process.env.NODE_ENV === 'development' || window.__QIANKUN_DEVELOPMENT__
+    ? [
+        // for react refresh
+        // see https://github.com/pmmmwh/react-refresh-webpack-plugin/blob/a3a068d0e7a1cb72220498635f001f6d9f069331/client/ReactRefreshEntry.js#L14
+        '__reactRefreshInjected',
+      ]
+    : [];
+// Who will not inherit properties from rawWindow
+const variableGetterWhiteList: PropertyKey[] = [...variableGetterWhiteListInDev];
+const variableInGetterWhiteList = (p: PropertyKey) => variableGetterWhiteList.indexOf(p) !== -1;
 
 /*
  variables who are impossible to be overwrite need to be escaped from proxy sandbox for performance reasons
@@ -73,6 +86,9 @@ function createFakeWindow(global: Window) {
    > A property cannot be reported as non-configurable, if it does not exists as an own property of the target object or if it exists as a configurable own property of the target object.
    */
   Object.getOwnPropertyNames(global)
+    .filter((p) => {
+      return variableGetterWhiteList.indexOf(p) === -1;
+    })
     .filter((p) => {
       const descriptor = Object.getOwnPropertyDescriptor(global, p);
       return !descriptor?.configurable;
@@ -152,7 +168,7 @@ export default class ProxySandbox implements SandBox {
     }
 
     if (--activeSandboxCount === 0) {
-      variableWhiteList.forEach((p) => {
+      variableSetterWhiteList.forEach((p) => {
         if (this.proxy.hasOwnProperty(p)) {
           // @ts-ignore
           delete window[p];
@@ -194,7 +210,7 @@ export default class ProxySandbox implements SandBox {
             target[p] = value;
           }
 
-          if (variableWhiteList.indexOf(p) !== -1) {
+          if (variableInSetterWhiteList(p)) {
             // @ts-ignore
             rawWindow[p] = value;
           }
@@ -262,18 +278,24 @@ export default class ProxySandbox implements SandBox {
           }
         }
 
-        // eslint-disable-next-line no-nested-ternary
-        const value = propertiesWithGetter.has(p)
-          ? (rawWindow as any)[p]
-          : p in target
-          ? (target as any)[p]
-          : (rawWindow as any)[p];
+        let value;
+        if (propertiesWithGetter.has(p)) {
+          value = (rawWindow as any)[p];
+        } else if (p in target) {
+          value = (target as any)[p];
+        } else if (!variableInGetterWhiteList(p)) {
+          value = (rawWindow as any)[p];
+        } // else the `value` will remain undefined
+
         return getTargetValue(rawWindow, value);
       },
 
       // trap in operator
       // see https://github.com/styled-components/styled-components/blob/master/packages/styled-components/src/constants.js#L12
       has(target: FakeWindow, p: string | number | symbol): boolean {
+        if (variableInGetterWhiteList(p)) {
+          return p in unscopables || p in target;
+        }
         return p in unscopables || p in target || p in rawWindow;
       },
 
@@ -289,7 +311,7 @@ export default class ProxySandbox implements SandBox {
           return descriptor;
         }
 
-        if (rawWindow.hasOwnProperty(p)) {
+        if (!variableInGetterWhiteList(p) && rawWindow.hasOwnProperty(p)) {
           const descriptor = Object.getOwnPropertyDescriptor(rawWindow, p);
           descriptorTargetMap.set(p, 'rawWindow');
           // A property cannot be reported as non-configurable, if it does not exists as an own property of the target object
@@ -304,7 +326,11 @@ export default class ProxySandbox implements SandBox {
 
       // trap to support iterator with sandbox
       ownKeys(target: FakeWindow): ArrayLike<string | symbol> {
-        return uniq(Reflect.ownKeys(rawWindow).concat(Reflect.ownKeys(target)));
+        return uniq(
+          Reflect.ownKeys(rawWindow)
+            .filter((p) => !variableInGetterWhiteList(p))
+            .concat(Reflect.ownKeys(target)),
+        );
       },
 
       defineProperty(target: Window, p: PropertyKey, attributes: PropertyDescriptor): boolean {
