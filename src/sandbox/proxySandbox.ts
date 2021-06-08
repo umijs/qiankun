@@ -87,7 +87,7 @@ function createFakeWindow(global: Window) {
    */
   Object.getOwnPropertyNames(global)
     .filter((p) => {
-      return variableGetterWhiteList.indexOf(p) === -1;
+      return !variableInGetterWhiteList(p);
     })
     .filter((p) => {
       const descriptor = Object.getOwnPropertyDescriptor(global, p);
