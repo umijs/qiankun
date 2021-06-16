@@ -14,7 +14,6 @@ export default function patch(global: Window) {
 
   global.clearInterval = (intervalId: number) => {
     intervals = intervals.filter((id) => id !== intervalId);
-    // @ts-ignore
     return rawWindowClearInterval.call(window, intervalId);
   };
 
