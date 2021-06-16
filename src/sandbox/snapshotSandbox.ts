@@ -9,7 +9,7 @@ function iter(obj: typeof window, callbackFn: (prop: any) => void) {
   // eslint-disable-next-line guard-for-in, no-restricted-syntax
   for (const prop in obj) {
     // ie10,11下默认hasOwnProperty不包括clearInterval等
-    // if (obj.hasOwnProperty(prop)) {
+    if (obj.hasOwnProperty(prop) || prop === 'clearInterval') {
     callbackFn(prop);
     // }
   }
