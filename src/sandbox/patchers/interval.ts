@@ -7,7 +7,6 @@
 import { noop } from 'lodash';
 
 const rawWindowInterval = window.setInterval;
-// 兼容ie10、11下，非全局clearInterval,报调用的对象无效，
 // @ts-ignore
 const rawWindowClearInterval = window.clearInterval;
 
