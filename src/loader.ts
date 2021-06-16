@@ -135,7 +135,7 @@ function getAppWrapperGetter(
       `[qiankun] Wrapper element for ${appName} with instance ${appInstanceId} is not existed!`,
     );
 
-    if (strictStyleIsolation && supportShadowDOM) {
+    if (strictStyleIsolation) {
       return element!.shadowRoot!;
     }
 
