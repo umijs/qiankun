@@ -11,7 +11,7 @@ function iter(obj: typeof window, callbackFn: (prop: any) => void) {
     // ie10,11下默认hasOwnProperty不包括clearInterval等
     if (obj.hasOwnProperty(prop) || prop === 'clearInterval') {
       callbackFn(prop);
-    // }
+    }
   }
 }
 
