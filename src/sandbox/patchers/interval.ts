@@ -28,7 +28,6 @@ export default function patch(global: Window) {
   return function free() {
     intervals.forEach((id) => global.clearInterval(id));
     global.setInterval = rawWindowInterval;
-    // @ts-ignore
     global.clearInterval = rawWindowClearInterval;
 
     return noop;
