@@ -14,7 +14,7 @@ export default function patch(global: Window) {
 
   global.clearInterval = (intervalId: number) => {
     intervals = intervals.filter((id) => id !== intervalId);
-    return rawWindowClearInterval(intervalId);
+    return rawWindowClearInterval.call(window, intervalId as any);
   };
 
   global.setInterval = (handler: CallableFunction, timeout?: number, ...args: any[]) => {
