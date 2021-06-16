@@ -7,7 +7,6 @@
 import { noop } from 'lodash';
 
 const rawWindowInterval = window.setInterval;
-// @ts-ignore
 const rawWindowClearInterval = window.clearInterval;
 
 export default function patch(global: Window) {
