@@ -3,7 +3,6 @@
  * @since 2020-03-31
  */
 
-import { isBoundedFunction } from '../../utils';
 import { getCurrentRunningSandboxProxy } from '../common';
 import ProxySandbox from '../proxySandbox';
 
@@ -290,7 +289,24 @@ test('bounded function should not be rebounded', () => {
 
   expect(proxy.fn1 === fn).toBeFalsy();
   expect(proxy.fn2 === boundedFn).toBeTruthy();
-  expect(isBoundedFunction(proxy.fn1)).toBeTruthy();
+});
+
+test('this should refer correctly', () => {
+  const proxy = new ProxySandbox('this-refer-test').proxy as any;
+  const obj = {};
+  proxy.getTemplate = function getTemplate() {
+    this.a = 'a';
+    this.b = 'b';
+  };
+  // this refers to global;
+  proxy.getTemplate();
+  expect(obj).toStrictEqual({});
+  expect(proxy.a).toBe('a');
+  expect(proxy.b).toBe('b');
+
+  // this refers to obj;
+  proxy.getTemplate.apply(obj);
+  expect(obj).toStrictEqual({ a: 'a', b: 'b' });
 });
 
 test('the prototype should be kept while we create a function with prototype on proxy', () => {

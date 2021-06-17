@@ -25,19 +25,23 @@ describe('getTargetValue', () => {
       this.field = field;
     }
     const notConstructableFunction = getTargetValue(window, prototypeAddedAfterFirstInvocation);
-    // `this` of not constructable function will be bound automatically, and it can not be changed by calling with special `this`
+    // `this` of not constructable function will be bound automatically, but it can be changed by calling with special `this`
     const result = {};
-    notConstructableFunction.call(result, '123');
+    notConstructableFunction('123');
     expect(result).toStrictEqual({});
+    expect(window.field).toEqual('123');
+
+    notConstructableFunction.call(result, '456');
+    expect(result).toStrictEqual({ field: '456' });
+    // window.field not be affected
     expect(window.field).toEqual('123');
 
     prototypeAddedAfterFirstInvocation.prototype.addedFn = () => {};
     const constructableFunction = getTargetValue(window, prototypeAddedAfterFirstInvocation);
-    // `this` coule be available if it be predicated as a constructable function
-    const result2 = {};
-    constructableFunction.call(result2, '456');
-    expect(result2).toStrictEqual({ field: '456' });
-    // window.field not be affected
+    // `this` coule also be available when it be predicated as a constructable function
+    const result3 = {};
+    constructableFunction.call(result3, '789');
+    expect(result3).toStrictEqual({ field: '789' });
     expect(window.field).toEqual('123');
   });
 
