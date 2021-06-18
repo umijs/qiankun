@@ -39,9 +39,9 @@ describe('getTargetValue', () => {
     prototypeAddedAfterFirstInvocation.prototype.addedFn = () => {};
     const constructableFunction = getTargetValue(window, prototypeAddedAfterFirstInvocation);
     // `this` coule also be available when it be predicated as a constructable function
-    const result3 = {};
-    constructableFunction.call(result3, '789');
-    expect(result3).toStrictEqual({ field: '789' });
+    const result2 = {};
+    constructableFunction.call(result2, '789');
+    expect(result2).toStrictEqual({ field: '789' });
     expect(window.field).toEqual('123');
   });
 

@@ -299,10 +299,12 @@ test('this should refer correctly', () => {
     this.b = 'b';
   };
   // this refers to global;
-  proxy.getTemplate();
-  expect(obj).toStrictEqual({});
+  const fn = proxy.getTemplate;
+  fn();
   expect(proxy.a).toBe('a');
   expect(proxy.b).toBe('b');
+  expect(window.a).toBeUndefined();
+  expect(window.b).toBeUndefined();
 
   // this refers to obj;
   proxy.getTemplate.apply(obj);
