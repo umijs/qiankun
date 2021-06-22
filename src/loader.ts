@@ -213,6 +213,7 @@ function getLifecyclesFromExports(
   appName: string,
   global: WindowProxy,
   globalLatestSetProp?: PropertyKey | null,
+  libraryName?: string,
 ) {
   if (validateExportLifecycle(scriptExports)) {
     return scriptExports;
@@ -226,14 +227,16 @@ function getLifecyclesFromExports(
     }
   }
 
+  const exportName = libraryName || appName;
+
   if (process.env.NODE_ENV === 'development') {
     console.warn(
-      `[qiankun] lifecycle not found from ${appName} entry exports, fallback to get from window['${appName}']`,
+      `[qiankun] lifecycle not found from ${appName} entry exports, fallback to get from window['${exportName}']`,
     );
   }
 
-  // fallback to global variable who named with ${appName} while module exports not found
-  const globalVariableExports = (global as any)[appName];
+  // fallback to global variable who named with ${exportName} while module exports not found
+  const globalVariableExports = (global as any)[exportName];
 
   if (validateExportLifecycle(globalVariableExports)) {
     return globalVariableExports;
@@ -251,7 +254,7 @@ export async function loadApp<T extends ObjectType>(
   configuration: FrameworkConfiguration = {},
   lifeCycles?: FrameworkLifeCycles<T>,
 ): Promise<ParcelConfigObjectGetter> {
-  const { entry, name: appName } = app;
+  const { entry, name: appName, libraryName = '' } = app;
   const appInstanceId = `${appName}_${+new Date()}_${Math.floor(Math.random() * 1000)}`;
 
   const markName = `[qiankun] App ${appInstanceId} Loading`;
@@ -337,6 +340,7 @@ export async function loadApp<T extends ObjectType>(
     appName,
     global,
     sandboxContainer?.instance?.latestSetProp,
+    libraryName,
   );
 
   const { onGlobalStateChange, setGlobalState, offGlobalStateChange }: Record<string, CallableFunction> =

@@ -29,6 +29,8 @@ export type HTMLContentRender = (props: { appContent: string; loading: boolean }
 export type AppMetadata = {
   // app name
   name: string;
+  // umd library name
+  libraryName?: string;
   // app entry
   entry: Entry;
 };
