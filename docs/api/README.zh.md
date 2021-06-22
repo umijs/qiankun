@@ -233,6 +233,7 @@ toc: menu
     - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - 必选，微应用的入口（详细说明同上）。
     - container - `string | HTMLElement` - 必选，微应用的容器节点的选择器或者 Element 实例。如`container: '#root'` 或 `container: document.querySelector('#root')`。
     - props - `object` - 可选，初始化时需要传递给微应用的数据。
+    - libraryName - `string` 可选，手动指定子应用umd的导出变量名（当无法从微应用的entry exports找到生命周期函数时，qiankun会试图读取`window[name]`变量作为生命周期）。
 
   - configuration - `Configuration` - 可选，微应用的配置信息
 

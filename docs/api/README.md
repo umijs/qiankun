@@ -229,7 +229,8 @@ A criterion for judging whether the business is closely related: <strong>Look at
     - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - Required, The entry of the micro application(The detailed description is the same as above).
     - container - `string | HTMLElement` - Required, selector or Element instance of the container node of the micro application. Such as `container: '#root'` or `container: document.querySelector('#root')`.
     - props - `object` - Optional, the data that needs to be passed to the micro-application during initialization.
-
+    - libraryName - `string` Optional，qiankun will fallback to get `window[name]` as micro-application's lifecycles when it has not been found from entry exports, `libraryName` allows you to manually specify micro-application's umd library name.
+ 
   - configuration - `Configuration` - Optional, configuration information of the micro application
 
     - sandbox - `boolean` | `{ strictStyleIsolation?: boolean, experimentalStyleIsolation?: boolean }` - optional, whether to open the js sandbox, default is `true`.
