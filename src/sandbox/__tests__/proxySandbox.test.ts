@@ -347,3 +347,16 @@ it('should return true while [[GetPrototypeOf]] invoked by proxy object', () => 
   expect(Reflect.getPrototypeOf(proxy)).toBe(Reflect.getPrototypeOf(window));
   expect(Reflect.getPrototypeOf(proxy)).toBe(Object.getPrototypeOf(window));
 });
+
+it('native window function calling should always be bound with window', () => {
+  window.nativeWindowFunction = function nativeWindowFunction(this: any) {
+    if (this !== undefined && this !== window) {
+      throw new Error('Illegal Invocation!');
+    }
+
+    return 'success';
+  };
+
+  const { proxy } = new ProxySandbox('mustBeBoundWithWindowReference');
+  expect(proxy.nativeWindowFunction()).toBe('success');
+});
