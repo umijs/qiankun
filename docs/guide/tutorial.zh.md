@@ -482,7 +482,7 @@ npm i @angular-builders/dev-server -D
 
 你也可以直接参照 examples 中 purehtml 部分的[代码](https://github.com/umijs/qiankun/tree/master/examples/purehtml)
 
-同时，你也需要开启相关资源的 CORS，具体请参照[此处](#微应用静态资源一定要支持跨域吗？)
+同时，你也需要开启相关资源的 CORS，具体请参照[此处](/zh/faq#微应用静态资源一定要支持跨域吗？)
 
 ### umi-qiankun 项目
 

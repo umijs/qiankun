@@ -484,7 +484,7 @@ example:
 
 refer to the [purehtml examples](https://github.com/umijs/qiankun/tree/master/examples/purehtml)
 
-At the same time, [the subApp must support the CORS](#must-a-sub-app-asset-support-cors)
+At the same time, [the subApp must support the CORS](/faq#must-a-sub-app-asset-support-cors)
 
 ### umi-qiankun app
 

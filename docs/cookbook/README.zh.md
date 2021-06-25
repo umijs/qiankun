@@ -164,7 +164,7 @@ const routes = [
   路由设置：
 
   ```js
-  base: window.__POWERED_BY_QIANKUN__ ? '/app-vue/' : '/child/vue-history/',
+  base: window.__POWERED_BY_QIANKUN__ ? '/app-vue-history/' : '/child/vue-history/',
   ```
 
   webpack 打包 publicPath 配置（`vue.config.js`）：
@@ -180,7 +180,7 @@ const routes = [
   路由设置：
 
   ```html
-  <BrowserRouter basename={window.__POWERED_BY_QIANKUN__ ? '/app-react' : '/child/react-history/'}>
+  <BrowserRouter basename={window.__POWERED_BY_QIANKUN__ ? '/app-react-history' : '/child/react-history/'}>
   ```
 
   webpack 打包 publicPath 配置：
@@ -201,7 +201,7 @@ const routes = [
   providers: [
     {
       provide: APP_BASE_HREF,
-      useValue: window.__POWERED_BY_QIANKUN__ ? '/app-angular/' : '/child/angular-history/',
+      useValue: window.__POWERED_BY_QIANKUN__ ? '/app-angular-history/' : '/child/angular-history/',
     },
   ];
   ```
