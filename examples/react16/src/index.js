@@ -6,6 +6,15 @@ import * as serviceWorker from './serviceWorker';
 
 function render(props) {
   const { container } = props;
+  setTimeout(() => {
+    console.log(window.sessionStorage);
+    window.sessionStorage.setItem('test1', '111');
+    window.sessionStorage.setItem('test2', '222');
+
+    console.log(window.sessionStorage.getItem('test2'));
+    
+    window.sessionStorage.clear();
+  }, 100);
   ReactDOM.render(<App />, container ? container.querySelector('#root') : document.querySelector('#root'));
 }
 
