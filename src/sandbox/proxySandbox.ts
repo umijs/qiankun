@@ -189,7 +189,14 @@ export default class ProxySandbox implements SandBox {
                 value,
               });
             }
+            /**
+             * fix: https://github.com/umijs/qiankun/issues/1502
+             * 发生跳转后的用户行为与主窗口保持一致
+             */
+          } else if (p === 'location' && typeof value === 'string') {
+            window.location.href = value;
           } else {
+            console.log(p);
             // @ts-ignore
             target[p] = value;
           }
