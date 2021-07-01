@@ -303,10 +303,32 @@ function getNewRemoveChild(
   };
 }
 
+type AppendScopedNode = <T extends Node>(newChild: T) => T;
+type InsertBeforeNode = <T extends Node>(newChild: T, refChild: Node | null) => T;
+
+/**
+ * 创建Head节点操作作用域
+ * @returns AppendScopedNode | InsertBeforeNode
+ */
+const createPatchHTMLHeadScoped = () => {
+  const node = document.createElement('div');
+  node.setAttribute('head-scoped', '');
+  document.body.insertBefore(node, document.body.firstChild);
+  const func = <T>(appendOrInsert: T) => (appendOrInsert as unknown as AppendScopedNode).bind(node);
+  func.destroy = () => {
+    if (node !== null) {
+      node.innerHTML = '';
+      document.body.removeChild(node);
+    }
+  };
+  return func;
+};
+
 export function patchHTMLDynamicAppendPrototypeFunctions(
   isInvokedByMicroApp: (element: HTMLElement) => boolean,
   containerConfigGetter: (element: HTMLElement) => ContainerConfig,
 ) {
+  const patchHTMLHeadScoped = createPatchHTMLHeadScoped();
   // Just overwrite it while it have not been overwrite
   if (
     HTMLHeadElement.prototype.appendChild === rawHeadAppendChild &&
@@ -314,7 +336,7 @@ export function patchHTMLDynamicAppendPrototypeFunctions(
     HTMLHeadElement.prototype.insertBefore === rawHeadInsertBefore
   ) {
     HTMLHeadElement.prototype.appendChild = getOverwrittenAppendChildOrInsertBefore({
-      rawDOMAppendOrInsertBefore: rawHeadAppendChild,
+      rawDOMAppendOrInsertBefore: patchHTMLHeadScoped<AppendScopedNode>(rawHeadAppendChild),
       containerConfigGetter,
       isInvokedByMicroApp,
     }) as typeof rawHeadAppendChild;
@@ -325,7 +347,7 @@ export function patchHTMLDynamicAppendPrototypeFunctions(
     }) as typeof rawBodyAppendChild;
 
     HTMLHeadElement.prototype.insertBefore = getOverwrittenAppendChildOrInsertBefore({
-      rawDOMAppendOrInsertBefore: rawHeadInsertBefore as any,
+      rawDOMAppendOrInsertBefore: patchHTMLHeadScoped<InsertBeforeNode>(rawHeadInsertBefore),
       containerConfigGetter,
       isInvokedByMicroApp,
     }) as typeof rawHeadInsertBefore;
@@ -337,7 +359,8 @@ export function patchHTMLDynamicAppendPrototypeFunctions(
     HTMLBodyElement.prototype.removeChild === rawBodyRemoveChild
   ) {
     HTMLHeadElement.prototype.removeChild = getNewRemoveChild(
-      rawHeadRemoveChild,
+      patchHTMLHeadScoped(rawHeadRemoveChild),
+      // rawHeadRemoveChild,
       (element) => containerConfigGetter(element).appWrapperGetter,
     );
     HTMLBodyElement.prototype.removeChild = getNewRemoveChild(
@@ -351,8 +374,8 @@ export function patchHTMLDynamicAppendPrototypeFunctions(
     HTMLHeadElement.prototype.removeChild = rawHeadRemoveChild;
     HTMLBodyElement.prototype.appendChild = rawBodyAppendChild;
     HTMLBodyElement.prototype.removeChild = rawBodyRemoveChild;
-
     HTMLHeadElement.prototype.insertBefore = rawHeadInsertBefore;
+    patchHTMLHeadScoped.destroy();
   };
 }
 

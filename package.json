@@ -34,6 +34,7 @@
     "install:vue3": "cd examples/vue3 && yarn",
     "start:vue3": "cd examples/vue3 && yarn start",
     "build": "father-build",
+    "build:watch": "father-build --watch",
     "release": "np --no-cleanup --yolo --no-publish",
     "prepublishOnly": "yarn ci",
     "lint": "yarn lint:js && yarn lint:prettier",
