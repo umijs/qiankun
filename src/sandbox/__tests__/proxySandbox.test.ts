@@ -247,18 +247,20 @@ test('document and eval accessing should modify the attachDocProxySymbol value e
   expect(eval1).toBe(eval);
 });
 
-test('document attachDocProxySymbol mark should be remove before next task', (done) => {
-  const { proxy } = new ProxySandbox('doc-symbol');
+test('document attachDocProxySymbol mark should be remove before next task', () => {
+  const fakeWindow = new ProxySandbox('doc-symbol');
+  const { proxy } = fakeWindow;
   // just access
   // @ts-ignore
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const d1 = proxy.document;
   expect(getCurrentRunningSandboxProxy()).toBe(proxy);
-
-  setTimeout(() => {
-    expect(getCurrentRunningSandboxProxy()).toBeNull();
-    done();
-  });
+  /**
+   * https://github.com/umijs/qiankun/issues/1266
+   * unmount remove current fakeWindow
+   */
+  fakeWindow.inactive();
+  expect(getCurrentRunningSandboxProxy()).toBeNull();
 });
 
 test('document should work well with MutationObserver', (done) => {

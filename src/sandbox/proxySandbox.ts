@@ -5,7 +5,7 @@
  */
 import type { SandBox } from '../interfaces';
 import { SandBoxType } from '../interfaces';
-import { nextTick } from '../utils';
+// import { nextTick } from '../utils';
 import { getTargetValue, setCurrentRunningSandboxProxy } from './common';
 
 /**
@@ -151,6 +151,9 @@ export default class ProxySandbox implements SandBox {
       ]);
     }
 
+    // FIXME if you have any other good ideas
+    // remove the mark in next tick, thus we can identify whether it in micro app or not
+    // this approach is just a workaround, it could not cover all complex cases, such as the micro app runs in the same task context with master in some case
     if (--activeSandboxCount === 0) {
       variableWhiteList.forEach((p) => {
         if (this.proxy.hasOwnProperty(p)) {
@@ -159,7 +162,11 @@ export default class ProxySandbox implements SandBox {
         }
       });
     }
-
+    /**
+     * https://github.com/umijs/qiankun/issues/1266
+     * 在取消挂载时取消当前选中的代理对象，使下一次 patchDocumentCreateElement 按既定逻辑执行
+     */
+    setCurrentRunningSandboxProxy(null);
     this.sandboxRunning = false;
   }
 
@@ -248,10 +255,6 @@ export default class ProxySandbox implements SandBox {
         // mark the symbol to document while accessing as document.createElement could know is invoked by which sandbox for dynamic append patcher
         if (p === 'document' || p === 'eval') {
           setCurrentRunningSandboxProxy(proxy);
-          // FIXME if you have any other good ideas
-          // remove the mark in next tick, thus we can identify whether it in micro app or not
-          // this approach is just a workaround, it could not cover all complex cases, such as the micro app runs in the same task context with master in some case
-          nextTick(() => setCurrentRunningSandboxProxy(null));
           switch (p) {
             case 'document':
               return document;
