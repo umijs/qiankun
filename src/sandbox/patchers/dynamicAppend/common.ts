@@ -295,10 +295,9 @@ function getNewRemoveChild(
       if (container.contains(attachedElement)) {
         return rawRemoveChild.call(container, attachedElement) as T;
       }
-    } catch (e) {
-      console.warn(e);
+    } catch {
+      return headOrBodyRemoveChild.call(this, child) as T;
     }
-
     return headOrBodyRemoveChild.call(this, child) as T;
   };
 }
