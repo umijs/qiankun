@@ -76,33 +76,39 @@ export default class SingularProxySandbox implements SandBox {
     const rawWindow = window;
     const fakeWindow = Object.create(null) as Window;
 
+    const setTrap = (p: PropertyKey, value: any, originalValue: any, sync2Window = true) => {
+      if (this.sandboxRunning) {
+        if (!rawWindow.hasOwnProperty(p)) {
+          addedPropsMapInSandbox.set(p, value);
+        } else if (!modifiedPropsOriginalValueMapInSandbox.has(p)) {
+          // 如果当前 window 对象存在该属性，且 record map 中未记录过，则记录该属性初始值
+          modifiedPropsOriginalValueMapInSandbox.set(p, originalValue);
+        }
+
+        currentUpdatedPropsValueMap.set(p, value);
+
+        if (sync2Window) {
+          // 必须重新设置 window 对象保证下次 get 时能拿到已更新的数据
+          (rawWindow as any)[p] = value;
+        }
+
+        this.latestSetProp = p;
+
+        return true;
+      }
+
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`[qiankun] Set window.${p.toString()} while sandbox destroyed or inactive in ${name}!`);
+      }
+
+      // 在 strict-mode 下，Proxy 的 handler.set 返回 false 会抛出 TypeError，在沙箱卸载的情况下应该忽略错误
+      return true;
+    };
+
     const proxy = new Proxy(fakeWindow, {
       set: (_: Window, p: PropertyKey, value: any): boolean => {
-        if (this.sandboxRunning) {
-          if (!rawWindow.hasOwnProperty(p)) {
-            addedPropsMapInSandbox.set(p, value);
-          } else if (!modifiedPropsOriginalValueMapInSandbox.has(p)) {
-            // 如果当前 window 对象存在该属性，且 record map 中未记录过，则记录该属性初始值
-            const originalValue = (rawWindow as any)[p];
-            modifiedPropsOriginalValueMapInSandbox.set(p, originalValue);
-          }
-
-          currentUpdatedPropsValueMap.set(p, value);
-          // 必须重新设置 window 对象保证下次 get 时能拿到已更新的数据
-          // eslint-disable-next-line no-param-reassign
-          (rawWindow as any)[p] = value;
-
-          this.latestSetProp = p;
-
-          return true;
-        }
-
-        if (process.env.NODE_ENV === 'development') {
-          console.warn(`[qiankun] Set window.${p.toString()} while sandbox destroyed or inactive in ${name}!`);
-        }
-
-        // 在 strict-mode 下，Proxy 的 handler.set 返回 false 会抛出 TypeError，在沙箱卸载的情况下应该忽略错误
-        return true;
+        const originalValue = (rawWindow as any)[p];
+        return setTrap(p, value, originalValue, true);
       },
 
       get(_: Window, p: PropertyKey): any {
@@ -130,6 +136,15 @@ export default class SingularProxySandbox implements SandBox {
           descriptor.configurable = true;
         }
         return descriptor;
+      },
+
+      defineProperty(_: Window, p: string | symbol, attributes: PropertyDescriptor): boolean {
+        const originalValue = (rawWindow as any)[p];
+        const done = Reflect.defineProperty(rawWindow, p, attributes);
+        const value = (rawWindow as any)[p];
+        setTrap(p, value, originalValue, false);
+
+        return done;
       },
     });
 
