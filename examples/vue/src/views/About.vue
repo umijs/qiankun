@@ -4,7 +4,10 @@
   </div>
 </template>
 
-<style scoped>
+<style>
+  #app {
+    background: red;
+  }
   .about {
     color: #7265e6;
   }
