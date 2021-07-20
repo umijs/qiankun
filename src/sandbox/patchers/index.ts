@@ -9,6 +9,7 @@ import * as css from './css';
 import { patchLooseSandbox, patchStrictSandbox } from './dynamicAppend';
 import patchHistoryListener from './historyListener';
 import patchInterval from './interval';
+import patchStorage from './storage';
 import patchWindowListener from './windowListener';
 
 export function patchAtMounting(
@@ -20,6 +21,7 @@ export function patchAtMounting(
 ): Freer[] {
   const basePatchers = [
     () => patchInterval(sandbox.proxy),
+    () => patchStorage(sandbox.proxy, appName),
     () => patchWindowListener(sandbox.proxy),
     () => patchHistoryListener(),
   ];
