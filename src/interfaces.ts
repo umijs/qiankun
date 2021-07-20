@@ -136,3 +136,9 @@ export type MicroAppStateActions = {
   setGlobalState: (state: Record<string, any>) => boolean;
   offGlobalStateChange: () => boolean;
 };
+
+export enum WindowType {
+  Window = '[object Window]',
+  DOMWindow = '[object DOMWindow]',
+  global = '[object global]',
+}
