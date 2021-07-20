@@ -174,27 +174,25 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
           }
 
           const mountDOM = appWrapperGetter();
+          // exclude link elements like <link rel="icon" href="favicon.ico">
+          const linkElementUsingStylesheet =
+            element.tagName?.toUpperCase() === LINK_TAG_NAME &&
+            (element as HTMLLinkElement).rel === 'stylesheet' &&
+            (element as HTMLLinkElement).href;
 
-          if (scopedCSS) {
-            // exclude link elements like <link rel="icon" href="favicon.ico">
-            const linkElementUsingStylesheet =
-              element.tagName?.toUpperCase() === LINK_TAG_NAME &&
-              (element as HTMLLinkElement).rel === 'stylesheet' &&
-              (element as HTMLLinkElement).href;
-            if (linkElementUsingStylesheet) {
-              const fetch =
-                typeof frameworkConfiguration.fetch === 'function'
-                  ? frameworkConfiguration.fetch
-                  : frameworkConfiguration.fetch?.fn;
-              stylesheetElement = convertLinkAsStyle(
-                element,
-                (styleElement) => css.process(mountDOM, styleElement, appName),
-                fetch,
-              );
-              dynamicLinkAttachedInlineStyleMap.set(element, stylesheetElement);
-            } else {
-              css.process(mountDOM, stylesheetElement, appName);
-            }
+          if (linkElementUsingStylesheet) {
+            const fetch =
+              typeof frameworkConfiguration.fetch === 'function'
+                ? frameworkConfiguration.fetch
+                : frameworkConfiguration.fetch?.fn;
+            stylesheetElement = convertLinkAsStyle(
+              element,
+              scopedCSS ? (styleElement) => css.process(mountDOM, styleElement, appName) : () => {},
+              fetch,
+            );
+            dynamicLinkAttachedInlineStyleMap.set(element, stylesheetElement);
+          } else if (scopedCSS) {
+            css.process(mountDOM, stylesheetElement, appName);
           }
 
           // eslint-disable-next-line no-shadow
