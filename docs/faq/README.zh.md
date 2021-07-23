@@ -564,7 +564,7 @@ qiankun 将会自动隔离微应用之间的样式（开启沙箱的情况下）
 详细文档参考 [antd 官方指南](https://ant.design/docs/react/customize-theme)。
 
 <Alert type="info">
-在最新的 qiankun 版本中，你也可以尝试通过配置 `{ scope: { experimentalStyleIsolation: true } }` 的方式开启运行时的 scoped css 功能，从而解决应用间的样式隔离问题。
+在最新的 qiankun 版本中，你也可以尝试通过配置 `{ sandbox : { experimentalStyleIsolation: true } }` 的方式开启运行时的 scoped css 功能，从而解决应用间的样式隔离问题。
 PS：目前该特性还处于实验阶段，如果碰到一些问题欢迎提 <a href="https://github.com/umijs/qiankun/issues/new?assignees=&labels=&template=bug_report_cn.md&title=%5BBug%5D%E8%AF%B7%E9%81%B5%E5%BE%AA%E4%B8%8B%E6%96%87%E6%A8%A1%E6%9D%BF%E6%8F%90%E4%BA%A4%E9%97%AE%E9%A2%98%EF%BC%8C%E5%90%A6%E5%88%99%E6%82%A8%E7%9A%84%E9%97%AE%E9%A2%98%E4%BC%9A%E8%A2%AB%E5%85%B3%E9%97%AD" target="_blank">issue</a> 来帮助我们一起改善。
 </Alert>
 
