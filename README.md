@@ -109,3 +109,7 @@ Visit `http://localhost:7099`.
 
 - [single-spa](https://github.com/CanopyTax/single-spa) What an awesome meta-framework for micro-frontends!
 - [import-html-entry](https://github.com/kuitos/import-html-entry/) An assets loader that supports html entry.
+
+### License
+
+Qiankun is [MIT licensed](./LICENSE).
