@@ -13,27 +13,46 @@
 
 # qiankun（乾坤）
 
-> In Chinese traditional culture `qian` means heaven and `kun` stands for earth, so `qiankun` is the universe.
+> In Chinese, `qian(乾)` means heaven and `kun(坤)` earth. `qiankun` is the universe.
 
-An implementation of [Micro Frontends](https://micro-frontends.org/), based on [single-spa](https://github.com/CanopyTax/single-spa), but made it production-ready.
+Qiankun enables you and your teams to build next-generation and enterprise-ready web applications leveraging [Micro Frontends](https://micro-frontends.org/). It is inspired by and based on [single-spa](https://github.com/CanopyTax/single-spa).
 
 ## 🤔 Motivation
 
-As we know what micro-frontends aims for:
+A quick recap about the concept of 'Micro Frontents':
 
 > Techniques, strategies and recipes for building a **modern web app** with **multiple teams** using **different JavaScript frameworks**. — [Micro Frontends](https://micro-frontends.org/)
 
-Modularity is very important for large application. By breaking down a large system into individual sub-applications, we can achieve good divide-and-conquer between products and when necessary combination, especially for enterprise applications that usually involve multi-team collaboration. But if you're trying to implement such a micro frontends architecture system by yourself, you're likely to run into some tricky problems:
+Qiankun was birthed internally in our group during the time web app development by distributed teams had turned to complete chaos. We faced every problem micro frontend was conceived to solve, so naturally, it became part of our solution.
 
-- In what form do sub applications publish static resources?
-- How does the main application integrate individual sub-applications?
-- How do you ensure that sub-applications are independent of each other (development independent, deployment independent) and runtime isolated?
+The path was never easy, we stepped on every challenge there could possibly be. Just to name a few:
+
+- In what form do micro-apps publish static resources?
+- How does the framework integrate individual micro-apps?
+- How to ensure that sub-applications are isolated from one another (development independence and deployment independence) and runtime sandboxed?
 - Performance issues? What about public dependencies?
-- And so on...
+- The list goes on long ...
 
-After solving these common problems of micro frontends, we extracted the kernel of our solution after a lot of internal online application testing and polishing, and then named it `qiankun`.
+After solving these common problems of micro frontends and lots of polishing and testing, we extracted the minimal viable framework of our solution, and named it `qiankun`, as it can contain and serve anything. Not long after, it became the cornerstone of hundreds of our web applications in production, and we decided to open-source it to save you the suffering.
 
-**Probably the most complete micro-frontends solution you ever met🧐.**
+**TLDR: Qiankun is probably the most complete micro-frontend solution you ever met🧐.**
+
+## :sparkles: Features
+
+Qiankun inherits many benefits from [single-spa](https://github.com/CanopyTax/single-spa):
+
+- 📦 **Micro-apps Independent Deployment** 
+- 🛴 **Lazy Load**
+- 📱 **Technology Agnostic**
+
+And on top of these, it offers:
+
+- 💃 **Elegant API**
+- 💪 **HTML Entry Access Mode**
+- 🛡  **Style Isolation**
+- 🧳 **JS Sandbox**
+- ⚡ **Prefetch Assets**
+- 🔌 **[Umi Plugin](https://github.com/umijs/plugins/tree/master/packages/plugin-qiankun) Integration**
 
 ## 📦 Installation
 
@@ -43,18 +62,29 @@ $ yarn add qiankun  # or npm i qiankun -S
 
 ## 📖 Documentation
 
-https://qiankun.umijs.org/
+You can find the Qiankun documentation [on the website](https://qiankun.umijs.org/
+)
 
-## 💿 Getting started
+Check out the [Getting Started](https://qiankun.umijs.org/guide/getting-started) page for a quick overview.
 
-This repo contains an `examples` folder with a sample Shell app and multiple mounted Micro FE apps. To run this app, first clone `qiankun`:
+The documentation is divided into several sections:
+
+* [Tutorial](https://qiankun.umijs.org/cookbook)
+* [API Reference](https://qiankun.umijs.org/api)
+* [FAQ](https://qiankun.umijs.org/faq)
+* [Community](https://qiankun.umijs.org/#communit)
+
+
+## 💿 Examples
+
+Inside the `examples` folder, there is a sample Shell app and multiple mounted Micro FE apps. To get it running, first clone `qiankun`:
 
 ```shell
 $ git clone https://github.com/umijs/qiankun.git
 $ cd qiankun
 ```
 
-Now run the yarn scripts to install and run the examples project:
+Now install and run the example:
 
 ```shell
 $ yarn install
@@ -66,32 +96,20 @@ Visit `http://localhost:7099`.
 
 ![](./examples/example.gif)
 
-## :sparkles: Features
-
-- 📦 **Based On [single-spa](https://github.com/CanopyTax/single-spa)**
-- 📱 **Technology Agnostic**
-- 💪 **HTML Entry Access Mode**
-- 🛡 **Style Isolation**
-- 🧳 **JS Sandbox**
-- ⚡ **Prefetch Assets**
-- 🔌 **[Umi Plugin](https://github.com/umijs/plugins/tree/master/packages/plugin-qiankun) Integration**
 
 ## 🎯 Roadmap
 
-- [x] Parcel apps integration (multiple sub apps displayed at the same time, but only one uses router at most)
-- [x] Communication development kits between master and sub apps
-- [ ] Custom side effects hijacker
-- [ ] Nested Microfrontends
+- [x] Parcel apps integration (multiple micro-apps displayed at the same time, but only one uses router at most)
+- [x] Communication protocol between the framework and hosted micro-apps
+- [ ] Customizable side-effect hijacker
+- [ ] Nested micro-apps
 
-## ❓ FAQ
-
-https://qiankun.umijs.org/faq/
-
-## 👬 Community
-
-https://qiankun.umijs.org/#community
 
 ## 🎁 Acknowledgements
 
 - [single-spa](https://github.com/CanopyTax/single-spa) What an awesome meta-framework for micro-frontends!
-- [import-html-entry](https://github.com/kuitos/import-html-entry/) An assets loader which supports html entry.
+- [import-html-entry](https://github.com/kuitos/import-html-entry/) An assets loader that supports html entry.
+
+### License
+
+Qiankun is [MIT licensed](./LICENSE).
