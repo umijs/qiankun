@@ -263,12 +263,8 @@ export default class ProxySandbox implements SandBox {
         }
 
         // eslint-disable-next-line no-nested-ternary
-        const value = propertiesWithGetter.has(p)
-          ? (rawWindow as any)[p]
-          : p in target
-          ? (target as any)[p]
-          : (rawWindow as any)[p];
-        return getTargetValue(rawWindow, value);
+        const source = propertiesWithGetter.has(p) ? rawWindow : p in target ? target : rawWindow;
+        return getTargetValue(source === target ? proxy : rawWindow, (source as any)[p]);
       },
 
       // trap in operator
