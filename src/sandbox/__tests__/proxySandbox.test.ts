@@ -123,7 +123,11 @@ test('hasOwnProperty should works well', () => {
 test('descriptor of non-configurable and non-enumerable property existed in raw window should be the same after modified in sandbox', () => {
   Object.defineProperty(window, 'nonConfigurableProp', { configurable: false, writable: true });
   // eslint-disable-next-line getter-return
-  Object.defineProperty(window, 'nonConfigurablePropWithAccessor', { configurable: false, get() {}, set() {} });
+  Object.defineProperty(window, 'nonConfigurablePropWithAccessor', {
+    configurable: false,
+    get() {},
+    set() {},
+  });
   Object.defineProperty(window, 'enumerableProp', { enumerable: true, writable: true });
   Object.defineProperty(window, 'nonEnumerableProp', { enumerable: false, writable: true });
 
@@ -297,6 +301,7 @@ test('the prototype should be kept while we create a function with prototype on 
   const proxy = new ProxySandbox('new-function').proxy as any;
 
   function test() {}
+
   proxy.fn = test;
   expect(proxy.fn === test).toBeFalsy();
   expect(proxy.fn.prototype).toBe(test.prototype);
@@ -346,6 +351,18 @@ it('should return true while [[GetPrototypeOf]] invoked by proxy object', () => 
   expect(Object.getPrototypeOf(proxy)).toBe(Object.getPrototypeOf(window));
   expect(Reflect.getPrototypeOf(proxy)).toBe(Reflect.getPrototypeOf(window));
   expect(Reflect.getPrototypeOf(proxy)).toBe(Object.getPrototypeOf(window));
+});
+
+it('should get current running sandbox proxy correctly', async () => {
+  const { proxy } = new ProxySandbox('running');
+
+  await Promise.resolve().then(() => {
+    expect(getCurrentRunningSandboxProxy()).toBeNull();
+    // @ts-ignore
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const unused = proxy.accessing;
+    expect(getCurrentRunningSandboxProxy()).toBe(proxy);
+  });
 });
 
 it('native window function calling should always be bound with window', () => {
