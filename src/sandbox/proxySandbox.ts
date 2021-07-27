@@ -215,6 +215,12 @@ export default class ProxySandbox implements SandBox {
       },
 
       get(target: FakeWindow, p: PropertyKey): any {
+        setCurrentRunningSandboxProxy(proxy);
+        // FIXME if you have any other good ideas
+        // remove the mark in next tick, thus we can identify whether it in micro app or not
+        // this approach is just a workaround, it could not cover all complex cases, such as the micro app runs in the same task context with master in some case
+        nextTick(() => setCurrentRunningSandboxProxy(null));
+
         if (p === Symbol.unscopables) return unscopables;
 
         // avoid who using window.window or window.self to escape the sandbox environment to touch the really window
@@ -247,11 +253,6 @@ export default class ProxySandbox implements SandBox {
 
         // mark the symbol to document while accessing as document.createElement could know is invoked by which sandbox for dynamic append patcher
         if (p === 'document' || p === 'eval') {
-          setCurrentRunningSandboxProxy(proxy);
-          // FIXME if you have any other good ideas
-          // remove the mark in next tick, thus we can identify whether it in micro app or not
-          // this approach is just a workaround, it could not cover all complex cases, such as the micro app runs in the same task context with master in some case
-          nextTick(() => setCurrentRunningSandboxProxy(null));
           switch (p) {
             case 'document':
               return document;
