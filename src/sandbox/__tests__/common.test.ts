@@ -39,6 +39,8 @@ describe('getTargetValue', () => {
     expect(result2).toStrictEqual({ field: '456' });
     // window.field not be affected
     expect(window.field).toEqual('123');
+    // reference should be stable after first running
+    expect(constructableFunction).toBe(getTargetValue(window, prototypeAddedAfterFirstInvocation));
   });
 
   it('should work well while value have a readonly prototype on its prototype chain', () => {

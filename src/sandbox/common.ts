@@ -14,6 +14,7 @@ export function setCurrentRunningSandboxProxy(proxy: WindowProxy | null) {
   currentRunningSandboxProxy = proxy;
 }
 
+const functionBoundedValueMap = new WeakMap<CallableFunction, CallableFunction>();
 export function getTargetValue(target: any, value: any): any {
   /*
     仅绑定 isCallable && !isBoundedFunction && !isConstructable 的函数对象，如 window.console、window.atob 这类，不然微应用中调用时会抛出 Illegal invocation 异常
@@ -21,6 +22,11 @@ export function getTargetValue(target: any, value: any): any {
     @warning 这里不要随意替换成别的判断方式，因为可能触发一些 edge case（比如在 lodash.isFunction 在 iframe 上下文中可能由于调用了 top window 对象触发的安全异常）
    */
   if (isCallable(value) && !isBoundedFunction(value) && !isConstructable(value)) {
+    const cachedBoundFunction = functionBoundedValueMap.get(value);
+    if (cachedBoundFunction) {
+      return cachedBoundFunction;
+    }
+
     const boundValue = Function.prototype.bind.call(value, target);
 
     // some callable function has custom fields, we need to copy the enumerable props to boundValue. such as moment function.
@@ -40,6 +46,7 @@ export function getTargetValue(target: any, value: any): any {
       Object.defineProperty(boundValue, 'prototype', { value: value.prototype, enumerable: false, writable: true });
     }
 
+    functionBoundedValueMap.set(value, boundValue);
     return boundValue;
   }
 
