@@ -13,7 +13,7 @@
 
 # qiankun（乾坤）
 
-> In Chinese, `qian(乾)` means heaven and `kun(坤)` earth. `qiankun` is the universe.
+> In Chinese, `qian(乾)` means heaven and `kun(坤)` means earth. `qiankun` is the universe.
 
 Qiankun enables you and your teams to build next-generation and enterprise-ready web applications leveraging [Micro Frontends](https://micro-frontends.org/). It is inspired by and based on [single-spa](https://github.com/CanopyTax/single-spa).
 
