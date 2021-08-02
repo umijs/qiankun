@@ -82,13 +82,13 @@ export function loadMicroApp<T extends ObjectType>(
         if (containerMicroApps?.length) {
           const mount = [
             async () => {
-              // While there are multiple micro app instance mounted on the same container, we must wait to mount until the prev instances had unmounted
+              // While there are multiple micro apps mounted on the same container, we must wait until the prev instances all had unmounted
               // Otherwise it will lead some concurrent issues
-              const microAppsLoadBeforeMe = containerMicroApps.slice(0, containerMicroApps.indexOf(microApp));
-              const microAppsLoadBeforeMeWhoAreHealthy = microAppsLoadBeforeMe.filter(
+              const prevLoadMicroAppsLoad = containerMicroApps.slice(0, containerMicroApps.indexOf(microApp));
+              const prevLoadMicroAppsWhichNotBroken = prevLoadMicroAppsLoad.filter(
                 (v) => v.getStatus() !== 'LOAD_ERROR' && v.getStatus() !== 'SKIP_BECAUSE_BROKEN',
               );
-              await Promise.all(microAppsLoadBeforeMeWhoAreHealthy.map((v) => v.unmountPromise));
+              await Promise.all(prevLoadMicroAppsWhichNotBroken.map((v) => v.unmountPromise));
             },
             ...toArray(microAppConfig.mount),
           ];
