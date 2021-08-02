@@ -5,13 +5,23 @@
 
 import { isBoundedFunction, isCallable, isConstructable } from '../utils';
 
-let currentRunningSandboxProxy: WindowProxy | null = null;
+declare global {
+  interface Window {
+    __currentRunningSandboxProxy__: WindowProxy | null;
+  }
+}
+
+// Get native global window with a sandbox disgusted way, thus we could share it between qiankun instances🤪
+// eslint-disable-next-line no-new-func
+const nativeGlobal: Window = new Function('return this')();
+Object.defineProperty(nativeGlobal, '__currentRunningSandboxProxy__', { enumerable: false, writable: true });
 export function getCurrentRunningSandboxProxy() {
-  return currentRunningSandboxProxy;
+  return nativeGlobal.__currentRunningSandboxProxy__;
 }
 
 export function setCurrentRunningSandboxProxy(proxy: WindowProxy | null) {
-  currentRunningSandboxProxy = proxy;
+  // set currentRunningSandboxProxy to global window, as its only use case is for document.createElement from now on, which hijacked by a global way
+  nativeGlobal.__currentRunningSandboxProxy__ = proxy;
 }
 
 const functionBoundedValueMap = new WeakMap<CallableFunction, CallableFunction>();
