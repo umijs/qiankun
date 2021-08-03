@@ -5,7 +5,7 @@
  */
 import type { SandBox } from '../interfaces';
 import { SandBoxType } from '../interfaces';
-import { nextTick } from '../utils';
+import { nextTask } from '../utils';
 import { getTargetValue, setCurrentRunningSandboxProxy } from './common';
 
 /**
@@ -215,13 +215,13 @@ export default class ProxySandbox implements SandBox {
       },
 
       get(target: FakeWindow, p: PropertyKey): any {
-        if (p === Symbol.unscopables) return unscopables;
-
         setCurrentRunningSandboxProxy(proxy);
         // FIXME if you have any other good ideas
         // remove the mark in next tick, thus we can identify whether it in micro app or not
         // this approach is just a workaround, it could not cover all complex cases, such as the micro app runs in the same task context with master in some case
-        nextTick(() => setCurrentRunningSandboxProxy(null));
+        nextTask(() => setCurrentRunningSandboxProxy(null));
+
+        if (p === Symbol.unscopables) return unscopables;
 
         // avoid who using window.window or window.self to escape the sandbox environment to touch the really window
         // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
