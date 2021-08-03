@@ -341,15 +341,8 @@ export async function loadApp<T extends ObjectType>(
   const syncAppWrapperElement2Sandbox = (element: HTMLElement | null) => (initialAppWrapperElement = element);
 
   const parcelConfigGetter: ParcelConfigObjectGetter = (remountContainer = initialContainer) => {
-    let appWrapperElement: HTMLElement | null = initialAppWrapperElement;
-    const appWrapperGetter = getAppWrapperGetter(
-      appName,
-      appInstanceId,
-      !!legacyRender,
-      strictStyleIsolation,
-      scopedCSS,
-      () => appWrapperElement,
-    );
+    let appWrapperElement: HTMLElement | null;
+    let appWrapperGetter: ReturnType<typeof getAppWrapperGetter>;
 
     const parcelConfig: ParcelConfigObject = {
       name: appInstanceId,
@@ -370,6 +363,18 @@ export async function loadApp<T extends ObjectType>(
           }
 
           return undefined;
+        },
+        // initial wrapper element before app mount/remount
+        async () => {
+          appWrapperElement = initialAppWrapperElement;
+          appWrapperGetter = getAppWrapperGetter(
+            appName,
+            appInstanceId,
+            !!legacyRender,
+            strictStyleIsolation,
+            scopedCSS,
+            () => appWrapperElement,
+          );
         },
         // 添加 mount hook, 确保每次应用加载前容器 dom 结构已经设置完毕
         async () => {

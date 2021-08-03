@@ -52,6 +52,7 @@ export function registerMicroApps<T extends ObjectType>(
 }
 
 const appConfigPromiseGetterMap = new Map<string, Promise<ParcelConfigObjectGetter>>();
+const containerMicroAppsMap = new Map<string, MicroApp[]>();
 
 export function loadMicroApp<T extends ObjectType>(
   app: LoadableApp<T>,
@@ -69,9 +70,39 @@ export function loadMicroApp<T extends ObjectType>(
     return undefined;
   };
 
+  let microApp: MicroApp;
   const wrapParcelConfigForRemount = (config: ParcelConfigObject): ParcelConfigObject => {
+    const container = 'container' in app ? app.container : undefined;
+
+    let microAppConfig = config;
+    if (container) {
+      const xpath = getContainerXpath(container);
+      if (xpath) {
+        const containerMicroApps = containerMicroAppsMap.get(`${name}-${xpath}`);
+        if (containerMicroApps?.length) {
+          const mount = [
+            async () => {
+              // While there are multiple micro apps mounted on the same container, we must wait until the prev instances all had unmounted
+              // Otherwise it will lead some concurrent issues
+              const prevLoadMicroApps = containerMicroApps.slice(0, containerMicroApps.indexOf(microApp));
+              const prevLoadMicroAppsWhichNotBroken = prevLoadMicroApps.filter(
+                (v) => v.getStatus() !== 'LOAD_ERROR' && v.getStatus() !== 'SKIP_BECAUSE_BROKEN',
+              );
+              await Promise.all(prevLoadMicroAppsWhichNotBroken.map((v) => v.unmountPromise));
+            },
+            ...toArray(microAppConfig.mount),
+          ];
+
+          microAppConfig = {
+            ...config,
+            mount,
+          };
+        }
+      }
+    }
+
     return {
-      ...config,
+      ...microAppConfig,
       // empty bootstrap hook which should not run twice while it calling from cached micro app
       bootstrap: () => Promise.resolve(),
     };
@@ -123,7 +154,30 @@ export function loadMicroApp<T extends ObjectType>(
     startSingleSpa({ urlRerouteOnly: frameworkConfiguration.urlRerouteOnly ?? defaultUrlRerouteOnly });
   }
 
-  return mountRootParcel(memorizedLoadingFn, { domElement: document.createElement('div'), ...props });
+  microApp = mountRootParcel(memorizedLoadingFn, { domElement: document.createElement('div'), ...props });
+
+  // Store the microApps which they mounted on the same container
+  const container = 'container' in app ? app.container : undefined;
+  if (container) {
+    const xpath = getContainerXpath(container);
+    if (xpath) {
+      const key = `${name}-${xpath}`;
+
+      const microAppsRef = containerMicroAppsMap.get(key) || [];
+      microAppsRef.push(microApp);
+      containerMicroAppsMap.set(key, microAppsRef);
+
+      // gc after unmount
+      microApp.unmountPromise.finally(() => {
+        const index = microAppsRef.indexOf(microApp);
+        microAppsRef.splice(index, 1);
+        // @ts-ignore
+        microApp = null;
+      });
+    }
+  }
+
+  return microApp;
 }
 
 export function start(opts: FrameworkConfiguration = {}) {
