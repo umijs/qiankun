@@ -3,6 +3,7 @@ import {
   getDefaultTplWrapper,
   getWrapperId,
   getXPathForElement,
+  nextTask,
   sleep,
   validateExportLifecycle,
 } from '../utils';
@@ -115,4 +116,21 @@ test('should getXPathForElement work well', () => {
   const virtualDOM = document.createElement('div');
   const xpath1 = getXPathForElement(virtualDOM, document);
   expect(xpath1).toBeUndefined();
+});
+
+it('should nextTick just executed once in one task context', async () => {
+  let counter = 0;
+  nextTask(() => ++counter);
+  nextTask(() => ++counter);
+  nextTask(() => ++counter);
+  nextTask(() => ++counter);
+  await sleep(0);
+  expect(counter).toBe(1);
+
+  await sleep(0);
+  nextTask(() => ++counter);
+  await sleep(0);
+  nextTask(() => ++counter);
+  await sleep(0);
+  expect(counter).toBe(3);
 });

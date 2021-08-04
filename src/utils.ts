@@ -14,12 +14,24 @@ export function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Promise.then might be synchronized in Zone.js context, we need to use setTimeout instead to mock next tick.
+const nextTick: (cb: () => void) => void =
+  typeof window.Zone === 'function' ? setTimeout : (cb) => Promise.resolve().then(cb);
+
+let globalTaskPending = false;
 /**
- * run a callback after next tick
+ * Run a callback before next task executing, and the invocation is idempotent in every singular task
+ * That means even we called nextTask multi times in one task, only the first callback will be pushed to nextTick to be invoked.
  * @param cb
  */
-export function nextTick(cb: () => void): void {
-  Promise.resolve().then(cb);
+export function nextTask(cb: () => void): void {
+  if (!globalTaskPending) {
+    globalTaskPending = true;
+    nextTick(() => {
+      cb();
+      globalTaskPending = false;
+    });
+  }
 }
 
 const fnRegexCheckCacheMap = new WeakMap<any | FunctionConstructor, boolean>();
