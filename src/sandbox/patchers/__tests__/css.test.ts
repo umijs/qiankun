@@ -3,8 +3,18 @@
  * @since 2020-04-19
  */
 
-import { processor as CSSProcessor } from '../css';
+import { ScopedCSS } from '../css';
 import { sleep } from '../../../utils';
+
+let CSSProcessor: ScopedCSS;
+beforeAll(() => {
+  CSSProcessor = new ScopedCSS();
+});
+
+afterAll(() => {
+  // @ts-ignore
+  CSSProcessor = null;
+});
 
 const fakeStyleNode = (css: string) => {
   const styleNode = document.createElement('style');

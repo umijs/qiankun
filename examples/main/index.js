@@ -1,8 +1,6 @@
+import 'zone.js'; // for angular subapp
 import { registerMicroApps, runAfterFirstMounted, setDefaultMountApp, start, initGlobalState } from '../../es';
 import './index.less';
-
-// for angular subapp
-import 'zone.js';
 
 /**
  * 主应用 **可以使用任意技术栈**
@@ -58,6 +56,13 @@ registerMicroApps(
       container: '#subapp-viewport',
       loader,
       activeRule: '/purehtml',
+    },
+    {
+      name: 'vue3',
+      entry: '//localhost:7105',
+      container: '#subapp-viewport',
+      loader,
+      activeRule: '/vue3',
     },
   ],
   {

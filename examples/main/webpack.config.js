@@ -5,6 +5,7 @@ module.exports = {
   entry: process.env.MODE === 'multiple' ? './multiple.js' : './index.js',
   devtool: 'source-map',
   devServer: {
+    open: true,
     port: '7099',
     clientLogLevel: 'warning',
     disableHostCheck: true,
@@ -44,7 +45,7 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       filename: 'index.html',
-      template: process.env.MODE === 'multiple' ? './multiple' : './index.html',
+      template: process.env.MODE === 'multiple' ? './multiple.html' : './index.html',
       minify: {
         removeComments: true,
         collapseWhitespace: true,

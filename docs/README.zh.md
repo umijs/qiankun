@@ -2,9 +2,9 @@
 title: qiankun
 hero:
   title: qiankun
-  desc: 可能是你见过最完善的微前端解决方案🧐 
+  desc: 可能是你见过最完善的微前端解决方案🧐
   actions:
-    - text:  快速开始 →
+    - text: 快速开始 →
       link: /zh/guide
 features:
   - title: 简单
@@ -33,7 +33,7 @@ loadMicroApp({
   entry: '//localhost:7100',
   container: '#container',
   props: {
-    slogan: 'Hello Qiankun'
+    slogan: 'Hello Qiankun',
   },
 });
 ```
@@ -42,6 +42,6 @@ loadMicroApp({
 
 ## 社区
 
-| Github Issue | 钉钉群 |
+| Github Discussions | 钉钉群 |
 | --- | --- |
-| [umijs/qiankun/issues](https://github.com/umijs/qiankun/issues) | <img src="https://gw.alipayobjects.com/mdn/rms_655822/afts/img/A*AdpES5z40LcAAAAAAAAAAABkARQnAQ" width="150" /> |
+| [qiankun discussions](https://github.com/umijs/qiankun/discussions) | <img src="https://gw.alipayobjects.com/mdn/rms_655822/afts/img/A*9U6OSKHyMHUAAAAAAAAAAAAAARQnAQ" width="150" /> |

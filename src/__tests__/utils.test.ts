@@ -1,4 +1,12 @@
-import { getWrapperId, getDefaultTplWrapper, validateExportLifecycle, sleep, Deferred } from '../utils';
+import {
+  Deferred,
+  getDefaultTplWrapper,
+  getWrapperId,
+  getXPathForElement,
+  nextTask,
+  sleep,
+  validateExportLifecycle,
+} from '../utils';
 
 test('should wrap the id [1]', () => {
   const id = 'REACT16';
@@ -85,4 +93,44 @@ test('Deferred should worked [2]', async () => {
   }
 
   expect(err).toBeInstanceOf(Error);
+});
+
+test('should getXPathForElement work well', () => {
+  const article = document.createElement('article');
+  article.innerHTML = `
+    <div>
+      <div></div>
+      <div id="testNode"></div>
+      <div></div>
+    </div>
+  `;
+
+  document.body.appendChild(article);
+  const testNode = document.querySelector('#testNode');
+  const xpath = getXPathForElement(testNode!, document);
+  expect(xpath).toEqual(
+    // eslint-disable-next-line max-len
+    `/*[name()='HTML' and namespace-uri()='http://www.w3.org/1999/xhtml']/*[name()='BODY' and namespace-uri()='http://www.w3.org/1999/xhtml'][1]/*[name()='ARTICLE' and namespace-uri()='http://www.w3.org/1999/xhtml'][1]/*[name()='DIV' and namespace-uri()='http://www.w3.org/1999/xhtml'][1]/*[name()='DIV' and namespace-uri()='http://www.w3.org/1999/xhtml'][2]`,
+  );
+
+  const virtualDOM = document.createElement('div');
+  const xpath1 = getXPathForElement(virtualDOM, document);
+  expect(xpath1).toBeUndefined();
+});
+
+it('should nextTick just executed once in one task context', async () => {
+  let counter = 0;
+  nextTask(() => ++counter);
+  nextTask(() => ++counter);
+  nextTask(() => ++counter);
+  nextTask(() => ++counter);
+  await sleep(0);
+  expect(counter).toBe(1);
+
+  await sleep(0);
+  nextTask(() => ++counter);
+  await sleep(0);
+  nextTask(() => ++counter);
+  await sleep(0);
+  expect(counter).toBe(3);
 });

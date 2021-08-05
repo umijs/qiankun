@@ -3,10 +3,11 @@
  * @since 2019-02-26
  */
 
-import { Entry, importEntry, ImportEntryOpts } from 'import-html-entry';
+import type { Entry, ImportEntryOpts } from 'import-html-entry';
+import { importEntry } from 'import-html-entry';
 import { isFunction } from 'lodash';
-import { getMountedApps } from 'single-spa';
-import { AppMetadata, PrefetchStrategy } from './interfaces';
+import { getAppStatus, getMountedApps, NOT_LOADED } from 'single-spa';
+import type { AppMetadata, PrefetchStrategy } from './interfaces';
 
 type RequestIdleCallbackHandle = any;
 type RequestIdleCallbackOptions = {
@@ -18,6 +19,7 @@ type RequestIdleCallbackDeadline = {
 };
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   interface Window {
     requestIdleCallback: (
       callback: (deadline: RequestIdleCallbackDeadline) => void,
@@ -77,14 +79,14 @@ function prefetch(entry: Entry, opts?: ImportEntryOpts): void {
 
 function prefetchAfterFirstMounted(apps: AppMetadata[], opts?: ImportEntryOpts): void {
   window.addEventListener('single-spa:first-mount', function listener() {
-    const mountedApps = getMountedApps();
-    const notMountedApps = apps.filter(app => mountedApps.indexOf(app.name) === -1);
+    const notLoadedApps = apps.filter((app) => getAppStatus(app.name) === NOT_LOADED);
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[qiankun] prefetch starting after ${mountedApps} mounted...`, notMountedApps);
+      const mountedApps = getMountedApps();
+      console.log(`[qiankun] prefetch starting after ${mountedApps} mounted...`, notLoadedApps);
     }
 
-    notMountedApps.forEach(({ entry }) => prefetch(entry, opts));
+    notLoadedApps.forEach(({ entry }) => prefetch(entry, opts));
 
     window.removeEventListener('single-spa:first-mount', listener);
   });
@@ -103,7 +105,7 @@ export function doPrefetchStrategy(
   prefetchStrategy: PrefetchStrategy,
   importEntryOpts?: ImportEntryOpts,
 ) {
-  const appsName2Apps = (names: string[]): AppMetadata[] => apps.filter(app => names.includes(app.name));
+  const appsName2Apps = (names: string[]): AppMetadata[] => apps.filter((app) => names.includes(app.name));
 
   if (Array.isArray(prefetchStrategy)) {
     prefetchAfterFirstMounted(appsName2Apps(prefetchStrategy as string[]), importEntryOpts);

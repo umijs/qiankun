@@ -1,8 +1,11 @@
 export default {
   target: 'browser',
-  entry: 'src/index.ts',
   esm: 'babel',
   cjs: 'babel',
+  umd: {
+    minFile: true,
+    sourcemap: true,
+  },
   runtimeHelpers: true,
   extraBabelPlugins: [
     [

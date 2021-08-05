@@ -1,0 +1,44 @@
+name: Issue Reply
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  reply-helper:
+    runs-on: ubuntu-latest
+    steps:
+      - name: help wanted
+        if: github.event.label.name == 'pr welcome' || github.event.label.name == 'help wanted'
+        uses: actions-cool/issues-helper@v2.0.0
+        with:
+          actions: 'create-comment'
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            Hello @${{ github.event.issue.user.login }}. We totally like your proposal/feedback, welcome to send us a Pull Request for it. Please be sure to fill in the default template in the Pull Request, provide changelog/documentation/test cases if needed and make sure CI passed, we will review it soon. We appreciate your effort in advance and looking forward to your contribution!
+
+            你好 @${{ github.event.issue.user.login }}，我们完全同意你的提议/反馈，欢迎直接在此仓库创建一个 Pull Request 来解决这个问题。请务必填写 Pull Request 内的预设模板，提供改动所需相应的 changelog、测试用例、文档等，并确保 CI 通过，我们会尽快进行 Review，提前感谢和期待您的贡献。
+
+      - name: pls use issue template
+        if: github.event.label.name == 'pls use issue template'
+        uses: actions-cool/issues-helper@v2.0.0
+        with:
+          actions: 'create-comment, close-issue'
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            Hello @${{ github.event.issue.user.login }}. To save both time, please use the issue template to report. This issue will be closed.
+
+            你好 @${{ github.event.issue.user.login }}，为节约大家的时间，请使用 issue 模板反馈问题。该 issue 将要被关闭。
+
+      - name: Need Reproduction
+        if: github.event.label.name == 'Need Reproduction'
+        uses: actions-cool/issues-helper@v2.0.0
+        with:
+          actions: 'create-comment'
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            Hello @${{ github.event.issue.user.login }}. In order to facilitate location and troubleshooting, we need you to provide a realistic example. Please forking these link [codesandbox](https://codesandbox.io/) or clone [qiankun examples](https://github.com/umijs/qiankun/tree/master/examples) to your GitHub repository.
+
+            你好 @${{ github.event.issue.user.login }}, 为了方便定位和排查问题，我们需要你提供一个重现实例，请提供一个尽可能精简的链接 [codesandbox](https://codesandbox.io/) 或直接 clone [qiankun examples](https://github.com/umijs/qiankun/tree/master/examples)，并上传到你的 GitHub 仓库。
+
+            ![](https://gw.alipayobjects.com/zos/antfincdn/y9kwg7DVCd/reproduce.gif)

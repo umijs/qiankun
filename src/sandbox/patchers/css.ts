@@ -22,7 +22,9 @@ const arrayify = <T>(list: CSSRuleList | any[]) => {
   return [].slice.call(list, 0) as T[];
 };
 
-class ScopedCSS {
+const rawDocumentBodyAppend = HTMLBodyElement.prototype.appendChild;
+
+export class ScopedCSS {
   private static ModifiedTag = 'Symbol(style-modified-qiankun)';
 
   private sheet: StyleSheet;
@@ -31,7 +33,7 @@ class ScopedCSS {
 
   constructor() {
     const styleNode = document.createElement('style');
-    document.body.appendChild(styleNode);
+    rawDocumentBodyAppend.call(document.body, styleNode);
 
     this.swapNode = styleNode;
     this.sheet = styleNode.sheet!;
@@ -53,7 +55,7 @@ class ScopedCSS {
       return;
     }
 
-    const mutator = new MutationObserver(mutations => {
+    const mutator = new MutationObserver((mutations) => {
       for (let i = 0; i < mutations.length; i += 1) {
         const mutation = mutations[i];
 
@@ -83,7 +85,7 @@ class ScopedCSS {
   private rewrite(rules: CSSRule[], prefix: string = '') {
     let css = '';
 
-    rules.forEach(rule => {
+    rules.forEach((rule) => {
       switch (rule.type) {
         case RuleType.STYLE:
           css += this.ruleStyle(rule as CSSStyleRule, prefix);
@@ -135,11 +137,11 @@ class ScopedCSS {
     }
 
     // handle grouping selector, a,span,p,div { ... }
-    cssText = cssText.replace(/^[^]+{/, selectors =>
+    cssText = cssText.replace(/^[\s\S]+{/, (selectors) =>
       selectors.replace(/(^|,\n?)([^,]+)/g, (item, p, s) => {
         // handle div,body,span { ... }
         if (rootSelectorRE.test(item)) {
-          return item.replace(rootSelectorRE, m => {
+          return item.replace(rootSelectorRE, (m) => {
             // do not discard valid previous character, such as body,html or *:not(:root)
             const whitePrevChars = [',', '('];
 
@@ -174,10 +176,19 @@ class ScopedCSS {
   }
 }
 
-const processor = new ScopedCSS();
+let processor: ScopedCSS;
 
 export const QiankunCSSRewriteAttr = 'data-qiankun';
-const process = (appWrapper: HTMLElement, stylesheetElement: HTMLStyleElement | HTMLLinkElement, appName: string) => {
+export const process = (
+  appWrapper: HTMLElement,
+  stylesheetElement: HTMLStyleElement | HTMLLinkElement,
+  appName: string,
+): void => {
+  // lazy singleton pattern
+  if (!processor) {
+    processor = new ScopedCSS();
+  }
+
   if (stylesheetElement.tagName === 'LINK') {
     console.warn('Feature: sandbox.experimentalStyleIsolation is not support for link element yet.');
   }
@@ -194,5 +205,3 @@ const process = (appWrapper: HTMLElement, stylesheetElement: HTMLStyleElement | 
     processor.process(stylesheetElement, prefix);
   }
 };
-
-export { process, processor };

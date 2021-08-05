@@ -2,7 +2,7 @@
 title: qiankun
 hero:
   title: qiankun
-  desc: Probably the most complete micro-frontends solution you ever met🧐 
+  desc: Probably the most complete micro-frontends solution you ever met🧐
   actions:
     - text: Get Started →
       link: /guide
@@ -33,7 +33,7 @@ loadMicroApp({
   entry: '//localhost:7100',
   container: '#container',
   props: {
-    slogan: 'Hello Qiankun'
+    slogan: 'Hello Qiankun',
   },
 });
 ```
@@ -42,6 +42,6 @@ See details：[Getting Started](/guide/getting-started)
 
 ## Community
 
-| Github Issue | 钉钉群 |
+| Github Discussions | 钉钉群 |
 | --- | --- |
-| [umijs/qiankun/issues](https://github.com/umijs/qiankun/issues) | <img src="https://gw.alipayobjects.com/mdn/rms_655822/afts/img/A*AdpES5z40LcAAAAAAAAAAABkARQnAQ" width="150" /> |
+| [qiankun discussions](https://github.com/umijs/qiankun/discussions) | <img src="https://gw.alipayobjects.com/mdn/rms_655822/afts/img/A*9U6OSKHyMHUAAAAAAAAAAAAAARQnAQ" width="150" /> |

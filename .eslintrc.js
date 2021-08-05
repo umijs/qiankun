@@ -14,4 +14,9 @@ module.exports = {
     'no-underscore-dangle': 0,
     'no-plusplus': 0,
   },
+  parserOptions: {
+    tsconfigRootDir: __dirname,
+    project: './tsconfig.json',
+    createDefaultProgram: true,
+  },
 };

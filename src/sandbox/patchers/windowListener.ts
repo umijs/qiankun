@@ -36,7 +36,7 @@ export default function patch(global: WindowProxy) {
 
   return function free() {
     listenerMap.forEach((listeners, type) =>
-      [...listeners].forEach(listener => global.removeEventListener(type, listener)),
+      [...listeners].forEach((listener) => global.removeEventListener(type, listener)),
     );
     global.addEventListener = rawAddEventListener;
     global.removeEventListener = rawRemoveEventListener;

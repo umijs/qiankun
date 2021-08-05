@@ -1,7 +1,7 @@
 {
   "name": "qiankun",
-  "version": "2.0.20",
-  "description": "An completed implementation of Micro Frontends",
+  "version": "2.4.6",
+  "description": "A completed implementation of Micro Frontends",
   "keywords": [
     "micro frontend",
     "microfrontend",
@@ -17,10 +17,10 @@
   "scripts": {
     "examples:install": "npm-run-all --serial build install:*",
     "examples:start": "npm-run-all --parallel start:*",
-    "examples:start-multiple": "run-p start:main-multiple start:react15 start:vue",
+    "examples:start-multiple": "run-p start-main-multiple start:react15 start:vue",
     "install:main": "cd examples/main && yarn",
     "start:main": "cd examples/main && yarn start",
-    "start:main-multiple": "cd examples/main && yarn start:multiple",
+    "start-main-multiple": "cd examples/main && yarn start:multiple",
     "install:react16": "cd examples/react16 && yarn",
     "start:react16": "cd examples/react16 && yarn start",
     "install:react15": "cd examples/react15 && yarn",
@@ -31,18 +31,20 @@
     "start:angular9": "cd examples/angular9 && yarn serve:qiankun",
     "install:purehtml": "cd examples/purehtml && yarn",
     "start:purehtml": "cd examples/purehtml && yarn start",
+    "install:vue3": "cd examples/vue3 && yarn",
+    "start:vue3": "cd examples/vue3 && yarn start",
     "build": "father-build",
     "release": "np --no-cleanup --yolo --no-publish",
-    "prepublishOnly": "yarn lint && yarn test && yarn build",
+    "prepublishOnly": "yarn ci",
     "lint": "yarn lint:js && yarn lint:prettier",
     "lint:js": "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty ./src",
     "lint:fix": "yarn lint:js -- --fix",
-    "lint:prettier": "check-prettier lint",
-    "prettier": "prettier -c --write **/*",
+    "lint:prettier": "prettier -c ./src/**/*",
+    "prettier": "prettier --write ./src/**/*",
     "docs:dev": "dumi dev",
     "docs:build": "dumi build",
-    "ci": "yarn lint && yarn test",
-    "test": "NODE_ENV=test jest"
+    "ci": "yarn lint && yarn build && yarn test",
+    "test": "cross-env NODE_ENV=test jest"
   },
   "repository": {
     "type": "git",
@@ -61,9 +63,9 @@
   "homepage": "https://github.com/kuitos/qiankun#readme",
   "dependencies": {
     "@babel/runtime": "^7.10.5",
-    "import-html-entry": "^1.7.0",
+    "import-html-entry": "^1.9.0",
     "lodash": "^4.17.11",
-    "single-spa": "^5.3.1",
+    "single-spa": "^5.9.2",
     "tslib": "^1.10.0"
   },
   "devDependencies": {
@@ -72,18 +74,23 @@
     "@types/vfile-message": "1.x",
     "@umijs/fabric": "^2.0.7",
     "babel-plugin-import": "^1.12.1",
-    "check-prettier": "^1.0.3",
-    "dumi": "^1.0.24",
+    "cross-env": "^7.0.2",
+    "dumi": "^1.1.0-beta.24",
     "father-build": "^1.7.0",
     "husky": "^2.3.0",
     "jest": "^25.2.2",
-    "lint-staged": "^9.4.2",
+    "levenary": "^1.1.1",
+    "lint-staged": "^10.5.4",
     "np": "^5.0.3",
     "npm-run-all": "^4.1.5",
-    "prettier": "^1.18.2",
+    "prettier": "^2.1.2",
     "rimraf": "^3.0.0",
     "ts-jest": "^25.2.1",
-    "typescript": "^3.4.5"
+    "typescript": "^4.1.2",
+    "umi-plugin-hire": "^1.0.3"
+  },
+  "resolutions": {
+    "@types/react": "^16.x"
   },
   "husky": {
     "hooks": {
@@ -93,12 +100,10 @@
   },
   "lint-staged": {
     "**/*.{js,ts,json,css,md}": [
-      "yarn prettier",
-      "git add"
+      "prettier -w"
     ],
     "**/*.{js,ts}": [
-      "yarn lint:fix",
-      "git add"
+      "yarn lint:fix"
     ]
   },
   "jest": {
