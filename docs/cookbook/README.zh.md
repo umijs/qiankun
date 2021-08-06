@@ -336,3 +336,58 @@ if ($http_custom_referer != "main") {
 
 1. `jsSandbox` 配置去掉，改为 `sandbox` ，可选值也修改了。
 2. 新增了 `getPublicPath` 和 `getTemplate` ，用于替代`RegisterMicroAppsOpts`。
+
+## 带壳开发
+
+一种不需要启动主应用，即可开发子应用的模式。
+
+当然爽的不止是少启动一个主应用这么简单，更主要的作用是让我们可以最大程度上使用qiankun的父子通信以及保持部署环境和本地开发环境执行代码的一致性。
+
+### 背景
+
+主应用和子应用都是独立开发和部署，都属于不同的仓库，那如何保证下列事情？
+
+1. 我们团队只负责子应用A，能不能和之前开发模式一致我们只启动子应用A的服务进行开发？
+2. 如果只启动子应用A，那么关于父子通信内容和菜单能UI内容如何复用？有没有比NPM包更好的方式？
+3. 子应用间有很多共有能力，统一由主应用实现了，能否以通信的方式传递给子应用而又不用启动主应用？
+4. 如何保证部署环境代码和本地开发执行代码的一致性？
+
+### 带壳开发
+
+本地开发环境，修改原访问域名 localhost:8081 为 http://xxx.com?LOCAL_PORT=8081
+
+主应用注册子应用相关代码如下：
+``` 
+let { LOCAL_PORT = ''} = QS.parse(location.search);
+qiankun.registerMicroApps([{
+  name: 'micro-app1',
+  entry: LOCAL_PORT ? '//localhost:8081/' : '此处为CDN html地址'
+}])
+```
+
+修改webpack配置如下：
+``` 
+devServer: {
+  // disableHostCheck和allowedHosts配置一个即可，推荐使用allowedHosts
+  disableHostCheck: true,
+  allowedHosts: [
+    '.xxx.com', // 允许远端访问本地静态资源的host
+  ],
+  sockHost: 'localhost',
+  port: '8081',
+  headers: {
+    'Access-Control-Allow-Origin': '*',
+  },
+  proxy: {
+    '/api': {
+      target: 'test环境地址',
+      changeOrigin: true,
+    },
+  },
+  historyApiFallback: {
+    rewrites: [
+      { from: /^\//, to: '/index.html' },
+    ]
+  }
+},
+```
