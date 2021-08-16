@@ -30,12 +30,12 @@
         text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
       }
     </style>
-    <link rel="stylesheet" href="/qiankun/umi.6e48760e.css" />
+    <link rel="stylesheet" href="/qiankun/umi.cba3229e.css" />
     <script>
       window.routerBase = "/qiankun";
     </script>
     <script>
-      //! umi version: 3.5.15
+      //! umi version: 3.5.17
     </script>
     <script>
       !(function () {
@@ -44,7 +44,7 @@
           r = ["light", "dark", "auto"];
         document.documentElement.setAttribute(
           "data-prefers-color",
-          e === r[2] ? (t ? r[1] : r[0]) : r.includes(e) ? e : r[0]
+          e === r[2] ? (t ? r[1] : r[0]) : r.indexOf(e) > -1 ? e : r[0]
         );
       })();
     </script>
@@ -96,6 +96,6 @@
         }
       })();
     </script>
-    <script src="/qiankun/umi.ef2193de.js"></script>
+    <script src="/qiankun/umi.016f70d6.js"></script>
   </body>
 </html>
