@@ -110,7 +110,7 @@ test('should getXPathForElement work well', () => {
   const xpath = getXPathForElement(testNode!, document);
   expect(xpath).toEqual(
     // eslint-disable-next-line max-len
-    `/*[name()='HTML' and namespace-uri()='http://www.w3.org/1999/xhtml']/*[name()='BODY' and namespace-uri()='http://www.w3.org/1999/xhtml'][1]/*[name()='ARTICLE' and namespace-uri()='http://www.w3.org/1999/xhtml'][1]/*[name()='DIV' and namespace-uri()='http://www.w3.org/1999/xhtml'][1]/*[name()='DIV' and namespace-uri()='http://www.w3.org/1999/xhtml'][2]`,
+    `/*[name()='HTML']/*[name()='BODY'][1]/*[name()='ARTICLE'][1]/*[name()='DIV'][1]/*[name()='DIV'][2]`,
   );
 
   const virtualDOM = document.createElement('div');

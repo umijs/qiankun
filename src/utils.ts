@@ -199,16 +199,12 @@ export function getXPathForElement(el: Node, document: Document): string | void 
       tmpEle = tmpEle.previousSibling;
     }
 
-    xpath = `*[name()='${element.nodeName}' and namespace-uri()='${
-      element.namespaceURI === null ? '' : element.namespaceURI
-    }'][${pos}]/${xpath}`;
+    xpath = `*[name()='${element.nodeName}'][${pos}]/${xpath}`;
 
     element = element.parentNode!;
   }
 
-  xpath = `/*[name()='${document.documentElement.nodeName}' and namespace-uri()='${
-    element.namespaceURI === null ? '' : element.namespaceURI
-  }']/${xpath}`;
+  xpath = `/*[name()='${document.documentElement.nodeName}']/${xpath}`;
   xpath = xpath.replace(/\/$/, '');
 
   return xpath;
