@@ -6,40 +6,69 @@
 
 import { noop } from 'lodash';
 
-const rawAddEventListener = window.addEventListener;
-const rawRemoveEventListener = window.removeEventListener;
+const rawWindowAddEventListener = window.addEventListener;
+const rawWindowRemoveEventListener = window.removeEventListener;
+const rawDocAddEventListener = document.addEventListener;
+const rawDocRemoveEventListener = document.removeEventListener;
 
 export default function patch(global: WindowProxy) {
-  const listenerMap = new Map<string, EventListenerOrEventListenerObject[]>();
+  const windowListenerMap = new Map<string, EventListenerOrEventListenerObject[]>();
+  const docListenerMap = new Map<string, EventListenerOrEventListenerObject[]>();
 
   global.addEventListener = (
     type: string,
     listener: EventListenerOrEventListenerObject,
     options?: boolean | AddEventListenerOptions,
   ) => {
-    const listeners = listenerMap.get(type) || [];
-    listenerMap.set(type, [...listeners, listener]);
-    return rawAddEventListener.call(window, type, listener, options);
+    const listeners = windowListenerMap.get(type) || [];
+    windowListenerMap.set(type, [...listeners, listener]);
+    return rawWindowAddEventListener.call(window, type, listener, options);
   };
-
   global.removeEventListener = (
     type: string,
     listener: EventListenerOrEventListenerObject,
     options?: boolean | AddEventListenerOptions,
   ) => {
-    const storedTypeListeners = listenerMap.get(type);
+    const storedTypeListeners = windowListenerMap.get(type);
     if (storedTypeListeners && storedTypeListeners.length && storedTypeListeners.indexOf(listener) !== -1) {
       storedTypeListeners.splice(storedTypeListeners.indexOf(listener), 1);
     }
-    return rawRemoveEventListener.call(window, type, listener, options);
+    return rawWindowRemoveEventListener.call(window, type, listener, options);
+  };
+
+  document.addEventListener = (
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+    options?: boolean | AddEventListenerOptions,
+  ) => {
+    const listeners = docListenerMap.get(type) || [];
+    docListenerMap.set(type, [...listeners, listener]);
+    return rawDocAddEventListener.call(document, type, listener, options);
+  };
+  document.removeEventListener = (
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+    options?: boolean | AddEventListenerOptions,
+  ) => {
+    const storedTypeListeners = docListenerMap.get(type);
+    if (storedTypeListeners && storedTypeListeners.length && storedTypeListeners.indexOf(listener) !== -1) {
+      storedTypeListeners.splice(storedTypeListeners.indexOf(listener), 1);
+    }
+    return rawDocRemoveEventListener.call(document, type, listener, options);
   };
 
   return function free() {
-    listenerMap.forEach((listeners, type) =>
+    windowListenerMap.forEach((listeners, type) =>
       [...listeners].forEach((listener) => global.removeEventListener(type, listener)),
     );
-    global.addEventListener = rawAddEventListener;
-    global.removeEventListener = rawRemoveEventListener;
+    docListenerMap.forEach((listeners, type) =>
+      [...listeners].forEach((listener) => document.removeEventListener(type, listener)),
+    );
+
+    global.addEventListener = rawWindowAddEventListener;
+    global.removeEventListener = rawWindowRemoveEventListener;
+    document.addEventListener = rawDocAddEventListener;
+    document.removeEventListener = rawDocRemoveEventListener;
 
     return noop;
   };
