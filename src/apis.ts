@@ -167,13 +167,15 @@ export function loadMicroApp<T extends ObjectType>(
       microAppsRef.push(microApp);
       containerMicroAppsMap.set(key, microAppsRef);
 
-      // gc after unmount
-      microApp.unmountPromise.finally(() => {
+      const cleanApp = () => {
         const index = microAppsRef.indexOf(microApp);
         microAppsRef.splice(index, 1);
         // @ts-ignore
         microApp = null;
-      });
+      };
+
+      // gc after unmount
+      microApp.unmountPromise.then(cleanApp).catch(cleanApp);
     }
   }
 
