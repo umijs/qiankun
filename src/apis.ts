@@ -18,7 +18,7 @@ const defaultUrlRerouteOnly = true;
 
 const frameworkStartedDefer = new Deferred<void>();
 
-const autoCompatibleWithLowVersionBrowser = (configuration: FrameworkConfiguration): FrameworkConfiguration => {
+const autoDowngradeForLowVersionBrowser = (configuration: FrameworkConfiguration): FrameworkConfiguration => {
   const { sandbox, singular } = configuration;
   if (sandbox) {
     if (!window.Proxy) {
@@ -133,7 +133,7 @@ export function loadMicroApp<T extends ObjectType>(
    * the micro app would not load and evaluate its lifecycles again
    */
   const memorizedLoadingFn = async (): Promise<ParcelConfigObject> => {
-    const userConfiguration = autoCompatibleWithLowVersionBrowser(
+    const userConfiguration = autoDowngradeForLowVersionBrowser(
       configuration ?? { ...frameworkConfiguration, singular: false },
     );
     const { $$cacheLifecycleByAppName } = userConfiguration;
@@ -217,7 +217,7 @@ export function start(opts: FrameworkConfiguration = {}) {
     doPrefetchStrategy(microApps, prefetch, importEntryOpts);
   }
 
-  frameworkConfiguration = autoCompatibleWithLowVersionBrowser(frameworkConfiguration);
+  frameworkConfiguration = autoDowngradeForLowVersionBrowser(frameworkConfiguration);
 
   startSingleSpa({ urlRerouteOnly });
   started = true;
