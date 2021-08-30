@@ -7,6 +7,7 @@ import {
   sleep,
   validateExportLifecycle,
 } from '../utils';
+import { version } from '../../package.json';
 
 test('should wrap the id [1]', () => {
   const id = 'REACT16';
@@ -26,7 +27,9 @@ test('should wrap string with div', () => {
 
   const ret = factory(tpl);
 
-  expect(ret).toBe(`<div id="__qiankun_microapp_wrapper_for_react_16__" data-name="react16">${tpl}</div>`);
+  expect(ret).toBe(
+    `<div id="__qiankun_microapp_wrapper_for_react_16__" data-name="react16" data-version="${version}">${tpl}</div>`,
+  );
 });
 
 test('should be able to validate lifecycle', () => {

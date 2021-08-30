@@ -5,7 +5,7 @@
     "lib": ["es2018", "dom"],
     "declaration": true,
     "outDir": "./esm",
-    "rootDir": "./src",
+    "rootDir": "./",
     "importHelpers": true,
     "downlevelIteration": true,
     "strict": true,
