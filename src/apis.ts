@@ -18,6 +18,25 @@ const defaultUrlRerouteOnly = true;
 
 const frameworkStartedDefer = new Deferred<void>();
 
+const autoCompatibleWithLowVersionBrowser = (configuration: FrameworkConfiguration): FrameworkConfiguration => {
+  const { sandbox, singular } = configuration;
+  if (sandbox) {
+    if (!window.Proxy) {
+      console.warn('[qiankun] Miss window.Proxy, proxySandbox will degenerate into snapshotSandbox');
+
+      if (singular === false) {
+        console.warn(
+          '[qiankun] Setting singular as false may cause unexpected behavior while your browser not support window.Proxy',
+        );
+      }
+
+      return { ...configuration, sandbox: typeof sandbox === 'object' ? { ...sandbox, loose: true } : { loose: true } };
+    }
+  }
+
+  return configuration;
+};
+
 export function registerMicroApps<T extends ObjectType>(
   apps: Array<RegistrableApp<T>>,
   lifeCycles?: FrameworkLifeCycles<T>,
@@ -114,7 +133,9 @@ export function loadMicroApp<T extends ObjectType>(
    * the micro app would not load and evaluate its lifecycles again
    */
   const memorizedLoadingFn = async (): Promise<ParcelConfigObject> => {
-    const userConfiguration = configuration ?? { ...frameworkConfiguration, singular: false };
+    const userConfiguration = autoCompatibleWithLowVersionBrowser(
+      configuration ?? { ...frameworkConfiguration, singular: false },
+    );
     const { $$cacheLifecycleByAppName } = userConfiguration;
     const container = 'container' in app ? app.container : undefined;
 
@@ -196,17 +217,7 @@ export function start(opts: FrameworkConfiguration = {}) {
     doPrefetchStrategy(microApps, prefetch, importEntryOpts);
   }
 
-  if (sandbox) {
-    if (!window.Proxy) {
-      console.warn('[qiankun] Miss window.Proxy, proxySandbox will degenerate into snapshotSandbox');
-      frameworkConfiguration.sandbox = typeof sandbox === 'object' ? { ...sandbox, loose: true } : { loose: true };
-      if (!singular) {
-        console.warn(
-          '[qiankun] Setting singular as false may cause unexpected behavior while your browser not support window.Proxy',
-        );
-      }
-    }
-  }
+  frameworkConfiguration = autoCompatibleWithLowVersionBrowser(frameworkConfiguration);
 
   startSingleSpa({ urlRerouteOnly });
   started = true;
