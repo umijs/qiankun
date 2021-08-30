@@ -4,7 +4,7 @@
  */
 
 import { isFunction, snakeCase } from 'lodash';
-import { version } from '../package.json';
+import { version } from './version';
 
 import type { FrameworkConfiguration } from './interfaces';
 
