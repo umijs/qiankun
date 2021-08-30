@@ -4,6 +4,8 @@
  */
 
 import { isFunction, snakeCase } from 'lodash';
+import { version } from '../package.json';
+
 import type { FrameworkConfiguration } from './interfaces';
 
 export function toArray<T>(array: T | T[]): T[] {
@@ -100,7 +102,7 @@ export function isBoundedFunction(fn: CallableFunction) {
 }
 
 export function getDefaultTplWrapper(id: string, name: string) {
-  return (tpl: string) => `<div id="${getWrapperId(id)}" data-name="${name}">${tpl}</div>`;
+  return (tpl: string) => `<div id="${getWrapperId(id)}" data-name="${name}" data-version="${version}">${tpl}</div>`;
 }
 
 export function getWrapperId(id: string) {
