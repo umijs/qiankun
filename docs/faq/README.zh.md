@@ -55,7 +55,7 @@ module.exports = {
   output: {
     // 这里改成跟主应用中注册的一致
     library: 'brokenSubApp',
-    libraryTarget: 'umd',
+    libraryTarget: 'window', // 这里如果设置为umd。那么在主应用引入部分第三方js导致 module或者exports或者define 存在的情况下就会出现Application died in status LOADING_SOURCE_CODE: You need to export the functional lifecycles in xxx entry的报错。主要原因是因为import-html-entry获取lifeCycle是使用 window['micro-name']的方式获取的，所以子应用最好设置libraryTarget为'window'
     jsonpFunction: `webpackJsonp_${packageName}`,
   },
 };
