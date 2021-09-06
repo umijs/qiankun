@@ -9,6 +9,7 @@ import ProxySandbox from './proxySandbox';
 import SnapshotSandbox from './snapshotSandbox';
 
 export { css } from './patchers';
+export { getCurrentRunningApp } from './common';
 
 /**
  * 生成应用运行时沙箱

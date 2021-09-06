@@ -4,7 +4,7 @@
  */
 
 import type { Freer } from '../../../interfaces';
-import { getCurrentRunningSandboxProxy } from '../../common';
+import { getCurrentRunningApp } from '../../common';
 import type { ContainerConfig } from './common';
 import {
   isHijackingTag,
@@ -27,7 +27,7 @@ function patchDocumentCreateElement() {
     ): HTMLElement {
       const element = rawDocumentCreateElement.call(this, tagName, options);
       if (isHijackingTag(tagName)) {
-        const currentRunningSandboxProxy = getCurrentRunningSandboxProxy();
+        const { window: currentRunningSandboxProxy } = getCurrentRunningApp() || {};
         if (currentRunningSandboxProxy) {
           const proxyContainerConfig = proxyAttachContainerConfigMap.get(currentRunningSandboxProxy);
           if (proxyContainerConfig) {

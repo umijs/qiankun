@@ -4,7 +4,7 @@
  */
 
 import { isBoundedFunction } from '../../utils';
-import { getCurrentRunningSandboxProxy } from '../common';
+import { getCurrentRunningApp } from '../common';
 import ProxySandbox from '../proxySandbox';
 
 declare global {
@@ -234,17 +234,21 @@ test('document and eval accessing should modify the attachDocProxySymbol value e
   const proxy4 = new ProxySandbox('eval-access-test2').proxy;
 
   const d1 = proxy1.document;
-  expect(getCurrentRunningSandboxProxy()).toBe(proxy1);
+  expect(getCurrentRunningApp()?.window).toBe(proxy1);
+  expect(getCurrentRunningApp()?.name).toBe('doc-access-test1');
   const d2 = proxy2.document;
-  expect(getCurrentRunningSandboxProxy()).toBe(proxy2);
+  expect(getCurrentRunningApp()?.window).toBe(proxy2);
+  expect(getCurrentRunningApp()?.name).toBe('doc-access-test2');
 
   expect(d1).toBe(d2);
   expect(d1).toBe(document);
 
   const eval1 = proxy3.eval;
-  expect(getCurrentRunningSandboxProxy()).toBe(proxy3);
+  expect(getCurrentRunningApp()?.window).toBe(proxy3);
+  expect(getCurrentRunningApp()?.name).toBe('eval-access-test1');
   const eval2 = proxy4.eval;
-  expect(getCurrentRunningSandboxProxy()).toBe(proxy4);
+  expect(getCurrentRunningApp()?.window).toBe(proxy4);
+  expect(getCurrentRunningApp()?.name).toBe('eval-access-test2');
 
   expect(eval1).toBe(eval2);
   // eslint-disable-next-line no-eval
@@ -257,10 +261,11 @@ test('document attachDocProxySymbol mark should be remove before next task', (do
   // @ts-ignore
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const d1 = proxy.document;
-  expect(getCurrentRunningSandboxProxy()).toBe(proxy);
+  expect(getCurrentRunningApp()?.window).toBe(proxy);
+  expect(getCurrentRunningApp()?.name).toBe('doc-symbol');
 
   setTimeout(() => {
-    expect(getCurrentRunningSandboxProxy()).toBeNull();
+    expect(getCurrentRunningApp()).toBeNull();
     done();
   });
 });
@@ -357,11 +362,12 @@ it('should get current running sandbox proxy correctly', async () => {
   const { proxy } = new ProxySandbox('running');
 
   await Promise.resolve().then(() => {
-    expect(getCurrentRunningSandboxProxy()).toBeNull();
+    expect(getCurrentRunningApp()).toBeNull();
     // @ts-ignore
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const unused = proxy.accessing;
-    expect(getCurrentRunningSandboxProxy()).toBe(proxy);
+    expect(getCurrentRunningApp()?.window).toBe(proxy);
+    expect(getCurrentRunningApp()?.name).toBe('running');
   });
 });
 
