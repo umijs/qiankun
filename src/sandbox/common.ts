@@ -5,9 +5,14 @@
 
 import { isBoundedFunction, isCallable, isConstructable } from '../utils';
 
+interface CurrentRunningApp {
+  name: string;
+  window: WindowProxy;
+}
+
 declare global {
   interface Window {
-    __currentRunningAppInSandbox__: { name: string; window: WindowProxy | null } | null;
+    __currentRunningAppInSandbox__: CurrentRunningApp | null;
   }
 }
 
@@ -24,16 +29,9 @@ export function getCurrentRunningApp() {
   return nativeGlobal.__currentRunningAppInSandbox__;
 }
 
-export function onAppStartRunning(name: string, proxy: WindowProxy | null) {
+export function setCurrentRunningApp(instance: CurrentRunningApp | null) {
   // set currentRunningApp and it's proxySandbox to global window, as its only use case is for document.createElement from now on, which hijacked by a global way
-  nativeGlobal.__currentRunningAppInSandbox__ = {
-    name,
-    window: proxy,
-  };
-
-  return () => {
-    nativeGlobal.__currentRunningAppInSandbox__ = null;
-  };
+  nativeGlobal.__currentRunningAppInSandbox__ = instance;
 }
 
 const functionBoundedValueMap = new WeakMap<CallableFunction, CallableFunction>();

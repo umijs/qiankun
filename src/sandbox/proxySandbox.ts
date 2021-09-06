@@ -6,7 +6,7 @@
 import type { SandBox } from '../interfaces';
 import { SandBoxType } from '../interfaces';
 import { nextTask } from '../utils';
-import { getTargetValue, onAppStartRunning } from './common';
+import { getTargetValue, setCurrentRunningApp } from './common';
 
 /**
  * fastest(at most time) unique array method
@@ -123,11 +123,13 @@ function createFakeWindow(global: Window) {
 let activeSandboxCount = 0;
 
 function registerRunningApp(name: string, proxy: Window) {
-  const onAppStopRunning = onAppStartRunning(name, proxy);
+  setCurrentRunningApp({ name, window: proxy });
   // FIXME if you have any other good ideas
   // remove the mark in next tick, thus we can identify whether it in micro app or not
   // this approach is just a workaround, it could not cover all complex cases, such as the micro app runs in the same task context with master in some case
-  nextTask(onAppStopRunning);
+  nextTask(() => {
+    setCurrentRunningApp(null);
+  });
 }
 
 /**
