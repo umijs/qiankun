@@ -15,12 +15,17 @@ declare global {
 // eslint-disable-next-line no-new-func
 const nativeGlobal: Window = new Function('return this')();
 Object.defineProperty(nativeGlobal, '__currentRunningAppInSandbox__', { enumerable: false, writable: true });
+
+/**
+ * get the app that running tasks at current tick
+ * @warning this method only works with proxy sandbox, right now it is for internal use only.
+ */
 export function getCurrentRunningApp() {
   return nativeGlobal.__currentRunningAppInSandbox__;
 }
 
 export function onAppStartRunning(name: string, proxy: WindowProxy | null) {
-  // set currentRunningSandboxProxy to global window, as its only use case is for document.createElement from now on, which hijacked by a global way
+  // set currentRunningApp and it's proxySandbox to global window, as its only use case is for document.createElement from now on, which hijacked by a global way
   nativeGlobal.__currentRunningAppInSandbox__ = {
     name,
     window: proxy,
