@@ -5,14 +5,9 @@
 
 import { isBoundedFunction, isCallable, isConstructable } from '../utils';
 
-interface CurrentRunningApp {
-  name: string;
-  window: WindowProxy;
-}
-
 declare global {
   interface Window {
-    __currentRunningAppInSandbox__: CurrentRunningApp | null;
+    __currentRunningAppInSandbox__: { name: string; window: WindowProxy } | null;
   }
 }
 
@@ -29,7 +24,7 @@ export function getCurrentRunningApp() {
   return nativeGlobal.__currentRunningAppInSandbox__;
 }
 
-export function setCurrentRunningApp(instance: CurrentRunningApp | null) {
+export function setCurrentRunningApp(instance: { name: string; window: WindowProxy } | null) {
   // set currentRunningApp and it's proxySandbox to global window, as its only use case is for document.createElement from now on, which hijacked by a global way
   nativeGlobal.__currentRunningAppInSandbox__ = instance;
 }
