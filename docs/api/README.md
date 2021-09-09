@@ -396,7 +396,7 @@ A criterion for judging whether the business is closely related: <strong>Look at
 
 - Usage
 
-  init global state, and return actions for communication. It is recommended to use in master, and slave get actions through props。
+  init global state, and return actions for communication. It is recommended to use in master, and slave get actions through props.
 
 - Return
 
