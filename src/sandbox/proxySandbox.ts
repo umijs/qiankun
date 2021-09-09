@@ -6,7 +6,7 @@
 import type { SandBox } from '../interfaces';
 import { SandBoxType } from '../interfaces';
 import { nextTask } from '../utils';
-import { getTargetValue, setCurrentRunningSandboxProxy } from './common';
+import { getTargetValue, setCurrentRunningApp } from './common';
 
 /**
  * fastest(at most time) unique array method
@@ -122,6 +122,16 @@ function createFakeWindow(global: Window) {
 
 let activeSandboxCount = 0;
 
+function registerRunningApp(name: string, proxy: Window) {
+  setCurrentRunningApp({ name, window: proxy });
+  // FIXME if you have any other good ideas
+  // remove the mark in next tick, thus we can identify whether it in micro app or not
+  // this approach is just a workaround, it could not cover all complex cases, such as the micro app runs in the same task context with master in some case
+  nextTask(() => {
+    setCurrentRunningApp(null);
+  });
+}
+
 /**
  * 基于 Proxy 实现的沙箱
  */
@@ -177,6 +187,7 @@ export default class ProxySandbox implements SandBox {
     const proxy = new Proxy(fakeWindow, {
       set: (target: FakeWindow, p: PropertyKey, value: any): boolean => {
         if (this.sandboxRunning) {
+          registerRunningApp(name, proxy);
           // We must kept its description while the property existed in rawWindow before
           if (!target.hasOwnProperty(p) && rawWindow.hasOwnProperty(p)) {
             const descriptor = Object.getOwnPropertyDescriptor(rawWindow, p);
@@ -216,13 +227,7 @@ export default class ProxySandbox implements SandBox {
 
       get(target: FakeWindow, p: PropertyKey): any {
         if (p === Symbol.unscopables) return unscopables;
-
-        setCurrentRunningSandboxProxy(proxy);
-        // FIXME if you have any other good ideas
-        // remove the mark in next tick, thus we can identify whether it in micro app or not
-        // this approach is just a workaround, it could not cover all complex cases, such as the micro app runs in the same task context with master in some case
-        nextTask(() => setCurrentRunningSandboxProxy(null));
-
+        registerRunningApp(name, proxy);
         // avoid who using window.window or window.self to escape the sandbox environment to touch the really window
         // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
         if (p === 'window' || p === 'self') {
@@ -323,6 +328,7 @@ export default class ProxySandbox implements SandBox {
       },
 
       deleteProperty(target: FakeWindow, p: string | number | symbol): boolean {
+        registerRunningApp(name, proxy);
         if (target.hasOwnProperty(p)) {
           // @ts-ignore
           delete target[p];
