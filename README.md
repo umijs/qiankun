@@ -72,7 +72,7 @@ The documentation is divided into several sections:
 * [Tutorial](https://qiankun.umijs.org/cookbook)
 * [API Reference](https://qiankun.umijs.org/api)
 * [FAQ](https://qiankun.umijs.org/faq)
-* [Community](https://qiankun.umijs.org/#communit)
+* [Community](https://qiankun.umijs.org/#community)
 
 
 ## 💿 Examples
