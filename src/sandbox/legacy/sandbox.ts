@@ -6,25 +6,16 @@ import type { SandBox } from '../../interfaces';
 import { SandBoxType } from '../../interfaces';
 import { getTargetValue } from '../common';
 
-function isPropConfigurable(target: typeof window, prop: PropertyKey) {
+function isPropConfigurable(target: WindowProxy, prop: PropertyKey) {
   const descriptor = Object.getOwnPropertyDescriptor(target, prop);
   return descriptor ? descriptor.configurable : true;
-}
-
-function setWindowProp(prop: PropertyKey, value: any, toDelete?: boolean) {
-  if (value === undefined && toDelete) {
-    delete (window as any)[prop];
-  } else if (isPropConfigurable(window, prop) && typeof prop !== 'symbol') {
-    Object.defineProperty(window, prop, { writable: true, configurable: true });
-    (window as any)[prop] = value;
-  }
 }
 
 /**
  * 基于 Proxy 实现的沙箱
  * TODO: 为了兼容性 singular 模式下依旧使用该沙箱，等新沙箱稳定之后再切换
  */
-export default class SingularProxySandbox implements SandBox {
+export default class LegacySandbox implements SandBox {
   /** 沙箱期间新增的全局变量 */
   private addedPropsMapInSandbox = new Map<PropertyKey, any>();
 
@@ -38,15 +29,28 @@ export default class SingularProxySandbox implements SandBox {
 
   proxy: WindowProxy;
 
+  globalContext: typeof window;
+
   type: SandBoxType;
 
   sandboxRunning = true;
 
   latestSetProp: PropertyKey | null = null;
 
+  private setWindowProp(prop: PropertyKey, value: any, toDelete?: boolean) {
+    if (value === undefined && toDelete) {
+      // eslint-disable-next-line no-param-reassign
+      delete (this.globalContext as any)[prop];
+    } else if (isPropConfigurable(this.globalContext, prop) && typeof prop !== 'symbol') {
+      Object.defineProperty(this.globalContext, prop, { writable: true, configurable: true });
+      // eslint-disable-next-line no-param-reassign
+      (this.globalContext as any)[prop] = value;
+    }
+  }
+
   active() {
     if (!this.sandboxRunning) {
-      this.currentUpdatedPropsValueMap.forEach((v, p) => setWindowProp(p, v));
+      this.currentUpdatedPropsValueMap.forEach((v, p) => this.setWindowProp(p, v));
     }
 
     this.sandboxRunning = true;
@@ -62,18 +66,19 @@ export default class SingularProxySandbox implements SandBox {
 
     // renderSandboxSnapshot = snapshot(currentUpdatedPropsValueMapForSnapshot);
     // restore global props to initial snapshot
-    this.modifiedPropsOriginalValueMapInSandbox.forEach((v, p) => setWindowProp(p, v));
-    this.addedPropsMapInSandbox.forEach((_, p) => setWindowProp(p, undefined, true));
+    this.modifiedPropsOriginalValueMapInSandbox.forEach((v, p) => this.setWindowProp(p, v));
+    this.addedPropsMapInSandbox.forEach((_, p) => this.setWindowProp(p, undefined, true));
 
     this.sandboxRunning = false;
   }
 
-  constructor(name: string) {
+  constructor(name: string, globalContext = window) {
     this.name = name;
+    this.globalContext = globalContext;
     this.type = SandBoxType.LegacyProxy;
     const { addedPropsMapInSandbox, modifiedPropsOriginalValueMapInSandbox, currentUpdatedPropsValueMap } = this;
 
-    const rawWindow = window;
+    const rawWindow = globalContext;
     const fakeWindow = Object.create(null) as Window;
 
     const setTrap = (p: PropertyKey, value: any, originalValue: any, sync2Window = true) => {
