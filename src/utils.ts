@@ -215,3 +215,14 @@ export function getXPathForElement(el: Node, document: Document): string | void 
 export function getContainer(container: string | HTMLElement): HTMLElement | null {
   return typeof container === 'string' ? document.querySelector(container) : container;
 }
+
+export function getContainerXPath(container?: string | HTMLElement): string | void {
+  if (container) {
+    const containerElement = getContainer(container);
+    if (containerElement) {
+      return getXPathForElement(containerElement, document);
+    }
+  }
+
+  return undefined;
+}

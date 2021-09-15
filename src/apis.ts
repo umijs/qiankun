@@ -1,12 +1,18 @@
 import { noop } from 'lodash';
 import type { ParcelConfigObject } from 'single-spa';
 import { mountRootParcel, registerApplication, start as startSingleSpa } from 'single-spa';
-import type { ObjectType } from './interfaces';
-import type { FrameworkConfiguration, FrameworkLifeCycles, LoadableApp, MicroApp, RegistrableApp } from './interfaces';
+import type {
+  FrameworkConfiguration,
+  FrameworkLifeCycles,
+  LoadableApp,
+  MicroApp,
+  ObjectType,
+  RegistrableApp,
+} from './interfaces';
 import type { ParcelConfigObjectGetter } from './loader';
 import { loadApp } from './loader';
 import { doPrefetchStrategy } from './prefetch';
-import { Deferred, getContainer, getXPathForElement, toArray } from './utils';
+import { Deferred, getContainerXPath, toArray } from './utils';
 
 let microApps: Array<RegistrableApp<Record<string, unknown>>> = [];
 
@@ -80,24 +86,18 @@ export function loadMicroApp<T extends ObjectType>(
 ): MicroApp {
   const { props, name } = app;
 
-  const getContainerXpath = (container: string | HTMLElement): string | void => {
-    const containerElement = getContainer(container);
-    if (containerElement) {
-      return getXPathForElement(containerElement, document);
-    }
-
-    return undefined;
-  };
+  const container = 'container' in app ? app.container : undefined;
+  // Must compute the container xpath at beginning to keep it consist around app mounting
+  // If we compute it every time, the container dom structure most probably been changed and result in a different xpath value
+  const containerXPath = getContainerXPath(container);
+  const appContainerXPathKey = `${name}-${containerXPath}`;
 
   let microApp: MicroApp;
   const wrapParcelConfigForRemount = (config: ParcelConfigObject): ParcelConfigObject => {
-    const container = 'container' in app ? app.container : undefined;
-
     let microAppConfig = config;
     if (container) {
-      const xpath = getContainerXpath(container);
-      if (xpath) {
-        const containerMicroApps = containerMicroAppsMap.get(`${name}-${xpath}`);
+      if (containerXPath) {
+        const containerMicroApps = containerMicroAppsMap.get(appContainerXPathKey);
         if (containerMicroApps?.length) {
           const mount = [
             async () => {
@@ -137,7 +137,6 @@ export function loadMicroApp<T extends ObjectType>(
       configuration ?? { ...frameworkConfiguration, singular: false },
     );
     const { $$cacheLifecycleByAppName } = userConfiguration;
-    const container = 'container' in app ? app.container : undefined;
 
     if (container) {
       // using appName as cache for internal experimental scenario
@@ -146,9 +145,8 @@ export function loadMicroApp<T extends ObjectType>(
         if (parcelConfigGetterPromise) return wrapParcelConfigForRemount((await parcelConfigGetterPromise)(container));
       }
 
-      const xpath = getContainerXpath(container);
-      if (xpath) {
-        const parcelConfigGetterPromise = appConfigPromiseGetterMap.get(`${name}-${xpath}`);
+      if (containerXPath) {
+        const parcelConfigGetterPromise = appConfigPromiseGetterMap.get(appContainerXPathKey);
         if (parcelConfigGetterPromise) return wrapParcelConfigForRemount((await parcelConfigGetterPromise)(container));
       }
     }
@@ -158,10 +156,7 @@ export function loadMicroApp<T extends ObjectType>(
     if (container) {
       if ($$cacheLifecycleByAppName) {
         appConfigPromiseGetterMap.set(name, parcelConfigObjectGetterPromise);
-      } else {
-        const xpath = getContainerXpath(container);
-        if (xpath) appConfigPromiseGetterMap.set(`${name}-${xpath}`, parcelConfigObjectGetterPromise);
-      }
+      } else if (containerXPath) appConfigPromiseGetterMap.set(appContainerXPathKey, parcelConfigObjectGetterPromise);
     }
 
     return (await parcelConfigObjectGetterPromise)(container);
@@ -177,18 +172,14 @@ export function loadMicroApp<T extends ObjectType>(
 
   microApp = mountRootParcel(memorizedLoadingFn, { domElement: document.createElement('div'), ...props });
 
-  // Store the microApps which they mounted on the same container
-  const container = 'container' in app ? app.container : undefined;
   if (container) {
-    const xpath = getContainerXpath(container);
-    if (xpath) {
-      const key = `${name}-${xpath}`;
-
-      const microAppsRef = containerMicroAppsMap.get(key) || [];
+    if (containerXPath) {
+      // Store the microApps which they mounted on the same container
+      const microAppsRef = containerMicroAppsMap.get(appContainerXPathKey) || [];
       microAppsRef.push(microApp);
-      containerMicroAppsMap.set(key, microAppsRef);
+      containerMicroAppsMap.set(appContainerXPathKey, microAppsRef);
 
-      const cleanApp = () => {
+      const cleanup = () => {
         const index = microAppsRef.indexOf(microApp);
         microAppsRef.splice(index, 1);
         // @ts-ignore
@@ -196,7 +187,7 @@ export function loadMicroApp<T extends ObjectType>(
       };
 
       // gc after unmount
-      microApp.unmountPromise.then(cleanApp).catch(cleanApp);
+      microApp.unmountPromise.then(cleanup).catch(cleanup);
     }
   }
 

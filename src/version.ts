@@ -1,1 +1,1 @@
-export { version } from '../package.json';
+export const version = '2.4.10';
