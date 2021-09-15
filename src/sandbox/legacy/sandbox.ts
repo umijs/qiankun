@@ -72,13 +72,13 @@ export default class LegacySandbox implements SandBox {
     this.sandboxRunning = false;
   }
 
-  constructor(name: string, contextWindow = window) {
+  constructor(name: string, globalContext = window) {
     this.name = name;
-    this.globalContext = contextWindow;
+    this.globalContext = globalContext;
     this.type = SandBoxType.LegacyProxy;
     const { addedPropsMapInSandbox, modifiedPropsOriginalValueMapInSandbox, currentUpdatedPropsValueMap } = this;
 
-    const rawWindow = contextWindow;
+    const rawWindow = globalContext;
     const fakeWindow = Object.create(null) as Window;
 
     const setTrap = (p: PropertyKey, value: any, originalValue: any, sync2Window = true) => {

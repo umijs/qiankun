@@ -27,7 +27,7 @@ export { css } from './patchers';
  * @param scopedCSS
  * @param useLooseSandbox
  * @param excludeAssetFilter
- * @param contextWindow
+ * @param globalContext
  */
 export function createSandboxContainer(
   appName: string,
@@ -35,11 +35,11 @@ export function createSandboxContainer(
   scopedCSS: boolean,
   useLooseSandbox?: boolean,
   excludeAssetFilter?: (url: string) => boolean,
-  contextWindow?: typeof window,
+  globalContext?: typeof window,
 ) {
   let sandbox: SandBox;
   if (window.Proxy) {
-    sandbox = useLooseSandbox ? new LegacySandbox(appName, contextWindow) : new ProxySandbox(appName, contextWindow);
+    sandbox = useLooseSandbox ? new LegacySandbox(appName, globalContext) : new ProxySandbox(appName, globalContext);
   } else {
     sandbox = new SnapshotSandbox(appName);
   }
