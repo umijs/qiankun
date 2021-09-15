@@ -145,6 +145,8 @@ export default class ProxySandbox implements SandBox {
 
   proxy: WindowProxy;
 
+  globalContext: typeof window;
+
   sandboxRunning = true;
 
   latestSetProp: PropertyKey | null = null;
@@ -165,7 +167,7 @@ export default class ProxySandbox implements SandBox {
       variableWhiteList.forEach((p) => {
         if (this.proxy.hasOwnProperty(p)) {
           // @ts-ignore
-          delete window[p];
+          delete this.globalContext[p];
         }
       });
     }
@@ -173,12 +175,13 @@ export default class ProxySandbox implements SandBox {
     this.sandboxRunning = false;
   }
 
-  constructor(name: string) {
+  constructor(name: string, globalContext = window) {
     this.name = name;
+    this.globalContext = globalContext;
     this.type = SandBoxType.Proxy;
     const { updatedValueSet } = this;
 
-    const rawWindow = window;
+    const rawWindow = globalContext;
     const { fakeWindow, propertiesWithGetter } = createFakeWindow(rawWindow);
 
     const descriptorTargetMap = new Map<PropertyKey, SymbolTarget>();
@@ -234,7 +237,7 @@ export default class ProxySandbox implements SandBox {
           return proxy;
         }
 
-        // hijack global accessing with globalThis keyword
+        // hijack globalWindow accessing with globalThis keyword
         if (p === 'globalThis') {
           return proxy;
         }
