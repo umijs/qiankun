@@ -14,10 +14,25 @@ import {
   recordStyledComponentsCSSRules,
 } from './common';
 
-const rawDocumentCreateElement = Document.prototype.createElement;
-const proxyAttachContainerConfigMap = new WeakMap<WindowProxy, ContainerConfig>();
+declare global {
+  interface Window {
+    __proxyAttachContainerConfigMap__: WeakMap<WindowProxy, ContainerConfig>;
+  }
+}
+
+// Get native global window with a sandbox disgusted way, thus we could share it between qiankun instances🤪
+// eslint-disable-next-line no-new-func
+const nativeGlobal: Window = new Function('return this')();
+Object.defineProperty(nativeGlobal, '__proxyAttachContainerConfigMap__', { enumerable: false, writable: true });
+
+// Share proxyAttachContainerConfigMap between multiple qiankun instance, thus they could access the same record
+nativeGlobal.__proxyAttachContainerConfigMap__ =
+  nativeGlobal.__proxyAttachContainerConfigMap__ || new WeakMap<WindowProxy, ContainerConfig>();
+const proxyAttachContainerConfigMap = nativeGlobal.__proxyAttachContainerConfigMap__;
 
 const elementAttachContainerConfigMap = new WeakMap<HTMLElement, ContainerConfig>();
+
+const rawDocumentCreateElement = Document.prototype.createElement;
 function patchDocumentCreateElement() {
   if (Document.prototype.createElement === rawDocumentCreateElement) {
     Document.prototype.createElement = function createElement<K extends keyof HTMLElementTagNameMap>(
