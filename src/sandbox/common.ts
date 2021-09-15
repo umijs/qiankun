@@ -5,28 +5,18 @@
 
 import { isBoundedFunction, isCallable, isConstructable } from '../utils';
 
-declare global {
-  interface Window {
-    __currentRunningAppInSandbox__: { name: string; window: WindowProxy } | null;
-  }
-}
-
-// Get native global window with a sandbox disgusted way, thus we could share it between qiankun instances🤪
-// eslint-disable-next-line no-new-func
-const nativeGlobal: Window = new Function('return this')();
-Object.defineProperty(nativeGlobal, '__currentRunningAppInSandbox__', { enumerable: false, writable: true });
-
+type SandboxInstance = { name: string; window: WindowProxy };
+let currentRunningSandboxProxy: SandboxInstance | null = null;
 /**
  * get the app that running tasks at current tick
- * @warning this method only works with proxy sandbox, right now it is for internal use only.
  */
 export function getCurrentRunningApp() {
-  return nativeGlobal.__currentRunningAppInSandbox__;
+  return currentRunningSandboxProxy;
 }
 
 export function setCurrentRunningApp(instance: { name: string; window: WindowProxy } | null) {
   // set currentRunningApp and it's proxySandbox to global window, as its only use case is for document.createElement from now on, which hijacked by a global way
-  nativeGlobal.__currentRunningAppInSandbox__ = instance;
+  currentRunningSandboxProxy = instance;
 }
 
 const functionBoundedValueMap = new WeakMap<CallableFunction, CallableFunction>();
