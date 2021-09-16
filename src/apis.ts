@@ -87,7 +87,7 @@ export function loadMicroApp<T extends ObjectType>(
   const { props, name } = app;
 
   const container = 'container' in app ? app.container : undefined;
-  // Must compute the container xpath at beginning to keep it consist around app mounting
+  // Must compute the container xpath at beginning to keep it consist around app running
   // If we compute it every time, the container dom structure most probably been changed and result in a different xpath value
   const containerXPath = getContainerXPath(container);
   const appContainerXPathKey = `${name}-${containerXPath}`;
