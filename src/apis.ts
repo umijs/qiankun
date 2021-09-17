@@ -16,7 +16,6 @@ import { Deferred, getContainerXPath, toArray } from './utils';
 
 let microApps: Array<RegistrableApp<Record<string, unknown>>> = [];
 
-// eslint-disable-next-line import/no-mutable-exports
 export let frameworkConfiguration: FrameworkConfiguration = {};
 
 let started = false;
