@@ -32,9 +32,12 @@ const proxyAttachContainerConfigMap = nativeGlobal.__proxyAttachContainerConfigM
 
 const elementAttachContainerConfigMap = new WeakMap<HTMLElement, ContainerConfig>();
 
-const rawDocumentCreateElement = Document.prototype.createElement;
+const docCreatePatchedMap = new WeakMap<typeof document.createElement, typeof document.createElement>();
 function patchDocumentCreateElement() {
-  if (Document.prototype.createElement === rawDocumentCreateElement) {
+  const docCreateElementFnBeforeOverwrite = docCreatePatchedMap.get(document.createElement);
+
+  if (!docCreateElementFnBeforeOverwrite) {
+    const rawDocumentCreateElement = document.createElement;
     Document.prototype.createElement = function createElement<K extends keyof HTMLElementTagNameMap>(
       this: Document,
       tagName: K,
@@ -53,10 +56,20 @@ function patchDocumentCreateElement() {
 
       return element;
     };
+
+    // It means it have been overwritten while createElement is an own property of document
+    if (document.hasOwnProperty('createElement')) {
+      document.createElement = Document.prototype.createElement;
+    }
+
+    docCreatePatchedMap.set(Document.prototype.createElement, rawDocumentCreateElement);
   }
 
   return function unpatch() {
-    Document.prototype.createElement = rawDocumentCreateElement;
+    if (docCreateElementFnBeforeOverwrite) {
+      Document.prototype.createElement = docCreateElementFnBeforeOverwrite;
+      document.createElement = docCreateElementFnBeforeOverwrite;
+    }
   };
 }
 
