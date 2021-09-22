@@ -30,7 +30,26 @@ To solve the exception, try the following steps:
 
 6. If the development environment is OK but the production environment is not, check whether the `index.html` and `entry js` of the micro app are returned normally, for example, `404.html` is returned.
 
-7. If you're using webpack5, please see [here](https://github.com/umijs/qiankun/issues/1092) If it still not works after the steps above, this is usually due to browser compatibility issues. Try to **set the webpack `output.library` of the broken sub app the same with your main app registration for your app**, such as:
+7. If you're using webpack5, please see [here](https://github.com/umijs/qiankun/issues/1092) 
+
+8. Check whether the main app and micro-app use AMD or CommonJS. Check method: run the main app and the micro-app independently, and enter the following code in the console: `(typeof exports === 'object' && typeof module === 'object') || (typeof define === 'function' && define.amd) || typeof exports === 'object'`，If it returns `true`，that it is caused by this reason, and there are mainly the following two solutions:
+
+    - Solution 1: Modify the `libraryTarget` of the micro-app `webpack` to `'window'`.
+
+    ```diff
+    const packageName = require('./package.json').name;
+    module.exports = {
+      output: {
+        library: `${packageName}-[name]`,
+    -    libraryTarget: 'umd',
+    +    libraryTarget: 'window',
+        jsonpFunction: `webpackJsonp_${packageName}`,
+      },
+    };
+    ```
+    - Solution 2: The micro-app is not bundle with `umd`, directly mount the life cycle function to the `window` in the entry file, refer to[Micro app built without webpack](/guide/tutorial#micro-app-built-without-webpack).
+ 
+9. If it still not works after the steps above, this is usually due to browser compatibility issues. Try to **set the webpack `output.library` of the broken sub app the same with your main app registration for your app**, such as:
 
 Such as here is the main configuration:
 
