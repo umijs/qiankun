@@ -70,3 +70,43 @@ export function getProxyPropertyValue(getter: CallableFunction) {
 
   return getterResult;
 }
+
+const ProcessedTag = 'Symbol(style-share-processed-qiankun)';
+const groupStyleLoadedMap: Record<string, Set<string>> = {};
+export function processInstanceGroupShareCss(styleNode: HTMLStyleElement, appGroupName: string | undefined) {
+  const mutator = new MutationObserver((mutations) => {
+    for (let i = 0; i < mutations.length; i += 1) {
+      if (ProcessedTag in styleNode) {
+        return;
+      }
+      if (isRepetitiveStyle(styleNode, appGroupName)) {
+        styleNode.textContent = '';
+        styleNode.parentElement?.removeChild(styleNode);
+        return;
+      }
+      (styleNode as any)[ProcessedTag] = true;
+    }
+  });
+  mutator.observe(styleNode, { childList: true });
+}
+
+export function isRepetitiveStyle(styleNode: HTMLStyleElement, appGroupName: string | undefined) {
+  if (!appGroupName) {
+    return false;
+  }
+  let styleKey = styleNode.textContent;
+  if (styleKey && styleKey.length > 200) {
+    styleKey = styleKey.substr(0, 200).replace(/ /g, '');
+  }
+  if (styleKey) {
+    if (!groupStyleLoadedMap[appGroupName]) {
+      groupStyleLoadedMap[appGroupName] = new Set();
+    }
+    const loaderStyles = groupStyleLoadedMap[appGroupName];
+    if (loaderStyles.has(styleKey)) {
+      return true;
+    }
+    groupStyleLoadedMap[appGroupName].add(styleKey);
+  }
+  return false;
+}

@@ -3,6 +3,9 @@
  * @since 2020-4-19
  */
 
+import type { InstanceGroupShareCss } from '../../interfaces';
+import { isRepetitiveStyle } from '../common';
+
 // https://developer.mozilla.org/en-US/docs/Web/API/CSSRule
 enum RuleType {
   // type: rule will be rewrote
@@ -40,7 +43,7 @@ export class ScopedCSS {
     this.sheet.disabled = true;
   }
 
-  process(styleNode: HTMLStyleElement, prefix: string = '') {
+  process(styleNode: HTMLStyleElement, prefix: string = '', instanceGroupShareCss?: InstanceGroupShareCss) {
     if (styleNode.textContent !== '') {
       const textNode = document.createTextNode(styleNode.textContent || '');
       this.swapNode.appendChild(textNode);
@@ -64,6 +67,11 @@ export class ScopedCSS {
         }
 
         if (mutation.type === 'childList') {
+          if (isRepetitiveStyle(styleNode, instanceGroupShareCss?.appGroupName)) {
+            styleNode.textContent = '';
+            styleNode.parentElement?.removeChild(styleNode);
+            return;
+          }
           const sheet = styleNode.sheet as any;
           const rules = arrayify<CSSRule>(sheet?.cssRules ?? []);
           const css = this.rewrite(rules, prefix);
@@ -183,6 +191,7 @@ export const process = (
   appWrapper: HTMLElement,
   stylesheetElement: HTMLStyleElement | HTMLLinkElement,
   appName: string,
+  instanceGroupShareCss?: InstanceGroupShareCss,
 ): void => {
   // lazy singleton pattern
   if (!processor) {
@@ -201,7 +210,8 @@ export const process = (
   const tag = (mountDOM.tagName || '').toLowerCase();
 
   if (tag && stylesheetElement.tagName === 'STYLE') {
-    const prefix = `${tag}[${QiankunCSSRewriteAttr}="${appName}"]`;
-    processor.process(stylesheetElement, prefix);
+    const value = instanceGroupShareCss?.appGroupName || appName;
+    const prefix = `${tag}[${QiankunCSSRewriteAttr}="${value}"]`;
+    processor.process(stylesheetElement, prefix, instanceGroupShareCss);
   }
 };

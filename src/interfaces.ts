@@ -60,6 +60,11 @@ export type PrefetchStrategy =
   | string[]
   | ((apps: AppMetadata[]) => { criticalAppNames: string[]; minorAppsName: string[] });
 
+export interface InstanceGroupShareCss {
+  cssMountDom: HTMLElement;
+  appGroupName: string;
+}
+
 type QiankunSpecialOpts = {
   /**
    * @deprecated internal api, don't used it as normal, might be removed after next version
@@ -88,6 +93,8 @@ type QiankunSpecialOpts = {
   excludeAssetFilter?: (url: string) => boolean;
 
   globalContext?: typeof window;
+
+  instanceGroupShareCss?: InstanceGroupShareCss;
 };
 export type FrameworkConfiguration = QiankunSpecialOpts & ImportEntryOpts & StartOpts;
 

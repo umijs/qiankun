@@ -5,6 +5,8 @@
 import { execScripts } from 'import-html-entry';
 import { isFunction } from 'lodash';
 import { frameworkConfiguration } from '../../../apis';
+import { processInstanceGroupShareCss } from '../../common';
+import type { InstanceGroupShareCss } from '../../../interfaces';
 
 import * as css from '../css';
 
@@ -134,6 +136,7 @@ export type ContainerConfig = {
   appWrapperGetter: CallableFunction;
   scopedCSS: boolean;
   excludeAssetFilter?: CallableFunction;
+  instanceGroupShareCss?: InstanceGroupShareCss;
 };
 
 function getOverwrittenAppendChildOrInsertBefore(opts: {
@@ -162,6 +165,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
         dynamicStyleSheetElements,
         scopedCSS,
         excludeAssetFilter,
+        instanceGroupShareCss,
       } = containerConfig;
 
       switch (element.tagName) {
@@ -188,19 +192,26 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
                   : frameworkConfiguration.fetch?.fn;
               stylesheetElement = convertLinkAsStyle(
                 element,
-                (styleElement) => css.process(mountDOM, styleElement, appName),
+                (styleElement) => css.process(mountDOM, styleElement, appName, instanceGroupShareCss),
                 fetch,
               );
               dynamicLinkAttachedInlineStyleMap.set(element, stylesheetElement);
             } else {
-              css.process(mountDOM, stylesheetElement, appName);
+              css.process(mountDOM, stylesheetElement, appName, instanceGroupShareCss);
             }
           }
 
-          // eslint-disable-next-line no-shadow
-          dynamicStyleSheetElements.push(stylesheetElement);
+          const { cssMountDom, appGroupName } = instanceGroupShareCss || {};
+          if (cssMountDom && appGroupName) {
+            if (!scopedCSS) {
+              processInstanceGroupShareCss(stylesheetElement, appGroupName);
+            }
+          } else {
+            // eslint-disable-next-line no-shadow
+            dynamicStyleSheetElements.push(stylesheetElement);
+          }
           const referenceNode = mountDOM.contains(refChild) ? refChild : null;
-          return rawDOMAppendOrInsertBefore.call(mountDOM, stylesheetElement, referenceNode);
+          return rawDOMAppendOrInsertBefore.call(cssMountDom || mountDOM, stylesheetElement, referenceNode);
         }
 
         case SCRIPT_TAG_NAME: {

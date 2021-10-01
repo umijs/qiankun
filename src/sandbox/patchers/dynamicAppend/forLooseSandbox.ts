@@ -4,7 +4,7 @@
  */
 
 import { checkActivityFunctions } from 'single-spa';
-import type { Freer } from '../../../interfaces';
+import type { Freer, InstanceGroupShareCss } from '../../../interfaces';
 import { patchHTMLDynamicAppendPrototypeFunctions, rebuildCSSRules, recordStyledComponentsCSSRules } from './common';
 
 let bootstrappingPatchCount = 0;
@@ -28,6 +28,7 @@ export function patchLooseSandbox(
   mounting = true,
   scopedCSS = false,
   excludeAssetFilter?: CallableFunction,
+  instanceGroupShareCss?: InstanceGroupShareCss,
 ): Freer {
   let dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
 
@@ -49,6 +50,7 @@ export function patchLooseSandbox(
       scopedCSS,
       dynamicStyleSheetElements,
       excludeAssetFilter,
+      instanceGroupShareCss,
     }),
   );
 

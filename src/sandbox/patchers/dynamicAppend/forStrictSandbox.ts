@@ -3,7 +3,7 @@
  * @since 2020-10-13
  */
 
-import type { Freer } from '../../../interfaces';
+import type { Freer, InstanceGroupShareCss } from '../../../interfaces';
 import { getCurrentRunningApp } from '../../common';
 import type { ContainerConfig } from './common';
 import {
@@ -83,6 +83,7 @@ export function patchStrictSandbox(
   mounting = true,
   scopedCSS = false,
   excludeAssetFilter?: CallableFunction,
+  instanceGroupShareCss?: InstanceGroupShareCss,
 ): Freer {
   let containerConfig = proxyAttachContainerConfigMap.get(proxy);
   if (!containerConfig) {
@@ -94,6 +95,7 @@ export function patchStrictSandbox(
       strictGlobal: true,
       excludeAssetFilter,
       scopedCSS,
+      instanceGroupShareCss,
     };
     proxyAttachContainerConfigMap.set(proxy, containerConfig);
   }

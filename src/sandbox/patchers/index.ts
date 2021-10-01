@@ -3,7 +3,7 @@
  * @since 2019-04-11
  */
 
-import type { Freer, SandBox } from '../../interfaces';
+import type { Freer, SandBox, InstanceGroupShareCss } from '../../interfaces';
 import { SandBoxType } from '../../interfaces';
 import * as css from './css';
 import { patchLooseSandbox, patchStrictSandbox } from './dynamicAppend';
@@ -17,6 +17,7 @@ export function patchAtMounting(
   sandbox: SandBox,
   scopedCSS: boolean,
   excludeAssetFilter?: CallableFunction,
+  instanceGroupShareCss?: InstanceGroupShareCss,
 ): Freer[] {
   const basePatchers = [
     () => patchInterval(sandbox.proxy),
@@ -27,15 +28,42 @@ export function patchAtMounting(
   const patchersInSandbox = {
     [SandBoxType.LegacyProxy]: [
       ...basePatchers,
-      () => patchLooseSandbox(appName, elementGetter, sandbox.proxy, true, scopedCSS, excludeAssetFilter),
+      () =>
+        patchLooseSandbox(
+          appName,
+          elementGetter,
+          sandbox.proxy,
+          true,
+          scopedCSS,
+          excludeAssetFilter,
+          instanceGroupShareCss,
+        ),
     ],
     [SandBoxType.Proxy]: [
       ...basePatchers,
-      () => patchStrictSandbox(appName, elementGetter, sandbox.proxy, true, scopedCSS, excludeAssetFilter),
+      () =>
+        patchStrictSandbox(
+          appName,
+          elementGetter,
+          sandbox.proxy,
+          true,
+          scopedCSS,
+          excludeAssetFilter,
+          instanceGroupShareCss,
+        ),
     ],
     [SandBoxType.Snapshot]: [
       ...basePatchers,
-      () => patchLooseSandbox(appName, elementGetter, sandbox.proxy, true, scopedCSS, excludeAssetFilter),
+      () =>
+        patchLooseSandbox(
+          appName,
+          elementGetter,
+          sandbox.proxy,
+          true,
+          scopedCSS,
+          excludeAssetFilter,
+          instanceGroupShareCss,
+        ),
     ],
   };
 
@@ -48,16 +76,44 @@ export function patchAtBootstrapping(
   sandbox: SandBox,
   scopedCSS: boolean,
   excludeAssetFilter?: CallableFunction,
+  instanceGroupShareCss?: InstanceGroupShareCss,
 ): Freer[] {
   const patchersInSandbox = {
     [SandBoxType.LegacyProxy]: [
-      () => patchLooseSandbox(appName, elementGetter, sandbox.proxy, false, scopedCSS, excludeAssetFilter),
+      () =>
+        patchLooseSandbox(
+          appName,
+          elementGetter,
+          sandbox.proxy,
+          false,
+          scopedCSS,
+          excludeAssetFilter,
+          instanceGroupShareCss,
+        ),
     ],
     [SandBoxType.Proxy]: [
-      () => patchStrictSandbox(appName, elementGetter, sandbox.proxy, false, scopedCSS, excludeAssetFilter),
+      () =>
+        patchStrictSandbox(
+          appName,
+          elementGetter,
+          sandbox.proxy,
+          false,
+          scopedCSS,
+          excludeAssetFilter,
+          instanceGroupShareCss,
+        ),
     ],
     [SandBoxType.Snapshot]: [
-      () => patchLooseSandbox(appName, elementGetter, sandbox.proxy, false, scopedCSS, excludeAssetFilter),
+      () =>
+        patchLooseSandbox(
+          appName,
+          elementGetter,
+          sandbox.proxy,
+          false,
+          scopedCSS,
+          excludeAssetFilter,
+          instanceGroupShareCss,
+        ),
     ],
   };
 

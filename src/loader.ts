@@ -30,6 +30,7 @@ import {
   toArray,
   validateExportLifecycle,
 } from './utils';
+import type { InstanceGroupShareCss } from './interfaces';
 
 function assertElementExist(element: Element | null | undefined, msg?: string) {
   if (!element) {
@@ -68,6 +69,7 @@ function createElement(
   strictStyleIsolation: boolean,
   scopedCSS: boolean,
   appName: string,
+  instanceGroupShareCss?: InstanceGroupShareCss,
 ): HTMLElement {
   const containerElement = document.createElement('div');
   containerElement.innerHTML = appContent;
@@ -96,12 +98,13 @@ function createElement(
   if (scopedCSS) {
     const attr = appElement.getAttribute(css.QiankunCSSRewriteAttr);
     if (!attr) {
-      appElement.setAttribute(css.QiankunCSSRewriteAttr, appName);
+      const attrValue = instanceGroupShareCss?.appGroupName || appName;
+      appElement.setAttribute(css.QiankunCSSRewriteAttr, attrValue);
     }
 
     const styleNodes = appElement.querySelectorAll('style') || [];
     forEach(styleNodes, (stylesheetElement: HTMLStyleElement) => {
-      css.process(appElement!, stylesheetElement, appName);
+      css.process(appElement!, stylesheetElement, appName, instanceGroupShareCss);
     });
   }
 
@@ -259,6 +262,7 @@ export async function loadApp<T extends ObjectType>(
     sandbox = true,
     excludeAssetFilter,
     globalContext = window,
+    instanceGroupShareCss,
     ...importEntryOpts
   } = configuration;
 
@@ -281,6 +285,7 @@ export async function loadApp<T extends ObjectType>(
     strictStyleIsolation,
     scopedCSS,
     appName,
+    instanceGroupShareCss,
   );
 
   const initialContainer = 'container' in app ? app.container : undefined;
@@ -315,6 +320,7 @@ export async function loadApp<T extends ObjectType>(
       useLooseSandbox,
       excludeAssetFilter,
       global,
+      instanceGroupShareCss,
     );
     // 用沙箱的代理对象作为接下来使用的全局对象
     global = sandboxContainer.instance.proxy as typeof window;
@@ -389,7 +395,13 @@ export async function loadApp<T extends ObjectType>(
           if (useNewContainer || !appWrapperElement) {
             // element will be destroyed after unmounted, we need to recreate it if it not exist
             // or we try to remount into a new container
-            appWrapperElement = createElement(appContent, strictStyleIsolation, scopedCSS, appName);
+            appWrapperElement = createElement(
+              appContent,
+              strictStyleIsolation,
+              scopedCSS,
+              appName,
+              instanceGroupShareCss,
+            );
             syncAppWrapperElement2Sandbox(appWrapperElement);
           }
 
