@@ -258,6 +258,7 @@ export async function loadApp<T extends ObjectType>(
     singular = false,
     sandbox = true,
     excludeAssetFilter,
+    excludeFreeListenerFilters,
     globalContext = window,
     ...importEntryOpts
   } = configuration;
@@ -314,6 +315,7 @@ export async function loadApp<T extends ObjectType>(
       scopedCSS,
       useLooseSandbox,
       excludeAssetFilter,
+      excludeFreeListenerFilters,
       global,
     );
     // 用沙箱的代理对象作为接下来使用的全局对象

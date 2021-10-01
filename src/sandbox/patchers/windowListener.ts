@@ -5,6 +5,7 @@
  */
 
 import { noop } from 'lodash';
+import type { ExcludeFreeListenerFilters } from '../../interfaces';
 
 const rawAddEventListener = window.addEventListener;
 const rawRemoveEventListener = window.removeEventListener;
@@ -34,9 +35,13 @@ export default function patch(global: WindowProxy) {
     return rawRemoveEventListener.call(window, type, listener, options);
   };
 
-  return function free() {
+  return function free(excludeFreeListenerFilters: ExcludeFreeListenerFilters) {
     listenerMap.forEach((listeners, type) =>
-      [...listeners].forEach((listener) => global.removeEventListener(type, listener)),
+      [...listeners].forEach((listener) => {
+        if (excludeFreeListenerFilters && !excludeFreeListenerFilters(type, listener)) {
+          global.removeEventListener(type, listener);
+        }
+      }),
     );
     global.addEventListener = rawAddEventListener;
     global.removeEventListener = rawRemoveEventListener;

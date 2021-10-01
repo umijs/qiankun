@@ -86,6 +86,7 @@ type QiankunSpecialOpts = {
    * skip some scripts or links intercept, like JSONP
    */
   excludeAssetFilter?: (url: string) => boolean;
+  excludeFreeListenerFilters?: ExcludeFreeListenerFilters;
 
   globalContext?: typeof window;
 };
@@ -103,7 +104,8 @@ export type FrameworkLifeCycles<T extends ObjectType> = {
 export type MicroApp = Parcel;
 
 export type Rebuilder = () => void;
-export type Freer = () => Rebuilder;
+export type Freer = (excludeFreeListenerFilters?: ExcludeFreeListenerFilters) => Rebuilder;
+export type ExcludeFreeListenerFilters = (type: string, listener: EventListenerOrEventListenerObject) => boolean;
 export type Patcher = () => Freer;
 
 export enum SandBoxType {

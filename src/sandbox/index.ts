@@ -2,7 +2,7 @@
  * @author Kuitos
  * @since 2019-04-11
  */
-import type { Freer, Rebuilder, SandBox } from '../interfaces';
+import type { Freer, Rebuilder, SandBox, ExcludeFreeListenerFilters } from '../interfaces';
 import LegacySandbox from './legacy/sandbox';
 import { patchAtBootstrapping, patchAtMounting } from './patchers';
 import ProxySandbox from './proxySandbox';
@@ -36,6 +36,7 @@ export function createSandboxContainer(
   scopedCSS: boolean,
   useLooseSandbox?: boolean,
   excludeAssetFilter?: (url: string) => boolean,
+  excludeFreeListenerFilters?: ExcludeFreeListenerFilters,
   globalContext?: typeof window,
 ) {
   let sandbox: SandBox;
@@ -94,7 +95,9 @@ export function createSandboxContainer(
     async unmount() {
       // record the rebuilders of window side effects (event listeners or timers)
       // note that the frees of mounting phase are one-off as it will be re-init at next mounting
-      sideEffectsRebuilders = [...bootstrappingFreers, ...mountingFreers].map((free) => free());
+      sideEffectsRebuilders = [...bootstrappingFreers, ...mountingFreers].map((free) =>
+        free(excludeFreeListenerFilters),
+      );
 
       sandbox.inactive();
     },
