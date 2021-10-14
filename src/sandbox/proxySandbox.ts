@@ -6,7 +6,7 @@
 import type { SandBox } from '../interfaces';
 import { SandBoxType } from '../interfaces';
 import { nextTask } from '../utils';
-import { getTargetValue, setCurrentRunningSandboxProxy } from './common';
+import { getTargetValue, setCurrentRunningApp } from './common';
 
 /**
  * fastest(at most time) unique array method
@@ -135,9 +135,23 @@ export default class ProxySandbox implements SandBox {
 
   proxy: WindowProxy;
 
+  globalContext: typeof window;
+
   sandboxRunning = true;
 
   latestSetProp: PropertyKey | null = null;
+
+  private registerRunningApp(name: string, proxy: Window) {
+    if (this.sandboxRunning) {
+      setCurrentRunningApp({ name, window: proxy });
+      // FIXME if you have any other good ideas
+      // remove the mark in next tick, thus we can identify whether it in micro app or not
+      // this approach is just a workaround, it could not cover all complex cases, such as the micro app runs in the same task context with master in some case
+      nextTask(() => {
+        setCurrentRunningApp(null);
+      });
+    }
+  }
 
   active() {
     if (!this.sandboxRunning) activeSandboxCount++;
@@ -155,7 +169,7 @@ export default class ProxySandbox implements SandBox {
       variableWhiteList.forEach((p) => {
         if (this.proxy.hasOwnProperty(p)) {
           // @ts-ignore
-          delete window[p];
+          delete this.globalContext[p];
         }
       });
     }
@@ -163,12 +177,13 @@ export default class ProxySandbox implements SandBox {
     this.sandboxRunning = false;
   }
 
-  constructor(name: string) {
+  constructor(name: string, globalContext = window) {
     this.name = name;
+    this.globalContext = globalContext;
     this.type = SandBoxType.Proxy;
     const { updatedValueSet } = this;
 
-    const rawWindow = window;
+    const rawWindow = globalContext;
     const { fakeWindow, propertiesWithGetter } = createFakeWindow(rawWindow);
 
     const descriptorTargetMap = new Map<PropertyKey, SymbolTarget>();
@@ -177,6 +192,7 @@ export default class ProxySandbox implements SandBox {
     const proxy = new Proxy(fakeWindow, {
       set: (target: FakeWindow, p: PropertyKey, value: any): boolean => {
         if (this.sandboxRunning) {
+          this.registerRunningApp(name, proxy);
           // We must kept its description while the property existed in rawWindow before
           if (!target.hasOwnProperty(p) && rawWindow.hasOwnProperty(p)) {
             const descriptor = Object.getOwnPropertyDescriptor(rawWindow, p);
@@ -214,22 +230,17 @@ export default class ProxySandbox implements SandBox {
         return true;
       },
 
-      get(target: FakeWindow, p: PropertyKey): any {
-        setCurrentRunningSandboxProxy(proxy);
-        // FIXME if you have any other good ideas
-        // remove the mark in next tick, thus we can identify whether it in micro app or not
-        // this approach is just a workaround, it could not cover all complex cases, such as the micro app runs in the same task context with master in some case
-        nextTask(() => setCurrentRunningSandboxProxy(null));
+      get: (target: FakeWindow, p: PropertyKey): any => {
+        this.registerRunningApp(name, proxy);
 
         if (p === Symbol.unscopables) return unscopables;
-
         // avoid who using window.window or window.self to escape the sandbox environment to touch the really window
         // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
         if (p === 'window' || p === 'self') {
           return proxy;
         }
 
-        // hijack global accessing with globalThis keyword
+        // hijack globalWindow accessing with globalThis keyword
         if (p === 'globalThis') {
           return proxy;
         }
@@ -322,7 +333,8 @@ export default class ProxySandbox implements SandBox {
         }
       },
 
-      deleteProperty(target: FakeWindow, p: string | number | symbol): boolean {
+      deleteProperty: (target: FakeWindow, p: string | number | symbol): boolean => {
+        this.registerRunningApp(name, proxy);
         if (target.hasOwnProperty(p)) {
           // @ts-ignore
           delete target[p];

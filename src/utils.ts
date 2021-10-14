@@ -4,6 +4,8 @@
  */
 
 import { isFunction, snakeCase } from 'lodash';
+import { version } from './version';
+
 import type { FrameworkConfiguration } from './interfaces';
 
 export function toArray<T>(array: T | T[]): T[] {
@@ -100,7 +102,7 @@ export function isBoundedFunction(fn: CallableFunction) {
 }
 
 export function getDefaultTplWrapper(id: string, name: string) {
-  return (tpl: string) => `<div id="${getWrapperId(id)}" data-name="${name}">${tpl}</div>`;
+  return (tpl: string) => `<div id="${getWrapperId(id)}" data-name="${name}" data-version="${version}">${tpl}</div>`;
 }
 
 export function getWrapperId(id: string) {
@@ -199,16 +201,12 @@ export function getXPathForElement(el: Node, document: Document): string | void 
       tmpEle = tmpEle.previousSibling;
     }
 
-    xpath = `*[name()='${element.nodeName}' and namespace-uri()='${
-      element.namespaceURI === null ? '' : element.namespaceURI
-    }'][${pos}]/${xpath}`;
+    xpath = `*[name()='${element.nodeName}'][${pos}]/${xpath}`;
 
     element = element.parentNode!;
   }
 
-  xpath = `/*[name()='${document.documentElement.nodeName}' and namespace-uri()='${
-    element.namespaceURI === null ? '' : element.namespaceURI
-  }']/${xpath}`;
+  xpath = `/*[name()='${document.documentElement.nodeName}']/${xpath}`;
   xpath = xpath.replace(/\/$/, '');
 
   return xpath;
@@ -216,4 +214,15 @@ export function getXPathForElement(el: Node, document: Document): string | void 
 
 export function getContainer(container: string | HTMLElement): HTMLElement | null {
   return typeof container === 'string' ? document.querySelector(container) : container;
+}
+
+export function getContainerXPath(container?: string | HTMLElement): string | void {
+  if (container) {
+    const containerElement = getContainer(container);
+    if (containerElement) {
+      return getXPathForElement(containerElement, document);
+    }
+  }
+
+  return undefined;
 }

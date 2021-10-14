@@ -1,22 +1,46 @@
 import { noop } from 'lodash';
 import type { ParcelConfigObject } from 'single-spa';
 import { mountRootParcel, registerApplication, start as startSingleSpa } from 'single-spa';
-import type { ObjectType } from './interfaces';
-import type { FrameworkConfiguration, FrameworkLifeCycles, LoadableApp, MicroApp, RegistrableApp } from './interfaces';
+import type {
+  FrameworkConfiguration,
+  FrameworkLifeCycles,
+  LoadableApp,
+  MicroApp,
+  ObjectType,
+  RegistrableApp,
+} from './interfaces';
 import type { ParcelConfigObjectGetter } from './loader';
 import { loadApp } from './loader';
 import { doPrefetchStrategy } from './prefetch';
-import { Deferred, getContainer, getXPathForElement, toArray } from './utils';
+import { Deferred, getContainerXPath, toArray } from './utils';
 
 let microApps: Array<RegistrableApp<Record<string, unknown>>> = [];
 
-// eslint-disable-next-line import/no-mutable-exports
 export let frameworkConfiguration: FrameworkConfiguration = {};
 
 let started = false;
 const defaultUrlRerouteOnly = true;
 
 const frameworkStartedDefer = new Deferred<void>();
+
+const autoDowngradeForLowVersionBrowser = (configuration: FrameworkConfiguration): FrameworkConfiguration => {
+  const { sandbox, singular } = configuration;
+  if (sandbox) {
+    if (!window.Proxy) {
+      console.warn('[qiankun] Miss window.Proxy, proxySandbox will degenerate into snapshotSandbox');
+
+      if (singular === false) {
+        console.warn(
+          '[qiankun] Setting singular as false may cause unexpected behavior while your browser not support window.Proxy',
+        );
+      }
+
+      return { ...configuration, sandbox: typeof sandbox === 'object' ? { ...sandbox, loose: true } : { loose: true } };
+    }
+  }
+
+  return configuration;
+};
 
 export function registerMicroApps<T extends ObjectType>(
   apps: Array<RegistrableApp<T>>,
@@ -61,24 +85,18 @@ export function loadMicroApp<T extends ObjectType>(
 ): MicroApp {
   const { props, name } = app;
 
-  const getContainerXpath = (container: string | HTMLElement): string | void => {
-    const containerElement = getContainer(container);
-    if (containerElement) {
-      return getXPathForElement(containerElement, document);
-    }
-
-    return undefined;
-  };
+  const container = 'container' in app ? app.container : undefined;
+  // Must compute the container xpath at beginning to keep it consist around app running
+  // If we compute it every time, the container dom structure most probably been changed and result in a different xpath value
+  const containerXPath = getContainerXPath(container);
+  const appContainerXPathKey = `${name}-${containerXPath}`;
 
   let microApp: MicroApp;
   const wrapParcelConfigForRemount = (config: ParcelConfigObject): ParcelConfigObject => {
-    const container = 'container' in app ? app.container : undefined;
-
     let microAppConfig = config;
     if (container) {
-      const xpath = getContainerXpath(container);
-      if (xpath) {
-        const containerMicroApps = containerMicroAppsMap.get(`${name}-${xpath}`);
+      if (containerXPath) {
+        const containerMicroApps = containerMicroAppsMap.get(appContainerXPathKey);
         if (containerMicroApps?.length) {
           const mount = [
             async () => {
@@ -114,9 +132,10 @@ export function loadMicroApp<T extends ObjectType>(
    * the micro app would not load and evaluate its lifecycles again
    */
   const memorizedLoadingFn = async (): Promise<ParcelConfigObject> => {
-    const userConfiguration = configuration ?? { ...frameworkConfiguration, singular: false };
+    const userConfiguration = autoDowngradeForLowVersionBrowser(
+      configuration ?? { ...frameworkConfiguration, singular: false },
+    );
     const { $$cacheLifecycleByAppName } = userConfiguration;
-    const container = 'container' in app ? app.container : undefined;
 
     if (container) {
       // using appName as cache for internal experimental scenario
@@ -125,9 +144,8 @@ export function loadMicroApp<T extends ObjectType>(
         if (parcelConfigGetterPromise) return wrapParcelConfigForRemount((await parcelConfigGetterPromise)(container));
       }
 
-      const xpath = getContainerXpath(container);
-      if (xpath) {
-        const parcelConfigGetterPromise = appConfigPromiseGetterMap.get(`${name}-${xpath}`);
+      if (containerXPath) {
+        const parcelConfigGetterPromise = appConfigPromiseGetterMap.get(appContainerXPathKey);
         if (parcelConfigGetterPromise) return wrapParcelConfigForRemount((await parcelConfigGetterPromise)(container));
       }
     }
@@ -137,10 +155,7 @@ export function loadMicroApp<T extends ObjectType>(
     if (container) {
       if ($$cacheLifecycleByAppName) {
         appConfigPromiseGetterMap.set(name, parcelConfigObjectGetterPromise);
-      } else {
-        const xpath = getContainerXpath(container);
-        if (xpath) appConfigPromiseGetterMap.set(`${name}-${xpath}`, parcelConfigObjectGetterPromise);
-      }
+      } else if (containerXPath) appConfigPromiseGetterMap.set(appContainerXPathKey, parcelConfigObjectGetterPromise);
     }
 
     return (await parcelConfigObjectGetterPromise)(container);
@@ -156,24 +171,22 @@ export function loadMicroApp<T extends ObjectType>(
 
   microApp = mountRootParcel(memorizedLoadingFn, { domElement: document.createElement('div'), ...props });
 
-  // Store the microApps which they mounted on the same container
-  const container = 'container' in app ? app.container : undefined;
   if (container) {
-    const xpath = getContainerXpath(container);
-    if (xpath) {
-      const key = `${name}-${xpath}`;
-
-      const microAppsRef = containerMicroAppsMap.get(key) || [];
+    if (containerXPath) {
+      // Store the microApps which they mounted on the same container
+      const microAppsRef = containerMicroAppsMap.get(appContainerXPathKey) || [];
       microAppsRef.push(microApp);
-      containerMicroAppsMap.set(key, microAppsRef);
+      containerMicroAppsMap.set(appContainerXPathKey, microAppsRef);
 
-      // gc after unmount
-      microApp.unmountPromise.finally(() => {
+      const cleanup = () => {
         const index = microAppsRef.indexOf(microApp);
         microAppsRef.splice(index, 1);
         // @ts-ignore
         microApp = null;
-      });
+      };
+
+      // gc after unmount
+      microApp.unmountPromise.then(cleanup).catch(cleanup);
     }
   }
 
@@ -194,17 +207,7 @@ export function start(opts: FrameworkConfiguration = {}) {
     doPrefetchStrategy(microApps, prefetch, importEntryOpts);
   }
 
-  if (sandbox) {
-    if (!window.Proxy) {
-      console.warn('[qiankun] Miss window.Proxy, proxySandbox will degenerate into snapshotSandbox');
-      frameworkConfiguration.sandbox = typeof sandbox === 'object' ? { ...sandbox, loose: true } : { loose: true };
-      if (!singular) {
-        console.warn(
-          '[qiankun] Setting singular as false may cause unexpected behavior while your browser not support window.Proxy',
-        );
-      }
-    }
-  }
+  frameworkConfiguration = autoDowngradeForLowVersionBrowser(frameworkConfiguration);
 
   startSingleSpa({ urlRerouteOnly });
   started = true;
