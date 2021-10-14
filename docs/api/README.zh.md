@@ -353,8 +353,8 @@ toc: menu
   import { prefetchApps } from 'qiankun';
 
   prefetchApps([
-    { name: 'app1', entry: '//locahost:7001' },
-    { name: 'app2', entry: '//locahost:7002' },
+    { name: 'app1', entry: '//localhost:7001' },
+    { name: 'app2', entry: '//localhost:7002' },
   ]);
   ```
 

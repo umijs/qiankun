@@ -4,7 +4,7 @@
  */
 
 import type { Freer } from '../../../interfaces';
-import { getCurrentRunningSandboxProxy } from '../../common';
+import { getCurrentRunningApp } from '../../common';
 import type { ContainerConfig } from './common';
 import {
   isHijackingTag,
@@ -14,12 +14,30 @@ import {
   recordStyledComponentsCSSRules,
 } from './common';
 
-const rawDocumentCreateElement = Document.prototype.createElement;
-const proxyAttachContainerConfigMap = new WeakMap<WindowProxy, ContainerConfig>();
+declare global {
+  interface Window {
+    __proxyAttachContainerConfigMap__: WeakMap<WindowProxy, ContainerConfig>;
+  }
+}
+
+// Get native global window with a sandbox disgusted way, thus we could share it between qiankun instances🤪
+// eslint-disable-next-line no-new-func
+const nativeGlobal: Window = new Function('return this')();
+Object.defineProperty(nativeGlobal, '__proxyAttachContainerConfigMap__', { enumerable: false, writable: true });
+
+// Share proxyAttachContainerConfigMap between multiple qiankun instance, thus they could access the same record
+nativeGlobal.__proxyAttachContainerConfigMap__ =
+  nativeGlobal.__proxyAttachContainerConfigMap__ || new WeakMap<WindowProxy, ContainerConfig>();
+const proxyAttachContainerConfigMap = nativeGlobal.__proxyAttachContainerConfigMap__;
 
 const elementAttachContainerConfigMap = new WeakMap<HTMLElement, ContainerConfig>();
+
+const docCreatePatchedMap = new WeakMap<typeof document.createElement, typeof document.createElement>();
 function patchDocumentCreateElement() {
-  if (Document.prototype.createElement === rawDocumentCreateElement) {
+  const docCreateElementFnBeforeOverwrite = docCreatePatchedMap.get(document.createElement);
+
+  if (!docCreateElementFnBeforeOverwrite) {
+    const rawDocumentCreateElement = document.createElement;
     Document.prototype.createElement = function createElement<K extends keyof HTMLElementTagNameMap>(
       this: Document,
       tagName: K,
@@ -27,7 +45,7 @@ function patchDocumentCreateElement() {
     ): HTMLElement {
       const element = rawDocumentCreateElement.call(this, tagName, options);
       if (isHijackingTag(tagName)) {
-        const currentRunningSandboxProxy = getCurrentRunningSandboxProxy();
+        const { window: currentRunningSandboxProxy } = getCurrentRunningApp() || {};
         if (currentRunningSandboxProxy) {
           const proxyContainerConfig = proxyAttachContainerConfigMap.get(currentRunningSandboxProxy);
           if (proxyContainerConfig) {
@@ -38,10 +56,20 @@ function patchDocumentCreateElement() {
 
       return element;
     };
+
+    // It means it have been overwritten while createElement is an own property of document
+    if (document.hasOwnProperty('createElement')) {
+      document.createElement = Document.prototype.createElement;
+    }
+
+    docCreatePatchedMap.set(Document.prototype.createElement, rawDocumentCreateElement);
   }
 
   return function unpatch() {
-    Document.prototype.createElement = rawDocumentCreateElement;
+    if (docCreateElementFnBeforeOverwrite) {
+      Document.prototype.createElement = docCreateElementFnBeforeOverwrite;
+      document.createElement = docCreateElementFnBeforeOverwrite;
+    }
   };
 }
 
