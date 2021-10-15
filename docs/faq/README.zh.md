@@ -236,7 +236,7 @@ if (inBrowser && window.Vue) {
 可以从以下方式中选择一种来解决问题：
 
 1. 在主应用中不使用 CDN 等 external 的方式来加载 `Vue` 框架，使用前端打包软件来加载模块
-2. 在主应用中，将 `window.Vue` 变量改个名称，例如 `window.Vue2 = window.Vue; window.Vue = undefined`
+2. 在主应用中，将 `window.Vue` 变量改个名称，例如 `window.Vue2 = window.Vue; delete window.Vue`
 
 ## 为什么微应用加载的资源会 404？
 
