@@ -156,7 +156,13 @@ toc: menu
       注意: @keyframes, @font-face, @import, @page 将不被支持 (i.e. 不会被改写)
 
     - singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - 可选，是否为单实例场景，单实例指的是同一时间只会渲染一个微应用。默认为 `true`。
+    - VueProto - `{VueProtoBlackList: string[], VueLibName: PropertyKey | string, VueRootId: string }` - 可选，如果vue2项目进行了依赖共享，通过设置一个新的代理沙箱用来处理其原型链污染问题。
 
+      `VueProtoBlackList` 需要沙箱的原型链对象
+
+      `VueLibName` 共享依赖的Vue名称, 如window.Vue2即为Vue2
+
+      `VueRootId` 父应用的root节点id
     - fetch - `Function` - 可选，自定义的 fetch 方法。
 
     - getPublicPath - `(entry: Entry) => string` - 可选，参数是微应用的 entry 值。

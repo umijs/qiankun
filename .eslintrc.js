@@ -13,6 +13,13 @@ module.exports = {
     'space-before-function-paren': ['error', { anonymous: 'never', named: 'never', asyncArrow: 'always' }],
     'no-underscore-dangle': 0,
     'no-plusplus': 0,
+    '@typescript-eslint/no-this-alias': [
+      'error',
+      {
+        allowDestructuring: true,
+        allowedNames: ['_sandbox'],
+      },
+    ],
   },
   parserOptions: {
     tsconfigRootDir: __dirname,

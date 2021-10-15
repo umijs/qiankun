@@ -259,6 +259,11 @@ export async function loadApp<T extends ObjectType>(
     sandbox = true,
     excludeAssetFilter,
     globalContext = window,
+    VueProto = {
+      VueProtoBlackList: [],
+      VueLibName: '',
+      VueRootId: '',
+    },
     ...importEntryOpts
   } = configuration;
 
@@ -312,6 +317,7 @@ export async function loadApp<T extends ObjectType>(
       // FIXME should use a strict sandbox logic while remount, see https://github.com/umijs/qiankun/issues/518
       initialAppWrapperGetter,
       scopedCSS,
+      VueProto,
       useLooseSandbox,
       excludeAssetFilter,
       global,

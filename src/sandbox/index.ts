@@ -2,7 +2,7 @@
  * @author Kuitos
  * @since 2019-04-11
  */
-import type { Freer, Rebuilder, SandBox } from '../interfaces';
+import type { Freer, Rebuilder, SandBox, VueProto } from '../interfaces';
 import LegacySandbox from './legacy/sandbox';
 import { patchAtBootstrapping, patchAtMounting } from './patchers';
 import ProxySandbox from './proxySandbox';
@@ -34,13 +34,18 @@ export function createSandboxContainer(
   appName: string,
   elementGetter: () => HTMLElement | ShadowRoot,
   scopedCSS: boolean,
+  VueProto?: VueProto,
   useLooseSandbox?: boolean,
   excludeAssetFilter?: (url: string) => boolean,
   globalContext?: typeof window,
 ) {
   let sandbox: SandBox;
   if (window.Proxy) {
-    sandbox = useLooseSandbox ? new LegacySandbox(appName, globalContext) : new ProxySandbox(appName, globalContext);
+    sandbox = useLooseSandbox
+      ? new LegacySandbox(appName, globalContext)
+      : VueProto
+      ? new ProxySandbox(appName, globalContext, VueProto)
+      : new ProxySandbox(appName, globalContext);
   } else {
     sandbox = new SnapshotSandbox(appName);
   }

@@ -88,6 +88,8 @@ type QiankunSpecialOpts = {
   excludeAssetFilter?: (url: string) => boolean;
 
   globalContext?: typeof window;
+
+  VueProto?: VueProto;
 };
 export type FrameworkConfiguration = QiankunSpecialOpts & ImportEntryOpts & StartOpts;
 
@@ -138,4 +140,10 @@ export type MicroAppStateActions = {
   onGlobalStateChange: (callback: OnGlobalStateChangeCallback, fireImmediately?: boolean) => void;
   setGlobalState: (state: Record<string, any>) => boolean;
   offGlobalStateChange: () => boolean;
+};
+
+export type VueProto = {
+  VueProtoBlackList: string[];
+  VueLibName: PropertyKey;
+  VueRootId: string;
 };

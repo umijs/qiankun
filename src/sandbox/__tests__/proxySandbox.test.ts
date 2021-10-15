@@ -6,7 +6,7 @@
 import { isBoundedFunction } from '../../utils';
 import { getCurrentRunningApp } from '../common';
 import ProxySandbox from '../proxySandbox';
-
+import vue from 'vue';
 declare global {
   // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   interface Window extends Record<string, any> {
@@ -26,6 +26,22 @@ beforeAll(() => {
   });
 });
 
+test('sandbox prototype pollution', () => {
+  const noVue2 = new ProxySandbox('globalThis', window, {
+    VueProtoBlackList: ['$test', '$test2', '$storage', '$test3', '$test1'],
+    VueLibName: 'Vue2',
+    VueRootId: 'root',
+  });
+  expect(noVue2.proxy.globalThis).toBe(noVue2.proxy);
+  window.Vue2 = vue;
+  const { proxy } = new ProxySandbox('globalThis', window, {
+    VueProtoBlackList: ['$test', '$test2', '$storage', '$test3', '$test1'],
+    VueLibName: 'Vue2',
+    VueRootId: 'root',
+  });
+  expect(proxy.globalThis).toBe(proxy);
+});
+
 test('iterator should be worked the same as the raw window', () => {
   Object.defineProperty(window, 'nonEnumerableValue', {
     enumerable: false,
@@ -33,7 +49,6 @@ test('iterator should be worked the same as the raw window', () => {
     writable: true,
     configurable: true,
   });
-
   const { proxy } = new ProxySandbox('unit-test');
   expect(Object.keys(proxy)).toEqual(Object.keys(window));
   expect(Object.getOwnPropertyNames(proxy)).toEqual(Object.getOwnPropertyNames(window));

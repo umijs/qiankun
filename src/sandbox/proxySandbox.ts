@@ -3,7 +3,7 @@
  * @author Kuitos
  * @since 2020-3-31
  */
-import type { SandBox } from '../interfaces';
+import type { SandBox, VueProto } from '../interfaces';
 import { SandBoxType } from '../interfaces';
 import { nextTask } from '../utils';
 import { getTargetValue, setCurrentRunningApp } from './common';
@@ -141,6 +141,8 @@ export default class ProxySandbox implements SandBox {
 
   latestSetProp: PropertyKey | null = null;
 
+  virtualActions: any[] = [];
+
   private registerRunningApp(name: string, proxy: Window) {
     if (this.sandboxRunning) {
       setCurrentRunningApp({ name, window: proxy });
@@ -177,7 +179,8 @@ export default class ProxySandbox implements SandBox {
     this.sandboxRunning = false;
   }
 
-  constructor(name: string, globalContext = window) {
+  constructor(name: string, globalContext = window, VueProto?: VueProto) {
+    const _sandbox = this;
     this.name = name;
     this.globalContext = globalContext;
     this.type = SandBoxType.Proxy;
@@ -188,7 +191,57 @@ export default class ProxySandbox implements SandBox {
 
     const descriptorTargetMap = new Map<PropertyKey, SymbolTarget>();
     const hasOwnProperty = (key: PropertyKey) => fakeWindow.hasOwnProperty(key) || rawWindow.hasOwnProperty(key);
-
+    // subapp vue prototype virtual actions Collections
+    _sandbox.virtualActions = [];
+    if (VueProto && (rawWindow as any).hasOwnProperty(VueProto.VueLibName)) {
+      const { VueProtoBlackList, VueLibName, VueRootId } = VueProto;
+      try {
+        const hander = {
+          get(target: any, key: any, receiver: any) {
+            // get proxy type
+            if (key === '__$isProxy') {
+              return true;
+            }
+            if (VueProtoBlackList.indexOf(key) != -1) {
+              // 一般来说receiver只会是vue2实例和原型链，如果不是代理的原型链且存在$root,意味这是个mount完毕的vue2实例
+              if (!receiver.__$isProxy) {
+                if (receiver.hasOwnProperty('$root') && receiver.$root.$el.id != VueRootId) {
+                  // 是mount完毕的实例且是subapp调用的话，返回本沙盒内的virtualActions里对应的操作/对象
+                  return _sandbox.virtualActions[key];
+                } else {
+                  // 反之，是主应用的话，反射回原本的方法
+                  return Reflect.get(target, key, receiver);
+                }
+              } else {
+                return _sandbox.virtualActions[key];
+              }
+            }
+            return Reflect.get(target, key, receiver);
+          },
+          set(target: any, key: any, value: any, receiver: any) {
+            if (VueProtoBlackList.indexOf(key) != -1) {
+              if (!receiver.__$isProxy) {
+                if (receiver.hasOwnProperty('$root') && receiver.$root.$el.id != VueRootId) {
+                  _sandbox.virtualActions[key] = value;
+                  return true;
+                } else {
+                  return Reflect.set(target, key, value, receiver);
+                }
+              } else {
+                _sandbox.virtualActions[key] = value;
+                return true;
+              }
+            }
+            return Reflect.set(target, key, value, receiver);
+          },
+        };
+        // 在依赖共享的情况下，用过不少办法很难无侵入的去处理父子应用Vue2原型链之间的完全隔离，只能退而求其次每次都重新替换一个proxy对象，
+        // 在proxy对象内部根据receiver来源来做不同的处理,但这样在多subapp共存情况下可能会有问题
+        (rawWindow as any)[VueLibName].prototype = new Proxy((rawWindow as any)[VueLibName].prototype, hander);
+      } catch (error) {
+        console.log(error);
+      }
+    }
     const proxy = new Proxy(fakeWindow, {
       set: (target: FakeWindow, p: PropertyKey, value: any): boolean => {
         if (this.sandboxRunning) {
