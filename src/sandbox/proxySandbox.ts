@@ -57,11 +57,11 @@ const unscopables = {
   Float32Array: true,
 };
 
-type SymbolTarget = 'target' | 'rawWindow';
+type SymbolTarget = 'target' | 'globalContext';
 
 type FakeWindow = Window & Record<PropertyKey, any>;
 
-function createFakeWindow(global: Window) {
+function createFakeWindow(globalContext: Window) {
   // map always has the fastest performance in has check scenario
   // see https://jsperf.com/array-indexof-vs-set-has/23
   const propertiesWithGetter = new Map<PropertyKey, boolean>();
@@ -72,13 +72,13 @@ function createFakeWindow(global: Window) {
    see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/getOwnPropertyDescriptor
    > A property cannot be reported as non-configurable, if it does not exists as an own property of the target object or if it exists as a configurable own property of the target object.
    */
-  Object.getOwnPropertyNames(global)
+  Object.getOwnPropertyNames(globalContext)
     .filter((p) => {
-      const descriptor = Object.getOwnPropertyDescriptor(global, p);
+      const descriptor = Object.getOwnPropertyDescriptor(globalContext, p);
       return !descriptor?.configurable;
     })
     .forEach((p) => {
-      const descriptor = Object.getOwnPropertyDescriptor(global, p);
+      const descriptor = Object.getOwnPropertyDescriptor(globalContext, p);
       if (descriptor) {
         const hasGetter = Object.prototype.hasOwnProperty.call(descriptor, 'get');
 
@@ -192,7 +192,7 @@ export default class ProxySandbox implements SandBox {
       set: (target: FakeWindow, p: PropertyKey, value: any): boolean => {
         if (this.sandboxRunning) {
           this.registerRunningApp(name, proxy);
-          // We must kept its description while the property existed in rawWindow before
+          // We must kept its description while the property existed in globalContext before
           if (!target.hasOwnProperty(p) && globalContext.hasOwnProperty(p)) {
             const descriptor = Object.getOwnPropertyDescriptor(globalContext, p);
             const { writable, configurable, enumerable } = descriptor!;
@@ -256,7 +256,7 @@ export default class ProxySandbox implements SandBox {
           return (globalContext as any)[p];
         }
 
-        // proxy.hasOwnProperty would invoke getter firstly, then its value represented as rawWindow.hasOwnProperty
+        // proxy.hasOwnProperty would invoke getter firstly, then its value represented as globalContext.hasOwnProperty
         if (p === 'hasOwnProperty') {
           return hasOwnProperty;
         }
@@ -298,7 +298,7 @@ export default class ProxySandbox implements SandBox {
 
         if (globalContext.hasOwnProperty(p)) {
           const descriptor = Object.getOwnPropertyDescriptor(globalContext, p);
-          descriptorTargetMap.set(p, 'rawWindow');
+          descriptorTargetMap.set(p, 'globalContext');
           // A property cannot be reported as non-configurable, if it does not exists as an own property of the target object
           if (descriptor && !descriptor.configurable) {
             descriptor.configurable = true;
@@ -321,7 +321,7 @@ export default class ProxySandbox implements SandBox {
          otherwise it would cause a TypeError with illegal invocation.
          */
         switch (from) {
-          case 'rawWindow':
+          case 'globalContext':
             return Reflect.defineProperty(globalContext, p, attributes);
           default:
             return Reflect.defineProperty(target, p, attributes);
