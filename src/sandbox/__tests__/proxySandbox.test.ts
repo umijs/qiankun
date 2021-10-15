@@ -384,7 +384,7 @@ it('native window function calling should always be bound with window', () => {
   expect(proxy.nativeWindowFunction()).toBe('success');
 });
 
-describe('nest sandbox should work', () => {
+describe('should work with nest sandbox', () => {
   it('specified dom api should bound with native window', () => {
     const { proxy: sandboxProxy } = new ProxySandbox('sandbox');
     const { proxy: nestProxy } = new ProxySandbox('dom-api', sandboxProxy as typeof window);
