@@ -4,6 +4,7 @@
  */
 
 import type { Freer } from '../../../interfaces';
+import { nativeGlobal } from '../../../utils';
 import { getCurrentRunningApp } from '../../common';
 import type { ContainerConfig } from './common';
 import {
@@ -21,8 +22,6 @@ declare global {
 }
 
 // Get native global window with a sandbox disgusted way, thus we could share it between qiankun instances🤪
-// eslint-disable-next-line no-new-func
-const nativeGlobal: Window = new Function('return this')();
 Object.defineProperty(nativeGlobal, '__proxyAttachContainerConfigMap__', { enumerable: false, writable: true });
 
 // Share proxyAttachContainerConfigMap between multiple qiankun instance, thus they could access the same record
