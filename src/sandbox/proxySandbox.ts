@@ -5,8 +5,12 @@
  */
 import type { SandBox } from '../interfaces';
 import { SandBoxType } from '../interfaces';
-import { nextTask } from '../utils';
+import { nativeGlobal, nextTask } from '../utils';
 import { getTargetValue, setCurrentRunningApp } from './common';
+
+type SymbolTarget = 'target' | 'globalContext';
+
+type FakeWindow = Window & Record<PropertyKey, any>;
 
 /**
  * fastest(at most time) unique array method
@@ -57,9 +61,10 @@ const unscopables = {
   Float32Array: true,
 };
 
-type SymbolTarget = 'target' | 'globalContext';
-
-type FakeWindow = Window & Record<PropertyKey, any>;
+const useNativeWindowForBindingsProps = new Map<PropertyKey, boolean>([
+  ['fetch', true],
+  ['mockDomAPIInBlackList', process.env.NODE_ENV === 'test'],
+]);
 
 function createFakeWindow(globalContext: Window) {
   // map always has the fastest performance in has check scenario
@@ -269,13 +274,19 @@ export default class ProxySandbox implements SandBox {
           return eval;
         }
 
-        // eslint-disable-next-line no-nested-ternary
         const value = propertiesWithGetter.has(p)
           ? (globalContext as any)[p]
           : p in target
           ? (target as any)[p]
           : (globalContext as any)[p];
-        return getTargetValue(globalContext, value);
+        /* Some dom api must be bound to native window, otherwise it would cause exception like 'TypeError: Failed to execute 'fetch' on 'Window': Illegal invocation'
+           See this code:
+             const proxy = new Proxy(window, {});
+             const proxyFetch = fetch.bind(proxy);
+             proxyFetch('https://qiankun.com');
+        */
+        const boundTarget = useNativeWindowForBindingsProps.get(p) ? nativeGlobal : globalContext;
+        return getTargetValue(boundTarget, value);
       },
 
       // trap in operator
