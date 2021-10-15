@@ -109,6 +109,8 @@ export function getWrapperId(id: string) {
   return `__qiankun_microapp_wrapper_for_${snakeCase(id)}__`;
 }
 
+export const nativeGlobal = new Function('return this')();
+
 /** 校验子应用导出的 生命周期 对象是否正确 */
 export function validateExportLifecycle(exports: any) {
   const { bootstrap, mount, unmount } = exports ?? {};

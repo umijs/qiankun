@@ -383,3 +383,30 @@ it('native window function calling should always be bound with window', () => {
   const { proxy } = new ProxySandbox('mustBeBoundWithWindowReference');
   expect(proxy.nativeWindowFunction()).toBe('success');
 });
+
+describe('nest sandbox should work', () => {
+  it('specified dom api should bound with native window', () => {
+    const { proxy: sandboxProxy } = new ProxySandbox('sandbox');
+    const { proxy: nestProxy } = new ProxySandbox('dom-api', sandboxProxy as typeof window);
+
+    function mockDomAPI(this: any) {
+      if (this !== window) {
+        throw new TypeError('Illegal invocation!');
+      }
+
+      return true;
+    }
+
+    nestProxy.mockDomAPIInBlackList = mockDomAPI;
+    // must use a new function to avoid cache
+    nestProxy.mockDomAPINotInBlackList = function fnCp(this: any) {
+      return mockDomAPI.call(this);
+    };
+
+    expect(nestProxy.mockDomAPIInBlackList()).toBeTruthy();
+
+    expect(() => {
+      nestProxy.mockDomAPINotInBlackList();
+    }).toThrowError(/Illegal invocation!/);
+  });
+});
