@@ -19,7 +19,7 @@ Qiankun enables you and your teams to build next-generation and enterprise-ready
 
 ## 🤔 Motivation
 
-A quick recap about the concept of 'Micro Frontends':
+A quick recap about the concept of `Micro Frontends`:
 
 > Techniques, strategies and recipes for building a **modern web app** with **multiple teams** using **different JavaScript frameworks**. — [Micro Frontends](https://micro-frontends.org/)
 
@@ -41,7 +41,7 @@ After solving these common problems of micro frontends and lots of polishing and
 
 Qiankun inherits many benefits from [single-spa](https://github.com/CanopyTax/single-spa):
 
-- 📦 **Micro-apps Independent Deployment** 
+- 📦 **Micro-apps Independent Deployment**
 - 🛴 **Lazy Load**
 - 📱 **Technology Agnostic**
 
@@ -49,7 +49,7 @@ And on top of these, it offers:
 
 - 💃 **Elegant API**
 - 💪 **HTML Entry Access Mode**
-- 🛡  **Style Isolation**
+- 🛡 **Style Isolation**
 - 🧳 **JS Sandbox**
 - ⚡ **Prefetch Assets**
 - 🔌 **[Umi Plugin](https://github.com/umijs/plugins/tree/master/packages/plugin-qiankun) Integration**
@@ -62,18 +62,16 @@ $ yarn add qiankun  # or npm i qiankun -S
 
 ## 📖 Documentation
 
-You can find the Qiankun documentation [on the website](https://qiankun.umijs.org/
-)
+You can find the Qiankun documentation [on the website](https://qiankun.umijs.org/)
 
 Check out the [Getting Started](https://qiankun.umijs.org/guide/getting-started) page for a quick overview.
 
 The documentation is divided into several sections:
 
-* [Tutorial](https://qiankun.umijs.org/cookbook)
-* [API Reference](https://qiankun.umijs.org/api)
-* [FAQ](https://qiankun.umijs.org/faq)
-* [Community](https://qiankun.umijs.org/#community)
-
+- [Tutorial](https://qiankun.umijs.org/cookbook)
+- [API Reference](https://qiankun.umijs.org/api)
+- [FAQ](https://qiankun.umijs.org/faq)
+- [Community](https://qiankun.umijs.org/#community)
 
 ## 💿 Examples
 
@@ -96,14 +94,12 @@ Visit `http://localhost:7099`.
 
 ![](./examples/example.gif)
 
-
 ## 🎯 Roadmap
 
 - [x] Parcel apps integration (multiple micro-apps displayed at the same time, but only one uses router at most)
 - [x] Communication protocol between the framework and hosted micro-apps
 - [ ] Customizable side-effect hijacker
 - [ ] Nested micro-apps
-
 
 ## 🎁 Acknowledgements
 

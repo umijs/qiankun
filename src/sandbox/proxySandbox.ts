@@ -5,8 +5,12 @@
  */
 import type { SandBox } from '../interfaces';
 import { SandBoxType } from '../interfaces';
-import { nextTask } from '../utils';
+import { nativeGlobal, nextTask } from '../utils';
 import { getTargetValue, setCurrentRunningApp } from './common';
+
+type SymbolTarget = 'target' | 'globalContext';
+
+type FakeWindow = Window & Record<PropertyKey, any>;
 
 /**
  * fastest(at most time) unique array method
@@ -57,11 +61,12 @@ const unscopables = {
   Float32Array: true,
 };
 
-type SymbolTarget = 'target' | 'rawWindow';
+const useNativeWindowForBindingsProps = new Map<PropertyKey, boolean>([
+  ['fetch', true],
+  ['mockDomAPIInBlackList', process.env.NODE_ENV === 'test'],
+]);
 
-type FakeWindow = Window & Record<PropertyKey, any>;
-
-function createFakeWindow(global: Window) {
+function createFakeWindow(globalContext: Window) {
   // map always has the fastest performance in has check scenario
   // see https://jsperf.com/array-indexof-vs-set-has/23
   const propertiesWithGetter = new Map<PropertyKey, boolean>();
@@ -72,13 +77,13 @@ function createFakeWindow(global: Window) {
    see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/getOwnPropertyDescriptor
    > A property cannot be reported as non-configurable, if it does not exists as an own property of the target object or if it exists as a configurable own property of the target object.
    */
-  Object.getOwnPropertyNames(global)
+  Object.getOwnPropertyNames(globalContext)
     .filter((p) => {
-      const descriptor = Object.getOwnPropertyDescriptor(global, p);
+      const descriptor = Object.getOwnPropertyDescriptor(globalContext, p);
       return !descriptor?.configurable;
     })
     .forEach((p) => {
-      const descriptor = Object.getOwnPropertyDescriptor(global, p);
+      const descriptor = Object.getOwnPropertyDescriptor(globalContext, p);
       if (descriptor) {
         const hasGetter = Object.prototype.hasOwnProperty.call(descriptor, 'get');
 
@@ -183,19 +188,18 @@ export default class ProxySandbox implements SandBox {
     this.type = SandBoxType.Proxy;
     const { updatedValueSet } = this;
 
-    const rawWindow = globalContext;
-    const { fakeWindow, propertiesWithGetter } = createFakeWindow(rawWindow);
+    const { fakeWindow, propertiesWithGetter } = createFakeWindow(globalContext);
 
     const descriptorTargetMap = new Map<PropertyKey, SymbolTarget>();
-    const hasOwnProperty = (key: PropertyKey) => fakeWindow.hasOwnProperty(key) || rawWindow.hasOwnProperty(key);
+    const hasOwnProperty = (key: PropertyKey) => fakeWindow.hasOwnProperty(key) || globalContext.hasOwnProperty(key);
 
     const proxy = new Proxy(fakeWindow, {
       set: (target: FakeWindow, p: PropertyKey, value: any): boolean => {
         if (this.sandboxRunning) {
           this.registerRunningApp(name, proxy);
-          // We must kept its description while the property existed in rawWindow before
-          if (!target.hasOwnProperty(p) && rawWindow.hasOwnProperty(p)) {
-            const descriptor = Object.getOwnPropertyDescriptor(rawWindow, p);
+          // We must kept its description while the property existed in globalContext before
+          if (!target.hasOwnProperty(p) && globalContext.hasOwnProperty(p)) {
+            const descriptor = Object.getOwnPropertyDescriptor(globalContext, p);
             const { writable, configurable, enumerable } = descriptor!;
             if (writable) {
               Object.defineProperty(target, p, {
@@ -212,7 +216,7 @@ export default class ProxySandbox implements SandBox {
 
           if (variableWhiteList.indexOf(p) !== -1) {
             // @ts-ignore
-            rawWindow[p] = value;
+            globalContext[p] = value;
           }
 
           updatedValueSet.add(p);
@@ -251,42 +255,44 @@ export default class ProxySandbox implements SandBox {
           (process.env.NODE_ENV === 'test' && (p === 'mockTop' || p === 'mockSafariTop'))
         ) {
           // if your master app in an iframe context, allow these props escape the sandbox
-          if (rawWindow === rawWindow.parent) {
+          if (globalContext === globalContext.parent) {
             return proxy;
           }
-          return (rawWindow as any)[p];
+          return (globalContext as any)[p];
         }
 
-        // proxy.hasOwnProperty would invoke getter firstly, then its value represented as rawWindow.hasOwnProperty
+        // proxy.hasOwnProperty would invoke getter firstly, then its value represented as globalContext.hasOwnProperty
         if (p === 'hasOwnProperty') {
           return hasOwnProperty;
         }
 
-        // mark the symbol to document while accessing as document.createElement could know is invoked by which sandbox for dynamic append patcher
-        if (p === 'document' || p === 'eval') {
-          switch (p) {
-            case 'document':
-              return document;
-            case 'eval':
-              // eslint-disable-next-line no-eval
-              return eval;
-            // no default
-          }
+        if (p === 'document') {
+          return document;
         }
 
-        // eslint-disable-next-line no-nested-ternary
+        if (p === 'eval') {
+          return eval;
+        }
+
         const value = propertiesWithGetter.has(p)
-          ? (rawWindow as any)[p]
+          ? (globalContext as any)[p]
           : p in target
           ? (target as any)[p]
-          : (rawWindow as any)[p];
-        return getTargetValue(rawWindow, value);
+          : (globalContext as any)[p];
+        /* Some dom api must be bound to native window, otherwise it would cause exception like 'TypeError: Failed to execute 'fetch' on 'Window': Illegal invocation'
+           See this code:
+             const proxy = new Proxy(window, {});
+             const proxyFetch = fetch.bind(proxy);
+             proxyFetch('https://qiankun.com');
+        */
+        const boundTarget = useNativeWindowForBindingsProps.get(p) ? nativeGlobal : globalContext;
+        return getTargetValue(boundTarget, value);
       },
 
       // trap in operator
       // see https://github.com/styled-components/styled-components/blob/master/packages/styled-components/src/constants.js#L12
       has(target: FakeWindow, p: string | number | symbol): boolean {
-        return p in unscopables || p in target || p in rawWindow;
+        return p in unscopables || p in target || p in globalContext;
       },
 
       getOwnPropertyDescriptor(target: FakeWindow, p: string | number | symbol): PropertyDescriptor | undefined {
@@ -301,9 +307,9 @@ export default class ProxySandbox implements SandBox {
           return descriptor;
         }
 
-        if (rawWindow.hasOwnProperty(p)) {
-          const descriptor = Object.getOwnPropertyDescriptor(rawWindow, p);
-          descriptorTargetMap.set(p, 'rawWindow');
+        if (globalContext.hasOwnProperty(p)) {
+          const descriptor = Object.getOwnPropertyDescriptor(globalContext, p);
+          descriptorTargetMap.set(p, 'globalContext');
           // A property cannot be reported as non-configurable, if it does not exists as an own property of the target object
           if (descriptor && !descriptor.configurable) {
             descriptor.configurable = true;
@@ -316,7 +322,7 @@ export default class ProxySandbox implements SandBox {
 
       // trap to support iterator with sandbox
       ownKeys(target: FakeWindow): ArrayLike<string | symbol> {
-        return uniq(Reflect.ownKeys(rawWindow).concat(Reflect.ownKeys(target)));
+        return uniq(Reflect.ownKeys(globalContext).concat(Reflect.ownKeys(target)));
       },
 
       defineProperty(target: Window, p: PropertyKey, attributes: PropertyDescriptor): boolean {
@@ -326,8 +332,8 @@ export default class ProxySandbox implements SandBox {
          otherwise it would cause a TypeError with illegal invocation.
          */
         switch (from) {
-          case 'rawWindow':
-            return Reflect.defineProperty(rawWindow, p, attributes);
+          case 'globalContext':
+            return Reflect.defineProperty(globalContext, p, attributes);
           default:
             return Reflect.defineProperty(target, p, attributes);
         }
@@ -348,7 +354,7 @@ export default class ProxySandbox implements SandBox {
 
       // makes sure `window instanceof Window` returns truthy in micro app
       getPrototypeOf() {
-        return Reflect.getPrototypeOf(rawWindow);
+        return Reflect.getPrototypeOf(globalContext);
       },
     });
 
