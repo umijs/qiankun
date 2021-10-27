@@ -477,6 +477,71 @@ Since qiankun get assets which imported by sub app via fetch, these static resou
 
 See [Enable Nginx Cors](https://enable-cors.org/server_nginx.html).
 
+## How to solve the problem that micro apps fail to be loaded due to abnormal scripts inserted dynamically by carriers
+
+Scripts inserted by carriers are usually marked with `async` to avoid loading of block micro apps. This is usually no problem, such as:
+
+```html
+<script async src="//www.rogue.com/rogue.js"></script>
+```
+
+However, if some inserted scripts are not marked as `async`, once such scripts fail to run, the entire application will be blocked and subsequent scripts will no longer be executed. We can solve this problem in the following ways:
+
+### Use a custom `getTemplate` method
+
+Filter abnormal scripts in the HTML template of the micro app through the `getTemplate` method implemented by yourself.
+
+```js
+import { start } from 'qiankun';
+
+start({
+  getTemplate(tpl) {
+    return tpl.replace('<script src="/to-be-replaced.js"><script>', '');
+  },
+});
+```
+
+### Use custom fetch method
+
+Intercept abnormal scripts through the `fetch` method implemented by yourself.
+
+```js
+import { start } from 'qiankun';
+
+start({
+  async fetch(url, ...args) {
+    if (url === 'http://to-be-replaced.js') {
+      return {
+        async text() {
+          return '';
+        },
+      };
+    }
+
+    return window.fetch(url, ...args);
+  },
+});
+```
+
+### Change the response Content-type of micro app's HTML to `text/plain` (ultimate solution)
+
+The principle is that the carriers can only recognize the request whose response's `content-type` is `text/html` and insert the script, and the response of the `text/plain` type will not be hijacked.
+
+How to modify the `content-type` of the response header of the micro-application HTML request, you can google it yourself, and there is a simpler and more efficient solution:
+
+1. Copy an `index.txt` file from `index.html` when the micro-app is published.
+
+2. Change `entry` in the main app to a txt address, for example:
+
+   ```diff
+   registerMicroApps(
+     [
+   -    { name: 'app1', entry: '//localhost:8080/index.html', container, activeRule },
+   +    { name: 'app1', entry: '//localhost:8080/index.txt', container, activeRule },
+     ],
+   );
+   ```
+
 ## How to guarantee the main app stylesheet isolated with sub apps?
 
 Qiankun will isolate stylesheet between your sub apps automatically, you can manually ensure isolation between master and child applications. Such as add a prefix to all classes in the master application, and if you are using [ant-design](https://ant.design), you can follow [this doc](https://ant.design/docs/react/customize-theme) to make it works.
