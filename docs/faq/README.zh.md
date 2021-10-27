@@ -514,7 +514,7 @@ start({
 import { start } from 'qiankun';
 
 start({
-  fetch(url, ...args) {
+  async fetch(url, ...args) {
     if (url === 'http://to-be-replaced.js') {
       return {
         async text() {
