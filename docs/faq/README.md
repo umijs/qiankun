@@ -477,7 +477,7 @@ Since qiankun get assets which imported by sub app via fetch, these static resou
 
 See [Enable Nginx Cors](https://enable-cors.org/server_nginx.html).
 
-## How to solve the problem that micro apps fail to be loaded due to abnormal scripts inserted dynamically by carriers
+## How to solve that micro apps loaded failed due to abnormal scripts inserted dynamically by carriers
 
 Scripts inserted by carriers are usually marked with `async` to avoid loading of block micro apps. This is usually no problem, such as:
 
