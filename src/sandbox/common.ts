@@ -51,6 +51,18 @@ export function getTargetValue(target: any, value: any): any {
       Object.defineProperty(boundValue, 'prototype', { value: value.prototype, enumerable: false, writable: true });
     }
 
+    // some utils, like `function isNative() {  return typeof Ctor === 'function' && /native code/.test(Ctor.toString()) }`
+    // rely on the correct `toString()` result. While bound functions' will be "function() {[native code]}", which is misleading
+    const valueHasInstanceToString = value.hasOwnProperty('toString') && !boundValue.hasOwnProperty('toString');
+    const boundValueHasPrototypeToString = boundValue.toString === Function.prototype.toString;
+
+    if (valueHasInstanceToString || boundValueHasPrototypeToString) {
+      Object.defineProperty(boundValue, 'toString', {
+        ...Object.getOwnPropertyDescriptor(valueHasInstanceToString ? value : Function.prototype, 'toString'),
+        value: () => value.toString(),
+      });
+    }
+
     functionBoundedValueMap.set(value, boundValue);
     return boundValue;
   }

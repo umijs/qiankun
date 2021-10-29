@@ -59,4 +59,11 @@ describe('getTargetValue', () => {
     const boundFn = getTargetValue(window, callableFunction);
     expect(boundFn.prototype).toBe(callableFunction.prototype);
   });
+
+  it("should work well while function's toString()'s return value keeps the same as the origin", () => {
+    function callableFunction() {}
+
+    const boundFn = getTargetValue(window, callableFunction);
+    expect(boundFn.toString()).toBe(callableFunction.toString());
+  });
 });
