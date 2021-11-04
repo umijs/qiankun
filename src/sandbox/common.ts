@@ -53,18 +53,21 @@ export function getTargetValue(target: any, value: any): any {
 
     // Some util, like `function isNative() {  return typeof Ctor === 'function' && /native code/.test(Ctor.toString()) }` relies on the original `toString()` result
     // but bound functions will always return "function() {[native code]}" for `toString`, which is misleading
-    const valueHasInstanceToString = value.hasOwnProperty('toString') && !boundValue.hasOwnProperty('toString');
-    const boundValueHasPrototypeToString = boundValue.toString === Function.prototype.toString;
-    const originToStringDescriptor = Object.getOwnPropertyDescriptor(
-      valueHasInstanceToString ? value : Function.prototype,
-      'toString',
-    );
+    if (typeof value.toString === 'function') {
+      const valueHasInstanceToString = value.hasOwnProperty('toString') && !boundValue.hasOwnProperty('toString');
+      const boundValueHasPrototypeToString = boundValue.toString === Function.prototype.toString;
 
-    if (valueHasInstanceToString || boundValueHasPrototypeToString) {
-      Object.defineProperty(boundValue, 'toString', {
-        ...originToStringDescriptor,
-        ...(originToStringDescriptor?.get ? null : { value: () => value.toString() }),
-      });
+      if (valueHasInstanceToString || boundValueHasPrototypeToString) {
+        const originToStringDescriptor = Object.getOwnPropertyDescriptor(
+          valueHasInstanceToString ? value : Function.prototype,
+          'toString',
+        );
+
+        Object.defineProperty(boundValue, 'toString', {
+          ...originToStringDescriptor,
+          ...(originToStringDescriptor?.get ? null : { value: () => value.toString() }),
+        });
+      }
     }
 
     functionBoundedValueMap.set(value, boundValue);
