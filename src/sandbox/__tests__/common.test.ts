@@ -61,9 +61,22 @@ describe('getTargetValue', () => {
   });
 
   it("should work well while function's toString()'s return value keeps the same as the origin", () => {
-    function callableFunction() {}
+    function callableFunction1() {}
+    function callableFunction2() {}
+    function callableFunction3() {}
+    callableFunction2.toString = () => 'instance toString';
+    Object.defineProperty(callableFunction3, 'toString', {
+      get() {
+        return () => 'instance toString';
+      },
+    });
 
-    const boundFn = getTargetValue(window, callableFunction);
-    expect(boundFn.toString()).toBe(callableFunction.toString());
+    const boundFn1 = getTargetValue(window, callableFunction1);
+    const boundFn2 = getTargetValue(window, callableFunction2);
+    const boundFn3 = getTargetValue(window, callableFunction3);
+
+    expect(boundFn1.toString()).toBe(callableFunction1.toString());
+    expect(boundFn2.toString()).toBe(callableFunction2.toString());
+    expect(boundFn3.toString()).toBe(callableFunction3.toString());
   });
 });
