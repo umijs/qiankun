@@ -52,7 +52,6 @@ export function getTargetValue(target: any, value: any): any {
     }
 
     // Some util, like `function isNative() {  return typeof Ctor === 'function' && /native code/.test(Ctor.toString()) }` relies on the original `toString()` result, but bound functions will always return "function() {[native code]}" for `toString`, which is misleading
-    // rely on the correct `toString()` result. While bound functions' will be "function() {[native code]}", which is misleading
     const valueHasInstanceToString = value.hasOwnProperty('toString') && !boundValue.hasOwnProperty('toString');
     const boundValueHasPrototypeToString = boundValue.toString === Function.prototype.toString;
 
