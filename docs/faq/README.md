@@ -235,7 +235,7 @@ if (inBrowser && window.Vue) {
 To solve the error, choose one of the options listed below:
 
 1. Use bundler to pack `Vue` library, instead of CDN or external module
-2. Rename `Vue` to other name in master application, eg: `window.Vue2 = window.Vue; window.Vue = undefined`
+2. Rename `Vue` to other name in master application, eg: `window.Vue2 = window.Vue; delete window.Vue`
 
 ## Why dynamic imported assets missing?
 
