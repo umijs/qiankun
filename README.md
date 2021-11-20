@@ -96,10 +96,7 @@ Visit `http://localhost:7099`.
 
 ## 🎯 Roadmap
 
-- [x] Parcel apps integration (multiple micro-apps displayed at the same time, but only one uses router at most)
-- [x] Communication protocol between the framework and hosted micro-apps
-- [ ] Customizable side-effect hijacker
-- [ ] Nested micro-apps
+See [Qiankun 3.0 Roadmap](https://github.com/umijs/qiankun/discussions/1378)
 
 ## 🎁 Acknowledgements
 
