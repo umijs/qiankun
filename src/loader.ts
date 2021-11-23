@@ -156,8 +156,8 @@ function getRender(appName: string, appContent: string, legacyRender?: HTMLConte
   const render: ElementRender = ({ element, loading, container }, phase) => {
     if (legacyRender) {
       if (process.env.NODE_ENV === 'development') {
-        console.warn(
-          '[qiankun] Custom rendering function is deprecated, you can use the container element setting instead!',
+        console.error(
+          '[qiankun] Custom rendering function is deprecated and will be removed in 3.0, you can use the container element setting instead!',
         );
       }
 
@@ -275,6 +275,13 @@ export async function loadApp<T extends ObjectType>(
   const appContent = getDefaultTplWrapper(appInstanceId, appName)(template);
 
   const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
+
+  if (process.env.NODE_ENV === 'development' && strictStyleIsolation) {
+    console.warn(
+      "[qiankun] strictStyleIsolation configuration will be removed in 3.0, pls don't depend on it or use experimentalStyleIsolation instead!",
+    );
+  }
+
   const scopedCSS = isEnableScopedCSS(sandbox);
   let initialAppWrapperElement: HTMLElement | null = createElement(
     appContent,
