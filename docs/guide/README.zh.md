@@ -63,7 +63,7 @@ TODO
 
 ## 特性
 
-- 📦 **基于 [single-spa](https://github.com/CanopyTax/single-spa)** 封装，提供了更加开箱即用的 API。
+- 📦 **基于 [single-spa](https://github.com/CanopyTax/single-spa)** 封装，提供了更多开箱即用的 API。
 - 📱 **技术栈无关**，任意技术栈的应用均可 使用/接入，不论是 React/Vue/Angular/JQuery 还是其他等框架。
 - 💪 **HTML Entry 接入方式**，让你接入微应用像使用 iframe 一样简单。
 - 🛡​ **样式隔离**，确保微应用之间样式互相不干扰。
