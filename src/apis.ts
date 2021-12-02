@@ -80,7 +80,7 @@ const containerMicroAppsMap = new Map<string, MicroApp[]>();
 
 export function loadMicroApp<T extends ObjectType>(
   app: LoadableApp<T>,
-  configuration?: FrameworkConfiguration,
+  configuration?: FrameworkConfiguration & { autoStart?: boolean },
   lifeCycles?: FrameworkLifeCycles<T>,
 ): MicroApp {
   const { props, name } = app;
@@ -161,7 +161,7 @@ export function loadMicroApp<T extends ObjectType>(
     return (await parcelConfigObjectGetterPromise)(container);
   };
 
-  if (!started) {
+  if (!started && configuration?.autoStart !== false) {
     // We need to invoke start method of single-spa as the popstate event should be dispatched while the main app calling pushState/replaceState automatically,
     // but in single-spa it will check the start status before it dispatch popstate
     // see https://github.com/single-spa/single-spa/blob/f28b5963be1484583a072c8145ac0b5a28d91235/src/navigation/navigation-events.js#L101
