@@ -82,7 +82,7 @@ function createFakeWindow(globalContext: Window) {
   // map always has the fastest performance in has check scenario
   // see https://jsperf.com/array-indexof-vs-set-has/23
   const propertiesWithGetter = new Map<PropertyKey, boolean>();
-  const fakeWindow = {} as FakeWindow;
+  const fakeWindow = Object.create(globalContext);
 
   /*
    copy the non-configurable property of global to fakeWindow
@@ -291,7 +291,8 @@ export default class ProxySandbox implements SandBox {
 
         const value = propertiesWithGetter.has(p)
           ? (globalContext as any)[p]
-          : p in target
+          : // : p in target
+          target.hasOwnProperty(p)
           ? (target as any)[p]
           : (globalContext as any)[p];
         /* Some dom api must be bound to native window, otherwise it would cause exception like 'TypeError: Failed to execute 'fetch' on 'Window': Illegal invocation'
@@ -306,9 +307,9 @@ export default class ProxySandbox implements SandBox {
 
       // trap in operator
       // see https://github.com/styled-components/styled-components/blob/master/packages/styled-components/src/constants.js#L12
-      has(target: FakeWindow, p: string | number | symbol): boolean {
-        return p in unscopables || p in target || p in globalContext;
-      },
+      // has(target: FakeWindow, p: string | number | symbol): boolean {
+      //   return p in unscopables || p in target || p in globalContext;
+      // },
 
       getOwnPropertyDescriptor(target: FakeWindow, p: string | number | symbol): PropertyDescriptor | undefined {
         /*
