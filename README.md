@@ -71,7 +71,7 @@ The documentation is divided into several sections:
 - [Tutorial](https://qiankun.umijs.org/cookbook)
 - [API Reference](https://qiankun.umijs.org/api)
 - [FAQ](https://qiankun.umijs.org/faq)
-- [Community](https://qiankun.umijs.org/#community)
+- [Community](https://qiankun.umijs.org/#-community)
 
 ## 💿 Examples
 
@@ -98,11 +98,19 @@ Visit `http://localhost:7099`.
 
 See [Qiankun 3.0 Roadmap](https://github.com/umijs/qiankun/discussions/1378)
 
+## 👥 Contributors
+
+Thanks to all the contributors!
+
+<a href="https://github.com/umijs/qiankun/graphs/contributors">
+  <img src="https://opencollective.com/qiankun/contributors.svg?width=960&button=false" alt="contributors" />
+</a>
+
 ## 🎁 Acknowledgements
 
 - [single-spa](https://github.com/CanopyTax/single-spa) What an awesome meta-framework for micro-frontends!
 - [import-html-entry](https://github.com/kuitos/import-html-entry/) An assets loader that supports html entry.
 
-### License
+## 📄 License
 
 Qiankun is [MIT licensed](./LICENSE).

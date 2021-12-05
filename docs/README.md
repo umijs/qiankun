@@ -40,7 +40,7 @@ loadMicroApp({
 
 See details：[Getting Started](/guide/getting-started)
 
-## Community
+## 👬 Community
 
 | Github Discussions | 钉钉群 |
 | --- | --- |

@@ -40,7 +40,7 @@ loadMicroApp({
 
 参考：[快速上手](/zh/guide/getting-started)。
 
-## 社区
+## 👬 社区
 
 | Github Discussions | 钉钉群 |
 | --- | --- |
