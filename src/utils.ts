@@ -101,15 +101,38 @@ export function isBoundedFunction(fn: CallableFunction) {
   return bounded;
 }
 
-export function getDefaultTplWrapper(id: string, name: string) {
-  return (tpl: string) => `<div id="${getWrapperId(id)}" data-name="${name}" data-version="${version}">${tpl}</div>`;
+export function getDefaultTplWrapper(name: string) {
+  return (tpl: string) => `<div id="${getWrapperId(name)}" data-name="${name}" data-version="${version}">${tpl}</div>`;
 }
 
-export function getWrapperId(id: string) {
-  return `__qiankun_microapp_wrapper_for_${snakeCase(id)}__`;
+export function getWrapperId(name: string) {
+  return `__qiankun_microapp_wrapper_for_${snakeCase(name)}__`;
 }
 
 export const nativeGlobal = new Function('return this')();
+
+/**
+ * get app instance name with the auto-increment approach
+ * @param appName
+ */
+export const getAppInstanceName = (appName: string): string => {
+  if (typeof nativeGlobal.__app_instance_name_map__?.[appName] === undefined) {
+    const prevAppsCount = nativeGlobal.__app_instance_name_map__ || {};
+    Object.defineProperty(nativeGlobal, '__app_instance_name_map__', {
+      enumerable: false,
+      writable: true,
+      value: {
+        ...prevAppsCount,
+        [appName]: 0,
+      },
+    });
+
+    return appName;
+  }
+
+  nativeGlobal.__app_instance_name_map__[appName]++;
+  return `${appName}_${nativeGlobal.__app_instance_name_map__[appName]}`;
+};
 
 /** 校验子应用导出的 生命周期 对象是否正确 */
 export function validateExportLifecycle(exports: any) {
