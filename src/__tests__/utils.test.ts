@@ -23,7 +23,7 @@ test('should wrap the id [2]', () => {
 
 test('should wrap string with div', () => {
   const tpl = '<span>qiankun</span>';
-  const factory = getDefaultTplWrapper('react16', 'react16');
+  const factory = getDefaultTplWrapper('react16');
 
   const ret = factory(tpl);
 
