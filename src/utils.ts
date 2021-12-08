@@ -111,22 +111,18 @@ export function getWrapperId(name: string) {
 
 export const nativeGlobal = new Function('return this')();
 
+Object.defineProperty(nativeGlobal, '__app_instance_name_map__', {
+  enumerable: false,
+  writable: true,
+  value: {},
+});
 /**
  * get app instance name with the auto-increment approach
  * @param appName
  */
 export const getAppInstanceName = (appName: string): string => {
-  if (typeof nativeGlobal.__app_instance_name_map__?.[appName] === undefined) {
-    const prevAppsCount = nativeGlobal.__app_instance_name_map__ || {};
-    Object.defineProperty(nativeGlobal, '__app_instance_name_map__', {
-      enumerable: false,
-      writable: true,
-      value: {
-        ...prevAppsCount,
-        [appName]: 0,
-      },
-    });
-
+  if (!(appName in nativeGlobal.__app_instance_name_map__)) {
+    nativeGlobal.__app_instance_name_map__[appName] = 0;
     return appName;
   }
 
