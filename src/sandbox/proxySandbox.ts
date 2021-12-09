@@ -291,8 +291,7 @@ export default class ProxySandbox implements SandBox {
 
         const value = propertiesWithGetter.has(p)
           ? (globalContext as any)[p]
-          : // : p in target
-          target.hasOwnProperty(p)
+          : target.hasOwnProperty(p)
           ? (target as any)[p]
           : (globalContext as any)[p];
         /* Some dom api must be bound to native window, otherwise it would cause exception like 'TypeError: Failed to execute 'fetch' on 'Window': Illegal invocation'

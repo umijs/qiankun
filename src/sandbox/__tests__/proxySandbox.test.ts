@@ -406,6 +406,7 @@ describe('should work with nest sandbox', () => {
     expect(nestProxy.mockDomAPIInBlackList()).toBeTruthy();
 
     expect(() => {
+      console.log('hehe', nestProxy);
       nestProxy.mockDomAPINotInBlackList();
     }).toThrowError(/Illegal invocation!/);
   });
