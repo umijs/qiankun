@@ -3,7 +3,7 @@
  * @since 2019-05-15
  */
 
-import { isFunction, snakeCase } from 'lodash';
+import { isFunction, snakeCase, once } from 'lodash';
 import { version } from './version';
 
 import type { FrameworkConfiguration } from './interfaces';
@@ -111,23 +111,30 @@ export function getWrapperId(name: string) {
 
 export const nativeGlobal = new Function('return this')();
 
-Object.defineProperty(nativeGlobal, '__app_instance_name_map__', {
-  enumerable: false,
-  writable: true,
-  value: {},
+const getGlobalAppInstanceMap = once<() => Record<string, number>>(() => {
+  if (!nativeGlobal.hasOwnProperty('__app_instance_name_map__')) {
+    Object.defineProperty(nativeGlobal, '__app_instance_name_map__', {
+      enumerable: false,
+      writable: true,
+      value: {},
+    });
+  }
+
+  return nativeGlobal.__app_instance_name_map__;
 });
 /**
- * get app instance name with the auto-increment approach
+ * Get app instance name with the auto-increment approach
  * @param appName
  */
-export const getAppInstanceName = (appName: string): string => {
-  if (!(appName in nativeGlobal.__app_instance_name_map__)) {
+export const genAppInstanceIdByName = (appName: string): string => {
+  const globalAppInstanceMap = getGlobalAppInstanceMap();
+  if (!(appName in globalAppInstanceMap)) {
     nativeGlobal.__app_instance_name_map__[appName] = 0;
     return appName;
   }
 
-  nativeGlobal.__app_instance_name_map__[appName]++;
-  return `${appName}_${nativeGlobal.__app_instance_name_map__[appName]}`;
+  globalAppInstanceMap[appName]++;
+  return `${appName}_${globalAppInstanceMap[appName]}`;
 };
 
 /** 校验子应用导出的 生命周期 对象是否正确 */
@@ -136,7 +143,7 @@ export function validateExportLifecycle(exports: any) {
   return isFunction(bootstrap) && isFunction(mount) && isFunction(unmount);
 }
 
-class Deferred<T> {
+export class Deferred<T> {
   promise: Promise<T>;
 
   resolve!: (value: T | PromiseLike<T>) => void;
@@ -150,8 +157,6 @@ class Deferred<T> {
     });
   }
 }
-
-export { Deferred };
 
 const supportsUserTiming =
   typeof performance !== 'undefined' &&
