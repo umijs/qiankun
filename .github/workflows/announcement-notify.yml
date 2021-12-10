@@ -1,4 +1,4 @@
-name: Release Notify
+name: Annoucement Notify
 
 on:
   discussion:
