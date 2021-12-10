@@ -115,6 +115,7 @@ const getGlobalAppInstanceMap = once<() => Record<string, number>>(() => {
   if (!nativeGlobal.hasOwnProperty('__app_instance_name_map__')) {
     Object.defineProperty(nativeGlobal, '__app_instance_name_map__', {
       enumerable: false,
+      configurable: true,
       writable: true,
       value: {},
     });
