@@ -13,7 +13,7 @@ The main app is not limited to the technical framework, it only needs to provide
 Install `qiankun` first :
 
 ```shell
-$ yarn add qiankun # or npm i qiankun -S
+$ pnpm run add qiankun # or npm i qiankun -S
 ```
 
 Register the micro apps and start:

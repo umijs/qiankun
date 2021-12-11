@@ -12,8 +12,8 @@ jobs:
         env:
           NOW_DEPLOY: true
         run: |
-          yarn install
-          yarn docs:build
+          pnpm run install
+          pnpm run docs:build
       - uses: amondnet/vercel-action@v19
         id: vercel-deployment-production
         with:

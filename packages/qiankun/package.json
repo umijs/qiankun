@@ -17,13 +17,13 @@
   "scripts": {
     "build": "father-build",
     "release": "np --no-cleanup --yolo --no-publish",
-    "prepublishOnly": "yarn lint && yarn test && yarn build",
-    "lint": "yarn lint:js && yarn lint:prettier",
+    "prepublishOnly": "pnpm run lint && pnpm run test && pnpm run build",
+    "lint": "pnpm run lint:js && pnpm run lint:prettier",
     "lint:js": "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty ./src",
-    "lint:fix": "yarn lint:js -- --fix",
+    "lint:fix": "pnpm run lint:js -- --fix",
     "lint:prettier": "prettier -c ./src/**/*",
     "prettier": "prettier --write ./src/**/*",
-    "ci": "yarn lint && yarn build && yarn test",
+    "ci": "pnpm run lint && pnpm run build && pnpm run test",
     "test": "cross-env NODE_ENV=test jest"
   },
   "repository": {

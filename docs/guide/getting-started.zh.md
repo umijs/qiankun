@@ -9,7 +9,7 @@ toc: menu
 ### 1. 安装 qiankun
 
 ```bash
-$ yarn add qiankun # 或者 npm i qiankun -S
+$ pnpm run add qiankun # 或者 npm i qiankun -S
 ```
 
 ### 2. 在主应用中注册微应用

@@ -1,34 +1,28 @@
 {
+  "name": "qiankun-monorepo",
   "private": true,
-  "workspaces": {
-    "packages": [
-      "packages/**",
-      "examples/**"
-    ],
-    "nohoist": [
-      "**/@types/**",
-      "**/@jest/**",
-      "**/ts-jest/**",
-      "**/@vue/**",
-      "**/@umijs/**"
-    ]
+  "engines": {
+    "node": ">=12.0.0"
   },
   "scripts": {
-    "examples:start": "lerna run start --scope \"@example/*\"",
-    "examples:start-multiple": "lerna run start:multiple --scope \"@example/*\"",
-    "build": "yarn run build:qiankun",
-    "build:qiankun": "lerna run build --scope qiankun",
+    "build": "pnpm run build-qiankun",
+    "build-qiankun": "pnpm run build --filter qiankun",
     "release": "np --no-cleanup --yolo --no-publish",
-    "prepublishOnly": "yarn lint && yarn test && yarn build",
-    "lint": "yarn workspace qiankun run lint",
-    "lint:js": "yarn workspace qiankun run lint:js",
-    "lint:fix": "yarn workspace qiankun run lint:fix",
-    "lint:prettier": "yarn workspace qiankun run lint:prettier",
-    "prettier": "yarn workspace qiankun run prettier",
-    "docs:dev": "dumi dev",
-    "docs:build": "dumi build",
-    "ci": "yarn lint && yarn build && yarn test",
+    "prepublishOnly": "pnpm run lint && pnpm run test && pnpm run build",
+    "lint": "eslint packages/*/{src,types}/**",
+    "prettier": "prettier --write .",
+    "docs": "dumi dev",
+    "build-docs": "dumi build",
+    "ci": "pnpm run lint && pnpm run build && pnpm run test",
     "test": "cross-env NODE_ENV=test lerna run test --scope qiankun"
+  },
+  "devDependencies": {
+    "dumi": "^1.1.0-beta.24",
+    "dumi-theme-default": "^1.0.10",
+    "husky": "^2.3.0",
+    "lint-staged": "^9.4.2",
+    "prettier": "^2.1.2",
+    "umi-plugin-hire": "^1.0.3"
   },
   "repository": {
     "type": "git",
@@ -39,30 +33,22 @@
     "url": "https://github.com/kuitos/qiankun/issues"
   },
   "homepage": "https://github.com/kuitos/qiankun#readme",
-  "resolutions": {
-    "@types/react": "^16.x"
-  },
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged",
-      "pre-push": "yarn test"
+      "pre-push": "pnpm run test"
     }
   },
   "lint-staged": {
     "**/*.{js,ts,json,css,md}": [
-      "prettier -w"
+      "prettier --write --ignore-unknown"
     ],
-    "packages/qiankun/**/*.{js,ts}": [
-      "yarn lint:fix"
+    "packages/*/{src,types}/**/*.ts": [
+      "eslint --ext .ts"
+    ],
+    "packages/**/*.d.ts": [
+      "eslint --ext .ts"
     ]
   },
-  "devDependencies": {
-    "dumi": "^1.1.0-beta.24",
-    "dumi-theme-default": "^1.0.10",
-    "husky": "^2.3.0",
-    "lint-staged": "^9.4.2",
-    "prettier": "^2.1.2",
-    "umi-plugin-hire": "^1.0.3",
-    "lerna": "^4.0.0"
-  }
+  "packageManager": "pnpm@6.23.0"
 }

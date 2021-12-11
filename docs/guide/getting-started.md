@@ -9,7 +9,7 @@ toc: menu
 ### 1. Installation
 
 ```bash
-$ yarn add qiankun # or npm i qiankun -S
+$ pnpm run add qiankun # or npm i qiankun -S
 ```
 
 ### 2. Register Sub Apps In Master Application

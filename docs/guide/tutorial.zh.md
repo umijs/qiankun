@@ -13,7 +13,7 @@ toc: menu
 先安装 `qiankun` ：
 
 ```shell
-$ yarn add qiankun # 或者 npm i qiankun -S
+$ pnpm run add qiankun # 或者 npm i qiankun -S
 ```
 
 注册微应用并启动：

@@ -1,5 +1,12 @@
 # qiankun（乾坤）
 
+<p align="center">
+  <a href="https://qiankun.umijs.org/" target="_blank" rel="noopener noreferrer">
+    <img width="180" src="https://gw.alipayobjects.com/zos/bmw-prod/8a74c1d3-16f3-4719-be63-15e467a68a24/km0cv8vn_w500_h500.png" alt="qiankun logo">
+  </a>
+</p>
+url('')
+
 [![npm version](https://img.shields.io/npm/v/qiankun.svg?style=flat-square)](https://www.npmjs.com/package/qiankun) [![coverage](https://img.shields.io/codecov/c/github/umijs/qiankun.svg?style=flat-square)](https://codecov.io/gh/umijs/qiankun) [![npm downloads](https://img.shields.io/npm/dt/qiankun.svg?style=flat-square)](https://www.npmjs.com/package/qiankun) [![Build Status](https://img.shields.io/travis/umijs/qiankun.svg?style=flat-square)](https://travis-ci.com/umijs/qiankun)
 
 > In Chinese traditional culture `qian` means heaven and `kun` stands for earth, so `qiankun` is the universe.
@@ -27,7 +34,7 @@ After solving these common problems of micro frontends, we extracted the kernel 
 ## 📦 Installation
 
 ```shell
-$ yarn add qiankun  # or npm i qiankun -S
+$ pnpm run add qiankun
 ```
 
 ## 📖 Documentation
@@ -43,12 +50,12 @@ $ git clone https://github.com/umijs/qiankun.git
 $ cd qiankun
 ```
 
-Now run the yarn scripts to install and run the examples project:
+Now run the pnpm run scripts to install and run the examples project:
 
 ```shell
-$ yarn install
-$ yarn examples:install
-$ yarn examples:start
+$ pnpm run install
+$ pnpm run examples:install
+$ pnpm run examples:start
 ```
 
 Visit `http://localhost:7099`.
