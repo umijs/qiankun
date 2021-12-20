@@ -144,7 +144,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
   return function appendChildOrInsertBefore<T extends Node>(
     this: HTMLHeadElement | HTMLBodyElement,
     newChild: T,
-    refChild?: Node | null,
+    refChild: Node | null = null,
   ) {
     let element = newChild as any;
     const { rawDOMAppendOrInsertBefore, isInvokedByMicroApp, containerConfigGetter } = opts;

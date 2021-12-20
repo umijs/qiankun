@@ -1,0 +1,99 @@
+name: Annoucement Notify
+
+on:
+  discussion:
+    types: [opened]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send DingGroup1 Anouncement Notify
+        uses: zcong1993/actions-ding@master
+        if: github.event.discussion.category.name == 'Announcement'
+        with:
+          dingToken: ${{ secrets.DING_GROUP_1_TOKEN }}
+          secret: ${{ secrets.DING_GROUP_1_SIGN }}
+          body: |
+            {
+              "msgtype": "markdown",
+              "markdown": {
+                  "title": "Qiankun News",
+                  "text": "# qiankun [${{github.event.discussion.title}}](${{github.event.discussion.html_url}}) 新闻播报📢\n${{github.event.discussion.body}}",
+              }
+            }
+
+      - name: Send DingGroup2 Anouncement Notify
+        uses: zcong1993/actions-ding@master
+        if: github.event.discussion.category.name == 'Announcement'
+        with:
+          dingToken: ${{ secrets.DING_GROUP_2_TOKEN }}
+          secret: ${{ secrets.DING_GROUP_2_SIGN }}
+          body: |
+            {
+              "msgtype": "markdown",
+              "markdown": {
+                  "title": "Qiankun News",
+                  "text": "# qiankun [${{github.event.discussion.title}}](${{github.event.discussion.html_url}}) 新闻播报📢\n${{github.event.discussion.body}}",
+              }
+            }
+
+      - name: Send DingGroup3 Anouncement Notify
+        uses: zcong1993/actions-ding@master
+        if: github.event.discussion.category.name == 'Announcement'
+        with:
+          dingToken: ${{ secrets.DING_GROUP_3_TOKEN }}
+          secret: ${{ secrets.DING_GROUP_3_SIGN }}
+          body: |
+            {
+              "msgtype": "markdown",
+              "markdown": {
+                  "title": "Qiankun News",
+                  "text": "# qiankun [${{github.event.discussion.title}}](${{github.event.discussion.html_url}}) 新闻播报📢\n${{github.event.discussion.body}}",
+              }
+            }
+
+      - name: Send DingGroup4 Anouncement Notify
+        uses: zcong1993/actions-ding@master
+        if: github.event.discussion.category.name == 'Announcement'
+        with:
+          dingToken: ${{ secrets.DING_GROUP_4_TOKEN }}
+          secret: ${{ secrets.DING_GROUP_4_SIGN }}
+          body: |
+            {
+              "msgtype": "markdown",
+              "markdown": {
+                  "title": "Qiankun News",
+                  "text": "# qiankun [${{github.event.discussion.title}}](${{github.event.discussion.html_url}}) 新闻播报📢\n${{github.event.discussion.body}}",
+              }
+            }
+
+      - name: Send DingGroup5 Anouncement Notify
+        uses: zcong1993/actions-ding@master
+        if: github.event.discussion.category.name == 'Announcement'
+        with:
+          dingToken: ${{ secrets.DING_GROUP_5_TOKEN }}
+          secret: ${{ secrets.DING_GROUP_5_SIGN }}
+          body: |
+            {
+              "msgtype": "markdown",
+              "markdown": {
+                  "title": "Qiankun News",
+                  "text": "# qiankun [${{github.event.discussion.title}}](${{github.event.discussion.html_url}}) 新闻播报📢\n${{github.event.discussion.body}}",
+              }
+            }
+
+      - name: Send DingGroup6 Anouncement Notify
+        uses: zcong1993/actions-ding@master
+        if: github.event.discussion.category.name == 'Announcement'
+        with:
+          dingToken: ${{ secrets.DING_GROUP_6_TOKEN }}
+          secret: ${{ secrets.DING_GROUP_6_SIGN }}
+          body: |
+            {
+              "msgtype": "markdown",
+              "markdown": {
+                  "title": "Qiankun News",
+                  "text": "# qiankun [${{github.event.discussion.title}}](${{github.event.discussion.html_url}}) 新闻播报📢\n${{github.event.discussion.body}}",
+              }
+            }

@@ -6,7 +6,7 @@
 import type { SandBox } from '../interfaces';
 import { SandBoxType } from '../interfaces';
 import { nativeGlobal, nextTask } from '../utils';
-import { getTargetValue, setCurrentRunningApp } from './common';
+import { getTargetValue, setCurrentRunningApp, getCurrentRunningApp } from './common';
 
 type SymbolTarget = 'target' | 'globalContext';
 
@@ -59,6 +59,18 @@ const unscopables = {
   Symbol: true,
   parseFloat: true,
   Float32Array: true,
+  isNaN: true,
+  Infinity: true,
+  Reflect: true,
+  Float64Array: true,
+  Function: true,
+  Map: true,
+  NaN: true,
+  Promise: true,
+  Proxy: true,
+  Set: true,
+  parseInt: true,
+  requestAnimationFrame: true,
 };
 
 const useNativeWindowForBindingsProps = new Map<PropertyKey, boolean>([
@@ -148,7 +160,10 @@ export default class ProxySandbox implements SandBox {
 
   private registerRunningApp(name: string, proxy: Window) {
     if (this.sandboxRunning) {
-      setCurrentRunningApp({ name, window: proxy });
+      const currentRunningApp = getCurrentRunningApp();
+      if (!currentRunningApp || currentRunningApp.name !== name) {
+        setCurrentRunningApp({ name, window: proxy });
+      }
       // FIXME if you have any other good ideas
       // remove the mark in next tick, thus we can identify whether it in micro app or not
       // this approach is just a workaround, it could not cover all complex cases, such as the micro app runs in the same task context with master in some case
