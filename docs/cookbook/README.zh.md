@@ -369,7 +369,7 @@ qiankun.registerMicroApps([{
 ``` 
 devServer: {
   // disableHostCheck和allowedHosts配置一个即可，推荐使用allowedHosts
-  disableHostCheck: true,
+  // disableHostCheck: true,
   allowedHosts: [
     '.xxx.com', // 允许远端访问本地静态资源的host
   ],
