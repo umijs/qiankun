@@ -3,7 +3,7 @@
  * @since 2019-05-15
  */
 
-import { isFunction, snakeCase } from 'lodash';
+import { isFunction, snakeCase, once } from 'lodash';
 import { version } from './version';
 
 import type { FrameworkConfiguration } from './interfaces';
@@ -101,15 +101,42 @@ export function isBoundedFunction(fn: CallableFunction) {
   return bounded;
 }
 
-export function getDefaultTplWrapper(id: string, name: string) {
-  return (tpl: string) => `<div id="${getWrapperId(id)}" data-name="${name}" data-version="${version}">${tpl}</div>`;
+export function getDefaultTplWrapper(name: string) {
+  return (tpl: string) => `<div id="${getWrapperId(name)}" data-name="${name}" data-version="${version}">${tpl}</div>`;
 }
 
-export function getWrapperId(id: string) {
-  return `__qiankun_microapp_wrapper_for_${snakeCase(id)}__`;
+export function getWrapperId(name: string) {
+  return `__qiankun_microapp_wrapper_for_${snakeCase(name)}__`;
 }
 
 export const nativeGlobal = new Function('return this')();
+
+const getGlobalAppInstanceMap = once<() => Record<string, number>>(() => {
+  if (!nativeGlobal.hasOwnProperty('__app_instance_name_map__')) {
+    Object.defineProperty(nativeGlobal, '__app_instance_name_map__', {
+      enumerable: false,
+      configurable: true,
+      writable: true,
+      value: {},
+    });
+  }
+
+  return nativeGlobal.__app_instance_name_map__;
+});
+/**
+ * Get app instance name with the auto-increment approach
+ * @param appName
+ */
+export const genAppInstanceIdByName = (appName: string): string => {
+  const globalAppInstanceMap = getGlobalAppInstanceMap();
+  if (!(appName in globalAppInstanceMap)) {
+    nativeGlobal.__app_instance_name_map__[appName] = 0;
+    return appName;
+  }
+
+  globalAppInstanceMap[appName]++;
+  return `${appName}_${globalAppInstanceMap[appName]}`;
+};
 
 /** 校验子应用导出的 生命周期 对象是否正确 */
 export function validateExportLifecycle(exports: any) {
@@ -117,7 +144,7 @@ export function validateExportLifecycle(exports: any) {
   return isFunction(bootstrap) && isFunction(mount) && isFunction(unmount);
 }
 
-class Deferred<T> {
+export class Deferred<T> {
   promise: Promise<T>;
 
   resolve!: (value: T | PromiseLike<T>) => void;
@@ -131,8 +158,6 @@ class Deferred<T> {
     });
   }
 }
-
-export { Deferred };
 
 const supportsUserTiming =
   typeof performance !== 'undefined' &&
