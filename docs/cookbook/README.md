@@ -337,3 +337,50 @@ The basic modification of the `start` function is as follows:
 
 1. The `jsSandbox` configuration has been removed and changed to `sandbox`, and the optional values have also been modified.
 2. Added `getPublicPath` and `getTemplate` to replace `RegisterMicroAppsOpts`.
+
+## Shell development
+
+A mode in which sub-applications can be developed without starting the main application.
+
+Of course, it's not just that it is as simple as starting a main application, but the main function is to allow us to use qiankun's father-son communication to the greatest extent and to maintain the consistency of the deployment environment and the execution code of the local development environment.
+
+### background
+
+The main application and sub-applications are developed and deployed independently, and belong to different warehouses. How to ensure the following things?
+
+1. Our team is only responsible for sub-application A. Can it be consistent with the previous development model? We only start the service of sub-application A for development?
+2. If only the child application A is launched, how to reuse the content of the parent-child communication and the UI content of the menu? Is there a better way than NPM package?
+3. There are many common capabilities among sub-applications, which are unified by the main application. Can they be communicated to the sub-applications without starting the main application?
+4. How to ensure the consistency of the deployment environment code and the local development execution code?
+
+### Shell development
+
+Local development environment, modify the original access domain name localhost:8081 to http://xxx.com?LOCAL_PORT=8081
+
+The main application registration sub-application related code is as follows:
+
+```
+devServer: {
+  // disableHostCheck和allowedHosts配置一个即可，推荐使用allowedHosts
+  // disableHostCheck: true,
+  allowedHosts: [
+    '.xxx.com', // 允许远端访问本地静态资源的host
+  ],
+  sockHost: 'localhost',
+  port: '8081',
+  headers: {
+    'Access-Control-Allow-Origin': '*',
+  },
+  proxy: {
+    '/api': {
+      target: 'test环境地址',
+      changeOrigin: true,
+    },
+  },
+  historyApiFallback: {
+    rewrites: [
+      { from: /^\//, to: '/index.html' },
+    ]
+  }
+},
+```
