@@ -1,5 +1,6 @@
 import {
   Deferred,
+  genAppInstanceIdByName,
   getDefaultTplWrapper,
   getWrapperId,
   getXPathForElement,
@@ -23,7 +24,7 @@ test('should wrap the id [2]', () => {
 
 test('should wrap string with div', () => {
   const tpl = '<span>qiankun</span>';
-  const factory = getDefaultTplWrapper('react16', 'react16');
+  const factory = getDefaultTplWrapper('react16');
 
   const ret = factory(tpl);
 
@@ -136,4 +137,15 @@ it('should nextTick just executed once in one task context', async () => {
   nextTask(() => ++counter);
   await sleep(0);
   expect(counter).toBe(3);
+});
+
+it('should genAppInstanceIdByName works well', () => {
+  const instanceId1 = genAppInstanceIdByName('hello');
+  expect(instanceId1).toBe('hello');
+
+  const instanceId2 = genAppInstanceIdByName('hello');
+  expect(instanceId2).toBe('hello_1');
+
+  const instanceId3 = genAppInstanceIdByName('hello');
+  expect(instanceId3).toBe('hello_2');
 });

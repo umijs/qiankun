@@ -1,6 +1,6 @@
 {
   "name": "qiankun",
-  "version": "2.5.1",
+  "version": "2.6.3",
   "description": "A completed implementation of Micro Frontends",
   "keywords": [
     "micro frontend",
@@ -90,7 +90,7 @@
     "umi-plugin-hire": "^1.0.3"
   },
   "resolutions": {
-    "@types/react": "^16.x"
+    "@types/react": "^17.x"
   },
   "husky": {
     "hooks": {
