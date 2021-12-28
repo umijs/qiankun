@@ -404,9 +404,8 @@ describe('should work with nest sandbox', () => {
     };
 
     expect(nestProxy.mockDomAPIInBlackList()).toBeTruthy();
-    
+
     expect(() => {
-      
       nestProxy.mockDomAPINotInBlackList();
     }).toThrowError(/Illegal invocation!/);
   });
