@@ -83,7 +83,7 @@ function createFakeWindow(globalContext: Window) {
   // see https://jsperf.com/array-indexof-vs-set-has/23
   const propertiesWithGetter = new Map<PropertyKey, boolean>();
   const fakeWindow = Object.create(globalContext);
-
+  // const fakeWindow = {} as Window;
   /*
    copy the non-configurable property of global to fakeWindow
    see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/getOwnPropertyDescriptor
@@ -292,6 +292,7 @@ export default class ProxySandbox implements SandBox {
         const value = propertiesWithGetter.has(p)
           ? (globalContext as any)[p]
           : target.hasOwnProperty(p)
+          // : p in target
           ? (target as any)[p]
           : (globalContext as any)[p];
         /* Some dom api must be bound to native window, otherwise it would cause exception like 'TypeError: Failed to execute 'fetch' on 'Window': Illegal invocation'
@@ -306,9 +307,9 @@ export default class ProxySandbox implements SandBox {
 
       // trap in operator
       // see https://github.com/styled-components/styled-components/blob/master/packages/styled-components/src/constants.js#L12
-      // has(target: FakeWindow, p: string | number | symbol): boolean {
-      //   return p in unscopables || p in target || p in globalContext;
-      // },
+      has(target: FakeWindow, p: string | number | symbol): boolean {
+        return p in unscopables || p in target || p in globalContext;
+      },
 
       getOwnPropertyDescriptor(target: FakeWindow, p: string | number | symbol): PropertyDescriptor | undefined {
         /*
