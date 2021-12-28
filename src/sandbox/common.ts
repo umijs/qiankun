@@ -33,7 +33,7 @@ export function getTargetValue(target: any, value: any): any {
     }
 
     const boundValue = Function.prototype.bind.call(value, target);
-    
+
     // some callable function has custom fields, we need to copy the enumerable props to boundValue. such as moment function.
     // use for..in rather than Object.keys.forEach for performance reason
     // eslint-disable-next-line guard-for-in,no-restricted-syntax
