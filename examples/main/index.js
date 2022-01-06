@@ -58,12 +58,20 @@ registerMicroApps(
       activeRule: '/purehtml',
     },
     {
+      name: 'tsvue3',
+      entry: '//localhost:7106',
+      container: '#subapp-viewport',
+      loader,
+      activeRule: '/tsvue3',
+    },
+    {
       name: 'vue3',
       entry: '//localhost:7105',
       container: '#subapp-viewport',
       loader,
       activeRule: '/vue3',
     },
+
   ],
   {
     beforeLoad: [

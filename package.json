@@ -15,7 +15,7 @@
   "types": "./es/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "examples:install": "npm-run-all --serial build install:*",
+    "examples:install": "npm-run-all --serial  install:*",
     "examples:start": "npm-run-all --parallel start:*",
     "examples:start-multiple": "run-p start-main-multiple start:react15 start:vue",
     "install:main": "cd examples/main && yarn",
@@ -33,6 +33,8 @@
     "start:purehtml": "cd examples/purehtml && yarn start",
     "install:vue3": "cd examples/vue3 && yarn",
     "start:vue3": "cd examples/vue3 && yarn start",
+    "install:vue3-ts": "cd examples/vue3 && yarn",
+    "start:vue3-ts": "cd examples/vue3-ts && yarn start",
     "build": "father-build",
     "release": "np --no-cleanup --yolo --no-publish",
     "prepublishOnly": "yarn ci",

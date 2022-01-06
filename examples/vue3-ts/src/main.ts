@@ -6,14 +6,13 @@ import App from './App.vue'
 import routes from './router'
 import store from './store'
 
-
 let router:any = null
 let instance:any = null
 let history:any = null
 
 function render (props: any) {
   const { container } = props
-  history = createWebHistory(window.__POWERED_BY_QIANKUN__ ? '/vue3' : '/')
+  history = createWebHistory(window.__POWERED_BY_QIANKUN__ ? '/tsvue3' : '/')
 
   router = createRouter({
     history,
