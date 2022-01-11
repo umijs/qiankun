@@ -12,8 +12,11 @@ export const rawHeadAppendChild = HTMLHeadElement.prototype.appendChild;
 const rawHeadRemoveChild = HTMLHeadElement.prototype.removeChild;
 const rawBodyAppendChild = HTMLBodyElement.prototype.appendChild;
 const rawBodyRemoveChild = HTMLBodyElement.prototype.removeChild;
+const rawBodyInsertBefore = HTMLBodyElement.prototype.insertBefore;
 const rawHeadInsertBefore = HTMLHeadElement.prototype.insertBefore;
 const rawRemoveChild = HTMLElement.prototype.removeChild;
+const rawAppendChild = HTMLElement.prototype.appendChild;
+const rawInsertBefore = HTMLElement.prototype.insertBefore;
 
 const SCRIPT_TAG_NAME = 'SCRIPT';
 const LINK_TAG_NAME = 'LINK';
@@ -311,7 +314,10 @@ export function patchHTMLDynamicAppendPrototypeFunctions(
   if (
     HTMLHeadElement.prototype.appendChild === rawHeadAppendChild &&
     HTMLBodyElement.prototype.appendChild === rawBodyAppendChild &&
-    HTMLHeadElement.prototype.insertBefore === rawHeadInsertBefore
+    HTMLBodyElement.prototype.insertBefore === rawBodyInsertBefore &&
+    HTMLHeadElement.prototype.insertBefore === rawHeadInsertBefore &&
+    HTMLElement.prototype.insertBefore === rawInsertBefore &&
+    HTMLElement.prototype.appendChild === rawAppendChild
   ) {
     HTMLHeadElement.prototype.appendChild = getOverwrittenAppendChildOrInsertBefore({
       rawDOMAppendOrInsertBefore: rawHeadAppendChild,
@@ -323,7 +329,22 @@ export function patchHTMLDynamicAppendPrototypeFunctions(
       containerConfigGetter,
       isInvokedByMicroApp,
     }) as typeof rawBodyAppendChild;
+    HTMLBodyElement.prototype.insertBefore = getOverwrittenAppendChildOrInsertBefore({
+      rawDOMAppendOrInsertBefore: rawBodyInsertBefore as any,
+      containerConfigGetter,
+      isInvokedByMicroApp,
+    }) as typeof rawBodyInsertBefore;
+    HTMLElement.prototype.insertBefore = getOverwrittenAppendChildOrInsertBefore({
+      rawDOMAppendOrInsertBefore: rawInsertBefore as any,
+      containerConfigGetter,
+      isInvokedByMicroApp,
+    }) as typeof rawInsertBefore;
 
+    HTMLElement.prototype.appendChild = getOverwrittenAppendChildOrInsertBefore({
+      rawDOMAppendOrInsertBefore: rawAppendChild as any,
+      containerConfigGetter,
+      isInvokedByMicroApp,
+    }) as typeof rawAppendChild;
     HTMLHeadElement.prototype.insertBefore = getOverwrittenAppendChildOrInsertBefore({
       rawDOMAppendOrInsertBefore: rawHeadInsertBefore as any,
       containerConfigGetter,
@@ -353,6 +374,10 @@ export function patchHTMLDynamicAppendPrototypeFunctions(
     HTMLBodyElement.prototype.removeChild = rawBodyRemoveChild;
 
     HTMLHeadElement.prototype.insertBefore = rawHeadInsertBefore;
+
+    HTMLBodyElement.prototype.insertBefore = rawBodyInsertBefore;
+    HTMLElement.prototype.appendChild = rawAppendChild;
+    HTMLElement.prototype.insertBefore = rawInsertBefore;
   };
 }
 
