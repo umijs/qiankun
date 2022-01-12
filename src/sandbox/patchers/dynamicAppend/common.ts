@@ -303,6 +303,25 @@ function getNewRemoveChild(
   };
 }
 
+const RawFunction = window.Function;
+export function patchFunction(proxy: Window) {
+  const wrapperFunction = (...args: string[]) => {
+    function fn() {
+      // @ts-ignore
+      // eslint-disable-next-line @typescript-eslint/no-invalid-this
+      const res = RawFunction(...args).bind(this);
+      const r = res();
+      if (r instanceof Window) {
+        return proxy;
+      }
+      return r;
+    }
+    return fn;
+  };
+  wrapperFunction.prototype = window.Function.prototype;
+  proxy.Function = wrapperFunction;
+}
+
 export function patchHTMLDynamicAppendPrototypeFunctions(
   isInvokedByMicroApp: (element: HTMLElement) => boolean,
   containerConfigGetter: (element: HTMLElement) => ContainerConfig,

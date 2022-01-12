@@ -12,6 +12,7 @@ import {
   patchHTMLDynamicAppendPrototypeFunctions,
   rawHeadAppendChild,
   rebuildCSSRules,
+  patchFunction,
   recordStyledComponentsCSSRules,
 } from './common';
 
@@ -100,7 +101,7 @@ export function patchStrictSandbox(
   const { dynamicStyleSheetElements } = containerConfig;
 
   const unpatchDocumentCreate = patchDocumentCreateElement();
-
+  patchFunction(proxy);
   const unpatchDynamicAppendPrototypeFunctions = patchHTMLDynamicAppendPrototypeFunctions(
     (element) => elementAttachContainerConfigMap.has(element),
     (element) => elementAttachContainerConfigMap.get(element)!,

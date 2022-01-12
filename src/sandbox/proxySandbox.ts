@@ -63,7 +63,7 @@ const unscopables = {
   Infinity: true,
   Reflect: true,
   Float64Array: true,
-  Function: true,
+  // Function: true,
   Map: true,
   NaN: true,
   Promise: true,
