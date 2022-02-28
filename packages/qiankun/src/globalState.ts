@@ -20,6 +20,10 @@ function emitGlobal(state: Record<string, any>, prevState: Record<string, any>) 
 }
 
 export function initGlobalState(state: Record<string, any> = {}) {
+  if (process.env.NODE_ENV === 'development') {
+    console.warn(`[qiankun] globalState tools will be removed in 3.0, pls don't use it!`);
+  }
+
   if (state === globalState) {
     console.warn('[qiankun] state has not changed！');
   } else {
@@ -58,8 +62,8 @@ export function getMicroAppStateActions(id: string, isMaster?: boolean): MicroAp
         console.warn(`[qiankun] '${id}' global listener already exists before this, new listener will overwrite it.`);
       }
       deps[id] = callback;
-      const cloneState = cloneDeep(globalState);
       if (fireImmediately) {
+        const cloneState = cloneDeep(globalState);
         callback(cloneState, cloneState);
       }
     },

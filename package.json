@@ -44,7 +44,7 @@
       "prettier --write --ignore-unknown"
     ],
     "packages/*/{src,types}/**/*.ts": [
-      "eslint --ext .ts"
+      "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty --fix"
     ],
     "packages/**/*.d.ts": [
       "eslint --ext .ts"

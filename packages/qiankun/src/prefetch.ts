@@ -9,32 +9,10 @@ import { isFunction } from 'lodash';
 import { getAppStatus, getMountedApps, NOT_LOADED } from 'single-spa';
 import type { AppMetadata, PrefetchStrategy } from './interfaces';
 
-type RequestIdleCallbackHandle = any;
-type RequestIdleCallbackOptions = {
-  timeout: number;
-};
-type RequestIdleCallbackDeadline = {
-  readonly didTimeout: boolean;
-  timeRemaining: () => number;
-};
-
 declare global {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
-  interface Window {
-    requestIdleCallback: (
-      callback: (deadline: RequestIdleCallbackDeadline) => void,
-      opts?: RequestIdleCallbackOptions,
-    ) => RequestIdleCallbackHandle;
-    cancelIdleCallback: (handle: RequestIdleCallbackHandle) => void;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
-  interface Navigator {
-    connection: {
-      saveData: boolean;
-      effectiveType: string;
-      type: 'bluetooth' | 'cellular' | 'ethernet' | 'none' | 'wifi' | 'wimax' | 'other' | 'unknown';
-    };
+  interface NetworkInformation {
+    saveData: boolean;
+    effectiveType: string;
   }
 }
 
@@ -57,7 +35,7 @@ const isSlowNetwork = navigator.connection
   ? navigator.connection.saveData ||
     (navigator.connection.type !== 'wifi' &&
       navigator.connection.type !== 'ethernet' &&
-      /(2|3)g/.test(navigator.connection.effectiveType))
+      /([23])g/.test(navigator.connection.effectiveType))
   : false;
 
 /**

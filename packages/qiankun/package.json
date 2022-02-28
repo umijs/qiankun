@@ -1,7 +1,7 @@
 {
   "name": "qiankun",
-  "version": "3.0.0-alpha.0",
-  "description": "An completed implementation of Micro Frontends",
+  "version": "3.0.0",
+  "description": "A completed implementation of Micro Frontends",
   "keywords": [
     "micro frontend",
     "microfrontend",
@@ -16,14 +16,13 @@
   "sideEffects": false,
   "scripts": {
     "build": "father-build",
-    "release": "np --no-cleanup --yolo --no-publish",
-    "prepublishOnly": "pnpm run lint && pnpm run test && pnpm run build",
-    "lint": "pnpm run lint:js && pnpm run lint:prettier",
+    "prepublishOnly": "yarn ci",
+    "lint": "yarn lint:js && yarn lint:prettier",
     "lint:js": "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty ./src",
-    "lint:fix": "pnpm run lint:js -- --fix",
+    "lint:fix": "yarn lint:js -- --fix",
     "lint:prettier": "prettier -c ./src/**/*",
     "prettier": "prettier --write ./src/**/*",
-    "ci": "pnpm run lint && pnpm run build && pnpm run test",
+    "ci": "yarn lint && yarn build && yarn test",
     "test": "cross-env NODE_ENV=test jest"
   },
   "repository": {
@@ -45,14 +44,12 @@
     "@babel/runtime": "^7.10.5",
     "import-html-entry": "^1.9.0",
     "lodash": "^4.17.11",
-    "single-spa": "5.8.1",
+    "single-spa": "^5.9.2",
     "tslib": "^1.10.0"
   },
   "devDependencies": {
-    "@testing-library/jest-dom": "^5.11.9",
     "@types/jest": "^25.1.4",
     "@types/lodash": "^4.14.129",
-    "@types/node": "^14.14.35",
     "@types/vfile-message": "1.x",
     "@umijs/fabric": "^2.0.7",
     "babel-plugin-import": "^1.12.1",
@@ -64,10 +61,26 @@
     "npm-run-all": "^4.1.5",
     "rimraf": "^3.0.0",
     "ts-jest": "^25.2.1",
-    "typescript": "^4.1.2"
+    "typescript": "^4.1.2",
+    "umi-plugin-hire": "^1.0.3"
   },
   "resolutions": {
-    "@types/react": "^16.x"
+    "@types/react": "^17.x",
+    "@types/history": "^4.x"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "yarn test"
+    }
+  },
+  "lint-staged": {
+    "**/*.{js,ts,json,css,md}": [
+      "prettier -w"
+    ],
+    "**/*.{js,ts}": [
+      "yarn lint:fix"
+    ]
   },
   "jest": {
     "moduleFileExtensions": [
