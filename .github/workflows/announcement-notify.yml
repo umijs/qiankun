@@ -97,3 +97,18 @@ jobs:
                   "text": "# qiankun [${{github.event.discussion.title}}](${{github.event.discussion.html_url}}) 新闻播报📢\n${{github.event.discussion.body}}",
               }
             }
+
+      - name: Send DingGroup7 Anouncement Notify
+        uses: zcong1993/actions-ding@master
+        if: github.event.discussion.category.name == 'Announcement'
+        with:
+          dingToken: ${{ secrets.DING_GROUP_7_TOKEN }}
+          secret: ${{ secrets.DING_GROUP_7_SIGN }}
+          body: |
+            {
+              "msgtype": "markdown",
+              "markdown": {
+                  "title": "Qiankun News",
+                  "text": "# qiankun [${{github.event.discussion.title}}](${{github.event.discussion.html_url}}) 新闻播报📢\n${{github.event.discussion.body}}",
+              }
+            }

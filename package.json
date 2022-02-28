@@ -90,7 +90,8 @@
     "umi-plugin-hire": "^1.0.3"
   },
   "resolutions": {
-    "@types/react": "^17.x"
+    "@types/react": "^17.x",
+    "@types/history": "^4.x"
   },
   "husky": {
     "hooks": {
