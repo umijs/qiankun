@@ -9,7 +9,7 @@
     "build-qiankun": "pnpm run build --filter qiankun",
     "release": "np --no-cleanup --yolo --no-publish",
     "prepublishOnly": "pnpm run lint && pnpm run test && pnpm run build",
-    "lint": "eslint packages/*/{src,types}/**",
+    "lint": "eslint packages/*/src/**",
     "prettier": "prettier --write .",
     "docs": "dumi dev",
     "build-docs": "dumi build",
@@ -19,10 +19,19 @@
   "devDependencies": {
     "dumi": "^1.1.0-beta.24",
     "dumi-theme-default": "^1.0.10",
+    "eslint": "^8.10.0",
+    "@umijs/fabric": "^2.0.7",
+    "eslint-define-config": "^1.2.5",
     "husky": "^2.3.0",
     "lint-staged": "^9.4.2",
     "prettier": "^2.1.2",
-    "umi-plugin-hire": "^1.0.3"
+    "umi-plugin-hire": "^1.0.3",
+    "rimraf": "^3.0.0",
+    "ts-jest": "^25.2.1"
+  },
+  "resolutions": {
+    "@types/react": "^17.x",
+    "@types/history": "^4.x"
   },
   "repository": {
     "type": "git",

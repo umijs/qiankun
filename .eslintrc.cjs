@@ -1,4 +1,7 @@
-module.exports = {
+// @ts-check
+const { defineConfig } = require('eslint-define-config')
+
+module.exports = defineConfig({
   extends: [require.resolve('@umijs/fabric/dist/eslint')],
   rules: {
     '@typescript-eslint/prefer-interface': 0,
@@ -15,8 +18,13 @@ module.exports = {
     'no-plusplus': 0,
   },
   parserOptions: {
-    tsconfigRootDir: __dirname,
-    project: './tsconfig.json',
+    // tsconfigRootDir: __dirname,
+    // project: './tsconfig.json',
     createDefaultProgram: true,
   },
-};
+  settings: {
+    react: {
+      version: 'detect'
+    }
+  }
+});
