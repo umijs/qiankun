@@ -14,20 +14,23 @@
     "docs": "dumi dev",
     "build-docs": "dumi build",
     "ci": "pnpm run lint && pnpm run build && pnpm run test",
-    "test": "cross-env NODE_ENV=test lerna run test --scope qiankun"
+    "test": "cross-env NODE_ENV=test jest"
   },
   "devDependencies": {
+    "@jest/types": "^27.5.1",
+    "@umijs/fabric": "^2.0.7",
+    "cross-env": "^7.0.2",
     "dumi": "^1.1.0-beta.24",
     "dumi-theme-default": "^1.0.10",
     "eslint": "^8.10.0",
-    "@umijs/fabric": "^2.0.7",
     "eslint-define-config": "^1.2.5",
     "husky": "^2.3.0",
+    "jest": "^25.2.2",
     "lint-staged": "^9.4.2",
     "prettier": "^2.1.2",
-    "umi-plugin-hire": "^1.0.3",
     "rimraf": "^3.0.0",
-    "ts-jest": "^25.2.1"
+    "ts-jest": "^25.2.1",
+    "umi-plugin-hire": "^1.0.3"
   },
   "resolutions": {
     "@types/react": "^17.x",
@@ -57,6 +60,27 @@
     ],
     "packages/**/*.d.ts": [
       "eslint --ext .ts"
+    ]
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "ts"
+    ],
+    "testMatch": [
+      "<rootDir>/packages/**/__tests__/**/*.test.ts"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/fixtures/"
+    ],
+    "transform": {
+      "^.+\\.ts$": "<rootDir>/node_modules/ts-jest"
+    },
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/__tests__/",
+      "/dist/"
     ]
   },
   "packageManager": "pnpm@6.23.0"
