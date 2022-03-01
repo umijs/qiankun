@@ -2,7 +2,7 @@ name: Annoucement Notify
 
 on:
   discussion:
-    types: [opened]
+    types: [created]
 
 jobs:
   notify:
@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Send DingGroup1 Anouncement Notify
         uses: zcong1993/actions-ding@master
-        if: github.event.discussion.category.name == 'Announcement'
+        if: github.event.discussion.category.name == 'Announcements'
         with:
           dingToken: ${{ secrets.DING_GROUP_1_TOKEN }}
           secret: ${{ secrets.DING_GROUP_1_SIGN }}
@@ -19,13 +19,13 @@ jobs:
               "msgtype": "markdown",
               "markdown": {
                   "title": "Qiankun News",
-                  "text": "# qiankun [${{github.event.discussion.title}}](${{github.event.discussion.html_url}}) 新闻播报📢\n${{github.event.discussion.body}}",
+                  "text": "# 新闻播报📢 [${{github.event.discussion.title}}](${{github.event.discussion.html_url}}) \n${{github.event.discussion.body}}",
               }
             }
 
       - name: Send DingGroup2 Anouncement Notify
         uses: zcong1993/actions-ding@master
-        if: github.event.discussion.category.name == 'Announcement'
+        if: github.event.discussion.category.name == 'Announcements'
         with:
           dingToken: ${{ secrets.DING_GROUP_2_TOKEN }}
           secret: ${{ secrets.DING_GROUP_2_SIGN }}
@@ -34,13 +34,13 @@ jobs:
               "msgtype": "markdown",
               "markdown": {
                   "title": "Qiankun News",
-                  "text": "# qiankun [${{github.event.discussion.title}}](${{github.event.discussion.html_url}}) 新闻播报📢\n${{github.event.discussion.body}}",
+                  "text": "# 新闻播报📢 [${{github.event.discussion.title}}](${{github.event.discussion.html_url}}) \n${{github.event.discussion.body}}",
               }
             }
 
       - name: Send DingGroup3 Anouncement Notify
         uses: zcong1993/actions-ding@master
-        if: github.event.discussion.category.name == 'Announcement'
+        if: github.event.discussion.category.name == 'Announcements'
         with:
           dingToken: ${{ secrets.DING_GROUP_3_TOKEN }}
           secret: ${{ secrets.DING_GROUP_3_SIGN }}
@@ -49,13 +49,13 @@ jobs:
               "msgtype": "markdown",
               "markdown": {
                   "title": "Qiankun News",
-                  "text": "# qiankun [${{github.event.discussion.title}}](${{github.event.discussion.html_url}}) 新闻播报📢\n${{github.event.discussion.body}}",
+                  "text": "# 新闻播报📢 [${{github.event.discussion.title}}](${{github.event.discussion.html_url}}) \n${{github.event.discussion.body}}",
               }
             }
 
       - name: Send DingGroup4 Anouncement Notify
         uses: zcong1993/actions-ding@master
-        if: github.event.discussion.category.name == 'Announcement'
+        if: github.event.discussion.category.name == 'Announcements'
         with:
           dingToken: ${{ secrets.DING_GROUP_4_TOKEN }}
           secret: ${{ secrets.DING_GROUP_4_SIGN }}
@@ -64,13 +64,13 @@ jobs:
               "msgtype": "markdown",
               "markdown": {
                   "title": "Qiankun News",
-                  "text": "# qiankun [${{github.event.discussion.title}}](${{github.event.discussion.html_url}}) 新闻播报📢\n${{github.event.discussion.body}}",
+                  "text": "# 新闻播报📢 [${{github.event.discussion.title}}](${{github.event.discussion.html_url}}) \n${{github.event.discussion.body}}",
               }
             }
 
       - name: Send DingGroup5 Anouncement Notify
         uses: zcong1993/actions-ding@master
-        if: github.event.discussion.category.name == 'Announcement'
+        if: github.event.discussion.category.name == 'Announcements'
         with:
           dingToken: ${{ secrets.DING_GROUP_5_TOKEN }}
           secret: ${{ secrets.DING_GROUP_5_SIGN }}
@@ -79,13 +79,13 @@ jobs:
               "msgtype": "markdown",
               "markdown": {
                   "title": "Qiankun News",
-                  "text": "# qiankun [${{github.event.discussion.title}}](${{github.event.discussion.html_url}}) 新闻播报📢\n${{github.event.discussion.body}}",
+                  "text": "# 新闻播报📢 [${{github.event.discussion.title}}](${{github.event.discussion.html_url}}) \n${{github.event.discussion.body}}",
               }
             }
 
       - name: Send DingGroup6 Anouncement Notify
         uses: zcong1993/actions-ding@master
-        if: github.event.discussion.category.name == 'Announcement'
+        if: github.event.discussion.category.name == 'Announcements'
         with:
           dingToken: ${{ secrets.DING_GROUP_6_TOKEN }}
           secret: ${{ secrets.DING_GROUP_6_SIGN }}
@@ -94,13 +94,13 @@ jobs:
               "msgtype": "markdown",
               "markdown": {
                   "title": "Qiankun News",
-                  "text": "# qiankun [${{github.event.discussion.title}}](${{github.event.discussion.html_url}}) 新闻播报📢\n${{github.event.discussion.body}}",
+                  "text": "# 新闻播报📢 [${{github.event.discussion.title}}](${{github.event.discussion.html_url}}) \n${{github.event.discussion.body}}",
               }
             }
 
       - name: Send DingGroup7 Anouncement Notify
         uses: zcong1993/actions-ding@master
-        if: github.event.discussion.category.name == 'Announcement'
+        if: github.event.discussion.category.name == 'Announcements'
         with:
           dingToken: ${{ secrets.DING_GROUP_7_TOKEN }}
           secret: ${{ secrets.DING_GROUP_7_SIGN }}
@@ -109,6 +109,6 @@ jobs:
               "msgtype": "markdown",
               "markdown": {
                   "title": "Qiankun News",
-                  "text": "# qiankun [${{github.event.discussion.title}}](${{github.event.discussion.html_url}}) 新闻播报📢\n${{github.event.discussion.body}}",
+                  "text": "# 新闻播报📢 [${{github.event.discussion.title}}](${{github.event.discussion.html_url}}) \n${{github.event.discussion.body}}",
               }
             }
