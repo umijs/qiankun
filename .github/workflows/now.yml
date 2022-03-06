@@ -1,4 +1,4 @@
-name: qiankun - deploy
+name: Qiankun Doc Deploy
 on:
   push:
     branches:
@@ -12,8 +12,8 @@ jobs:
         env:
           NOW_DEPLOY: true
         run: |
-          pnpm run install
-          pnpm run docs:build
+          yarn
+          yarn build-docs
       - uses: amondnet/vercel-action@v19
         id: vercel-deployment-production
         with:

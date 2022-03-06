@@ -1,4 +1,4 @@
 packages:
   - 'packages/*'
-  - 'packages/ui/**'
+  - 'packages/ui-bindings/*'
   # - 'examples/**'
