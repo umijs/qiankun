@@ -18,9 +18,10 @@ jobs:
         os: [ubuntu-latest]
         node_version: [14, 16]
 
+    name: "Build&Lint&Test: node-${{ matrix.node_version }}, ${{ matrix.os }}"
     steps:
       - name: Checkout
-      - uses: actions/checkout@v2
+        uses: actions/checkout@v2
 
       - name: Install pnpm
         uses: pnpm/action-setup@v2
