@@ -7,7 +7,6 @@ on:
       - master
       - next
       - 1.x
-      - monorepo
 
 jobs:
   check:
