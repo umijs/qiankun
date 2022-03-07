@@ -19,7 +19,7 @@ footer: MIT Licensed | Copyright © 2019-present<br />Powered by [dumi](https://
 ## 📦 Installation
 
 ```shell
-$ pnpm run add qiankun  # or npm i qiankun -S
+$ yarn add qiankun  # or npm i qiankun -S
 ```
 
 ## 🔨 Getting Started
