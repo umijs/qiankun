@@ -1,7 +1,7 @@
 {
   "name": "qiankun",
-  "version": "3.0.0-alpha.0",
-  "description": "An completed implementation of Micro Frontends",
+  "version": "3.0.0",
+  "description": "A completed implementation of Micro Frontends",
   "keywords": [
     "micro frontend",
     "microfrontend",
@@ -16,8 +16,7 @@
   "sideEffects": false,
   "scripts": {
     "build": "father-build",
-    "release": "np --no-cleanup --yolo --no-publish",
-    "prepublishOnly": "yarn lint && yarn test && yarn build",
+    "prepublishOnly": "yarn ci",
     "lint": "yarn lint:js && yarn lint:prettier",
     "lint:js": "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty ./src",
     "lint:fix": "yarn lint:js -- --fix",
@@ -45,16 +44,13 @@
     "@babel/runtime": "^7.10.5",
     "import-html-entry": "^1.9.0",
     "lodash": "^4.17.11",
-    "single-spa": "5.8.1",
+    "single-spa": "^5.9.2",
     "tslib": "^1.10.0"
   },
   "devDependencies": {
-    "@testing-library/jest-dom": "^5.11.9",
     "@types/jest": "^25.1.4",
     "@types/lodash": "^4.14.129",
-    "@types/node": "^14.14.35",
     "@types/vfile-message": "1.x",
-    "@umijs/fabric": "^2.0.7",
     "babel-plugin-import": "^1.12.1",
     "cross-env": "^7.0.2",
     "father-build": "^1.7.0",
@@ -62,32 +58,10 @@
     "levenary": "^1.1.1",
     "np": "^5.0.3",
     "npm-run-all": "^4.1.5",
-    "rimraf": "^3.0.0",
-    "ts-jest": "^25.2.1",
     "typescript": "^4.1.2"
   },
   "resolutions": {
-    "@types/react": "^16.x"
-  },
-  "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "ts"
-    ],
-    "testMatch": [
-      "<rootDir>/src/**/__tests__/**/*.test.ts"
-    ],
-    "testPathIgnorePatterns": [
-      "/node_modules/",
-      "/fixtures/"
-    ],
-    "transform": {
-      "^.+\\.ts$": "<rootDir>/node_modules/ts-jest"
-    },
-    "coveragePathIgnorePatterns": [
-      "/node_modules/",
-      "/__tests__/",
-      "/dist/"
-    ]
+    "@types/react": "^17.x",
+    "@types/history": "^4.x"
   }
 }

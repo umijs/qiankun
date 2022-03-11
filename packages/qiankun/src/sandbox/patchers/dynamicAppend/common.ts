@@ -144,7 +144,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
   return function appendChildOrInsertBefore<T extends Node>(
     this: HTMLHeadElement | HTMLBodyElement,
     newChild: T,
-    refChild?: Node | null,
+    refChild: Node | null = null,
   ) {
     let element = newChild as any;
     const { rawDOMAppendOrInsertBefore, isInvokedByMicroApp, containerConfigGetter } = opts;
@@ -219,12 +219,18 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
               fetch,
               strictGlobal,
               beforeExec: () => {
-                Object.defineProperty(document, 'currentScript', {
-                  get(): any {
-                    return element;
-                  },
-                  configurable: true,
-                });
+                const isCurrentScriptConfigurable = () => {
+                  const descriptor = Object.getOwnPropertyDescriptor(document, 'currentScript');
+                  return !descriptor || descriptor.configurable;
+                };
+                if (isCurrentScriptConfigurable()) {
+                  Object.defineProperty(document, 'currentScript', {
+                    get(): any {
+                      return element;
+                    },
+                    configurable: true,
+                  });
+                }
               },
               success: () => {
                 manualInvokeElementOnLoad(element);

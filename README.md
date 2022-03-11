@@ -1,10 +1,32 @@
-# qiankun（乾坤）
+<p align="center">
+  <a href="https://qiankun.umijs.org" target="_blank" rel="noopener noreferrer">
+    <img width="180" src="https://gw.alipayobjects.com/zos/bmw-prod/8a74c1d3-16f3-4719-be63-15e467a68a24/km0cv8vn_w500_h500.png" alt="qiankun logo">
+  </a>
+</p>
 
 [![npm version](https://img.shields.io/npm/v/qiankun.svg?style=flat-square)](https://www.npmjs.com/package/qiankun) [![coverage](https://img.shields.io/codecov/c/github/umijs/qiankun.svg?style=flat-square)](https://codecov.io/gh/umijs/qiankun) [![npm downloads](https://img.shields.io/npm/dt/qiankun.svg?style=flat-square)](https://www.npmjs.com/package/qiankun) [![Build Status](https://img.shields.io/travis/umijs/qiankun.svg?style=flat-square)](https://travis-ci.com/umijs/qiankun)
 
-> In Chinese traditional culture `qian` means heaven and `kun` stands for earth, so `qiankun` is the universe.
+# qiankun（乾坤）
 
-An implementation of [Micro Frontends](https://micro-frontends.org/), based on [single-spa](https://github.com/CanopyTax/single-spa), but made it production-ready.
+> An Enterprise Mirco-Frontends Framework
+
+- 📦 Based On [single-spa](https://github.com/CanopyTax/single-spa)
+- 📱 Technology Agnostic
+- 💪 HTML Entry Access Mode
+- 🛡 Style Isolation
+- 🧳 JS Sandbox
+- ⚡ Prefetch Assets
+- 🔌 [Umi Plugin](https://github.com/umijs/plugins/tree/master/packages/plugin-qiankun) Integration
+
+In Chinese traditional culture `qian` means heaven and `kun` stands for earth, so `qiankun` is the universe.
+
+## Packages
+
+| Package                              | Version (click for changelogs)                                                                             |
+| ------------------------------------ | :--------------------------------------------------------------------------------------------------------- |
+| [qiankun](packages/qiankun)          | [![plugin-vue version](https://img.shields.io/npm/v/qiankun.svg?label=%20)](packages/qiankun/CHANGELOG.md) |
+| [@qiankun/loader](packages/loader)   |                                                                                                            |
+| [@qiankun/sandbox](packages/sandbox) |                                                                                                            |
 
 ## 🤔 Motivation
 
@@ -23,62 +45,6 @@ Modularity is very important for large application. By breaking down a large sys
 After solving these common problems of micro frontends, we extracted the kernel of our solution after a lot of internal online application testing and polishing, and then named it `qiankun`.
 
 **Probably the most complete micro-frontends solution you ever met🧐.**
-
-## 📦 Installation
-
-```shell
-$ yarn add qiankun  # or npm i qiankun -S
-```
-
-## 📖 Documentation
-
-https://qiankun.umijs.org/
-
-## 💿 Getting started
-
-This repo contains an `examples` folder with a sample Shell app and multiple mounted Micro FE apps. To run this app, first clone `qiankun`:
-
-```shell
-$ git clone https://github.com/umijs/qiankun.git
-$ cd qiankun
-```
-
-Now run the yarn scripts to install and run the examples project:
-
-```shell
-$ yarn install
-$ yarn examples:install
-$ yarn examples:start
-```
-
-Visit `http://localhost:7099`.
-
-![](./examples/example.gif)
-
-## :sparkles: Features
-
-- 📦 **Based On [single-spa](https://github.com/CanopyTax/single-spa)**
-- 📱 **Technology Agnostic**
-- 💪 **HTML Entry Access Mode**
-- 🛡 **Style Isolation**
-- 🧳 **JS Sandbox**
-- ⚡ **Prefetch Assets**
-- 🔌 **[Umi Plugin](https://github.com/umijs/plugins/tree/master/packages/plugin-qiankun) Integration**
-
-## 🎯 Roadmap
-
-- [x] Parcel apps integration (multiple sub apps displayed at the same time, but only one uses router at most)
-- [x] Communication development kits between master and sub apps
-- [ ] Custom side effects hijacker
-- [ ] Nested Microfrontends
-
-## ❓ FAQ
-
-https://qiankun.umijs.org/faq/
-
-## 👬 Community
-
-https://qiankun.umijs.org/#community
 
 ## 🎁 Acknowledgements
 

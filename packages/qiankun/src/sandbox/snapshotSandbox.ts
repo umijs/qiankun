@@ -8,7 +8,8 @@ import { SandBoxType } from '../interfaces';
 function iter(obj: typeof window, callbackFn: (prop: any) => void) {
   // eslint-disable-next-line guard-for-in, no-restricted-syntax
   for (const prop in obj) {
-    if (obj.hasOwnProperty(prop)) {
+    // patch for clearInterval for compatible reason, see #1490
+    if (obj.hasOwnProperty(prop) || prop === 'clearInterval') {
       callbackFn(prop);
     }
   }

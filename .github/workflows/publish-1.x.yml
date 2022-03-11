@@ -1,0 +1,25 @@
+name: Publish 1.x Version
+
+on:
+  push:
+    tags:
+      - v1.*
+
+jobs:
+  publish:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14.x'
+          check-latest: true
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: yarn
+      - run: yarn publish --tag qiankun1
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}

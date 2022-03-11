@@ -4,7 +4,7 @@
  */
 
 import { isBoundedFunction } from '../../utils';
-import { getCurrentRunningSandboxProxy } from '../common';
+import { getCurrentRunningApp } from '../common';
 import ProxySandbox from '../proxySandbox';
 
 declare global {
@@ -123,7 +123,11 @@ test('hasOwnProperty should works well', () => {
 test('descriptor of non-configurable and non-enumerable property existed in raw window should be the same after modified in sandbox', () => {
   Object.defineProperty(window, 'nonConfigurableProp', { configurable: false, writable: true });
   // eslint-disable-next-line getter-return
-  Object.defineProperty(window, 'nonConfigurablePropWithAccessor', { configurable: false, get() {}, set() {} });
+  Object.defineProperty(window, 'nonConfigurablePropWithAccessor', {
+    configurable: false,
+    get() {},
+    set() {},
+  });
   Object.defineProperty(window, 'enumerableProp', { enumerable: true, writable: true });
   Object.defineProperty(window, 'nonEnumerableProp', { enumerable: false, writable: true });
 
@@ -230,17 +234,21 @@ test('document and eval accessing should modify the attachDocProxySymbol value e
   const proxy4 = new ProxySandbox('eval-access-test2').proxy;
 
   const d1 = proxy1.document;
-  expect(getCurrentRunningSandboxProxy()).toBe(proxy1);
+  expect(getCurrentRunningApp()?.window).toBe(proxy1);
+  expect(getCurrentRunningApp()?.name).toBe('doc-access-test1');
   const d2 = proxy2.document;
-  expect(getCurrentRunningSandboxProxy()).toBe(proxy2);
+  expect(getCurrentRunningApp()?.window).toBe(proxy2);
+  expect(getCurrentRunningApp()?.name).toBe('doc-access-test2');
 
   expect(d1).toBe(d2);
   expect(d1).toBe(document);
 
   const eval1 = proxy3.eval;
-  expect(getCurrentRunningSandboxProxy()).toBe(proxy3);
+  expect(getCurrentRunningApp()?.window).toBe(proxy3);
+  expect(getCurrentRunningApp()?.name).toBe('eval-access-test1');
   const eval2 = proxy4.eval;
-  expect(getCurrentRunningSandboxProxy()).toBe(proxy4);
+  expect(getCurrentRunningApp()?.window).toBe(proxy4);
+  expect(getCurrentRunningApp()?.name).toBe('eval-access-test2');
 
   expect(eval1).toBe(eval2);
   // eslint-disable-next-line no-eval
@@ -253,10 +261,11 @@ test('document attachDocProxySymbol mark should be remove before next task', (do
   // @ts-ignore
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const d1 = proxy.document;
-  expect(getCurrentRunningSandboxProxy()).toBe(proxy);
+  expect(getCurrentRunningApp()?.window).toBe(proxy);
+  expect(getCurrentRunningApp()?.name).toBe('doc-symbol');
 
   setTimeout(() => {
-    expect(getCurrentRunningSandboxProxy()).toBeNull();
+    expect(getCurrentRunningApp()).toBeNull();
     done();
   });
 });
@@ -297,6 +306,7 @@ test('the prototype should be kept while we create a function with prototype on 
   const proxy = new ProxySandbox('new-function').proxy as any;
 
   function test() {}
+
   proxy.fn = test;
   expect(proxy.fn === test).toBeFalsy();
   expect(proxy.fn.prototype).toBe(test.prototype);
@@ -331,4 +341,72 @@ test('falsy values should return as expected', () => {
   expect(proxy.falsevar).toBe(false);
   expect(proxy.nullvar).toBeNull();
   expect(proxy.zero).toBe(0);
+});
+
+it('should return true while [[GetPrototypeOf]] invoked by proxy object', () => {
+  // window.__proto__ not equals window prototype in jest environment
+  // eslint-disable-next-line no-proto
+  expect(window.__proto__ === Object.getPrototypeOf(window)).toBeFalsy();
+  // we must to set the prototype of window as jest modified window `__proto__` property but not changed it internal [[Prototype]] property
+  // eslint-disable-next-line no-proto
+  Object.setPrototypeOf(window, window.__proto__);
+
+  const { proxy } = new ProxySandbox('window-prototype');
+  expect(proxy instanceof Window).toBeTruthy();
+  expect(Object.getPrototypeOf(proxy)).toBe(Object.getPrototypeOf(window));
+  expect(Reflect.getPrototypeOf(proxy)).toBe(Reflect.getPrototypeOf(window));
+  expect(Reflect.getPrototypeOf(proxy)).toBe(Object.getPrototypeOf(window));
+});
+
+it('should get current running sandbox proxy correctly', async () => {
+  const { proxy } = new ProxySandbox('running');
+
+  await Promise.resolve().then(() => {
+    expect(getCurrentRunningApp()).toBeNull();
+    // @ts-ignore
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const unused = proxy.accessing;
+    expect(getCurrentRunningApp()?.window).toBe(proxy);
+    expect(getCurrentRunningApp()?.name).toBe('running');
+  });
+});
+
+it('native window function calling should always be bound with window', () => {
+  window.nativeWindowFunction = function nativeWindowFunction(this: any) {
+    if (this !== undefined && this !== window) {
+      throw new Error('Illegal Invocation!');
+    }
+
+    return 'success';
+  };
+
+  const { proxy } = new ProxySandbox('mustBeBoundWithWindowReference');
+  expect(proxy.nativeWindowFunction()).toBe('success');
+});
+
+describe('should work with nest sandbox', () => {
+  it('specified dom api should bound with native window', () => {
+    const { proxy: sandboxProxy } = new ProxySandbox('sandbox');
+    const { proxy: nestProxy } = new ProxySandbox('dom-api', sandboxProxy as typeof window);
+
+    function mockDomAPI(this: any) {
+      if (this !== window) {
+        throw new TypeError('Illegal invocation!');
+      }
+
+      return true;
+    }
+
+    nestProxy.mockDomAPIInBlackList = mockDomAPI;
+    // must use a new function to avoid cache
+    nestProxy.mockDomAPINotInBlackList = function fnCp(this: any) {
+      return mockDomAPI.call(this);
+    };
+
+    expect(nestProxy.mockDomAPIInBlackList()).toBeTruthy();
+
+    expect(() => {
+      nestProxy.mockDomAPINotInBlackList();
+    }).toThrowError(/Illegal invocation!/);
+  });
 });

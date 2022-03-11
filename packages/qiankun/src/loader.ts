@@ -7,6 +7,7 @@ import { importEntry } from 'import-html-entry';
 import { concat, forEach, mergeWith } from 'lodash';
 import type { LifeCycles, ParcelConfigObject } from 'single-spa';
 import getAddOns from './addons';
+import { QiankunError } from './error';
 import { getMicroAppStateActions } from './globalState';
 import type {
   FrameworkConfiguration,
@@ -19,13 +20,14 @@ import type {
 import { createSandboxContainer, css } from './sandbox';
 import {
   Deferred,
+  genAppInstanceIdByName,
   getContainer,
   getDefaultTplWrapper,
   getWrapperId,
   isEnableScopedCSS,
+  performanceGetEntriesByName,
   performanceMark,
   performanceMeasure,
-  performanceGetEntriesByName,
   toArray,
   validateExportLifecycle,
 } from './utils';
@@ -33,10 +35,10 @@ import {
 function assertElementExist(element: Element | null | undefined, msg?: string) {
   if (!element) {
     if (msg) {
-      throw new Error(msg);
+      throw new QiankunError(msg);
     }
 
-    throw new Error('[qiankun] element not existed!');
+    throw new QiankunError('element not existed!');
   }
 }
 
@@ -66,7 +68,7 @@ function createElement(
   appContent: string,
   strictStyleIsolation: boolean,
   scopedCSS: boolean,
-  appName: string,
+  appInstanceId: string,
 ): HTMLElement {
   const containerElement = document.createElement('div');
   containerElement.innerHTML = appContent;
@@ -95,12 +97,12 @@ function createElement(
   if (scopedCSS) {
     const attr = appElement.getAttribute(css.QiankunCSSRewriteAttr);
     if (!attr) {
-      appElement.setAttribute(css.QiankunCSSRewriteAttr, appName);
+      appElement.setAttribute(css.QiankunCSSRewriteAttr, appInstanceId);
     }
 
     const styleNodes = appElement.querySelectorAll('style') || [];
     forEach(styleNodes, (stylesheetElement: HTMLStyleElement) => {
-      css.process(appElement!, stylesheetElement, appName);
+      css.process(appElement!, stylesheetElement, appInstanceId);
     });
   }
 
@@ -109,7 +111,6 @@ function createElement(
 
 /** generate app wrapper dom getter */
 function getAppWrapperGetter(
-  appName: string,
   appInstanceId: string,
   useLegacyRender: boolean,
   strictStyleIsolation: boolean,
@@ -118,24 +119,18 @@ function getAppWrapperGetter(
 ) {
   return () => {
     if (useLegacyRender) {
-      if (strictStyleIsolation) throw new Error('[qiankun]: strictStyleIsolation can not be used with legacy render!');
-      if (scopedCSS) throw new Error('[qiankun]: experimentalStyleIsolation can not be used with legacy render!');
+      if (strictStyleIsolation) throw new QiankunError('strictStyleIsolation can not be used with legacy render!');
+      if (scopedCSS) throw new QiankunError('experimentalStyleIsolation can not be used with legacy render!');
 
       const appWrapper = document.getElementById(getWrapperId(appInstanceId));
-      assertElementExist(
-        appWrapper,
-        `[qiankun] Wrapper element for ${appName} with instance ${appInstanceId} is not existed!`,
-      );
+      assertElementExist(appWrapper, `Wrapper element for ${appInstanceId} is not existed!`);
       return appWrapper!;
     }
 
     const element = elementGetter();
-    assertElementExist(
-      element,
-      `[qiankun] Wrapper element for ${appName} with instance ${appInstanceId} is not existed!`,
-    );
+    assertElementExist(element, `Wrapper element for ${appInstanceId} is not existed!`);
 
-    if (strictStyleIsolation) {
+    if (strictStyleIsolation && supportShadowDOM) {
       return element!.shadowRoot!;
     }
 
@@ -153,16 +148,16 @@ type ElementRender = (
 /**
  * Get the render function
  * If the legacy render function is provide, used as it, otherwise we will insert the app element to target container by qiankun
- * @param appName
+ * @param appInstanceId
  * @param appContent
  * @param legacyRender
  */
-function getRender(appName: string, appContent: string, legacyRender?: HTMLContentRender) {
+function getRender(appInstanceId: string, appContent: string, legacyRender?: HTMLContentRender) {
   const render: ElementRender = ({ element, loading, container }, phase) => {
     if (legacyRender) {
       if (process.env.NODE_ENV === 'development') {
-        console.warn(
-          '[qiankun] Custom rendering function is deprecated, you can use the container element setting instead!',
+        console.error(
+          '[qiankun] Custom rendering function is deprecated and will be removed in 3.0, you can use the container element setting instead!',
         );
       }
 
@@ -178,13 +173,13 @@ function getRender(appName: string, appContent: string, legacyRender?: HTMLConte
         switch (phase) {
           case 'loading':
           case 'mounting':
-            return `[qiankun] Target container with ${container} not existed while ${appName} ${phase}!`;
+            return `Target container with ${container} not existed while ${appInstanceId} ${phase}!`;
 
           case 'mounted':
-            return `[qiankun] Target container with ${container} not existed after ${appName} ${phase}!`;
+            return `Target container with ${container} not existed after ${appInstanceId} ${phase}!`;
 
           default:
-            return `[qiankun] Target container with ${container} not existed while ${appName} rendering!`;
+            return `Target container with ${container} not existed while ${appInstanceId} rendering!`;
         }
       })();
       assertElementExist(containerElement, errorMsg);
@@ -239,7 +234,7 @@ function getLifecyclesFromExports(
     return globalVariableExports;
   }
 
-  throw new Error(`[qiankun] You need to export lifecycle functions in ${appName} entry`);
+  throw new QiankunError(`You need to export lifecycle functions in ${appName} entry`);
 }
 
 let prevAppUnmountedDeferred: Deferred<void>;
@@ -252,14 +247,20 @@ export async function loadApp<T extends ObjectType>(
   lifeCycles?: FrameworkLifeCycles<T>,
 ): Promise<ParcelConfigObjectGetter> {
   const { entry, name: appName } = app;
-  const appInstanceId = `${appName}_${+new Date()}_${Math.floor(Math.random() * 1000)}`;
+  const appInstanceId = genAppInstanceIdByName(appName);
 
   const markName = `[qiankun] App ${appInstanceId} Loading`;
   if (process.env.NODE_ENV === 'development') {
     performanceMark(markName);
   }
 
-  const { singular = false, sandbox = true, excludeAssetFilter, ...importEntryOpts } = configuration;
+  const {
+    singular = false,
+    sandbox = true,
+    excludeAssetFilter,
+    globalContext = window,
+    ...importEntryOpts
+  } = configuration;
 
   // get the entry html content and script executor
   const { template, execScripts, assetPublicPath } = await importEntry(entry, importEntryOpts);
@@ -271,28 +272,34 @@ export async function loadApp<T extends ObjectType>(
     await (prevAppUnmountedDeferred && prevAppUnmountedDeferred.promise);
   }
 
-  const appContent = getDefaultTplWrapper(appInstanceId, appName)(template);
+  const appContent = getDefaultTplWrapper(appInstanceId)(template);
 
   const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
+
+  if (process.env.NODE_ENV === 'development' && strictStyleIsolation) {
+    console.warn(
+      "[qiankun] strictStyleIsolation configuration will be removed in 3.0, pls don't depend on it or use experimentalStyleIsolation instead!",
+    );
+  }
+
   const scopedCSS = isEnableScopedCSS(sandbox);
   let initialAppWrapperElement: HTMLElement | null = createElement(
     appContent,
     strictStyleIsolation,
     scopedCSS,
-    appName,
+    appInstanceId,
   );
 
   const initialContainer = 'container' in app ? app.container : undefined;
   const legacyRender = 'render' in app ? app.render : undefined;
 
-  const render = getRender(appName, appContent, legacyRender);
+  const render = getRender(appInstanceId, appContent, legacyRender);
 
   // 第一次加载设置应用可见区域 dom 结构
   // 确保每次应用加载前容器 dom 结构已经设置完毕
   render({ element: initialAppWrapperElement, loading: true, container: initialContainer }, 'loading');
 
   const initialAppWrapperGetter = getAppWrapperGetter(
-    appName,
     appInstanceId,
     !!legacyRender,
     strictStyleIsolation,
@@ -300,19 +307,20 @@ export async function loadApp<T extends ObjectType>(
     () => initialAppWrapperElement,
   );
 
-  let global = window;
+  let global = globalContext;
   let mountSandbox = () => Promise.resolve();
   let unmountSandbox = () => Promise.resolve();
   const useLooseSandbox = typeof sandbox === 'object' && !!sandbox.loose;
   let sandboxContainer;
   if (sandbox) {
     sandboxContainer = createSandboxContainer(
-      appName,
+      appInstanceId,
       // FIXME should use a strict sandbox logic while remount, see https://github.com/umijs/qiankun/issues/518
       initialAppWrapperGetter,
       scopedCSS,
       useLooseSandbox,
       excludeAssetFilter,
+      global,
     );
     // 用沙箱的代理对象作为接下来使用的全局对象
     global = sandboxContainer.instance.proxy as typeof window;
@@ -320,17 +328,18 @@ export async function loadApp<T extends ObjectType>(
     unmountSandbox = sandboxContainer.unmount;
   }
 
-  const { beforeUnmount = [], afterUnmount = [], afterMount = [], beforeMount = [], beforeLoad = [] } = mergeWith(
-    {},
-    getAddOns(global, assetPublicPath),
-    lifeCycles,
-    (v1, v2) => concat(v1 ?? [], v2 ?? []),
-  );
+  const {
+    beforeUnmount = [],
+    afterUnmount = [],
+    afterMount = [],
+    beforeMount = [],
+    beforeLoad = [],
+  } = mergeWith({}, getAddOns(global, assetPublicPath), lifeCycles, (v1, v2) => concat(v1 ?? [], v2 ?? []));
 
   await execHooksChain(toArray(beforeLoad), app, global);
 
   // get the lifecycle hooks from module exports
-  const scriptExports: any = await execScripts(global, !useLooseSandbox);
+  const scriptExports: any = await execScripts(global, sandbox && !useLooseSandbox);
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
     scriptExports,
     appName,
@@ -338,25 +347,15 @@ export async function loadApp<T extends ObjectType>(
     sandboxContainer?.instance?.latestSetProp,
   );
 
-  const {
-    onGlobalStateChange,
-    setGlobalState,
-    offGlobalStateChange,
-  }: Record<string, CallableFunction> = getMicroAppStateActions(appInstanceId);
+  const { onGlobalStateChange, setGlobalState, offGlobalStateChange }: Record<string, CallableFunction> =
+    getMicroAppStateActions(appInstanceId);
 
   // FIXME temporary way
   const syncAppWrapperElement2Sandbox = (element: HTMLElement | null) => (initialAppWrapperElement = element);
 
   const parcelConfigGetter: ParcelConfigObjectGetter = (remountContainer = initialContainer) => {
-    let appWrapperElement: HTMLElement | null = initialAppWrapperElement;
-    const appWrapperGetter = getAppWrapperGetter(
-      appName,
-      appInstanceId,
-      !!legacyRender,
-      strictStyleIsolation,
-      scopedCSS,
-      () => appWrapperElement,
-    );
+    let appWrapperElement: HTMLElement | null;
+    let appWrapperGetter: ReturnType<typeof getAppWrapperGetter>;
 
     const parcelConfig: ParcelConfigObject = {
       name: appInstanceId,
@@ -378,13 +377,24 @@ export async function loadApp<T extends ObjectType>(
 
           return undefined;
         },
+        // initial wrapper element before app mount/remount
+        async () => {
+          appWrapperElement = initialAppWrapperElement;
+          appWrapperGetter = getAppWrapperGetter(
+            appInstanceId,
+            !!legacyRender,
+            strictStyleIsolation,
+            scopedCSS,
+            () => appWrapperElement,
+          );
+        },
         // 添加 mount hook, 确保每次应用加载前容器 dom 结构已经设置完毕
         async () => {
           const useNewContainer = remountContainer !== initialContainer;
           if (useNewContainer || !appWrapperElement) {
             // element will be destroyed after unmounted, we need to recreate it if it not exist
             // or we try to remount into a new container
-            appWrapperElement = createElement(appContent, strictStyleIsolation, scopedCSS, appName);
+            appWrapperElement = createElement(appContent, strictStyleIsolation, scopedCSS, appInstanceId);
             syncAppWrapperElement2Sandbox(appWrapperElement);
           }
 

@@ -11,6 +11,7 @@ declare global {
     __POWERED_BY_QIANKUN__?: boolean;
     __INJECTED_PUBLIC_PATH_BY_QIANKUN__?: string;
     __QIANKUN_DEVELOPMENT__?: boolean;
+    Zone?: CallableFunction;
   }
 }
 
@@ -85,6 +86,8 @@ type QiankunSpecialOpts = {
    * skip some scripts or links intercept, like JSONP
    */
   excludeAssetFilter?: (url: string) => boolean;
+
+  globalContext?: typeof window;
 };
 export type FrameworkConfiguration = QiankunSpecialOpts & ImportEntryOpts & StartOpts;
 
