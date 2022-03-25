@@ -19,6 +19,15 @@ const SCRIPT_TAG_NAME = 'SCRIPT';
 const LINK_TAG_NAME = 'LINK';
 const STYLE_TAG_NAME = 'STYLE';
 
+export function isExecutableScriptType(script: HTMLScriptElement) {
+  return (
+    !script.type ||
+    ['text/javascript', 'module', 'application/javascript', 'text/ecmascript', 'application/ecmascript'].indexOf(
+      script.type,
+    ) !== -1
+  );
+}
+
 export function isHijackingTag(tagName?: string) {
   return (
     tagName?.toUpperCase() === LINK_TAG_NAME ||
@@ -206,7 +215,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
         case SCRIPT_TAG_NAME: {
           const { src, text } = element as HTMLScriptElement;
           // some script like jsonp maybe not support cors which should't use execScripts
-          if (excludeAssetFilter && src && excludeAssetFilter(src)) {
+          if ((excludeAssetFilter && src && excludeAssetFilter(src)) || !isExecutableScriptType(element)) {
             return rawDOMAppendOrInsertBefore.call(this, element, refChild) as T;
           }
 
