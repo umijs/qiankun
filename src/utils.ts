@@ -88,17 +88,16 @@ export const isCallable = (fn: any) => {
 };
 
 /**
- * isOverWritable
+ * isPropertyReadonly
  * @param target
  * @param p
  * @returns boolean
  */
-export function isOverWritable(target: any, p?: any) {
-  const propertyDescriptor = Object.getOwnPropertyDescriptor(target, p);
-  return propertyDescriptor && p
-    ? // 如果目标属性 configurable: false && writable: false， 则proxy内不能被重写
-      !(propertyDescriptor.configurable === false && propertyDescriptor.writable === false)
-    : true;
+export function isPropertyReadonly(target: any, p?: any) {
+  let propertyDescriptor = null;
+  return p && (propertyDescriptor = Object.getOwnPropertyDescriptor(target, p))
+    ? propertyDescriptor.configurable === false && propertyDescriptor.writable === false
+    : false;
 }
 
 const boundedMap = new WeakMap<CallableFunction, boolean>();
