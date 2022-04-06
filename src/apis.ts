@@ -1,6 +1,6 @@
 import { noop } from 'lodash';
 import type { ParcelConfigObject } from 'single-spa';
-import { mountRootParcel, registerApplication, start as startSingleSpa } from 'single-spa';
+import { mountRootParcel, registerApplication, start as startSingleSpa, unregisterApplication as unregisterApplicationSingleSpa } from 'single-spa';
 import type {
   FrameworkConfiguration,
   FrameworkLifeCycles,
@@ -40,6 +40,13 @@ const autoDowngradeForLowVersionBrowser = (configuration: FrameworkConfiguration
   }
 
   return configuration;
+};
+
+export const unregisterApplication: typeof unregisterApplicationSingleSpa = (
+  appName,
+) => {
+  microApps = microApps.filter((microApp) => microApp.name !== appName);
+  return unregisterApplicationSingleSpa(appName);
 };
 
 export function registerMicroApps<T extends ObjectType>(
