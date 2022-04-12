@@ -6,7 +6,20 @@
 import { isBoundedFunction, isCallable, isConstructable } from '../utils';
 
 type AppInstance = { name: string; window: WindowProxy };
+type FunctionPrototype = 'toString' | 'apply' | 'bind' | 'call';
 let currentRunningApp: AppInstance | null = null;
+
+const isWindow = (obj: any) => {
+  if (!obj || typeof obj !== 'object') {
+    return false;
+  }
+  const typeofObj = Object.prototype.toString.call(obj);
+  if (['[object Window]', '[object DOMWindow]', '[object global]'].includes(typeofObj)) {
+    return true;
+  }
+  return obj.window === obj;
+};
+
 /**
  * get the app that running tasks at current tick
  */
@@ -53,22 +66,37 @@ export function getTargetValue(target: any, value: any): any {
 
     // Some util, like `function isNative() {  return typeof Ctor === 'function' && /native code/.test(Ctor.toString()) }` relies on the original `toString()` result
     // but bound functions will always return "function() {[native code]}" for `toString`, which is misleading
-    if (typeof value.toString === 'function') {
-      const valueHasInstanceToString = value.hasOwnProperty('toString') && !boundValue.hasOwnProperty('toString');
-      const boundValueHasPrototypeToString = boundValue.toString === Function.prototype.toString;
 
-      if (valueHasInstanceToString || boundValueHasPrototypeToString) {
-        const originToStringDescriptor = Object.getOwnPropertyDescriptor(
-          valueHasInstanceToString ? value : Function.prototype,
-          'toString',
-        );
+    // Fix the function instance scope
+    const prototypes: FunctionPrototype[] = ['call', 'apply', 'bind', 'toString'];
 
-        Object.defineProperty(boundValue, 'toString', {
-          ...originToStringDescriptor,
-          ...(originToStringDescriptor?.get ? null : { value: () => value.toString() }),
-        });
+    prototypes.forEach((prototype: FunctionPrototype) => {
+      if (typeof value[prototype] === 'function') {
+        const valueHasInstance = value.hasOwnProperty(prototype) && !boundValue.hasOwnProperty(prototype);
+        const boundValueHasPrototype = boundValue[prototype] === Function.prototype[prototype];
+
+        if (valueHasInstance || boundValueHasPrototype) {
+          const originDescriptor = Object.getOwnPropertyDescriptor(
+            valueHasInstance ? value : Function.prototype,
+            prototype,
+          );
+
+          Object.defineProperty(boundValue, prototype, {
+            ...originDescriptor,
+            ...(originDescriptor?.get
+              ? null
+              : {
+                  value: function(...args: any) {
+                    if (prototype === 'toString') {
+                      return value.toString(...args);
+                    }
+                    return value[prototype].bind(!this || isWindow(this) ? target : this)(...args);
+                  },
+                }),
+          });
+        }
       }
-    }
+    });
 
     functionBoundedValueMap.set(value, boundValue);
     return boundValue;
