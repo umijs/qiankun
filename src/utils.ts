@@ -59,8 +59,12 @@ export function isConstructable(fn: () => any | FunctionConstructor) {
     // fn.toString has a significant performance overhead, if hasPrototypeMethods check not passed, we will check the function string with regex
     const fnString = fn.toString();
     const constructableFunctionRegex = /^function\b\s[A-Z].*/;
+    const constructableFunctionNameRegex = /^[A-Z].*/;
     const classRegex = /^class\b/;
-    constructable = constructableFunctionRegex.test(fnString) || classRegex.test(fnString);
+    constructable =
+      constructableFunctionNameRegex.test(fn.name) ||
+      constructableFunctionRegex.test(fnString) ||
+      classRegex.test(fnString);
   }
 
   fnRegexCheckCacheMap.set(fn, constructable);
