@@ -208,7 +208,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
 
           // eslint-disable-next-line no-shadow
           dynamicStyleSheetElements.push(stylesheetElement);
-          const referenceNode = mountDOM.contains(refChild) ? refChild : null;
+          const referenceNode = rawDOMAppendOrInsertBefore.name === "insertBefore" ? mountDOM.childNodes[0] : mountDOM.contains(refChild) ? refChild : null;
           return rawDOMAppendOrInsertBefore.call(mountDOM, stylesheetElement, referenceNode);
         }
 
