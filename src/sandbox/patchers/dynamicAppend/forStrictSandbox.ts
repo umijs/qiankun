@@ -14,6 +14,7 @@ import {
   rebuildCSSRules,
   recordStyledComponentsCSSRules,
 } from './common';
+import { checkActivityFunctions } from 'single-spa';
 
 declare global {
   interface Window {
@@ -44,8 +45,9 @@ function patchDocumentCreateElement() {
     ): HTMLElement {
       const element = rawDocumentCreateElement.call(this, tagName, options);
       if (isHijackingTag(tagName)) {
-        const { window: currentRunningSandboxProxy } = getCurrentRunningApp() || {};
-        if (currentRunningSandboxProxy) {
+        const { window: currentRunningSandboxProxy, name: currentRunningName } = getCurrentRunningApp() || {};
+        const useSandboxProxy = checkActivityFunctions(window.location).includes(currentRunningName as any);
+        if (currentRunningSandboxProxy && useSandboxProxy) {
           const proxyContainerConfig = proxyAttachContainerConfigMap.get(currentRunningSandboxProxy);
           if (proxyContainerConfig) {
             elementAttachContainerConfigMap.set(element, proxyContainerConfig);
