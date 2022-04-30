@@ -140,6 +140,21 @@ How to determine the completion of the container DOM loading? The vue app can be
 
 If it still reports an error, check whether the container DOM is placed on a routing page of the main app, please refer to [How to load micro apps on a routing page of the main app](#How to load micro apps on a routing page of the main app)
 
+## The main application uses a third-party route manager scenario
+
+If your main application is based on `vue`, `angular`, `react`, etc., the corresponding official will generally provide a matching routing manager (for example: `vue-router`). At this time, `qiankun` must be loaded before the main application loads the three-party routing manager, because the `single-spa` that Qiankun relies on rewrites functions such as `addEventListener` and `removeEventListener`, which will proxy `popstate` and `hashchange` internally. Only in this way can it be ensured that the subsequent page switching will be processed as expected, otherwise the `popstate` and `hashchange` events registered before this will be free, which may lead to unexpected situations.[issues](https://github.com/umijs/qiankun/issues/2056)
+
+```js
+- scene1
+
+import * from 'some-pkg.js'; // now registered popstate、hashchange
+import qiankun from 'qiankun';
+
+- scene2
+
+Introduce qiankun to a routing page of the main application (this page is lazy loaded), and the loading lag will also cause
+```
+
 ## How to load micro apps on a routing page of the main app
 
 It must be ensured that the routing page of the main app is also loaded when the micro app is loaded.

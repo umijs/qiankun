@@ -141,6 +141,23 @@ qiankun 抛出这个错误是因为微应用加载后容器 DOM 节点不存在�
 
 如果仍然报错，检查容器 DOM 是否放在了主应用的某个路由页面，请参考[如何在主应用的某个路由页面加载微应用](#如何在主应用的某个路由页面加载微应用)。
 
+## 主应用使用了第三方路由管理器场景
+
+如果你的主应用基于`vue`、`angular`、`react`等搭建，一般对应官方都会提供配套的路由管理器（比如:`vue-router`）。
+此时必须在主应用加载三方路由管理器之前加载 `qiankun` ，因为乾坤依赖的 `single-spa` 重写了`addEventListener`、`removeEventListener`等函数，其内部会代理 `popstate`、`hashchange`。只有这样才能保证后续在各页面切换时按预期处理到，否则在这之前的注册的`popstate`、`hashchange`事件游离在外，可能导致不可预期的情况。
+[相关issues](https://github.com/umijs/qiankun/issues/2056)
+
+```js
+- 场景1
+
+import * from 'some-pkg.js'; // 此时注册了popstate、hashchange
+import qiankun from 'qiankun';
+
+- 场景2
+
+在主应用的某个路由页面引入qiankun（此页面懒加载），此时加载滞后也会导致
+```
+
 ## 如何在主应用的某个路由页面加载微应用
 
 必须保证微应用加载时主应用这个路由页面也加载了。
