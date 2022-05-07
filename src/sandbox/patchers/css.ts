@@ -41,6 +41,10 @@ export class ScopedCSS {
   }
 
   process(styleNode: HTMLStyleElement, prefix: string = '') {
+    if (ScopedCSS.ModifiedTag in styleNode) {
+      return;
+    }
+
     if (styleNode.textContent !== '') {
       const textNode = document.createTextNode(styleNode.textContent || '');
       this.swapNode.appendChild(textNode);
@@ -52,6 +56,7 @@ export class ScopedCSS {
 
       // cleanup
       this.swapNode.removeChild(textNode);
+      (styleNode as any)[ScopedCSS.ModifiedTag] = true;
       return;
     }
 
