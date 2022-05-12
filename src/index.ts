@@ -4,6 +4,7 @@
  */
 
 export { loadMicroApp, registerMicroApps, start } from './apis';
+export { loadApp } from './loader';
 export { initGlobalState } from './globalState';
 export { getCurrentRunningApp as __internalGetCurrentRunningApp } from './sandbox';
 export * from './errorHandler';
