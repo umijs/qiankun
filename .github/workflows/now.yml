@@ -23,4 +23,4 @@ jobs:
           vercel-project-id: ${{ secrets.NOW_PROJECT_ID }}
           working-directory: dist
           vercel-args: '--prod'
-          scope: umijs
+          scope: chencheng
