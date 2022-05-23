@@ -1,6 +1,6 @@
 {
   "name": "qiankun",
-  "scope": "umijs",
+  "scope": "chencheng",
   "version": 2,
   "builds": [{ "src": "./dist/**", "use": "@now/static" }],
   "build": {
