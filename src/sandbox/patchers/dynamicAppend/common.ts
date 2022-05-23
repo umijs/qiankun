@@ -5,7 +5,7 @@
 import { execScripts } from 'import-html-entry';
 import { isFunction } from 'lodash';
 import { frameworkConfiguration } from '../../../apis';
-
+import { qiankunHeadTagName } from '../../../utils';
 import * as css from '../css';
 
 export const rawHeadAppendChild = HTMLHeadElement.prototype.appendChild;
@@ -18,6 +18,25 @@ const rawRemoveChild = HTMLElement.prototype.removeChild;
 const SCRIPT_TAG_NAME = 'SCRIPT';
 const LINK_TAG_NAME = 'LINK';
 const STYLE_TAG_NAME = 'STYLE';
+
+export const styleElementTargetSymbol = Symbol('target');
+
+type DynamicAppendTarget = 'head' | 'body';
+
+declare global {
+  interface HTMLLinkElement {
+    [styleElementTargetSymbol]: DynamicAppendTarget;
+  }
+
+  interface HTMLStyleElement {
+    [styleElementTargetSymbol]: DynamicAppendTarget;
+  }
+}
+
+export const getAppWrapperHeadElement = (appWrapper: Element | ShadowRoot) => {
+  const rootElement = 'host' in appWrapper ? appWrapper.host : appWrapper;
+  return rootElement.getElementsByTagName(qiankunHeadTagName)[0];
+};
 
 export function isExecutableScriptType(script: HTMLScriptElement) {
   return (
@@ -149,6 +168,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
   rawDOMAppendOrInsertBefore: <T extends Node>(newChild: T, refChild?: Node | null) => T;
   isInvokedByMicroApp: (element: HTMLElement) => boolean;
   containerConfigGetter: (element: HTMLElement) => ContainerConfig;
+  target: DynamicAppendTarget;
 }) {
   return function appendChildOrInsertBefore<T extends Node>(
     this: HTMLHeadElement | HTMLBodyElement,
@@ -156,7 +176,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
     refChild: Node | null = null,
   ) {
     let element = newChild as any;
-    const { rawDOMAppendOrInsertBefore, isInvokedByMicroApp, containerConfigGetter } = opts;
+    const { rawDOMAppendOrInsertBefore, isInvokedByMicroApp, containerConfigGetter, target = 'body' } = opts;
     if (!isHijackingTag(element.tagName) || !isInvokedByMicroApp(element)) {
       return rawDOMAppendOrInsertBefore.call(this, element, refChild) as T;
     }
@@ -182,7 +202,14 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
             return rawDOMAppendOrInsertBefore.call(this, element, refChild) as T;
           }
 
-          const mountDOM = appWrapperGetter();
+          Object.defineProperty(stylesheetElement, styleElementTargetSymbol, {
+            value: target,
+            writable: true,
+            configurable: true,
+          });
+
+          const appWrapper = appWrapperGetter();
+          const mountDOM = target === 'head' ? getAppWrapperHeadElement(appWrapper) : appWrapper;
 
           if (scopedCSS) {
             // exclude link elements like <link rel="icon" href="favicon.ico">
@@ -326,17 +353,20 @@ export function patchHTMLDynamicAppendPrototypeFunctions(
       rawDOMAppendOrInsertBefore: rawHeadAppendChild,
       containerConfigGetter,
       isInvokedByMicroApp,
+      target: 'head',
     }) as typeof rawHeadAppendChild;
     HTMLBodyElement.prototype.appendChild = getOverwrittenAppendChildOrInsertBefore({
       rawDOMAppendOrInsertBefore: rawBodyAppendChild,
       containerConfigGetter,
       isInvokedByMicroApp,
+      target: 'body',
     }) as typeof rawBodyAppendChild;
 
     HTMLHeadElement.prototype.insertBefore = getOverwrittenAppendChildOrInsertBefore({
       rawDOMAppendOrInsertBefore: rawHeadInsertBefore as any,
       containerConfigGetter,
       isInvokedByMicroApp,
+      target: 'head',
     }) as typeof rawHeadInsertBefore;
   }
 
