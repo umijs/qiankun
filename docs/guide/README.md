@@ -10,7 +10,7 @@ Qiankun is an implementation of [Micro Frontends](https://micro-frontends.org/),
 
 Qiankun hatched from [Ant Financial](https://en.wikipedia.org/wiki/Ant_Financial)’s unified front-end platform for cloud products based on micro-frontends architecture. After full testing and polishing of a number of online applications, we extracted its micro-frontends kernel and open sourced it. We hope to help the systems who has the same requirement more convenient to build its own micro-frontends application in the community. At the same time, with the help of community, qiankun will be polished and improved.
 
-At present qiankun has served more than 200 online applications inside Ant, and it is definitely trustworthy in terms of ease of use and completeness.
+At present qiankun has served more than 2000 online applications inside Ant, and it is definitely trustworthy in terms of ease of use and completeness.
 
 ## What Are Micro FrontEnds
 
