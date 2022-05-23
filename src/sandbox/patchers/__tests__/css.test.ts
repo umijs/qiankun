@@ -3,8 +3,8 @@
  * @since 2020-04-19
  */
 
-import { ScopedCSS } from '../css';
 import { sleep } from '../../../utils';
+import { ScopedCSS } from '../css';
 
 let CSSProcessor: ScopedCSS;
 beforeAll(() => {

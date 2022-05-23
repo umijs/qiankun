@@ -8,8 +8,8 @@ import { patchAtBootstrapping, patchAtMounting } from './patchers';
 import ProxySandbox from './proxySandbox';
 import SnapshotSandbox from './snapshotSandbox';
 
-export { css } from './patchers';
 export { getCurrentRunningApp } from './common';
+export { css } from './patchers';
 
 /**
  * 生成应用运行时沙箱

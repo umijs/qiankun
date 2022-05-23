@@ -8,11 +8,13 @@ import { nativeGlobal } from '../../../utils';
 import { getCurrentRunningApp } from '../../common';
 import type { ContainerConfig } from './common';
 import {
+  getAppWrapperHeadElement,
   isHijackingTag,
   patchHTMLDynamicAppendPrototypeFunctions,
   rawHeadAppendChild,
   rebuildCSSRules,
   recordStyledComponentsCSSRules,
+  styleElementTargetSymbol,
 } from './common';
 
 declare global {
@@ -130,7 +132,9 @@ export function patchStrictSandbox(
       rebuildCSSRules(dynamicStyleSheetElements, (stylesheetElement) => {
         const appWrapper = appWrapperGetter();
         if (!appWrapper.contains(stylesheetElement)) {
-          rawHeadAppendChild.call(appWrapper, stylesheetElement);
+          const mountDom =
+            stylesheetElement[styleElementTargetSymbol] === 'head' ? getAppWrapperHeadElement(appWrapper) : appWrapper;
+          rawHeadAppendChild.call(mountDom, stylesheetElement);
           return true;
         }
 

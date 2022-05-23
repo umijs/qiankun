@@ -1,4 +1,4 @@
-import { rebuildCSSRules, recordStyledComponentsCSSRules, getStyledElementCSSRules } from '../common';
+import { getStyledElementCSSRules, rebuildCSSRules, recordStyledComponentsCSSRules } from '../common';
 
 jest.mock('import-html-entry', () => ({
   execScripts: jest.fn(),
