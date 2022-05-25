@@ -44,4 +44,4 @@ loadMicroApp({
 
 | Github Discussions | 钉钉群 |
 | --- | --- |
-| [qiankun discussions](https://github.com/umijs/qiankun/discussions) | <img src="https://gw.alipayobjects.com/mdn/rms_655822/afts/img/A*fqcCSK2OyjEAAAAAAAAAAAAAARQnAQ" width="150" /> |
+| [qiankun discussions](https://github.com/umijs/qiankun/discussions) | <img src="https://gw.alipayobjects.com/mdn/rms_84469a/afts/img/A*SH8VQrYfQpYAAAAAAAAAAAAAARQnAQ" width="150" /> |
