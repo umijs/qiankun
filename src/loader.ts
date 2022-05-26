@@ -130,6 +130,7 @@ function getAppWrapperGetter(
     const element = elementGetter();
     assertElementExist(element, `Wrapper element for ${appInstanceId} is not existed!`);
 
+    // @ts-ignore
     if (strictStyleIsolation && supportShadowDOM) {
       return element!.shadowRoot!;
     }
