@@ -3,10 +3,9 @@
  * @since 2019-05-15
  */
 
-import { isFunction, snakeCase, once } from 'lodash';
-import { version } from './version';
-
+import { isFunction, once, snakeCase } from 'lodash';
 import type { FrameworkConfiguration } from './interfaces';
+import { version } from './version';
 
 export function toArray<T>(array: T | T[]): T[] {
   return Array.isArray(array) ? array : [array];
@@ -21,6 +20,7 @@ const nextTick: (cb: () => void) => void =
   typeof window.Zone === 'function' ? setTimeout : (cb) => Promise.resolve().then(cb);
 
 let globalTaskPending = false;
+
 /**
  * Run a callback before next task executing, and the invocation is idempotent in every singular task
  * That means even we called nextTask multi times in one task, only the first callback will be pushed to nextTick to be invoked.
@@ -37,6 +37,7 @@ export function nextTask(cb: () => void): void {
 }
 
 const fnRegexCheckCacheMap = new WeakMap<any | FunctionConstructor, boolean>();
+
 export function isConstructable(fn: () => any | FunctionConstructor) {
   // prototype methods might be changed while code running, so we need check it every time
   const hasPrototypeMethods =
@@ -101,6 +102,7 @@ export function isPropertyReadonly(target: any, p?: any) {
 }
 
 const boundedMap = new WeakMap<CallableFunction, boolean>();
+
 export function isBoundedFunction(fn: CallableFunction) {
   if (boundedMap.has(fn)) {
     return boundedMap.get(fn);
@@ -114,8 +116,18 @@ export function isBoundedFunction(fn: CallableFunction) {
   return bounded;
 }
 
+export const qiankunHeadTagName = 'qiankun-head';
+
 export function getDefaultTplWrapper(name: string) {
-  return (tpl: string) => `<div id="${getWrapperId(name)}" data-name="${name}" data-version="${version}">${tpl}</div>`;
+  return (tpl: string) => {
+    // We need to mock a head placeholder as native head element will be erased by browser in micro app
+    const tplWithSimulatedHead = tpl
+      .replace('<head>', `<${qiankunHeadTagName}>`)
+      .replace('</head>', `</${qiankunHeadTagName}>`);
+    return `<div id="${getWrapperId(
+      name,
+    )}" data-name="${name}" data-version="${version}">${tplWithSimulatedHead}</div>`;
+  };
 }
 
 export function getWrapperId(name: string) {

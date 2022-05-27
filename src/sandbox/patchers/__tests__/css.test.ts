@@ -3,8 +3,8 @@
  * @since 2020-04-19
  */
 
-import { ScopedCSS } from '../css';
 import { sleep } from '../../../utils';
+import { ScopedCSS } from '../css';
 
 let CSSProcessor: ScopedCSS;
 beforeAll(() => {
@@ -296,6 +296,35 @@ test('should not transform @font-face', () => {
   const expectValue = '@font-face {font-family: "Open Sans";}';
 
   const styleNode = fakeStyleNode(actualValue);
+  CSSProcessor.process(styleNode, 'div[data-qiankun="react15"]');
+
+  expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
+});
+
+test('should not transform style that has already been transform [1]', async () => {
+  const actualValue = '.react15-main {display: flex;}';
+  const expectValue = 'div[data-qiankun="react15"] .react15-main {display: flex;}';
+
+  const styleNode = fakeStyleNode('');
+  CSSProcessor.process(styleNode, 'div[data-qiankun="react15"]');
+
+  const textNode = document.createTextNode(actualValue);
+  styleNode.appendChild(textNode);
+
+  await sleep(10);
+
+  CSSProcessor.process(styleNode, 'div[data-qiankun="react15"]');
+
+  expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));
+});
+
+test('should not transform style that has already been transform [2]', async () => {
+  const actualValue = '.react15-main {display: flex;}';
+  const expectValue = 'div[data-qiankun="react15"] .react15-main {display: flex;}';
+
+  const styleNode = fakeStyleNode(actualValue);
+  CSSProcessor.process(styleNode, 'div[data-qiankun="react15"]');
+
   CSSProcessor.process(styleNode, 'div[data-qiankun="react15"]');
 
   expect(removeWs(styleNode.textContent)).toBe(removeWs(expectValue));

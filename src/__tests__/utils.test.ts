@@ -1,3 +1,4 @@
+import { version } from '../../package.json';
 import {
   Deferred,
   genAppInstanceIdByName,
@@ -8,7 +9,6 @@ import {
   sleep,
   validateExportLifecycle,
 } from '../utils';
-import { version } from '../../package.json';
 
 test('should wrap the id [1]', () => {
   const id = 'REACT16';
