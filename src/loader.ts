@@ -61,8 +61,7 @@ async function validateSingularMode<T extends ObjectType>(
   return typeof validate === 'function' ? validate(app) : !!validate;
 }
 
-// @ts-ignore
-const supportShadowDOM = document.head.attachShadow || document.head.createShadowRoot;
+const supportShadowDOM = !!document.head.attachShadow || !!(document.head as any).createShadowRoot;
 
 function createElement(
   appContent: string,
