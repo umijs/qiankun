@@ -1,6 +1,6 @@
 {
   "name": "qiankun",
-  "version": "2.7.0",
+  "version": "2.7.1",
   "description": "A completed implementation of Micro Frontends",
   "keywords": [
     "micro frontend",
@@ -10,10 +10,25 @@
     "micro-frontends",
     "microservice"
   ],
+  "homepage": "https://github.com/kuitos/qiankun#readme",
+  "bugs": {
+    "url": "https://github.com/kuitos/qiankun/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kuitos/qiankun.git"
+  },
+  "license": "MIT",
+  "author": "Kuitos",
+  "sideEffects": false,
   "main": "./lib/index.js",
   "module": "./es/index.js",
   "types": "./es/index.d.ts",
-  "sideEffects": false,
+  "files": [
+    "dist",
+    "es",
+    "lib"
+  ],
   "scripts": {
     "examples:install": "npm-run-all --serial build install:*",
     "examples:start": "npm-run-all --parallel start:*",
@@ -46,21 +61,45 @@
     "ci": "yarn lint && yarn build && yarn test",
     "test": "cross-env NODE_ENV=test jest"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/kuitos/qiankun.git"
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "yarn test"
+    }
   },
-  "files": [
-    "dist",
-    "es",
-    "lib"
-  ],
-  "author": "Kuitos",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/kuitos/qiankun/issues"
+  "lint-staged": {
+    "**/*.{js,ts,json,css,md}": [
+      "prettier -w"
+    ],
+    "**/*.{js,ts}": [
+      "yarn lint:fix"
+    ]
   },
-  "homepage": "https://github.com/kuitos/qiankun#readme",
+  "jest": {
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/__tests__/",
+      "/dist/"
+    ],
+    "moduleFileExtensions": [
+      "js",
+      "ts"
+    ],
+    "testMatch": [
+      "<rootDir>/src/**/__tests__/**/*.test.ts"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/fixtures/"
+    ],
+    "transform": {
+      "^.+\\.ts$": "<rootDir>/node_modules/ts-jest"
+    }
+  },
+  "resolutions": {
+    "@types/history": "^4.x",
+    "@types/react": "^17.x"
+  },
   "dependencies": {
     "@babel/runtime": "^7.10.5",
     "import-html-entry": "^1.9.0",
@@ -88,44 +127,5 @@
     "ts-jest": "^25.2.1",
     "typescript": "^4.1.2",
     "umi-plugin-hire": "^1.0.3"
-  },
-  "resolutions": {
-    "@types/react": "^17.x",
-    "@types/history": "^4.x"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged",
-      "pre-push": "yarn test"
-    }
-  },
-  "lint-staged": {
-    "**/*.{js,ts,json,css,md}": [
-      "prettier -w"
-    ],
-    "**/*.{js,ts}": [
-      "yarn lint:fix"
-    ]
-  },
-  "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "ts"
-    ],
-    "testMatch": [
-      "<rootDir>/src/**/__tests__/**/*.test.ts"
-    ],
-    "testPathIgnorePatterns": [
-      "/node_modules/",
-      "/fixtures/"
-    ],
-    "transform": {
-      "^.+\\.ts$": "<rootDir>/node_modules/ts-jest"
-    },
-    "coveragePathIgnorePatterns": [
-      "/node_modules/",
-      "/__tests__/",
-      "/dist/"
-    ]
   }
 }

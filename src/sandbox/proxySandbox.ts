@@ -6,7 +6,7 @@
 import type { SandBox } from '../interfaces';
 import { SandBoxType } from '../interfaces';
 import { nativeGlobal, nextTask } from '../utils';
-import { getTargetValue, setCurrentRunningApp, getCurrentRunningApp } from './common';
+import { getCurrentRunningApp, getTargetValue, setCurrentRunningApp } from './common';
 
 type SymbolTarget = 'target' | 'globalContext';
 
