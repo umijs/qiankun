@@ -75,7 +75,8 @@ export function registerMicroApps<T extends ObjectType>(
   });
 }
 
-export function unregisterMicroApp(appName: string){
+export function unregisterMicroApp(appName: string) {
+  microApps.splice(microApps.findIndex((app) => app.name === appName), 1)
   unregisterApplication(appName);
 }
 
