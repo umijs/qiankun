@@ -1,6 +1,6 @@
 import { noop } from 'lodash';
 import type { ParcelConfigObject } from 'single-spa';
-import { mountRootParcel, registerApplication, start as startSingleSpa } from 'single-spa';
+import { mountRootParcel, registerApplication, start as startSingleSpa, unregisterApplication } from 'single-spa';
 import type {
   FrameworkConfiguration,
   FrameworkLifeCycles,
@@ -73,6 +73,11 @@ export function registerMicroApps<T extends ObjectType>(
       customProps: props,
     });
   });
+}
+
+export function unregisterMicroApp(appName: string) {
+  microApps.splice(microApps.findIndex((app) => app.name === appName), 1)
+  unregisterApplication(appName);
 }
 
 const appConfigPromiseGetterMap = new Map<string, Promise<ParcelConfigObjectGetter>>();
