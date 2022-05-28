@@ -3,7 +3,7 @@
  * @since 2020-03-31
  */
 
-import { isBoundedFunction } from '../../utils';
+import { isBoundedFunction, isPropertyReadonly } from '../../utils';
 import { getCurrentRunningApp } from '../common';
 import ProxySandbox from '../proxySandbox';
 
@@ -300,6 +300,24 @@ test('bounded function should not be rebounded', () => {
   expect(proxy.fn1 === fn).toBeFalsy();
   expect(proxy.fn2 === boundedFn).toBeTruthy();
   expect(isBoundedFunction(proxy.fn1)).toBeTruthy();
+});
+
+test('readonly property should not be overwrite', () => {
+  const proxy = new ProxySandbox('bound-fn-test').proxy as any;
+
+  proxy.normalField = 'normalFieldValue';
+
+  Object.defineProperties(proxy, {
+    readOnlyField: {
+      value: 'readOnlyFieldValue',
+      configurable: false,
+      enumerable: true,
+      writable: false,
+    },
+  });
+
+  expect(isPropertyReadonly(proxy, 'normalField')).toBeFalsy();
+  expect(isPropertyReadonly(proxy, 'readOnlyField')).toBeTruthy();
 });
 
 test('the prototype should be kept while we create a function with prototype on proxy', () => {
