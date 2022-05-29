@@ -117,7 +117,7 @@ export function patchStrictSandbox(
     if (mounting) mountingPatchCount--;
 
     const allMicroAppUnmounted = mountingPatchCount === 0 && bootstrappingPatchCount === 0;
-    // release the overwrite prototype after all the micro apps unmounted
+    // release the overwritten prototype after all the micro apps unmounted
     if (allMicroAppUnmounted) {
       unpatchDynamicAppendPrototypeFunctions();
       unpatchDocumentCreate();
