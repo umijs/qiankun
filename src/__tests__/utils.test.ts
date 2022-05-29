@@ -29,7 +29,8 @@ test('should wrap string with div', () => {
   const ret = factory(tpl);
 
   expect(ret).toBe(
-    `<div id="__qiankun_microapp_wrapper_for_react_16__" data-name="react16" data-version="${version}">${tpl}</div>`,
+    // eslint-disable-next-line max-len
+    `<div id="__qiankun_microapp_wrapper_for_react_16__" data-name="react16" data-version="${version}"><qiankun-head></qiankun-head>${tpl}</div>`,
   );
 });
 
