@@ -21,19 +21,19 @@ const STYLE_TAG_NAME = 'STYLE';
 
 export const styleElementTargetSymbol = Symbol('target');
 
-type DynamicAppendTarget = 'head' | 'body';
+type DynamicDomMutationTarget = 'head' | 'body';
 
 declare global {
   interface HTMLLinkElement {
-    [styleElementTargetSymbol]: DynamicAppendTarget;
+    [styleElementTargetSymbol]: DynamicDomMutationTarget;
   }
 
   interface HTMLStyleElement {
-    [styleElementTargetSymbol]: DynamicAppendTarget;
+    [styleElementTargetSymbol]: DynamicDomMutationTarget;
   }
 }
 
-export const getAppWrapperHeadElement = (appWrapper: Element | ShadowRoot) => {
+export const getAppWrapperHeadElement = (appWrapper: Element | ShadowRoot): Element => {
   const rootElement = 'host' in appWrapper ? appWrapper.host : appWrapper;
   return rootElement.getElementsByTagName(qiankunHeadTagName)[0];
 };
@@ -158,7 +158,7 @@ export type ContainerConfig = {
   appName: string;
   proxy: WindowProxy;
   strictGlobal: boolean;
-  dynamicStyleSheetElements: HTMLStyleElement[];
+  dynamicStyleSheetElements: Array<HTMLStyleElement | HTMLLinkElement>;
   appWrapperGetter: CallableFunction;
   scopedCSS: boolean;
   excludeAssetFilter?: CallableFunction;
@@ -168,7 +168,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
   rawDOMAppendOrInsertBefore: <T extends Node>(newChild: T, refChild?: Node | null) => T;
   isInvokedByMicroApp: (element: HTMLElement) => boolean;
   containerConfigGetter: (element: HTMLElement) => ContainerConfig;
-  target: DynamicAppendTarget;
+  target: DynamicDomMutationTarget;
 }) {
   return function appendChildOrInsertBefore<T extends Node>(
     this: HTMLHeadElement | HTMLBodyElement,
@@ -209,7 +209,6 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
           });
 
           const appWrapper = appWrapperGetter();
-          const mountDOM = target === 'head' ? getAppWrapperHeadElement(appWrapper) : appWrapper;
 
           if (scopedCSS) {
             // exclude link elements like <link rel="icon" href="favicon.ico">
@@ -224,16 +223,17 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
                   : frameworkConfiguration.fetch?.fn;
               stylesheetElement = convertLinkAsStyle(
                 element,
-                (styleElement) => css.process(mountDOM, styleElement, appName),
+                (styleElement) => css.process(appWrapper, styleElement, appName),
                 fetch,
               );
               dynamicLinkAttachedInlineStyleMap.set(element, stylesheetElement);
             } else {
-              css.process(mountDOM, stylesheetElement, appName);
+              css.process(appWrapper, stylesheetElement, appName);
             }
           }
 
-          // eslint-disable-next-line no-shadow
+          const mountDOM = target === 'head' ? getAppWrapperHeadElement(appWrapper) : appWrapper;
+
           dynamicStyleSheetElements.push(stylesheetElement);
           const referenceNode = mountDOM.contains(refChild) ? refChild : null;
           return rawDOMAppendOrInsertBefore.call(mountDOM, stylesheetElement, referenceNode);
@@ -301,7 +301,8 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
 
 function getNewRemoveChild(
   headOrBodyRemoveChild: typeof HTMLElement.prototype.removeChild,
-  appWrapperGetterGetter: (element: HTMLElement) => ContainerConfig['appWrapperGetter'],
+  containerConfigGetter: (element: HTMLElement) => ContainerConfig,
+  target: DynamicDomMutationTarget,
 ) {
   return function removeChild<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, child: T) {
     const { tagName } = child as any;
@@ -309,14 +310,19 @@ function getNewRemoveChild(
 
     try {
       let attachedElement: Node;
+      const { appWrapperGetter, dynamicStyleSheetElements } = containerConfigGetter(child as any);
+
       switch (tagName) {
+        case STYLE_TAG_NAME:
         case LINK_TAG_NAME: {
-          attachedElement = (dynamicLinkAttachedInlineStyleMap.get(child as any) as Node) || child;
+          attachedElement = dynamicLinkAttachedInlineStyleMap.get(child as any) || child;
+          // try to remove the dynamic style sheet
+          dynamicStyleSheetElements.splice(dynamicStyleSheetElements.indexOf(attachedElement as any), 1);
           break;
         }
 
         case SCRIPT_TAG_NAME: {
-          attachedElement = (dynamicScriptAttachedCommentMap.get(child as any) as Node) || child;
+          attachedElement = dynamicScriptAttachedCommentMap.get(child as any) || child;
           break;
         }
 
@@ -325,11 +331,11 @@ function getNewRemoveChild(
         }
       }
 
-      // container may had been removed while app unmounting if the removeChild action was async
-      const appWrapperGetter = appWrapperGetterGetter(child as any);
-      const container = appWrapperGetter();
+      const appWrapper = appWrapperGetter();
+      const container = target === 'head' ? getAppWrapperHeadElement(appWrapper) : appWrapper;
+      // container might have been removed while app unmounting if the removeChild action was async
       if (container.contains(attachedElement)) {
-        return rawRemoveChild.call(container, attachedElement) as T;
+        return rawRemoveChild.call(attachedElement.parentNode, attachedElement) as T;
       }
     } catch (e) {
       console.warn(e);
@@ -375,14 +381,8 @@ export function patchHTMLDynamicAppendPrototypeFunctions(
     HTMLHeadElement.prototype.removeChild === rawHeadRemoveChild &&
     HTMLBodyElement.prototype.removeChild === rawBodyRemoveChild
   ) {
-    HTMLHeadElement.prototype.removeChild = getNewRemoveChild(
-      rawHeadRemoveChild,
-      (element) => containerConfigGetter(element).appWrapperGetter,
-    );
-    HTMLBodyElement.prototype.removeChild = getNewRemoveChild(
-      rawBodyRemoveChild,
-      (element) => containerConfigGetter(element).appWrapperGetter,
-    );
+    HTMLHeadElement.prototype.removeChild = getNewRemoveChild(rawHeadRemoveChild, containerConfigGetter, 'head');
+    HTMLBodyElement.prototype.removeChild = getNewRemoveChild(rawBodyRemoveChild, containerConfigGetter, 'body');
   }
 
   return function unpatch() {
