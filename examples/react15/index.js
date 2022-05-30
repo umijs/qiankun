@@ -2,13 +2,12 @@
  * @author Kuitos
  * @since 2019-05-16
  */
-import './public-path';
+import 'antd/dist/antd.min.css';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './App';
-
-import 'antd/dist/antd.min.css';
 import './index.css';
+import './public-path';
 
 export async function bootstrap() {
   console.log('[react15] react app bootstraped');
@@ -24,6 +23,14 @@ export async function mount(props = {}) {
   import('./dynamic.css').then(() => {
     console.log('[react15] dynamic style load');
   });
+
+  const styleElement = document.createElement('style');
+  styleElement.innerText = '.react15-icon { height: 400px }';
+  document.head.appendChild(styleElement);
+
+  setTimeout(() => {
+    document.head.removeChild(styleElement);
+  }, 2000);
 }
 
 export async function unmount(props) {
