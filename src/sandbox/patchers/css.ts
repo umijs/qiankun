@@ -177,7 +177,7 @@ export class ScopedCSS {
   // @supports (display: grid) {}
   private ruleSupport(rule: CSSSupportsRule, prefix: string) {
     const css = this.rewrite(arrayify(rule.cssRules), prefix);
-    return `@supports ${rule.conditionText|| rule.cssText.split('{')[0]} {${css}}`;
+    return `@supports ${rule.conditionText || rule.cssText.split('{')[0]} {${css}}`;
   }
 }
 
