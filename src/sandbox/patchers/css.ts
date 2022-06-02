@@ -170,14 +170,14 @@ export class ScopedCSS {
   // @media screen and (max-width: 300px) {}
   private ruleMedia(rule: CSSMediaRule, prefix: string) {
     const css = this.rewrite(arrayify(rule.cssRules), prefix);
-    return `@media ${rule.conditionText} {${css}}`;
+    return `@media ${rule.conditionText || rule.media.mediaText} {${css}}`;
   }
 
   // handle case:
   // @supports (display: grid) {}
   private ruleSupport(rule: CSSSupportsRule, prefix: string) {
     const css = this.rewrite(arrayify(rule.cssRules), prefix);
-    return `@supports ${rule.conditionText} {${css}}`;
+    return `@supports ${rule.conditionText || rule.cssText.split('{')[0]} {${css}}`;
   }
 }
 
