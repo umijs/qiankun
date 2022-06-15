@@ -34,8 +34,7 @@ declare global {
 }
 
 export const getAppWrapperHeadElement = (appWrapper: Element | ShadowRoot): Element => {
-  const rootElement = 'host' in appWrapper ? appWrapper.host : appWrapper;
-  return rootElement.getElementsByTagName(qiankunHeadTagName)[0];
+  return appWrapper.querySelector(qiankunHeadTagName)!;
 };
 
 export function isExecutableScriptType(script: HTMLScriptElement) {
