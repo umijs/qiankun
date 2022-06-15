@@ -316,8 +316,13 @@ function getNewRemoveChild(
         case STYLE_TAG_NAME:
         case LINK_TAG_NAME: {
           attachedElement = dynamicLinkAttachedInlineStyleMap.get(child as any) || child;
+
           // try to remove the dynamic style sheet
-          dynamicStyleSheetElements.splice(dynamicStyleSheetElements.indexOf(attachedElement as any), 1);
+          const dynamicElementIndex = dynamicStyleSheetElements.indexOf(attachedElement as HTMLLinkElement);
+          if (dynamicElementIndex !== -1) {
+            dynamicStyleSheetElements.splice(dynamicElementIndex, 1);
+          }
+
           break;
         }
 
