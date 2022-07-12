@@ -245,7 +245,9 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
             return rawDOMAppendOrInsertBefore.call(this, element, refChild) as T;
           }
 
-          const mountDOM = appWrapperGetter();
+          const appWrapper = appWrapperGetter();
+          const mountDOM = target === 'head' ? getAppWrapperHeadElement(appWrapper) : appWrapper;
+
           const { fetch } = frameworkConfiguration;
           const referenceNode = mountDOM.contains(refChild) ? refChild : null;
 
