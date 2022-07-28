@@ -102,7 +102,11 @@ export class ScopedCSS {
           css += this.ruleSupport(rule as CSSSupportsRule, prefix);
           break;
         default:
-          css += `${rule.cssText}`;
+          try {
+            css += `${rule.cssText}`;
+          } catch (err) {
+            console.warn(`[qiankun] Unable to access cssText property, ${rule}`);
+          }
           break;
       }
     });
