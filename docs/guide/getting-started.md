@@ -118,7 +118,4 @@ module.exports = {
 };
 ```
 
-
-
-
 You can check the configuration description from [webpack doc](https://webpack.js.org/configuration/output/#outputlibrary)。
