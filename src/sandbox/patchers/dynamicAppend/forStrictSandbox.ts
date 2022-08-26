@@ -8,7 +8,9 @@ import { nativeGlobal } from '../../../utils';
 import { getCurrentRunningApp } from '../../common';
 import type { ContainerConfig } from './common';
 import {
+  calcAppCount,
   getAppWrapperHeadElement,
+  isAllAppsUnmounted,
   isHijackingTag,
   patchHTMLDynamicAppendPrototypeFunctions,
   rawHeadAppendChild,
@@ -74,9 +76,6 @@ function patchDocumentCreateElement() {
   };
 }
 
-let bootstrappingPatchCount = 0;
-let mountingPatchCount = 0;
-
 export function patchStrictSandbox(
   appName: string,
   appWrapperGetter: () => HTMLElement | ShadowRoot,
@@ -108,17 +107,15 @@ export function patchStrictSandbox(
     (element) => elementAttachContainerConfigMap.get(element)!,
   );
 
-  if (!mounting) bootstrappingPatchCount++;
-  if (mounting) mountingPatchCount++;
+  if (!mounting) calcAppCount(appName, 'increase', 'bootstrapping');
+  if (mounting) calcAppCount(appName, 'increase', 'mounting');
 
   return function free() {
-    // bootstrap patch just called once but its freer will be called multiple times
-    if (!mounting && bootstrappingPatchCount !== 0) bootstrappingPatchCount--;
-    if (mounting) mountingPatchCount--;
+    if (!mounting) calcAppCount(appName, 'decrease', 'bootstrapping');
+    if (mounting) calcAppCount(appName, 'decrease', 'mounting');
 
-    const allMicroAppUnmounted = mountingPatchCount === 0 && bootstrappingPatchCount === 0;
     // release the overwritten prototype after all the micro apps unmounted
-    if (allMicroAppUnmounted) {
+    if (isAllAppsUnmounted()) {
       unpatchDynamicAppendPrototypeFunctions();
       unpatchDocumentCreate();
     }

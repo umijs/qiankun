@@ -5,10 +5,13 @@
 
 import { checkActivityFunctions } from 'single-spa';
 import type { Freer } from '../../../interfaces';
-import { patchHTMLDynamicAppendPrototypeFunctions, rebuildCSSRules, recordStyledComponentsCSSRules } from './common';
-
-let bootstrappingPatchCount = 0;
-let mountingPatchCount = 0;
+import {
+  calcAppCount,
+  isAllAppsUnmounted,
+  patchHTMLDynamicAppendPrototypeFunctions,
+  rebuildCSSRules,
+  recordStyledComponentsCSSRules,
+} from './common';
 
 /**
  * Just hijack dynamic head append, that could avoid accidentally hijacking the insertion of elements except in head.
@@ -52,17 +55,15 @@ export function patchLooseSandbox(
     }),
   );
 
-  if (!mounting) bootstrappingPatchCount++;
-  if (mounting) mountingPatchCount++;
+  if (!mounting) calcAppCount(appName, 'increase', 'bootstrapping');
+  if (mounting) calcAppCount(appName, 'increase', 'mounting');
 
   return function free() {
-    // bootstrap patch just called once but its freer will be called multiple times
-    if (!mounting && bootstrappingPatchCount !== 0) bootstrappingPatchCount--;
-    if (mounting) mountingPatchCount--;
+    if (!mounting) calcAppCount(appName, 'decrease', 'bootstrapping');
+    if (mounting) calcAppCount(appName, 'decrease', 'mounting');
 
-    const allMicroAppUnmounted = mountingPatchCount === 0 && bootstrappingPatchCount === 0;
     // release the overwrite prototype after all the micro apps unmounted
-    if (allMicroAppUnmounted) unpatchDynamicAppendPrototypeFunctions();
+    if (isAllAppsUnmounted()) unpatchDynamicAppendPrototypeFunctions();
 
     recordStyledComponentsCSSRules(dynamicStyleSheetElements);
 
