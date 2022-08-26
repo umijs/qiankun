@@ -67,6 +67,32 @@ export function isStyledComponentsLike(element: HTMLStyleElement) {
   );
 }
 
+const appsCounterMap = new Map<string, { bootstrappingPatchCount: number; mountingPatchCount: number }>();
+export function calcAppCount(
+  appName: string,
+  calcType: 'increase' | 'decrease',
+  status: 'bootstrapping' | 'mounting',
+): void {
+  const appCount = appsCounterMap.get(appName) || { bootstrappingPatchCount: 0, mountingPatchCount: 0 };
+  switch (calcType) {
+    case 'increase':
+      appCount[`${status}PatchCount`] += 1;
+      break;
+    case 'decrease':
+      // bootstrap patch just called once but its freer will be called multiple times
+      if (appCount[`${status}PatchCount`] > 0) {
+        appCount[`${status}PatchCount`] -= 1;
+      }
+      break;
+  }
+  appsCounterMap.set(appName, appCount);
+}
+export function isAllAppsUnmounted(): boolean {
+  return Array.from(appsCounterMap.entries()).every(
+    ([, { bootstrappingPatchCount: bpc, mountingPatchCount: mpc }]) => bpc === 0 && mpc === 0,
+  );
+}
+
 function patchCustomEvent(
   e: CustomEvent,
   elementGetter: () => HTMLScriptElement | HTMLLinkElement | null,
