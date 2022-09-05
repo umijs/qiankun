@@ -104,8 +104,7 @@
     "@babel/runtime": "^7.10.5",
     "import-html-entry": "^1.9.0",
     "lodash": "^4.17.11",
-    "single-spa": "^5.9.2",
-    "tslib": "^1.10.0"
+    "single-spa": "^5.9.2"
   },
   "devDependencies": {
     "@types/jest": "^25.1.4",
