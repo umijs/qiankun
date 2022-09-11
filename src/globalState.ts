@@ -3,7 +3,6 @@
  * @since 2020-04-10
  */
 
-import { cloneDeep } from 'lodash';
 import type { OnGlobalStateChangeCallback, MicroAppStateActions } from './interfaces';
 
 let globalState: Record<string, any> = {};
@@ -14,7 +13,7 @@ const deps: Record<string, OnGlobalStateChangeCallback> = {};
 function emitGlobal(state: Record<string, any>, prevState: Record<string, any>) {
   Object.keys(deps).forEach((id: string) => {
     if (deps[id] instanceof Function) {
-      deps[id](cloneDeep(state), cloneDeep(prevState));
+      deps[id](structuredClone(state), structuredClone(prevState));
     }
   });
 }
@@ -27,8 +26,8 @@ export function initGlobalState(state: Record<string, any> = {}) {
   if (state === globalState) {
     console.warn('[qiankun] state has not changed！');
   } else {
-    const prevGlobalState = cloneDeep(globalState);
-    globalState = cloneDeep(state);
+    const prevGlobalState = structuredClone(globalState);
+    globalState = structuredClone(state);
     emitGlobal(globalState, prevGlobalState);
   }
   return getMicroAppStateActions(`global-${+new Date()}`, true);
@@ -63,7 +62,7 @@ export function getMicroAppStateActions(id: string, isMaster?: boolean): MicroAp
       }
       deps[id] = callback;
       if (fireImmediately) {
-        const cloneState = cloneDeep(globalState);
+        const cloneState = structuredClone(globalState);
         callback(cloneState, cloneState);
       }
     },
@@ -83,8 +82,8 @@ export function getMicroAppStateActions(id: string, isMaster?: boolean): MicroAp
       }
 
       const changeKeys: string[] = [];
-      const prevGlobalState = cloneDeep(globalState);
-      globalState = cloneDeep(
+      const prevGlobalState = structuredClone(globalState);
+      globalState = structuredClone(
         Object.keys(state).reduce((_globalState, changeKey) => {
           if (isMaster || _globalState.hasOwnProperty(changeKey)) {
             changeKeys.push(changeKey);

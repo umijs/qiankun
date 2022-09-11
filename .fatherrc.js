@@ -14,15 +14,5 @@ export default {
     minFile: true,
     sourcemap: true,
   },
-  runtimeHelpers: true,
-  extraBabelPlugins: [
-    [
-      'babel-plugin-import',
-      {
-        libraryName: 'lodash',
-        libraryDirectory: '',
-        camel2DashComponentName: false,
-      },
-    ],
-  ],
+  runtimeHelpers: true
 };

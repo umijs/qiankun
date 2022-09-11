@@ -5,7 +5,7 @@
 
 import type { Entry, ImportEntryOpts } from 'import-html-entry';
 import { importEntry } from 'import-html-entry';
-import { isFunction } from 'lodash';
+import isFunction from 'lodash.isfunction';
 import { getAppStatus, getMountedApps, NOT_LOADED } from 'single-spa';
 import type { AppMetadata, PrefetchStrategy } from './interfaces';
 

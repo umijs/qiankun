@@ -4,7 +4,7 @@
  */
 
 import { importEntry } from 'import-html-entry';
-import { concat, forEach, mergeWith } from 'lodash';
+import mergeWith from 'lodash.mergewith';
 import type { LifeCycles, ParcelConfigObject } from 'single-spa';
 import getAddOns from './addons';
 import { QiankunError } from './error';
@@ -100,7 +100,7 @@ function createElement(
     }
 
     const styleNodes = appElement.querySelectorAll('style') || [];
-    forEach(styleNodes, (stylesheetElement: HTMLStyleElement) => {
+    styleNodes.forEach((stylesheetElement: HTMLStyleElement) => {
       css.process(appElement!, stylesheetElement, appInstanceId);
     });
   }
@@ -333,7 +333,7 @@ export async function loadApp<T extends ObjectType>(
     afterMount = [],
     beforeMount = [],
     beforeLoad = [],
-  } = mergeWith({}, getAddOns(global, assetPublicPath), lifeCycles, (v1, v2) => concat(v1 ?? [], v2 ?? []));
+  } = mergeWith({}, getAddOns(global, assetPublicPath), lifeCycles, (v1, v2) => (v1 ?? []).concat(v2 ?? []));
 
   await execHooksChain(toArray(beforeLoad), app, global);
 

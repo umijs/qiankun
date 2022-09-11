@@ -1,4 +1,3 @@
-import { noop } from 'lodash';
 import type { ParcelConfigObject } from 'single-spa';
 import { mountRootParcel, registerApplication, start as startSingleSpa } from 'single-spa';
 import type {
@@ -13,6 +12,8 @@ import type { ParcelConfigObjectGetter } from './loader';
 import { loadApp } from './loader';
 import { doPrefetchStrategy } from './prefetch';
 import { Deferred, getContainerXPath, toArray } from './utils';
+
+const noop = () => {};
 
 let microApps: Array<RegistrableApp<Record<string, unknown>>> = [];
 

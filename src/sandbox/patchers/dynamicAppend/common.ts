@@ -3,7 +3,7 @@
  * @since 2019-10-21
  */
 import { execScripts } from 'import-html-entry';
-import { isFunction } from 'lodash';
+import isFunction from 'lodash.isfunction';
 import { frameworkConfiguration } from '../../../apis';
 import { qiankunHeadTagName } from '../../../utils';
 import * as css from '../css';

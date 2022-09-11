@@ -2,8 +2,9 @@
  * @author Kuitos
  * @since 2019-05-15
  */
-
-import { isFunction, once, snakeCase } from 'lodash';
+import isFunction from 'lodash.isfunction';
+import once from 'lodash.once';
+import snakeCase from 'lodash.snakecase';
 import type { FrameworkConfiguration } from './interfaces';
 import { version } from './version';
 
