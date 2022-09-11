@@ -5,6 +5,10 @@
 
 import { getMicroAppStateActions, initGlobalState } from '../globalState';
 
+global.structuredClone = (value: any) => {
+  return JSON.parse(JSON.stringify(value));
+};
+
 const master = initGlobalState({ user: 'qiankun' });
 
 test('test master to master actions', () => {
