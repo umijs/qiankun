@@ -116,7 +116,7 @@ function manualInvokeElementOnLoad(element: HTMLLinkElement | HTMLScriptElement)
   // 2. addEventListener way, which toast-loader used, see https://github.com/pyrsmk/toast/blob/master/src/Toast.ts#L64
   const loadEvent = new CustomEvent('load');
   const patchedEvent = patchCustomEvent(loadEvent, () => element);
-  if (isFunction(element.onload)) {
+  if (element.onload && isFunction(element.onload)) {
     element.onload(patchedEvent);
   } else {
     element.dispatchEvent(patchedEvent);
@@ -126,7 +126,7 @@ function manualInvokeElementOnLoad(element: HTMLLinkElement | HTMLScriptElement)
 function manualInvokeElementOnError(element: HTMLLinkElement | HTMLScriptElement) {
   const errorEvent = new CustomEvent('error');
   const patchedEvent = patchCustomEvent(errorEvent, () => element);
-  if (isFunction(element.onerror)) {
+  if (element.onerror && isFunction(element.onerror)) {
     element.onerror(patchedEvent);
   } else {
     element.dispatchEvent(patchedEvent);

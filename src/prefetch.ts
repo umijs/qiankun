@@ -101,6 +101,7 @@ export function doPrefetchStrategy(
   } else if (isFunction(prefetchStrategy)) {
     (async () => {
       // critical rendering apps would be prefetch as earlier as possible
+      // @ts-ignore
       const { criticalAppNames = [], minorAppsName = [] } = await prefetchStrategy(apps);
       prefetchImmediately(appsName2Apps(criticalAppNames), importEntryOpts);
       prefetchAfterFirstMounted(appsName2Apps(minorAppsName), importEntryOpts);

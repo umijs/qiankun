@@ -11,6 +11,7 @@ specifiers:
   '@types/lodash.mergewith': ^4.6.7
   '@types/lodash.once': ^4.1.7
   '@types/lodash.snakecase': ^4.1.7
+  '@types/node': ^18.7.16
   '@types/vfile-message': 1.x
   '@umijs/fabric': ^2.0.7
   cross-env: ^7.0.2
@@ -49,6 +50,7 @@ devDependencies:
   '@types/lodash.mergewith': 4.6.7
   '@types/lodash.once': 4.1.7
   '@types/lodash.snakecase': 4.1.7
+  '@types/node': 18.7.16
   '@types/vfile-message': 1.0.1
   '@umijs/fabric': 2.14.0
   cross-env: 7.0.3
