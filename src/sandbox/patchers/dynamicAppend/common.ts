@@ -184,6 +184,7 @@ export type ContainerConfig = {
   appName: string;
   proxy: WindowProxy;
   strictGlobal: boolean;
+  speedySandbox: boolean;
   dynamicStyleSheetElements: Array<HTMLStyleElement | HTMLLinkElement>;
   appWrapperGetter: CallableFunction;
   scopedCSS: boolean;
@@ -214,6 +215,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
         appWrapperGetter,
         proxy,
         strictGlobal,
+        speedySandbox,
         dynamicStyleSheetElements,
         scopedCSS,
         excludeAssetFilter,
@@ -278,7 +280,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
           const { fetch } = frameworkConfiguration;
           const referenceNode = mountDOM.contains(refChild) ? refChild : null;
 
-          const scopedGlobalVariables = getScopedGlobals();
+          const scopedGlobalVariables = speedySandbox ? getScopedGlobals() : [];
 
           if (src) {
             execScripts(null, [src], proxy, {
