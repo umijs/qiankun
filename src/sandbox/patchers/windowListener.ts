@@ -1,13 +1,10 @@
-/* eslint-disable no-param-reassign */
 /**
  * @author Kuitos
  * @since 2019-04-11
  */
-
-import { noop } from 'lodash';
-
 const rawAddEventListener = window.addEventListener;
 const rawRemoveEventListener = window.removeEventListener;
+const noop = () => {};
 
 export default function patch(global: WindowProxy) {
   const listenerMap = new Map<string, EventListenerOrEventListenerObject[]>();

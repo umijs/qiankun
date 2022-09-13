@@ -4,7 +4,7 @@
  */
 
 import { importEntry } from 'import-html-entry';
-import { concat, forEach, mergeWith } from 'lodash';
+import mergeWith from 'lodash.mergewith';
 import type { LifeCycles, ParcelConfigObject } from 'single-spa';
 import getAddOns from './addons';
 import { QiankunError } from './error';
@@ -100,7 +100,7 @@ function createElement(
     }
 
     const styleNodes = appElement.querySelectorAll('style') || [];
-    forEach(styleNodes, (stylesheetElement: HTMLStyleElement) => {
+    styleNodes.forEach((stylesheetElement: HTMLStyleElement) => {
       css.process(appElement!, stylesheetElement, appInstanceId);
     });
   }
@@ -240,6 +240,8 @@ let prevAppUnmountedDeferred: Deferred<void>;
 
 export type ParcelConfigObjectGetter = (remountContainer?: string | HTMLElement) => ParcelConfigObject;
 
+const customizer = (v1?: any[], v2?: any[]) => (v1 ?? []).concat(v2 ?? []);
+
 export async function loadApp<T extends ObjectType>(
   app: LoadableApp<T>,
   configuration: FrameworkConfiguration = {},
@@ -333,7 +335,7 @@ export async function loadApp<T extends ObjectType>(
     afterMount = [],
     beforeMount = [],
     beforeLoad = [],
-  } = mergeWith({}, getAddOns(global, assetPublicPath), lifeCycles, (v1, v2) => concat(v1 ?? [], v2 ?? []));
+  } = mergeWith({}, getAddOns(global, assetPublicPath), lifeCycles, customizer);
 
   await execHooksChain(toArray(beforeLoad), app, global);
 

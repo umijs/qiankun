@@ -1,13 +1,10 @@
-/* eslint-disable no-param-reassign */
 /**
  * @author Kuitos
  * @since 2019-04-11
  */
-
-import { noop } from 'lodash';
-
 const rawWindowInterval = window.setInterval;
 const rawWindowClearInterval = window.clearInterval;
+const noop = () => {};
 
 export default function patch(global: Window) {
   let intervals: number[] = [];

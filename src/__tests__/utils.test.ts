@@ -35,7 +35,7 @@ test('should wrap string with div', () => {
 });
 
 test('should be able to validate lifecycle', () => {
-  const noop = () => undefined;
+  const noop = () => {};
 
   const export1 = {
     bootstrap: noop,

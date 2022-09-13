@@ -5,7 +5,7 @@
 
 import type { Entry, ImportEntryOpts } from 'import-html-entry';
 import { importEntry } from 'import-html-entry';
-import { isFunction } from 'lodash';
+import isFunction from 'lodash.isfunction';
 import { getAppStatus, getMountedApps, NOT_LOADED } from 'single-spa';
 import type { AppMetadata, PrefetchStrategy } from './interfaces';
 
@@ -101,6 +101,7 @@ export function doPrefetchStrategy(
   } else if (isFunction(prefetchStrategy)) {
     (async () => {
       // critical rendering apps would be prefetch as earlier as possible
+      // @ts-ignore
       const { criticalAppNames = [], minorAppsName = [] } = await prefetchStrategy(apps);
       prefetchImmediately(appsName2Apps(criticalAppNames), importEntryOpts);
       prefetchAfterFirstMounted(appsName2Apps(minorAppsName), importEntryOpts);
