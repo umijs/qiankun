@@ -1,6 +1,6 @@
 {
   "name": "qiankun",
-  "version": "2.7.3",
+  "version": "2.7.5",
   "description": "A completed implementation of Micro Frontends",
   "keywords": [
     "micro frontend",
@@ -104,8 +104,7 @@
     "@babel/runtime": "^7.10.5",
     "import-html-entry": "^1.9.0",
     "lodash": "^4.17.11",
-    "single-spa": "^5.9.2",
-    "tslib": "^1.10.0"
+    "single-spa": "^5.9.2"
   },
   "devDependencies": {
     "@types/jest": "^25.1.4",
@@ -125,7 +124,7 @@
     "prettier": "^2.1.2",
     "rimraf": "^3.0.0",
     "ts-jest": "^25.2.1",
-    "typescript": "^4.1.2",
+    "typescript": "^4.8.2",
     "umi-plugin-hire": "^1.0.3"
   }
 }
