@@ -79,29 +79,29 @@ export function getTargetValue(target: any, value: any): any {
   return value;
 }
 
-export function getScopedGlobals() {
-  return [
-    'undefined',
-    'Array',
-    'Object',
-    'String',
-    'Boolean',
-    'Math',
-    'Number',
-    'Symbol',
-    'parseFloat',
-    'Float32Array',
-    'isNaN',
-    'Infinity',
-    'Reflect',
-    'Float64Array',
-    'Function',
-    'Map',
-    'NaN',
-    'Promise',
-    'Proxy',
-    'Set',
-    'parseInt',
-    'requestAnimationFrame',
-  ];
-}
+export const unscopedGlobals = [
+  'undefined',
+  'Array',
+  'Object',
+  'String',
+  'Boolean',
+  'Math',
+  'Number',
+  'Symbol',
+  'parseFloat',
+  'Float32Array',
+  'isNaN',
+  'Infinity',
+  'Reflect',
+  'Float64Array',
+  'Function',
+  'Map',
+  'NaN',
+  'Promise',
+  'Proxy',
+  'Set',
+  'parseInt',
+  'requestAnimationFrame',
+];
+
+export const lexicalGlobals = [...unscopedGlobals, 'globalThis', 'window', 'self'];

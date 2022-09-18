@@ -6,7 +6,7 @@
 import type { SandBox } from '../interfaces';
 import { SandBoxType } from '../interfaces';
 import { nativeGlobal, nextTask } from '../utils';
-import { getCurrentRunningApp, getScopedGlobals, getTargetValue, setCurrentRunningApp } from './common';
+import { getCurrentRunningApp, getTargetValue, setCurrentRunningApp, unscopedGlobals } from './common';
 
 type SymbolTarget = 'target' | 'globalContext';
 
@@ -47,8 +47,9 @@ const variableWhiteList: PropertyKey[] = [
 
 /*
  variables who are impossible to be overwritten need to be escaped from proxy sandbox for performance reasons
+ see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/unscopables
  */
-const unscopables = getScopedGlobals().reduce((acc, key) => ({ ...acc, [key]: true }), {});
+const unscopables = unscopedGlobals.reduce((acc, key) => ({ ...acc, [key]: true }), { __proto__: null });
 
 const useNativeWindowForBindingsProps = new Map<PropertyKey, boolean>([
   ['fetch', true],
