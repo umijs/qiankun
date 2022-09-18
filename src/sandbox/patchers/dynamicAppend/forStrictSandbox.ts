@@ -19,19 +19,14 @@ import {
   styleElementTargetSymbol,
 } from './common';
 
-declare global {
-  interface Window {
-    __proxyAttachContainerConfigMap__: WeakMap<WindowProxy, ContainerConfig>;
-  }
-}
-
 // Get native global window with a sandbox disgusted way, thus we could share it between qiankun instances🤪
 Object.defineProperty(nativeGlobal, '__proxyAttachContainerConfigMap__', { enumerable: false, writable: true });
 
 // Share proxyAttachContainerConfigMap between multiple qiankun instance, thus they could access the same record
 nativeGlobal.__proxyAttachContainerConfigMap__ =
   nativeGlobal.__proxyAttachContainerConfigMap__ || new WeakMap<WindowProxy, ContainerConfig>();
-const proxyAttachContainerConfigMap = nativeGlobal.__proxyAttachContainerConfigMap__;
+const proxyAttachContainerConfigMap: WeakMap<WindowProxy, ContainerConfig> =
+  nativeGlobal.__proxyAttachContainerConfigMap__;
 
 const elementAttachContainerConfigMap = new WeakMap<HTMLElement, ContainerConfig>();
 
@@ -83,6 +78,7 @@ export function patchStrictSandbox(
   mounting = true,
   scopedCSS = false,
   excludeAssetFilter?: CallableFunction,
+  speedySandbox = false,
 ): Freer {
   let containerConfig = proxyAttachContainerConfigMap.get(proxy);
   if (!containerConfig) {
@@ -92,6 +88,7 @@ export function patchStrictSandbox(
       appWrapperGetter,
       dynamicStyleSheetElements: [],
       strictGlobal: true,
+      speedySandbox,
       excludeAssetFilter,
       scopedCSS,
     };

@@ -102,7 +102,7 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.10.5",
-    "import-html-entry": "^1.9.0",
+    "import-html-entry": "^1.14.0",
     "lodash": "^4.17.11",
     "single-spa": "^5.9.2"
   },
