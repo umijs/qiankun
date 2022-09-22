@@ -8,7 +8,9 @@ import { nativeGlobal } from '../../../utils';
 import { getCurrentRunningApp } from '../../common';
 import type { ContainerConfig } from './common';
 import {
+  calcAppCount,
   getAppWrapperHeadElement,
+  isAllAppsUnmounted,
   isHijackingTag,
   patchHTMLDynamicAppendPrototypeFunctions,
   rawHeadAppendChild,
@@ -17,19 +19,14 @@ import {
   styleElementTargetSymbol,
 } from './common';
 
-declare global {
-  interface Window {
-    __proxyAttachContainerConfigMap__: WeakMap<WindowProxy, ContainerConfig>;
-  }
-}
-
 // Get native global window with a sandbox disgusted way, thus we could share it between qiankun instances🤪
 Object.defineProperty(nativeGlobal, '__proxyAttachContainerConfigMap__', { enumerable: false, writable: true });
 
 // Share proxyAttachContainerConfigMap between multiple qiankun instance, thus they could access the same record
 nativeGlobal.__proxyAttachContainerConfigMap__ =
   nativeGlobal.__proxyAttachContainerConfigMap__ || new WeakMap<WindowProxy, ContainerConfig>();
-const proxyAttachContainerConfigMap = nativeGlobal.__proxyAttachContainerConfigMap__;
+const proxyAttachContainerConfigMap: WeakMap<WindowProxy, ContainerConfig> =
+  nativeGlobal.__proxyAttachContainerConfigMap__;
 
 const elementAttachContainerConfigMap = new WeakMap<HTMLElement, ContainerConfig>();
 
@@ -74,9 +71,6 @@ function patchDocumentCreateElement() {
   };
 }
 
-let bootstrappingPatchCount = 0;
-let mountingPatchCount = 0;
-
 export function patchStrictSandbox(
   appName: string,
   appWrapperGetter: () => HTMLElement | ShadowRoot,
@@ -84,6 +78,7 @@ export function patchStrictSandbox(
   mounting = true,
   scopedCSS = false,
   excludeAssetFilter?: CallableFunction,
+  speedySandbox = false,
 ): Freer {
   let containerConfig = proxyAttachContainerConfigMap.get(proxy);
   if (!containerConfig) {
@@ -93,6 +88,7 @@ export function patchStrictSandbox(
       appWrapperGetter,
       dynamicStyleSheetElements: [],
       strictGlobal: true,
+      speedySandbox,
       excludeAssetFilter,
       scopedCSS,
     };
@@ -108,17 +104,15 @@ export function patchStrictSandbox(
     (element) => elementAttachContainerConfigMap.get(element)!,
   );
 
-  if (!mounting) bootstrappingPatchCount++;
-  if (mounting) mountingPatchCount++;
+  if (!mounting) calcAppCount(appName, 'increase', 'bootstrapping');
+  if (mounting) calcAppCount(appName, 'increase', 'mounting');
 
   return function free() {
-    // bootstrap patch just called once but its freer will be called multiple times
-    if (!mounting && bootstrappingPatchCount !== 0) bootstrappingPatchCount--;
-    if (mounting) mountingPatchCount--;
+    if (!mounting) calcAppCount(appName, 'decrease', 'bootstrapping');
+    if (mounting) calcAppCount(appName, 'decrease', 'mounting');
 
-    const allMicroAppUnmounted = mountingPatchCount === 0 && bootstrappingPatchCount === 0;
     // release the overwritten prototype after all the micro apps unmounted
-    if (allMicroAppUnmounted) {
+    if (isAllAppsUnmounted()) {
       unpatchDynamicAppendPrototypeFunctions();
       unpatchDocumentCreate();
     }

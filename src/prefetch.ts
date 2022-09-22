@@ -31,6 +31,16 @@ const requestIdleCallback =
     }, 1);
   };
 
+declare global {
+  interface Navigator {
+    connection: {
+      saveData: boolean;
+      effectiveType: string;
+      type: 'bluetooth' | 'cellular' | 'ethernet' | 'none' | 'wifi' | 'wimax' | 'other' | 'unknown';
+    };
+  }
+}
+
 const isSlowNetwork = navigator.connection
   ? navigator.connection.saveData ||
     (navigator.connection.type !== 'wifi' &&
