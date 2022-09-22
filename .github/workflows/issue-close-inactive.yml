@@ -28,6 +28,16 @@ jobs:
             Since the issue was labeled with `pls use issue template`, but no response in 30 days. This issue will be close. If you have any questions, you can comment and reply.
             由于该 issue 被标记为需要使用模板，却 30 天未收到回应。现关闭 issue，若有任何问题，可评论回复。
 
+      - name: close inactive issue out of scope
+        uses: actions-cool/issues-helper@v2.2.1
+        with:
+          actions: 'close-issues'
+          labels: 'out-of-scope'
+          inactive-day: 30
+          body: |
+            Since the issue was labeled with `out-of-scope`, but no response in 30 days. This issue will be close. If you have any questions, you can comment and reply.
+            由于该 issue 被标记为与本项目无关，却 30 天未收到回应。现关闭 issue，若有任何问题，可评论回复。
+
       - name: close inactive issue
         uses: actions-cool/issues-helper@v2.2.1
         with:
