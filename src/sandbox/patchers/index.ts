@@ -17,6 +17,7 @@ export function patchAtMounting(
   sandbox: SandBox,
   scopedCSS: boolean,
   excludeAssetFilter?: CallableFunction,
+  speedySandBox?: boolean,
 ): Freer[] {
   const basePatchers = [
     () => patchInterval(sandbox.proxy),
@@ -31,7 +32,8 @@ export function patchAtMounting(
     ],
     [SandBoxType.Proxy]: [
       ...basePatchers,
-      () => patchStrictSandbox(appName, elementGetter, sandbox.proxy, true, scopedCSS, excludeAssetFilter),
+      () =>
+        patchStrictSandbox(appName, elementGetter, sandbox.proxy, true, scopedCSS, excludeAssetFilter, speedySandBox),
     ],
     [SandBoxType.Snapshot]: [
       ...basePatchers,
@@ -48,13 +50,15 @@ export function patchAtBootstrapping(
   sandbox: SandBox,
   scopedCSS: boolean,
   excludeAssetFilter?: CallableFunction,
+  speedySandBox?: boolean,
 ): Freer[] {
   const patchersInSandbox = {
     [SandBoxType.LegacyProxy]: [
       () => patchLooseSandbox(appName, elementGetter, sandbox.proxy, false, scopedCSS, excludeAssetFilter),
     ],
     [SandBoxType.Proxy]: [
-      () => patchStrictSandbox(appName, elementGetter, sandbox.proxy, false, scopedCSS, excludeAssetFilter),
+      () =>
+        patchStrictSandbox(appName, elementGetter, sandbox.proxy, false, scopedCSS, excludeAssetFilter, speedySandBox),
     ],
     [SandBoxType.Snapshot]: [
       () => patchLooseSandbox(appName, elementGetter, sandbox.proxy, false, scopedCSS, excludeAssetFilter),

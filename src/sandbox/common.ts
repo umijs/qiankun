@@ -7,6 +7,7 @@ import { isBoundedFunction, isCallable, isConstructable, isPropertyReadonly } fr
 
 type AppInstance = { name: string; window: WindowProxy };
 let currentRunningApp: AppInstance | null = null;
+
 /**
  * get the app that running tasks at current tick
  */
@@ -78,15 +79,29 @@ export function getTargetValue(target: any, value: any, p?: any): any {
   return value;
 }
 
-const getterInvocationResultMap = new WeakMap<CallableFunction, any>();
+export const unscopedGlobals = [
+  'undefined',
+  'Array',
+  'Object',
+  'String',
+  'Boolean',
+  'Math',
+  'Number',
+  'Symbol',
+  'parseFloat',
+  'Float32Array',
+  'isNaN',
+  'Infinity',
+  'Reflect',
+  'Float64Array',
+  'Function',
+  'Map',
+  'NaN',
+  'Promise',
+  'Proxy',
+  'Set',
+  'parseInt',
+  'requestAnimationFrame',
+];
 
-export function getProxyPropertyValue(getter: CallableFunction) {
-  const getterResult = getterInvocationResultMap.get(getter);
-  if (!getterResult) {
-    const result = getter();
-    getterInvocationResultMap.set(getter, result);
-    return result;
-  }
-
-  return getterResult;
-}
+export const lexicalGlobals = [...unscopedGlobals, 'globalThis', 'window', 'self'];

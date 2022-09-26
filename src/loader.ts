@@ -18,6 +18,7 @@ import type {
   ObjectType,
 } from './interfaces';
 import { createSandboxContainer, css } from './sandbox';
+import { lexicalGlobals } from './sandbox/common';
 import {
   Deferred,
   genAppInstanceIdByName,
@@ -310,6 +311,7 @@ export async function loadApp<T extends ObjectType>(
   let mountSandbox = () => Promise.resolve();
   let unmountSandbox = () => Promise.resolve();
   const useLooseSandbox = typeof sandbox === 'object' && !!sandbox.loose;
+  const speedySandbox = typeof sandbox === 'object' && !!sandbox.speedy;
   let sandboxContainer;
   if (sandbox) {
     sandboxContainer = createSandboxContainer(
@@ -320,6 +322,7 @@ export async function loadApp<T extends ObjectType>(
       useLooseSandbox,
       excludeAssetFilter,
       global,
+      speedySandbox,
     );
     // 用沙箱的代理对象作为接下来使用的全局对象
     global = sandboxContainer.instance.proxy as typeof window;
@@ -338,7 +341,9 @@ export async function loadApp<T extends ObjectType>(
   await execHooksChain(toArray(beforeLoad), app, global);
 
   // get the lifecycle hooks from module exports
-  const scriptExports: any = await execScripts(global, sandbox && !useLooseSandbox);
+  const scriptExports: any = await execScripts(global, sandbox && !useLooseSandbox, {
+    scopedGlobalVariables: speedySandbox ? lexicalGlobals : [],
+  });
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
     scriptExports,
     appName,
