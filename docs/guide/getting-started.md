@@ -92,6 +92,20 @@ In addition to exposing the corresponding life-cycle hooks in the code, in order
 
 #### webpack:
 
+If using Webpack v5:
+```js
+const packageName = require('./package.json').name;
+
+module.exports = {
+  output: {
+    library: `${packageName}-[name]`,
+    libraryTarget: 'umd',
+    chunkLoadingGlobal: `webpackJsonp_${packageName}`,
+  },
+};
+```
+
+If using Webpack v4:
 ```js
 const packageName = require('./package.json').name;
 
