@@ -3,7 +3,7 @@
  * @since 2020-04-13
  */
 
-import { isBoundedFunction, isCallable, isConstructable } from '../utils';
+import { isBoundedFunction, isCallable, isConstructable, isPropertyReadonly } from '../utils';
 
 type AppInstance = { name: string; window: WindowProxy };
 let currentRunningApp: AppInstance | null = null;
@@ -21,14 +21,14 @@ export function setCurrentRunningApp(appInstance: { name: string; window: Window
 }
 
 const functionBoundedValueMap = new WeakMap<CallableFunction, CallableFunction>();
-
-export function getTargetValue(target: any, value: any): any {
+export function getTargetValue(target: any, value: any, p?: any): any {
   /*
-    仅绑定 isCallable && !isBoundedFunction && !isConstructable 的函数对象，如 window.console、window.atob 这类，不然微应用中调用时会抛出 Illegal invocation 异常
+    仅绑定 isCallable && !isPropertyReadonly && !isBoundedFunction && !isConstructable 的函数对象，如 window.console、window.atob 这类，不然微应用中调用时会抛出 Illegal invocation 异常
     目前没有完美的检测方式，这里通过 prototype 中是否还有可枚举的拓展方法的方式来判断
     @warning 这里不要随意替换成别的判断方式，因为可能触发一些 edge case（比如在 lodash.isFunction 在 iframe 上下文中可能由于调用了 top window 对象触发的安全异常）
+    @warning 对于configurable及writable都为false的readonly属性，proxy必须返回原值
    */
-  if (isCallable(value) && !isBoundedFunction(value) && !isConstructable(value)) {
+  if (isCallable(value) && !isPropertyReadonly(target, p) && !isBoundedFunction(value) && !isConstructable(value)) {
     const cachedBoundFunction = functionBoundedValueMap.get(value);
     if (cachedBoundFunction) {
       return cachedBoundFunction;

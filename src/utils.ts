@@ -88,6 +88,37 @@ export const isCallable = (fn: any) => {
   return callable;
 };
 
+/**
+ * isPropertyReadonly
+ * @param target
+ * @param p
+ * @returns boolean
+ */
+const propertyReadonlyCacheMap = new WeakMap<any, Record<PropertyKey, boolean>>();
+export function isPropertyReadonly(target: any, p?: PropertyKey): boolean {
+  // 异常返回
+  if (!target || !p) {
+    return false;
+  }
+
+  // 取缓存
+  const targetPropertiesFromCache = propertyReadonlyCacheMap.get(target) || {};
+
+  if (typeof targetPropertiesFromCache[p] === 'boolean') {
+    return targetPropertiesFromCache[p];
+  }
+
+  // 计算
+  const propertyDescriptor = Object.getOwnPropertyDescriptor(target, p);
+  const result = propertyDescriptor?.configurable === false && propertyDescriptor?.writable === false;
+
+  // 写缓存
+  targetPropertiesFromCache[p] = result;
+  propertyReadonlyCacheMap.set(target, targetPropertiesFromCache);
+
+  return result;
+}
+
 const boundedMap = new WeakMap<CallableFunction, boolean>();
 
 export function isBoundedFunction(fn: CallableFunction) {

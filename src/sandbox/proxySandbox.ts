@@ -262,7 +262,7 @@ export default class ProxySandbox implements SandBox {
              proxyFetch('https://qiankun.com');
         */
         const boundTarget = useNativeWindowForBindingsProps.get(p) ? nativeGlobal : globalContext;
-        return getTargetValue(boundTarget, value);
+        return getTargetValue(boundTarget, value, p);
       },
 
       // trap in operator
