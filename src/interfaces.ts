@@ -75,6 +75,7 @@ type QiankunSpecialOpts = {
          * @deprecated We use strict mode by default
          */
         loose?: boolean;
+        speedy?: boolean;
         patchers?: Patcher[];
       };
   /*

@@ -679,10 +679,10 @@ const childrenPath = ['/app1', '/app2'];
 router.beforeEach((to, from, next) => {
   if (to.name) {
     // There is a name attribute, indicating that it is the route of the main project
-    next();
+    return next();
   }
   if (childrenPath.some((item) => to.path.includes(item))) {
-    next();
+    return next();
   }
   next({ name: '404' });
 });
