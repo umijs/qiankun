@@ -6,6 +6,7 @@ import { execScripts } from 'import-html-entry';
 import { isFunction } from 'lodash';
 import { frameworkConfiguration } from '../../../apis';
 import { qiankunHeadTagName } from '../../../utils';
+import { lexicalGlobals } from '../../common';
 import * as css from '../css';
 
 export const rawHeadAppendChild = HTMLHeadElement.prototype.appendChild;
@@ -183,6 +184,7 @@ export type ContainerConfig = {
   appName: string;
   proxy: WindowProxy;
   strictGlobal: boolean;
+  speedySandbox: boolean;
   dynamicStyleSheetElements: Array<HTMLStyleElement | HTMLLinkElement>;
   appWrapperGetter: CallableFunction;
   scopedCSS: boolean;
@@ -213,6 +215,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
         appWrapperGetter,
         proxy,
         strictGlobal,
+        speedySandbox,
         dynamicStyleSheetElements,
         scopedCSS,
         excludeAssetFilter,
@@ -277,10 +280,13 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
           const { fetch } = frameworkConfiguration;
           const referenceNode = mountDOM.contains(refChild) ? refChild : null;
 
+          const scopedGlobalVariables = speedySandbox ? lexicalGlobals : [];
+
           if (src) {
             execScripts(null, [src], proxy, {
               fetch,
               strictGlobal,
+              scopedGlobalVariables,
               beforeExec: () => {
                 const isCurrentScriptConfigurable = () => {
                   const descriptor = Object.getOwnPropertyDescriptor(document, 'currentScript');
@@ -311,7 +317,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
           }
 
           // inline script never trigger the onload and onerror event
-          execScripts(null, [`<script>${text}</script>`], proxy, { strictGlobal });
+          execScripts(null, [`<script>${text}</script>`], proxy, { strictGlobal, scopedGlobalVariables });
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
           dynamicScriptAttachedCommentMap.set(element, dynamicInlineScriptCommentElement);
           return rawDOMAppendOrInsertBefore.call(mountDOM, dynamicInlineScriptCommentElement, referenceNode);

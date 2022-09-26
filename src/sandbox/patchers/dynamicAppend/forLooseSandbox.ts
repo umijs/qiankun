@@ -49,6 +49,7 @@ export function patchLooseSandbox(
       appWrapperGetter,
       proxy,
       strictGlobal: false,
+      speedySandbox: false,
       scopedCSS,
       dynamicStyleSheetElements,
       excludeAssetFilter,

@@ -6,7 +6,6 @@ import './index.less';
  * 以下分别是 React 和 Vue 的示例，可切换尝试
  */
 import render from './render/ReactRender';
-
 // import render from './render/VueRender';
 
 /**

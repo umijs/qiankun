@@ -5,8 +5,8 @@
  */
 import type { SandBox } from '../interfaces';
 import { SandBoxType } from '../interfaces';
-import { nativeGlobal, nextTask } from '../utils';
-import { getCurrentRunningApp, getTargetValue, setCurrentRunningApp } from './common';
+import { isPropertyFrozen, nativeGlobal, nextTask } from '../utils';
+import { getCurrentRunningApp, getTargetValue, setCurrentRunningApp, unscopedGlobals } from './common';
 
 type SymbolTarget = 'target' | 'globalContext';
 
@@ -46,32 +46,10 @@ const variableWhiteList: PropertyKey[] = [
 ];
 
 /*
- variables who are impossible to be overwrite need to be escaped from proxy sandbox for performance reasons
+ variables who are impossible to be overwritten need to be escaped from proxy sandbox for performance reasons
+ see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/unscopables
  */
-const unscopables = {
-  undefined: true,
-  Array: true,
-  Object: true,
-  String: true,
-  Boolean: true,
-  Math: true,
-  Number: true,
-  Symbol: true,
-  parseFloat: true,
-  Float32Array: true,
-  isNaN: true,
-  Infinity: true,
-  Reflect: true,
-  Float64Array: true,
-  Function: true,
-  Map: true,
-  NaN: true,
-  Promise: true,
-  Proxy: true,
-  Set: true,
-  parseInt: true,
-  requestAnimationFrame: true,
-};
+const unscopables = unscopedGlobals.reduce((acc, key) => ({ ...acc, [key]: true }), { __proto__: null });
 
 const useNativeWindowForBindingsProps = new Map<PropertyKey, boolean>([
   ['fetch', true],
@@ -87,7 +65,7 @@ function createFakeWindow(globalContext: Window) {
   /*
    copy the non-configurable property of global to fakeWindow
    see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/getOwnPropertyDescriptor
-   > A property cannot be reported as non-configurable, if it does not exists as an own property of the target object or if it exists as a configurable own property of the target object.
+   > A property cannot be reported as non-configurable, if it does not exist as an own property of the target object or if it exists as a configurable own property of the target object.
    */
   Object.getOwnPropertyNames(globalContext)
     .filter((p) => {
@@ -151,27 +129,8 @@ export default class ProxySandbox implements SandBox {
   type: SandBoxType;
 
   proxy: WindowProxy;
-
-  globalContext: typeof window;
-
   sandboxRunning = true;
-
   latestSetProp: PropertyKey | null = null;
-
-  private registerRunningApp(name: string, proxy: Window) {
-    if (this.sandboxRunning) {
-      const currentRunningApp = getCurrentRunningApp();
-      if (!currentRunningApp || currentRunningApp.name !== name) {
-        setCurrentRunningApp({ name, window: proxy });
-      }
-      // FIXME if you have any other good ideas
-      // remove the mark in next tick, thus we can identify whether it in micro app or not
-      // this approach is just a workaround, it could not cover all complex cases, such as the micro app runs in the same task context with master in some case
-      nextTask(() => {
-        setCurrentRunningApp(null);
-      });
-    }
-  }
 
   active() {
     if (!this.sandboxRunning) activeSandboxCount++;
@@ -196,6 +155,8 @@ export default class ProxySandbox implements SandBox {
 
     this.sandboxRunning = false;
   }
+
+  globalContext: typeof window;
 
   constructor(name: string, globalContext = window) {
     this.name = name;
@@ -289,11 +250,14 @@ export default class ProxySandbox implements SandBox {
           return eval;
         }
 
-        const value = propertiesWithGetter.has(p)
-          ? (globalContext as any)[p]
-          : p in target
-          ? (target as any)[p]
-          : (globalContext as any)[p];
+        const actualTarget = propertiesWithGetter.has(p) ? globalContext : p in target ? target : globalContext;
+        const value = actualTarget[p];
+
+        // frozen value should return directly, see https://github.com/umijs/qiankun/issues/2015
+        if (isPropertyFrozen(actualTarget, p)) {
+          return value;
+        }
+
         /* Some dom api must be bound to native window, otherwise it would cause exception like 'TypeError: Failed to execute 'fetch' on 'Window': Illegal invocation'
            See this code:
              const proxy = new Proxy(window, {});
@@ -376,5 +340,20 @@ export default class ProxySandbox implements SandBox {
     this.proxy = proxy;
 
     activeSandboxCount++;
+  }
+
+  private registerRunningApp(name: string, proxy: Window) {
+    if (this.sandboxRunning) {
+      const currentRunningApp = getCurrentRunningApp();
+      if (!currentRunningApp || currentRunningApp.name !== name) {
+        setCurrentRunningApp({ name, window: proxy });
+      }
+      // FIXME if you have any other good ideas
+      // remove the mark in next tick, thus we can identify whether it in micro app or not
+      // this approach is just a workaround, it could not cover all complex cases, such as the micro app runs in the same task context with master in some case
+      nextTask(() => {
+        setCurrentRunningApp(null);
+      });
+    }
   }
 }
