@@ -5,24 +5,25 @@ import {
   getDefaultTplWrapper,
   getWrapperId,
   getXPathForElement,
+  isPropertyReadonly,
   nextTask,
   sleep,
   validateExportLifecycle,
 } from '../utils';
 
-test('should wrap the id [1]', () => {
+it('should wrap the id [1]', () => {
   const id = 'REACT16';
 
   expect(getWrapperId(id)).toBe(`__qiankun_microapp_wrapper_for_${'react_16'}__`);
 });
 
-test('should wrap the id [2]', () => {
+it('should wrap the id [2]', () => {
   const id = 'react16';
 
   expect(getWrapperId(id)).toBe('__qiankun_microapp_wrapper_for_react_16__');
 });
 
-test('should wrap string with div', () => {
+it('should wrap string with div', () => {
   const tpl = '<span>qiankun</span>';
   const factory = getDefaultTplWrapper('react16');
 
@@ -34,7 +35,7 @@ test('should wrap string with div', () => {
   );
 });
 
-test('should be able to validate lifecycle', () => {
+it('should be able to validate lifecycle', () => {
   const noop = () => undefined;
 
   const export1 = {
@@ -71,7 +72,7 @@ test.skip('should be able to suspend', async () => {
   expect(diff >= 10).toBeTruthy();
 });
 
-test('Deferred should worked [1]', async () => {
+it('Deferred should worked [1]', async () => {
   const inst = new Deferred();
 
   setTimeout(() => {
@@ -82,7 +83,7 @@ test('Deferred should worked [1]', async () => {
   expect(ret).toBe(1);
 });
 
-test('Deferred should worked [2]', async () => {
+it('Deferred should worked [2]', async () => {
   const inst = new Deferred();
 
   setTimeout(() => {
@@ -100,7 +101,7 @@ test('Deferred should worked [2]', async () => {
   expect(err).toBeInstanceOf(Error);
 });
 
-test('should getXPathForElement work well', () => {
+it('should getXPathForElement work well', () => {
   const article = document.createElement('article');
   article.innerHTML = `
     <div>
@@ -140,7 +141,7 @@ it('should nextTick just executed once in one task context', async () => {
   expect(counter).toBe(3);
 });
 
-it('should genAppInstanceIdByName works well', () => {
+it('should genAppInstanceIdByName work well', () => {
   const instanceId1 = genAppInstanceIdByName('hello');
   expect(instanceId1).toBe('hello');
 
@@ -149,4 +150,35 @@ it('should genAppInstanceIdByName works well', () => {
 
   const instanceId3 = genAppInstanceIdByName('hello');
   expect(instanceId3).toBe('hello_2');
+});
+
+it('should isPropertyReadonly work well', () => {
+  const a = {
+    get name() {
+      return 'read only';
+    },
+  };
+  expect(isPropertyReadonly(a, 'name')).toBeTruthy();
+
+  const b = {
+    get name() {
+      return 'read only';
+    },
+    set name(_) {},
+  };
+  expect(isPropertyReadonly(b, 'name')).toBeFalsy();
+
+  const c = {};
+  Object.defineProperty(c, 'name', { writable: false });
+  expect(isPropertyReadonly(c, 'name')).toBeTruthy();
+
+  const d = {};
+  Object.defineProperty(d, 'name', { configurable: true });
+  expect(isPropertyReadonly(d, 'name')).toBeTruthy();
+
+  const e = {};
+  Object.defineProperty(e, 'name', { writable: true });
+  expect(isPropertyReadonly(e, 'name')).toBeFalsy();
+
+  expect(isPropertyReadonly(undefined, 'name')).toBeFalsy();
 });
