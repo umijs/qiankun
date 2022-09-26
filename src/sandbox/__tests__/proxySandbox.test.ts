@@ -3,7 +3,7 @@
  * @since 2020-03-31
  */
 
-import { isBoundedFunction, isPropertyReadonly } from '../../utils';
+import { isBoundedFunction } from '../../utils';
 import { getCurrentRunningApp } from '../common';
 import ProxySandbox from '../proxySandbox';
 
@@ -26,7 +26,7 @@ beforeAll(() => {
   });
 });
 
-test('iterator should be worked the same as the raw window', () => {
+it('iterator should be worked the same as the raw window', () => {
   Object.defineProperty(window, 'nonEnumerableValue', {
     enumerable: false,
     value: 1,
@@ -59,7 +59,7 @@ test('iterator should be worked the same as the raw window', () => {
   expect(Object.keys(proxy)).toEqual([...Object.keys(window), 'additionalProp']);
 });
 
-test('window.self & window.window & window.top & window.parent should equals with sandbox', () => {
+it('window.self & window.window & window.top & window.parent should equals with sandbox', () => {
   const { proxy } = new ProxySandbox('unit-test');
 
   expect(proxy.self).toBe(proxy);
@@ -71,12 +71,12 @@ test('window.self & window.window & window.top & window.parent should equals wit
   expect(proxy.parent).toBe(proxy);
 });
 
-test('globalThis should equals with sandbox', () => {
+it('globalThis should equals with sandbox', () => {
   const { proxy } = new ProxySandbox('globalThis');
   expect(proxy.globalThis).toBe(proxy);
 });
 
-test('allow window.top & window.parent to escape sandbox while in iframe', () => {
+it('allow window.top & window.parent to escape sandbox while in iframe', () => {
   // change window.parent to cheat ProxySandbox is in iframe
   Object.defineProperty(window, 'parent', { value: 'parent' });
   Object.defineProperty(window, 'top', { value: 'top' });
@@ -86,7 +86,7 @@ test('allow window.top & window.parent to escape sandbox while in iframe', () =>
   expect(proxy.parent).toBe('parent');
 });
 
-test('eval should never be represented', () => {
+it('eval should never be represented', () => {
   const { proxy } = new ProxySandbox('eval-test');
   // @ts-ignore
   window.proxy = proxy;
@@ -102,7 +102,7 @@ test('eval should never be represented', () => {
   expect(window.testEval).toBeUndefined();
 });
 
-test('hasOwnProperty should works well', () => {
+it('hasOwnProperty should works well', () => {
   const { proxy } = new ProxySandbox('unit-test');
 
   proxy.testName = 'kuitos';
@@ -120,7 +120,7 @@ test('hasOwnProperty should works well', () => {
   });
 });
 
-test('descriptor of non-configurable and non-enumerable property existed in raw window should be the same after modified in sandbox', () => {
+it('descriptor of non-configurable and non-enumerable property existed in raw window should be the same after modified in sandbox', () => {
   Object.defineProperty(window, 'nonConfigurableProp', { configurable: false, writable: true });
   // eslint-disable-next-line getter-return
   Object.defineProperty(window, 'nonConfigurablePropWithAccessor', {
@@ -161,14 +161,14 @@ test('descriptor of non-configurable and non-enumerable property existed in raw 
   });
 });
 
-test('A property cannot be reported as non-configurable, if it does not exists as an own property of the target object', () => {
+it('A property cannot be reported as non-configurable, if it does not exists as an own property of the target object', () => {
   const { proxy } = new ProxySandbox('non-configurable');
   Object.defineProperty(window, 'nonConfigurablePropAfterSandboxCreated', { value: 'test', configurable: false });
   const descriptor = Object.getOwnPropertyDescriptor(proxy, 'nonConfigurablePropAfterSandboxCreated');
   expect(descriptor?.configurable).toBeTruthy();
 });
 
-test('property added by Object.defineProperty should works as expect', () => {
+it('property added by Object.defineProperty should works as expect', () => {
   const { proxy } = new ProxySandbox('object-define-property-test');
 
   let v: any;
@@ -197,7 +197,7 @@ test('property added by Object.defineProperty should works as expect', () => {
   });
 });
 
-test('defineProperty should added to the target where its descriptor from', () => {
+it('defineProperty should added to the target where its descriptor from', () => {
   Object.defineProperty(window, 'propertyInNativeWindow', {
     get(this: any) {
       // distinguish it from internal target or raw window with property length
@@ -219,7 +219,7 @@ test('defineProperty should added to the target where its descriptor from', () =
   expect(proxy.propertyInNativeWindow).toBe('ifAccessByInternalTargetWillCauseIllegalInvocation');
 });
 
-test('hasOwnProperty should always returns same reference', () => {
+it('hasOwnProperty should always returns same reference', () => {
   const proxy = new ProxySandbox('hasOwnProperty-test').proxy as any;
   proxy.testA = {};
   proxy.testB = {};
@@ -227,7 +227,7 @@ test('hasOwnProperty should always returns same reference', () => {
   expect(proxy.testA.hasOwnProperty).toBe(proxy.testB.hasOwnProperty);
 });
 
-test('document and eval accessing should modify the attachDocProxySymbol value every time', () => {
+it('document and eval accessing should modify the attachDocProxySymbol value every time', () => {
   const proxy1 = new ProxySandbox('doc-access-test1').proxy;
   const proxy2 = new ProxySandbox('doc-access-test2').proxy;
   const proxy3 = new ProxySandbox('eval-access-test1').proxy;
@@ -255,7 +255,7 @@ test('document and eval accessing should modify the attachDocProxySymbol value e
   expect(eval1).toBe(eval);
 });
 
-test('document attachDocProxySymbol mark should be remove before next task', (done) => {
+it('document attachDocProxySymbol mark should be remove before next task', (done) => {
   const { proxy } = new ProxySandbox('doc-symbol');
   // just access
   // @ts-ignore
@@ -270,7 +270,7 @@ test('document attachDocProxySymbol mark should be remove before next task', (do
   });
 });
 
-test('document should work well with MutationObserver', (done) => {
+it('document should work well with MutationObserver', (done) => {
   const docProxy = new ProxySandbox('doc').proxy;
 
   const observer = new MutationObserver((mutations) => {
@@ -290,7 +290,7 @@ test('document should work well with MutationObserver', (done) => {
   docProxy.document.body.innerHTML = '<div></div>';
 });
 
-test('bounded function should not be rebounded', () => {
+it('bounded function should not be rebounded', () => {
   const proxy = new ProxySandbox('bound-fn-test').proxy as any;
   const fn = () => {};
   const boundedFn = fn.bind(null);
@@ -302,25 +302,32 @@ test('bounded function should not be rebounded', () => {
   expect(isBoundedFunction(proxy.fn1)).toBeTruthy();
 });
 
-test('readonly property should not be overwrite', () => {
-  const proxy = new ProxySandbox('bound-fn-test').proxy as any;
+it('frozen property should not be overwrite', () => {
+  const globalContext = window;
+  const fn = () => {};
+  Object.defineProperty(globalContext, 'frozenProp', {
+    value: fn,
+    configurable: false,
+    enumerable: true,
+    writable: false,
+  });
+  const proxy = new ProxySandbox('bound-fn-test', globalContext).proxy as any;
+
+  expect(proxy.frozenProp).toBe(fn);
 
   proxy.normalField = 'normalFieldValue';
-
-  Object.defineProperties(proxy, {
-    readOnlyField: {
-      value: 'readOnlyFieldValue',
-      configurable: false,
-      enumerable: true,
-      writable: false,
-    },
+  Object.defineProperty(proxy, 'frozenPropInProxy', {
+    value: fn,
+    configurable: false,
+    enumerable: true,
+    writable: false,
   });
 
-  expect(isPropertyReadonly(proxy, 'normalField')).toBeFalsy();
-  expect(isPropertyReadonly(proxy, 'readOnlyField')).toBeTruthy();
+  expect(proxy.normalField).toBe('normalFieldValue');
+  expect(proxy.frozenPropInProxy).toBe(fn);
 });
 
-test('the prototype should be kept while we create a function with prototype on proxy', () => {
+it('the prototype should be kept while we create a function with prototype on proxy', () => {
   const proxy = new ProxySandbox('new-function').proxy as any;
 
   function test() {}
@@ -330,7 +337,7 @@ test('the prototype should be kept while we create a function with prototype on 
   expect(proxy.fn.prototype).toBe(test.prototype);
 });
 
-test('some native window property was defined with getter in safari and firefox, and they will check the caller source', () => {
+it('some native window property was defined with getter in safari and firefox, and they will check the caller source', () => {
   Object.defineProperty(window, 'mockSafariGetterProperty', {
     get(this: Window) {
       // distinguish it from internal target or raw window with property length
@@ -351,7 +358,7 @@ test('some native window property was defined with getter in safari and firefox,
   expect(proxy.mockSafariGetterProperty).toBe('getterPropertyInSafariWindow');
 });
 
-test('falsy values should return as expected', () => {
+it('falsy values should return as expected', () => {
   const { proxy } = new ProxySandbox('falsy-value-test');
   proxy.falsevar = false;
   proxy.nullvar = null;

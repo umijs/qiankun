@@ -76,7 +76,7 @@ export function isConstructable(fn: () => any | FunctionConstructor) {
  */
 const naughtySafari = typeof document.all === 'function' && typeof document.all === 'undefined';
 const callableFnCacheMap = new WeakMap<CallableFunction, boolean>();
-export const isCallable = (fn: any) => {
+export function isCallable(fn: any) {
   if (callableFnCacheMap.has(fn)) {
     return true;
   }
@@ -86,7 +86,7 @@ export const isCallable = (fn: any) => {
     callableFnCacheMap.set(fn, callable);
   }
   return callable;
-};
+}
 
 /**
  * isPropertyReadonly
@@ -94,28 +94,29 @@ export const isCallable = (fn: any) => {
  * @param p
  * @returns boolean
  */
-const propertyReadonlyCacheMap = new WeakMap<any, Record<PropertyKey, boolean>>();
-export function isPropertyReadonly(target: any, p?: PropertyKey): boolean {
+const frozenPropertyCacheMap = new WeakMap<any, Record<PropertyKey, boolean>>();
+export function isPropertyFrozen(target: any, p?: PropertyKey): boolean {
   if (!target || !p) {
     return false;
   }
 
-  const targetPropertiesFromCache = propertyReadonlyCacheMap.get(target) || {};
+  const targetPropertiesFromCache = frozenPropertyCacheMap.get(target) || {};
 
   if (targetPropertiesFromCache[p]) {
     return targetPropertiesFromCache[p];
   }
 
   const propertyDescriptor = Object.getOwnPropertyDescriptor(target, p);
-  const readonly = Boolean(
+  const frozen = Boolean(
     propertyDescriptor &&
+      propertyDescriptor.configurable === false &&
       (propertyDescriptor.writable === false || (propertyDescriptor.get && !propertyDescriptor.set)),
   );
 
-  targetPropertiesFromCache[p] = readonly;
-  propertyReadonlyCacheMap.set(target, targetPropertiesFromCache);
+  targetPropertiesFromCache[p] = frozen;
+  frozenPropertyCacheMap.set(target, targetPropertiesFromCache);
 
-  return readonly;
+  return frozen;
 }
 
 const boundedMap = new WeakMap<CallableFunction, boolean>();
