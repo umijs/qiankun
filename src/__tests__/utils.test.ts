@@ -6,24 +6,25 @@ import {
   getDefaultTplWrapper,
   getWrapperId,
   getXPathForElement,
+  isPropertyFrozen,
   nextTask,
   sleep,
   validateExportLifecycle,
 } from '../utils';
 
-test('should wrap the id [1]', () => {
+it('should wrap the id [1]', () => {
   const id = 'REACT16';
 
   expect(getWrapperId(id)).toBe(`__qiankun_microapp_wrapper_for_${'react_16'}__`);
 });
 
-test('should wrap the id [2]', () => {
+it('should wrap the id [2]', () => {
   const id = 'react16';
 
   expect(getWrapperId(id)).toBe('__qiankun_microapp_wrapper_for_react_16__');
 });
 
-test('should wrap string with div', () => {
+it('should wrap string with div', () => {
   const tpl = '<span>qiankun</span>';
   const factory = getDefaultTplWrapper('react16');
 
@@ -35,7 +36,7 @@ test('should wrap string with div', () => {
   );
 });
 
-test('should be able to validate lifecycle', () => {
+it('should be able to validate lifecycle', () => {
   const noop = () => undefined;
 
   const export1 = {
@@ -72,7 +73,7 @@ test.skip('should be able to suspend', async () => {
   expect(diff >= 10).toBeTruthy();
 });
 
-test('Deferred should worked [1]', async () => {
+it('Deferred should worked [1]', async () => {
   const inst = new Deferred();
 
   setTimeout(() => {
@@ -83,7 +84,7 @@ test('Deferred should worked [1]', async () => {
   expect(ret).toBe(1);
 });
 
-test('Deferred should worked [2]', async () => {
+it('Deferred should worked [2]', async () => {
   const inst = new Deferred();
 
   setTimeout(() => {
@@ -101,7 +102,7 @@ test('Deferred should worked [2]', async () => {
   expect(err).toBeInstanceOf(Error);
 });
 
-test('should getContainerXPath work well', () => {
+it('should getContainerXPath work well', () => {
   const article = document.createElement('article');
   article.innerHTML = `
     <div>
@@ -135,7 +136,7 @@ test('should getContainerXPath work well', () => {
   expect(xpath2).toBeUndefined();
 });
 
-test('should getXPathForElement work well', () => {
+it('should getXPathForElement work well', () => {
   const article = document.createElement('article');
   article.innerHTML = `
     <div>
@@ -175,7 +176,7 @@ it('should nextTick just executed once in one task context', async () => {
   expect(counter).toBe(3);
 });
 
-it('should genAppInstanceIdByName works well', () => {
+it('should genAppInstanceIdByName work well', () => {
   const instanceId1 = genAppInstanceIdByName('hello');
   expect(instanceId1).toBe('hello');
 
@@ -184,4 +185,44 @@ it('should genAppInstanceIdByName works well', () => {
 
   const instanceId3 = genAppInstanceIdByName('hello');
   expect(instanceId3).toBe('hello_2');
+});
+
+it('should isPropertyFrozen work well', () => {
+  const a = {
+    get name() {
+      return 'read only';
+    },
+  };
+  expect(isPropertyFrozen(a, 'name')).toBeFalsy();
+
+  const b = {
+    get name() {
+      return 'read only';
+    },
+    set name(_) {},
+  };
+  expect(isPropertyFrozen(b, 'name')).toBeFalsy();
+
+  const c = {};
+  Object.defineProperty(c, 'name', { writable: false });
+  expect(isPropertyFrozen(c, 'name')).toBeTruthy();
+
+  const d = {};
+  Object.defineProperty(d, 'name', { configurable: true });
+  expect(isPropertyFrozen(d, 'name')).toBeFalsy();
+
+  const e = {};
+  Object.defineProperty(e, 'name', { configurable: false });
+  expect(isPropertyFrozen(e, 'name')).toBeTruthy();
+
+  const f = {};
+  Object.defineProperty(f, 'name', {
+    get() {
+      return 'test';
+    },
+    configurable: false,
+  });
+  expect(isPropertyFrozen(f, 'name')).toBeTruthy();
+
+  expect(isPropertyFrozen(undefined, 'name')).toBeFalsy();
 });

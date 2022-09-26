@@ -6,6 +6,7 @@ import { execScripts } from 'import-html-entry';
 import { isFunction } from 'lodash';
 import { frameworkConfiguration } from '../../../apis';
 import { qiankunHeadTagName } from '../../../utils';
+import { lexicalGlobals } from '../../common';
 import * as css from '../css';
 
 export const rawHeadAppendChild = HTMLHeadElement.prototype.appendChild;
@@ -34,8 +35,7 @@ declare global {
 }
 
 export const getAppWrapperHeadElement = (appWrapper: Element | ShadowRoot): Element => {
-  const rootElement = 'host' in appWrapper ? appWrapper.host : appWrapper;
-  return rootElement.getElementsByTagName(qiankunHeadTagName)[0];
+  return appWrapper.querySelector(qiankunHeadTagName)!;
 };
 
 export function isExecutableScriptType(script: HTMLScriptElement) {
@@ -65,6 +65,32 @@ export function isStyledComponentsLike(element: HTMLStyleElement) {
   return (
     !element.textContent &&
     ((element.sheet as CSSStyleSheet)?.cssRules.length || getStyledElementCSSRules(element)?.length)
+  );
+}
+
+const appsCounterMap = new Map<string, { bootstrappingPatchCount: number; mountingPatchCount: number }>();
+export function calcAppCount(
+  appName: string,
+  calcType: 'increase' | 'decrease',
+  status: 'bootstrapping' | 'mounting',
+): void {
+  const appCount = appsCounterMap.get(appName) || { bootstrappingPatchCount: 0, mountingPatchCount: 0 };
+  switch (calcType) {
+    case 'increase':
+      appCount[`${status}PatchCount`] += 1;
+      break;
+    case 'decrease':
+      // bootstrap patch just called once but its freer will be called multiple times
+      if (appCount[`${status}PatchCount`] > 0) {
+        appCount[`${status}PatchCount`] -= 1;
+      }
+      break;
+  }
+  appsCounterMap.set(appName, appCount);
+}
+export function isAllAppsUnmounted(): boolean {
+  return Array.from(appsCounterMap.entries()).every(
+    ([, { bootstrappingPatchCount: bpc, mountingPatchCount: mpc }]) => bpc === 0 && mpc === 0,
   );
 }
 
@@ -158,6 +184,7 @@ export type ContainerConfig = {
   appName: string;
   proxy: WindowProxy;
   strictGlobal: boolean;
+  speedySandbox: boolean;
   dynamicStyleSheetElements: Array<HTMLStyleElement | HTMLLinkElement>;
   appWrapperGetter: CallableFunction;
   scopedCSS: boolean;
@@ -188,6 +215,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
         appWrapperGetter,
         proxy,
         strictGlobal,
+        speedySandbox,
         dynamicStyleSheetElements,
         scopedCSS,
         excludeAssetFilter,
@@ -246,14 +274,19 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
             return rawDOMAppendOrInsertBefore.call(this, element, refChild) as T;
           }
 
-          const mountDOM = appWrapperGetter();
+          const appWrapper = appWrapperGetter();
+          const mountDOM = target === 'head' ? getAppWrapperHeadElement(appWrapper) : appWrapper;
+
           const { fetch } = frameworkConfiguration;
           const referenceNode = mountDOM.contains(refChild) ? refChild : null;
+
+          const scopedGlobalVariables = speedySandbox ? lexicalGlobals : [];
 
           if (src) {
             execScripts(null, [src], proxy, {
               fetch,
               strictGlobal,
+              scopedGlobalVariables,
               beforeExec: () => {
                 const isCurrentScriptConfigurable = () => {
                   const descriptor = Object.getOwnPropertyDescriptor(document, 'currentScript');
@@ -284,7 +317,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
           }
 
           // inline script never trigger the onload and onerror event
-          execScripts(null, [`<script>${text}</script>`], proxy, { strictGlobal });
+          execScripts(null, [`<script>${text}</script>`], proxy, { strictGlobal, scopedGlobalVariables });
           const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
           dynamicScriptAttachedCommentMap.set(element, dynamicInlineScriptCommentElement);
           return rawDOMAppendOrInsertBefore.call(mountDOM, dynamicInlineScriptCommentElement, referenceNode);
@@ -316,8 +349,13 @@ function getNewRemoveChild(
         case STYLE_TAG_NAME:
         case LINK_TAG_NAME: {
           attachedElement = dynamicLinkAttachedInlineStyleMap.get(child as any) || child;
+
           // try to remove the dynamic style sheet
-          dynamicStyleSheetElements.splice(dynamicStyleSheetElements.indexOf(attachedElement as any), 1);
+          const dynamicElementIndex = dynamicStyleSheetElements.indexOf(attachedElement as HTMLLinkElement);
+          if (dynamicElementIndex !== -1) {
+            dynamicStyleSheetElements.splice(dynamicElementIndex, 1);
+          }
+
           break;
         }
 
