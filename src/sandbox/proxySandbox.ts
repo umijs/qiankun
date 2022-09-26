@@ -5,7 +5,7 @@
  */
 import type { SandBox } from '../interfaces';
 import { SandBoxType } from '../interfaces';
-import { nativeGlobal, nextTask } from '../utils';
+import { isPropertyFrozen, nativeGlobal, nextTask } from '../utils';
 import { getCurrentRunningApp, getTargetValue, setCurrentRunningApp, unscopedGlobals } from './common';
 
 type SymbolTarget = 'target' | 'globalContext';
@@ -65,7 +65,7 @@ function createFakeWindow(globalContext: Window) {
   /*
    copy the non-configurable property of global to fakeWindow
    see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/getOwnPropertyDescriptor
-   > A property cannot be reported as non-configurable, if it does not exists as an own property of the target object or if it exists as a configurable own property of the target object.
+   > A property cannot be reported as non-configurable, if it does not exist as an own property of the target object or if it exists as a configurable own property of the target object.
    */
   Object.getOwnPropertyNames(globalContext)
     .filter((p) => {
@@ -250,11 +250,14 @@ export default class ProxySandbox implements SandBox {
           return eval;
         }
 
-        const value = propertiesWithGetter.has(p)
-          ? (globalContext as any)[p]
-          : p in target
-          ? (target as any)[p]
-          : (globalContext as any)[p];
+        const actualTarget = propertiesWithGetter.has(p) ? globalContext : p in target ? target : globalContext;
+        const value = actualTarget[p];
+
+        // frozen value should return directly, see https://github.com/umijs/qiankun/issues/2015
+        if (isPropertyFrozen(actualTarget, p)) {
+          return value;
+        }
+
         /* Some dom api must be bound to native window, otherwise it would cause exception like 'TypeError: Failed to execute 'fetch' on 'Window': Illegal invocation'
            See this code:
              const proxy = new Proxy(window, {});
@@ -262,7 +265,7 @@ export default class ProxySandbox implements SandBox {
              proxyFetch('https://qiankun.com');
         */
         const boundTarget = useNativeWindowForBindingsProps.get(p) ? nativeGlobal : globalContext;
-        return getTargetValue(boundTarget, value, p);
+        return getTargetValue(boundTarget, value);
       },
 
       // trap in operator

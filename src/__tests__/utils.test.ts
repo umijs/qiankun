@@ -5,7 +5,7 @@ import {
   getDefaultTplWrapper,
   getWrapperId,
   getXPathForElement,
-  isPropertyReadonly,
+  isPropertyFrozen,
   nextTask,
   sleep,
   validateExportLifecycle,
@@ -152,13 +152,13 @@ it('should genAppInstanceIdByName work well', () => {
   expect(instanceId3).toBe('hello_2');
 });
 
-it('should isPropertyReadonly work well', () => {
+it('should isPropertyFrozen work well', () => {
   const a = {
     get name() {
       return 'read only';
     },
   };
-  expect(isPropertyReadonly(a, 'name')).toBeTruthy();
+  expect(isPropertyFrozen(a, 'name')).toBeFalsy();
 
   const b = {
     get name() {
@@ -166,19 +166,28 @@ it('should isPropertyReadonly work well', () => {
     },
     set name(_) {},
   };
-  expect(isPropertyReadonly(b, 'name')).toBeFalsy();
+  expect(isPropertyFrozen(b, 'name')).toBeFalsy();
 
   const c = {};
   Object.defineProperty(c, 'name', { writable: false });
-  expect(isPropertyReadonly(c, 'name')).toBeTruthy();
+  expect(isPropertyFrozen(c, 'name')).toBeTruthy();
 
   const d = {};
   Object.defineProperty(d, 'name', { configurable: true });
-  expect(isPropertyReadonly(d, 'name')).toBeTruthy();
+  expect(isPropertyFrozen(d, 'name')).toBeFalsy();
 
   const e = {};
-  Object.defineProperty(e, 'name', { writable: true });
-  expect(isPropertyReadonly(e, 'name')).toBeFalsy();
+  Object.defineProperty(e, 'name', { configurable: false });
+  expect(isPropertyFrozen(e, 'name')).toBeTruthy();
 
-  expect(isPropertyReadonly(undefined, 'name')).toBeFalsy();
+  const f = {};
+  Object.defineProperty(f, 'name', {
+    get() {
+      return 'test';
+    },
+    configurable: false,
+  });
+  expect(isPropertyFrozen(f, 'name')).toBeTruthy();
+
+  expect(isPropertyFrozen(undefined, 'name')).toBeFalsy();
 });
