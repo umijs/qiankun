@@ -146,9 +146,9 @@ export default class ProxySandbox implements SandBox {
 
     if (--activeSandboxCount === 0) {
       variableWhiteList.forEach((p) => {
-        if (this.proxy.hasOwnProperty(p)) {
-          // @ts-ignore
-          delete this.globalContext[p];
+        const descriptor = this.globalWhiteList[p];
+        if (descriptor && descriptor.writable) {
+          Object.defineProperty(this.globalContext, p, descriptor);
         }
       });
     }
@@ -157,10 +157,16 @@ export default class ProxySandbox implements SandBox {
   }
 
   globalContext: typeof window;
+  /** the whitelisted original global variables */
+  globalWhiteList: Record<PropertyKey, PropertyDescriptor | undefined>;
 
   constructor(name: string, globalContext = window) {
     this.name = name;
     this.globalContext = globalContext;
+    this.globalWhiteList = variableWhiteList.reduce((acc, key) => {
+      acc[key] = Object.getOwnPropertyDescriptor(globalContext, key);
+      return acc;
+    }, {} as ProxySandbox['globalWhiteList']);
     this.type = SandBoxType.Proxy;
     const { updatedValueSet } = this;
 

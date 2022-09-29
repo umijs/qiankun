@@ -409,6 +409,36 @@ it('native window function calling should always be bound with window', () => {
   expect(proxy.nativeWindowFunction()).toBe('success');
 });
 
+it('should restore window properties (primitive values) that in whitelisted variables', () => {
+  const original = {
+    iframeReady: () => {},
+  };
+  window.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__ = original;
+
+  const sandbox = new ProxySandbox('whitelist-variables');
+  const { proxy } = sandbox;
+  sandbox.active();
+  proxy.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__ = undefined;
+  sandbox.inactive();
+  proxy.expect(window.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__).toBe(original);
+});
+
+it('should restore window properties (object descriptors) that in whitelisted variables', () => {
+  const original = {
+    iframeReady: () => {},
+  };
+  Object.defineProperty(window, '__REACT_ERROR_OVERLAY_GLOBAL_HOOK__', {
+    value: original,
+  });
+
+  const sandbox = new ProxySandbox('whitelist-variables');
+  const { proxy } = sandbox;
+  sandbox.active();
+  proxy.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__ = {};
+  sandbox.inactive();
+  proxy.expect(window.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__).toBe(original);
+});
+
 describe('should work with nest sandbox', () => {
   it('specified dom api should bound with native window', () => {
     const { proxy: sandboxProxy } = new ProxySandbox('sandbox');
