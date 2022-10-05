@@ -115,6 +115,7 @@
     "cross-env": "^7.0.2",
     "dumi": "^1.1.0-beta.24",
     "father-build": "^1.7.0",
+    "globals": "^13.17.0",
     "husky": "^2.3.0",
     "jest": "^25.2.2",
     "levenary": "^1.1.1",
