@@ -4,6 +4,8 @@
  */
 
 import { isBoundedFunction, isCallable, isConstructable } from '../utils';
+import { globals } from './globals';
+import { without } from 'lodash';
 
 type AppInstance = { name: string; window: WindowProxy };
 let currentRunningApp: AppInstance | null = null;
@@ -20,6 +22,10 @@ export function setCurrentRunningApp(appInstance: { name: string; window: Window
   currentRunningApp = appInstance;
 }
 
+const scopedGlobals = ['window', 'self', 'globalThis', 'top', 'parent', 'hasOwnProperty', 'document', 'eval'];
+export const unscopedGlobals = [...without(globals, ...scopedGlobals), 'requestAnimationFrame'];
+export const lexicalGlobals = [...unscopedGlobals, ...scopedGlobals];
+
 const functionBoundedValueMap = new WeakMap<CallableFunction, CallableFunction>();
 
 export function getTargetValue(target: any, value: any): any {
@@ -27,7 +33,6 @@ export function getTargetValue(target: any, value: any): any {
     仅绑定 isCallable && !isBoundedFunction && !isConstructable 的函数对象，如 window.console、window.atob 这类，不然微应用中调用时会抛出 Illegal invocation 异常
     目前没有完美的检测方式，这里通过 prototype 中是否还有可枚举的拓展方法的方式来判断
     @warning 这里不要随意替换成别的判断方式，因为可能触发一些 edge case（比如在 lodash.isFunction 在 iframe 上下文中可能由于调用了 top window 对象触发的安全异常）
-    @warning 对于configurable及writable都为false的readonly属性，proxy必须返回原值
    */
   if (isCallable(value) && !isBoundedFunction(value) && !isConstructable(value)) {
     const cachedBoundFunction = functionBoundedValueMap.get(value);
@@ -79,30 +84,3 @@ export function getTargetValue(target: any, value: any): any {
 
   return value;
 }
-
-export const unscopedGlobals = [
-  'undefined',
-  'Array',
-  'Object',
-  'String',
-  'Boolean',
-  'Math',
-  'Number',
-  'Symbol',
-  'parseFloat',
-  'Float32Array',
-  'isNaN',
-  'Infinity',
-  'Reflect',
-  'Float64Array',
-  'Function',
-  'Map',
-  'NaN',
-  'Promise',
-  'Proxy',
-  'Set',
-  'parseInt',
-  'requestAnimationFrame',
-];
-
-export const lexicalGlobals = [...unscopedGlobals, 'globalThis', 'window', 'self'];
