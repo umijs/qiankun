@@ -112,6 +112,7 @@ start();
      ReactDOM.unmountComponentAtNode(container ? container.querySelector('#root') : document.querySelector('#root'));
    }
    ```
+这里需要特别注意的是，通过 ReactDOM.render 挂载子应用时，需要保证每次子应用加载都应使用一个新的路由实例。
 
 4. 修改 `webpack` 配置
 

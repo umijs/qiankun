@@ -2,6 +2,7 @@ import { version } from '../../package.json';
 import {
   Deferred,
   genAppInstanceIdByName,
+  getContainerXPath,
   getDefaultTplWrapper,
   getWrapperId,
   getXPathForElement,
@@ -99,6 +100,40 @@ it('Deferred should worked [2]', async () => {
   }
 
   expect(err).toBeInstanceOf(Error);
+});
+
+it('should getContainerXPath work well', () => {
+  const article = document.createElement('article');
+  article.innerHTML = `
+    <div>
+      <div></div>
+      <div id="testNode"></div>
+      <div></div>
+    </div>
+  `;
+
+  document.body.appendChild(article);
+  // const testNode = document.querySelector('#testNode');
+  const xpath = getContainerXPath('#testNode');
+  expect(xpath).toEqual(
+    // eslint-disable-next-line max-len
+    `/*[name()='HTML']/*[name()='BODY'][1]/*[name()='ARTICLE'][1]/*[name()='DIV'][1]/*[name()='DIV'][2]`,
+  );
+  const testNode2 = document.createElement('div');
+  testNode2.innerHTML = `
+      <div id="testNode2"></div>
+  `;
+
+  document.body.appendChild(testNode2);
+  const xpath1 = getContainerXPath(testNode2);
+
+  expect(xpath1).toEqual(
+    // eslint-disable-next-line max-len
+    `/*[name()='HTML']/*[name()='BODY'][1]/*[name()='DIV'][1]`,
+  );
+
+  const xpath2 = getContainerXPath(undefined);
+  expect(xpath2).toBeUndefined();
 });
 
 it('should getXPathForElement work well', () => {
