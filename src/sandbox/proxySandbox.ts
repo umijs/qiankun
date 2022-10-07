@@ -154,6 +154,7 @@ export default class ProxySandbox implements SandBox {
         if (descriptor) {
           Object.defineProperty(this.globalContext, p, descriptor);
         } else {
+          // @ts-ignore
           delete this.globalContext[p];
         }
       });
@@ -191,6 +192,7 @@ export default class ProxySandbox implements SandBox {
           // sync the property to globalContext
           if (typeof p === 'string' && globalVariableWhiteList.indexOf(p) !== -1) {
             this.globalWhitelistPrevDescriptor[p] = Object.getOwnPropertyDescriptor(globalContext, p);
+            // @ts-ignore
             globalContext[p] = value;
           }
 
