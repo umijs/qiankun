@@ -88,12 +88,6 @@ export function isCallable(fn: any) {
   return callable;
 }
 
-/**
- * isPropertyReadonly
- * @param target
- * @param p
- * @returns boolean
- */
 const frozenPropertyCacheMap = new WeakMap<any, Record<PropertyKey, boolean>>();
 export function isPropertyFrozen(target: any, p?: PropertyKey): boolean {
   if (!target || !p) {

@@ -26,7 +26,7 @@ function uniq(array: Array<string | symbol>) {
 const rawObjectDefineProperty = Object.defineProperty;
 
 const variableWhiteListInDev =
-  process.env.NODE_ENV === 'development' || window.__QIANKUN_DEVELOPMENT__
+  process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development' || window.__QIANKUN_DEVELOPMENT__
     ? [
         // for react hot reload
         // see https://github.com/facebook/create-react-app/blob/66bf7dfc43350249e2f09d138a20840dae8a0a4a/packages/react-error-overlay/src/index.js#L180
@@ -34,7 +34,7 @@ const variableWhiteListInDev =
       ]
     : [];
 // who could escape the sandbox
-const variableWhiteList: PropertyKey[] = [
+const globalVariableWhiteList: string[] = [
   // FIXME System.js used a indirect call with eval, which would make it scope escape to global
   // To make System.js works well, we write it back to global window temporary
   // see https://github.com/systemjs/systemjs/blob/457f5b7e8af6bd120a279540477552a07d5de086/src/evaluate.js#L106
@@ -132,6 +132,9 @@ export default class ProxySandbox implements SandBox {
   sandboxRunning = true;
   latestSetProp: PropertyKey | null = null;
 
+  // the descriptor of global variables in whitelist before it been modified
+  globalWhitelistPrevDescriptor: { [p in typeof globalVariableWhiteList[number]]: PropertyDescriptor | undefined } = {};
+
   active() {
     if (!this.sandboxRunning) activeSandboxCount++;
     this.sandboxRunning = true;
@@ -144,11 +147,15 @@ export default class ProxySandbox implements SandBox {
       ]);
     }
 
-    if (--activeSandboxCount === 0) {
-      variableWhiteList.forEach((p) => {
-        const descriptor = this.globalWhiteList[p];
-        if (descriptor && descriptor.writable) {
+    if (process.env.NODE_ENV === 'test' || --activeSandboxCount === 0) {
+      // reset the global value to the prev value
+      globalVariableWhiteList.forEach((p) => {
+        const descriptor = this.globalWhitelistPrevDescriptor[p];
+        if (descriptor) {
           Object.defineProperty(this.globalContext, p, descriptor);
+        } else {
+          // @ts-ignore
+          delete this.globalContext[p];
         }
       });
     }
@@ -157,16 +164,10 @@ export default class ProxySandbox implements SandBox {
   }
 
   globalContext: typeof window;
-  /** the whitelisted original global variables */
-  globalWhiteList: Record<PropertyKey, PropertyDescriptor | undefined>;
 
   constructor(name: string, globalContext = window) {
     this.name = name;
     this.globalContext = globalContext;
-    this.globalWhiteList = variableWhiteList.reduce((acc, key) => {
-      acc[key] = Object.getOwnPropertyDescriptor(globalContext, key);
-      return acc;
-    }, {} as ProxySandbox['globalWhiteList']);
     this.type = SandBoxType.Proxy;
     const { updatedValueSet } = this;
 
@@ -179,24 +180,18 @@ export default class ProxySandbox implements SandBox {
       set: (target: FakeWindow, p: PropertyKey, value: any): boolean => {
         if (this.sandboxRunning) {
           this.registerRunningApp(name, proxy);
-          // We must kept its description while the property existed in globalContext before
+          // We must keep its description while the property existed in globalContext before
           if (!target.hasOwnProperty(p) && globalContext.hasOwnProperty(p)) {
             const descriptor = Object.getOwnPropertyDescriptor(globalContext, p);
             const { writable, configurable, enumerable } = descriptor!;
-            if (writable) {
-              Object.defineProperty(target, p, {
-                configurable,
-                enumerable,
-                writable,
-                value,
-              });
-            }
+            Object.defineProperty(target, p, { configurable, enumerable, writable, value });
           } else {
-            // @ts-ignore
             target[p] = value;
           }
 
-          if (variableWhiteList.indexOf(p) !== -1) {
+          // sync the property to globalContext
+          if (typeof p === 'string' && globalVariableWhiteList.indexOf(p) !== -1) {
+            this.globalWhitelistPrevDescriptor[p] = Object.getOwnPropertyDescriptor(globalContext, p);
             // @ts-ignore
             globalContext[p] = value;
           }

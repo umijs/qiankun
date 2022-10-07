@@ -409,34 +409,50 @@ it('native window function calling should always be bound with window', () => {
   expect(proxy.nativeWindowFunction()).toBe('success');
 });
 
-it('should restore window properties (primitive values) that in whitelisted variables', () => {
-  const original = {
-    iframeReady: () => {},
-  };
-  window.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__ = original;
+describe('variables in whitelist', () => {
+  it('should restore window properties (primitive values) that in whitelisted variables', () => {
+    const original = {
+      iframeReady: function t1() {},
+    };
+    window.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__ = original;
 
-  const sandbox = new ProxySandbox('whitelist-variables');
-  const { proxy } = sandbox;
-  sandbox.active();
-  proxy.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__ = undefined;
-  sandbox.inactive();
-  proxy.expect(window.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__).toBe(original);
-});
-
-it('should restore window properties (object descriptors) that in whitelisted variables', () => {
-  const original = {
-    iframeReady: () => {},
-  };
-  Object.defineProperty(window, '__REACT_ERROR_OVERLAY_GLOBAL_HOOK__', {
-    value: original,
+    const sandbox = new ProxySandbox('whitelist-variables');
+    const { proxy } = sandbox;
+    sandbox.active();
+    proxy.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__ = undefined;
+    expect(window.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__).toBe(undefined);
+    sandbox.inactive();
+    expect(window.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__).toBe(original);
   });
 
-  const sandbox = new ProxySandbox('whitelist-variables');
-  const { proxy } = sandbox;
-  sandbox.active();
-  proxy.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__ = {};
-  sandbox.inactive();
-  proxy.expect(window.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__).toBe(original);
+  it('should restore window properties (object descriptors) that in whitelisted variables', () => {
+    const original = {
+      iframeReady: function t2() {},
+    };
+    Object.defineProperty(window, '__REACT_ERROR_OVERLAY_GLOBAL_HOOK__', {
+      value: original,
+      writable: true,
+    });
+
+    const sandbox = new ProxySandbox('whitelist-variables');
+    const { proxy } = sandbox;
+    sandbox.active();
+    proxy.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__ = {};
+    expect(window.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__).toEqual({});
+    sandbox.inactive();
+    expect(window.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__).toBe(original);
+  });
+
+  it('should delete global context while it is undefined before sandbox start', () => {
+    delete window.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__;
+    const sandbox = new ProxySandbox('whitelist-variables');
+    const { proxy } = sandbox;
+    sandbox.active();
+    proxy.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__ = {};
+    expect(window.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__).toEqual({});
+    sandbox.inactive();
+    expect('__REACT_ERROR_OVERLAY_GLOBAL_HOOK__' in window).toBeFalsy();
+  });
 });
 
 describe('should work with nest sandbox', () => {
