@@ -183,8 +183,13 @@ export default class ProxySandbox implements SandBox {
           // We must keep its description while the property existed in globalContext before
           if (!target.hasOwnProperty(p) && globalContext.hasOwnProperty(p)) {
             const descriptor = Object.getOwnPropertyDescriptor(globalContext, p);
-            const { writable, configurable, enumerable } = descriptor!;
-            Object.defineProperty(target, p, { configurable, enumerable, writable, value });
+            const { writable, configurable, enumerable, set } = descriptor!;
+            // only writable property can be overwritten
+            // here we ignored accessor descriptor of globalContext as it makes no sense to trigger its logic(which might make sandbox escaping instead)
+            // we force to set value by data descriptor
+            if (writable || set) {
+              Object.defineProperty(target, p, { configurable, enumerable, writable: true, value });
+            }
           } else {
             target[p] = value;
           }
