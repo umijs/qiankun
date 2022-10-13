@@ -409,6 +409,55 @@ it('native window function calling should always be bound with window', () => {
   expect(proxy.nativeWindowFunction()).toBe('success');
 });
 
+describe('should work well while the property existed in global context before', () => {
+  it('should not write value while the readonly property existed in global context but not in sandbox', () => {
+    Object.defineProperty(window, 'readonlyPropertyInGlobalContext', {
+      value: 123,
+      writable: false,
+      configurable: true,
+    });
+    const { proxy } = new ProxySandbox('readonly-sandbox');
+    proxy.readonlyPropertyInGlobalContext = 456;
+    expect(proxy.readonlyPropertyInGlobalContext).toBe(123);
+
+    Object.defineProperty(window, 'readonlyPropertyInGlobalContext', {
+      get() {
+        return '123';
+      },
+      configurable: true,
+    });
+    const { proxy: proxy2 } = new ProxySandbox('readonly-sandbox');
+    proxy2.readonlyPropertyInGlobalContext = 456;
+    expect(proxy2.readonlyPropertyInGlobalContext).toBe(123);
+  });
+
+  it('should write value while the writable property existed in global context but not in sandbox', () => {
+    Object.defineProperty(window, 'readonlyPropertyInGlobalContext', {
+      value: 123,
+      writable: true,
+      configurable: true,
+    });
+    const { proxy } = new ProxySandbox('readonly-sandbox');
+    proxy.readonlyPropertyInGlobalContext = 456;
+    proxy.readonlyPropertyInGlobalContext = 789;
+    expect(proxy.readonlyPropertyInGlobalContext).toBe(789);
+
+    Object.defineProperty(window, 'readonlyPropertyInGlobalContext', {
+      get() {
+        return '123';
+      },
+      set() {
+        // do nothing
+      },
+      configurable: true,
+    });
+    const { proxy: proxy2 } = new ProxySandbox('readonly-sandbox');
+    proxy2.readonlyPropertyInGlobalContext = 456;
+    proxy2.readonlyPropertyInGlobalContext = 789;
+    expect(proxy2.readonlyPropertyInGlobalContext).toBe(789);
+  });
+});
+
 describe('variables in whitelist', () => {
   it('should restore window properties (primitive values) that in whitelisted variables', () => {
     const original = {
