@@ -502,6 +502,24 @@ describe('variables in whitelist', () => {
     sandbox.inactive();
     expect('__REACT_ERROR_OVERLAY_GLOBAL_HOOK__' in window).toBeFalsy();
   });
+
+  it('should not modify those global context that have not been touched during the app running', () => {
+    const original = {
+      iframeReady: function t1() {},
+    };
+    window.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__ = original;
+    const sandbox = new ProxySandbox('whitelist-variables');
+    const { proxy } = sandbox;
+    sandbox.active();
+    // globals in whitelist
+    proxy.System = {};
+    expect(window.System).toEqual({});
+    // regular globals
+    proxy.someOther = {};
+    expect('someOther' in window).toBeFalsy();
+    sandbox.inactive();
+    expect(window.__REACT_ERROR_OVERLAY_GLOBAL_HOOK__).toBe(original);
+  });
 });
 
 describe('should work with nest sandbox', () => {
