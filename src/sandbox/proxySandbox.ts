@@ -149,7 +149,7 @@ export default class ProxySandbox implements SandBox {
 
     if (process.env.NODE_ENV === 'test' || --activeSandboxCount === 0) {
       // reset the global value to the prev value
-      globalVariableWhiteList.forEach((p) => {
+      Object.keys(this.globalWhitelistPrevDescriptor).forEach((p) => {
         const descriptor = this.globalWhitelistPrevDescriptor[p];
         if (descriptor) {
           Object.defineProperty(this.globalContext, p, descriptor);
