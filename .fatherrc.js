@@ -11,8 +11,9 @@ writeFileSync(versionFilePath, `export const version = '${version}';`);
 const globalsFilePath = join(__dirname, './src/sandbox/globals.ts');
 writeFileSync(
   globalsFilePath,
-  `// generated from https://github.com/sindresorhus/globals/blob/main/globals.json builtin part
-export const globals = ${JSON.stringify(Object.keys(globals.builtin), null, 2)};`,
+  `// generated from https://github.com/sindresorhus/globals/blob/main/globals.json es2015 part
+// only init its values while Proxy is supported
+export const globals = window.Proxy ? ${JSON.stringify(Object.keys(globals.es2015), null, 2)} : [];`,
 );
 
 export default {

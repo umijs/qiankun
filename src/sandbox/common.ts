@@ -18,13 +18,12 @@ export function getCurrentRunningApp() {
 }
 
 export function setCurrentRunningApp(appInstance: { name: string; window: WindowProxy } | null) {
-  // set currentRunningApp and it's proxySandbox to global window, as its only use case is for document.createElement from now on, which hijacked by a global way
+  // Set currentRunningApp and it's proxySandbox to global window, as its only use case is for document.createElement from now on, which hijacked by a global way
   currentRunningApp = appInstance;
 }
 
-const scopedGlobals = ['window', 'self', 'globalThis', 'top', 'parent', 'hasOwnProperty', 'document', 'eval'];
-export const unscopedGlobals = [...without(globals, ...scopedGlobals), 'requestAnimationFrame'];
-export const lexicalGlobals = [...unscopedGlobals, ...scopedGlobals];
+const spiedGlobals = ['window', 'self', 'globalThis', 'top', 'parent', 'hasOwnProperty', 'document', 'eval'];
+export const trustedGlobals = [...without(globals, ...spiedGlobals), 'requestAnimationFrame'];
 
 const functionBoundedValueMap = new WeakMap<CallableFunction, CallableFunction>();
 
