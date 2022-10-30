@@ -311,8 +311,7 @@ export async function loadApp<T extends ObjectType>(
   let mountSandbox = () => Promise.resolve();
   let unmountSandbox = () => Promise.resolve();
   const useLooseSandbox = typeof sandbox === 'object' && !!sandbox.loose;
-  // enable speedy mode by default
-  const speedySandbox = typeof sandbox === 'object' ? sandbox.speedy !== false : true;
+  const speedySandbox = typeof sandbox === 'object' && !!sandbox.speedy;
   let sandboxContainer;
   if (sandbox) {
     sandboxContainer = createSandboxContainer(
