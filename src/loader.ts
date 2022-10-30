@@ -18,7 +18,7 @@ import type {
   ObjectType,
 } from './interfaces';
 import { createSandboxContainer, css } from './sandbox';
-import { lexicalGlobals } from './sandbox/common';
+import { trustedGlobals } from './sandbox/common';
 import {
   Deferred,
   genAppInstanceIdByName,
@@ -311,7 +311,8 @@ export async function loadApp<T extends ObjectType>(
   let mountSandbox = () => Promise.resolve();
   let unmountSandbox = () => Promise.resolve();
   const useLooseSandbox = typeof sandbox === 'object' && !!sandbox.loose;
-  const speedySandbox = typeof sandbox === 'object' && !!sandbox.speedy;
+  // enable speedy mode by default
+  const speedySandbox = typeof sandbox === 'object' ? sandbox.speedy !== false : true;
   let sandboxContainer;
   if (sandbox) {
     sandboxContainer = createSandboxContainer(
@@ -342,7 +343,7 @@ export async function loadApp<T extends ObjectType>(
 
   // get the lifecycle hooks from module exports
   const scriptExports: any = await execScripts(global, sandbox && !useLooseSandbox, {
-    scopedGlobalVariables: speedySandbox ? lexicalGlobals : [],
+    scopedGlobalVariables: speedySandbox ? trustedGlobals : [],
   });
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
     scriptExports,

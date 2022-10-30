@@ -75,6 +75,9 @@ type QiankunSpecialOpts = {
          * @deprecated We use strict mode by default
          */
         loose?: boolean;
+        /**
+         * use speed sandbox mode, enabled by default from 2.9.0
+         */
         speedy?: boolean;
         patchers?: Patcher[];
       };

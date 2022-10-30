@@ -6,7 +6,7 @@ import { execScripts } from 'import-html-entry';
 import { isFunction } from 'lodash';
 import { frameworkConfiguration } from '../../../apis';
 import { qiankunHeadTagName } from '../../../utils';
-import { lexicalGlobals } from '../../common';
+import { trustedGlobals } from '../../common';
 import * as css from '../css';
 
 export const rawHeadAppendChild = HTMLHeadElement.prototype.appendChild;
@@ -280,7 +280,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
           const { fetch } = frameworkConfiguration;
           const referenceNode = mountDOM.contains(refChild) ? refChild : null;
 
-          const scopedGlobalVariables = speedySandbox ? lexicalGlobals : [];
+          const scopedGlobalVariables = speedySandbox ? trustedGlobals : [];
 
           if (src) {
             execScripts(null, [src], proxy, {
