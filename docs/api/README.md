@@ -161,6 +161,8 @@ By linking the micro-application to some url rules, the function of automaticall
 
     - excludeAssetFilter - `(assetUrl: string) => boolean` - optional，some special dynamic loaded micro app resources should not be handled by qiankun hijacking
 
+    - disableCache - `boolean` - optional，qiankun will not load resources and excute code repeatedly when loading the same micro app multiple times, so it can improve performace and avoid the risk of memory leaks, default is `false`.
+
 - Usage
 
   Start qiankun.

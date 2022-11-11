@@ -90,6 +90,10 @@ type QiankunSpecialOpts = {
    * skip some scripts or links intercept, like JSONP
    */
   excludeAssetFilter?: (url: string) => boolean;
+  /**
+   * disable the cache when loading the same micro app multi times
+   */
+  disableCache?: boolean;
 
   globalContext?: typeof window;
 };
