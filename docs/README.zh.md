@@ -42,6 +42,6 @@ loadMicroApp({
 
 ## 👬 社区
 
-| Github Discussions | 钉钉群 |
-| --- | --- |
-| [qiankun discussions](https://github.com/umijs/qiankun/discussions) | <img src="https://gw.alipayobjects.com/mdn/rms_84469a/afts/img/A*SH8VQrYfQpYAAAAAAAAAAAAAARQnAQ" width="150" /> |
+| Github Discussions | 钉钉群 | 微信群 |
+| --- | --- | --- |
+| [qiankun discussions](https://github.com/umijs/qiankun/discussions) | <img src="https://mdn.alipayobjects.com/huamei_zvchwx/afts/img/A*GG8zTJaUnTAAAAAAAAAAAAAADuWEAQ/original" width="150" /> | [点击查看群二维码](https://github.com/umijs/qiankun/discussions/2343) |
