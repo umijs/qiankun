@@ -140,6 +140,18 @@ How to determine the completion of the container DOM loading? The vue app can be
 
 If it still reports an error, check whether the container DOM is placed on a routing page of the main app, please refer to [How to load micro apps on a routing page of the main app](#How to load micro apps on a routing page of the main app)
 
+## `[import-html-entry]: error occurs while excuting xxx script http://xxx.xxx.xxx/x.js`
+![](https://user-images.githubusercontent.com/22413530/109919189-41563d00-7cf3-11eb-8328-711228389d63.png)
+The first line is just an auxiliary information printed by qiankun through console.error, which is used to help users quickly know which js has an error, not a real exception. The real exception information is on the second line.
+
+For example, such an error indicates that when qiankun was executing the http://localhost:9100/index.bundle.js of the sub application, this js itself threw an exception. The specific exception information is Uncaught TypeError: Cannot read property 'call' of undefined.
+
+Sub-application exceptions can be attempted to be resolved through the following steps:
+
+Check the error js for syntax errors according to the specific exception information, such as missing semicolons, dependence on uninitialized variables, etc.
+Whether it depends on global variables provided by the main application, but the main application is not actually initialized.
+Compatibility issues. The js itself of the sub-application has syntax compatibility issues in the current runtime environment.
+
 ## How to load micro apps on a routing page of the main app
 
 It must be ensured that the routing page of the main app is also loaded when the micro app is loaded.
