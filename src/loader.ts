@@ -272,7 +272,7 @@ export async function loadApp<T extends ObjectType>(
     await (prevAppUnmountedDeferred && prevAppUnmountedDeferred.promise);
   }
 
-  const appContent = getDefaultTplWrapper(appInstanceId)(template);
+  const appContent = getDefaultTplWrapper(appInstanceId, sandbox)(template);
 
   const strictStyleIsolation = typeof sandbox === 'object' && !!sandbox.strictStyleIsolation;
 
