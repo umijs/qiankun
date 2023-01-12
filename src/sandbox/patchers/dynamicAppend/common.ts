@@ -283,6 +283,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
           const scopedGlobalVariables = speedySandbox ? trustedGlobals : [];
 
           if (src) {
+            let isRedfinedCurrentScript = false;
             execScripts(null, [src], proxy, {
               fetch,
               strictGlobal,
@@ -299,11 +300,12 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
                     },
                     configurable: true,
                   });
+                  isRedfinedCurrentScript = true;
                 }
               },
               success: () => {
                 manualInvokeElementOnLoad(element);
-                if (document.currentScript) {
+                if (isRedfinedCurrentScript) {
                   // @ts-ignore
                   delete document.currentScript;
                 }
@@ -311,7 +313,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
               },
               error: () => {
                 manualInvokeElementOnError(element);
-                if (document.currentScript) {
+                if (isRedfinedCurrentScript) {
                   // @ts-ignore
                   delete document.currentScript;
                 }
