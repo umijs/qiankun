@@ -161,7 +161,8 @@ export default class ProxySandbox implements SandBox {
   }
 
   // the descriptor of global variables in whitelist before it been modified
-  globalWhitelistPrevDescriptor: { [p in typeof globalVariableWhiteList[number]]: PropertyDescriptor | undefined } = {};
+  globalWhitelistPrevDescriptor: { [p in (typeof globalVariableWhiteList)[number]]: PropertyDescriptor | undefined } =
+    {};
   globalContext: typeof window;
 
   constructor(name: string, globalContext = window) {

@@ -303,16 +303,16 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
               },
               success: () => {
                 manualInvokeElementOnLoad(element);
-                if(document.currentScript){
-                  // @ts-ignore 
+                if (document.currentScript) {
+                  // @ts-ignore
                   delete document.currentScript;
                 }
                 element = null;
               },
               error: () => {
                 manualInvokeElementOnError(element);
-                if(document.currentScript){
-                  // @ts-ignore 
+                if (document.currentScript) {
+                  // @ts-ignore
                   delete document.currentScript;
                 }
                 element = null;
