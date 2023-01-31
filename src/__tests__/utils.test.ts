@@ -32,7 +32,7 @@ it('should wrap string with div', () => {
 
   expect(ret).toBe(
     // eslint-disable-next-line max-len
-    `<div id="__qiankun_microapp_wrapper_for_react_16__" data-name="react16" data-version="${version}" data-sandbox-configuration="{\"speedy\":true}"><qiankun-head></qiankun-head>${tpl}</div>`,
+    `<div id="__qiankun_microapp_wrapper_for_react_16__" data-name="react16" data-version="${version}" data-sandbox-cfg={\"speedy\":true}><qiankun-head></qiankun-head>${tpl}</div>`,
   );
 });
 
