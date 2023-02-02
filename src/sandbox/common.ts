@@ -23,7 +23,8 @@ export function setCurrentRunningApp(appInstance: { name: string; window: Window
 }
 
 const spiedGlobals = ['window', 'self', 'globalThis', 'top', 'parent', 'hasOwnProperty', 'document', 'eval'];
-export const trustedGlobals = [...without(globals, ...spiedGlobals), 'requestAnimationFrame'];
+export const unscopedGlobals = [...without(globals, ...spiedGlobals), 'requestAnimationFrame'];
+export const trustedGlobals = [...unscopedGlobals, ...spiedGlobals];
 
 const functionBoundedValueMap = new WeakMap<CallableFunction, CallableFunction>();
 

@@ -6,7 +6,7 @@
 import type { SandBox } from '../interfaces';
 import { SandBoxType } from '../interfaces';
 import { isPropertyFrozen, nativeGlobal, nextTask } from '../utils';
-import { getCurrentRunningApp, getTargetValue, trustedGlobals, setCurrentRunningApp } from './common';
+import { getCurrentRunningApp, getTargetValue, unscopedGlobals, setCurrentRunningApp } from './common';
 
 type SymbolTarget = 'target' | 'globalContext';
 
@@ -49,7 +49,7 @@ const globalVariableWhiteList: string[] = [
  variables who are impossible to be overwritten need to be escaped from proxy sandbox for performance reasons
  see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/unscopables
  */
-const unscopables = trustedGlobals.reduce((acc, key) => ({ ...acc, [key]: true }), { __proto__: null });
+const unscopables = unscopedGlobals.reduce((acc, key) => ({ ...acc, [key]: true }), { __proto__: null });
 
 const useNativeWindowForBindingsProps = new Map<PropertyKey, boolean>([
   ['fetch', true],
@@ -161,8 +161,7 @@ export default class ProxySandbox implements SandBox {
   }
 
   // the descriptor of global variables in whitelist before it been modified
-  globalWhitelistPrevDescriptor: { [p in (typeof globalVariableWhiteList)[number]]: PropertyDescriptor | undefined } =
-    {};
+  globalWhitelistPrevDescriptor: { [p in typeof globalVariableWhiteList[number]]: PropertyDescriptor | undefined } = {};
   globalContext: typeof window;
 
   constructor(name: string, globalContext = window) {
