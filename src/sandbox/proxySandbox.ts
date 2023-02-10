@@ -1,4 +1,5 @@
 /* eslint-disable no-param-reassign */
+import { without } from 'lodash';
 /**
  * @author Kuitos
  * @since 2020-3-31
@@ -6,7 +7,8 @@
 import type { SandBox } from '../interfaces';
 import { SandBoxType } from '../interfaces';
 import { isPropertyFrozen, nativeGlobal, nextTask } from '../utils';
-import { getCurrentRunningApp, getTargetValue, trustedGlobals, setCurrentRunningApp } from './common';
+import { overwrittenGlobals, getCurrentRunningApp, getTargetValue, setCurrentRunningApp } from './common';
+import { globals } from './globals';
 
 type SymbolTarget = 'target' | 'globalContext';
 
@@ -45,11 +47,18 @@ const globalVariableWhiteList: string[] = [
   ...variableWhiteListInDev,
 ];
 
+// these globals should be recorded in every accessing
+const accessingSpiedGlobals = ['document', 'top', 'parent', 'hasOwnProperty', 'eval'];
 /*
- variables who are impossible to be overwritten need to be escaped from proxy sandbox for performance reasons
+ variables who are impossible to be overwritten need to be escaped from proxy sandbox for performance reasons.
  see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/unscopables
  */
-const unscopables = trustedGlobals.reduce((acc, key) => ({ ...acc, [key]: true }), { __proto__: null });
+const unscopables = without(globals, ...accessingSpiedGlobals, ...overwrittenGlobals).reduce(
+  (acc, key) => ({ ...acc, [key]: true }),
+  {
+    __proto__: null,
+  },
+);
 
 const useNativeWindowForBindingsProps = new Map<PropertyKey, boolean>([
   ['fetch', true],

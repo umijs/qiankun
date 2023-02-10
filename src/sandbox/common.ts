@@ -5,7 +5,6 @@
 
 import { isBoundedFunction, isCallable, isConstructable } from '../utils';
 import { globals } from './globals';
-import { without } from 'lodash';
 
 type AppInstance = { name: string; window: WindowProxy };
 let currentRunningApp: AppInstance | null = null;
@@ -22,8 +21,8 @@ export function setCurrentRunningApp(appInstance: { name: string; window: Window
   currentRunningApp = appInstance;
 }
 
-const spiedGlobals = ['window', 'self', 'globalThis', 'top', 'parent', 'hasOwnProperty', 'document', 'eval'];
-export const trustedGlobals = [...without(globals, ...spiedGlobals), 'requestAnimationFrame'];
+export const overwrittenGlobals = ['window', 'self', 'globalThis'];
+export const scopedGlobals = Array.from(new Set([...globals, ...overwrittenGlobals, 'requestAnimationFrame']));
 
 const functionBoundedValueMap = new WeakMap<CallableFunction, CallableFunction>();
 
