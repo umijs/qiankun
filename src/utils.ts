@@ -146,9 +146,9 @@ export function getDefaultTplWrapper(name: string, sandboxOpts: FrameworkConfigu
 
     return `<div id="${getWrapperId(
       name,
-    )}" data-name="${name}" data-version="${version}" data-sandbox-configuration="${JSON.stringify(
+    )}" data-name="${name}" data-version="${version}" data-sandbox-cfg=${JSON.stringify(
       sandboxOpts,
-    )}">${tplWithSimulatedHead}</div>`;
+    )}>${tplWithSimulatedHead}</div>`;
   };
 }
 

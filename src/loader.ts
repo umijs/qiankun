@@ -18,7 +18,7 @@ import type {
   ObjectType,
 } from './interfaces';
 import { createSandboxContainer, css } from './sandbox';
-import { trustedGlobals } from './sandbox/common';
+import { scopedGlobals } from './sandbox/common';
 import {
   Deferred,
   genAppInstanceIdByName,
@@ -263,7 +263,9 @@ export async function loadApp<T extends ObjectType>(
   } = configuration;
 
   // get the entry html content and script executor
-  const { template, execScripts, assetPublicPath } = await importEntry(entry, importEntryOpts);
+  const { template, execScripts, assetPublicPath, getExternalScripts } = await importEntry(entry, importEntryOpts);
+  // trigger external scripts loading to make sure all assets are ready before execScripts calling
+  await getExternalScripts();
 
   // as single-spa load and bootstrap new app parallel with other apps unmounting
   // (see https://github.com/CanopyTax/single-spa/blob/master/src/navigation/reroute.js#L74)
@@ -343,7 +345,7 @@ export async function loadApp<T extends ObjectType>(
 
   // get the lifecycle hooks from module exports
   const scriptExports: any = await execScripts(global, sandbox && !useLooseSandbox, {
-    scopedGlobalVariables: speedySandbox ? trustedGlobals : [],
+    scopedGlobalVariables: speedySandbox ? scopedGlobals : [],
   });
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
     scriptExports,
