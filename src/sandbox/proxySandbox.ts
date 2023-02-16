@@ -59,7 +59,7 @@ export const cachedGlobals = Array.from(
   new Set(without([...globals, ...overwrittenGlobals, 'requestAnimationFrame'], ...accessingSpiedGlobals)),
 );
 
-// transform scopedGlobals to object for faster element check
+// transform cachedGlobals to object for faster element check
 const cachedGlobalObjects = cachedGlobals.reduce((acc, globalProp) => ({ ...acc, [globalProp]: true }), {});
 
 /*
