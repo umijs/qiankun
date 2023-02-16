@@ -18,7 +18,7 @@ import type {
   ObjectType,
 } from './interfaces';
 import { createSandboxContainer, css } from './sandbox';
-import { scopedGlobals } from './sandbox/common';
+import { cachedGlobals } from './sandbox/proxySandbox';
 import {
   Deferred,
   genAppInstanceIdByName,
@@ -345,7 +345,7 @@ export async function loadApp<T extends ObjectType>(
 
   // get the lifecycle hooks from module exports
   const scriptExports: any = await execScripts(global, sandbox && !useLooseSandbox, {
-    scopedGlobalVariables: speedySandbox ? scopedGlobals : [],
+    scopedGlobalVariables: speedySandbox ? cachedGlobals : [],
   });
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
     scriptExports,
