@@ -7,7 +7,7 @@ import { without } from 'lodash';
 import type { SandBox } from '../interfaces';
 import { SandBoxType } from '../interfaces';
 import { isPropertyFrozen, nativeGlobal, nextTask } from '../utils';
-import { overwrittenGlobals, getCurrentRunningApp, getTargetValue, setCurrentRunningApp } from './common';
+import { getCurrentRunningApp, getTargetValue, setCurrentRunningApp } from './common';
 import { globals } from './globals';
 
 type SymbolTarget = 'target' | 'globalContext';
@@ -47,17 +47,32 @@ const globalVariableWhiteList: string[] = [
   ...variableWhiteListInDev,
 ];
 
-// these globals should be recorded in every accessing
-const accessingSpiedGlobals = ['document', 'top', 'parent', 'hasOwnProperty', 'eval'];
+const inTest = process.env.NODE_ENV === 'test';
+const mockSafariTop = 'mockSafariTop';
+const mockTop = 'mockTop';
+const mockGlobalThis = 'mockGlobalThis';
+
+// these globals should be recorded while accessing every time
+const accessingSpiedGlobals = ['document', 'top', 'parent', 'eval'];
+const overwrittenGlobals = ['window', 'self', 'globalThis'].concat(inTest ? [mockGlobalThis] : []);
+export const cachedGlobals = Array.from(
+  new Set(without([...globals, ...overwrittenGlobals, 'requestAnimationFrame'], ...accessingSpiedGlobals)),
+);
+
+// transform cachedGlobals to object for faster element check
+const cachedGlobalObjects = cachedGlobals.reduce((acc, globalProp) => ({ ...acc, [globalProp]: true }), {});
+
 /*
- variables who are impossible to be overwritten need to be escaped from proxy sandbox for performance reasons.
+ Variables who are impossible to be overwritten need to be escaped from proxy sandbox for performance reasons.
+ But overwritten globals must not be escaped, otherwise they will be leaked to the global scope.
  see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/unscopables
  */
-const unscopables = without(globals, ...accessingSpiedGlobals, ...overwrittenGlobals).reduce(
+const unscopables = without(cachedGlobals, ...overwrittenGlobals).reduce(
+  // Notes that babel will transpile spread operator to Object.assign({}, ...args), which will keep the prototype of Object in merged object,
+  // while this result used as Symbol.unscopables, it will make properties in Object.prototype always be escaped from proxy sandbox as unscopables check will look up prototype chain as well,
+  // such as hasOwnProperty, toString, valueOf, etc.
   (acc, key) => ({ ...acc, [key]: true }),
-  {
-    __proto__: null,
-  },
+  {},
 );
 
 const useNativeWindowForBindingsProps = new Map<PropertyKey, boolean>([
@@ -96,7 +111,7 @@ function createFakeWindow(globalContext: Window) {
           p === 'parent' ||
           p === 'self' ||
           p === 'window' ||
-          (process.env.NODE_ENV === 'test' && (p === 'mockTop' || p === 'mockSafariTop'))
+          (inTest && (p === mockTop || p === mockSafariTop))
         ) {
           descriptor.configurable = true;
           /*
@@ -153,7 +168,7 @@ export default class ProxySandbox implements SandBox {
       ]);
     }
 
-    if (process.env.NODE_ENV === 'test' || --activeSandboxCount === 0) {
+    if (inTest || --activeSandboxCount === 0) {
       // reset the global value to the prev value
       Object.keys(this.globalWhitelistPrevDescriptor).forEach((p) => {
         const descriptor = this.globalWhitelistPrevDescriptor[p];
@@ -236,15 +251,11 @@ export default class ProxySandbox implements SandBox {
         }
 
         // hijack globalWindow accessing with globalThis keyword
-        if (p === 'globalThis') {
+        if (p === 'globalThis' || (inTest && p === mockGlobalThis)) {
           return proxy;
         }
 
-        if (
-          p === 'top' ||
-          p === 'parent' ||
-          (process.env.NODE_ENV === 'test' && (p === 'mockTop' || p === 'mockSafariTop'))
-        ) {
+        if (p === 'top' || p === 'parent' || (inTest && (p === mockTop || p === mockSafariTop))) {
           // if your master app in an iframe context, allow these props escape the sandbox
           if (globalContext === globalContext.parent) {
             return proxy;
@@ -286,14 +297,15 @@ export default class ProxySandbox implements SandBox {
       // trap in operator
       // see https://github.com/styled-components/styled-components/blob/master/packages/styled-components/src/constants.js#L12
       has(target: FakeWindow, p: string | number | symbol): boolean {
-        return p in unscopables || p in target || p in globalContext;
+        // property in cachedGlobalObjects must return true to avoid escape from get trap
+        return p in cachedGlobalObjects || p in target || p in globalContext;
       },
 
       getOwnPropertyDescriptor(target: FakeWindow, p: string | number | symbol): PropertyDescriptor | undefined {
         /*
          as the descriptor of top/self/window/mockTop in raw window are configurable but not in proxy target, we need to get it from target to avoid TypeError
          see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/getOwnPropertyDescriptor
-         > A property cannot be reported as non-configurable, if it does not exists as an own property of the target object or if it exists as a configurable own property of the target object.
+         > A property cannot be reported as non-configurable, if it does not existed as an own property of the target object or if it exists as a configurable own property of the target object.
          */
         if (target.hasOwnProperty(p)) {
           const descriptor = Object.getOwnPropertyDescriptor(target, p);

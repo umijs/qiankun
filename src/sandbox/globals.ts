@@ -59,5 +59,5 @@ export const globals = window.Proxy
       'valueOf',
       'WeakMap',
       'WeakSet',
-    ]
+    ].filter((p) => /* just keep the available properties in current window context */ p in window)
   : [];

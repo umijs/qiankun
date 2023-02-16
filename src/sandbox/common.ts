@@ -4,7 +4,6 @@
  */
 
 import { isBoundedFunction, isCallable, isConstructable } from '../utils';
-import { globals } from './globals';
 
 type AppInstance = { name: string; window: WindowProxy };
 let currentRunningApp: AppInstance | null = null;
@@ -20,9 +19,6 @@ export function setCurrentRunningApp(appInstance: { name: string; window: Window
   // Set currentRunningApp and it's proxySandbox to global window, as its only use case is for document.createElement from now on, which hijacked by a global way
   currentRunningApp = appInstance;
 }
-
-export const overwrittenGlobals = ['window', 'self', 'globalThis'];
-export const scopedGlobals = Array.from(new Set([...globals, ...overwrittenGlobals, 'requestAnimationFrame']));
 
 const functionBoundedValueMap = new WeakMap<CallableFunction, CallableFunction>();
 
