@@ -15,9 +15,13 @@ export function getCurrentRunningApp() {
   return currentRunningApp;
 }
 
-export function setCurrentRunningApp(appInstance: { name: string; window: WindowProxy } | null) {
+export function setCurrentRunningApp(appInstance: { name: string; window: WindowProxy }) {
   // Set currentRunningApp and it's proxySandbox to global window, as its only use case is for document.createElement from now on, which hijacked by a global way
   currentRunningApp = appInstance;
+}
+
+export function clearCurrentRunningApp() {
+  currentRunningApp = null;
 }
 
 const functionBoundedValueMap = new WeakMap<CallableFunction, CallableFunction>();

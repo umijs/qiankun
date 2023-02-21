@@ -130,6 +130,7 @@ export type SandBox = {
   sandboxRunning: boolean;
   /** latest set property */
   latestSetProp?: PropertyKey | null;
+  patchDocument: (doc: Document) => void;
   /** 启动沙箱 */
   active: () => void;
   /** 关闭沙箱 */

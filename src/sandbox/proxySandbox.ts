@@ -7,7 +7,7 @@ import { without } from 'lodash';
 import type { SandBox } from '../interfaces';
 import { SandBoxType } from '../interfaces';
 import { isPropertyFrozen, nativeGlobal, nextTask } from '../utils';
-import { getCurrentRunningApp, getTargetValue, setCurrentRunningApp } from './common';
+import { clearCurrentRunningApp, getCurrentRunningApp, getTargetValue, setCurrentRunningApp } from './common';
 import { globals } from './globals';
 
 type SymbolTarget = 'target' | 'globalContext';
@@ -153,7 +153,11 @@ export default class ProxySandbox implements SandBox {
   type: SandBoxType;
 
   proxy: WindowProxy;
+
   sandboxRunning = true;
+
+  private document = document;
+
   latestSetProp: PropertyKey | null = null;
 
   active() {
@@ -269,7 +273,7 @@ export default class ProxySandbox implements SandBox {
         }
 
         if (p === 'document') {
-          return document;
+          return this.document;
         }
 
         if (p === 'eval') {
@@ -316,7 +320,7 @@ export default class ProxySandbox implements SandBox {
         if (globalContext.hasOwnProperty(p)) {
           const descriptor = Object.getOwnPropertyDescriptor(globalContext, p);
           descriptorTargetMap.set(p, 'globalContext');
-          // A property cannot be reported as non-configurable, if it does not exists as an own property of the target object
+          // A property cannot be reported as non-configurable, if it does not exist as an own property of the target object
           if (descriptor && !descriptor.configurable) {
             descriptor.configurable = true;
           }
@@ -331,7 +335,7 @@ export default class ProxySandbox implements SandBox {
         return uniq(Reflect.ownKeys(globalContext).concat(Reflect.ownKeys(target)));
       },
 
-      defineProperty(target: Window, p: PropertyKey, attributes: PropertyDescriptor): boolean {
+      defineProperty: (target: Window, p: PropertyKey, attributes: PropertyDescriptor): boolean => {
         const from = descriptorTargetMap.get(p);
         /*
          Descriptor must be defined to native window while it comes from native window via Object.getOwnPropertyDescriptor(window, p),
@@ -369,6 +373,10 @@ export default class ProxySandbox implements SandBox {
     activeSandboxCount++;
   }
 
+  public patchDocument(doc: Document) {
+    this.document = doc;
+  }
+
   private registerRunningApp(name: string, proxy: Window) {
     if (this.sandboxRunning) {
       const currentRunningApp = getCurrentRunningApp();
@@ -378,9 +386,7 @@ export default class ProxySandbox implements SandBox {
       // FIXME if you have any other good ideas
       // remove the mark in next tick, thus we can identify whether it in micro app or not
       // this approach is just a workaround, it could not cover all complex cases, such as the micro app runs in the same task context with master in some case
-      nextTask(() => {
-        setCurrentRunningApp(null);
-      });
+      nextTask(clearCurrentRunningApp);
     }
   }
 }

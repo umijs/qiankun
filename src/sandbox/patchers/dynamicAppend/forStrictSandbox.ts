@@ -3,7 +3,8 @@
  * @since 2020-10-13
  */
 
-import type { Freer } from '../../../interfaces';
+import { noop } from 'lodash';
+import type { Freer, SandBox } from '../../../interfaces';
 import { nativeGlobal } from '../../../utils';
 import { getCurrentRunningApp } from '../../common';
 import type { ContainerConfig } from './common';
@@ -31,9 +32,48 @@ const proxyAttachContainerConfigMap: WeakMap<WindowProxy, ContainerConfig> =
 const elementAttachContainerConfigMap = new WeakMap<HTMLElement, ContainerConfig>();
 
 const docCreatePatchedMap = new WeakMap<typeof document.createElement, typeof document.createElement>();
-function patchDocumentCreateElement() {
-  const docCreateElementFnBeforeOverwrite = docCreatePatchedMap.get(document.createElement);
 
+function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
+  const { sandbox, speedy } = cfg;
+
+  const attachElementToProxy = (element: HTMLElement, proxy: Window) => {
+    const proxyContainerConfig = proxyAttachContainerConfigMap.get(proxy);
+    if (proxyContainerConfig) {
+      elementAttachContainerConfigMap.set(element, proxyContainerConfig);
+    }
+  };
+
+  if (speedy) {
+    const proxyDocument = new Proxy(document, {
+      set: (target, p, value) => {
+        (<any>target)[p] = value;
+        return true;
+      },
+      get: (target, p) => {
+        if (p === 'createElement') {
+          return (...args: Parameters<typeof document.createElement>) => {
+            const element = document.createElement(...args);
+            attachElementToProxy(element, sandbox.proxy);
+            return element;
+          };
+        }
+
+        const value = (<any>target)[p];
+        // must rebind the function to the target otherwise it will cause illegal invocation error
+        if (typeof value === 'function') {
+          return value.bind(target);
+        }
+
+        return value;
+      },
+    });
+
+    sandbox.patchDocument(proxyDocument);
+
+    return noop;
+  }
+
+  const docCreateElementFnBeforeOverwrite = docCreatePatchedMap.get(document.createElement);
   if (!docCreateElementFnBeforeOverwrite) {
     const rawDocumentCreateElement = document.createElement;
     Document.prototype.createElement = function createElement<K extends keyof HTMLElementTagNameMap>(
@@ -45,10 +85,7 @@ function patchDocumentCreateElement() {
       if (isHijackingTag(tagName)) {
         const { window: currentRunningSandboxProxy } = getCurrentRunningApp() || {};
         if (currentRunningSandboxProxy) {
-          const proxyContainerConfig = proxyAttachContainerConfigMap.get(currentRunningSandboxProxy);
-          if (proxyContainerConfig) {
-            elementAttachContainerConfigMap.set(element, proxyContainerConfig);
-          }
+          attachElementToProxy(element, currentRunningSandboxProxy);
         }
       }
 
@@ -74,12 +111,13 @@ function patchDocumentCreateElement() {
 export function patchStrictSandbox(
   appName: string,
   appWrapperGetter: () => HTMLElement | ShadowRoot,
-  proxy: Window,
+  sandbox: SandBox,
   mounting = true,
   scopedCSS = false,
   excludeAssetFilter?: CallableFunction,
   speedySandbox = false,
 ): Freer {
+  const { proxy } = sandbox;
   let containerConfig = proxyAttachContainerConfigMap.get(proxy);
   if (!containerConfig) {
     containerConfig = {
@@ -97,7 +135,7 @@ export function patchStrictSandbox(
   // all dynamic style sheets are stored in proxy container
   const { dynamicStyleSheetElements } = containerConfig;
 
-  const unpatchDocumentCreate = patchDocumentCreateElement();
+  const unpatchDocumentCreate = patchDocument({ sandbox, speedy: speedySandbox });
 
   const unpatchDynamicAppendPrototypeFunctions = patchHTMLDynamicAppendPrototypeFunctions(
     (element) => elementAttachContainerConfigMap.has(element),

@@ -155,4 +155,6 @@ export default class LegacySandbox implements SandBox {
 
     this.proxy = proxy;
   }
+
+  patchDocument(): void {}
 }

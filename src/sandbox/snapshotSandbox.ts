@@ -69,4 +69,6 @@ export default class SnapshotSandbox implements SandBox {
 
     this.sandboxRunning = false;
   }
+
+  patchDocument(): void {}
 }
