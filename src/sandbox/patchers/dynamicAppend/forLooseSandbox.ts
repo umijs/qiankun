@@ -4,7 +4,7 @@
  */
 
 import { checkActivityFunctions } from 'single-spa';
-import type { Freer } from '../../../interfaces';
+import type { Freer, SandBox } from '../../../interfaces';
 import {
   calcAppCount,
   isAllAppsUnmounted,
@@ -16,10 +16,10 @@ import {
 /**
  * Just hijack dynamic head append, that could avoid accidentally hijacking the insertion of elements except in head.
  * Such a case: ReactDOM.createPortal(<style>.test{color:blue}</style>, container),
- * this could made we append the style element into app wrapper but it will cause an error while the react portal unmounting, as ReactDOM could not find the style in body children list.
+ * this could make we append the style element into app wrapper but it will cause an error while the react portal unmounting, as ReactDOM could not find the style in body children list.
  * @param appName
  * @param appWrapperGetter
- * @param proxy
+ * @param sandbox
  * @param mounting
  * @param scopedCSS
  * @param excludeAssetFilter
@@ -27,20 +27,22 @@ import {
 export function patchLooseSandbox(
   appName: string,
   appWrapperGetter: () => HTMLElement | ShadowRoot,
-  proxy: Window,
+  sandbox: SandBox,
   mounting = true,
   scopedCSS = false,
   excludeAssetFilter?: CallableFunction,
 ): Freer {
+  const { proxy } = sandbox;
+
   let dynamicStyleSheetElements: Array<HTMLLinkElement | HTMLStyleElement> = [];
 
   const unpatchDynamicAppendPrototypeFunctions = patchHTMLDynamicAppendPrototypeFunctions(
     /*
       check if the currently specified application is active
       While we switch page from qiankun app to a normal react routing page, the normal one may load stylesheet dynamically while page rendering,
-      but the url change listener must to wait until the current call stack is flushed.
+      but the url change listener must wait until the current call stack is flushed.
       This scenario may cause we record the stylesheet from react routing page dynamic injection,
-      and remove them after the url change triggered and qiankun app is unmouting
+      and remove them after the url change triggered and qiankun app is unmounting
       see https://github.com/ReactTraining/history/blob/master/modules/createHashHistory.js#L222-L230
      */
     () => checkActivityFunctions(window.location).some((name) => name === appName),
