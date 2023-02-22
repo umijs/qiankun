@@ -158,6 +158,8 @@ export function getWrapperId(name: string) {
 
 export const nativeGlobal = new Function('return this')();
 
+export const nativeDocument = new Function('return document')();
+
 const getGlobalAppInstanceMap = once<() => Record<string, number>>(() => {
   if (!nativeGlobal.hasOwnProperty('__app_instance_name_map__')) {
     Object.defineProperty(nativeGlobal, '__app_instance_name_map__', {

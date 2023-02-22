@@ -3,9 +3,8 @@
  * @since 2020-10-13
  */
 
-import { noop } from 'lodash';
 import type { Freer, SandBox } from '../../../interfaces';
-import { nativeGlobal } from '../../../utils';
+import { nativeDocument, nativeGlobal } from '../../../utils';
 import { getCurrentRunningApp } from '../../common';
 import type { ContainerConfig } from './common';
 import {
@@ -70,7 +69,21 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
 
     sandbox.patchDocument(proxyDocument);
 
-    return noop;
+    // patch MutationObserver.prototype.observe to avoid type error
+    // https://github.com/umijs/qiankun/issues/2406
+    const nativeMutationObserverObserveFn = MutationObserver.prototype.observe;
+    MutationObserver.prototype.observe = function observe(
+      this: MutationObserver,
+      target: Node,
+      options: MutationObserverInit,
+    ) {
+      const realTarget = target instanceof Document ? nativeDocument : target;
+      return nativeMutationObserverObserveFn.call(this, realTarget, options);
+    };
+
+    return () => {
+      MutationObserver.prototype.observe = nativeMutationObserverObserveFn;
+    };
   }
 
   const docCreateElementFnBeforeOverwrite = docCreatePatchedMap.get(document.createElement);
