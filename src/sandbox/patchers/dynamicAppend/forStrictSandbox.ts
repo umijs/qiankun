@@ -4,7 +4,7 @@
  */
 
 import type { Freer, SandBox } from '../../../interfaces';
-import { nativeDocument, nativeGlobal } from '../../../utils';
+import { isBoundedFunction, nativeDocument, nativeGlobal } from '../../../utils';
 import { getCurrentRunningApp } from '../../common';
 import type { ContainerConfig } from './common';
 import {
@@ -59,7 +59,7 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
 
         const value = (<any>target)[p];
         // must rebind the function to the target otherwise it will cause illegal invocation error
-        if (typeof value === 'function') {
+        if (typeof value === 'function' && !isBoundedFunction(value)) {
           return value.bind(target);
         }
 
