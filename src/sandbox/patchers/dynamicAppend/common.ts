@@ -203,10 +203,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
     refChild: Node | null = null,
   ) {
     let element = newChild as any;
-    const { rawDOMAppendOrInsertBefore, isInvokedByMicroApp, containerConfigGetter, target = 'body' } = opts;
-    if (!isHijackingTag(element.tagName) || !isInvokedByMicroApp(element)) {
-      return rawDOMAppendOrInsertBefore.call(this, element, refChild) as T;
-    }
+    const { rawDOMAppendOrInsertBefore, containerConfigGetter, target = 'body' } = opts;
 
     if (element.tagName) {
       const containerConfig = containerConfigGetter(element);
@@ -220,6 +217,12 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
         scopedCSS,
         excludeAssetFilter,
       } = containerConfig;
+
+      const appWrapper = appWrapperGetter();
+
+      if(!appName) {
+        return rawDOMAppendOrInsertBefore.call(this, element, refChild) as T;
+      }
 
       switch (element.tagName) {
         case LINK_TAG_NAME:
@@ -235,8 +238,6 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
             writable: true,
             configurable: true,
           });
-
-          const appWrapper = appWrapperGetter();
 
           if (scopedCSS) {
             // exclude link elements like <link rel="icon" href="favicon.ico">
@@ -274,7 +275,6 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
             return rawDOMAppendOrInsertBefore.call(this, element, refChild) as T;
           }
 
-          const appWrapper = appWrapperGetter();
           const mountDOM = target === 'head' ? getAppWrapperHeadElement(appWrapper) : appWrapper;
 
           const { fetch } = frameworkConfiguration;
@@ -334,7 +334,9 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
         }
 
         default:
-          break;
+          if(scopedCSS && target === 'body' && !appWrapper.contains(element)) {
+            return rawDOMAppendOrInsertBefore.call(appWrapper, element, refChild);
+          }
       }
     }
 
@@ -349,7 +351,6 @@ function getNewRemoveChild(
 ) {
   return function removeChild<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, child: T) {
     const { tagName } = child as any;
-    if (!isHijackingTag(tagName)) return headOrBodyRemoveChild.call(this, child) as T;
 
     try {
       let attachedElement: Node;

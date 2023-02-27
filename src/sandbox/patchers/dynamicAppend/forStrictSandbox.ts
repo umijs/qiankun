@@ -11,7 +11,6 @@ import {
   calcAppCount,
   getAppWrapperHeadElement,
   isAllAppsUnmounted,
-  isHijackingTag,
   patchHTMLDynamicAppendPrototypeFunctions,
   rawHeadAppendChild,
   rebuildCSSRules,
@@ -134,12 +133,10 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
       options?: ElementCreationOptions,
     ): HTMLElement {
       const element = rawDocumentCreateElement.call(this, tagName, options);
-      if (isHijackingTag(tagName)) {
         const { window: currentRunningSandboxProxy } = getCurrentRunningApp() || {};
         if (currentRunningSandboxProxy) {
           attachElementToProxy(element, currentRunningSandboxProxy);
         }
-      }
 
       return element;
     };
