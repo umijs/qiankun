@@ -29,8 +29,12 @@ const proxyAttachContainerConfigMap: WeakMap<WindowProxy, ContainerConfig> =
   nativeGlobal.__proxyAttachContainerConfigMap__;
 
 const elementAttachContainerConfigMap = new WeakMap<HTMLElement, ContainerConfig>();
-
 const docCreatePatchedMap = new WeakMap<typeof document.createElement, typeof document.createElement>();
+const mutationObserverPatchedMap = new WeakMap<
+  typeof MutationObserver.prototype.observe,
+  typeof MutationObserver.prototype.observe
+>();
+const parentNodePatchedMap = new WeakMap<PropertyDescriptor, PropertyDescriptor>();
 
 function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
   const { sandbox, speedy } = cfg;
@@ -74,17 +78,50 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
     // patch MutationObserver.prototype.observe to avoid type error
     // https://github.com/umijs/qiankun/issues/2406
     const nativeMutationObserverObserveFn = MutationObserver.prototype.observe;
-    MutationObserver.prototype.observe = function observe(
-      this: MutationObserver,
-      target: Node,
-      options: MutationObserverInit,
-    ) {
-      const realTarget = target instanceof Document ? nativeDocument : target;
-      return nativeMutationObserverObserveFn.call(this, realTarget, options);
-    };
+    if (!mutationObserverPatchedMap.has(nativeMutationObserverObserveFn)) {
+      const observe = function observe(this: MutationObserver, target: Node, options: MutationObserverInit) {
+        const realTarget = target instanceof Document ? nativeDocument : target;
+        return nativeMutationObserverObserveFn.call(this, realTarget, options);
+      };
+
+      MutationObserver.prototype.observe = observe;
+      mutationObserverPatchedMap.set(nativeMutationObserverObserveFn, observe);
+    }
+
+    // patch parentNode getter to avoid document === html.parentNode
+    // https://github.com/umijs/qiankun/issues/2408#issuecomment-1446229105
+    const parentNodeDescriptor = Object.getOwnPropertyDescriptor(Node.prototype, 'parentNode');
+    if (parentNodeDescriptor && !parentNodePatchedMap.has(parentNodeDescriptor)) {
+      const { get: parentNodeGetter, configurable } = parentNodeDescriptor;
+      if (parentNodeGetter && configurable) {
+        const patchedParentNodeDescriptor = {
+          ...parentNodeDescriptor,
+          get(this: Node) {
+            const parentNode = parentNodeGetter.call(this);
+            if (parentNode instanceof Document) {
+              const proxy = getCurrentRunningApp()?.window;
+              if (proxy) {
+                return proxy.document;
+              }
+            }
+
+            return parentNode;
+          },
+        };
+        Object.defineProperty(Node.prototype, 'parentNode', patchedParentNodeDescriptor);
+
+        parentNodePatchedMap.set(parentNodeDescriptor, patchedParentNodeDescriptor);
+      }
+    }
 
     return () => {
       MutationObserver.prototype.observe = nativeMutationObserverObserveFn;
+      mutationObserverPatchedMap.delete(nativeMutationObserverObserveFn);
+
+      if (parentNodeDescriptor) {
+        Object.defineProperty(Node.prototype, 'parentNode', parentNodeDescriptor);
+        parentNodePatchedMap.delete(parentNodeDescriptor);
+      }
     };
   }
 
@@ -150,7 +187,7 @@ export function patchStrictSandbox(
   // all dynamic style sheets are stored in proxy container
   const { dynamicStyleSheetElements } = containerConfig;
 
-  const unpatchDocumentCreate = patchDocument({ sandbox, speedy: speedySandbox });
+  const unpatchDocument = patchDocument({ sandbox, speedy: speedySandbox });
 
   const unpatchDynamicAppendPrototypeFunctions = patchHTMLDynamicAppendPrototypeFunctions(
     (element) => elementAttachContainerConfigMap.has(element),
@@ -167,7 +204,7 @@ export function patchStrictSandbox(
     // release the overwritten prototype after all the micro apps unmounted
     if (isAllAppsUnmounted()) {
       unpatchDynamicAppendPrototypeFunctions();
-      unpatchDocumentCreate();
+      unpatchDocument();
     }
 
     recordStyledComponentsCSSRules(dynamicStyleSheetElements);
