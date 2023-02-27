@@ -50,8 +50,10 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
       },
       get: (target, p) => {
         if (p === 'createElement') {
-          return (...args: Parameters<typeof document.createElement>) => {
-            const element = document.createElement(...args);
+          // Must store the original createElement function to avoid error in nested sandbox
+          const targetCreateElement = target.createElement;
+          return function createElement(...args: Parameters<typeof document.createElement>) {
+            const element = targetCreateElement.call(target, ...args);
             attachElementToProxy(element, sandbox.proxy);
             return element;
           };
