@@ -259,11 +259,10 @@ export async function loadApp<T extends ObjectType>(
     sandbox = true,
     excludeAssetFilter,
     globalContext = window,
-    ...importEntryOpts
   } = configuration;
 
   // get the entry html content and script executor
-  const { template, execScripts, assetPublicPath, getExternalScripts } = await importEntry(entry, importEntryOpts);
+  const { template, execScripts, assetPublicPath, getExternalScripts } = await importEntry(entry);
   // trigger external scripts loading to make sure all assets are ready before execScripts calling
   await getExternalScripts();
 
