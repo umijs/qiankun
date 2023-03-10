@@ -80,7 +80,7 @@ const useNativeWindowForBindingsProps = new Map<PropertyKey, boolean>([
   ['mockDomAPIInBlackList', process.env.NODE_ENV === 'test'],
 ]);
 
-function createFakeWindow(globalContext: Window) {
+function createFakeWindow(globalContext: Window, speedy: boolean) {
   // map always has the fastest performance in has check scenario
   // see https://jsperf.com/array-indexof-vs-set-has/23
   const propertiesWithGetter = new Map<PropertyKey, boolean>();
@@ -111,6 +111,8 @@ function createFakeWindow(globalContext: Window) {
           p === 'parent' ||
           p === 'self' ||
           p === 'window' ||
+          // window.document is overwriting in speedy mode
+          (p === 'document' && speedy) ||
           (inTest && (p === mockTop || p === mockSafariTop))
         ) {
           descriptor.configurable = true;
@@ -193,13 +195,14 @@ export default class ProxySandbox implements SandBox {
     {};
   globalContext: typeof window;
 
-  constructor(name: string, globalContext = window) {
+  constructor(name: string, globalContext = window, opts?: { speedy: boolean }) {
     this.name = name;
     this.globalContext = globalContext;
     this.type = SandBoxType.Proxy;
     const { updatedValueSet } = this;
+    const { speedy } = opts || {};
 
-    const { fakeWindow, propertiesWithGetter } = createFakeWindow(globalContext);
+    const { fakeWindow, propertiesWithGetter } = createFakeWindow(globalContext, !!speedy);
 
     const descriptorTargetMap = new Map<PropertyKey, SymbolTarget>();
     const hasOwnProperty = (key: PropertyKey) => fakeWindow.hasOwnProperty(key) || globalContext.hasOwnProperty(key);
