@@ -397,7 +397,7 @@ export function patchHTMLDynamicAppendPrototypeFunctions(
   isInvokedByMicroApp: (element: HTMLElement) => boolean,
   containerConfigGetter: (element: HTMLElement) => ContainerConfig,
 ) {
-  // Just overwrite it while it have not been overwrite
+  // Just overwrite it while it have not been overwritten
   if (
     HTMLHeadElement.prototype.appendChild === rawHeadAppendChild &&
     HTMLBodyElement.prototype.appendChild === rawBodyAppendChild &&
@@ -424,7 +424,7 @@ export function patchHTMLDynamicAppendPrototypeFunctions(
     }) as typeof rawHeadInsertBefore;
   }
 
-  // Just overwrite it while it have not been overwrite
+  // Just overwrite it while it have not been overwritten
   if (
     HTMLHeadElement.prototype.removeChild === rawHeadRemoveChild &&
     HTMLBodyElement.prototype.removeChild === rawBodyRemoveChild
