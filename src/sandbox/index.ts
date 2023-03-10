@@ -42,12 +42,14 @@ export function createSandboxContainer(
 ) {
   let sandbox: SandBox;
   if (window.Proxy) {
-    sandbox = useLooseSandbox ? new LegacySandbox(appName, globalContext) : new ProxySandbox(appName, globalContext);
+    sandbox = useLooseSandbox
+      ? new LegacySandbox(appName, globalContext)
+      : new ProxySandbox(appName, globalContext, { speedy: !!speedySandBox });
   } else {
     sandbox = new SnapshotSandbox(appName);
   }
 
-  // some side effect could be be invoked while bootstrapping, such as dynamic stylesheet injection with style-loader, especially during the development phase
+  // some side effect could be invoked while bootstrapping, such as dynamic stylesheet injection with style-loader, especially during the development phase
   const bootstrappingFreers = patchAtBootstrapping(
     appName,
     elementGetter,
