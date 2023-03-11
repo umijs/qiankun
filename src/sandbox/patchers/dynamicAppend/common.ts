@@ -346,10 +346,12 @@ function getNewRemoveChild(
   headOrBodyRemoveChild: typeof HTMLElement.prototype.removeChild,
   containerConfigGetter: (element: HTMLElement) => ContainerConfig,
   target: DynamicDomMutationTarget,
+  isInvokedByMicroApp: (element: HTMLElement) => boolean,
 ) {
   return function removeChild<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, child: T) {
     const { tagName } = child as any;
-    if (!isHijackingTag(tagName)) return headOrBodyRemoveChild.call(this, child) as T;
+    if (!isHijackingTag(tagName) || !isInvokedByMicroApp(child as any))
+      return headOrBodyRemoveChild.call(this, child) as T;
 
     try {
       let attachedElement: Node;
@@ -397,7 +399,7 @@ export function patchHTMLDynamicAppendPrototypeFunctions(
   isInvokedByMicroApp: (element: HTMLElement) => boolean,
   containerConfigGetter: (element: HTMLElement) => ContainerConfig,
 ) {
-  // Just overwrite it while it have not been overwrite
+  // Just overwrite it while it have not been overwritten
   if (
     HTMLHeadElement.prototype.appendChild === rawHeadAppendChild &&
     HTMLBodyElement.prototype.appendChild === rawBodyAppendChild &&
@@ -424,13 +426,23 @@ export function patchHTMLDynamicAppendPrototypeFunctions(
     }) as typeof rawHeadInsertBefore;
   }
 
-  // Just overwrite it while it have not been overwrite
+  // Just overwrite it while it have not been overwritten
   if (
     HTMLHeadElement.prototype.removeChild === rawHeadRemoveChild &&
     HTMLBodyElement.prototype.removeChild === rawBodyRemoveChild
   ) {
-    HTMLHeadElement.prototype.removeChild = getNewRemoveChild(rawHeadRemoveChild, containerConfigGetter, 'head');
-    HTMLBodyElement.prototype.removeChild = getNewRemoveChild(rawBodyRemoveChild, containerConfigGetter, 'body');
+    HTMLHeadElement.prototype.removeChild = getNewRemoveChild(
+      rawHeadRemoveChild,
+      containerConfigGetter,
+      'head',
+      isInvokedByMicroApp,
+    );
+    HTMLBodyElement.prototype.removeChild = getNewRemoveChild(
+      rawBodyRemoveChild,
+      containerConfigGetter,
+      'body',
+      isInvokedByMicroApp,
+    );
   }
 
   return function unpatch() {
