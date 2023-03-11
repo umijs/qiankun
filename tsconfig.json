@@ -24,7 +24,10 @@
     "typeRoots": ["typings", "node_modules/@types"],
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "paths": {
+      "qiankun": ["./src"]
+    }
   },
   "exclude": ["node_modules", "examples"]
 }
