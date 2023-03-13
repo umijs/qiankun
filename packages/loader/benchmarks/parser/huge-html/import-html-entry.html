@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>import html entry for huge html</title>
+</head>
+<body>
+
+<script type="module">
+  import * as bench from '/bench.js';
+  import processTpl from 'import-html-entry/esm/process-tpl.js';
+  import { hugeHtmlContent } from './huge-html.js';
+
+  bench.start();
+  processTpl(hugeHtmlContent, location.href);
+  bench.stop();
+</script>
+</body>
+</html>

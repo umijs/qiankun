@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>parser for huge html</title>
+</head>
+<body>
+
+<script type="module">
+  import * as bench from '/bench.js';
+  import { parseHTML } from '../../../es/parser.js';
+  import { hugeHtmlContent } from './huge-html.js';
+
+  bench.start();
+  parseHTML(hugeHtmlContent, location.href);
+  bench.stop();
+</script>
+</body>
+</html>
