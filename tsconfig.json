@@ -6,7 +6,7 @@
     "declaration": true,
     "outDir": "./esm",
     "rootDir": "./",
-    "importHelpers": true,
+    "importHelpers": false,
     "downlevelIteration": true,
     "strict": true,
     "noImplicitAny": true,
@@ -25,7 +25,7 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "experimentalDecorators": true,
-    "skipLibCheck": true
+    "skipLibCheck": false
   },
   "exclude": ["node_modules", "examples"]
 }

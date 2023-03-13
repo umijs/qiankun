@@ -32,10 +32,6 @@
     "ts-jest": "^25.2.1",
     "umi-plugin-hire": "^1.0.3"
   },
-  "resolutions": {
-    "@types/react": "^17.x",
-    "@types/history": "^4.x"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kuitos/qiankun.git"
@@ -83,5 +79,5 @@
       "/dist/"
     ]
   },
-  "packageManager": "pnpm@6.23.0"
+  "packageManager": "pnpm@7.3.0"
 }
