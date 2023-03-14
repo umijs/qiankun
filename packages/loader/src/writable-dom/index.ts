@@ -33,8 +33,15 @@ let createDocument = (target: ParentNode, nextSibling: ChildNode | null): Docume
   return createDocument(target, nextSibling);
 };
 
-// @ts-ignore
-export = function writableDOM(
+type WritableDOM = {
+  new (
+    target: ParentNode,
+    previousSibling?: ChildNode | null,
+    assetTransformer?: (node: Node) => Node,
+  ): WritableStream<string>;
+  (target: ParentNode, previousSibling?: ChildNode | null, assetTransformer?: (node: Node) => Node): Writable;
+};
+function writableDOM(
   this: unknown,
   target: ParentNode,
   previousSibling?: ChildNode | null,
@@ -145,14 +152,9 @@ export = function writableDOM(
       if (resolve) resolve();
     }
   }
-} as {
-  new (
-    target: ParentNode,
-    previousSibling?: ChildNode | null,
-    assetTransformer?: (node: Node) => Node,
-  ): WritableStream<string>;
-  (target: ParentNode, previousSibling?: ChildNode | null): Writable;
-};
+}
+
+export default writableDOM as WritableDOM;
 
 function isBlocking(node: any): node is HTMLElement {
   return (

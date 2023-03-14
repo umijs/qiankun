@@ -2,23 +2,29 @@
   "name": "@qiankunjs/loader",
   "version": "0.0.1",
   "description": "",
-  "main": "./lib/index.ts",
-  "module": "./es/index.js",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
   "scripts": {
-    "build": "father-build",
+    "build": "father build",
     "test": "cross-env NODE_ENV=test jest",
     "bench": "npm run build && tachometer ./benchmarks/parser/import-html-entry.html ./benchmarks/parser/parser.html ./benchmarks/parser/huge-html/import-html-entry.html ./benchmarks/parser/huge-html/parser.html --timeout=1"
   },
-  "author": "",
+  "author": "Kuitos",
   "license": "MIT",
   "dependencies": {
-    "@babel/runtime": "^7.10.5"
+    "@babel/runtime": "^7.10.5",
+    "lodash": "^4.17.11"
   },
   "devDependencies": {
+    "@types/lodash": "^4.14.129",
     "babel-plugin-import": "^1.12.1",
-    "father-build": "^1.7.0",
+    "father": "^4.1.0",
     "import-html-entry": "^1.12.0",
     "tachometer": "^0.5.10",
     "typescript": "^4.1.2"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }
