@@ -16,8 +16,11 @@ export function sleep(ms: number) {
 }
 
 // Promise.then might be synchronized in Zone.js context, we need to use setTimeout instead to mock next tick.
+// Since zone.js will hijack the setTimeout callback, and notify angular to do change detection, so we need to use the  __zone_symbol__setTimeout to avoid this, see https://github.com/umijs/qiankun/issues/2384
 const nextTick: (cb: () => void) => void =
-  typeof window.Zone === 'function' ? setTimeout : (cb) => Promise.resolve().then(cb);
+  typeof window.__zone_symbol__setTimeout === 'function'
+    ? window.__zone_symbol__setTimeout
+    : (cb) => Promise.resolve().then(cb);
 
 let globalTaskPending = false;
 
