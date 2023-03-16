@@ -37,6 +37,7 @@ importers:
   packages/loader:
     specifiers:
       '@babel/runtime': ^7.10.5
+      '@qiankunjs/sandbox': ^0.0.1
       '@types/lodash': ^4.14.129
       babel-plugin-import: ^1.12.1
       father: ^4.1.0
@@ -48,6 +49,7 @@ importers:
       '@babel/runtime': 7.21.0
       lodash: 4.17.21
     devDependencies:
+      '@qiankunjs/sandbox': link:../sandbox
       '@types/lodash': 4.14.191
       babel-plugin-import: 1.13.6
       father: 4.1.6
@@ -59,6 +61,7 @@ importers:
     specifiers:
       '@babel/runtime': ^7.10.5
       '@qiankunjs/loader': ^0.0.1
+      '@qiankunjs/sandbox': ^0.0.1
       '@types/jest': ^25.1.4
       '@types/lodash': ^4.14.129
       '@types/vfile-message': 1.x
@@ -77,6 +80,7 @@ importers:
     dependencies:
       '@babel/runtime': 7.21.0
       '@qiankunjs/loader': link:../loader
+      '@qiankunjs/sandbox': link:../sandbox
       import-html-entry: 1.14.3
       lodash: 4.17.21
       single-spa: 5.9.4
@@ -97,14 +101,20 @@ importers:
   packages/sandbox:
     specifiers:
       '@babel/runtime': ^7.10.5
+      '@types/lodash': ^4.14.129
+      '@types/node': ^18.15.3
       babel-plugin-import: ^1.12.1
       father: ^4.1.0
+      lodash: ^4.17.11
       typescript: ^4.1.2
     dependencies:
       '@babel/runtime': 7.21.0
+      '@types/node': 18.15.3
+      lodash: 4.17.21
     devDependencies:
+      '@types/lodash': 4.14.191
       babel-plugin-import: 1.13.6
-      father: 4.1.6
+      father: 4.1.6_@types+node@18.15.3
       typescript: 4.9.5
 
 packages:
@@ -2060,7 +2070,7 @@ packages:
     dependencies:
       '@types/istanbul-lib-coverage': 2.0.4
       '@types/istanbul-reports': 3.0.1
-      '@types/node': 18.14.6
+      '@types/node': 18.15.3
       '@types/yargs': 16.0.5
       chalk: 4.1.2
     dev: true
@@ -2072,7 +2082,7 @@ packages:
       '@jest/schemas': 29.4.3
       '@types/istanbul-lib-coverage': 2.0.4
       '@types/istanbul-reports': 3.0.1
-      '@types/node': 18.14.6
+      '@types/node': 18.15.3
       '@types/yargs': 17.0.22
       chalk: 4.1.2
     dev: true
@@ -2145,6 +2155,16 @@ packages:
       - '@types/node'
     dev: true
 
+  /@microsoft/api-extractor-model/7.26.3_@types+node@18.15.3:
+    resolution: {integrity: sha512-1Y/JOkaCF5zE6P56saA0yPzEb7ZJwoF2d8fUYdzZY4I0p1gmqGbNk1h9WguvrN5hANg+2CaqcOX0eh+l4SAhJw==, tarball: '@microsoft/api-extractor-model/download/@microsoft/api-extractor-model-7.26.3.tgz'}
+    dependencies:
+      '@microsoft/tsdoc': 0.14.2
+      '@microsoft/tsdoc-config': 0.16.2
+      '@rushstack/node-core-library': 3.55.1_@types+node@18.15.3
+    transitivePeerDependencies:
+      - '@types/node'
+    dev: true
+
   /@microsoft/api-extractor/7.34.3:
     resolution: {integrity: sha512-vXpU+i/MMinVzDxbLo3of1Sx/IS5bwOZl4XrX8YyqNBXFvovEer5ex0wckWumkBErDZtLOMp3zhZfYL3W7h3cg==, tarball: '@microsoft/api-extractor/download/@microsoft/api-extractor-7.34.3.tgz'}
     hasBin: true
@@ -2153,6 +2173,26 @@ packages:
       '@microsoft/tsdoc': 0.14.2
       '@microsoft/tsdoc-config': 0.16.2
       '@rushstack/node-core-library': 3.55.1
+      '@rushstack/rig-package': 0.3.17
+      '@rushstack/ts-command-line': 4.13.1
+      colors: 1.2.5
+      lodash: 4.17.21
+      resolve: 1.22.1
+      semver: 7.3.8
+      source-map: 0.6.1
+      typescript: 4.8.4
+    transitivePeerDependencies:
+      - '@types/node'
+    dev: true
+
+  /@microsoft/api-extractor/7.34.3_@types+node@18.15.3:
+    resolution: {integrity: sha512-vXpU+i/MMinVzDxbLo3of1Sx/IS5bwOZl4XrX8YyqNBXFvovEer5ex0wckWumkBErDZtLOMp3zhZfYL3W7h3cg==, tarball: '@microsoft/api-extractor/download/@microsoft/api-extractor-7.34.3.tgz'}
+    hasBin: true
+    dependencies:
+      '@microsoft/api-extractor-model': 7.26.3_@types+node@18.15.3
+      '@microsoft/tsdoc': 0.14.2
+      '@microsoft/tsdoc-config': 0.16.2
+      '@rushstack/node-core-library': 3.55.1_@types+node@18.15.3
       '@rushstack/rig-package': 0.3.17
       '@rushstack/ts-command-line': 4.13.1
       colors: 1.2.5
@@ -2251,6 +2291,24 @@ packages:
       '@types/node':
         optional: true
     dependencies:
+      colors: 1.2.5
+      fs-extra: 7.0.1
+      import-lazy: 4.0.0
+      jju: 1.4.0
+      resolve: 1.22.1
+      semver: 7.3.8
+      z-schema: 5.0.5
+    dev: true
+
+  /@rushstack/node-core-library/3.55.1_@types+node@18.15.3:
+    resolution: {integrity: sha512-t/nZHq4/4S3ltpYVyIsbbIqmcZx3qEe3Aaw8tI9B6XRNqCFzPxtoTopqTPTuRn8XqCtoDaSe6uMlnn7YCTu8lQ==, tarball: '@rushstack/node-core-library/download/@rushstack/node-core-library-3.55.1.tgz'}
+    peerDependencies:
+      '@types/node': '*'
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
+    dependencies:
+      '@types/node': 18.15.3
       colors: 1.2.5
       fs-extra: 7.0.1
       import-lazy: 4.0.0
@@ -2563,13 +2621,13 @@ packages:
     resolution: {integrity: sha1-vBtb86qS8lvV3TnzXFc2G9zlsus=, tarball: '@types/glob/download/@types/glob-7.2.0.tgz'}
     dependencies:
       '@types/minimatch': 5.1.2
-      '@types/node': 18.14.6
+      '@types/node': 18.15.3
     dev: true
 
   /@types/graceful-fs/4.1.6:
     resolution: {integrity: sha512-Sig0SNORX9fdW+bQuTEovKj3uHcUL6LQKbCrrqb1X7J6/ReAbhCXRAhc+SMejhLELFj2QcyuxmUooZ4bt5ReSw==, tarball: '@types/graceful-fs/download/@types/graceful-fs-4.1.6.tgz'}
     dependencies:
-      '@types/node': 18.14.6
+      '@types/node': 18.15.3
     dev: true
 
   /@types/hapi__joi/17.1.9:
@@ -2634,7 +2692,7 @@ packages:
   /@types/keyv/3.1.4:
     resolution: {integrity: sha512-BQ5aZNSCpj7D6K2ksrRCTmKRLEpnPvWDiLPfoGyhZ++8YtiK9d/3DBKPJgry359X/P1PfruyYwvnvwFjuEiEIg==, tarball: '@types/keyv/download/@types/keyv-3.1.4.tgz'}
     dependencies:
-      '@types/node': 18.14.6
+      '@types/node': 18.15.3
     dev: true
 
   /@types/lodash/4.14.191:
@@ -2670,6 +2728,9 @@ packages:
   /@types/node/18.14.6:
     resolution: {integrity: sha512-93+VvleD3mXwlLI/xASjw0FzKcwzl3OdTCzm1LaRfqgS21gfFtK3zDXM5Op9TeeMsJVOaJ2VRDpT9q4Y3d0AvA==, tarball: '@types/node/download/@types/node-18.14.6.tgz'}
     dev: true
+
+  /@types/node/18.15.3:
+    resolution: {integrity: sha512-p6ua9zBxz5otCmbpb5D3U4B5Nanw6Pk3PPyX05xnxbB/fRv71N7CPmORg7uAD5P70T0xmx1pzAx/FUfa5X+3cw==, tarball: '@types/node/download/@types/node-18.15.3.tgz'}
 
   /@types/normalize-package-data/2.4.1:
     resolution: {integrity: sha1-0zV0eaD9/dWQf+Z+F+CoXJBuEwE=, tarball: '@types/normalize-package-data/download/@types/normalize-package-data-2.4.1.tgz'}
@@ -2754,13 +2815,13 @@ packages:
   /@types/responselike/1.0.0:
     resolution: {integrity: sha1-JR9P59FU0rrRJavhtCmyOv0mLik=, tarball: '@types/responselike/download/@types/responselike-1.0.0.tgz'}
     dependencies:
-      '@types/node': 18.14.6
+      '@types/node': 18.15.3
     dev: true
 
   /@types/sax/1.2.4:
     resolution: {integrity: sha512-pSAff4IAxJjfAXUG6tFkO7dsSbTmf8CtUpfhhZ5VhkRpC4628tJhh3+V6H1E+/Gs9piSzYKT5yzHO5M4GG9jkw==, tarball: '@types/sax/download/@types/sax-1.2.4.tgz'}
     dependencies:
-      '@types/node': 18.14.6
+      '@types/node': 18.15.3
     dev: true
 
   /@types/scheduler/0.16.2:
@@ -6871,6 +6932,43 @@ packages:
       - webpack-plugin-serve
     dev: true
 
+  /father/4.1.6_@types+node@18.15.3:
+    resolution: {integrity: sha512-EYLrycl6e5K0NPAsLnWdKkQtLsXBFZxK1tJ8ng5L6TTs4j1iwt7p53mQfR7AXzX61clWC3WNh8KuXXd5ahKORw==, tarball: father/download/father-4.1.6.tgz}
+    hasBin: true
+    dependencies:
+      '@microsoft/api-extractor': 7.34.3_@types+node@18.15.3
+      '@umijs/babel-preset-umi': 4.0.57
+      '@umijs/bundler-utils': 4.0.57
+      '@umijs/bundler-webpack': 4.0.57_typescript@4.8.4
+      '@umijs/core': 4.0.57
+      '@umijs/utils': 4.0.57
+      '@vercel/ncc': 0.33.3
+      babel-plugin-dynamic-import-node: 2.3.3
+      babel-plugin-module-resolver: 4.1.0
+      babel-plugin-react-require: 3.1.3
+      babel-plugin-transform-define: 2.0.1
+      fast-glob: 3.2.12
+      file-system-cache: 2.0.0
+      loader-runner: 4.2.0
+      minimatch: 3.1.2
+      tsconfig-paths: 4.0.0
+      typescript: 4.8.4
+      typescript-transform-paths: 3.4.6_typescript@4.8.4
+      v8-compile-cache: 2.3.0
+    transitivePeerDependencies:
+      - '@types/node'
+      - '@types/webpack'
+      - sockjs-client
+      - styled-components
+      - supports-color
+      - type-fest
+      - vue-template-compiler
+      - webpack
+      - webpack-dev-server
+      - webpack-hot-middleware
+      - webpack-plugin-serve
+    dev: true
+
   /fault/1.0.4:
     resolution: {integrity: sha1-6vz8Cm0hT8lGAeFw3ymVSk+ELxM=, tarball: fault/download/fault-1.0.4.tgz}
     dependencies:
@@ -9314,7 +9412,7 @@ packages:
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
     dependencies:
       '@jest/types': 29.5.0
-      '@types/node': 18.14.6
+      '@types/node': 18.15.3
       chalk: 4.1.2
       ci-info: 3.8.0
       graceful-fs: 4.2.10
@@ -9365,7 +9463,7 @@ packages:
     resolution: {integrity: sha1-f3LLxNZDw2Xie5/XdfnQ6qnHqO0=, tarball: jest-worker/download/jest-worker-26.6.2.tgz}
     engines: {node: '>= 10.13.0'}
     dependencies:
-      '@types/node': 18.14.6
+      '@types/node': 18.15.3
       merge-stream: 2.0.0
       supports-color: 7.2.0
     dev: true
@@ -9374,7 +9472,7 @@ packages:
     resolution: {integrity: sha512-GLHN/GTAAMEy5BFdvpUfzr9Dr80zQqBrh0fz1mtRMe05hqP45+HfQltu7oTBfduD0UeZs09d+maFtFYAXFWvAA==, tarball: jest-worker/download/jest-worker-29.4.3.tgz}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
     dependencies:
-      '@types/node': 18.14.6
+      '@types/node': 18.15.3
       jest-util: 29.5.0
       merge-stream: 2.0.0
       supports-color: 8.1.1

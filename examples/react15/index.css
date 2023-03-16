@@ -1,0 +1,15 @@
+.react15-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.react15-icon {
+  width: 140px;
+}
+
+.react15-lib {
+  margin: 32px 0 24px;
+  font-size: 16px;
+  color: #2c3e50;
+}

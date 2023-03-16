@@ -48,7 +48,7 @@ function writableDOM(
   assetTransformer?: (node: Node) => Node,
 ): Writable | WritableStream<string> {
   if (this instanceof writableDOM) {
-    return new WritableStream(writableDOM(target, previousSibling));
+    return new WritableStream(writableDOM(target, previousSibling, assetTransformer));
   }
 
   const nextSibling = previousSibling ? previousSibling.nextSibling : null;

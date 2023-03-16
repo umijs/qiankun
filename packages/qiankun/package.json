@@ -10,9 +10,9 @@
     "micro-frontends",
     "microservice"
   ],
-  "main": "./lib/index.js",
-  "module": "./es/index.js",
-  "types": "./es/index.d.ts",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
   "sideEffects": false,
   "scripts": {
     "build": "father build",
@@ -43,6 +43,7 @@
   "dependencies": {
     "@babel/runtime": "^7.10.5",
     "@qiankunjs/loader": "^0.0.1",
+    "@qiankunjs/sandbox": "^0.0.1",
     "import-html-entry": "^1.9.0",
     "lodash": "^4.17.11",
     "single-spa": "^5.9.2",

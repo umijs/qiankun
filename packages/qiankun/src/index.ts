@@ -1,4 +1,5 @@
 import { importEntry } from '@qiankunjs/loader';
+import { assetsTranspiler } from '@qiankunjs/sandbox';
 
 export type ObjectType = Record<string, any>;
 
@@ -27,5 +28,5 @@ export type LoadableApp<T extends ObjectType> = AppMetadata & {
 
 export async function loadMicroApp<T extends ObjectType>(app: LoadableApp<T>) {
   const { entry, container } = app;
-  await importEntry(entry, container);
+  await importEntry(entry as string, container as HTMLElement, { assetsTranspiler });
 }
