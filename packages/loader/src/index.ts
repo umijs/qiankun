@@ -1,4 +1,3 @@
-import type { assetsTranspiler } from '@qiankunjs/sandbox';
 import WritableDOMStream from './writable-dom';
 
 type HTMLEntry = string;
@@ -15,7 +14,7 @@ type Entry = HTMLEntry;
 type ImportOpts = {
   fetch?: typeof window.fetch;
   decoder?: (chunk: string) => string;
-  assetsTranspiler?: typeof assetsTranspiler;
+  nodeTransformer?: (node: Node) => Node;
 };
 
 /**
@@ -24,13 +23,13 @@ type ImportOpts = {
  * @param opts
  * @todo Compatible with browsers that do not support WritableStream/TransformStream
  */
-export async function importEntry(entry: Entry, target: HTMLElement, opts?: ImportOpts): Promise<void> {
-  const { fetch = window.fetch, assetsTranspiler = (node: Node) => node } = opts || {};
-  const res = await fetch(entry);
+export async function loadEntry(entry: Entry, target: HTMLElement, opts?: ImportOpts): Promise<void> {
+  const { fetch = window.fetch, nodeTransformer = (node: Node) => node } = opts || {};
 
+  const res = await fetch(entry);
   if (res.body) {
     await res.body
       .pipeThrough(new TextDecoderStream())
-      .pipeTo(new WritableDOMStream(target, null, (node) => assetsTranspiler(node, entry)));
+      .pipeTo(new WritableDOMStream(target, null, (node) => nodeTransformer(node)));
   }
 }

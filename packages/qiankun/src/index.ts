@@ -1,15 +1,9 @@
-import { importEntry } from '@qiankunjs/loader';
-import { assetsTranspiler } from '@qiankunjs/sandbox';
+import { loadEntry } from '@qiankunjs/loader';
+import { transpileAssets, Compartment } from '@qiankunjs/sandbox';
 
 export type ObjectType = Record<string, any>;
 
-export type Entry =
-  | string
-  | {
-      scripts?: string[];
-      styles?: string[];
-      html?: string;
-    };
+export type Entry = string;
 
 type AppMetadata = {
   // app name
@@ -26,7 +20,18 @@ export type LoadableApp<T extends ObjectType> = AppMetadata & {
   props?: T;
 };
 
-export async function loadMicroApp<T extends ObjectType>(app: LoadableApp<T>) {
+type AppConfiguration = {
+  fetch?: typeof window.fetch;
+};
+
+export async function loadMicroApp<T extends ObjectType>(app: LoadableApp<T>, configuration?: AppConfiguration) {
   const { entry, container } = app;
-  await importEntry(entry as string, container as HTMLElement, { assetsTranspiler });
+  const { fetch } = configuration || {};
+
+  await loadEntry(entry as string, container as HTMLElement, {
+    nodeTransformer: (node: Node) => {
+      transpileAssets(node, entry, { fetch, compartment: new Compartment() });
+      return node;
+    },
+  });
 }
