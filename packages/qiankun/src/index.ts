@@ -1,5 +1,5 @@
 import { loadEntry } from '@qiankunjs/loader';
-import { transpileAssets, Compartment } from '@qiankunjs/sandbox';
+import { Compartment, transpileAssets } from '@qiankunjs/sandbox';
 
 export type ObjectType = Record<string, any>;
 
