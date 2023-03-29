@@ -13,7 +13,6 @@ import {
   isAllAppsUnmounted,
   isHijackingTag,
   patchHTMLDynamicAppendPrototypeFunctions,
-  rawHeadAppendChild,
   rebuildCSSRules,
   recordStyledComponentsCSSRules,
   styleElementTargetSymbol,
@@ -21,6 +20,8 @@ import {
 
 // Get native global window with a sandbox disgusted way, thus we could share it between qiankun instances🤪
 Object.defineProperty(nativeGlobal, '__proxyAttachContainerConfigMap__', { enumerable: false, writable: true });
+
+const rawHeadAppendChild = HTMLHeadElement.prototype.appendChild;
 
 // Share proxyAttachContainerConfigMap between multiple qiankun instance, thus they could access the same record
 nativeGlobal.__proxyAttachContainerConfigMap__ =
