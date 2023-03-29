@@ -12,7 +12,7 @@ import type {
 import type { ParcelConfigObjectGetter } from './loader';
 import { loadApp } from './loader';
 import { doPrefetchStrategy } from './prefetch';
-import { Deferred, getContainerXPath, toArray } from './utils';
+import { Deferred, getContainerXPath, isConstDestructAssignmentSupported, toArray } from './utils';
 
 let microApps: Array<RegistrableApp<Record<string, unknown>>> = [];
 
@@ -24,10 +24,10 @@ const defaultUrlRerouteOnly = true;
 const frameworkStartedDefer = new Deferred<void>();
 
 const autoDowngradeForLowVersionBrowser = (configuration: FrameworkConfiguration): FrameworkConfiguration => {
-  const { sandbox, singular } = configuration;
+  const { sandbox = true, singular } = configuration;
   if (sandbox) {
     if (!window.Proxy) {
-      console.warn('[qiankun] Miss window.Proxy, proxySandbox will degenerate into snapshotSandbox');
+      console.warn('[qiankun] Missing window.Proxy, proxySandbox will degenerate into snapshotSandbox');
 
       if (singular === false) {
         console.warn(
@@ -36,6 +36,20 @@ const autoDowngradeForLowVersionBrowser = (configuration: FrameworkConfiguration
       }
 
       return { ...configuration, sandbox: typeof sandbox === 'object' ? { ...sandbox, loose: true } : { loose: true } };
+    }
+
+    if (
+      !isConstDestructAssignmentSupported() &&
+      (sandbox === true || (typeof sandbox === 'object' && sandbox.speedy !== false))
+    ) {
+      console.warn(
+        '[qiankun] Speedy mode will turn off as const destruct assignment not supported in current browser!',
+      );
+
+      return {
+        ...configuration,
+        sandbox: typeof sandbox === 'object' ? { ...sandbox, speedy: false } : { speedy: false },
+      };
     }
   }
 
@@ -195,13 +209,7 @@ export function loadMicroApp<T extends ObjectType>(
 
 export function start(opts: FrameworkConfiguration = {}) {
   frameworkConfiguration = { prefetch: true, singular: true, sandbox: true, ...opts };
-  const {
-    prefetch,
-    sandbox,
-    singular,
-    urlRerouteOnly = defaultUrlRerouteOnly,
-    ...importEntryOpts
-  } = frameworkConfiguration;
+  const { prefetch, urlRerouteOnly = defaultUrlRerouteOnly, ...importEntryOpts } = frameworkConfiguration;
 
   if (prefetch) {
     doPrefetchStrategy(microApps, prefetch, importEntryOpts);
