@@ -3,7 +3,7 @@
  * @since 2019-05-15
  */
 
-import { isFunction, once, snakeCase } from 'lodash';
+import { isFunction, once, snakeCase, memoize } from 'lodash';
 import type { FrameworkConfiguration } from './interfaces';
 import { version } from './version';
 
@@ -130,6 +130,15 @@ export function isBoundedFunction(fn: CallableFunction) {
   boundedMap.set(fn, bounded);
   return bounded;
 }
+
+export const isConstDestructAssignmentSupported = memoize(() => {
+  try {
+    new Function('const { a } = { a: 1 }')();
+    return true;
+  } catch (e) {
+    return false;
+  }
+});
 
 export const qiankunHeadTagName = 'qiankun-head';
 
