@@ -9,18 +9,12 @@ import { qiankunHeadTagName } from '../../../utils';
 import { cachedGlobals } from '../../proxySandbox';
 import * as css from '../css';
 
-export const rawHeadAppendChild = HTMLHeadElement.prototype.appendChild;
-const rawHeadRemoveChild = HTMLHeadElement.prototype.removeChild;
-const rawBodyAppendChild = HTMLBodyElement.prototype.appendChild;
-const rawBodyRemoveChild = HTMLBodyElement.prototype.removeChild;
-const rawHeadInsertBefore = HTMLHeadElement.prototype.insertBefore;
-const rawRemoveChild = HTMLElement.prototype.removeChild;
-
 const SCRIPT_TAG_NAME = 'SCRIPT';
 const LINK_TAG_NAME = 'LINK';
 const STYLE_TAG_NAME = 'STYLE';
 
 export const styleElementTargetSymbol = Symbol('target');
+const overwrittenSymbol = Symbol('qiankun-overwritten');
 
 type DynamicDomMutationTarget = 'head' | 'body';
 
@@ -31,6 +25,10 @@ declare global {
 
   interface HTMLStyleElement {
     [styleElementTargetSymbol]: DynamicDomMutationTarget;
+  }
+
+  interface Function {
+    [overwrittenSymbol]: boolean;
   }
 }
 
@@ -69,6 +67,7 @@ export function isStyledComponentsLike(element: HTMLStyleElement) {
 }
 
 const appsCounterMap = new Map<string, { bootstrappingPatchCount: number; mountingPatchCount: number }>();
+
 export function calcAppCount(
   appName: string,
   calcType: 'increase' | 'decrease',
@@ -88,6 +87,7 @@ export function calcAppCount(
   }
   appsCounterMap.set(appName, appCount);
 }
+
 export function isAllAppsUnmounted(): boolean {
   return Array.from(appsCounterMap.entries()).every(
     ([, { bootstrappingPatchCount: bpc, mountingPatchCount: mpc }]) => bpc === 0 && mpc === 0,
@@ -197,7 +197,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
   containerConfigGetter: (element: HTMLElement) => ContainerConfig;
   target: DynamicDomMutationTarget;
 }) {
-  return function appendChildOrInsertBefore<T extends Node>(
+  function appendChildOrInsertBefore<T extends Node>(
     this: HTMLHeadElement | HTMLBodyElement,
     newChild: T,
     refChild: Node | null = null,
@@ -339,19 +339,22 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
     }
 
     return rawDOMAppendOrInsertBefore.call(this, element, refChild);
-  };
+  }
+
+  appendChildOrInsertBefore[overwrittenSymbol] = true;
+
+  return appendChildOrInsertBefore;
 }
 
 function getNewRemoveChild(
-  headOrBodyRemoveChild: typeof HTMLElement.prototype.removeChild,
+  rawRemoveChild: typeof HTMLElement.prototype.removeChild,
   containerConfigGetter: (element: HTMLElement) => ContainerConfig,
   target: DynamicDomMutationTarget,
   isInvokedByMicroApp: (element: HTMLElement) => boolean,
 ) {
-  return function removeChild<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, child: T) {
+  function removeChild<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, child: T) {
     const { tagName } = child as any;
-    if (!isHijackingTag(tagName) || !isInvokedByMicroApp(child as any))
-      return headOrBodyRemoveChild.call(this, child) as T;
+    if (!isHijackingTag(tagName) || !isInvokedByMicroApp(child as any)) return rawRemoveChild.call(this, child) as T;
 
     try {
       let attachedElement: Node;
@@ -391,19 +394,26 @@ function getNewRemoveChild(
       console.warn(e);
     }
 
-    return headOrBodyRemoveChild.call(this, child) as T;
-  };
+    return rawRemoveChild.call(this, child) as T;
+  }
+
+  removeChild[overwrittenSymbol] = true;
+  return removeChild;
 }
 
 export function patchHTMLDynamicAppendPrototypeFunctions(
   isInvokedByMicroApp: (element: HTMLElement) => boolean,
   containerConfigGetter: (element: HTMLElement) => ContainerConfig,
 ) {
+  const rawHeadAppendChild = HTMLHeadElement.prototype.appendChild;
+  const rawBodyAppendChild = HTMLBodyElement.prototype.appendChild;
+  const rawHeadInsertBefore = HTMLHeadElement.prototype.insertBefore;
+
   // Just overwrite it while it have not been overwritten
   if (
-    HTMLHeadElement.prototype.appendChild === rawHeadAppendChild &&
-    HTMLBodyElement.prototype.appendChild === rawBodyAppendChild &&
-    HTMLHeadElement.prototype.insertBefore === rawHeadInsertBefore
+    rawHeadAppendChild[overwrittenSymbol] !== true &&
+    rawBodyAppendChild[overwrittenSymbol] !== true &&
+    rawHeadInsertBefore[overwrittenSymbol] !== true
   ) {
     HTMLHeadElement.prototype.appendChild = getOverwrittenAppendChildOrInsertBefore({
       rawDOMAppendOrInsertBefore: rawHeadAppendChild,
@@ -426,11 +436,10 @@ export function patchHTMLDynamicAppendPrototypeFunctions(
     }) as typeof rawHeadInsertBefore;
   }
 
+  const rawHeadRemoveChild = HTMLHeadElement.prototype.removeChild;
+  const rawBodyRemoveChild = HTMLBodyElement.prototype.removeChild;
   // Just overwrite it while it have not been overwritten
-  if (
-    HTMLHeadElement.prototype.removeChild === rawHeadRemoveChild &&
-    HTMLBodyElement.prototype.removeChild === rawBodyRemoveChild
-  ) {
+  if (rawHeadRemoveChild[overwrittenSymbol] !== true && rawBodyRemoveChild[overwrittenSymbol] !== true) {
     HTMLHeadElement.prototype.removeChild = getNewRemoveChild(
       rawHeadRemoveChild,
       containerConfigGetter,
