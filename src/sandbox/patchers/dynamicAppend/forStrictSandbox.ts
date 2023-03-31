@@ -67,8 +67,8 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
         const value = (<any>target)[p];
         // must rebind the function to the target otherwise it will cause illegal invocation error
         if (typeof value === 'function' && !isBoundedFunction(value)) {
-          return function proxiedFunction(...args: unknown) {
-            return value.call(target, ...args.map((arg) => arg === receiver ? target : arg));
+          return function proxiedFunction(...args: unknown[]) {
+            return value.call(target, ...args.map((arg) => (arg === receiver ? target : arg)));
           };
         }
 
