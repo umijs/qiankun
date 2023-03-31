@@ -54,9 +54,9 @@ const mockGlobalThis = 'mockGlobalThis';
 
 // these globals should be recorded while accessing every time
 const accessingSpiedGlobals = ['document', 'top', 'parent', 'eval'];
-const overwrittenGlobals = ['window', 'self', 'globalThis'].concat(inTest ? [mockGlobalThis] : []);
+const overwrittenGlobals = ['window', 'self', 'globalThis', 'hasOwnProperty'].concat(inTest ? [mockGlobalThis] : []);
 export const cachedGlobals = Array.from(
-  new Set(without([...globals, ...overwrittenGlobals, 'requestAnimationFrame'], ...accessingSpiedGlobals)),
+  new Set(without(globals.concat(overwrittenGlobals).concat('requestAnimationFrame'), ...accessingSpiedGlobals)),
 );
 
 // transform cachedGlobals to object for faster element check
@@ -67,12 +67,13 @@ const cachedGlobalObjects = cachedGlobals.reduce((acc, globalProp) => ({ ...acc,
  But overwritten globals must not be escaped, otherwise they will be leaked to the global scope.
  see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/unscopables
  */
-const unscopables = without(cachedGlobals, ...overwrittenGlobals).reduce(
+const unscopables = without(cachedGlobals, ...accessingSpiedGlobals.concat(overwrittenGlobals)).reduce(
+  (acc, key) => ({ ...acc, [key]: true }),
   // Notes that babel will transpile spread operator to Object.assign({}, ...args), which will keep the prototype of Object in merged object,
   // while this result used as Symbol.unscopables, it will make properties in Object.prototype always be escaped from proxy sandbox as unscopables check will look up prototype chain as well,
   // such as hasOwnProperty, toString, valueOf, etc.
-  (acc, key) => ({ ...acc, [key]: true }),
-  {},
+  // so we should use Object.create(null) to create a pure object without prototype chain here.
+  Object.create(null),
 );
 
 const useNativeWindowForBindingsProps = new Map<PropertyKey, boolean>([
@@ -149,17 +150,11 @@ let activeSandboxCount = 0;
 export default class ProxySandbox implements SandBox {
   /** window 值变更记录 */
   private updatedValueSet = new Set<PropertyKey>();
-
-  name: string;
-
-  type: SandBoxType;
-
-  proxy: WindowProxy;
-
-  sandboxRunning = true;
-
   private document = document;
-
+  name: string;
+  type: SandBoxType;
+  proxy: WindowProxy;
+  sandboxRunning = true;
   latestSetProp: PropertyKey | null = null;
 
   active() {
@@ -190,6 +185,10 @@ export default class ProxySandbox implements SandBox {
     this.sandboxRunning = false;
   }
 
+  public patchDocument(doc: Document) {
+    this.document = doc;
+  }
+
   // the descriptor of global variables in whitelist before it been modified
   globalWhitelistPrevDescriptor: { [p in (typeof globalVariableWhiteList)[number]]: PropertyDescriptor | undefined } =
     {};
@@ -205,7 +204,6 @@ export default class ProxySandbox implements SandBox {
     const { fakeWindow, propertiesWithGetter } = createFakeWindow(globalContext, !!speedy);
 
     const descriptorTargetMap = new Map<PropertyKey, SymbolTarget>();
-    const hasOwnProperty = (key: PropertyKey) => fakeWindow.hasOwnProperty(key) || globalContext.hasOwnProperty(key);
 
     const proxy = new Proxy(fakeWindow, {
       set: (target: FakeWindow, p: PropertyKey, value: any): boolean => {
@@ -251,7 +249,7 @@ export default class ProxySandbox implements SandBox {
         this.registerRunningApp(name, proxy);
 
         if (p === Symbol.unscopables) return unscopables;
-        // avoid who using window.window or window.self to escape the sandbox environment to touch the really window
+        // avoid who using window.window or window.self to escape the sandbox environment to touch the real window
         // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
         if (p === 'window' || p === 'self') {
           return proxy;
@@ -312,7 +310,7 @@ export default class ProxySandbox implements SandBox {
         /*
          as the descriptor of top/self/window/mockTop in raw window are configurable but not in proxy target, we need to get it from target to avoid TypeError
          see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/getOwnPropertyDescriptor
-         > A property cannot be reported as non-configurable, if it does not existed as an own property of the target object or if it exists as a configurable own property of the target object.
+         > A property cannot be reported as non-configurable, if it does not exist as an own property of the target object or if it exists as a configurable own property of the target object.
          */
         if (target.hasOwnProperty(p)) {
           const descriptor = Object.getOwnPropertyDescriptor(target, p);
@@ -374,10 +372,15 @@ export default class ProxySandbox implements SandBox {
     this.proxy = proxy;
 
     activeSandboxCount++;
-  }
 
-  public patchDocument(doc: Document) {
-    this.document = doc;
+    function hasOwnProperty(this: any, key: PropertyKey): boolean {
+      // calling from hasOwnProperty.call(obj, key)
+      if (this !== proxy && this !== null && typeof this === 'object') {
+        return Object.prototype.hasOwnProperty.call(this, key);
+      }
+
+      return fakeWindow.hasOwnProperty(key) || globalContext.hasOwnProperty(key);
+    }
   }
 
   private registerRunningApp(name: string, proxy: Window) {
