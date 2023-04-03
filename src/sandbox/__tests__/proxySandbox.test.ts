@@ -112,6 +112,9 @@ it('hasOwnProperty should works well', () => {
   expect(proxy.hasOwnProperty('testName')).toBeTruthy();
   expect(window.hasOwnProperty('testName')).toBeFalsy();
 
+  const hasOwnProperty = proxy.hasOwnProperty;
+  expect(hasOwnProperty.call({ name: 'kuitos' }, 'name')).toBeTruthy();
+
   expect(Object.getOwnPropertyDescriptor(proxy, 'testName')).toEqual({
     value: 'kuitos',
     configurable: true,
