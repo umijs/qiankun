@@ -49,7 +49,7 @@ it('should throw errors while variable not existed in current global context', (
   }
 });
 
-it('should never hijack native method of Object.prototype', () => {
+it('should never hijack native method of Object.prototype expect hasOwnProperty', () => {
   const { proxy } = new ProxySandbox('native-object-method');
   // @ts-ignore
   window.proxy = proxy;
@@ -60,6 +60,8 @@ it('should never hijack native method of Object.prototype', () => {
         window.nativeHasOwnCheckResult = hasOwnProperty.call({nativeHas: 123}, 'nativeHas');
         window.proxyHasOwnCheck = window.hasOwnProperty.call({nativeHas: '123'}, 'nativeHas');
         window.selfCheck = window.hasOwnProperty('nativeHasOwnCheckResult');
+        
+        window.enumerableCheckResult = propertyIsEnumerable.call({nativeHas: 123}, 'nativeHas');
       })(mockGlobalThis);
     }
   })()`;
@@ -67,6 +69,7 @@ it('should never hijack native method of Object.prototype', () => {
   const geval = eval;
   geval(code);
   expect(window.proxy.nativeHasOwnCheckResult).toBeTruthy();
-  expect(window.proxy.proxyHasOwnCheck).toBeFalsy();
+  expect(window.proxy.proxyHasOwnCheck).toBeTruthy();
   expect(window.proxy.selfCheck).toBeTruthy();
+  expect(window.proxy.enumerableCheckResult).toBeTruthy();
 });
