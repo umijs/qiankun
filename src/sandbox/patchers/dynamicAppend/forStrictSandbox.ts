@@ -53,7 +53,7 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
         (<any>target)[p] = value;
         return true;
       },
-      get: (target, p) => {
+      get: (target, p, receiver) => {
         if (p === 'createElement') {
           // Must store the original createElement function to avoid error in nested sandbox
           const targetCreateElement = target.createElement;
@@ -67,7 +67,9 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
         const value = (<any>target)[p];
         // must rebind the function to the target otherwise it will cause illegal invocation error
         if (typeof value === 'function' && !isBoundedFunction(value)) {
-          return value.bind(target);
+          return function proxiedFunction(...args: unknown[]) {
+            return value.call(target, ...args.map((arg) => (arg === receiver ? target : arg)));
+          };
         }
 
         return value;
