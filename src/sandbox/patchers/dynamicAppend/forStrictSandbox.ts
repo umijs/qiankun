@@ -65,6 +65,10 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
         }
 
         const value = (<any>target)[p];
+        // fix document.all proxy error in naughtySafari
+        if (p === 'all') {
+          return value;
+        }
         // must rebind the function to the target otherwise it will cause illegal invocation error
         if (typeof value === 'function' && !isBoundedFunction(value)) {
           return function proxiedFunction(...args: unknown[]) {
