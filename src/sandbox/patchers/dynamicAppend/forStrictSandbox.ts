@@ -28,6 +28,12 @@ declare global {
 // Get native global window with a sandbox disgusted way, thus we could share it between qiankun instances🤪
 Object.defineProperty(nativeGlobal, '__proxyAttachContainerConfigMap__', { enumerable: false, writable: true });
 
+Object.defineProperty(nativeGlobal, '__currentLockingSandbox__', {
+  enumerable: false,
+  writable: true,
+  configurable: true,
+});
+
 const rawHeadAppendChild = HTMLHeadElement.prototype.appendChild;
 
 // Share proxyAttachContainerConfigMap between multiple qiankun instance, thus they could access the same record
@@ -48,19 +54,9 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
   const { sandbox, speedy } = cfg;
 
   const attachElementToProxy = (element: HTMLElement, proxy: Window) => {
-    // If this element has been processed by a sandbox, it should not be processed again.
-    // This usually occurs in the nested scenario, where an element is repeatedly processed by the sandbox in the nested chain.
-    if (element[elementAttachedSymbol]) return;
-
     const proxyContainerConfig = proxyAttachContainerConfigMap.get(proxy);
     if (proxyContainerConfig) {
       elementAttachContainerConfigMap.set(element, proxyContainerConfig);
-      Object.defineProperty(element, elementAttachedSymbol, {
-        enumerable: false,
-        configurable: false,
-        writable: false,
-        value: proxy.name,
-      });
     }
   };
 
@@ -75,8 +71,18 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
           // Must store the original createElement function to avoid error in nested sandbox
           const targetCreateElement = target.createElement;
           return function createElement(...args: Parameters<typeof document.createElement>) {
+            if (!nativeGlobal.__currentLockingSandbox__) {
+              nativeGlobal.__currentLockingSandbox__ = sandbox.name;
+            }
+
             const element = targetCreateElement.call(target, ...args);
-            attachElementToProxy(element, sandbox.proxy);
+
+            // only record the element which is created by the current sandbox, thus we can avoid the element created by nested sandboxes
+            if (nativeGlobal.__currentLockingSandbox__ === sandbox.name) {
+              attachElementToProxy(element, sandbox.proxy);
+              delete nativeGlobal.__currentLockingSandbox__;
+            }
+
             return element;
           };
         }
