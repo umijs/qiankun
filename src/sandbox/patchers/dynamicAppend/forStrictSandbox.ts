@@ -18,6 +18,13 @@ import {
   styleElementTargetSymbol,
 } from './common';
 
+const elementAttachedSymbol = Symbol('attachedApp');
+declare global {
+  interface HTMLElement {
+    [elementAttachedSymbol]: string;
+  }
+}
+
 // Get native global window with a sandbox disgusted way, thus we could share it between qiankun instances🤪
 Object.defineProperty(nativeGlobal, '__proxyAttachContainerConfigMap__', { enumerable: false, writable: true });
 
@@ -41,9 +48,19 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
   const { sandbox, speedy } = cfg;
 
   const attachElementToProxy = (element: HTMLElement, proxy: Window) => {
+    // If this element has been processed by a sandbox, it should not be processed again.
+    // This usually occurs in the nested scenario, where an element is repeatedly processed by the sandbox in the nested chain.
+    if (element[elementAttachedSymbol]) return;
+
     const proxyContainerConfig = proxyAttachContainerConfigMap.get(proxy);
     if (proxyContainerConfig) {
       elementAttachContainerConfigMap.set(element, proxyContainerConfig);
+      Object.defineProperty(element, elementAttachedSymbol, {
+        enumerable: false,
+        configurable: false,
+        writable: false,
+        value: proxy.name,
+      });
     }
   };
 
@@ -67,7 +84,7 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
         const value = (<any>target)[p];
         // must rebind the function to the target otherwise it will cause illegal invocation error
         if (typeof value === 'function' && !isBoundedFunction(value)) {
-          return function proxiedFunction(...args: unknown[]) {
+          return function proxyFunction(...args: unknown[]) {
             return value.call(target, ...args.map((arg) => (arg === receiver ? target : arg)));
           };
         }

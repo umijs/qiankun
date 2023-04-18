@@ -71,7 +71,7 @@ export function patchLooseSandbox(
     recordStyledComponentsCSSRules(dynamicStyleSheetElements);
 
     // As now the sub app content all wrapped with a special id container,
-    // the dynamic style sheet would be removed automatically while unmoutting
+    // the dynamic style sheet would be removed automatically while unmounting
 
     return function rebuild() {
       rebuildCSSRules(dynamicStyleSheetElements, (stylesheetElement) => {
