@@ -11,7 +11,7 @@ importers:
       dumi-theme-default: ^1.0.10
       eslint: ^8.10.0
       eslint-define-config: ^1.2.5
-      husky: ^2.3.0
+      husky: ^8.0.3
       jest: ^25.2.2
       lint-staged: ^9.4.2
       prettier: ^2.1.2
@@ -26,7 +26,7 @@ importers:
       dumi-theme-default: 1.1.24
       eslint: 8.35.0
       eslint-define-config: 1.15.0
-      husky: 2.7.0
+      husky: 8.0.3
       jest: 25.5.4
       lint-staged: 9.5.0
       prettier: 2.8.4
@@ -7342,11 +7342,6 @@ packages:
     engines: {node: '>=8.0.0'}
     dev: true
 
-  /get-stdin/7.0.0:
-    resolution: {integrity: sha1-jV3pjxUXGhJcXlFmQ8em0OqKlvY=, tarball: get-stdin/download/get-stdin-7.0.0.tgz}
-    engines: {node: '>=8'}
-    dev: true
-
   /get-stdin/8.0.0:
     resolution: {integrity: sha1-y61qc/63X27rIrqeAfiaooqpelM=, tarball: get-stdin/download/get-stdin-8.0.0.tgz}
     engines: {node: '>=10'}
@@ -8153,22 +8148,10 @@ packages:
     resolution: {integrity: sha1-3QLqYIG9BWjcXQcxhEY5V7qe+ao=, tarball: humps/download/humps-2.0.1.tgz}
     dev: true
 
-  /husky/2.7.0:
-    resolution: {integrity: sha1-wKmmo7URRiJOEbugtGu6VG5GHQU=, tarball: husky/download/husky-2.7.0.tgz}
-    engines: {node: '>=8'}
+  /husky/8.0.3:
+    resolution: {integrity: sha512-+dQSyqPh4x1hlO1swXBiNb2HzTDN1I2IGLQx1GrBuiqFJfoMrnZWwVmatvSiO+Iz8fBUnf+lekwNo4c2LlXItg==, tarball: husky/download/husky-8.0.3.tgz}
+    engines: {node: '>=14'}
     hasBin: true
-    requiresBuild: true
-    dependencies:
-      cosmiconfig: 5.2.1
-      execa: 1.0.0
-      find-up: 3.0.0
-      get-stdin: 7.0.0
-      is-ci: 2.0.0
-      pkg-dir: 4.2.0
-      please-upgrade-node: 3.2.0
-      read-pkg: 5.2.0
-      run-node: 1.0.0
-      slash: 3.0.0
     dev: true
 
   /iconv-lite/0.4.24:
@@ -13982,12 +13965,6 @@ packages:
   /run-async/2.4.1:
     resolution: {integrity: sha1-hEDsz5nqPnC9QJ1JqriOEMGJpFU=, tarball: run-async/download/run-async-2.4.1.tgz}
     engines: {node: '>=0.12.0'}
-    dev: true
-
-  /run-node/1.0.0:
-    resolution: {integrity: sha1-RrULlGoqotSUeuHYhumFb9nKvl4=, tarball: run-node/download/run-node-1.0.0.tgz}
-    engines: {node: '>=4'}
-    hasBin: true
     dev: true
 
   /run-parallel/1.2.0:
