@@ -18,8 +18,21 @@ import {
   styleElementTargetSymbol,
 } from './common';
 
+const elementAttachedSymbol = Symbol('attachedApp');
+declare global {
+  interface HTMLElement {
+    [elementAttachedSymbol]: string;
+  }
+}
+
 // Get native global window with a sandbox disgusted way, thus we could share it between qiankun instances🤪
 Object.defineProperty(nativeGlobal, '__proxyAttachContainerConfigMap__', { enumerable: false, writable: true });
+
+Object.defineProperty(nativeGlobal, '__currentLockingSandbox__', {
+  enumerable: false,
+  writable: true,
+  configurable: true,
+});
 
 const rawHeadAppendChild = HTMLHeadElement.prototype.appendChild;
 
@@ -58,8 +71,18 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
           // Must store the original createElement function to avoid error in nested sandbox
           const targetCreateElement = target.createElement;
           return function createElement(...args: Parameters<typeof document.createElement>) {
+            if (!nativeGlobal.__currentLockingSandbox__) {
+              nativeGlobal.__currentLockingSandbox__ = sandbox.name;
+            }
+
             const element = targetCreateElement.call(target, ...args);
-            attachElementToProxy(element, sandbox.proxy);
+
+            // only record the element which is created by the current sandbox, thus we can avoid the element created by nested sandboxes
+            if (nativeGlobal.__currentLockingSandbox__ === sandbox.name) {
+              attachElementToProxy(element, sandbox.proxy);
+              delete nativeGlobal.__currentLockingSandbox__;
+            }
+
             return element;
           };
         }
@@ -67,7 +90,7 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
         const value = (<any>target)[p];
         // must rebind the function to the target otherwise it will cause illegal invocation error
         if (isCallable(value) && !isBoundedFunction(value)) {
-          return function proxiedFunction(...args: unknown[]) {
+          return function proxyFunction(...args: unknown[]) {
             return value.call(target, ...args.map((arg) => (arg === receiver ? target : arg)));
           };
         }
