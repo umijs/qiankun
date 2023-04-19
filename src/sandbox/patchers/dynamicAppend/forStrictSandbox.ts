@@ -4,7 +4,7 @@
  */
 
 import type { Freer, SandBox } from '../../../interfaces';
-import { isBoundedFunction, nativeDocument, nativeGlobal } from '../../../utils';
+import { isBoundedFunction, nativeDocument, nativeGlobal, isCallable } from '../../../utils';
 import { getCurrentRunningApp } from '../../common';
 import type { ContainerConfig } from './common';
 import {
@@ -65,12 +65,8 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
         }
 
         const value = (<any>target)[p];
-        // fix document.all proxy error in naughtySafari
-        if (p === 'all') {
-          return value;
-        }
         // must rebind the function to the target otherwise it will cause illegal invocation error
-        if (typeof value === 'function' && !isBoundedFunction(value)) {
+        if (isCallable(value) && !isBoundedFunction(value)) {
           return function proxiedFunction(...args: unknown[]) {
             return value.call(target, ...args.map((arg) => (arg === receiver ? target : arg)));
           };
