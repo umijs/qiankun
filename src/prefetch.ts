@@ -16,20 +16,39 @@ declare global {
   }
 }
 
-// RIC and shim for browsers setTimeout() without it
-const requestIdleCallback =
-  window.requestIdleCallback ||
-  function requestIdleCallback(cb: CallableFunction) {
-    const start = Date.now();
-    return setTimeout(() => {
-      cb({
-        didTimeout: false,
-        timeRemaining() {
-          return Math.max(0, 50 - (Date.now() - start));
-        },
-      });
-    }, 1);
+function idleCall(cb: IdleRequestCallback, start: number) {
+  cb({
+    didTimeout: false,
+    timeRemaining() {
+      return Math.max(0, 50 - (Date.now() - start));
+    },
+  });
+}
+
+// RIC and shim for browsers setTimeout() without it idle
+let requestIdleCallback: (cb: IdleRequestCallback) => any;
+if (typeof window.requestIdleCallback !== 'undefined') {
+  requestIdleCallback = window.requestIdleCallback;
+} else if (typeof MessageChannel !== 'undefined') {
+  // The first recommendation is to use MessageChannel because
+  // it does not have the 4ms delay of setTimeout
+  const channel = new MessageChannel();
+  const port = channel.port2;
+  const tasks: IdleRequestCallback[] = [];
+  channel.port1.onmessage = ({ data }) => {
+    const task = tasks.shift();
+    if (!task) {
+      return;
+    }
+    idleCall(task, data.start);
   };
+  requestIdleCallback = function(cb: IdleRequestCallback) {
+    tasks.push(cb);
+    port.postMessage({ start: Date.now() });
+  };
+} else {
+  requestIdleCallback = (cb: IdleRequestCallback) => setTimeout(idleCall, 0, cb, Date.now());
+}
 
 declare global {
   interface Navigator {
