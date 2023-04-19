@@ -5,6 +5,9 @@
     "node": ">=12.0.0"
   },
   "scripts": {
+    "dev": "pnpm run build && npm run start:main && npm run start:react15",
+    "start:main": "cd ./examples/main && npm start",
+    "start:react15": "cd ./examples/react15 && npm start",
     "build": "pnpm -r --filter ./packages run build",
     "build-qiankun": "pnpm run build --filter qiankun",
     "release": "np --no-cleanup --yolo --no-publish",

@@ -20,36 +20,42 @@ declare global {
 let compartmentCounter = 0;
 
 export class Compartment {
-  private readonly compartmentSpecifier: CompartmentSpecifier;
-  protected globalProxy: WindowProxy = window;
+  /**
+   * Since the time of execution of the code in Compartment is determined by the browser, a unique compartmentSpecifier should be generated in Compartment
+   * @private
+   */
+  private readonly compartmentSpecifier: CompartmentSpecifier = (() => {
+    // make sure the compartmentSpecifier is unique
+    while (nativeWindow[`${compartmentSpecifierPrefix}${String(compartmentCounter)}`]) {
+      compartmentCounter++;
+    }
+    return `${compartmentSpecifierPrefix}${String(compartmentCounter)}`;
+  })();
+
+  protected globalContext: WindowProxy = window;
 
   constructor(globals?: Record<string, any>) {
     if (globals) {
       Object.keys(globals).forEach((k) => {
-        this.globalProxy[k as any] = globals[k];
+        this.globalContext[k as any] = globals[k];
       });
     }
-
-    this.compartmentSpecifier = (() => {
-      while (nativeWindow[`${compartmentSpecifierPrefix}${String(compartmentCounter)}`]) {
-        compartmentCounter++;
-      }
-      return `${compartmentSpecifierPrefix}${String(compartmentCounter)}`;
-    })();
   }
 
   get globalThis(): WindowProxy {
-    return this.globalProxy;
+    return this.globalContext;
   }
 
   makeEvaluator(source: string, sourceURL?: string): string {
-    nativeWindow[this.compartmentSpecifier] = this.globalProxy;
+    nativeWindow[this.compartmentSpecifier] = this.globalContext;
 
     const sourceMapURL = sourceURL ? `//# sourceURL=${sourceURL}\n` : '';
-    const globalObjectOptimizer = ['window', 'globalThis'].join(',');
+
+    const globalObjectConstants = ['window', 'globalThis'];
+    const globalObjectOptimizer = `const {${globalObjectConstants.join(',')}} = this;`;
 
     // eslint-disable-next-line max-len
-    return `;with(window.${this.compartmentSpecifier}){(function(${globalObjectOptimizer}){;${source}\n${sourceMapURL}}).bind(window)(${globalObjectOptimizer})};`;
+    return `;(function(){with(this){${globalObjectOptimizer}${source}\n${sourceMapURL}}}).bind(window.${this.compartmentSpecifier})();`;
   }
 
   // evaluate<T>(code: string, options?: CompartmentOptions): T {

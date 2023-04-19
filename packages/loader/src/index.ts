@@ -21,8 +21,8 @@ type ImportOpts = {
  * @param entry
  * @param target
  * @param opts
- * @todo Compatible with browsers that do not support WritableStream/TransformStream
  */
+// Todo Compatible with browsers that do not support WritableStream/TransformStream
 export async function loadEntry(entry: Entry, target: HTMLElement, opts?: ImportOpts): Promise<void> {
   const { fetch = window.fetch, nodeTransformer = (node: Node) => node } = opts || {};
 

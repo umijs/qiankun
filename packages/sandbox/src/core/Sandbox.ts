@@ -8,6 +8,6 @@ export class Sandbox extends Compartment {
     const { globalThis = window } = globals;
 
     const { membrane } = createMembrane(globalThis);
-    this.globalProxy = new Proxy(membrane, {});
+    this.globalContext = new Proxy(membrane, {});
   }
 }
