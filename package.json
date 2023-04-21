@@ -17,7 +17,8 @@
     "docs": "dumi dev",
     "build-docs": "dumi build",
     "ci": "pnpm run lint && pnpm run build && pnpm run test",
-    "test": "cross-env NODE_ENV=test jest"
+    "test": "cross-env NODE_ENV=test jest",
+    "prepare": "husky install"
   },
   "devDependencies": {
     "@jest/types": "^27.5.1",
@@ -44,12 +45,6 @@
     "url": "https://github.com/kuitos/qiankun/issues"
   },
   "homepage": "https://github.com/kuitos/qiankun#readme",
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged",
-      "pre-push": "pnpm run test"
-    }
-  },
   "lint-staged": {
     "**/*.{js,ts,json,css,md}": [
       "prettier --write --ignore-unknown"

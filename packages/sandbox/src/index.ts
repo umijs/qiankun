@@ -1,2 +1,2 @@
 export * from './transpilers';
-export * from './core/Compartment';
+export * from './core/Sandbox';

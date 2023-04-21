@@ -1,5 +1,5 @@
 import { loadEntry } from '@qiankunjs/loader';
-import { Compartment, transpileAssets } from '@qiankunjs/sandbox';
+import { transpileAssets, Sandbox } from '@qiankunjs/sandbox';
 
 export type ObjectType = Record<string, any>;
 
@@ -30,7 +30,7 @@ export async function loadMicroApp<T extends ObjectType>(app: LoadableApp<T>, co
 
   await loadEntry(entry as string, container as HTMLElement, {
     nodeTransformer: (node: Node) => {
-      transpileAssets(node, entry, { fetch, compartment: new Compartment() });
+      transpileAssets(node, entry, { fetch, compartment: new Sandbox() });
       return node;
     },
   });

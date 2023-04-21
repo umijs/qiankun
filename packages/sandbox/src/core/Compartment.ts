@@ -5,7 +5,7 @@
 //   transforms?: Transform[];
 // }
 
-import { nativeWindow } from '../consts';
+import { nativeGlobal } from '../consts';
 
 const compartmentSpecifierPrefix = '__compartment_globalThis__';
 type CompartmentSpecifier = `${typeof compartmentSpecifierPrefix}${string}`;
@@ -26,7 +26,7 @@ export class Compartment {
    */
   private readonly compartmentSpecifier: CompartmentSpecifier = (() => {
     // make sure the compartmentSpecifier is unique
-    while (nativeWindow[`${compartmentSpecifierPrefix}${String(compartmentCounter)}`]) {
+    while (nativeGlobal[`${compartmentSpecifierPrefix}${String(compartmentCounter)}`]) {
       compartmentCounter++;
     }
     return `${compartmentSpecifierPrefix}${String(compartmentCounter)}`;
@@ -47,7 +47,7 @@ export class Compartment {
   }
 
   makeEvaluator(source: string, sourceURL?: string): string {
-    nativeWindow[this.compartmentSpecifier] = this.globalContext;
+    nativeGlobal[this.compartmentSpecifier] = this.globalContext;
 
     const sourceMapURL = sourceURL ? `//# sourceURL=${sourceURL}\n` : '';
 

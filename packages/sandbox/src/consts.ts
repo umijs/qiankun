@@ -3,4 +3,4 @@
  * @since 2023-03-16
  */
 
-export const nativeWindow = document.defaultView!;
+export const nativeGlobal = document.defaultView!;
