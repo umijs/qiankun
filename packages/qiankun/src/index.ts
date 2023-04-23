@@ -22,16 +22,19 @@ export type LoadableApp<T extends ObjectType> = AppMetadata & {
 
 type AppConfiguration = {
   fetch?: typeof window.fetch;
+  sandbox?: boolean;
 };
 
 export async function loadMicroApp<T extends ObjectType>(app: LoadableApp<T>, configuration?: AppConfiguration) {
   const { entry, container } = app;
-  const { fetch } = configuration || {};
+  const { fetch, sandbox } = configuration || {};
 
   await loadEntry(entry as string, container as HTMLElement, {
-    nodeTransformer: (node: Node) => {
-      transpileAssets(node, entry, { fetch, compartment: new Sandbox() });
-      return node;
-    },
+    nodeTransformer: sandbox
+      ? (node: Node) => {
+          transpileAssets(node, entry, { fetch, compartment: new Sandbox() });
+          return node;
+        }
+      : undefined,
   });
 }
