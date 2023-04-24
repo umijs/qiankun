@@ -1,7 +1,15 @@
+/* eslint-disable @typescript-eslint/method-signature-style */
 import { Compartment } from './Compartment';
 import { createMembrane } from './membrane';
 
-export class Sandbox extends Compartment {
+interface SandboxInterface {
+  active(): void;
+  inactive(): void;
+  // TODO
+  // destroy(): void;
+}
+
+export class Sandbox extends Compartment implements SandboxInterface {
   private membrane: ReturnType<typeof createMembrane>;
 
   constructor(globals: Record<string, any> = {}) {
