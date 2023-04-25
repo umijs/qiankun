@@ -46,8 +46,7 @@
     "@qiankunjs/sandbox": "^0.0.1",
     "import-html-entry": "^1.9.0",
     "lodash": "^4.17.11",
-    "single-spa": "^5.9.2",
-    "tslib": "^1.10.0"
+    "single-spa": "^6.0.0-beta.3"
   },
   "devDependencies": {
     "@types/jest": "^25.1.4",

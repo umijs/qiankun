@@ -74,7 +74,7 @@ importers:
       lodash: ^4.17.11
       np: ^5.0.3
       npm-run-all: ^4.1.5
-      single-spa: ^5.9.2
+      single-spa: 6.0.0-beta.3
       tslib: ^1.10.0
       typescript: ^4.1.2
     dependencies:
@@ -83,7 +83,7 @@ importers:
       '@qiankunjs/sandbox': link:../sandbox
       import-html-entry: 1.14.3
       lodash: 4.17.21
-      single-spa: 5.9.4
+      single-spa: 6.0.0-beta.3
       tslib: 1.14.1
     devDependencies:
       '@types/jest': 25.2.3
@@ -14230,8 +14230,8 @@ packages:
     resolution: {integrity: sha512-wnD2ZE+l+SPC/uoS0vXeE9L1+0wuaMqKlfz9AMUo38JsyLSBWSFcHR1Rri62LZc12vLr1gb3jl7iwQhgwpAbGQ==, tarball: signal-exit/download/signal-exit-3.0.7.tgz}
     dev: true
 
-  /single-spa/5.9.4:
-    resolution: {integrity: sha512-QkEoh0AzGuU82qnbUUk0ydF78QbU5wMKqKKJn7uUQfBiOYlRQEfIOpLM4m23Sab+kTOLI1kbYhYeiQ7fX5KVVw==, tarball: single-spa/download/single-spa-5.9.4.tgz}
+  /single-spa/6.0.0-beta.3:
+    resolution: {integrity: sha512-nyRyqq88hBF+X9y2JZrrOcypYhLV3ziRGyU9hiW+EQEU3FmkmWy9eU2DEC1Q1C3XEKv2Of/khHfanT/q2LNWSw==, tarball: single-spa/download/single-spa-6.0.0-beta.3.tgz}
     dev: false
 
   /sisteransi/1.0.5:
