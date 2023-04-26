@@ -1,3 +1,4 @@
+import { defaultTransformer } from './transformer';
 import WritableDOMStream from './writable-dom';
 
 type HTMLEntry = string;
@@ -14,20 +15,22 @@ type Entry = HTMLEntry;
 type ImportOpts = {
   fetch?: typeof window.fetch;
   decoder?: (chunk: string) => string;
-  assetsTransformer?: (node: Node) => Node;
+  nodeTransformer?: (node: Node) => Node;
 };
 
 /**
  * @param entry
  * @param target
  * @param opts
- * @todo Compatible with browsers that do not support WritableStream/TransformStream
  */
-export async function importEntry(entry: Entry, target: HTMLElement, opts?: ImportOpts): Promise<void> {
-  const { fetch = window.fetch, assetsTransformer } = opts || {};
-  const res = await fetch(entry);
+// Todo Compatible with browsers that do not support WritableStream/TransformStream
+export async function loadEntry(entry: Entry, target: HTMLElement, opts?: ImportOpts): Promise<void> {
+  const { fetch = window.fetch, nodeTransformer = defaultTransformer } = opts || {};
 
+  const res = await fetch(entry);
   if (res.body) {
-    await res.body.pipeThrough(new TextDecoderStream()).pipeTo(new WritableDOMStream(target, null, assetsTransformer));
+    await res.body
+      .pipeThrough(new TextDecoderStream())
+      .pipeTo(new WritableDOMStream(target, null, (node) => nodeTransformer(node, entry)));
   }
 }

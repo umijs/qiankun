@@ -1,12 +1,8 @@
 export default {
-  target: 'browser',
-  esm: 'babel',
-  cjs: 'babel',
-  umd: {
-    minFile: true,
-    sourcemap: true,
-  },
-  runtimeHelpers: true,
+  platform: 'browser',
+  esm: {},
+  cjs: {},
+  umd: {},
   extraBabelPlugins: [
     [
       'babel-plugin-import',

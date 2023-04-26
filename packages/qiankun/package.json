@@ -10,12 +10,12 @@
     "micro-frontends",
     "microservice"
   ],
-  "main": "./lib/index.js",
-  "module": "./es/index.js",
-  "types": "./es/index.d.ts",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "build": "father-build",
+    "build": "father build",
     "prepublishOnly": "yarn ci",
     "lint": "yarn lint:js && yarn lint:prettier",
     "lint:js": "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty ./src",
@@ -42,10 +42,11 @@
   "homepage": "https://github.com/kuitos/qiankun#readme",
   "dependencies": {
     "@babel/runtime": "^7.10.5",
+    "@qiankunjs/loader": "^0.0.1",
+    "@qiankunjs/sandbox": "^0.0.1",
     "import-html-entry": "^1.9.0",
     "lodash": "^4.17.11",
-    "single-spa": "^5.9.2",
-    "tslib": "^1.10.0"
+    "single-spa": "^6.0.0-beta.3"
   },
   "devDependencies": {
     "@types/jest": "^25.1.4",
@@ -53,7 +54,7 @@
     "@types/vfile-message": "1.x",
     "babel-plugin-import": "^1.12.1",
     "cross-env": "^7.0.2",
-    "father-build": "^1.7.0",
+    "father": "^4.1.0",
     "jest": "^25.2.2",
     "levenary": "^1.1.1",
     "np": "^5.0.3",
