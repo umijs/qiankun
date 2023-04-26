@@ -4,6 +4,17 @@
  */
 import type { Parcel } from 'single-spa';
 
+declare global {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+  interface Window {
+    __POWERED_BY_QIANKUN__?: boolean;
+    __INJECTED_PUBLIC_PATH_BY_QIANKUN__?: string;
+    __QIANKUN_DEVELOPMENT__?: boolean;
+    Zone?: CallableFunction;
+    __zone_symbol__setTimeout?: Window['setTimeout'];
+  }
+}
+
 export type ObjectType = Record<string, any>;
 
 export type Entry = string;
@@ -26,9 +37,10 @@ export type LoadableApp<T extends ObjectType> = AppMetadata & {
 export type AppConfiguration = {
   fetch?: typeof window.fetch;
   sandbox?: boolean;
+  globalContext?: WindowProxy;
 };
 
-type LifeCycleFn<T extends ObjectType> = (app: LoadableApp<T>, global: typeof window) => Promise<any>;
+export type LifeCycleFn<T extends ObjectType> = (app: LoadableApp<T>, global: WindowProxy) => Promise<any>;
 export type LifeCycles<T extends ObjectType> = {
   beforeLoad?: LifeCycleFn<T> | Array<LifeCycleFn<T>>; // function before app load
   beforeMount?: LifeCycleFn<T> | Array<LifeCycleFn<T>>; // function before app mount

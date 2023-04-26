@@ -43,6 +43,7 @@ importers:
       father: ^4.1.0
       import-html-entry: ^1.12.0
       lodash: ^4.17.11
+      single-spa: 6.0.0-beta.3
       tachometer: ^0.5.10
       typescript: ^4.1.2
     dependencies:
@@ -54,6 +55,7 @@ importers:
       babel-plugin-import: 1.13.6
       father: 4.1.6
       import-html-entry: 1.14.3
+      single-spa: 6.0.0-beta.3
       tachometer: 0.5.10
       typescript: 4.9.5
 
@@ -14232,7 +14234,6 @@ packages:
 
   /single-spa/6.0.0-beta.3:
     resolution: {integrity: sha512-nyRyqq88hBF+X9y2JZrrOcypYhLV3ziRGyU9hiW+EQEU3FmkmWy9eU2DEC1Q1C3XEKv2Of/khHfanT/q2LNWSw==, tarball: single-spa/download/single-spa-6.0.0-beta.3.tgz}
-    dev: false
 
   /sisteransi/1.0.5:
     resolution: {integrity: sha1-E01oEpd1ZDfMBcoBNw06elcQde0=, tarball: sisteransi/download/sisteransi-1.0.5.tgz}

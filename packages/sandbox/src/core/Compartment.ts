@@ -7,31 +7,20 @@
 
 import { nativeGlobal } from '../consts';
 
-const compartmentSpecifierPrefix = '__compartment_globalThis__';
-type CompartmentSpecifier = `${typeof compartmentSpecifierPrefix}${string}`;
+const compartmentGlobalIdPrefix = '__compartment_globalThis__';
+type CompartmentGlobalId = `${typeof compartmentGlobalIdPrefix}${string}`;
 
 declare global {
   interface Window {
     __compartment_window__?: Window;
-    [p: CompartmentSpecifier]: WindowProxy;
+
+    [p: CompartmentGlobalId]: WindowProxy;
   }
 }
 
 let compartmentCounter = 0;
 
 export class Compartment {
-  /**
-   * Since the time of execution of the code in Compartment is determined by the browser, a unique compartmentSpecifier should be generated in Compartment
-   * @private
-   */
-  private readonly compartmentSpecifier: CompartmentSpecifier = (() => {
-    // make sure the compartmentSpecifier is unique
-    while (nativeGlobal[`${compartmentSpecifierPrefix}${String(compartmentCounter)}`]) {
-      compartmentCounter++;
-    }
-    return `${compartmentSpecifierPrefix}${String(compartmentCounter)}`;
-  })();
-
   protected globalContext: WindowProxy = window;
 
   constructor(globals?: Record<string, any>) {
@@ -42,12 +31,23 @@ export class Compartment {
     }
   }
 
+  /**
+   * Since the time of execution of the code in Compartment is determined by the browser, a unique compartmentSpecifier should be generated in Compartment
+   */
+  get id(): CompartmentGlobalId {
+    // make sure the compartmentSpecifier is unique
+    while (nativeGlobal[`${compartmentGlobalIdPrefix}${String(compartmentCounter)}`]) {
+      compartmentCounter++;
+    }
+    return `${compartmentGlobalIdPrefix}${String(compartmentCounter)}`;
+  }
+
   get globalThis(): WindowProxy {
     return this.globalContext;
   }
 
   makeEvaluator(source: string, sourceURL?: string): string {
-    nativeGlobal[this.compartmentSpecifier] = this.globalContext;
+    nativeGlobal[this.id] = this.globalContext;
 
     const sourceMapURL = sourceURL ? `//# sourceURL=${sourceURL}\n` : '';
 
@@ -55,7 +55,7 @@ export class Compartment {
     const globalObjectOptimizer = `const {${globalObjectConstants.join(',')}} = this;`;
 
     // eslint-disable-next-line max-len
-    return `;(function(){with(this){${globalObjectOptimizer}${source}\n${sourceMapURL}}}).bind(window.${this.compartmentSpecifier})();`;
+    return `;(function(){with(this){${globalObjectOptimizer}${source}\n${sourceMapURL}}}).bind(window.${this.id})();`;
   }
 
   // evaluate<T>(code: string, options?: CompartmentOptions): T {
