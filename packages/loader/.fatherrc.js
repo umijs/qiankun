@@ -2,6 +2,7 @@ export default {
   platform: 'browser',
   esm: {},
   cjs: {},
+  sourcemap: true,
   extraBabelPlugins: [
     [
       'babel-plugin-import',

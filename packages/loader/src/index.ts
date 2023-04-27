@@ -1,4 +1,6 @@
-import { defaultTransformer } from './transformer';
+import type { Compartment } from '@qiankunjs/sandbox';
+import { transpileAssets } from './transpilers';
+import { Deferred } from './utils';
 import WritableDOMStream from './writable-dom';
 
 type HTMLEntry = string;
@@ -15,22 +17,64 @@ type Entry = HTMLEntry;
 type ImportOpts = {
   fetch?: typeof window.fetch;
   decoder?: (chunk: string) => string;
-  nodeTransformer?: (node: Node) => Node;
+  compartment?: Compartment;
+  nodeTransformer?: typeof transpileAssets;
 };
 
 /**
  * @param entry
- * @param target
+ * @param container
  * @param opts
  */
-// Todo Compatible with browsers that do not support WritableStream/TransformStream
-export async function loadEntry(entry: Entry, target: HTMLElement, opts?: ImportOpts): Promise<void> {
-  const { fetch = window.fetch, nodeTransformer = defaultTransformer } = opts || {};
+export async function loadEntry(entry: Entry, container: HTMLElement, opts?: ImportOpts): Promise<void> {
+  const { fetch = window.fetch, nodeTransformer = transpileAssets, compartment } = opts || {};
 
   const res = await fetch(entry);
   if (res.body) {
-    await res.body
+    const loadEntryDeferred = new Deferred<void>();
+    const streamFinishedDeferred = new Deferred<void>();
+
+    res.body
       .pipeThrough(new TextDecoderStream())
-      .pipeTo(new WritableDOMStream(target, null, (node) => nodeTransformer(node, entry)));
+      .pipeTo(
+        new WritableDOMStream(container, null, (node) => {
+          const transformedNode = nodeTransformer(node, entry, { fetch, compartment });
+
+          const script = transformedNode as any as HTMLScriptElement;
+          if (script.tagName === 'SCRIPT' && (script.src || script.dataset.src)) {
+            script.addEventListener(
+              'load',
+              async () => {
+                /*
+                 * If the entry script is executed, we can complete the entry process in advance
+                 * otherwise we need to wait until the last script is executed.
+                 */
+                if (script.hasAttribute('entry')) {
+                  loadEntryDeferred.resolve();
+                } else {
+                  await streamFinishedDeferred.promise;
+
+                  const scripts = container.querySelectorAll('script[src]');
+                  const lastScript = scripts[scripts.length - 1];
+
+                  if (lastScript === script) {
+                    loadEntryDeferred.resolve();
+                  }
+                }
+              },
+              { once: true },
+            );
+          }
+
+          return transformedNode;
+        }),
+      )
+      .then(() => streamFinishedDeferred.resolve());
+
+    return loadEntryDeferred.promise;
   }
+
+  // return {} as any;
 }
+
+export * from './transpilers';

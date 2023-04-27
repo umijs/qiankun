@@ -60,8 +60,9 @@ export function createMembrane(
   globalContext: Window,
   unscopables: Record<string, true>,
   whitelistVariables = globalVariableWhiteList,
+  extraContext: Record<string, any> = {},
 ) {
-  const { fakeWindow, propertiesWithGetter } = createFakeWindow(globalContext);
+  const { fakeWindow, propertiesWithGetter } = createFakeWindow(globalContext, extraContext);
   const descriptorTargetMap = new Map<PropertyKey, SymbolTarget>();
 
   const modifications = new Set<PropertyKey>();
@@ -252,14 +253,17 @@ export function createMembrane(
   };
 }
 
-function createFakeWindow(globalContext: Window): {
+function createFakeWindow(
+  globalContext: Window,
+  extraContext?: Record<string, any>,
+): {
   fakeWindow: FakeWindow;
   propertiesWithGetter: Map<PropertyKey, boolean>;
 } {
   // map always has the best performance in `has` check scenario
   // see https://jsperf.com/array-indexof-vs-set-has/23
   const propertiesWithGetter = new Map<PropertyKey, boolean>();
-  const fakeWindow = {} as FakeWindow;
+  const fakeWindow = extraContext || ({} as FakeWindow);
 
   /*
    copy the non-configurable property of global to fakeWindow

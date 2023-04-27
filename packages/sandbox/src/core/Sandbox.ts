@@ -12,21 +12,23 @@ interface SandboxInterface {
 export class Sandbox extends Compartment implements SandboxInterface {
   private membrane: ReturnType<typeof createMembrane>;
 
-  constructor(globals: Record<string, any> = {}) {
+  constructor(globals: Record<string, any> = {}, globalContext: WindowProxy = window) {
     super(globals);
 
-    const { globalThis = window } = globals;
-
-    const membrane = createMembrane(globalThis, {}, []);
+    const membrane = createMembrane(globalContext, {}, [], globals);
     this.membrane = membrane;
     this.globalContext = membrane.instance;
   }
 
-  active() {
+  get latestSetProp() {
+    return this.membrane.latestSetProp;
+  }
+
+  async active() {
     this.membrane.unlock();
   }
 
-  inactive() {
+  async inactive() {
     this.membrane.lock();
   }
 

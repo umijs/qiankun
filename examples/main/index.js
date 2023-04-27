@@ -9,3 +9,12 @@ loadMicroApp(
   },
   { sandbox: false },
 );
+
+loadMicroApp(
+  {
+    name: 'react15',
+    entry: '//localhost:7102',
+    container: document.getElementById('subapp-container-react'),
+  },
+  { sandbox: true },
+);

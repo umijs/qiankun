@@ -3,6 +3,7 @@ export default {
   esm: {},
   cjs: {},
   umd: {},
+  sourcemap: true,
   extraBabelPlugins: [
     [
       'babel-plugin-import',
