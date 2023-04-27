@@ -6,8 +6,12 @@ import transpileLink from './link';
 import type { TransformerOpts } from './script';
 import transpileScript from './script';
 
-export function transpileAssets(node: Node, baseURI: string, opts: TransformerOpts): Node {
-  const { tagName } = node as HTMLElement;
+export function transpileAssets<T extends HTMLScriptElement | HTMLLinkElement>(
+  node: T,
+  baseURI: string,
+  opts: TransformerOpts,
+): T {
+  const { tagName } = node;
 
   switch (tagName) {
     case 'SCRIPT': {
