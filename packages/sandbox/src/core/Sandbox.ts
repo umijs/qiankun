@@ -12,10 +12,10 @@ interface SandboxInterface {
 export class Sandbox extends Compartment implements SandboxInterface {
   private membrane: ReturnType<typeof createMembrane>;
 
-  constructor(globals: WindowProxy = window) {
+  constructor(globals: Record<string, any> = {}, globalContext: WindowProxy = window) {
     super(globals);
 
-    const membrane = createMembrane(globals, {}, []);
+    const membrane = createMembrane(globalContext, {}, [], globals);
     this.membrane = membrane;
     this.globalContext = membrane.instance;
   }

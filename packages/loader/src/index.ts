@@ -1,7 +1,7 @@
 import type { Compartment } from '@qiankunjs/sandbox';
 import { transpileAssets } from './transpilers';
+import { Deferred } from './utils';
 import WritableDOMStream from './writable-dom';
-import type { LifeCycles } from 'single-spa';
 
 type HTMLEntry = string;
 // type ConfigEntry = { html: string; scripts: [], styles: [] };
@@ -23,21 +23,43 @@ type ImportOpts = {
 
 /**
  * @param entry
- * @param target
+ * @param container
  * @param opts
  */
-// Todo Compatible with browsers that do not support WritableStream/TransformStream
-export async function loadEntry(entry: Entry, target: HTMLElement, opts?: ImportOpts): Promise<LifeCycles> {
+export async function loadEntry(entry: Entry, container: HTMLElement, opts?: ImportOpts): Promise<void> {
   const { fetch = window.fetch, nodeTransformer = transpileAssets, compartment } = opts || {};
 
   const res = await fetch(entry);
   if (res.body) {
-    await res.body
+    const deferred = new Deferred<void>();
+
+    res.body
       .pipeThrough(new TextDecoderStream())
-      .pipeTo(new WritableDOMStream(target, null, (node) => nodeTransformer(node, entry, { fetch, compartment })));
+      .pipeTo(
+        new WritableDOMStream(container, null, (node) => {
+          const transformedNode = nodeTransformer(node, entry, { fetch, compartment });
+
+          const script = transformedNode as any as HTMLScriptElement;
+          if (script.tagName === 'SCRIPT' && script.hasAttribute('entry')) {
+            script.addEventListener('load', () => deferred.resolve(), { once: true });
+          }
+
+          return transformedNode;
+        }),
+      )
+      .then(() => {
+        const scripts = container.querySelector('script[src]');
+        if (scripts && scripts.lastChild) {
+          scripts.lastChild.addEventListener('load', () => deferred.resolve(), { once: true });
+        } else {
+          deferred.resolve();
+        }
+      });
+
+    await deferred.promise;
   }
 
-  return {} as any;
+  // return {} as any;
 }
 
 export * from './transpilers';

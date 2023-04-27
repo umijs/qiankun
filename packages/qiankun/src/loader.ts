@@ -49,7 +49,7 @@ export default async function <T extends ObjectType>(
 
   await execHooksChain(toArray(beforeLoad), app, global);
 
-  const { scriptExports } = await loadEntry(entry, container, {
+  await loadEntry(entry, container, {
     nodeTransformer: sandbox
       ? (node: Node) => {
           transpileAssets(node, entry, { fetch, compartment: sandboxContainer });
@@ -59,7 +59,7 @@ export default async function <T extends ObjectType>(
   });
 
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
-    scriptExports,
+    {},
     appName,
     global,
     sandboxContainer?.latestSetProp,

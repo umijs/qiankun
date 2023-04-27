@@ -3,13 +3,13 @@ import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-export async function bootstrap() {
+async function bootstrap() {
   console.log('[react15] react app bootstraped');
 }
 
 const containerMap = new WeakMap();
 
-export async function mount(props: any) {
+async function mount(props: any) {
   console.log('[react18] props from main framework', props);
 
   const container = props?.container ? props.container.querySelector('#root') : document.getElementById('root');
@@ -23,7 +23,7 @@ export async function mount(props: any) {
   containerMap.set(container, root);
 }
 
-export async function unmount(props: any) {
+async function unmount(props: any) {
   const container = props.container ? props.container.querySelector('#root') : document.getElementById('root');
   const root = containerMap.get(container);
   root.unmount();
@@ -33,3 +33,9 @@ export async function unmount(props: any) {
 if (!window.__POWERED_BY_QIANKUN__) {
   bootstrap().then(mount);
 }
+
+window.vite = {
+  bootstrap,
+  mount,
+  unmount,
+};

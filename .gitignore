@@ -13,8 +13,8 @@ config.local.js
 .idea/
 .cache
 yarn.lock
-es
-lib
+esm
+cjs
 package-lock.json
 .eslintcache
 .history
