@@ -320,6 +320,17 @@ module.exports = {
 };
 ```
 
+`vue-cli5` project, use the `asset/inline` of `webpack` replace `url-loader`:
+
+```js
+module.exports = {
+  chainWebpack: (config) => {
+    config.module.rule('fonts').type('asset/inline').set('generator', {});
+    config.module.rule('images').type('asset/inline').set('generator', {});
+  },
+};
+```
+
 3. Use the `file-loader` of `webpack` to inject the full path when packaging it (suitable for projects with large font files and images)
 
 ```js
