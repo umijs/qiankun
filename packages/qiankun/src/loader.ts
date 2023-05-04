@@ -62,7 +62,7 @@ export default async function <T extends ObjectType>(
     {},
     appName,
     global,
-    sandboxContainer?.latestSetProp,
+    sandboxContainer ? sandboxContainer.latestSetProp : null,
   );
 
   const parcelConfigGetter: ParcelConfigObjectGetter = (mountContainer = container) => {

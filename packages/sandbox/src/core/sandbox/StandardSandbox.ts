@@ -1,28 +1,13 @@
 /* eslint-disable @typescript-eslint/method-signature-style */
-import { Compartment } from './Compartment';
-import { createMembrane } from './membrane';
+import { Compartment } from '../compartment';
+import { createMembrane } from '../membrane';
+import { SandboxType } from './types';
+import type { Sandbox } from './types';
 
-interface SandboxInterface {
-  active(): void;
-  inactive(): void;
-  // TODO
-  // destroy(): void;
-}
-
-export class Sandbox extends Compartment implements SandboxInterface {
+export class StandardSandbox extends Compartment implements Sandbox {
   private membrane: ReturnType<typeof createMembrane>;
 
-  constructor(globals: Record<string, any> = {}, globalContext: WindowProxy = window) {
-    super(globals);
-
-    const membrane = createMembrane(globalContext, {}, [], globals);
-    this.membrane = membrane;
-    this.globalContext = membrane.instance;
-  }
-
-  get latestSetProp() {
-    return this.membrane.latestSetProp;
-  }
+  readonly type = SandboxType.Standard;
 
   async active() {
     this.membrane.unlock();
@@ -30,6 +15,20 @@ export class Sandbox extends Compartment implements SandboxInterface {
 
   async inactive() {
     this.membrane.lock();
+  }
+
+  constructor(globals: Record<string, any> = {}, globalContext: WindowProxy = window) {
+    super(globals);
+
+    const membrane = createMembrane(globalContext, {}, [], globals);
+    this.membrane = membrane;
+
+    // Override the globalContext
+    this.globalContext = membrane.instance;
+  }
+
+  get latestSetProp() {
+    return this.membrane.latestSetProp;
   }
 
   // TODO

@@ -4,3 +4,5 @@
  */
 
 export const nativeGlobal = document.defaultView!;
+
+export const nativeDocument = nativeGlobal.document;

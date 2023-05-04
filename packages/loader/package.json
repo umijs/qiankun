@@ -8,7 +8,7 @@
   "scripts": {
     "build": "father build",
     "test": "cross-env NODE_ENV=test jest",
-    "bench": "npm run build && tachometer ./benchmarks/parser/import-html-entry.html ./benchmarks/parser/parser.html ./benchmarks/parser/huge-html/import-html-entry.html ./benchmarks/parser/huge-html/parser.html --timeout=1"
+    "bench": "npm run build && tachometer ./benchmarks/parser/tern/import-html-entry.html ./benchmarks/parser/tern/parser.html --timeout=1"
   },
   "author": "Kuitos",
   "license": "MIT",

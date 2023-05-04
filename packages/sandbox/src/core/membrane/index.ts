@@ -263,7 +263,7 @@ function createFakeWindow(
   // map always has the best performance in `has` check scenario
   // see https://jsperf.com/array-indexof-vs-set-has/23
   const propertiesWithGetter = new Map<PropertyKey, boolean>();
-  const fakeWindow = extraContext || ({} as FakeWindow);
+  const fakeWindow = (extraContext || {}) as FakeWindow;
 
   /*
    copy the non-configurable property of global to fakeWindow
@@ -306,7 +306,9 @@ function createFakeWindow(
           }
         }
 
-        if (hasGetter) propertiesWithGetter.set(p, true);
+        if (hasGetter && !fakeWindow.hasOwnProperty(p)) {
+          propertiesWithGetter.set(p, true);
+        }
 
         // freeze the descriptor to avoid being modified by zone.js
         // see https://github.com/angular/zone.js/blob/a5fe09b0fac27ac5df1fa746042f96f05ccb6a00/lib/browser/define-property.ts#L71

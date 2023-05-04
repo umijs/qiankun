@@ -41,13 +41,13 @@ export default function transpileScript(script: HTMLScriptElement, baseURI: stri
       fetch(scriptSrc)
         .then((res) => res.text())
         .then((code) => {
-          const evaluator = compartment.makeEvaluator(code, scriptSrc);
-          script.src = URL.createObjectURL(new Blob([evaluator], { type: 'application/javascript' }));
+          const codeFactory = compartment.makeEvaluateFactory(code, scriptSrc);
+          script.src = URL.createObjectURL(new Blob([codeFactory], { type: 'application/javascript' }));
         });
     } else if (isValidJavaScriptType(script.type)) {
       const code = script.textContent;
       if (code) {
-        script.textContent = compartment.makeEvaluator(code, baseURI);
+        script.textContent = compartment.makeEvaluateFactory(code, baseURI);
       }
     }
   } else {

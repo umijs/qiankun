@@ -1,14 +1,16 @@
-// type Transform = (source: string) => string;
+type Transform = (source: string) => string;
 // type ModuleMap = Record<string, string>;
 //
-// interface CompartmentOptions {
-//   transforms?: Transform[];
-// }
+interface CompartmentOptions {
+  transforms?: Transform[];
+}
 
-import { nativeGlobal } from '../consts';
+import { nativeGlobal } from '../../consts';
 
 const compartmentGlobalIdPrefix = '__compartment_globalThis__';
 const compartmentGlobalIdSuffix = '__';
+const getCompartmentGlobalId = (id: number): CompartmentGlobalId =>
+  `${compartmentGlobalIdPrefix}${String(id)}${compartmentGlobalIdSuffix}`;
 type CompartmentGlobalId = `${typeof compartmentGlobalIdPrefix}${string}${typeof compartmentGlobalIdSuffix}`;
 
 declare global {
@@ -28,10 +30,10 @@ export class Compartment {
   private readonly id: CompartmentGlobalId = (() => {
     {
       // make sure the compartmentSpecifier is unique
-      while (nativeGlobal[`${compartmentGlobalIdPrefix}${String(compartmentCounter)}`]) {
+      while (nativeGlobal[getCompartmentGlobalId(compartmentCounter)]) {
         compartmentCounter++;
       }
-      return `${compartmentGlobalIdPrefix}${String(compartmentCounter)}__`;
+      return getCompartmentGlobalId(compartmentCounter);
     }
   })();
 
@@ -49,7 +51,7 @@ export class Compartment {
     return this.globalContext;
   }
 
-  makeEvaluator(source: string, sourceURL?: string): string {
+  makeEvaluateFactory(source: string, sourceURL?: string): string {
     const sourceMapURL = sourceURL ? `//# sourceURL=${sourceURL}\n` : '';
 
     const globalObjectConstants = ['window', 'globalThis'];
@@ -60,7 +62,14 @@ export class Compartment {
     return `;(function(){with(this){${globalObjectOptimizer}${source}\n${sourceMapURL}}}).bind(window.${this.id})();`;
   }
 
-  // evaluate<T>(code: string, options?: CompartmentOptions): T {
-  //   const script = document.createElement('script');
-  // }
+  // TODO add return value
+  evaluate(code: string, options?: CompartmentOptions): void {
+    const { transforms } = options || {};
+    const transformedCode = transforms?.reduce((acc, transform) => transform(acc), code) || code;
+    const codeFactory = this.makeEvaluateFactory(transformedCode);
+
+    const script = document.createElement('script');
+    script.textContent = codeFactory;
+    document.head.appendChild(script);
+  }
 }
