@@ -3,14 +3,12 @@
  * @since 2023-03-16
  */
 
-import type { Compartment } from '@qiankunjs/sandbox';
-import { nativeGlobal } from '@qiankunjs/sandbox';
+import type { Sandbox } from '@qiankunjs/sandbox';
 import { getEntireUrl } from '../utils';
-import { getGlobalProp, noteGlobalProps } from './utils';
 
 export type TransformerOpts = {
   fetch: typeof window.fetch;
-  compartment?: Compartment;
+  sandbox?: Sandbox;
 };
 
 const isValidJavaScriptType = (type?: string): boolean => {
@@ -28,9 +26,9 @@ export default function transpileScript(script: HTMLScriptElement, baseURI: stri
   // Can't use script.src directly, because it will be resolved to absolute path by browser with Node.baseURI
   // Such as <script src="./foo.js"></script> will be resolved to http://localhost:8000/foo.js while read script.src
   const srcAttribute = script.getAttribute('src');
-  const { compartment } = opts;
+  const { sandbox } = opts;
 
-  if (compartment) {
+  if (sandbox) {
     if (srcAttribute) {
       script.removeAttribute('src');
 
@@ -41,13 +39,13 @@ export default function transpileScript(script: HTMLScriptElement, baseURI: stri
       fetch(scriptSrc)
         .then((res) => res.text())
         .then((code) => {
-          const codeFactory = compartment.makeEvaluateFactory(code, scriptSrc);
+          const codeFactory = sandbox.makeEvaluateFactory(code, scriptSrc);
           script.src = URL.createObjectURL(new Blob([codeFactory], { type: 'application/javascript' }));
         });
     } else if (isValidJavaScriptType(script.type)) {
       const code = script.textContent;
       if (code) {
-        script.textContent = compartment.makeEvaluateFactory(code, baseURI);
+        script.textContent = sandbox.makeEvaluateFactory(code, baseURI);
       }
     }
   } else {
@@ -57,25 +55,4 @@ export default function transpileScript(script: HTMLScriptElement, baseURI: stri
   }
 
   // TODO find entry exports
-}
-
-nativeGlobal.__qiankun_audit_pre_script__ = noteGlobalProps;
-nativeGlobal.__qiankun_audit_post_script__ = getGlobalProp;
-
-function createPreAuditScript(compartment: Compartment): HTMLScriptElement {
-  const preAuditScript = document.createElement('script');
-  preAuditScript.textContent = `
-    window.__qiankun_audit_pre_script__(window.${compartment.id});
-    `;
-
-  return preAuditScript;
-}
-
-function createPostAuditScript(compartment: Compartment): HTMLScriptElement {
-  const postAuditScript = document.createElement('script');
-  postAuditScript.textContent = `
-    window.__qiankun_audit_post_script__(window.${compartment.id});
-    `;
-
-  return postAuditScript;
 }

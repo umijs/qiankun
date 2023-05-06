@@ -1,9 +1,9 @@
-type Transform = (source: string) => string;
+// type Transform = (source: string) => string;
 // type ModuleMap = Record<string, string>;
 //
-interface CompartmentOptions {
-  transforms?: Transform[];
-}
+// interface CompartmentOptions {
+//   transforms?: Transform[];
+// }
 
 import { nativeGlobal } from '../../consts';
 
@@ -37,18 +37,14 @@ export class Compartment {
     }
   })();
 
-  protected globalContext: WindowProxy = window;
+  private readonly _globalThis: WindowProxy;
 
-  constructor(globals?: Record<string, any>) {
-    if (globals) {
-      Object.keys(globals).forEach((k) => {
-        this.globalContext[k as any] = globals[k];
-      });
-    }
+  constructor(globals: WindowProxy) {
+    this._globalThis = globals;
   }
 
   get globalThis(): WindowProxy {
-    return this.globalContext;
+    return this._globalThis;
   }
 
   makeEvaluateFactory(source: string, sourceURL?: string): string {
@@ -57,19 +53,19 @@ export class Compartment {
     const globalObjectConstants = ['window', 'globalThis'];
     const globalObjectOptimizer = `const {${globalObjectConstants.join(',')}} = this;`;
 
-    nativeGlobal[this.id] = this.globalContext;
+    nativeGlobal[this.id] = this.globalThis;
     // eslint-disable-next-line max-len
     return `;(function(){with(this){${globalObjectOptimizer}${source}\n${sourceMapURL}}}).bind(window.${this.id})();`;
   }
 
   // TODO add return value
-  evaluate(code: string, options?: CompartmentOptions): void {
-    const { transforms } = options || {};
-    const transformedCode = transforms?.reduce((acc, transform) => transform(acc), code) || code;
-    const codeFactory = this.makeEvaluateFactory(transformedCode);
-
-    const script = document.createElement('script');
-    script.textContent = codeFactory;
-    document.head.appendChild(script);
-  }
+  // evaluate(code: string, options?: CompartmentOptions): void {
+  //   const { transforms } = options || {};
+  //   const transformedCode = transforms?.reduce((acc, transform) => transform(acc), code) || code;
+  //   const codeFactory = this.makeEvaluateFactory(transformedCode);
+  //
+  //   const script = document.createElement('script');
+  //   script.textContent = codeFactory;
+  //   document.head.appendChild(script);
+  // }
 }

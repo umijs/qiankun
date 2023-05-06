@@ -3,7 +3,6 @@
  * @since 2019-04-11
  */
 
-import { noop } from 'lodash';
 import type { Sandbox } from '../core/sandbox/types';
 import { SandboxType } from '../core/sandbox/types';
 import { patchStandardSandbox } from './dynamicAppend';
@@ -12,24 +11,16 @@ import patchInterval from './interval';
 import type { Free } from './types';
 import patchWindowListener from './windowListener';
 
-export function patchAtBootstrapping(
-  appName: string,
-  getContainer: () => HTMLElement | ShadowRoot,
-  sandbox: Sandbox,
-): Free[] {
+export function patchAtBootstrapping(appName: string, getContainer: () => HTMLElement, sandbox: Sandbox): Free[] {
   const patchersInSandbox = {
-    [SandboxType.Standard]: [() => patchStandardSandbox(appName, getContainer, sandbox, false)],
-    [SandboxType.Snapshot]: [noop],
+    [SandboxType.Standard]: [() => patchStandardSandbox(appName, getContainer, { sandbox, mounting: false })],
+    [SandboxType.Snapshot]: [],
   } as const;
 
   return patchersInSandbox[sandbox.type]?.map((patch) => patch());
 }
 
-export function patchAtMounting(
-  appName: string,
-  getContainer: () => HTMLElement | ShadowRoot,
-  sandbox: Sandbox,
-): Free[] {
+export function patchAtMounting(appName: string, getContainer: () => HTMLElement, sandbox: Sandbox): Free[] {
   const basePatchers = [
     () => patchInterval(sandbox.globalThis),
     () => patchWindowListener(sandbox.globalThis),
@@ -37,8 +28,11 @@ export function patchAtMounting(
   ];
 
   const patchersInSandbox = {
-    [SandboxType.Standard]: [...basePatchers, () => patchStandardSandbox(appName, getContainer, sandbox, true)],
-    [SandboxType.Snapshot]: [...basePatchers, noop],
+    [SandboxType.Standard]: [
+      ...basePatchers,
+      () => patchStandardSandbox(appName, getContainer, { sandbox, mounting: true }),
+    ],
+    [SandboxType.Snapshot]: basePatchers,
   };
 
   return patchersInSandbox[sandbox.type]?.map((patch) => patch());

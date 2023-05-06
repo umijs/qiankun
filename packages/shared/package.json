@@ -1,5 +1,5 @@
 {
-  "name": "@qiankunjs/loader",
+  "name": "@qiankunjs/shared",
   "version": "0.0.1",
   "description": "",
   "main": "./dist/cjs/index.js",
@@ -14,9 +14,8 @@
   "license": "MIT",
   "dependencies": {
     "@babel/runtime": "^7.10.5",
-    "@qiankunjs/sandbox": "workspace:^",
-    "@qiankunjs/shared": "workspace:^",
-    "lodash": "^4.17.11"
+    "lodash": "^4.17.11",
+    "@qiankunjs/sandbox": "^0.0.1"
   },
   "devDependencies": {
     "@types/lodash": "^4.14.129",

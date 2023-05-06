@@ -99,7 +99,7 @@ function patchDocument(sandbox: Sandbox) {
     },
   });
 
-  sandbox.patchDocument(proxyDocument);
+  sandbox.addIntrinsics({ document: { value: proxyDocument, writable: false, enumerable: true, configurable: true } });
 
   // patch MutationObserver.prototype.observe to avoid type error
   // https://github.com/umijs/qiankun/issues/2406
@@ -117,28 +117,28 @@ function patchDocument(sandbox: Sandbox) {
   // patch parentNode getter to avoid document === html.parentNode
   // https://github.com/umijs/qiankun/issues/2408#issuecomment-1446229105
   const parentNodeDescriptor = Object.getOwnPropertyDescriptor(Node.prototype, 'parentNode');
-  if (parentNodeDescriptor && !parentNodePatchedMap.has(parentNodeDescriptor)) {
-    const { get: parentNodeGetter, configurable } = parentNodeDescriptor;
-    if (parentNodeGetter && configurable) {
-      const patchedParentNodeDescriptor = {
-        ...parentNodeDescriptor,
-        get(this: Node) {
-          const parentNode = parentNodeGetter.call(this);
-          if (parentNode instanceof Document) {
-            const proxy = getCurrentRunningApp()?.window;
-            if (proxy) {
-              return proxy.document;
-            }
-          }
-
-          return parentNode;
-        },
-      };
-      Object.defineProperty(Node.prototype, 'parentNode', patchedParentNodeDescriptor);
-
-      parentNodePatchedMap.set(parentNodeDescriptor, patchedParentNodeDescriptor);
-    }
-  }
+  // if (parentNodeDescriptor && !parentNodePatchedMap.has(parentNodeDescriptor)) {
+  //   const { get: parentNodeGetter, configurable } = parentNodeDescriptor;
+  //   if (parentNodeGetter && configurable) {
+  //     const patchedParentNodeDescriptor = {
+  //       ...parentNodeDescriptor,
+  //       get(this: Node) {
+  //         const parentNode = parentNodeGetter.call(this);
+  //         if (parentNode instanceof Document) {
+  //           const proxy = getCurrentRunningApp()?.window;
+  //           if (proxy) {
+  //             return proxy.document;
+  //           }
+  //         }
+  //
+  //         return parentNode;
+  //       },
+  //     };
+  //     Object.defineProperty(Node.prototype, 'parentNode', patchedParentNodeDescriptor);
+  //
+  //     parentNodePatchedMap.set(parentNodeDescriptor, patchedParentNodeDescriptor);
+  //   }
+  // }
 
   return () => {
     MutationObserver.prototype.observe = nativeMutationObserverObserveFn;

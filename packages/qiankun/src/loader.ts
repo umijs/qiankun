@@ -2,8 +2,10 @@
  * @author Kuitos
  * @since 2023-04-25
  */
-import { loadEntry, transpileAssets } from '@qiankunjs/loader';
-import { Sandbox } from '@qiankunjs/sandbox';
+import { loadEntry } from '@qiankunjs/loader';
+import type { Sandbox } from '@qiankunjs/sandbox';
+import { createSandboxContainer } from '@qiankunjs/sandbox';
+import { transpileAssets } from '@qiankunjs/shared';
 import { concat, isFunction, mergeWith } from 'lodash';
 import type { ParcelConfigObject } from 'single-spa';
 import getAddOns from './addons';
@@ -29,13 +31,16 @@ export default async function <T extends ObjectType>(
   let global = globalContext;
   let mountSandbox = () => Promise.resolve();
   let unmountSandbox = () => Promise.resolve();
-  let sandboxContainer: Sandbox;
+  let sandboxInstance: Sandbox | undefined;
 
   if (sandbox) {
-    sandboxContainer = new Sandbox();
-    global = sandboxContainer.globalThis;
-    mountSandbox = () => sandboxContainer.active();
-    unmountSandbox = () => sandboxContainer.inactive();
+    const sandboxContainer = createSandboxContainer(appName, () => container, { globalContext, extraGlobals: {} });
+
+    sandboxInstance = sandboxContainer.instance;
+    global = sandboxInstance.globalThis;
+
+    mountSandbox = () => sandboxContainer.mount();
+    unmountSandbox = () => sandboxContainer.unmount();
   }
 
   const assetPublicPath = calcPublicPath(entry);
@@ -51,10 +56,7 @@ export default async function <T extends ObjectType>(
 
   await loadEntry(entry, container, {
     nodeTransformer: sandbox
-      ? (node: Node) => {
-          transpileAssets(node, entry, { fetch, compartment: sandboxContainer });
-          return node;
-        }
+      ? <K extends Node>(node: K) => transpileAssets<K>(node, entry, { fetch, sandbox: sandboxInstance })
       : undefined,
   });
 
@@ -62,7 +64,7 @@ export default async function <T extends ObjectType>(
     {},
     appName,
     global,
-    sandboxContainer ? sandboxContainer.latestSetProp : null,
+    sandboxInstance?.latestSetProp,
   );
 
   const parcelConfigGetter: ParcelConfigObjectGetter = (mountContainer = container) => {
@@ -128,8 +130,8 @@ function execHooksChain<T extends ObjectType>(
 function getLifecyclesFromExports(
   scriptExports: LifeCycles<any>,
   appName: string,
-  global: WindowProxy,
-  globalLatestSetProp?: PropertyKey | null,
+  globalContext: WindowProxy,
+  globalLatestSetProp?: PropertyKey,
 ) {
   const validateExportLifecycle = (exports: any) => {
     const { bootstrap, mount, unmount } = exports ?? {};
@@ -142,7 +144,7 @@ function getLifecyclesFromExports(
 
   // fallback to sandbox latest set property if it had
   if (globalLatestSetProp) {
-    const lifecycles = (<any>global)[globalLatestSetProp];
+    const lifecycles = (<any>globalContext)[globalLatestSetProp];
     if (validateExportLifecycle(lifecycles)) {
       return lifecycles;
     }
@@ -154,8 +156,8 @@ function getLifecyclesFromExports(
     );
   }
 
-  // fallback to global variable who named with ${appName} while module exports not found
-  const globalVariableExports = (global as any)[appName];
+  // fallback to globalContext variable who named with ${appName} while module exports not found
+  const globalVariableExports = (globalContext as any)[appName];
 
   if (validateExportLifecycle(globalVariableExports)) {
     return globalVariableExports;

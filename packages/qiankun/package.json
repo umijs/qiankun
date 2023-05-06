@@ -42,8 +42,9 @@
   "homepage": "https://github.com/kuitos/qiankun#readme",
   "dependencies": {
     "@babel/runtime": "^7.10.5",
-    "@qiankunjs/loader": "^0.0.1",
-    "@qiankunjs/sandbox": "^0.0.1",
+    "@qiankunjs/loader": "workspace:^",
+    "@qiankunjs/sandbox": "workspace:^",
+    "@qiankunjs/shared": "workspace:^",
     "import-html-entry": "^1.9.0",
     "lodash": "^4.17.11",
     "single-spa": "^6.0.0-beta.3"

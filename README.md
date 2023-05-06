@@ -1,10 +1,10 @@
 <p align="center">
   <a href="https://qiankun.umijs.org" target="_blank" rel="noopener noreferrer">
-    <img width="180" src="https://gw.alipayobjects.com/zos/bmw-prod/8a74c1d3-16f3-4719-be63-15e467a68a24/km0cv8vn_w500_h500.png" alt="qiankun logo">
+    <img width="180" src="https://user-images.githubusercontent.com/5206843/156369489-cf708a6a-1937-4dd9-895b-c6d17156c493.png" alt="qiankun logo">
   </a>
 </p>
 
-[![npm version](https://img.shields.io/npm/v/qiankun.svg?style=flat-square)](https://www.npmjs.com/package/qiankun) [![coverage](https://img.shields.io/codecov/c/github/umijs/qiankun.svg?style=flat-square)](https://codecov.io/gh/umijs/qiankun) [![npm downloads](https://img.shields.io/npm/dt/qiankun.svg?style=flat-square)](https://www.npmjs.com/package/qiankun) [![Build Status](https://img.shields.io/travis/umijs/qiankun.svg?style=flat-square)](https://travis-ci.com/umijs/qiankun)
+[![npm version](https://img.shields.io/npm/v/qiankun/next.svg?style=flat-square)](https://www.npmjs.com/package/qiankun) [![coverage](https://img.shields.io/codecov/c/github/umijs/qiankun.svg?style=flat-square)](https://codecov.io/gh/umijs/qiankun) [![npm downloads](https://img.shields.io/npm/dt/qiankun.svg?style=flat-square)](https://www.npmjs.com/package/qiankun) [![Build Status](https://img.shields.io/travis/umijs/qiankun.svg?style=flat-square)](https://travis-ci.com/umijs/qiankun)
 
 # qiankun（乾坤）
 
@@ -22,11 +22,11 @@ In Chinese traditional culture `qian` means heaven and `kun` stands for earth, s
 
 ## Packages
 
-| Package                              | Version (click for changelogs)                                                                             |
-| ------------------------------------ | :--------------------------------------------------------------------------------------------------------- |
-| [qiankun](packages/qiankun)          | [![plugin-vue version](https://img.shields.io/npm/v/qiankun.svg?label=%20)](packages/qiankun/CHANGELOG.md) |
-| [@qiankun/loader](packages/loader)   |                                                                                                            |
-| [@qiankun/sandbox](packages/sandbox) |                                                                                                            |
+| Package                                | Version (click for changelogs)                                                                             |
+|----------------------------------------| :--------------------------------------------------------------------------------------------------------- |
+| [qiankun](packages/qiankun)            | [![plugin-vue version](https://img.shields.io/npm/v/qiankun.svg?label=%20)](packages/qiankun/CHANGELOG.md) |
+| [@qiankunjs/loader](packages/loader)   |                                                                                                            |
+| [@qiankunjs/sandbox](packages/sandbox) |                                                                                                            |
 
 ## 🤔 Motivation
 

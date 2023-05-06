@@ -12,12 +12,7 @@ declare global {
 type FakeWindow = Window & Record<PropertyKey, any>;
 type SymbolTarget = 'target' | 'globalContext';
 
-// zone.js will overwrite Object.defineProperty
-const rawObjectDefineProperty = Object.defineProperty;
-
 const inTest = process.env.NODE_ENV === 'test';
-const mockSafariTop = 'mockSafariTop';
-const mockTop = 'mockTop';
 const mockGlobalThis = 'mockGlobalThis';
 
 // these globals should be recorded while accessing every time
@@ -59,17 +54,21 @@ const useNativeWindowForBindingsProps = new Map<PropertyKey, boolean>([
 export function createMembrane(
   globalContext: Window,
   unscopables: Record<string, true>,
-  whitelistVariables = globalVariableWhiteList,
-  extraContext: Record<string, any> = {},
+  opts?: {
+    whitelistVariables?: string[];
+    extraContext?: Record<string, any>;
+  },
 ) {
-  const { fakeWindow, propertiesWithGetter } = createFakeWindow(globalContext, extraContext);
+  const { whitelistVariables = globalVariableWhiteList, extraContext = {} } = opts || {};
   const descriptorTargetMap = new Map<PropertyKey, SymbolTarget>();
+
+  const { fakeWindow, propertiesWithGetter } = createFakeWindow(extraContext);
 
   const modifications = new Set<PropertyKey>();
   let latestSetProp: PropertyKey | undefined;
   let locking = false;
 
-  const membrane = new Proxy(fakeWindow, {
+  const membraneInstance = new Proxy(fakeWindow, {
     set: (target: FakeWindow, p: PropertyKey, value: any): boolean => {
       if (!locking) {
         // We must keep its description while the property existed in globalContext before
@@ -108,39 +107,8 @@ export function createMembrane(
       return true;
     },
 
-    get: (target: FakeWindow, p: PropertyKey, receiver): any => {
+    get: (target: FakeWindow, p: PropertyKey): any => {
       if (p === Symbol.unscopables) return unscopables;
-      // avoid who using window.window or window.self to escape the sandbox environment to touch the real window
-      // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
-      if (p === 'window' || p === 'self') {
-        return receiver;
-      }
-
-      // hijack globalWindow accessing with globalThis keyword
-      if (p === 'globalThis' || (inTest && p === mockGlobalThis)) {
-        return receiver;
-      }
-
-      if (p === 'top' || p === 'parent' || (inTest && (p === mockTop || p === mockSafariTop))) {
-        // if your master app in an iframe context, allow these props escape the sandbox
-        if (globalContext === globalContext.parent) {
-          return receiver;
-        }
-        return (globalContext as any)[p];
-      }
-
-      // proxy.hasOwnProperty would invoke getter firstly, then its value represented as globalContext.hasOwnProperty
-      if (p === 'hasOwnProperty') {
-        return hasOwnProperty;
-      }
-
-      // if (p === 'document') {
-      //   return this.document;
-      // }
-
-      if (p === 'eval') {
-        return eval;
-      }
 
       const actualTarget = propertiesWithGetter.has(p) ? globalContext : p in target ? target : globalContext;
       const value = actualTarget[p as any];
@@ -229,18 +197,12 @@ export function createMembrane(
     },
   });
 
-  function hasOwnProperty(this: any, key: PropertyKey): boolean {
-    // calling from hasOwnProperty.call(obj, key)
-    if (this !== membrane && this !== null && typeof this === 'object') {
-      return Object.prototype.hasOwnProperty.call(this, key);
-    }
-
-    return fakeWindow.hasOwnProperty(key) || globalContext.hasOwnProperty(key);
-  }
-
   return {
     get instance() {
-      return membrane;
+      return membraneInstance;
+    },
+    get target() {
+      return fakeWindow;
     },
     get modifications() {
       return modifications;
@@ -253,10 +215,7 @@ export function createMembrane(
   };
 }
 
-function createFakeWindow(
-  globalContext: Window,
-  extraContext?: Record<string, any>,
-): {
+function createFakeWindow(extraContext?: Record<string, any>): {
   fakeWindow: FakeWindow;
   propertiesWithGetter: Map<PropertyKey, boolean>;
 } {
@@ -266,55 +225,32 @@ function createFakeWindow(
   const fakeWindow = (extraContext || {}) as FakeWindow;
 
   /*
-   copy the non-configurable property of global to fakeWindow
+   copy the non-configurable property of globalContext to fakeWindow
    see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/getOwnPropertyDescriptor
    > A property cannot be reported as non-configurable, if it does not exist as an own property of the target object or if it exists as a configurable own property of the target object.
    */
-  Object.getOwnPropertyNames(globalContext)
-    .filter((p) => {
-      const descriptor = Object.getOwnPropertyDescriptor(globalContext, p);
-      return !descriptor?.configurable;
-    })
-    .forEach((p) => {
-      const descriptor = Object.getOwnPropertyDescriptor(globalContext, p);
-      if (descriptor) {
-        const hasGetter = Object.prototype.hasOwnProperty.call(descriptor, 'get');
-
-        /*
-         make top/self/window property configurable and writable, otherwise it will cause TypeError while get trap return.
-         see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/get
-         > The value reported for a property must be the same as the value of the corresponding target object property if the target object property is a non-writable, non-configurable data property.
-         */
-        if (
-          p === 'top' ||
-          p === 'parent' ||
-          p === 'self' ||
-          p === 'window' ||
-          // window.document is overwriting
-          p === 'document' ||
-          (inTest && (p === mockTop || p === mockSafariTop))
-        ) {
-          descriptor.configurable = true;
-          /*
-           The descriptor of window.window/window.top/window.self in Safari/FF are accessor descriptors, we need to avoid adding a data descriptor while it was
-           Example:
-            Safari/FF: Object.getOwnPropertyDescriptor(window, 'top') -> {get: function, set: undefined, enumerable: true, configurable: false}
-            Chrome: Object.getOwnPropertyDescriptor(window, 'top') -> {value: Window, writable: false, enumerable: true, configurable: false}
-           */
-          if (!hasGetter) {
-            descriptor.writable = true;
-          }
-        }
-
-        if (hasGetter && !fakeWindow.hasOwnProperty(p)) {
-          propertiesWithGetter.set(p, true);
-        }
-
-        // freeze the descriptor to avoid being modified by zone.js
-        // see https://github.com/angular/zone.js/blob/a5fe09b0fac27ac5df1fa746042f96f05ccb6a00/lib/browser/define-property.ts#L71
-        rawObjectDefineProperty(fakeWindow, p, Object.freeze(descriptor));
-      }
-    });
+  // Object.getOwnPropertyNames(globalContext)
+  //   .filter((p) => {
+  //     const descriptor = Object.getOwnPropertyDescriptor(globalContext, p);
+  //     return !descriptor?.configurable;
+  //   })
+  //   .forEach((p) => {
+  //     const descriptor = Object.getOwnPropertyDescriptor(globalContext, p);
+  //     if (descriptor) {
+  //       const hasGetter = Object.prototype.hasOwnProperty.call(descriptor, 'get');
+  //       if (hasGetter) {
+  //         propertiesWithGetter.set(p, true);
+  //       }
+  //
+  //       rawObjectDefineProperty(
+  //         fakeWindow,
+  //         p,
+  //         // freeze the descriptor to avoid being modified by zone.js
+  //         // see https://github.com/angular/zone.js/blob/a5fe09b0fac27ac5df1fa746042f96f05ccb6a00/lib/browser/define-property.ts#L71
+  //         Object.freeze(descriptor),
+  //       );
+  //     }
+  //   });
 
   return {
     fakeWindow,

@@ -7,6 +7,8 @@ import type { Free, Rebuild } from '../../patchers/types';
 import { StandardSandbox } from './StandardSandbox';
 import type { Sandbox } from './types';
 
+export { Sandbox };
+
 /**
  * 生成应用运行时沙箱
  *
@@ -25,19 +27,19 @@ import type { Sandbox } from './types';
  */
 export function createSandboxContainer(
   appName: string,
-  getContainer: () => HTMLElement | ShadowRoot,
+  getContainer: () => HTMLElement,
   opts: {
-    globalContext?: typeof window;
+    globalContext?: WindowProxy;
     extraGlobals?: Record<string, any>;
   },
 ) {
-  const { globalContext, extraGlobals } = opts;
+  const { globalContext, extraGlobals = {} } = opts;
   let sandbox: Sandbox;
   if (window.Proxy) {
-    sandbox = new StandardSandbox(extraGlobals, globalContext);
+    sandbox = new StandardSandbox(appName, extraGlobals, globalContext);
   } else {
     // TODO snapshot sandbox
-    sandbox = new StandardSandbox(extraGlobals, globalContext);
+    sandbox = new StandardSandbox(appName, extraGlobals, globalContext);
   }
 
   // some side effect could be invoked while bootstrapping, such as dynamic stylesheet injection with style-loader, especially during the development phase

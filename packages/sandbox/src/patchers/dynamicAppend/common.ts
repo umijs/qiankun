@@ -2,7 +2,7 @@
  * @author Kuitos
  * @since 2019-10-21
  */
-import { isFunction } from 'lodash';
+import { transpileAssets } from '@qiankunjs/shared';
 import { qiankunHeadTagName } from '../consts';
 import type { SandboxConfig } from './types';
 
@@ -91,46 +91,6 @@ export function isAllAppsUnmounted(): boolean {
   );
 }
 
-function patchCustomEvent(
-  e: CustomEvent,
-  elementGetter: () => HTMLScriptElement | HTMLLinkElement | null,
-): CustomEvent {
-  Object.defineProperties(e, {
-    srcElement: {
-      get: elementGetter,
-    },
-    target: {
-      get: elementGetter,
-    },
-  });
-
-  return e;
-}
-
-function manualInvokeElementOnLoad(element: HTMLLinkElement | HTMLScriptElement) {
-  // we need to invoke the onload event manually to notify the event listener that the script was completed
-  // here are the two typical ways of dynamic script loading
-  // 1. element.onload callback way, which webpack and loadjs used, see https://github.com/muicss/loadjs/blob/master/src/loadjs.js#L138
-  // 2. addEventListener way, which toast-loader used, see https://github.com/pyrsmk/toast/blob/master/src/Toast.ts#L64
-  const loadEvent = new CustomEvent('load');
-  const patchedEvent = patchCustomEvent(loadEvent, () => element);
-  if (isFunction(element.onload)) {
-    element.onload(patchedEvent);
-  } else {
-    element.dispatchEvent(patchedEvent);
-  }
-}
-
-function manualInvokeElementOnError(element: HTMLLinkElement | HTMLScriptElement) {
-  const errorEvent = new CustomEvent('error');
-  const patchedEvent = patchCustomEvent(errorEvent, () => element);
-  if (isFunction(element.onerror)) {
-    element.onerror(patchedEvent);
-  } else {
-    element.dispatchEvent(patchedEvent);
-  }
-}
-
 const styledComponentCSSRulesMap = new WeakMap<HTMLStyleElement, CSSRuleList>();
 const dynamicScriptAttachedCommentMap = new WeakMap<HTMLScriptElement, Comment>();
 const dynamicLinkAttachedInlineStyleMap = new WeakMap<HTMLLinkElement, HTMLStyleElement>();
@@ -174,7 +134,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
 
     if (element.tagName) {
       const containerConfig = getSandboxConfig(element);
-      const { getContainer, dynamicStyleSheetElements } = containerConfig;
+      const { getContainer, dynamicStyleSheetElements, sandbox } = containerConfig;
 
       switch (element.tagName) {
         case LINK_TAG_NAME:
@@ -187,8 +147,8 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
           });
 
           const container = getContainer();
-
-          const mountDOM = target === 'head' ? getContainerHeadElement(container) : container;
+          // const mountDOM = target === 'head' ? getContainerHeadElement(container) : container;
+          const mountDOM = container;
 
           dynamicStyleSheetElements.push(stylesheetElement);
           const referenceNode = mountDOM.contains(refChild) ? refChild : null;
@@ -196,29 +156,15 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
         }
 
         case SCRIPT_TAG_NAME: {
-          const { src, text } = element as HTMLScriptElement;
-          // some script like jsonp maybe not support cors which shouldn't use execScripts
-
           const container = getContainer();
-          const mountDOM = target === 'head' ? getContainerHeadElement(container) : container;
-
+          // const mountDOM = target === 'head' ? getContainerHeadElement(container) : container;
+          const mountDOM = container;
           const referenceNode = mountDOM.contains(refChild) ? refChild : null;
 
-          const scopedGlobalVariables = speedySandbox ? cachedGlobals : [];
+          // TODO paas fetch configuration and current entry url as baseURI
+          const node = transpileAssets(element, location.href, { fetch, sandbox });
 
-          if (src) {
-            const isRedfinedCurrentScript = false;
-
-            const dynamicScriptCommentElement = document.createComment(`dynamic script ${src} replaced by qiankun`);
-            dynamicScriptAttachedCommentMap.set(element, dynamicScriptCommentElement);
-            return rawDOMAppendOrInsertBefore.call(mountDOM, element, referenceNode);
-          }
-
-          // inline script never trigger the onload and onerror event
-          execScripts(null, [`<script>${text}</script>`], proxy, { strictGlobal, scopedGlobalVariables });
-          const dynamicInlineScriptCommentElement = document.createComment('dynamic inline script replaced by qiankun');
-          dynamicScriptAttachedCommentMap.set(element, dynamicInlineScriptCommentElement);
-          return rawDOMAppendOrInsertBefore.call(mountDOM, dynamicInlineScriptCommentElement, referenceNode);
+          return rawDOMAppendOrInsertBefore.call(mountDOM, node, referenceNode);
         }
 
         default:
@@ -273,7 +219,8 @@ function getNewRemoveChild(
       }
 
       const appWrapper = getContainer();
-      const container = target === 'head' ? getContainerHeadElement(appWrapper) : appWrapper;
+      // const container = target === 'head' ? getContainerHeadElement(appWrapper) : appWrapper;
+      const container = appWrapper;
       // container might have been removed while app unmounting if the removeChild action was async
       if (container.contains(attachedElement)) {
         return rawRemoveChild.call(attachedElement.parentNode, attachedElement) as T;
