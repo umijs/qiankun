@@ -1,6 +1,6 @@
 {
   "name": "@qiankunjs/shared",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "description": "",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -15,7 +15,7 @@
   "dependencies": {
     "@babel/runtime": "^7.10.5",
     "lodash": "^4.17.11",
-    "@qiankunjs/sandbox": "^0.0.1"
+    "@qiankunjs/sandbox": "workspace:^"
   },
   "devDependencies": {
     "@types/lodash": "^4.14.129",
