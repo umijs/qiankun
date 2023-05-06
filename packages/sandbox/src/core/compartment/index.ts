@@ -5,10 +5,12 @@
 //   transforms?: Transform[];
 // }
 
-import { nativeGlobal } from '../consts';
+import { nativeGlobal } from '../../consts';
 
 const compartmentGlobalIdPrefix = '__compartment_globalThis__';
 const compartmentGlobalIdSuffix = '__';
+const getCompartmentGlobalId = (id: number): CompartmentGlobalId =>
+  `${compartmentGlobalIdPrefix}${String(id)}${compartmentGlobalIdSuffix}`;
 type CompartmentGlobalId = `${typeof compartmentGlobalIdPrefix}${string}${typeof compartmentGlobalIdSuffix}`;
 
 declare global {
@@ -28,39 +30,42 @@ export class Compartment {
   private readonly id: CompartmentGlobalId = (() => {
     {
       // make sure the compartmentSpecifier is unique
-      while (nativeGlobal[`${compartmentGlobalIdPrefix}${String(compartmentCounter)}`]) {
+      while (nativeGlobal[getCompartmentGlobalId(compartmentCounter)]) {
         compartmentCounter++;
       }
-      return `${compartmentGlobalIdPrefix}${String(compartmentCounter)}__`;
+      return getCompartmentGlobalId(compartmentCounter);
     }
   })();
 
-  protected globalContext: WindowProxy = window;
+  private readonly _globalThis: WindowProxy;
 
-  constructor(globals?: Record<string, any>) {
-    if (globals) {
-      Object.keys(globals).forEach((k) => {
-        this.globalContext[k as any] = globals[k];
-      });
-    }
+  constructor(globals: WindowProxy) {
+    this._globalThis = globals;
   }
 
   get globalThis(): WindowProxy {
-    return this.globalContext;
+    return this._globalThis;
   }
 
-  makeEvaluator(source: string, sourceURL?: string): string {
+  makeEvaluateFactory(source: string, sourceURL?: string): string {
     const sourceMapURL = sourceURL ? `//# sourceURL=${sourceURL}\n` : '';
 
     const globalObjectConstants = ['window', 'globalThis'];
     const globalObjectOptimizer = `const {${globalObjectConstants.join(',')}} = this;`;
 
-    nativeGlobal[this.id] = this.globalContext;
+    nativeGlobal[this.id] = this.globalThis;
     // eslint-disable-next-line max-len
     return `;(function(){with(this){${globalObjectOptimizer}${source}\n${sourceMapURL}}}).bind(window.${this.id})();`;
   }
 
-  // evaluate<T>(code: string, options?: CompartmentOptions): T {
+  // TODO add return value
+  // evaluate(code: string, options?: CompartmentOptions): void {
+  //   const { transforms } = options || {};
+  //   const transformedCode = transforms?.reduce((acc, transform) => transform(acc), code) || code;
+  //   const codeFactory = this.makeEvaluateFactory(transformedCode);
+  //
   //   const script = document.createElement('script');
+  //   script.textContent = codeFactory;
+  //   document.head.appendChild(script);
   // }
 }
