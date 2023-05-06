@@ -16,7 +16,6 @@
   "sideEffects": false,
   "scripts": {
     "build": "father build",
-    "prepublishOnly": "yarn ci",
     "lint": "yarn lint:js && yarn lint:prettier",
     "lint:js": "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty ./src",
     "lint:fix": "yarn lint:js -- --fix",
