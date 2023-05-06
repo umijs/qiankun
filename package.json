@@ -8,10 +8,8 @@
     "dev": "pnpm run build && npm run start:main && npm run start:react15",
     "start:main": "cd ./examples/main && npm start",
     "start:react15": "cd ./examples/react15 && npm start",
-    "build": "pnpm -r --filter ./packages run build",
-    "build:all": "cd packages/shared && pnpm run build && cd ../sandbox && pnpm run build && cd ../loader && pnpm run build && cd ../qiankun && pnpm run build",
-    "build-qiankun": "pnpm run build --filter qiankun",
-    "release": "np --no-cleanup --yolo --no-publish",
+    "build": "pnpm -r run build",
+    "release": "pnpm run build && changeset",
     "prepublishOnly": "pnpm run lint && pnpm run test && pnpm run build",
     "lint": "eslint packages/*/src/**",
     "prettier": "prettier --write .",
@@ -22,6 +20,7 @@
     "prepare": "husky install"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.26.1",
     "@jest/types": "^27.5.1",
     "@umijs/fabric": "^2.0.7",
     "cross-env": "^7.0.2",
