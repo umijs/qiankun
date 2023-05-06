@@ -9,7 +9,7 @@
     "start:main": "cd ./examples/main && npm start",
     "start:react15": "cd ./examples/react15 && npm start",
     "build": "pnpm -r run build",
-    "release": "pnpm run build && changeset",
+    "release": "pnpm run build && changeset publish",
     "prepublishOnly": "pnpm run lint && pnpm run test && pnpm run build",
     "lint": "eslint packages/*/src/**",
     "prettier": "prettier --write .",
@@ -77,5 +77,8 @@
       "/dist/"
     ]
   },
-  "packageManager": "pnpm@8.4.0"
+  "packageManager": "pnpm@8.4.0",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  }
 }
