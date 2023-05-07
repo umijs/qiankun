@@ -322,6 +322,17 @@ module.exports = {
 };
 ```
 
+`vue-cli5` 项目，使用 `asset/inline` 替代 `url-loader`，写法：
+
+```js
+module.exports = {
+  chainWebpack: (config) => {
+    config.module.rule('fonts').type('asset/inline').set('generator', {});
+    config.module.rule('images').type('asset/inline').set('generator', {});
+  },
+};
+```
+
 3. 借助 `webpack` 的 `file-loader` ，在打包时给其注入完整路径（适用于字体文件和图片体积比较大的项目）
 
 ```js
