@@ -1,0 +1,65 @@
+{
+  "name": "qiankun",
+  "version": "3.0.0-alpha.1",
+  "description": "A completed implementation of Micro Frontends",
+  "keywords": [
+    "micro frontend",
+    "microfrontend",
+    "micro frontends",
+    "micro-frontend",
+    "micro-frontends",
+    "microservice"
+  ],
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "sideEffects": false,
+  "scripts": {
+    "build": "father build",
+    "lint": "yarn lint:js && yarn lint:prettier",
+    "lint:js": "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty ./src",
+    "lint:fix": "yarn lint:js -- --fix",
+    "lint:prettier": "prettier -c ./src/**/*",
+    "prettier": "prettier --write ./src/**/*",
+    "ci": "yarn lint && yarn build && yarn test",
+    "test": "cross-env NODE_ENV=test jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kuitos/qiankun.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "author": "Kuitos",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kuitos/qiankun/issues"
+  },
+  "homepage": "https://github.com/kuitos/qiankun#readme",
+  "dependencies": {
+    "@babel/runtime": "^7.10.5",
+    "@qiankunjs/loader": "workspace:^",
+    "@qiankunjs/sandbox": "workspace:^",
+    "@qiankunjs/shared": "workspace:^",
+    "lodash": "^4.17.11",
+    "single-spa": "^6.0.0-beta.3"
+  },
+  "devDependencies": {
+    "@types/jest": "^25.1.4",
+    "@types/lodash": "^4.14.129",
+    "@types/vfile-message": "1.x",
+    "babel-plugin-import": "^1.12.1",
+    "cross-env": "^7.0.2",
+    "father": "^4.1.0",
+    "jest": "^25.2.2",
+    "levenary": "^1.1.1",
+    "np": "^5.0.3",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^4.1.2"
+  },
+  "resolutions": {
+    "@types/react": "^17.x",
+    "@types/history": "^4.x"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "@qiankunjs/sandbox",
+  "version": "0.0.1-alpha.0",
+  "description": "",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "scripts": {
+    "build": "father build",
+    "test": "cross-env NODE_ENV=test jest"
+  },
+  "files": [
+    "dist"
+  ],
+  "author": "Kuitos",
+  "license": "MIT",
+  "dependencies": {
+    "@babel/runtime": "^7.10.5",
+    "@qiankunjs/shared": "workspace:^",
+    "@types/node": "^18.15.3",
+    "lodash": "^4.17.11"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.129",
+    "babel-plugin-import": "^1.12.1",
+    "father": "^4.1.0",
+    "typescript": "^4.1.2"
+  }
+}

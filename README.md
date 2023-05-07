@@ -1,11 +1,11 @@
 <p align="center">
-  <a href="https://qiankun.umijs.org">
-    <img src="https://gw.alipayobjects.com/zos/bmw-prod/8a74c1d3-16f3-4719-be63-15e467a68a24/km0cv8vn_w500_h500.png" alt="qiankun" width="180" />
+  <a href="https://qiankun.umijs.org" target="_blank" rel="noopener noreferrer">
+    <img width="180" src="https://user-images.githubusercontent.com/5206843/156369489-cf708a6a-1937-4dd9-895b-c6d17156c493.png" alt="qiankun logo">
   </a>
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/qiankun"><img src="https://img.shields.io/npm/v/qiankun.svg?style=flat-square" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/qiankun"><img src="https://img.shields.io/npm/v/qiankun/next.svg?style=flat-square" alt="npm version" /></a>
   <a href="https://codecov.io/gh/umijs/qiankun"><img src="https://img.shields.io/codecov/c/github/umijs/qiankun.svg?style=flat-square" alt="coverage" /></a>
   <a href="https://www.npmjs.com/package/qiankun"><img src="https://img.shields.io/npm/dt/qiankun.svg?style=flat-square" alt="npm downloads" /></a>
   <a href="https://github.com/umijs/qiankun/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/umijs/qiankun/ci.yml?branch=master&style=flat-square" alt="build status" /></a>
@@ -54,6 +54,14 @@ And on top of these, it offers:
 - 🧳 **JS Sandbox**
 - ⚡ **Prefetch Assets**
 - 🔌 **[Umi Plugin](https://github.com/umijs/plugins/tree/master/packages/plugin-qiankun) Integration**
+
+## Packages
+
+| Package                                | Version (click for changelogs)                                                                                          |
+|----------------------------------------|:------------------------------------------------------------------------------------------------------------------------|
+| [qiankun](packages/qiankun)            | [![qiankun version](https://img.shields.io/npm/v/qiankun/next.svg?label=%20)](packages/qiankun/CHANGELOG.md)            |
+| [@qiankunjs/loader](packages/loader)   | [![qiankun version](https://img.shields.io/npm/v/@qiankunjs/loader/alpha.svg?label=%20)](packages/qiankun/CHANGELOG.md)  |
+| [@qiankunjs/sandbox](packages/sandbox) | [![qiankun version](https://img.shields.io/npm/v/@qiankunjs/sandbox/alpha.svg?label=%20)](packages/qiankun/CHANGELOG.md) |
 
 ## 📦 Installation
 

@@ -1,92 +1,67 @@
 {
-  "name": "qiankun",
-  "version": "2.10.6",
-  "description": "A completed implementation of Micro Frontends",
-  "keywords": [
-    "micro frontend",
-    "microfrontend",
-    "micro frontends",
-    "micro-frontend",
-    "micro-frontends",
-    "microservice"
-  ],
-  "homepage": "https://github.com/kuitos/qiankun#readme",
-  "bugs": {
-    "url": "https://github.com/kuitos/qiankun/issues"
+  "name": "qiankun-monorepo",
+  "private": true,
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm run build && npm run start:main && npm run start:react15",
+    "start:main": "cd ./examples/main && npm start",
+    "start:react15": "cd ./examples/react15 && npm start",
+    "build": "pnpm -r run build",
+    "release": "pnpm run build && changeset publish",
+    "lint": "eslint packages/*/src/**",
+    "prettier": "prettier --write .",
+    "docs": "dumi dev",
+    "build-docs": "dumi build",
+    "ci": "pnpm run lint && pnpm run build && pnpm run test",
+    "test": "cross-env NODE_ENV=test jest",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.26.1",
+    "@jest/types": "^27.5.1",
+    "@umijs/fabric": "^2.0.7",
+    "cross-env": "^7.0.2",
+    "dumi": "^1.1.0-beta.24",
+    "dumi-theme-default": "^1.0.10",
+    "eslint": "^8.10.0",
+    "eslint-define-config": "^1.2.5",
+    "husky": "^8.0.3",
+    "jest": "^25.2.2",
+    "lint-staged": "^9.4.2",
+    "prettier": "^2.1.2",
+    "rimraf": "^3.0.0",
+    "ts-jest": "^25.2.1",
+    "umi-plugin-hire": "^1.0.3"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kuitos/qiankun.git"
   },
   "license": "MIT",
-  "author": "Kuitos",
-  "sideEffects": false,
-  "main": "./lib/index.js",
-  "module": "./es/index.js",
-  "types": "./es/index.d.ts",
-  "files": [
-    "dist",
-    "es",
-    "lib"
-  ],
-  "scripts": {
-    "examples:install": "npm-run-all --serial build install:*",
-    "examples:start": "npm-run-all --parallel start:*",
-    "examples:start-multiple": "run-p start-main-multiple start:react15 start:vue",
-    "install:main": "cd examples/main && yarn",
-    "start:main": "cd examples/main && yarn start",
-    "start-main-multiple": "cd examples/main && yarn start:multiple",
-    "install:react16": "cd examples/react16 && yarn",
-    "start:react16": "cd examples/react16 && yarn start",
-    "install:react15": "cd examples/react15 && yarn",
-    "start:react15": "cd examples/react15 && yarn start",
-    "install:vue": "cd examples/vue && yarn",
-    "start:vue": "cd examples/vue && yarn start",
-    "install:angular9": "cd examples/angular9 && yarn",
-    "start:angular9": "cd examples/angular9 && yarn serve:qiankun",
-    "install:purehtml": "cd examples/purehtml && yarn",
-    "start:purehtml": "cd examples/purehtml && yarn start",
-    "install:vue3": "cd examples/vue3 && yarn",
-    "start:vue3": "cd examples/vue3 && yarn start",
-    "build": "father-build",
-    "release": "np --no-cleanup --yolo --no-publish",
-    "prepublishOnly": "yarn ci",
-    "lint": "yarn lint:js && yarn lint:prettier",
-    "lint:js": "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty ./src",
-    "lint:fix": "yarn lint:js -- --fix",
-    "lint:prettier": "prettier -c ./src/**/*",
-    "prettier": "prettier --write ./src/**/*",
-    "docs:dev": "dumi dev",
-    "docs:build": "dumi build",
-    "ci": "yarn lint && yarn build && yarn test",
-    "test": "cross-env NODE_ENV=test jest"
+  "bugs": {
+    "url": "https://github.com/kuitos/qiankun/issues"
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged",
-      "pre-push": "yarn test"
-    }
-  },
+  "homepage": "https://github.com/kuitos/qiankun#readme",
   "lint-staged": {
     "**/*.{js,ts,json,css,md}": [
-      "prettier -w"
+      "prettier --write --ignore-unknown"
     ],
-    "**/*.{js,ts}": [
-      "yarn lint:fix"
+    "packages/*/{src,types}/**/*.ts": [
+      "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty --fix"
+    ],
+    "packages/**/*.d.ts": [
+      "eslint --ext .ts"
     ]
   },
   "jest": {
-    "coveragePathIgnorePatterns": [
-      "/node_modules/",
-      "/__tests__/",
-      "/dist/"
-    ],
     "moduleFileExtensions": [
       "js",
       "ts"
     ],
     "testMatch": [
-      "<rootDir>/src/**/__tests__/**/*.test.ts"
+      "<rootDir>/packages/**/__tests__/**/*.test.ts"
     ],
     "testPathIgnorePatterns": [
       "/node_modules/",
@@ -94,38 +69,15 @@
     ],
     "transform": {
       "^.+\\.ts$": "<rootDir>/node_modules/ts-jest"
-    }
+    },
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/__tests__/",
+      "/dist/"
+    ]
   },
-  "resolutions": {
-    "@types/history": "^4.x",
-    "@types/react": "^17.x"
-  },
-  "dependencies": {
-    "@babel/runtime": "^7.10.5",
-    "import-html-entry": "^1.14.5",
-    "lodash": "^4.17.11",
-    "single-spa": "^5.9.2"
-  },
-  "devDependencies": {
-    "@types/jest": "^25.1.4",
-    "@types/lodash": "^4.14.129",
-    "@types/vfile-message": "1.x",
-    "@umijs/fabric": "^2.0.7",
-    "babel-plugin-import": "^1.12.1",
-    "cross-env": "^7.0.2",
-    "dumi": "^1.1.0-beta.24",
-    "father-build": "^1.7.0",
-    "globals": "^13.17.0",
-    "husky": "^2.3.0",
-    "jest": "^25.2.2",
-    "levenary": "^1.1.1",
-    "lint-staged": "^10.5.4",
-    "np": "^5.0.3",
-    "npm-run-all": "^4.1.5",
-    "prettier": "^2.1.2",
-    "rimraf": "^3.0.0",
-    "ts-jest": "^25.2.1",
-    "typescript": "^4.8.2",
-    "umi-plugin-hire": "^1.0.3"
+  "packageManager": "pnpm@8.4.0",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
   }
 }
