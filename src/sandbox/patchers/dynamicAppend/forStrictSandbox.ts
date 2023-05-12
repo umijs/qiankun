@@ -91,10 +91,10 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
           case 'querySelector': {
             const targetQuerySelector = target.querySelector;
             return function querySelector(...args: Parameters<typeof document.querySelector>) {
-              const selector = args[0]
+              const selector = args[0];
               switch (selector) {
                 case 'head': {
-                  const containerConfig  = proxyAttachContainerConfigMap.get(sandbox.proxy)
+                  const containerConfig = proxyAttachContainerConfigMap.get(sandbox.proxy);
                   if (containerConfig) {
                     return getAppWrapperHeadElement(containerConfig.appWrapperGetter());
                   }
@@ -102,9 +102,11 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
                 }
               }
 
-              return targetQuerySelector.call(target, ...args)
-            }
+              return targetQuerySelector.call(target, ...args);
+            };
           }
+          default:
+            break;
         }
 
         const value = (<any>target)[p];
