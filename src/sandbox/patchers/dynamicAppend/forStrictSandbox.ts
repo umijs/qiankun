@@ -4,7 +4,7 @@
  */
 
 import type { Freer, SandBox } from '../../../interfaces';
-import { isBoundedFunction, nativeDocument, nativeGlobal, isCallable } from '../../../utils';
+import { isBoundedFunction, isCallable, nativeDocument, nativeGlobal } from '../../../utils';
 import { getCurrentRunningApp } from '../../common';
 import type { ContainerConfig } from './common';
 import {
@@ -67,24 +67,46 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
         return true;
       },
       get: (target, p, receiver) => {
-        if (p === 'createElement') {
-          // Must store the original createElement function to avoid error in nested sandbox
-          const targetCreateElement = target.createElement;
-          return function createElement(...args: Parameters<typeof document.createElement>) {
-            if (!nativeGlobal.__currentLockingSandbox__) {
-              nativeGlobal.__currentLockingSandbox__ = sandbox.name;
-            }
+        switch (p) {
+          case 'createElement': {
+            // Must store the original createElement function to avoid error in nested sandbox
+            const targetCreateElement = target.createElement;
+            return function createElement(...args: Parameters<typeof document.createElement>) {
+              if (!nativeGlobal.__currentLockingSandbox__) {
+                nativeGlobal.__currentLockingSandbox__ = sandbox.name;
+              }
 
-            const element = targetCreateElement.call(target, ...args);
+              const element = targetCreateElement.call(target, ...args);
 
-            // only record the element which is created by the current sandbox, thus we can avoid the element created by nested sandboxes
-            if (nativeGlobal.__currentLockingSandbox__ === sandbox.name) {
-              attachElementToProxy(element, sandbox.proxy);
-              delete nativeGlobal.__currentLockingSandbox__;
-            }
+              // only record the element which is created by the current sandbox, thus we can avoid the element created by nested sandboxes
+              if (nativeGlobal.__currentLockingSandbox__ === sandbox.name) {
+                attachElementToProxy(element, sandbox.proxy);
+                delete nativeGlobal.__currentLockingSandbox__;
+              }
 
-            return element;
-          };
+              return element;
+            };
+          }
+
+          case 'querySelector': {
+            const targetQuerySelector = target.querySelector;
+            return function querySelector(...args: Parameters<typeof document.querySelector>) {
+              const selector = args[0];
+              switch (selector) {
+                case 'head': {
+                  const containerConfig = proxyAttachContainerConfigMap.get(sandbox.proxy);
+                  if (containerConfig) {
+                    return getAppWrapperHeadElement(containerConfig.appWrapperGetter());
+                  }
+                  break;
+                }
+              }
+
+              return targetQuerySelector.call(target, ...args);
+            };
+          }
+          default:
+            break;
         }
 
         const value = (<any>target)[p];
