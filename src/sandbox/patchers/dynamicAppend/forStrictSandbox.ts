@@ -44,11 +44,7 @@ const proxyAttachContainerConfigMap: WeakMap<WindowProxy, ContainerConfig> =
 
 const elementAttachContainerConfigMap = new WeakMap<HTMLElement, ContainerConfig>();
 const docCreatePatchedMap = new WeakMap<typeof document.createElement, typeof document.createElement>();
-const mutationObserverPatchedMap = new WeakMap<
-  typeof MutationObserver.prototype.observe,
-  typeof MutationObserver.prototype.observe
->();
-const parentNodePatchedMap = new WeakMap<PropertyDescriptor, PropertyDescriptor>();
+const patchMap = new WeakMap<any, any>();
 
 function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
   const { sandbox, speedy } = cfg;
@@ -129,20 +125,30 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
     // patch MutationObserver.prototype.observe to avoid type error
     // https://github.com/umijs/qiankun/issues/2406
     const nativeMutationObserverObserveFn = MutationObserver.prototype.observe;
-    if (!mutationObserverPatchedMap.has(nativeMutationObserverObserveFn)) {
+    if (!patchMap.has(nativeMutationObserverObserveFn)) {
       const observe = function observe(this: MutationObserver, target: Node, options: MutationObserverInit) {
         const realTarget = target instanceof Document ? nativeDocument : target;
         return nativeMutationObserverObserveFn.call(this, realTarget, options);
       };
 
       MutationObserver.prototype.observe = observe;
-      mutationObserverPatchedMap.set(nativeMutationObserverObserveFn, observe);
+      patchMap.set(nativeMutationObserverObserveFn, observe);
+    }
+
+    // patch Node.prototype.compareDocumentPosition to avoid type error
+    const prevCompareDocumentPosition = Node.prototype.compareDocumentPosition;
+    if (!patchMap.has(prevCompareDocumentPosition)) {
+      Node.prototype.compareDocumentPosition = function compareDocumentPosition(this: Node, node) {
+        const realNode = node instanceof Document ? nativeDocument : node;
+        return prevCompareDocumentPosition.call(this, realNode);
+      };
+      patchMap.set(prevCompareDocumentPosition, Node.prototype.compareDocumentPosition);
     }
 
     // patch parentNode getter to avoid document === html.parentNode
     // https://github.com/umijs/qiankun/issues/2408#issuecomment-1446229105
     const parentNodeDescriptor = Object.getOwnPropertyDescriptor(Node.prototype, 'parentNode');
-    if (parentNodeDescriptor && !parentNodePatchedMap.has(parentNodeDescriptor)) {
+    if (parentNodeDescriptor && !patchMap.has(parentNodeDescriptor)) {
       const { get: parentNodeGetter, configurable } = parentNodeDescriptor;
       if (parentNodeGetter && configurable) {
         const patchedParentNodeDescriptor = {
@@ -161,17 +167,20 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
         };
         Object.defineProperty(Node.prototype, 'parentNode', patchedParentNodeDescriptor);
 
-        parentNodePatchedMap.set(parentNodeDescriptor, patchedParentNodeDescriptor);
+        patchMap.set(parentNodeDescriptor, patchedParentNodeDescriptor);
       }
     }
 
     return () => {
       MutationObserver.prototype.observe = nativeMutationObserverObserveFn;
-      mutationObserverPatchedMap.delete(nativeMutationObserverObserveFn);
+      patchMap.delete(nativeMutationObserverObserveFn);
+
+      Node.prototype.compareDocumentPosition = prevCompareDocumentPosition;
+      patchMap.delete(prevCompareDocumentPosition);
 
       if (parentNodeDescriptor) {
         Object.defineProperty(Node.prototype, 'parentNode', parentNodeDescriptor);
-        parentNodePatchedMap.delete(parentNodeDescriptor);
+        patchMap.delete(parentNodeDescriptor);
       }
     };
   }
