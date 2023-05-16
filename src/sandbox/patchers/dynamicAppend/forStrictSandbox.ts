@@ -96,7 +96,10 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
                 case 'head': {
                   const containerConfig = proxyAttachContainerConfigMap.get(sandbox.proxy);
                   if (containerConfig) {
-                    return getAppWrapperHeadElement(containerConfig.appWrapperGetter());
+                    const qiankunHead = getAppWrapperHeadElement(containerConfig.appWrapperGetter());
+                    qiankunHead.appendChild = HTMLHeadElement.prototype.appendChild;
+                    qiankunHead.insertBefore = HTMLHeadElement.prototype.insertBefore;
+                    return qiankunHead;
                   }
                   break;
                 }
