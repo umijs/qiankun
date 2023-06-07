@@ -95,6 +95,7 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
                     const qiankunHead = getAppWrapperHeadElement(containerConfig.appWrapperGetter());
                     qiankunHead.appendChild = HTMLHeadElement.prototype.appendChild;
                     qiankunHead.insertBefore = HTMLHeadElement.prototype.insertBefore;
+                    qiankunHead.removeChild = HTMLHeadElement.prototype.removeChild;
                     return qiankunHead;
                   }
                   break;
@@ -247,12 +248,12 @@ export function patchStrictSandbox(
   // all dynamic style sheets are stored in proxy container
   const { dynamicStyleSheetElements } = containerConfig;
 
-  const unpatchDocument = patchDocument({ sandbox, speedy: speedySandbox });
-
   const unpatchDynamicAppendPrototypeFunctions = patchHTMLDynamicAppendPrototypeFunctions(
     (element) => elementAttachContainerConfigMap.has(element),
     (element) => elementAttachContainerConfigMap.get(element)!,
   );
+
+  const unpatchDocument = patchDocument({ sandbox, speedy: speedySandbox });
 
   if (!mounting) calcAppCount(appName, 'increase', 'bootstrapping');
   if (mounting) calcAppCount(appName, 'increase', 'mounting');
