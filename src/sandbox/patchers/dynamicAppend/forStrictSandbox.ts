@@ -227,6 +227,7 @@ export function patchStrictSandbox(
   sandbox: SandBox,
   mounting = true,
   scopedCSS = false,
+  proxyCSS = true,
   excludeAssetFilter?: CallableFunction,
   speedySandbox = false,
 ): Freer {
@@ -242,6 +243,7 @@ export function patchStrictSandbox(
       speedySandbox,
       excludeAssetFilter,
       scopedCSS,
+      proxyCSS,
     };
     proxyAttachContainerConfigMap.set(proxy, containerConfig);
   }
