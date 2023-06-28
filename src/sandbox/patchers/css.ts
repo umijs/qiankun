@@ -102,7 +102,10 @@ export class ScopedCSS {
           css += this.ruleSupport(rule as CSSSupportsRule, prefix);
           break;
         default:
-          css += `${rule.cssText}`;
+          if (typeof rule.cssText === 'string') {
+            css += `${rule.cssText}`;
+          }
+
           break;
       }
     });
@@ -121,7 +124,11 @@ export class ScopedCSS {
 
     const selector = rule.selectorText.trim();
 
-    let { cssText } = rule;
+    let cssText = '';
+    if (typeof rule.cssText === 'string') {
+      cssText = rule.cssText;
+    }
+
     // handle html { ... }
     // handle body { ... }
     // handle :root { ... }
