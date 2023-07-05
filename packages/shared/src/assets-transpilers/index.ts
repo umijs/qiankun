@@ -26,3 +26,5 @@ export function transpileAssets<T extends Node>(node: T, baseURI: string, opts: 
 
   return node;
 }
+
+export type { TransformerOpts };

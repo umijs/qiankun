@@ -1,10 +1,11 @@
 {
   "name": "@qiankunjs/sandbox",
   "version": "0.0.1-alpha.0",
-  "description": "",
+  "description": "qiankun sandbox",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/esm/index.d.ts",
+  "sideEffects": false,
   "scripts": {
     "build": "father build",
     "test": "cross-env NODE_ENV=test jest"

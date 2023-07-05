@@ -5,6 +5,7 @@
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/esm/index.d.ts",
+  "sideEffects": false,
   "scripts": {
     "build": "father build",
     "test": "cross-env NODE_ENV=test jest",
@@ -14,8 +15,9 @@
   "license": "MIT",
   "dependencies": {
     "@babel/runtime": "^7.10.5",
+    "@qiankunjs/sandbox": "workspace:^",
     "lodash": "^4.17.11",
-    "@qiankunjs/sandbox": "workspace:^"
+    "semver": "^7.5.3"
   },
   "devDependencies": {
     "@types/lodash": "^4.14.129",
