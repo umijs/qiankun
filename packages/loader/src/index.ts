@@ -1,5 +1,5 @@
-import type { Sandbox } from '@qiankunjs/sandbox';
-import { transpileAssets } from '@qiankunjs/shared';
+import type { TransformerOpts } from '@qiankunjs/shared';
+import { moduleResolver as defaultModuleResolver, transpileAssets } from '@qiankunjs/shared';
 import { Deferred } from './utils';
 import WritableDOMStream from './writable-dom';
 
@@ -15,11 +15,9 @@ type Entry = HTMLEntry;
 // };
 //
 type ImportOpts = {
-  fetch?: typeof window.fetch;
   decoder?: (chunk: string) => string;
-  sandbox?: Sandbox;
-  nodeTransformer?: <T extends Node>(node: T) => T;
-};
+  nodeTransformer?: typeof transpileAssets;
+} & TransformerOpts;
 
 /**
  * @param entry
@@ -27,7 +25,14 @@ type ImportOpts = {
  * @param opts
  */
 export async function loadEntry(entry: Entry, container: HTMLElement, opts?: ImportOpts): Promise<void> {
-  const { fetch = window.fetch, nodeTransformer = transpileAssets, sandbox } = opts || {};
+  const {
+    fetch = window.fetch,
+    nodeTransformer = transpileAssets,
+    sandbox,
+    moduleResolver = (url: string) => {
+      return defaultModuleResolver(url, container, document.head);
+    },
+  } = opts || {};
 
   const res = await fetch(entry);
   if (res.body) {
@@ -38,7 +43,7 @@ export async function loadEntry(entry: Entry, container: HTMLElement, opts?: Imp
       .pipeThrough(new TextDecoderStream())
       .pipeTo(
         new WritableDOMStream(container, null, (node) => {
-          const transformedNode = nodeTransformer(node, entry, { fetch, sandbox });
+          const transformedNode = nodeTransformer(node, entry, { fetch, sandbox, moduleResolver });
 
           const script = transformedNode as any as HTMLScriptElement;
           /*

@@ -16,7 +16,7 @@ export function transpileAssets<T extends Node>(node: T, baseURI: string, opts: 
     }
 
     case 'LINK': {
-      transpileLink(node as any as HTMLLinkElement, baseURI);
+      transpileLink(node as any as HTMLLinkElement, baseURI, opts);
       break;
     }
 
@@ -26,3 +26,5 @@ export function transpileAssets<T extends Node>(node: T, baseURI: string, opts: 
 
   return node;
 }
+
+export type { TransformerOpts };
