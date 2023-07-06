@@ -4,6 +4,28 @@
 <head>
   <meta charset="UTF-8">
   <title>QianKun Example</title>
+
+  <script type="dependencymap">
+    {
+      "dependencies": {
+        "antd": {
+          "url": "https://gw.alipayobjects.com/os/lib/antd/2.13.14/dist/antd.js",
+          "version": "2.13.14",
+          "range": "^2.13.14"
+        },
+        "react": {
+          "url": "https://gw.alipayobjects.com/os/lib/react/15.7.0/dist/react.js",
+          "version": "15.7.0",
+          "range": "^15.6.2"
+        },
+        "react-dom": {
+          "url": "https://gw.alipayobjects.com/os/lib/react-dom/15.7.0/dist/react-dom.js",
+          "version": "15.7.0",
+          "range": "^15.6.2"
+        }
+      }
+    }
+</script>
 </head>
 
 <body>
@@ -27,9 +49,13 @@
     </div>
   </div>
 
+
   <script>
     function push(subapp) { history.pushState(null, subapp, subapp) }
   </script>
+  <script src="https://gw.alipayobjects.com/os/lib/react/15.7.0/dist/react.js"></script>
+  <script src="https://gw.alipayobjects.com/os/lib/react-dom/15.7.0/dist/react-dom.js"></script>
+  <script src="https://gw.alipayobjects.com/os/lib/antd/2.13.14/dist/antd.js"></script>
 </body>
 
 </html>

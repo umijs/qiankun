@@ -5,7 +5,6 @@
 import { loadEntry } from '@qiankunjs/loader';
 import type { Sandbox } from '@qiankunjs/sandbox';
 import { createSandboxContainer } from '@qiankunjs/sandbox';
-import { transpileAssets } from '@qiankunjs/shared';
 import { concat, isFunction, mergeWith } from 'lodash';
 import type { ParcelConfigObject } from 'single-spa';
 import getAddOns from './addons';
@@ -54,11 +53,7 @@ export default async function <T extends ObjectType>(
 
   await execHooksChain(toArray(beforeLoad), app, global);
 
-  await loadEntry(entry, container, {
-    nodeTransformer: sandbox
-      ? <K extends Node>(node: K) => transpileAssets<K>(node, entry, { fetch, sandbox: sandboxInstance })
-      : undefined,
-  });
+  await loadEntry(entry, container, { fetch, sandbox: sandboxInstance });
 
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
     {},

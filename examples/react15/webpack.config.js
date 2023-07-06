@@ -15,7 +15,7 @@ module.exports = {
     overlay: { warnings: false, errors: true },
   },
   output: {
-    library: `${name}-[name]`,
+    library: name,
     libraryTarget: 'umd',
     jsonpFunction: `webpackJsonp_${name}`,
   },
@@ -52,4 +52,9 @@ module.exports = {
       },
     }),
   ],
+  externals: {
+    react: 'React',
+    'react-dom': 'ReactDOM',
+    antd: 'antd',
+  },
 };

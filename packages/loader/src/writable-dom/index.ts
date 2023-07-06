@@ -98,8 +98,10 @@ function writableDOM(
       while ((node = walker.nextNode())) {
         const link = getPreloadLink((scanNode = node));
         if (link) {
-          link.onload = link.onerror = () => target.removeChild(link);
-          target.insertBefore(link, nextSibling);
+          const transformedLink =
+            typeof assetTransformer === 'function' ? (assetTransformer(link) as HTMLLinkElement) : link;
+          transformedLink.onload = transformedLink.onerror = () => target.removeChild(transformedLink);
+          target.insertBefore(transformedLink, nextSibling);
         }
       }
 
@@ -173,7 +175,7 @@ function getPreloadLink(node: any) {
       case 'SCRIPT':
         if (node.src && !node.noModule) {
           link = document.createElement('link');
-          link.href = node.src;
+          link.href = node.getAttribute('src');
           if (node.getAttribute('type') === 'module') {
             link.rel = 'modulepreload';
           } else {
@@ -185,7 +187,7 @@ function getPreloadLink(node: any) {
       case 'LINK':
         if (node.rel === 'stylesheet' && (!node.media || matchMedia(node.media).matches)) {
           link = document.createElement('link');
-          link.href = node.href;
+          link.href = node.getAttribute('href');
           link.rel = 'preload';
           link.as = 'style';
         }
@@ -198,7 +200,7 @@ function getPreloadLink(node: any) {
           link.imageSrcset = node.srcset;
           link.imageSizes = node.sizes;
         } else {
-          link.href = node.src;
+          link.href = node.getAttribute('src');
         }
         break;
     }

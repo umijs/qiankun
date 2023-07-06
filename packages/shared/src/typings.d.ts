@@ -1,3 +1,3 @@
-declare module 'semver/functions/eq' {
-  export default function eq(version: string, semver: string): boolean;
+declare module 'semver/functions/satisfies' {
+  export default function satisfies(version: string, range: string): boolean;
 }

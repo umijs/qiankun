@@ -1,10 +1,10 @@
 import type { MatchResult } from '../common';
-import eq from 'semver/functions/eq';
+import satisfies from 'semver/functions/satisfies';
 
 type Dependency = {
   url: string;
   version: string;
-  semver: string;
+  range: string;
 };
 
 type NormalizedDependency = {
@@ -22,18 +22,18 @@ export function moduleResolver(
 ): MatchResult | undefined {
   const dependencyMapSelector = 'script[type=dependencymap]';
 
-  const dependenciesString = microAppContainer.querySelector(dependencyMapSelector)?.innerHTML;
-  if (dependenciesString) {
-    const { dependencies }: DependencyMap = JSON.parse(dependenciesString);
+  const microAppDependenciesString = microAppContainer.querySelector(dependencyMapSelector)?.innerHTML;
+  if (microAppDependenciesString) {
+    const { dependencies }: DependencyMap = JSON.parse(microAppDependenciesString);
     const normalizedDependencies = normalizeDependencies(dependencies);
-    const urlDependency = normalizedDependencies.find((v) => v.url === url);
+    const microAppDependency = normalizedDependencies.find((v) => v.url === url);
 
-    if (urlDependency) {
+    if (microAppDependency) {
       const mainDependencyMapString = mainAppContainer.querySelector(dependencyMapSelector)?.innerHTML;
 
       if (mainDependencyMapString) {
         const mainDependencyMap: DependencyMap = JSON.parse(mainDependencyMapString);
-        return findDependency(urlDependency, normalizeDependencies(mainDependencyMap.dependencies));
+        return findDependency(microAppDependency, normalizeDependencies(mainDependencyMap.dependencies));
       }
     }
   }
@@ -43,9 +43,12 @@ export function moduleResolver(
 
 function findDependency(
   dependency: NormalizedDependency,
-  dependencies: NormalizedDependency[],
+  cachedDependencies: NormalizedDependency[],
 ): MatchResult | undefined {
-  const matched = dependencies.find((item) => item.name === dependency.name && eq(dependency.version, item.semver));
+  const matched = cachedDependencies.find(
+    (cachedDependency) =>
+      cachedDependency.name === dependency.name && satisfies(cachedDependency.version, dependency.range),
+  );
   if (matched) {
     return {
       version: matched.version,
