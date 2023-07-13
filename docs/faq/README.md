@@ -713,7 +713,7 @@ router.beforeEach((to, from, next) => {
 
 ## How to jump between micro apps?
 
-It is not feasible to use the router instance of micro-application directly to jump between micro-applications or micro-applications to main application page, such as the `Link` component in react-router or router-link in vue, because the router instance jump of micro-applications is based on the 'base' of routes. There are two ways to jump:
+It is not feasible to use the router instance of micro-application directly to jump between micro-applications or micro-applications to main application page, such as the `Link` component in react-router or router-link in vue, because the router instance jump of micro-applications is based on the 'base' of routes. There are such ways to jump:
 
 1. ` history. PushState () ` : [MDN usage introduction] (https://developer.mozilla.org/zh-CN/docs/Web/API/History/pushState)
 2. Direct use of native a full address label, such as: ` < a href = "http://localhost:8080/app1" > app1 < / a > `
