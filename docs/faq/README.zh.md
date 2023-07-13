@@ -720,14 +720,11 @@ router.beforeEach((to, from, next) => {
 
 ## 微应用之间如何跳转？
 
-- 主应用和微应用都是 `hash` 模式，主应用根据 `hash` 来判断微应用，则不用考虑这个问题。
+微应用之间的跳转，或者微应用跳主应用页面，直接使用微应用的路由实例是不行的，如 raact-router 的 Link 组件或 vue 的 router-link，原因是微应用的路由实例跳转都基于路由的 `base`。有这几种办法可以跳转：
 
-- 主应用根据 `path` 来判断微应用
-
-  `history` 模式的微应用之间的跳转，或者微应用跳主应用页面，直接使用微应用的路由实例是不行的，原因是微应用的路由实例跳转都基于路由的 `base`。有两种办法可以跳转：
-
-  1. `history.pushState()`：[mdn 用法介绍](https://developer.mozilla.org/zh-CN/docs/Web/API/History/pushState)
-  2. 将主应用的路由实例通过 `props` 传给微应用，微应用这个路由实例跳转。
+1. `history.pushState()`：[mdn 用法介绍](https://developer.mozilla.org/zh-CN/docs/Web/API/History/pushState)
+2. 直接使用原生 a 标签写完整地址，如：`<a href="http://localhost:8080/app1">app1</a>`
+3. 修改 location href 跳转，如：`window.location.href = 'http://localhost:8080/app1'`
 
 ## 微应用文件更新之后，访问的还是旧版文件
 
