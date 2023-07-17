@@ -29,7 +29,7 @@ function idleCall(cb: IdleRequestCallback, start: number) {
 let requestIdleCallback: (cb: IdleRequestCallback) => any;
 if (typeof window.requestIdleCallback !== 'undefined') {
   requestIdleCallback = window.requestIdleCallback;
-} else if (typeof MessageChannel !== 'undefined') {
+} else if (typeof window.MessageChannel !== 'undefined') {
   // The first recommendation is to use MessageChannel because
   // it does not have the 4ms delay of setTimeout
   const channel = new MessageChannel();
