@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 /**
  * @author Kuitos
  * @since 2020-10-13
@@ -14,6 +15,7 @@ import {
   patchHTMLDynamicAppendPrototypeFunctions,
   rebuildCSSRules,
   recordStyledComponentsCSSRules,
+  styleElementRefNodeNo,
   styleElementTargetSymbol,
 } from './common';
 import type { SandboxConfig } from './types';
@@ -43,7 +45,7 @@ Object.defineProperty(nativeGlobal, '__currentLockingSandbox__', {
   configurable: true,
 });
 
-// eslint-disable-next-line @typescript-eslint/unbound-method
+const rawHeadInsertBefore = HTMLHeadElement.prototype.insertBefore;
 const rawHeadAppendChild = HTMLHeadElement.prototype.appendChild;
 
 // Share sandboxConfigWeakMap between multiple qiankun instance, thus they could access the same record
@@ -51,11 +53,7 @@ nativeGlobal.__sandboxConfigWeakMap__ = nativeGlobal.__sandboxConfigWeakMap__ ||
 const sandboxConfigWeakMap = nativeGlobal.__sandboxConfigWeakMap__;
 
 const elementAttachSandboxConfigMap = new WeakMap<HTMLElement, SandboxConfig>();
-const mutationObserverPatchedMap = new WeakMap<
-  typeof MutationObserver.prototype.observe,
-  typeof MutationObserver.prototype.observe
->();
-const parentNodePatchedMap = new WeakMap<PropertyDescriptor, PropertyDescriptor>();
+const patchMap = new WeakMap<object, unknown>();
 
 function patchDocument(sandbox: Sandbox) {
   const attachElementToSandbox = (element: HTMLElement) => {
@@ -71,27 +69,55 @@ function patchDocument(sandbox: Sandbox) {
       return true;
     },
     get: (target, p, receiver) => {
-      if (p === 'createElement') {
-        // Must store the original createElement function to avoid error in nested sandbox
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        const targetCreateElement = target.createElement;
-        return function createElement(...args: Parameters<typeof document.createElement>) {
-          if (!nativeGlobal.__currentLockingSandbox__) {
-            nativeGlobal.__currentLockingSandbox__ = sandbox;
-          }
+      switch (p) {
+        case 'createElement': {
+          // Must store the original createElement function to avoid error in nested sandbox
+          const targetCreateElement = target.createElement;
+          return function createElement(...args: Parameters<typeof document.createElement>) {
+            if (!nativeGlobal.__currentLockingSandbox__) {
+              nativeGlobal.__currentLockingSandbox__ = sandbox;
+            }
 
-          const element = targetCreateElement.call(target, ...args);
+            const element = targetCreateElement.call(target, ...args);
 
-          // only record the element which is created by the current sandbox, thus we can avoid the element created by nested sandboxes
-          if (nativeGlobal.__currentLockingSandbox__ === sandbox) {
-            attachElementToSandbox(element);
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            delete nativeGlobal.__currentLockingSandbox__;
-          }
+            // only record the element which is created by the current sandbox, thus we can avoid the element created by nested sandboxes
+            if (nativeGlobal.__currentLockingSandbox__ === sandbox) {
+              attachElementToSandbox(element);
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
+              delete nativeGlobal.__currentLockingSandbox__;
+            }
 
-          return element;
-        };
+            return element;
+          };
+        }
+
+        case 'querySelector': {
+          const targetQuerySelector = target.querySelector;
+          return function querySelector(...args: Parameters<typeof document.querySelector>) {
+            const selector = args[0];
+            switch (selector) {
+              case 'head': {
+                const containerConfig = sandboxConfigWeakMap.get(sandbox);
+                if (containerConfig) {
+                  const qiankunHead = getContainerHeadElement(containerConfig.getContainer());
+
+                  // proxied head in micro app should use the proxied appendChild/removeChild/insertBefore methods
+                  qiankunHead.appendChild = HTMLHeadElement.prototype.appendChild;
+                  qiankunHead.insertBefore = HTMLHeadElement.prototype.insertBefore;
+                  qiankunHead.removeChild = HTMLHeadElement.prototype.removeChild;
+
+                  return qiankunHead;
+                }
+                break;
+              }
+            }
+
+            return targetQuerySelector.call(target, ...args);
+          };
+        }
+        default:
+          break;
       }
 
       const value = target[p as string];
@@ -114,28 +140,38 @@ function patchDocument(sandbox: Sandbox) {
 
   // patch MutationObserver.prototype.observe to avoid type error
   // https://github.com/umijs/qiankun/issues/2406
-  // eslint-disable-next-line @typescript-eslint/unbound-method
   const nativeMutationObserverObserveFn = MutationObserver.prototype.observe;
-  if (!mutationObserverPatchedMap.has(nativeMutationObserverObserveFn)) {
-    const observe = function (this: MutationObserver, target: Node, options: MutationObserverInit) {
+  if (!patchMap.has(nativeMutationObserverObserveFn)) {
+    const observe = function observe(this: MutationObserver, target: Node, options: MutationObserverInit) {
       const realTarget = target instanceof Document ? nativeDocument : target;
       return nativeMutationObserverObserveFn.call(this, realTarget, options);
     };
 
     MutationObserver.prototype.observe = observe;
-    mutationObserverPatchedMap.set(nativeMutationObserverObserveFn, observe);
+    patchMap.set(nativeMutationObserverObserveFn, observe);
   }
 
+  // patch Node.prototype.compareDocumentPosition to avoid type error
+  const prevCompareDocumentPosition = Node.prototype.compareDocumentPosition;
+  if (!patchMap.has(prevCompareDocumentPosition)) {
+    Node.prototype.compareDocumentPosition = function compareDocumentPosition(this: Node, node) {
+      const realNode = node instanceof Document ? nativeDocument : node;
+      return prevCompareDocumentPosition.call(this, realNode);
+    };
+    patchMap.set(prevCompareDocumentPosition, Node.prototype.compareDocumentPosition);
+  }
+
+  // TODO https://github.com/umijs/qiankun/pull/2415 Not support yet as getCurrentRunningApp api is not reliable
   // patch parentNode getter to avoid document === html.parentNode
   // https://github.com/umijs/qiankun/issues/2408#issuecomment-1446229105
-  const parentNodeDescriptor = Object.getOwnPropertyDescriptor(Node.prototype, 'parentNode');
-  // if (parentNodeDescriptor && !parentNodePatchedMap.has(parentNodeDescriptor)) {
+  // const parentNodeDescriptor = Object.getOwnPropertyDescriptor(Node.prototype, 'parentNode');
+  // if (parentNodeDescriptor && !patchMap.has(parentNodeDescriptor)) {
   //   const { get: parentNodeGetter, configurable } = parentNodeDescriptor;
   //   if (parentNodeGetter && configurable) {
   //     const patchedParentNodeDescriptor = {
   //       ...parentNodeDescriptor,
   //       get(this: Node) {
-  //         const parentNode = parentNodeGetter.call(this);
+  //         const parentNode = parentNodeGetter.call(this) as HTMLElement;
   //         if (parentNode instanceof Document) {
   //           const proxy = getCurrentRunningApp()?.window;
   //           if (proxy) {
@@ -148,18 +184,21 @@ function patchDocument(sandbox: Sandbox) {
   //     };
   //     Object.defineProperty(Node.prototype, 'parentNode', patchedParentNodeDescriptor);
   //
-  //     parentNodePatchedMap.set(parentNodeDescriptor, patchedParentNodeDescriptor);
+  //     patchMap.set(parentNodeDescriptor, patchedParentNodeDescriptor);
   //   }
   // }
 
   return () => {
     MutationObserver.prototype.observe = nativeMutationObserverObserveFn;
-    mutationObserverPatchedMap.delete(nativeMutationObserverObserveFn);
+    patchMap.delete(nativeMutationObserverObserveFn);
 
-    if (parentNodeDescriptor) {
-      Object.defineProperty(Node.prototype, 'parentNode', parentNodeDescriptor);
-      parentNodePatchedMap.delete(parentNodeDescriptor);
-    }
+    Node.prototype.compareDocumentPosition = prevCompareDocumentPosition;
+    patchMap.delete(prevCompareDocumentPosition);
+
+    // if (parentNodeDescriptor) {
+    //   Object.defineProperty(Node.prototype, 'parentNode', parentNodeDescriptor);
+    //   patchMap.delete(parentNodeDescriptor);
+    // }
   };
 }
 
@@ -212,10 +251,20 @@ export function patchStandardSandbox(
 
     return function rebuild() {
       rebuildCSSRules(dynamicStyleSheetElements as HTMLStyleElement[], (stylesheetElement) => {
-        const appWrapper = getContainer();
-        if (!appWrapper.contains(stylesheetElement)) {
+        const container = getContainer();
+        if (!container.contains(stylesheetElement)) {
           const mountDom =
-            stylesheetElement[styleElementTargetSymbol] === 'head' ? getContainerHeadElement(appWrapper) : appWrapper;
+            stylesheetElement[styleElementTargetSymbol] === 'head' ? getContainerHeadElement(container) : container;
+
+          const refNo = stylesheetElement[styleElementRefNodeNo];
+          if (typeof refNo === 'number' && refNo !== -1) {
+            // the reference node may be dynamic script comment which is not rebuilt while remounting thus reference node no longer exists
+            // in this case, we should append the style element to the end of mountDom
+            const refNode = mountDom.childNodes[refNo] || null;
+            rawHeadInsertBefore.call(mountDom, stylesheetElement, refNode);
+            return true;
+          }
+
           rawHeadAppendChild.call(mountDom, stylesheetElement);
           return true;
         }

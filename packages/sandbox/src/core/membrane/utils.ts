@@ -1,4 +1,4 @@
-import { defineProperty, getOwnPropertyDescriptor, hasOwnProperty } from '@qiankunjs/shared';
+import { defineProperty, getOwnPropertyDescriptor, getOwnPropertyNames, hasOwnProperty } from '@qiankunjs/shared';
 import { isBoundedFunction, isCallable, isConstructable } from '../../utils';
 
 const functionBoundedValueMap = new WeakMap<CallableFunction, CallableFunction>();
@@ -18,11 +18,13 @@ export function getTargetValue<T>(target: unknown, value: T): T {
 
     const boundValue = Function.prototype.bind.call(typedValue, target) as CallableFunction;
 
-    // some callable function has custom fields, we need to copy the enumerable props to boundValue. such as moment function.
-    // use for..in rather than Object.keys.forEach for performance reason
-    for (const key in typedValue) {
-      (boundValue as object as Record<string, unknown>)[key] = (typedValue as object as Record<string, unknown>)[key];
-    }
+    // some callable function has custom fields, we need to copy the own props to boundValue. such as moment function.
+    getOwnPropertyNames(value).forEach((key) => {
+      // boundValue might be a proxy, we need to check the key whether exist in it
+      if (!hasOwnProperty(boundValue, key)) {
+        defineProperty(boundValue, key, getOwnPropertyDescriptor(value, key)!);
+      }
+    });
 
     // copy prototype if bound function not have but target one have
     // as prototype is non-enumerable mostly, we need to copy it from target function manually

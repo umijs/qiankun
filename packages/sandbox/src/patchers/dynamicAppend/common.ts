@@ -12,6 +12,7 @@ const LINK_TAG_NAME = 'LINK';
 const STYLE_TAG_NAME = 'STYLE';
 
 export const styleElementTargetSymbol = Symbol('target');
+export const styleElementRefNodeNo = Symbol('refNodeNo');
 const overwrittenSymbol = Symbol('qiankun-overwritten');
 
 type DynamicDomMutationTarget = 'head' | 'body';
@@ -19,10 +20,12 @@ type DynamicDomMutationTarget = 'head' | 'body';
 declare global {
   interface HTMLLinkElement {
     [styleElementTargetSymbol]: DynamicDomMutationTarget;
+    [styleElementRefNodeNo]?: Exclude<number, -1>;
   }
 
   interface HTMLStyleElement {
     [styleElementTargetSymbol]: DynamicDomMutationTarget;
+    [styleElementRefNodeNo]?: Exclude<number, -1>;
   }
 
   interface Function {
@@ -33,15 +36,6 @@ declare global {
 export const getContainerHeadElement = (container: Element | ShadowRoot): Element => {
   return container.querySelector(qiankunHeadTagName)!;
 };
-
-export function isExecutableScriptType(script: HTMLScriptElement) {
-  return (
-    !script.type ||
-    ['text/javascript', 'module', 'application/javascript', 'text/ecmascript', 'application/ecmascript'].indexOf(
-      script.type,
-    ) !== -1
-  );
-}
 
 export function isHijackingTag(tagName?: string) {
   return (
@@ -91,6 +85,15 @@ export function isAllAppsUnmounted(): boolean {
     ([, { bootstrappingPatchCount: bpc, mountingPatchCount: mpc }]) => bpc === 0 && mpc === 0,
   );
 }
+
+const defineNonEnumerableProperty = (target: unknown, key: string | symbol, value: unknown) => {
+  Object.defineProperty(target, key, {
+    configurable: true,
+    enumerable: false,
+    writable: true,
+    value,
+  });
+};
 
 const styledComponentCSSRulesMap = new WeakMap<HTMLStyleElement, CSSRuleList>();
 const dynamicScriptAttachedCommentMap = new WeakMap<HTMLScriptElement, Comment>();
@@ -147,19 +150,29 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
             configurable: true,
           });
 
-          const container = getContainer() as unknown as HTMLElement;
-          // const mountDOM = target === 'head' ? getContainerHeadElement(container) : container;
-          const mountDOM = container;
+          const container = getContainer();
+          const mountDOM = target === 'head' ? getContainerHeadElement(container) : container;
 
-          dynamicStyleSheetElements.push(stylesheetElement);
           const referenceNode = mountDOM.contains(refChild) ? refChild : null;
-          return rawDOMAppendOrInsertBefore.call(mountDOM, stylesheetElement, referenceNode);
+          let refNo: number | undefined;
+          if (referenceNode) {
+            refNo = Array.from(mountDOM.childNodes).indexOf(referenceNode as ChildNode);
+          }
+
+          const result = rawDOMAppendOrInsertBefore.call(mountDOM, stylesheetElement, referenceNode);
+
+          // record refNo thus we can keep order while remounting
+          if (typeof refNo === 'number' && refNo !== -1) {
+            defineNonEnumerableProperty(stylesheetElement, styleElementRefNodeNo, refNo);
+          }
+          // record dynamic style elements after insert succeed
+          dynamicStyleSheetElements.push(stylesheetElement);
+          return result;
         }
 
         case SCRIPT_TAG_NAME: {
-          const container = getContainer() as unknown as HTMLElement;
-          // const mountDOM = target === 'head' ? getContainerHeadElement(container) : container;
-          const mountDOM = container;
+          const container = getContainer();
+          const mountDOM = target === 'head' ? getContainerHeadElement(container) : container;
           const referenceNode = mountDOM.contains(refChild) ? refChild : null;
 
           // TODO paas fetch configuration and current entry url as baseURI
@@ -184,7 +197,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
 function getNewRemoveChild(
   rawRemoveChild: typeof HTMLElement.prototype.removeChild,
   containerConfigGetter: (element: HTMLElement) => SandboxConfig,
-  _: DynamicDomMutationTarget,
+  target: DynamicDomMutationTarget,
   isInvokedByMicroApp: (element: HTMLElement) => boolean,
 ) {
   function removeChild<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, child: T) {
@@ -220,11 +233,10 @@ function getNewRemoveChild(
         }
       }
 
-      const appWrapper = getContainer() as unknown as HTMLElement;
-      // const container = target === 'head' ? getContainerHeadElement(appWrapper) : appWrapper;
-      const container = appWrapper;
+      const container = getContainer();
+      const mountDOM = target === 'head' ? getContainerHeadElement(container) : container;
       // container might have been removed while app unmounting if the removeChild action was async
-      if (container.contains(attachedElement)) {
+      if (mountDOM.contains(attachedElement)) {
         return rawRemoveChild.call(attachedElement.parentNode, attachedElement) as T;
       }
     } catch (e) {
