@@ -4,7 +4,7 @@
  */
 
 import type { Freer, SandBox } from '../../../interfaces';
-import { isBoundedFunction, nativeDocument, nativeGlobal, isCallable } from '../../../utils';
+import { isBoundedFunction, isCallable, nativeDocument, nativeGlobal } from '../../../utils';
 import { getCurrentRunningApp } from '../../common';
 import type { ContainerConfig } from './common';
 import {
@@ -44,11 +44,7 @@ const proxyAttachContainerConfigMap: WeakMap<WindowProxy, ContainerConfig> =
 
 const elementAttachContainerConfigMap = new WeakMap<HTMLElement, ContainerConfig>();
 const docCreatePatchedMap = new WeakMap<typeof document.createElement, typeof document.createElement>();
-const mutationObserverPatchedMap = new WeakMap<
-  typeof MutationObserver.prototype.observe,
-  typeof MutationObserver.prototype.observe
->();
-const parentNodePatchedMap = new WeakMap<PropertyDescriptor, PropertyDescriptor>();
+const patchMap = new WeakMap<any, any>();
 
 function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
   const { sandbox, speedy } = cfg;
@@ -67,24 +63,50 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
         return true;
       },
       get: (target, p, receiver) => {
-        if (p === 'createElement') {
-          // Must store the original createElement function to avoid error in nested sandbox
-          const targetCreateElement = target.createElement;
-          return function createElement(...args: Parameters<typeof document.createElement>) {
-            if (!nativeGlobal.__currentLockingSandbox__) {
-              nativeGlobal.__currentLockingSandbox__ = sandbox.name;
-            }
+        switch (p) {
+          case 'createElement': {
+            // Must store the original createElement function to avoid error in nested sandbox
+            const targetCreateElement = target.createElement;
+            return function createElement(...args: Parameters<typeof document.createElement>) {
+              if (!nativeGlobal.__currentLockingSandbox__) {
+                nativeGlobal.__currentLockingSandbox__ = sandbox.name;
+              }
 
-            const element = targetCreateElement.call(target, ...args);
+              const element = targetCreateElement.call(target, ...args);
 
-            // only record the element which is created by the current sandbox, thus we can avoid the element created by nested sandboxes
-            if (nativeGlobal.__currentLockingSandbox__ === sandbox.name) {
-              attachElementToProxy(element, sandbox.proxy);
-              delete nativeGlobal.__currentLockingSandbox__;
-            }
+              // only record the element which is created by the current sandbox, thus we can avoid the element created by nested sandboxes
+              if (nativeGlobal.__currentLockingSandbox__ === sandbox.name) {
+                attachElementToProxy(element, sandbox.proxy);
+                delete nativeGlobal.__currentLockingSandbox__;
+              }
 
-            return element;
-          };
+              return element;
+            };
+          }
+
+          case 'querySelector': {
+            const targetQuerySelector = target.querySelector;
+            return function querySelector(...args: Parameters<typeof document.querySelector>) {
+              const selector = args[0];
+              switch (selector) {
+                case 'head': {
+                  const containerConfig = proxyAttachContainerConfigMap.get(sandbox.proxy);
+                  if (containerConfig) {
+                    const qiankunHead = getAppWrapperHeadElement(containerConfig.appWrapperGetter());
+                    qiankunHead.appendChild = HTMLHeadElement.prototype.appendChild;
+                    qiankunHead.insertBefore = HTMLHeadElement.prototype.insertBefore;
+                    qiankunHead.removeChild = HTMLHeadElement.prototype.removeChild;
+                    return qiankunHead;
+                  }
+                  break;
+                }
+              }
+
+              return targetQuerySelector.call(target, ...args);
+            };
+          }
+          default:
+            break;
         }
 
         const value = (<any>target)[p];
@@ -104,20 +126,30 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
     // patch MutationObserver.prototype.observe to avoid type error
     // https://github.com/umijs/qiankun/issues/2406
     const nativeMutationObserverObserveFn = MutationObserver.prototype.observe;
-    if (!mutationObserverPatchedMap.has(nativeMutationObserverObserveFn)) {
+    if (!patchMap.has(nativeMutationObserverObserveFn)) {
       const observe = function observe(this: MutationObserver, target: Node, options: MutationObserverInit) {
         const realTarget = target instanceof Document ? nativeDocument : target;
         return nativeMutationObserverObserveFn.call(this, realTarget, options);
       };
 
       MutationObserver.prototype.observe = observe;
-      mutationObserverPatchedMap.set(nativeMutationObserverObserveFn, observe);
+      patchMap.set(nativeMutationObserverObserveFn, observe);
+    }
+
+    // patch Node.prototype.compareDocumentPosition to avoid type error
+    const prevCompareDocumentPosition = Node.prototype.compareDocumentPosition;
+    if (!patchMap.has(prevCompareDocumentPosition)) {
+      Node.prototype.compareDocumentPosition = function compareDocumentPosition(this: Node, node) {
+        const realNode = node instanceof Document ? nativeDocument : node;
+        return prevCompareDocumentPosition.call(this, realNode);
+      };
+      patchMap.set(prevCompareDocumentPosition, Node.prototype.compareDocumentPosition);
     }
 
     // patch parentNode getter to avoid document === html.parentNode
     // https://github.com/umijs/qiankun/issues/2408#issuecomment-1446229105
     const parentNodeDescriptor = Object.getOwnPropertyDescriptor(Node.prototype, 'parentNode');
-    if (parentNodeDescriptor && !parentNodePatchedMap.has(parentNodeDescriptor)) {
+    if (parentNodeDescriptor && !patchMap.has(parentNodeDescriptor)) {
       const { get: parentNodeGetter, configurable } = parentNodeDescriptor;
       if (parentNodeGetter && configurable) {
         const patchedParentNodeDescriptor = {
@@ -136,17 +168,20 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
         };
         Object.defineProperty(Node.prototype, 'parentNode', patchedParentNodeDescriptor);
 
-        parentNodePatchedMap.set(parentNodeDescriptor, patchedParentNodeDescriptor);
+        patchMap.set(parentNodeDescriptor, patchedParentNodeDescriptor);
       }
     }
 
     return () => {
       MutationObserver.prototype.observe = nativeMutationObserverObserveFn;
-      mutationObserverPatchedMap.delete(nativeMutationObserverObserveFn);
+      patchMap.delete(nativeMutationObserverObserveFn);
+
+      Node.prototype.compareDocumentPosition = prevCompareDocumentPosition;
+      patchMap.delete(prevCompareDocumentPosition);
 
       if (parentNodeDescriptor) {
         Object.defineProperty(Node.prototype, 'parentNode', parentNodeDescriptor);
-        parentNodePatchedMap.delete(parentNodeDescriptor);
+        patchMap.delete(parentNodeDescriptor);
       }
     };
   }
@@ -213,12 +248,12 @@ export function patchStrictSandbox(
   // all dynamic style sheets are stored in proxy container
   const { dynamicStyleSheetElements } = containerConfig;
 
-  const unpatchDocument = patchDocument({ sandbox, speedy: speedySandbox });
-
   const unpatchDynamicAppendPrototypeFunctions = patchHTMLDynamicAppendPrototypeFunctions(
     (element) => elementAttachContainerConfigMap.has(element),
     (element) => elementAttachContainerConfigMap.get(element)!,
   );
+
+  const unpatchDocument = patchDocument({ sandbox, speedy: speedySandbox });
 
   if (!mounting) calcAppCount(appName, 'increase', 'bootstrapping');
   if (mounting) calcAppCount(appName, 'increase', 'mounting');

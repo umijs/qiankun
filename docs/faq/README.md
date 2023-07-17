@@ -320,6 +320,17 @@ module.exports = {
 };
 ```
 
+`vue-cli5` project, use the `asset/inline` of `webpack` replace `url-loader`:
+
+```js
+module.exports = {
+  chainWebpack: (config) => {
+    config.module.rule('fonts').type('asset/inline').set('generator', {});
+    config.module.rule('images').type('asset/inline').set('generator', {});
+  },
+};
+```
+
 3. Use the `file-loader` of `webpack` to inject the full path when packaging it (suitable for projects with large font files and images)
 
 ```js
@@ -702,14 +713,11 @@ router.beforeEach((to, from, next) => {
 
 ## How to jump between micro apps?
 
--Both the main application and the micro application are in the `hash` mode. The main application judges the micro application based on the `hash`, so this issue is not considered.
+It is not feasible to use the router instance of micro-application directly to jump between micro-applications or micro-applications to main application page, such as the `Link` component in react-router or router-link in vue, because the router instance jump of micro-applications is based on the 'base' of routes. There are such ways to jump:
 
--The main application judges the micro application based on the `path`
-
-It is not possible to directly use the routing instance of the micro-application to jump between micro-applications in the `history` mode or to jump to the main application page. The reason is that the routing instance jumps of the micro-application are all based on the `base` of the route. There are two ways to jump:
-
-1. `history.pushState()`: [mdn usage introduction](https://developer.mozilla.org/zh-CN/docs/Web/API/History/pushState)
-2. Pass the routing instance of the main application to the micro application through `props`, and the micro application will jump to this routing instance.
+1. ` history. PushState () ` : [MDN usage introduction] (https://developer.mozilla.org/zh-CN/docs/Web/API/History/pushState)
+2. Direct use of native a full address label, such as: ` < a href = "http://localhost:8080/app1" > app1 < / a > `
+3. Modify the location href jump, such as: ` window. The location. The href = 'http://localhost:8080/app1' `
 
 ## After the microapp file is updated, the old version of the file is still accessed
 

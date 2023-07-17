@@ -33,6 +33,8 @@ const variableWhiteListInDev =
         // for react hot reload
         // see https://github.com/facebook/create-react-app/blob/66bf7dfc43350249e2f09d138a20840dae8a0a4a/packages/react-error-overlay/src/index.js#L180
         '__REACT_ERROR_OVERLAY_GLOBAL_HOOK__',
+        // for react development event issue, see https://github.com/umijs/qiankun/issues/2375
+        'event',
       ]
     : [];
 // who could escape the sandbox
@@ -209,25 +211,26 @@ export default class ProxySandbox implements SandBox {
       set: (target: FakeWindow, p: PropertyKey, value: any): boolean => {
         if (this.sandboxRunning) {
           this.registerRunningApp(name, proxy);
-          // We must keep its description while the property existed in globalContext before
-          if (!target.hasOwnProperty(p) && globalContext.hasOwnProperty(p)) {
-            const descriptor = Object.getOwnPropertyDescriptor(globalContext, p);
-            const { writable, configurable, enumerable, set } = descriptor!;
-            // only writable property can be overwritten
-            // here we ignored accessor descriptor of globalContext as it makes no sense to trigger its logic(which might make sandbox escaping instead)
-            // we force to set value by data descriptor
-            if (writable || set) {
-              Object.defineProperty(target, p, { configurable, enumerable, writable: true, value });
-            }
-          } else {
-            target[p] = value;
-          }
 
           // sync the property to globalContext
           if (typeof p === 'string' && globalVariableWhiteList.indexOf(p) !== -1) {
             this.globalWhitelistPrevDescriptor[p] = Object.getOwnPropertyDescriptor(globalContext, p);
             // @ts-ignore
             globalContext[p] = value;
+          } else {
+            // We must keep its description while the property existed in globalContext before
+            if (!target.hasOwnProperty(p) && globalContext.hasOwnProperty(p)) {
+              const descriptor = Object.getOwnPropertyDescriptor(globalContext, p);
+              const { writable, configurable, enumerable, set } = descriptor!;
+              // only writable property can be overwritten
+              // here we ignored accessor descriptor of globalContext as it makes no sense to trigger its logic(which might make sandbox escaping instead)
+              // we force to set value by data descriptor
+              if (writable || set) {
+                Object.defineProperty(target, p, { configurable, enumerable, writable: true, value });
+              }
+            } else {
+              target[p] = value;
+            }
           }
 
           updatedValueSet.add(p);
@@ -279,6 +282,11 @@ export default class ProxySandbox implements SandBox {
 
         if (p === 'eval') {
           return eval;
+        }
+
+        if (p === 'string' && globalVariableWhiteList.indexOf(p) !== -1) {
+          // @ts-ignore
+          return globalContext[p];
         }
 
         const actualTarget = propertiesWithGetter.has(p) ? globalContext : p in target ? target : globalContext;
