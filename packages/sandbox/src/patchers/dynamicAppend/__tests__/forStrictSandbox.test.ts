@@ -2,8 +2,10 @@ import { SandBoxType } from '../../../../interfaces';
 import { noop } from 'lodash';
 import { patchStandardSandbox } from '../forStrictSandbox';
 
-jest.mock('import-html-entry', () => ({
-  execScripts: jest.fn(),
+vi.mock('import-html-entry', () => ({
+  default: {
+    execScripts: vi.fn(),
+  }
 }));
 
 describe('forStrictSandbox test', () => {

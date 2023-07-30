@@ -8,7 +8,7 @@
   "sideEffects": false,
   "scripts": {
     "build": "father build",
-    "test": "cross-env NODE_ENV=test jest"
+    "test": "cross-env NODE_ENV=test vitest --config ../../vitest.config.ts"
   },
   "files": [
     "dist"

@@ -27,7 +27,8 @@
     "experimentalDecorators": true,
     "paths": {
       "qiankun": ["./src"]
-    }
+    },
+    "types": ["vitest/globals"]
   },
   "exclude": ["node_modules", "examples"]
 }
