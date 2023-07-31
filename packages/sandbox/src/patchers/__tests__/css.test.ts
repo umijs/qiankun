@@ -3,7 +3,7 @@
  * @since 2020-04-19
  */
 
-import { sleep } from '../../../utils';
+import { sleep } from '../../utils';
 import { ScopedCSS } from '../css';
 
 let CSSProcessor: ScopedCSS;

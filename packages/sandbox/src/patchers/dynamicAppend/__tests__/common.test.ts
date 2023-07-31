@@ -1,7 +1,9 @@
 import { getStyledElementCSSRules, rebuildCSSRules, recordStyledComponentsCSSRules } from '../common';
 
-jest.mock('import-html-entry', () => ({
-  execScripts: jest.fn(),
+vi.mock('import-html-entry', () => ({
+  default: {
+    execScripts: vi.fn(),
+  }
 }));
 
 const cssRuleText1 = '#foo { color: red; }';
