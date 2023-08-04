@@ -20,18 +20,24 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.26.1",
+    "@jest/types": "^27.5.1",
+    "@types/lodash": "^4.14.129",
     "@umijs/fabric": "^2.0.7",
+    "babel-plugin-import": "^1.12.1",
     "cross-env": "^7.0.2",
     "dumi": "^1.1.0-beta.24",
     "dumi-theme-default": "^1.0.10",
     "eslint": "^8.10.0",
     "eslint-define-config": "^1.2.5",
+    "father": "^4.1.0",
     "husky": "^8.0.3",
     "lint-staged": "^9.4.2",
     "prettier": "^2.1.2",
     "rimraf": "^3.0.0",
+    "ts-jest": "^25.2.1",
+    "typescript": "^5.1.6",
     "umi-plugin-hire": "^1.0.3",
-    "vitest": "^0.32.2"
+    "vitest": "^0.34.1"
   },
   "repository": {
     "type": "git",

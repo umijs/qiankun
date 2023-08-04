@@ -20,11 +20,5 @@
     "@qiankunjs/shared": "workspace:^",
     "@types/node": "^18.15.3",
     "lodash": "^4.17.11"
-  },
-  "devDependencies": {
-    "@types/lodash": "^4.14.129",
-    "babel-plugin-import": "^1.12.1",
-    "father": "^4.1.0",
-    "typescript": "^4.1.2"
   }
 }
