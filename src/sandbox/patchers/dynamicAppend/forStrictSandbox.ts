@@ -284,11 +284,10 @@ export function patchStrictSandbox(
           const refNo = stylesheetElement[styleElementRefNodeNo];
 
           if (typeof refNo === 'number' && refNo !== -1) {
-            const refNode = mountDom.childNodes[refNo];
-            if (refNode) {
-              rawHeadInsertBefore.call(mountDom, stylesheetElement, refNode);
-              return true;
-            }
+            // the reference node may be dynamic script comment which is not rebuilt while remounting thus reference node no longer exists
+            const refNode = mountDom.childNodes[refNo] || null;
+            rawHeadInsertBefore.call(mountDom, stylesheetElement, refNode);
+            return true;
           } else {
             rawHeadAppendChild.call(mountDom, stylesheetElement);
             return true;
