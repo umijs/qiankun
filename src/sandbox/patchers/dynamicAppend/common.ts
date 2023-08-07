@@ -14,6 +14,7 @@ const LINK_TAG_NAME = 'LINK';
 const STYLE_TAG_NAME = 'STYLE';
 
 export const styleElementTargetSymbol = Symbol('target');
+export const styleElementRefNodeNo = Symbol('refNodeNo');
 const overwrittenSymbol = Symbol('qiankun-overwritten');
 
 type DynamicDomMutationTarget = 'head' | 'body';
@@ -21,10 +22,12 @@ type DynamicDomMutationTarget = 'head' | 'body';
 declare global {
   interface HTMLLinkElement {
     [styleElementTargetSymbol]: DynamicDomMutationTarget;
+    [styleElementRefNodeNo]?: number;
   }
 
   interface HTMLStyleElement {
     [styleElementTargetSymbol]: DynamicDomMutationTarget;
+    [styleElementRefNodeNo]?: number;
   }
 
   interface Function {
@@ -156,6 +159,15 @@ function convertLinkAsStyle(
   return styleElement;
 }
 
+const defineNonEnumerableProperty = (target: any, key: string | symbol, value: any) => {
+  Object.defineProperty(target, key, {
+    configurable: true,
+    enumerable: false,
+    writable: true,
+    value,
+  });
+};
+
 const styledComponentCSSRulesMap = new WeakMap<HTMLStyleElement, CSSRuleList>();
 const dynamicScriptAttachedCommentMap = new WeakMap<HTMLScriptElement, Comment>();
 const dynamicLinkAttachedInlineStyleMap = new WeakMap<HTMLLinkElement, HTMLStyleElement>();
@@ -230,11 +242,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
             return rawDOMAppendOrInsertBefore.call(this, element, refChild) as T;
           }
 
-          Object.defineProperty(stylesheetElement, styleElementTargetSymbol, {
-            value: target,
-            writable: true,
-            configurable: true,
-          });
+          defineNonEnumerableProperty(stylesheetElement, styleElementTargetSymbol, target);
 
           const appWrapper = appWrapperGetter();
 
@@ -262,9 +270,23 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
 
           const mountDOM = target === 'head' ? getAppWrapperHeadElement(appWrapper) : appWrapper;
 
-          dynamicStyleSheetElements.push(stylesheetElement);
           const referenceNode = mountDOM.contains(refChild) ? refChild : null;
-          return rawDOMAppendOrInsertBefore.call(mountDOM, stylesheetElement, referenceNode);
+
+          let refNo: number | undefined;
+          if (referenceNode) {
+            refNo = Array.from(mountDOM.childNodes).indexOf(referenceNode);
+          }
+
+          const result = rawDOMAppendOrInsertBefore.call(mountDOM, stylesheetElement, referenceNode);
+
+          // record refNo thus we can keep order while remounting
+          if (typeof refNo === 'number' && refNo !== -1) {
+            defineNonEnumerableProperty(stylesheetElement, styleElementRefNodeNo, refNo);
+          }
+          // record dynamic style elements after insert succeed
+          dynamicStyleSheetElements.push(stylesheetElement);
+
+          return result as T;
         }
 
         case SCRIPT_TAG_NAME: {
