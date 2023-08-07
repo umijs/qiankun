@@ -15,6 +15,7 @@ import {
   patchHTMLDynamicAppendPrototypeFunctions,
   rebuildCSSRules,
   recordStyledComponentsCSSRules,
+  styleElementRefNodeNo,
   styleElementTargetSymbol,
 } from './common';
 
@@ -35,6 +36,7 @@ Object.defineProperty(nativeGlobal, '__currentLockingSandbox__', {
 });
 
 const rawHeadAppendChild = HTMLHeadElement.prototype.appendChild;
+const rawHeadInsertBefore = HTMLHeadElement.prototype.insertBefore;
 
 // Share proxyAttachContainerConfigMap between multiple qiankun instance, thus they could access the same record
 nativeGlobal.__proxyAttachContainerConfigMap__ =
@@ -279,8 +281,18 @@ export function patchStrictSandbox(
         if (!appWrapper.contains(stylesheetElement)) {
           const mountDom =
             stylesheetElement[styleElementTargetSymbol] === 'head' ? getAppWrapperHeadElement(appWrapper) : appWrapper;
-          rawHeadAppendChild.call(mountDom, stylesheetElement);
-          return true;
+          const refNo = stylesheetElement[styleElementRefNodeNo];
+
+          if (refNo !== undefined && refNo !== -1) {
+            const refNode = mountDom.childNodes[refNo];
+            if (refNode) {
+              rawHeadInsertBefore.call(mountDom, stylesheetElement, refNode);
+              return true;
+            }
+          } else {
+            rawHeadAppendChild.call(mountDom, stylesheetElement);
+            return true;
+          }
         }
 
         return false;
