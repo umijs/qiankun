@@ -71,20 +71,18 @@ export function isConstructable(fn: () => any | FunctionConstructor) {
   return constructable;
 }
 
-/**
- * in safari
- * typeof document.all === 'undefined' // true
- * typeof document.all === 'function' // true
- * We need to discriminate safari for better performance
- */
-const naughtySafari = typeof document.all === 'function' && typeof document.all === 'undefined';
 const callableFnCacheMap = new WeakMap<CallableFunction, boolean>();
-export function isCallable(fn: any) {
+export function isCallable(fn: any): boolean {
   if (callableFnCacheMap.has(fn)) {
     return true;
   }
 
-  const callable = naughtySafari ? typeof fn === 'function' && typeof fn !== 'undefined' : typeof fn === 'function';
+  /**
+   * We can not use typeof to confirm it is function as in some safari version
+   * typeof document.all === 'undefined' // true
+   * typeof document.all === 'function' // true
+   */
+  const callable = typeof fn === 'function' && fn instanceof Function;
   if (callable) {
     callableFnCacheMap.set(fn, callable);
   }
