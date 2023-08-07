@@ -22,12 +22,12 @@ type DynamicDomMutationTarget = 'head' | 'body';
 declare global {
   interface HTMLLinkElement {
     [styleElementTargetSymbol]: DynamicDomMutationTarget;
-    [styleElementRefNodeNo]?: number;
+    [styleElementRefNodeNo]?: Exclude<number, -1>;
   }
 
   interface HTMLStyleElement {
     [styleElementTargetSymbol]: DynamicDomMutationTarget;
-    [styleElementRefNodeNo]?: number;
+    [styleElementRefNodeNo]?: Exclude<number, -1>;
   }
 
   interface Function {
