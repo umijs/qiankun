@@ -280,7 +280,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
           const result = rawDOMAppendOrInsertBefore.call(mountDOM, stylesheetElement, referenceNode);
 
           // record refNo thus we can keep order while remounting
-          if (refNo !== undefined && refNo !== -1) {
+          if (typeof refNo === 'number' && refNo !== -1) {
             defineNonEnumerableProperty(stylesheetElement, styleElementRefNodeNo, refNo);
           }
           // record dynamic style elements after insert succeed

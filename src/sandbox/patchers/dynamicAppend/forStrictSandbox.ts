@@ -283,7 +283,7 @@ export function patchStrictSandbox(
             stylesheetElement[styleElementTargetSymbol] === 'head' ? getAppWrapperHeadElement(appWrapper) : appWrapper;
           const refNo = stylesheetElement[styleElementRefNodeNo];
 
-          if (refNo !== undefined && refNo !== -1) {
+          if (typeof refNo === 'number' && refNo !== -1) {
             const refNode = mountDom.childNodes[refNo];
             if (refNode) {
               rawHeadInsertBefore.call(mountDom, stylesheetElement, refNode);
