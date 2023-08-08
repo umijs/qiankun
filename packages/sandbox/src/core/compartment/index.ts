@@ -28,30 +28,33 @@ export class Compartment {
    * Since the time of execution of the code in Compartment is determined by the browser, a unique compartmentSpecifier should be generated in Compartment
    */
   private readonly id: CompartmentGlobalId = (() => {
-    {
-      // make sure the compartmentSpecifier is unique
-      while (nativeGlobal[getCompartmentGlobalId(compartmentCounter)]) {
-        compartmentCounter++;
-      }
-      return getCompartmentGlobalId(compartmentCounter);
+    // make sure the compartmentSpecifier is unique
+    while (nativeGlobal[getCompartmentGlobalId(compartmentCounter)]) {
+      compartmentCounter++;
     }
+    return getCompartmentGlobalId(compartmentCounter);
   })();
 
   private readonly _globalThis: WindowProxy;
 
-  constructor(globals: WindowProxy) {
-    this._globalThis = globals;
+  private constantIntrinsicNames: string[] = [];
+
+  constructor(globalProxy: WindowProxy) {
+    this._globalThis = globalProxy;
   }
 
   get globalThis(): WindowProxy {
     return this._globalThis;
   }
 
+  protected addConstantIntrinsicNames(intrinsics: string[]): void {
+    this.constantIntrinsicNames  = [...intrinsics, ...this.constantIntrinsicNames];
+  }
+
   makeEvaluateFactory(source: string, sourceURL?: string): string {
     const sourceMapURL = sourceURL ? `//# sourceURL=${sourceURL}\n` : '';
 
-    const globalObjectConstants = ['window', 'globalThis'];
-    const globalObjectOptimizer = `const {${globalObjectConstants.join(',')}} = this;`;
+    const globalObjectOptimizer = this.constantIntrinsicNames.length ? `const {${this.constantIntrinsicNames.join(',')}} = this;`: '';
 
     nativeGlobal[this.id] = this.globalThis;
     // eslint-disable-next-line max-len

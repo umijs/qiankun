@@ -12,7 +12,7 @@
   ],
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
-  "types": "./dist/esm/index.d.ts",
+  "types": "./src/index.ts",
   "sideEffects": false,
   "scripts": {
     "build": "father build",
@@ -29,7 +29,8 @@
     "url": "git+https://github.com/kuitos/qiankun.git"
   },
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "author": "Kuitos",
   "license": "MIT",

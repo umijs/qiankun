@@ -14,6 +14,7 @@ module.exports = {
     'space-before-function-paren': ['error', { anonymous: 'never', named: 'never', asyncArrow: 'always' }],
     'no-underscore-dangle': 0,
     'no-plusplus': 0,
+    'no-nested-ternary': 0,
   },
   parserOptions: {
     tsconfigRootDir: __dirname,

@@ -4,7 +4,7 @@
   "description": "",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
-  "types": "./dist/esm/index.d.ts",
+  "types": "./src/index.ts",
   "sideEffects": false,
   "scripts": {
     "build": "father build",
@@ -20,6 +20,7 @@
     "semver": "^7.5.3"
   },
   "files": [
-    "dist"
+    "dist",
+    "src"
   ]
 }

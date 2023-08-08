@@ -4,14 +4,15 @@
   "description": "qiankun sandbox",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
-  "types": "./dist/esm/index.d.ts",
+  "types": "./src/index.ts",
   "sideEffects": false,
   "scripts": {
     "build": "father build",
     "test": "cross-env NODE_ENV=test vitest --config ../../vitest.config.ts"
   },
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "author": "Kuitos",
   "license": "MIT",
@@ -20,5 +21,8 @@
     "@qiankunjs/shared": "workspace:^",
     "@types/node": "^18.15.3",
     "lodash": "^4.17.11"
+  },
+  "devDependencies": {
+    "globals": "^13.20.0"
   }
 }

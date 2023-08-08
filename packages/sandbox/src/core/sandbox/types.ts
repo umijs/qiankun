@@ -15,9 +15,9 @@ export interface Sandbox extends Compartment {
   type: SandboxType;
   latestSetProp?: PropertyKey;
 
-  active: () => void;
+  active(): void;
 
-  inactive: () => void;
+  inactive(): void;
 
   addIntrinsics: (intrinsics: Record<string, PropertyDescriptor>) => void;
 

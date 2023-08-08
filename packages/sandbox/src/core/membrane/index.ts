@@ -1,4 +1,4 @@
-import { without } from 'lodash';
+/* eslint-disable no-param-reassign */
 import { nativeGlobal } from '../../consts';
 import { isPropertyFrozen } from '../../utils';
 import { getTargetValue } from './utils';
@@ -9,22 +9,8 @@ declare global {
   }
 }
 
-type FakeWindow = Window & Record<PropertyKey, any>;
+export type FakeWindow = Window & Record<PropertyKey, any>;
 type SymbolTarget = 'target' | 'globalContext';
-
-const inTest = process.env.NODE_ENV === 'test';
-const mockGlobalThis = 'mockGlobalThis';
-
-// these globals should be recorded while accessing every time
-const accessingSpiedGlobals = ['document', 'top', 'parent', 'eval'];
-const overwrittenGlobals = ['window', 'self', 'globalThis', 'hasOwnProperty'].concat(inTest ? [mockGlobalThis] : []);
-const globals = ['window', 'this'];
-export const cachedGlobals = Array.from(
-  new Set(without(globals.concat(overwrittenGlobals).concat('requestAnimationFrame'), ...accessingSpiedGlobals)),
-);
-
-// transform cachedGlobals to object for faster element check
-const cachedGlobalObjects = cachedGlobals.reduce((acc, globalProp) => ({ ...acc, [globalProp]: true }), {});
 
 const variableWhiteListInDev =
   process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development' || window.__QIANKUN_DEVELOPMENT__
@@ -132,7 +118,7 @@ export function createMembrane(
     // see https://github.com/styled-components/styled-components/blob/master/packages/styled-components/src/constants.js#L12
     has(target: FakeWindow, p: string | number | symbol): boolean {
       // property in cachedGlobalObjects must return true to avoid escape from get trap
-      return p in cachedGlobalObjects || p in target || p in globalContext;
+      return p in target || p in globalContext;
     },
 
     getOwnPropertyDescriptor(target: FakeWindow, p: string | number | symbol): PropertyDescriptor | undefined {
@@ -201,9 +187,6 @@ export function createMembrane(
     get instance() {
       return membraneInstance;
     },
-    get target() {
-      return fakeWindow;
-    },
     get modifications() {
       return modifications;
     },
@@ -212,10 +195,20 @@ export function createMembrane(
     },
     lock: () => (locking = true),
     unlock: () => (locking = false),
+    addIntrinsics(
+      intrinsics: Record<string, PropertyDescriptor> | ((rawTarget: FakeWindow) => Record<string, PropertyDescriptor>),
+    ): void {
+      const intrinsicsObj = typeof intrinsics === 'function' ? intrinsics(fakeWindow) : intrinsics;
+      Object.keys(intrinsicsObj).forEach((key) => {
+        Object.defineProperty(fakeWindow, key, intrinsicsObj[key]);
+      });
+    },
   };
 }
 
-function createFakeWindow(extraContext?: Record<string, any>): {
+function createFakeWindow(
+  extraContext?: Record<string, any>,
+): {
   fakeWindow: FakeWindow;
   propertiesWithGetter: Map<PropertyKey, boolean>;
 } {
