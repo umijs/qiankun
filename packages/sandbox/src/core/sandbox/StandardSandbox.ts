@@ -1,17 +1,20 @@
 import { Compartment } from '../compartment';
 import { createMembrane } from '../membrane';
-import type { Sandbox } from './types';
-import { SandboxType } from './types';
+import { Sandbox, SandboxType } from './types';
+import { globals as constantGlobals } from './globals';
+
+const whitelistBOMAPIs = ['requestAnimationFrame', 'cancelAnimationFrame'];
 
 export class StandardSandbox extends Compartment implements Sandbox {
   private readonly membrane: ReturnType<typeof createMembrane>;
 
   readonly type = SandboxType.Standard;
+
   readonly name: string;
 
   constructor(name: string, globals: Record<string, any>, globalContext: WindowProxy = window) {
     const membrane = createMembrane(globalContext, {}, { whitelistVariables: [], extraContext: globals });
-    const { target, instance: membraneInstance } = membrane;
+    const { instance: membraneInstance } = membrane;
 
     super(membraneInstance);
 
@@ -25,44 +28,57 @@ export class StandardSandbox extends Compartment implements Sandbox {
       }
       return (globalContext as any)[p];
     };
-    this.addIntrinsics({
-      // avoid who using window.window or window.self to escape the sandbox environment to touch the real window
-      // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
-      window: { value: membraneInstance, writable: false, enumerable: true, configurable: false },
-      self: { value: membraneInstance, writable: false, enumerable: true, configurable: false },
-      globalThis: { value: membraneInstance, writable: true, enumerable: false, configurable: true },
 
-      // proxy.hasOwnProperty would invoke getter firstly, then its value represented as globalContext.hasOwnProperty
-      hasOwnProperty: {
-        value: function hasOwnProperty(this: any, key: PropertyKey): boolean {
-          // calling from hasOwnProperty.call(obj, key)
-          if (this !== membraneInstance && this !== null && typeof this === 'object') {
-            return Object.prototype.hasOwnProperty.call(this, key);
-          }
+    this.membrane.addIntrinsics((rawTarget) => {
+      const intrinsics: Record<string, PropertyDescriptor> = {
+        // avoid who using window.window or window.self to escape the sandbox environment to touch the real window
+        // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
+        window: { value: membraneInstance, writable: false, enumerable: true, configurable: false },
+        self: { value: membraneInstance, writable: false, enumerable: true, configurable: false },
+        globalThis: { value: membraneInstance, writable: true, enumerable: false, configurable: true },
 
-          return target.hasOwnProperty(key) || globalContext.hasOwnProperty(key);
+        // proxy.hasOwnProperty would invoke getter firstly, then its value represented as globalContext.hasOwnProperty
+        hasOwnProperty: {
+          value: function hasOwnProperty(this: any, key: PropertyKey): boolean {
+            // calling from hasOwnProperty.call(obj, key)
+            if (this !== membraneInstance && this !== null && typeof this === 'object') {
+              return Object.prototype.hasOwnProperty.call(this, key);
+            }
+
+            return rawTarget.hasOwnProperty(key) || globalContext.hasOwnProperty(key);
+          },
+          writable: true,
+          enumerable: false,
+          configurable: true,
         },
-        writable: true,
-        enumerable: false,
-        configurable: true,
-      },
 
-      eval: { value: eval, writable: true, enumerable: false, configurable: true },
+        // eslint-disable-next-line no-eval
+        eval: { value: eval, writable: true, enumerable: false, configurable: true },
 
-      top: {
-        get() {
-          return getTopValue('top');
+        top: {
+          get() {
+            return getTopValue('top');
+          },
+          configurable: false,
+          enumerable: true,
         },
-        configurable: false,
-        enumerable: true,
-      },
-      parent: {
-        get() {
-          return getTopValue('parent');
+        parent: {
+          get() {
+            return getTopValue('parent');
+          },
+          configurable: false,
+          enumerable: true,
         },
-        configurable: false,
-        enumerable: true,
-      },
+      };
+
+      if (process.env.NODE_ENV === 'test') {
+        intrinsics.mockGlobalThis = { value: membraneInstance, writable: true, enumerable: false, configurable: true };
+      }
+
+      const constants = Array.from(new Set(Object.keys(intrinsics).concat(whitelistBOMAPIs).concat(constantGlobals)));
+      this.addConstantIntrinsicNames(constants);
+
+      return intrinsics;
     });
   }
 
@@ -71,10 +87,7 @@ export class StandardSandbox extends Compartment implements Sandbox {
   }
 
   addIntrinsics(intrinsics: Record<string, PropertyDescriptor>) {
-    const { target } = this.membrane;
-    Object.keys(intrinsics).forEach((key) => {
-      Object.defineProperty(target, key, intrinsics[key]);
-    });
+    this.membrane.addIntrinsics(intrinsics);
   }
 
   async active() {
