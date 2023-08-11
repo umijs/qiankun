@@ -21,7 +21,6 @@
   },
   "devDependencies": {
     "import-html-entry": "^1.12.0",
-    "single-spa": "6.0.0-beta.3",
     "tachometer": "^0.5.10"
   },
   "files": [

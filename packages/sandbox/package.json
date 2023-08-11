@@ -19,7 +19,6 @@
   "dependencies": {
     "@babel/runtime": "^7.10.5",
     "@qiankunjs/shared": "workspace:^",
-    "@types/node": "^18.15.3",
     "lodash": "^4.17.11"
   },
   "devDependencies": {
