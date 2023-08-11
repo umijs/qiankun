@@ -4,6 +4,7 @@
   "engines": {
     "node": ">=12.0.0"
   },
+  "type": "module",
   "scripts": {
     "dev": "pnpm run build && npm run start:main && npm run start:react15",
     "start:main": "cd ./examples/main && npm start",
@@ -22,20 +23,19 @@
     "@changesets/cli": "^2.26.1",
     "@types/lodash": "^4.14.129",
     "@types/node": "^18.15.3",
-    "@umijs/fabric": "^2.0.7",
+    "@typescript-eslint/eslint-plugin": "^6.3.0",
+    "@typescript-eslint/parser": "^6.3.0",
     "babel-plugin-import": "^1.12.1",
     "cross-env": "^7.0.2",
     "dumi": "^1.1.0-beta.24",
     "dumi-theme-default": "^1.0.10",
-    "eslint": "^8.10.0",
-    "eslint-define-config": "^1.2.5",
+    "eslint": "^8.46.0",
+    "eslint-config-prettier": "^9.0.0",
     "father": "^4.1.0",
     "husky": "^8.0.3",
     "lint-staged": "^9.4.2",
     "prettier": "^2.1.2",
-    "rimraf": "^3.0.0",
     "typescript": "^5.1.6",
-    "umi-plugin-hire": "^1.0.3",
     "vitest": "^0.34.1"
   },
   "repository": {

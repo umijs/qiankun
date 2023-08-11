@@ -1,0 +1,18 @@
+{
+  "singleQuote": true,
+  "trailingComma": "all",
+  "proseWrap": "never",
+  "editorconfig": true,
+  "overrides": [
+    {
+      "files": [
+        "*.json",
+        ".eslintrc",
+        ".prettierrc"
+      ],
+      "options": {
+        "parser": "json"
+      }
+    }
+  ]
+}

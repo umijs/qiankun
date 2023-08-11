@@ -1,7 +1,9 @@
 import { writeFileSync } from 'fs';
 import { join } from 'path';
 import globals from 'globals';
+import cfg from '../../.fatherrc';
 
+console.log('generate globals.ts...');
 // generate globals.ts
 const globalsFilePath = join(__dirname, './src/core/sandbox/globals.ts');
 writeFileSync(
@@ -14,20 +16,6 @@ export const globals = window.Proxy ? ${JSON.stringify(
     2,
   )}.filter(p => /* just keep the available properties in current window context */ p in window) : [];`,
 );
+console.log('generate globals.ts succeed...');
 
-export default {
-  platform: 'browser',
-  esm: {},
-  cjs: {},
-  sourcemap: true,
-  extraBabelPlugins: [
-    [
-      'babel-plugin-import',
-      {
-        libraryName: 'lodash',
-        libraryDirectory: '',
-        camel2DashComponentName: false,
-      },
-    ],
-  ],
-};
+export default cfg;

@@ -38,6 +38,7 @@ export function isConstructable(fn: () => any | FunctionConstructor) {
  */
 const naughtySafari = typeof document.all === 'function' && typeof document.all === 'undefined';
 const callableFnCacheMap = new WeakMap<CallableFunction, boolean>();
+
 export function isCallable(fn: any) {
   if (callableFnCacheMap.has(fn)) {
     return true;
@@ -51,6 +52,7 @@ export function isCallable(fn: any) {
 }
 
 const frozenPropertyCacheMap = new WeakMap<any, Record<PropertyKey, boolean>>();
+
 export function isPropertyFrozen(target: any, p?: PropertyKey): boolean {
   if (!target || !p) {
     return false;
@@ -89,3 +91,6 @@ export function isBoundedFunction(fn: CallableFunction) {
   boundedMap.set(fn, bounded);
   return bounded;
 }
+
+export const { create, defineProperty, getOwnPropertyDescriptor, getOwnPropertyNames, freeze, keys } = Object;
+export const hasOwnProperty = (caller: any, p: PropertyKey) => Object.prototype.hasOwnProperty.call(caller, p);
