@@ -18,8 +18,8 @@ declare global {
   }
 }
 
-export type MembraneTarget = Window & Record<PropertyKey, any>;
-export type Endowments = Record<string, number | string | Function | PropertyDescriptor>;
+export type MembraneTarget = Record<string | symbol, unknown>;
+export type Endowments = Record<string, number | string | CallableFunction | PropertyDescriptor>;
 
 type SymbolTarget = 'target' | 'globalContext';
 
@@ -48,7 +48,7 @@ const useNativeWindowForBindingsProps = new Map<PropertyKey, boolean>([
   ['mockDomAPIInBlackList', process.env.NODE_ENV === 'test'],
 ]);
 
-const isPropertyDescriptor = (v: any): boolean => {
+const isPropertyDescriptor = (v: unknown): boolean => {
   return (
     typeof v === 'object' &&
     v !== null &&
@@ -68,7 +68,7 @@ export class Membrane {
   latestSetProp: PropertyKey | undefined;
 
   constructor(
-    incubatorContext: Window,
+    incubatorContext: WindowProxy,
     unscopables: Record<string, true>,
     opts?: {
       whitelist?: string[];
@@ -83,17 +83,17 @@ export class Membrane {
 
     this.target = target;
 
-    this.realmGlobal = new Proxy(this.target, {
-      set: (membraneTarget: MembraneTarget, p: PropertyKey, value: any): boolean => {
+    this.realmGlobal = (new Proxy(this.target, {
+      set: (membraneTarget, p, value: never) => {
         if (!this.locking) {
           // We must keep its description while the property existed in incubatorContext before
           if (!hasOwnProperty(membraneTarget, p) && hasOwnProperty(incubatorContext, p)) {
             const descriptor = getOwnPropertyDescriptor(incubatorContext, p);
-            const { writable, configurable, enumerable, set } = descriptor!;
+            const { writable, configurable, enumerable } = descriptor!;
             // only writable property can be overwritten
             // here we ignored accessor descriptor of incubatorContext as it makes no sense to trigger its logic(which might make sandbox escaping instead)
             // we force to set value by data descriptor
-            if (writable || set) {
+            if (writable || hasOwnProperty(descriptor, 'set')) {
               defineProperty(membraneTarget, p, { configurable, enumerable, writable: true, value });
             }
           } else {
@@ -103,8 +103,7 @@ export class Membrane {
           // sync the property to incubatorContext
           if (typeof p === 'string' && whitelistVars.indexOf(p) !== -1) {
             // this.globalWhitelistPrevDescriptor[p] = Object.getOwnPropertyDescriptor(incubatorContext, p);
-            // @ts-ignore
-            incubatorContext[p] = value;
+            incubatorContext[p as never] = value;
           }
 
           this.modifications.add(p);
@@ -115,14 +114,15 @@ export class Membrane {
         }
 
         if (process.env.NODE_ENV === 'development') {
-          console.warn(`[qiankun] Set window.${p.toString()} while sandbox destroyed or inactive in ${name}!`);
+          // console.warn(`[qiankun] Set window.${p.toString()} while sandbox destroyed or inactive in ${name}!`);
+          console.warn(`[qiankun] Set window.${p.toString()} while sandbox destroyed or inactive!`);
         }
 
         // 在 strict-mode 下，Proxy 的 handler.set 返回 false 会抛出 TypeError，在沙箱卸载的情况下应该忽略错误
         return true;
       },
 
-      get: (membraneTarget: MembraneTarget, p: PropertyKey): any => {
+      get: (membraneTarget, p) => {
         if (p === Symbol.unscopables) return unscopables;
 
         // properties in endowments returns directly
@@ -135,7 +135,7 @@ export class Membrane {
           : p in membraneTarget
           ? membraneTarget
           : incubatorContext;
-        const value = actualTarget[p as any];
+        const value = actualTarget[p as never];
 
         // frozen value should return directly, see https://github.com/umijs/qiankun/issues/2015
         if (isPropertyFrozen(actualTarget, p)) {
@@ -192,7 +192,7 @@ export class Membrane {
         return uniq(Reflect.ownKeys(incubatorContext).concat(Reflect.ownKeys(membraneTarget)));
       },
 
-      defineProperty: (membraneTarget: Window, p: PropertyKey, attributes: PropertyDescriptor): boolean => {
+      defineProperty: (membraneTarget, p, attributes) => {
         const from = descriptorTargetMap.get(p);
         /*
          Descriptor must be defined to native window while it comes from native window via Object.getOwnPropertyDescriptor(window, p),
@@ -206,9 +206,8 @@ export class Membrane {
         }
       },
 
-      deleteProperty: (membraneTarget: MembraneTarget, p: string | number | symbol): boolean => {
-        if (membraneTarget.hasOwnProperty(p)) {
-          // @ts-ignore
+      deleteProperty: (membraneTarget, p) => {
+        if (hasOwnProperty(membraneTarget, p)) {
           delete membraneTarget[p];
           this.modifications.delete(p);
 
@@ -222,7 +221,7 @@ export class Membrane {
       getPrototypeOf() {
         return Reflect.getPrototypeOf(incubatorContext);
       },
-    });
+    }) as unknown) as WindowProxy;
   }
 
   addIntrinsics(
@@ -304,7 +303,7 @@ function createMembraneTarget(
  * @see https://jsperf.com/array-filter-unique/30
  */
 function uniq(array: Array<string | symbol>) {
-  return array.filter(function filter(this: PropertyKey[], element) {
-    return element in this ? false : ((this as any)[element] = true);
+  return array.filter(function (this: Record<string | symbol, boolean>, element) {
+    return element in this ? false : (this[element] = true);
   }, create(null));
 }

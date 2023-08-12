@@ -1,7 +1,7 @@
 import { without } from 'lodash';
 import { hasOwnProperty } from '../../utils';
 import { Compartment } from '../compartment';
-import { Membrane } from '../membrane';
+import { Endowments, Membrane } from '../membrane';
 import { Sandbox, SandboxType } from './types';
 import { globals as constantGlobals } from './globals';
 
@@ -14,14 +14,14 @@ export class StandardSandbox extends Compartment implements Sandbox {
 
   readonly name: string;
 
-  constructor(name: string, globals: Record<string, any>, incubatorContext: WindowProxy = window) {
+  constructor(name: string, globals: Endowments, incubatorContext: WindowProxy = window) {
     const getRealmGlobal = () => realmGlobal;
-    const getTopValue = (p: 'top' | 'parent') => {
+    const getTopValue = (p: 'top' | 'parent'): WindowProxy => {
       // if your master app in an iframe context, allow these props escape the sandbox
       if (incubatorContext === incubatorContext.parent) {
         return realmGlobal;
       }
-      return (incubatorContext as any)[p];
+      return incubatorContext[p]!;
     };
 
     const intrinsics: Record<string, PropertyDescriptor> = {
@@ -33,7 +33,7 @@ export class StandardSandbox extends Compartment implements Sandbox {
 
       // proxy.hasOwnProperty would invoke getter firstly, then its value represented as incubatorContext.hasOwnProperty
       hasOwnProperty: {
-        value: function hasOwnPropertyImpl(this: any, key: PropertyKey): boolean {
+        value: function hasOwnPropertyImpl(this: unknown, key: PropertyKey): boolean {
           // calling from hasOwnProperty.call(obj, key)
           if (this !== realmGlobal && this !== null && typeof this === 'object') {
             return hasOwnProperty(this, key);
@@ -76,12 +76,12 @@ export class StandardSandbox extends Compartment implements Sandbox {
     const constantNames = Array.from(new Set(Object.keys(intrinsics).concat(constantGlobals).concat(whitelistBOMAPIs)));
     // intrinsics should not be escaped from sandbox
     const unscopables = without(constantNames, ...Object.keys(intrinsics)).reduce(
-      (acc, key) => ({ ...acc, [key]: true }),
+      (acc, key) => ({ ...acc, [key]: true } as Record<string, true>),
       // Notes that babel will transpile spread operator to Object.assign({}, ...args), which will keep the prototype of Object in merged object,
       // while this result used as Symbol.unscopables, it will make properties in Object.prototype always be escaped from proxy sandbox as unscopables check will look up prototype chain as well,
       // such as hasOwnProperty, toString, valueOf, etc.
       // so we should use Object.create(null) to create a pure object without prototype chain here.
-      Object.create(null),
+      Object.create(null) as Record<string, true>,
     );
     const membrane = new Membrane(incubatorContext, unscopables, {
       whitelist: [],
@@ -106,11 +106,11 @@ export class StandardSandbox extends Compartment implements Sandbox {
     this.membrane.addIntrinsics(intrinsics);
   }
 
-  async active() {
+  active() {
     this.membrane.unlock();
   }
 
-  async inactive() {
+  inactive() {
     if (process.env.NODE_ENV === 'development') {
       console.info(`[qiankun:sandbox] ${this.name} modified global properties restore...`, [
         ...this.membrane.modifications.keys(),

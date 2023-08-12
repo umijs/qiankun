@@ -1,23 +1,29 @@
-const fnRegexCheckCacheMap = new WeakMap<any | FunctionConstructor, boolean>();
+// eslint-disable-next-line @typescript-eslint/unbound-method
+export const { create, defineProperty, getOwnPropertyDescriptor, getOwnPropertyNames, freeze, keys } = Object;
+export const hasOwnProperty = (caller: unknown, p: PropertyKey) => Object.prototype.hasOwnProperty.call(caller, p);
 
-export function isConstructable(fn: () => any | FunctionConstructor) {
+const fnRegexCheckCacheMap = new WeakMap<CallableFunction, boolean>();
+
+/**
+ * 1. has prototype and prototype has defined a series of non-constructor attributes
+ * 2. The function name starts with a capital letter
+ * 3. class function
+ * If one of them is satisfied, it can be regarded as a constructor function
+ * @param fn
+ */
+export function isConstructable(fn: CallableFunction): fn is CallableFunction {
   // prototype methods might be changed while code running, so we need check it every time
   const hasPrototypeMethods =
-    fn.prototype && fn.prototype.constructor === fn && Object.getOwnPropertyNames(fn.prototype).length > 1;
+    (<unknown>fn.prototype)?.constructor === fn && Object.getOwnPropertyNames(fn.prototype).length > 1;
 
   if (hasPrototypeMethods) return true;
 
-  if (fnRegexCheckCacheMap.has(fn)) {
-    return fnRegexCheckCacheMap.get(fn);
+  const cachedValue = fnRegexCheckCacheMap.get(fn);
+  if (typeof cachedValue !== 'undefined') {
+    return cachedValue;
   }
 
-  /*
-    1. 有 prototype 并且 prototype 上有定义一系列非 constructor 属性
-    2. 函数名大写开头
-    3. class 函数
-    满足其一则可认定为构造函数
-   */
-  let constructable = hasPrototypeMethods;
+  let constructable: boolean = hasPrototypeMethods;
   if (!constructable) {
     // fn.toString has a significant performance overhead, if hasPrototypeMethods check not passed, we will check the function string with regex
     const fnString = fn.toString();
@@ -36,24 +42,23 @@ export function isConstructable(fn: () => any | FunctionConstructor) {
  * typeof document.all === 'function' // true
  * We need to discriminate safari for better performance
  */
-const naughtySafari = typeof document.all === 'function' && typeof document.all === 'undefined';
 const callableFnCacheMap = new WeakMap<CallableFunction, boolean>();
 
-export function isCallable(fn: any) {
-  if (callableFnCacheMap.has(fn)) {
+export function isCallable(fn: unknown): fn is CallableFunction {
+  if (callableFnCacheMap.has(fn as CallableFunction)) {
     return true;
   }
 
-  const callable = naughtySafari ? typeof fn === 'function' && typeof fn !== 'undefined' : typeof fn === 'function';
+  const callable = typeof fn === 'function' && fn instanceof Function;
   if (callable) {
     callableFnCacheMap.set(fn, callable);
   }
   return callable;
 }
 
-const frozenPropertyCacheMap = new WeakMap<any, Record<PropertyKey, boolean>>();
+const frozenPropertyCacheMap = new WeakMap<object, Record<PropertyKey, boolean>>();
 
-export function isPropertyFrozen(target: any, p?: PropertyKey): boolean {
+export function isPropertyFrozen(target: object, p?: PropertyKey): boolean {
   if (!target || !p) {
     return false;
   }
@@ -64,7 +69,7 @@ export function isPropertyFrozen(target: any, p?: PropertyKey): boolean {
     return targetPropertiesFromCache[p];
   }
 
-  const propertyDescriptor = Object.getOwnPropertyDescriptor(target, p);
+  const propertyDescriptor = getOwnPropertyDescriptor(target, p);
   const frozen = Boolean(
     propertyDescriptor &&
       propertyDescriptor.configurable === false &&
@@ -79,18 +84,16 @@ export function isPropertyFrozen(target: any, p?: PropertyKey): boolean {
 
 const boundedMap = new WeakMap<CallableFunction, boolean>();
 
-export function isBoundedFunction(fn: CallableFunction) {
-  if (boundedMap.has(fn)) {
-    return boundedMap.get(fn);
+export function isBoundedFunction(fn: CallableFunction): fn is CallableFunction {
+  const cachedValue = boundedMap.get(fn);
+  if (typeof cachedValue !== 'undefined') {
+    return cachedValue;
   }
   /*
    indexOf is faster than startsWith
    see https://jsperf.com/string-startswith/72
    */
-  const bounded = fn.name.indexOf('bound ') === 0 && !fn.hasOwnProperty('prototype');
+  const bounded = fn.name.indexOf('bound ') === 0 && !hasOwnProperty(fn, 'prototype');
   boundedMap.set(fn, bounded);
   return bounded;
 }
-
-export const { create, defineProperty, getOwnPropertyDescriptor, getOwnPropertyNames, freeze, keys } = Object;
-export const hasOwnProperty = (caller: any, p: PropertyKey) => Object.prototype.hasOwnProperty.call(caller, p);
