@@ -8,7 +8,7 @@ import type { Endowments } from '../membrane';
 import { StandardSandbox } from './StandardSandbox';
 import type { Sandbox } from './types';
 
-export { Sandbox };
+export type { Sandbox };
 
 /**
  * 生成应用运行时沙箱

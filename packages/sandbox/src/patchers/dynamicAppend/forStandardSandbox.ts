@@ -4,7 +4,7 @@
  */
 
 import { nativeDocument, nativeGlobal } from '../../consts';
-import type { Sandbox } from '../../core/sandbox/types';
+import type { Sandbox } from '../../core/sandbox';
 import { isBoundedFunction, isCallable } from '../../utils';
 import type { Free } from '../types';
 import {
@@ -28,6 +28,10 @@ declare global {
     __sandboxConfigWeakMap__: WeakMap<Sandbox, SandboxConfig>;
     __currentLockingSandbox__: Sandbox;
   }
+
+  interface Document {
+    [p: string]: unknown;
+  }
 }
 
 // Get native global window with a sandbox disgusted way, thus we could share it between qiankun instances🤪
@@ -39,6 +43,7 @@ Object.defineProperty(nativeGlobal, '__currentLockingSandbox__', {
   configurable: true,
 });
 
+// eslint-disable-next-line @typescript-eslint/unbound-method
 const rawHeadAppendChild = HTMLHeadElement.prototype.appendChild;
 
 // Share sandboxConfigWeakMap between multiple qiankun instance, thus they could access the same record
@@ -62,12 +67,13 @@ function patchDocument(sandbox: Sandbox) {
 
   const proxyDocument = new Proxy(document, {
     set: (target, p, value) => {
-      (<any>target)[p] = value;
+      target[p as string] = value;
       return true;
     },
     get: (target, p, receiver) => {
       if (p === 'createElement') {
         // Must store the original createElement function to avoid error in nested sandbox
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         const targetCreateElement = target.createElement;
         return function createElement(...args: Parameters<typeof document.createElement>) {
           if (!nativeGlobal.__currentLockingSandbox__) {
@@ -79,6 +85,7 @@ function patchDocument(sandbox: Sandbox) {
           // only record the element which is created by the current sandbox, thus we can avoid the element created by nested sandboxes
           if (nativeGlobal.__currentLockingSandbox__ === sandbox) {
             attachElementToSandbox(element);
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             delete nativeGlobal.__currentLockingSandbox__;
           }
@@ -87,11 +94,11 @@ function patchDocument(sandbox: Sandbox) {
         };
       }
 
-      const value = (<any>target)[p];
+      const value = target[p as string];
       // must rebind the function to the target otherwise it will cause illegal invocation error
       if (isCallable(value) && !isBoundedFunction(value)) {
-        return function proxyFunction(...args: unknown[]) {
-          return value.call(target, ...args.map((arg) => (arg === receiver ? target : arg)));
+        return function proxyFunction(...args: unknown[]): unknown {
+          return Function.prototype.call(value, target, ...args.map((arg) => (arg === receiver ? target : arg)));
         };
       }
 
@@ -103,12 +110,13 @@ function patchDocument(sandbox: Sandbox) {
 
   // patch MutationObserver.prototype.observe to avoid type error
   // https://github.com/umijs/qiankun/issues/2406
+  // eslint-disable-next-line @typescript-eslint/unbound-method
   const nativeMutationObserverObserveFn = MutationObserver.prototype.observe;
   if (!mutationObserverPatchedMap.has(nativeMutationObserverObserveFn)) {
-    function observe(this: MutationObserver, target: Node, options: MutationObserverInit) {
+    const observe = function (this: MutationObserver, target: Node, options: MutationObserverInit) {
       const realTarget = target instanceof Document ? nativeDocument : target;
       return nativeMutationObserverObserveFn.call(this, realTarget, options);
-    }
+    };
 
     MutationObserver.prototype.observe = observe;
     mutationObserverPatchedMap.set(nativeMutationObserverObserveFn, observe);
@@ -193,13 +201,13 @@ export function patchStandardSandbox(
       unpatchDocument();
     }
 
-    recordStyledComponentsCSSRules(dynamicStyleSheetElements);
+    recordStyledComponentsCSSRules(dynamicStyleSheetElements as HTMLStyleElement[]);
 
     // As now the sub app content all wrapped with a special id container,
     // the dynamic style sheet would be removed automatically while unmounting
 
     return function rebuild() {
-      rebuildCSSRules(dynamicStyleSheetElements, (stylesheetElement) => {
+      rebuildCSSRules(dynamicStyleSheetElements as HTMLStyleElement[], (stylesheetElement) => {
         const appWrapper = getContainer();
         if (!appWrapper.contains(stylesheetElement)) {
           const mountDom =

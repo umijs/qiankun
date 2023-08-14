@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 /**
  * @author Kuitos
  * @since 2019-10-21
@@ -105,7 +106,7 @@ export function recordStyledComponentsCSSRules(styleElements: HTMLStyleElement[]
     if (styleElement instanceof HTMLStyleElement && isStyledComponentsLike(styleElement)) {
       if (styleElement.sheet) {
         // record the original css rules of the style element for restore
-        styledComponentCSSRulesMap.set(styleElement, (styleElement.sheet as CSSStyleSheet).cssRules);
+        styledComponentCSSRulesMap.set(styleElement, styleElement.sheet.cssRules);
       }
     }
   });
@@ -116,7 +117,7 @@ export function getStyledElementCSSRules(styledElement: HTMLStyleElement): CSSRu
 }
 
 function getOverwrittenAppendChildOrInsertBefore(opts: {
-  rawDOMAppendOrInsertBefore: <T extends Node>(newChild: T, refChild?: Node | null) => T;
+  rawDOMAppendOrInsertBefore: typeof HTMLElement.prototype.insertBefore;
   isInvokedByMicroApp: (element: HTMLElement) => boolean;
   getSandboxConfig: (element: HTMLElement) => SandboxConfig;
   target: DynamicDomMutationTarget;
@@ -126,7 +127,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
     newChild: T,
     refChild: Node | null = null,
   ) {
-    const element = newChild as any;
+    const element = (newChild as unknown) as HTMLElement;
     const { rawDOMAppendOrInsertBefore, isInvokedByMicroApp, getSandboxConfig, target = 'body' } = opts;
     if (!isHijackingTag(element.tagName) || !isInvokedByMicroApp(element)) {
       return rawDOMAppendOrInsertBefore.call(this, element, refChild) as T;
@@ -139,14 +140,14 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
       switch (element.tagName) {
         case LINK_TAG_NAME:
         case STYLE_TAG_NAME: {
-          const stylesheetElement: HTMLLinkElement | HTMLStyleElement = newChild as any;
+          const stylesheetElement = (newChild as unknown) as HTMLLinkElement | HTMLStyleElement;
           Object.defineProperty(stylesheetElement, styleElementTargetSymbol, {
             value: target,
             writable: true,
             configurable: true,
           });
 
-          const container = getContainer();
+          const container = (getContainer() as unknown) as HTMLElement;
           // const mountDOM = target === 'head' ? getContainerHeadElement(container) : container;
           const mountDOM = container;
 
@@ -156,7 +157,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
         }
 
         case SCRIPT_TAG_NAME: {
-          const container = getContainer();
+          const container = (getContainer() as unknown) as HTMLElement;
           // const mountDOM = target === 'head' ? getContainerHeadElement(container) : container;
           const mountDOM = container;
           const referenceNode = mountDOM.contains(refChild) ? refChild : null;
@@ -183,21 +184,23 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
 function getNewRemoveChild(
   rawRemoveChild: typeof HTMLElement.prototype.removeChild,
   containerConfigGetter: (element: HTMLElement) => SandboxConfig,
-  target: DynamicDomMutationTarget,
+  _: DynamicDomMutationTarget,
   isInvokedByMicroApp: (element: HTMLElement) => boolean,
 ) {
   function removeChild<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, child: T) {
-    const { tagName } = child as any;
-    if (!isHijackingTag(tagName) || !isInvokedByMicroApp(child as any)) return rawRemoveChild.call(this, child) as T;
+    const childElement = (child as unknown) as HTMLElement;
+    const { tagName } = childElement;
+    if (!isHijackingTag(tagName) || !isInvokedByMicroApp(childElement)) return rawRemoveChild.call(this, child) as T;
 
     try {
       let attachedElement: Node;
-      const { getContainer, dynamicStyleSheetElements } = containerConfigGetter(child as any);
+      const { getContainer, dynamicStyleSheetElements } = containerConfigGetter(childElement);
 
       switch (tagName) {
         case STYLE_TAG_NAME:
         case LINK_TAG_NAME: {
-          attachedElement = dynamicLinkAttachedInlineStyleMap.get(child as any) || child;
+          attachedElement =
+            dynamicLinkAttachedInlineStyleMap.get((childElement as unknown) as HTMLLinkElement) || child;
 
           // try to remove the dynamic style sheet
           const dynamicElementIndex = dynamicStyleSheetElements.indexOf(attachedElement as HTMLLinkElement);
@@ -209,7 +212,8 @@ function getNewRemoveChild(
         }
 
         case SCRIPT_TAG_NAME: {
-          attachedElement = dynamicScriptAttachedCommentMap.get(child as any) || child;
+          attachedElement =
+            dynamicScriptAttachedCommentMap.get((childElement as unknown) as HTMLScriptElement) || child;
           break;
         }
 
@@ -218,7 +222,7 @@ function getNewRemoveChild(
         }
       }
 
-      const appWrapper = getContainer();
+      const appWrapper = (getContainer() as unknown) as HTMLElement;
       // const container = target === 'head' ? getContainerHeadElement(appWrapper) : appWrapper;
       const container = appWrapper;
       // container might have been removed while app unmounting if the removeChild action was async
@@ -264,7 +268,7 @@ export function patchHTMLDynamicAppendPrototypeFunctions(
     }) as typeof rawBodyAppendChild;
 
     HTMLHeadElement.prototype.insertBefore = getOverwrittenAppendChildOrInsertBefore({
-      rawDOMAppendOrInsertBefore: rawHeadInsertBefore as any,
+      rawDOMAppendOrInsertBefore: rawHeadInsertBefore,
       getSandboxConfig: getSandboxConfig,
       isInvokedByMicroApp,
       target: 'head',

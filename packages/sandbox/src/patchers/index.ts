@@ -3,7 +3,7 @@
  * @since 2019-04-11
  */
 
-import type { Sandbox } from '../core/sandbox/types';
+import type { Sandbox } from '../core/sandbox';
 import { SandboxType } from '../core/sandbox/types';
 import { patchStandardSandbox } from './dynamicAppend';
 import patchHistoryListener from './historyListener';
