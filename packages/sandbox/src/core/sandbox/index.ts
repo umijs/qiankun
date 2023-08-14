@@ -4,6 +4,7 @@
  */
 import { patchAtBootstrapping, patchAtMounting } from '../../patchers';
 import type { Free, Rebuild } from '../../patchers/types';
+import type { Endowments } from '../membrane';
 import { StandardSandbox } from './StandardSandbox';
 import type { Sandbox } from './types';
 
@@ -30,7 +31,7 @@ export function createSandboxContainer(
   getContainer: () => HTMLElement,
   opts: {
     globalContext?: WindowProxy;
-    extraGlobals?: Record<string, any>;
+    extraGlobals?: Endowments;
   },
 ) {
   const { globalContext, extraGlobals = {} } = opts;

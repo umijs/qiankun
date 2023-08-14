@@ -5,17 +5,25 @@
 
 import { isFunction, noop } from 'lodash';
 
+declare global {
+  interface Window {
+    g_history?: {
+      listen: (listener: typeof noop) => () => void;
+    };
+  }
+}
+
 export default function patch() {
   // FIXME umi unmount feature request
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let rawHistoryListen = (_: any) => noop;
+  let rawHistoryListen = (_: unknown) => noop;
   const historyListeners: Array<typeof noop> = [];
   const historyUnListens: Array<typeof noop> = [];
 
-  if ((window as any).g_history && isFunction((window as any).g_history.listen)) {
-    rawHistoryListen = (window as any).g_history.listen.bind((window as any).g_history);
+  if (window.g_history && isFunction(window.g_history.listen)) {
+    rawHistoryListen = window.g_history.listen.bind(window.g_history) as typeof rawHistoryListen;
 
-    (window as any).g_history.listen = (listener: typeof noop) => {
+    window.g_history.listen = (listener: typeof noop) => {
       historyListeners.push(listener);
 
       const unListen = rawHistoryListen(listener);
@@ -41,7 +49,7 @@ export default function patch() {
     if (historyListeners.length) {
       rebuild = () => {
         // 必须使用 window.g_history.listen 的方式重新绑定 listener，从而能保证 rebuild 这部分也能被捕获到，否则在应用卸载后无法正确的移除这部分副作用
-        historyListeners.forEach((listener) => (window as any).g_history.listen(listener));
+        historyListeners.forEach((listener) => window.g_history?.listen(listener));
       };
     }
 
@@ -49,8 +57,8 @@ export default function patch() {
     historyUnListens.forEach((unListen) => unListen());
 
     // restore
-    if ((window as any).g_history && isFunction((window as any).g_history.listen)) {
-      (window as any).g_history.listen = rawHistoryListen;
+    if (window.g_history && isFunction(window.g_history.listen)) {
+      window.g_history.listen = rawHistoryListen;
     }
 
     return rebuild;
