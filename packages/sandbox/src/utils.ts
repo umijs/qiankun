@@ -1,6 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/unbound-method
-export const { create, defineProperty, getOwnPropertyDescriptor, getOwnPropertyNames, freeze, keys } = Object;
-export const hasOwnProperty = (caller: unknown, p: PropertyKey) => Object.prototype.hasOwnProperty.call(caller, p);
+import { getOwnPropertyDescriptor, hasOwnProperty } from '@qiankunjs/shared';
 
 const fnRegexCheckCacheMap = new WeakMap<CallableFunction, boolean>();
 

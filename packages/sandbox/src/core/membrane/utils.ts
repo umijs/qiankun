@@ -1,11 +1,5 @@
-import {
-  defineProperty,
-  getOwnPropertyDescriptor,
-  hasOwnProperty,
-  isBoundedFunction,
-  isCallable,
-  isConstructable,
-} from '../../utils';
+import { defineProperty, getOwnPropertyDescriptor, hasOwnProperty } from '@qiankunjs/shared';
+import { isBoundedFunction, isCallable, isConstructable } from '../../utils';
 
 const functionBoundedValueMap = new WeakMap<CallableFunction, CallableFunction>();
 
