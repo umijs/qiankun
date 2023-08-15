@@ -39,13 +39,13 @@ export async function loadEntry(entry: Entry, container: HTMLElement, opts?: Imp
     const loadEntryDeferred = new Deferred<void>();
     const streamFinishedDeferred = new Deferred<void>();
 
-    res.body
+    void res.body
       .pipeThrough(new TextDecoderStream())
       .pipeTo(
         new WritableDOMStream(container, null, (node) => {
           const transformedNode = nodeTransformer(node, entry, { fetch, sandbox, moduleResolver });
 
-          const script = transformedNode as any as HTMLScriptElement;
+          const script = (transformedNode as unknown) as HTMLScriptElement;
           /*
            * If the entry script is executed, we can complete the entry process in advance
            * otherwise we need to wait until the last script is executed.
@@ -54,6 +54,7 @@ export async function loadEntry(entry: Entry, container: HTMLElement, opts?: Imp
           if (script.tagName === 'SCRIPT' && (script.src || script.dataset.src)) {
             script.addEventListener(
               'load',
+              // eslint-disable-next-line @typescript-eslint/no-misused-promises
               async () => {
                 if (script.hasAttribute('entry')) {
                   loadEntryDeferred.resolve();

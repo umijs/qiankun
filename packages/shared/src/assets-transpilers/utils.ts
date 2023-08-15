@@ -1,12 +1,20 @@
+import { hasOwnProperty } from '../utils';
+
 const isIE11 = typeof navigator !== 'undefined' && navigator.userAgent.indexOf('Trident') !== -1;
 
-function shouldSkipProperty(global: WindowProxy, p: PropertyKey) {
-  if (!global.hasOwnProperty(p) || (!isNaN(p as any) && <any>p < global.length)) return true;
+declare global {
+  interface Window {
+    [p: PropertyKey]: unknown;
+  }
+}
+
+function shouldSkipProperty(global: WindowProxy, p: PropertyKey): boolean {
+  if (!hasOwnProperty(global, p) || (!isNaN(p as number) && (p as number) < global.length)) return true;
 
   if (isIE11) {
     // https://github.com/kuitos/import-html-entry/pull/32，最小化 try 范围
     try {
-      return global[p as any] && typeof window !== 'undefined' && global[p as any].parent === window;
+      return !!(global[p] && typeof window !== 'undefined' && (global[p] as Window).parent === window);
     } catch (err) {
       return true;
     }
@@ -29,7 +37,7 @@ export function getGlobalProp(global: WindowProxy) {
     // 遍历 iframe，检查 window 上的属性值是否是 iframe，是则跳过后面的 first 和 second 判断
     for (let i = 0; i < window.frames.length && !hasIframe; i++) {
       const frame = window.frames[i];
-      if (frame === global[p as any]) {
+      if (frame === global[p]) {
         hasIframe = true;
         break;
       }

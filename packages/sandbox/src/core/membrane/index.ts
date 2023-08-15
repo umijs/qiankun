@@ -7,9 +7,9 @@ import {
   getOwnPropertyDescriptor,
   getOwnPropertyNames,
   hasOwnProperty,
-  isPropertyFrozen,
   keys,
-} from '../../utils';
+} from '@qiankunjs/shared';
+import { isPropertyFrozen } from '../../utils';
 import { getTargetValue } from './utils';
 
 declare global {

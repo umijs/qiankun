@@ -49,7 +49,7 @@ export default function transpileScript(script: HTMLScriptElement, baseURI: stri
         script.dataset.src = scriptSrc;
 
         const { fetch } = opts;
-        fetch(scriptSrc)
+        void fetch(scriptSrc)
           .then((res) => res.text())
           .then((code) => {
             const codeFactory = sandbox.makeEvaluateFactory(code, scriptSrc);

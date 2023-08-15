@@ -24,7 +24,7 @@ export function moduleResolver(
 
   const microAppDependenciesString = microAppContainer.querySelector(dependencyMapSelector)?.innerHTML;
   if (microAppDependenciesString) {
-    const { dependencies }: DependencyMap = JSON.parse(microAppDependenciesString);
+    const { dependencies } = JSON.parse(microAppDependenciesString) as DependencyMap;
     const normalizedDependencies = normalizeDependencies(dependencies);
     const microAppDependency = normalizedDependencies.find((v) => v.url === url);
 
@@ -32,7 +32,7 @@ export function moduleResolver(
       const mainDependencyMapString = mainAppContainer.querySelector(dependencyMapSelector)?.innerHTML;
 
       if (mainDependencyMapString) {
-        const mainDependencyMap: DependencyMap = JSON.parse(mainDependencyMapString);
+        const mainDependencyMap = JSON.parse(mainDependencyMapString) as DependencyMap;
         return findDependency(microAppDependency, normalizeDependencies(mainDependencyMap.dependencies));
       }
     }
