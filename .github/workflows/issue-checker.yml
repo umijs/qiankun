@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions-cool/maintain-one-comment@v3
         with:
-          body: 由于缺乏足够的信息(github、stackblitz、codesandbox等可复现仓库)，我们暂时关闭了该 Issue。请修改（不要回复） Issue 提供[最小重现](https://stackoverflow.com/help/minimal-reproducible-example)以重新开启。谢谢。
+          body: 由于缺乏足够的信息(github、stackblitz、codesandbox等可复现仓库)，我们暂时关闭了该 Issue。请修改（不要回复） Issue 提供[最小重现](https://stackoverflow.com/help/minimal-reproducible-example)以重新开启。谢谢。如果只是单独的技术咨询，可移步 https://qiankun.umijs.org/#-community 交流~
       - uses: actions-cool/issues-helper@v3
         with:
           actions: close-issue
