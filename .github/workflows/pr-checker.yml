@@ -39,6 +39,7 @@ jobs:
     needs: read-file
     permissions:
       issues: write
+      pull-requests: write
     if: contains(fromJSON(needs.read-file.outputs.require-result), github.event.pull_request.user.login) == false && github.event.pull_request.merged == true
     steps:
       - uses: actions-cool/maintain-one-comment@v3
