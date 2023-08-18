@@ -181,6 +181,17 @@ export function recordStyledComponentsCSSRules(styleElements: HTMLStyleElement[]
      */
     if (styleElement instanceof HTMLStyleElement && isStyledComponentsLike(styleElement)) {
       if (styleElement.sheet) {
+        if (!styledComponentCSSRulesMap.has(styleElement)) {
+          const originInsertRule = styleElement.sheet.insertRule;
+
+          styleElement.sheet.insertRule = function resetInsertRule(...args: [string, number]) {
+            if (styleElement.sheet?.insertRule && styleElement.sheet.insertRule !== resetInsertRule) {
+              return styleElement.sheet.insertRule(...args);
+            } else {
+              return originInsertRule(...args);
+            }
+          };
+        }
         // record the original css rules of the style element for restore
         styledComponentCSSRulesMap.set(styleElement, (styleElement.sheet as CSSStyleSheet).cssRules);
       }
