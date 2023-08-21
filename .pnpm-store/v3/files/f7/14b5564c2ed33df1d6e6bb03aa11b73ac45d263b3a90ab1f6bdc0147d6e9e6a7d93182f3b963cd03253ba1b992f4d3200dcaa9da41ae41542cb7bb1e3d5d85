@@ -1,0 +1,19 @@
+"use strict";
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.measurements = exports.Deferred = void 0;
+class Deferred {
+    constructor() {
+        this.promise = new Promise((resolve, reject) => {
+            this.resolve = resolve;
+            this.reject = reject;
+        });
+    }
+}
+exports.Deferred = Deferred;
+exports.measurements = new Set(['callback', 'fcp', 'global']);
+//# sourceMappingURL=types.js.map

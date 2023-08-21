@@ -1,0 +1,84 @@
+{
+  "name": "rc-tree",
+  "version": "5.7.9",
+  "description": "tree ui component for react",
+  "engines": {
+    "node": ">=10.x"
+  },
+  "keywords": [
+    "react",
+    "react-component",
+    "react-tree",
+    "tree"
+  ],
+  "files": [
+    "assets/*.css",
+    "assets/*.png",
+    "assets/*.gif",
+    "assets/*.less",
+    "dist",
+    "es",
+    "lib"
+  ],
+  "homepage": "http://github.com/react-component/tree",
+  "author": "smith3816@gmail.com",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:react-component/tree.git"
+  },
+  "bugs": {
+    "url": "http://github.com/react-component/tree/issues"
+  },
+  "license": "MIT",
+  "main": "./lib/index",
+  "module": "./es/index",
+  "scripts": {
+    "start": "dumi dev",
+    "docs:build": "dumi build",
+    "docs:deploy": "gh-pages -d docs-dist",
+    "compile": "father build && lessc assets/index.less assets/index.css",
+    "prepublishOnly": "npm run compile && np --yolo --no-publish",
+    "postpublish": "npm run gh-pages",
+    "lint": "eslint src/ --ext .tsx,.ts,.jsx,.js",
+    "test": "father test",
+    "coverage": "father test --coverage",
+    "gh-pages": "npm run docs:build && father doc deploy",
+    "now-build": "npm run docs:build"
+  },
+  "peerDependencies": {
+    "react": "*",
+    "react-dom": "*"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^5.16.4",
+    "@testing-library/react": "^13.0.0",
+    "@types/enzyme": "^3.10.9",
+    "@types/jest": "^26.0.4",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^17.0.8",
+    "@types/warning": "^3.0.0",
+    "@umijs/fabric": "^3.0.0",
+    "dumi": "^1.1.4",
+    "enzyme": "^3.3.0",
+    "enzyme-adapter-react-16": "^1.1.1",
+    "enzyme-to-json": "^3.0.0",
+    "eslint": "^7.0.0",
+    "father": "^2.29.8",
+    "glob": "^7.1.6",
+    "less": "^3.11.1",
+    "np": "^6.0.0",
+    "rc-dialog": "^8.1.0",
+    "rc-tooltip": "5.x",
+    "rc-trigger": "^5.0.7",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "typescript": "^4.0.2"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.10.1",
+    "classnames": "2.x",
+    "rc-motion": "^2.0.1",
+    "rc-util": "^5.16.1",
+    "rc-virtual-list": "^3.5.1"
+  }
+}

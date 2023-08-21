@@ -1,0 +1,70 @@
+{
+  "name": "parse-git-config",
+  "description": "Parse `.git/config` into a JavaScript object. sync or async.",
+  "version": "1.1.1",
+  "homepage": "https://github.com/jonschlinkert/parse-git-config",
+  "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
+  "contributors": [
+    "Jason Denizac <jason@denizac.org> (https://jden.us)",
+    "Jon Schlinkert <jon.schlinkert@sellside.com> (http://twitter.com/jonschlinkert)",
+    "Sam Holmes <sam@samholmes.net> (https://samholmes.net)"
+  ],
+  "repository": "jonschlinkert/parse-git-config",
+  "bugs": {
+    "url": "https://github.com/jonschlinkert/parse-git-config/issues"
+  },
+  "license": "MIT",
+  "files": [
+    "index.js"
+  ],
+  "main": "index.js",
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "dependencies": {
+    "extend-shallow": "^2.0.1",
+    "fs-exists-sync": "^0.1.0",
+    "git-config-path": "^1.0.1",
+    "ini": "^1.3.4"
+  },
+  "devDependencies": {
+    "gulp-format-md": "^0.1.11",
+    "homedir-polyfill": "^1.0.1",
+    "mocha": "^3.2.0"
+  },
+  "keywords": [
+    "config",
+    "git",
+    "parse"
+  ],
+  "verb": {
+    "run": true,
+    "toc": false,
+    "layout": "default",
+    "tasks": [
+      "readme"
+    ],
+    "plugins": [
+      "gulp-format-md"
+    ],
+    "related": {
+      "list": [
+        "git-user-name",
+        "git-username",
+        "parse-author",
+        "parse-authors",
+        "parse-github-url",
+        "parse-gitignore"
+      ]
+    },
+    "reflinks": [
+      "verb"
+    ],
+    "lint": {
+      "reflinks": true
+    }
+  }
+}

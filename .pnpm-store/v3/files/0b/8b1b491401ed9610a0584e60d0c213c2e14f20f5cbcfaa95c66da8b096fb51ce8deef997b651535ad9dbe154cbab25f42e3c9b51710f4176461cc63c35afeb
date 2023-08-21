@@ -1,0 +1,161 @@
+{
+  "name": "editions",
+  "version": "2.3.1",
+  "description": "Publish multiple editions for your JavaScript packages consistently and easily (e.g. source edition, esnext edition, es2015 edition)",
+  "homepage": "https://github.com/bevry/editions",
+  "license": "MIT",
+  "keywords": [
+    "editions",
+    "edition",
+    "versions",
+    "syntaxes",
+    "esnext",
+    "jsnext",
+    "es2015",
+    "es6",
+    "es6+"
+  ],
+  "badges": {
+    "list": [
+      "travisci",
+      "npmversion",
+      "npmdownloads",
+      "daviddm",
+      "daviddmdev",
+      "---",
+      "githubsponsors",
+      "patreon",
+      "flattr",
+      "liberapay",
+      "buymeacoffee",
+      "opencollective",
+      "crypto",
+      "paypal",
+      "wishlist"
+    ],
+    "config": {
+      "githubSponsorsUsername": "balupton",
+      "buymeacoffeeUsername": "balupton",
+      "cryptoURL": "https://bevry.me/crypto",
+      "flattrUsername": "balupton",
+      "liberapayUsername": "bevry",
+      "opencollectiveUsername": "bevry",
+      "patreonUsername": "bevry",
+      "paypalURL": "https://bevry.me/paypal",
+      "wishlistURL": "https://bevry.me/wishlist",
+      "travisTLD": "com"
+    }
+  },
+  "funding": "https://bevry.me/fund",
+  "author": "2016+ Bevry Pty Ltd <us@bevry.me> (http://bevry.me)",
+  "maintainers": [
+    "Benjamin Lupton <b@lupton.cc> (http://balupton.com)"
+  ],
+  "contributors": [
+    "Benjamin Lupton <b@lupton.cc> (http://balupton.com)",
+    "Zlatan Vasović <zlatanvasovic@gmail.com> (http://zdroid.github.io)",
+    "dependabot[bot] (http://github.com/apps/dependabot)"
+  ],
+  "bugs": {
+    "url": "https://github.com/bevry/editions/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bevry/editions.git"
+  },
+  "engines": {
+    "node": ">=0.8"
+  },
+  "editions": [
+    {
+      "description": "typescript source code with import for modules",
+      "directory": "source",
+      "entry": "index.ts",
+      "tags": [
+        "typescript",
+        "import"
+      ],
+      "engines": false
+    },
+    {
+      "description": "typescript compiled against ES5 for Node.js with require for modules",
+      "directory": "edition-es5",
+      "entry": "index.js",
+      "tags": [
+        "javascript",
+        "es5",
+        "require"
+      ],
+      "engines": {
+        "node": "0.8 || 0.10 || 0.12 || 4 || 6 || 8 || 10 || 12 || 13 || 14"
+      }
+    }
+  ],
+  "types": "./compiled-types/",
+  "type": "commonjs",
+  "main": "edition-es5/index.js",
+  "dependencies": {
+    "errlop": "^2.0.0",
+    "semver": "^6.3.0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^2.11.0",
+    "@typescript-eslint/parser": "^2.11.0",
+    "assert-helpers": "4.10.0",
+    "eslint": "^6.7.2",
+    "eslint-config-bevry": "^2.3.0",
+    "eslint-config-prettier": "^6.7.0",
+    "eslint-plugin-prettier": "^3.1.1",
+    "kava": "3.2.0",
+    "prettier": "^1.19.1",
+    "projectz": "^1.16.0",
+    "surge": "^0.21.3",
+    "typedoc": "^0.15.4",
+    "typescript": "^3.7.3",
+    "valid-directory": "^1.6.0"
+  },
+  "scripts": {
+    "our:clean": "rm -Rf ./docs ./edition* ./es2015 ./es5 ./out ./.next",
+    "our:compile": "npm run our:compile:edition-es5 && npm run our:compile:types",
+    "our:compile:edition-es5": "tsc --module commonjs --target ES5 --outDir ./edition-es5 --project tsconfig.json && test -d edition-es5/source && ( mv edition-es5/source edition-temp && rm -Rf edition-es5 && mv edition-temp edition-es5 ) || true",
+    "our:compile:types": "tsc --project tsconfig.json --emitDeclarationOnly --declaration --declarationDir ./compiled-types/ --declarationMap",
+    "our:deploy": "echo no need for this project",
+    "our:meta": "npm run our:meta:docs && npm run our:meta:projectz",
+    "our:meta:docs": "npm run our:meta:docs:typedoc",
+    "our:meta:docs:typedoc": "rm -Rf ./docs && typedoc --mode file --exclude '**/+(*test*|node_modules)' --excludeExternals --name \"$npm_package_name\" --readme ./README.md --out ./docs ./source",
+    "our:meta:projectz": "projectz compile",
+    "our:release": "npm run our:release:prepare && npm run our:release:check-changelog && npm run our:release:check-dirty && npm run our:release:tag && npm run our:release:push",
+    "our:release:check-changelog": "cat ./HISTORY.md | grep v$npm_package_version || (echo add a changelog entry for v$npm_package_version && exit -1)",
+    "our:release:check-dirty": "git diff --exit-code",
+    "our:release:prepare": "npm run our:clean && npm run our:compile && npm run our:test && npm run our:meta",
+    "our:release:push": "git push origin master && git push origin --tags",
+    "our:release:tag": "export MESSAGE=$(cat ./HISTORY.md | sed -n \"/## v$npm_package_version/,/##/p\" | sed 's/## //' | awk 'NR>1{print buf}{buf = $0}') && test \"$MESSAGE\" || (echo 'proper changelog entry not found' && exit -1) && git tag v$npm_package_version -am \"$MESSAGE\"",
+    "our:setup": "npm run our:setup:install",
+    "our:setup:install": "npm install",
+    "our:test": "npm run our:verify && npm test",
+    "our:verify": "npm run our:verify:directory && npm run our:verify:eslint && npm run our:verify:prettier && npm run our:verify:typescript",
+    "our:verify:directory": "npx valid-directory",
+    "our:verify:eslint": "eslint --fix --ignore-pattern '**/*.d.ts' --ignore-pattern '**/vendor/' --ignore-pattern '**/node_modules/' --ext .mjs,.js,.jsx,.ts,.tsx ./source",
+    "our:verify:prettier": "prettier --write ./source/**",
+    "our:verify:typescript": "tsc --noEmit --project tsconfig.json",
+    "test": "node ./edition-es5/test.js"
+  },
+  "eslintConfig": {
+    "extends": [
+      "bevry"
+    ]
+  },
+  "prettier": {
+    "semi": false,
+    "singleQuote": true
+  },
+  "boundation": {
+    "minimumSupportNodeVersion": "0.8",
+    "minimumTestNodeVersion": "0.8",
+    "browser": false,
+    "compiler": "typescript",
+    "targets": [
+      "ES5"
+    ]
+  }
+}

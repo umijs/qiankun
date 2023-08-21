@@ -1,0 +1,57 @@
+{
+  "name": "rehype-mathjax",
+  "version": "3.1.0",
+  "description": "rehype plugin to transform inline and block math with MathJax",
+  "license": "MIT",
+  "keywords": [
+    "unified",
+    "remark",
+    "rehype",
+    "rehype-plugin",
+    "plugin",
+    "mdast",
+    "markdown",
+    "hast",
+    "html",
+    "math",
+    "mathjax",
+    "latex",
+    "tex"
+  ],
+  "repository": "https://github.com/remarkjs/remark-math/tree/main/packages/rehype-mathjax",
+  "bugs": "https://github.com/remarkjs/remark-math/issues",
+  "funding": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/unified"
+  },
+  "browser": {
+    "./lib/adaptor.js": "./lib/adaptor.browser.js"
+  },
+  "author": "TANIGUCHI Masaya <mew@cat.ovh> (https://docs.casa)",
+  "contributors": [
+    "TANIGUCHI Masaya <mew@cat.ovh> (https://docs.casa)",
+    "Titus Wormer <tituswormer@gmail.com> (https://wooorm.com)"
+  ],
+  "files": [
+    "lib/",
+    "*.d.ts",
+    "browser.js",
+    "chtml.js",
+    "svg.js",
+    "index.js"
+  ],
+  "main": "index.js",
+  "types": "index.d.ts",
+  "dependencies": {
+    "@types/mathjax": "^0.0.36",
+    "hast-util-from-dom": "^3.0.0",
+    "hast-util-to-text": "^2.0.0",
+    "jsdom": "^16.0.0",
+    "mathjax-full": "^3.0.0",
+    "unist-util-visit": "^2.0.0"
+  },
+  "scripts": {
+    "test-types": "dtslint"
+  },
+  "xo": false
+}

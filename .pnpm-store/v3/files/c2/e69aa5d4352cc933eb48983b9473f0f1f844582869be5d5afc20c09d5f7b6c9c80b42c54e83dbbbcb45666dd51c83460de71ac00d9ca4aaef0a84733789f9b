@@ -1,0 +1,5 @@
+{
+  "id": "[tex]/noerrors",
+  "component": "input/tex/extensions/noerrors",
+  "targets": ["input/tex/noerrors"]
+}

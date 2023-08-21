@@ -1,0 +1,59 @@
+{
+  "name": "@umijs/bundler-webpack",
+  "version": "3.5.41",
+  "description": "@umijs/bundler-webpack",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "bin",
+    "bundled"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/umijs/umi"
+  },
+  "keywords": [
+    "umi"
+  ],
+  "authors": [
+    "chencheng <sorrycc@gmail.com> (https://github.com/sorrycc)"
+  ],
+  "license": "MIT",
+  "bugs": "http://github.com/umijs/umi/issues",
+  "homepage": "https://github.com/umijs/umi/tree/3.x/packages/bundler-webpack#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "bundleWebpackHotDevClient": "BABEL_CACHE=none COMPRESS=none ./bin/bundler-webpack.js build && node ./scripts/patchWebpackHotDevClient.js",
+    "bundleHotModuleReplacement": "node scripts/bundleHotModuleReplacement.js"
+  },
+  "devDependencies": {
+    "@types/sockjs-client": "1.5.0",
+    "anymatch": "3.1.1",
+    "react-error-overlay": "6.0.9",
+    "sockjs-client": "1.5.0",
+    "strip-ansi": "6.0.0"
+  },
+  "dependencies": {
+    "@umijs/bundler-utils": "3.5.41",
+    "@umijs/case-sensitive-paths-webpack-plugin": "^1.0.1",
+    "@umijs/deps": "3.5.41",
+    "@umijs/types": "3.5.41",
+    "@umijs/utils": "3.5.41",
+    "jest-worker": "26.6.2",
+    "node-libs-browser": "2.2.1",
+    "normalize-url": "1.9.1",
+    "postcss": "7.0.32",
+    "postcss-flexbugs-fixes": "4.2.1",
+    "postcss-loader": "3.0.0",
+    "postcss-preset-env": "6.7.0",
+    "postcss-safe-parser": "4.0.2",
+    "terser": "5.14.2",
+    "webpack-chain": "6.5.1"
+  },
+  "bin": {
+    "bundler-webpack": "bin/bundler-webpack.js"
+  }
+}

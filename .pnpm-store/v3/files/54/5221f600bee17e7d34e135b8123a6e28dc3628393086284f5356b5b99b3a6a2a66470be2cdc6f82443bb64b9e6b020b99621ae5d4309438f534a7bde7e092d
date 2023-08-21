@@ -1,0 +1,34 @@
+import { AbstractEntry } from './abstract_entry.js';
+import { Item } from './item.js';
+import { Menu } from './menu.js';
+export declare abstract class AbstractItem extends AbstractEntry implements Item {
+    private _content;
+    protected disabled: boolean;
+    private _id;
+    private callbacks;
+    constructor(menu: Menu, type: string, _content: string, id?: string);
+    get content(): string;
+    set content(content: string);
+    get id(): string;
+    press(): void;
+    protected executeAction(): void;
+    registerCallback(func: Function): void;
+    unregisterCallback(func: Function): void;
+    mousedown(event: MouseEvent): void;
+    mouseover(event: MouseEvent): void;
+    mouseout(event: MouseEvent): void;
+    generateHtml(): void;
+    protected activate(): void;
+    protected deactivate(): void;
+    focus(): void;
+    unfocus(): void;
+    escape(_event: KeyboardEvent): void;
+    up(event: KeyboardEvent): void;
+    down(event: KeyboardEvent): void;
+    left(event: KeyboardEvent): void;
+    right(event: KeyboardEvent): void;
+    space(_event: KeyboardEvent): void;
+    disable(): void;
+    enable(): void;
+    private executeCallbacks_;
+}

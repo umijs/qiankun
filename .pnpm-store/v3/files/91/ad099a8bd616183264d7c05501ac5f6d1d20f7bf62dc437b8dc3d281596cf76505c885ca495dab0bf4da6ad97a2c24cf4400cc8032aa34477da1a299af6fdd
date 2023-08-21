@@ -1,0 +1,61 @@
+name: CI
+on:
+  push:
+    paths-ignore:
+        - 'docs/**'
+        - '*.md'
+  pull_request:
+    paths-ignore:
+        - 'docs/**'
+        - '*.md'
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        node-version: [12, 14, 16]
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
+    steps:
+
+      - uses: actions/checkout@v3
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install
+        run: |
+          npm install --ignore-scripts
+
+      - name: Run tests
+        shell: bash
+        run: |
+          npm run test:ci
+
+      - name: Coveralls Parallel
+        uses: coverallsapp/github-action@1.1.3
+        with:
+          github-token: ${{ secrets.github_token }}
+          parallel: true
+          flag-name: run-${{ matrix.node-version }}-${{ matrix.os }}
+
+  coverage:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@1.1.3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true
+
+  automerge:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: fastify/github-action-merge-dependabot@v3.0.2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}

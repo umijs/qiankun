@@ -1,0 +1,24 @@
+import * as babel from '@babel/core';
+import { IDemoOpts } from './options';
+export interface IDepAnalyzeResult {
+    dependencies: {
+        [key: string]: {
+            version: string;
+            css?: string;
+        };
+    };
+    files: {
+        [key: string]: {
+            import: string;
+            content: string;
+        };
+    };
+}
+export declare const LOCAL_DEP_EXT: string[];
+export declare const LOCAL_MODULE_EXT: string[];
+export declare const PLAIN_TEXT_EXT: string[];
+declare function analyzeDeps(raw: babel.BabelFileResult['ast'] | string, { isTSX, fileAbsPath, entryAbsPath }: IDemoOpts & {
+    entryAbsPath?: string;
+}, totalFiles?: IDepAnalyzeResult['files']): IDepAnalyzeResult;
+export declare function getCSSForDep(dep: string): string;
+export default analyzeDeps;

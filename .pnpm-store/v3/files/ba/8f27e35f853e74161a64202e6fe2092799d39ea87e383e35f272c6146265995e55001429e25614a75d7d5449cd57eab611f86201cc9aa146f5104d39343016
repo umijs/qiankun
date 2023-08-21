@@ -1,0 +1,49 @@
+{
+	"root": true,
+
+	"extends": "@ljharb",
+
+	"rules": {
+		"array-bracket-newline": "off",
+		"id-length": "off",
+		"max-lines-per-function": "off",
+		"new-cap": ["error", {
+			"capIsNewExceptions": [
+				"AddValueToKeyedGroup",
+				"Call",
+				"CreateDataPropertyOrThrow",
+				"GetIntrinsic",
+				"GetIterator",
+				"GetMethod",
+				"GroupBy",
+				"IsCallable",
+				"IteratorClose",
+				"IteratorComplete",
+				"IteratorNext",
+				"IteratorStep",
+				"IteratorValue",
+				"OrdinaryObjectCreate",
+				"RequireObjectCoercible",
+				"ThrowCompletion",
+				"ToPropertyKey",
+				"ToString",
+				"Type",
+			],
+		}],
+	},
+
+	"overrides": [
+		{
+			"files": "aos/*.js",
+			"rules": {
+				"max-statements": "off",
+			},
+		},
+		{
+			"files": "test/tests.js",
+			"rules": {
+				"max-lines-per-function": "off",
+			},
+		},
+	],
+}

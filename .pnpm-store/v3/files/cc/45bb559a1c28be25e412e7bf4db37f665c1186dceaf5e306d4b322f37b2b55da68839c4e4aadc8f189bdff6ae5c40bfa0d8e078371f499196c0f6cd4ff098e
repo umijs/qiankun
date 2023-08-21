@@ -1,0 +1,35 @@
+{
+  "name": "@microsoft/tsdoc",
+  "version": "0.14.2",
+  "description": "A parser for the TypeScript doc comment syntax",
+  "keywords": [
+    "TypeScript",
+    "documentation",
+    "doc",
+    "comments",
+    "JSDoc",
+    "parser",
+    "standard"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/microsoft/tsdoc",
+    "directory": "tsdoc"
+  },
+  "homepage": "https://tsdoc.org/",
+  "main": "lib-commonjs/index.js",
+  "module": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "license": "MIT",
+  "devDependencies": {
+    "@rushstack/eslint-config": "~2.3.1",
+    "@rushstack/heft-web-rig": "0.1.28",
+    "@rushstack/heft": "^0.22.3",
+    "@types/heft-jest": "1.0.1",
+    "eslint": "~7.12.1"
+  },
+  "scripts": {
+    "build": "heft test --clean",
+    "watch": "heft test --clean --watch"
+  }
+}

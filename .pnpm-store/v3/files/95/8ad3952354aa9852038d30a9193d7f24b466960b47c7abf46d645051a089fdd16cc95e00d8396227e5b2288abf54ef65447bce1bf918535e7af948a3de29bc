@@ -1,0 +1,43 @@
+{
+  "name": "ufo",
+  "version": "1.2.0",
+  "description": "URL utils for humans",
+  "repository": "unjs/ufo",
+  "license": "MIT",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.mjs"
+    },
+    "./*": "./*"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "unbuild",
+    "dev": "vitest",
+    "lint": "eslint --ext .ts . && prettier -c src test",
+    "lint:fix": "eslint --fix --ext .ts . && prettier -w src test",
+    "prepack": "pnpm build",
+    "release": "pnpm test && changelogen --release && npm publish && git push --follow-tags",
+    "test": "pnpm lint && vitest --run typecheck && vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^20.4.5",
+    "@vitest/coverage-v8": "^0.33.0",
+    "changelogen": "^0.5.4",
+    "eslint": "^8.46.0",
+    "eslint-config-unjs": "^0.2.1",
+    "prettier": "^3.0.0",
+    "typescript": "^5.1.6",
+    "unbuild": "^1.2.1",
+    "vitest": "^0.33.0"
+  },
+  "packageManager": "pnpm@8.6.10"
+}

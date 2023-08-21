@@ -1,0 +1,78 @@
+{
+  "name": "rc-menu",
+  "version": "9.6.4",
+  "description": "menu ui component for react",
+  "keywords": [
+    "react",
+    "react-component",
+    "menu",
+    "ui",
+    "react-menu"
+  ],
+  "homepage": "http://github.com/react-component/menu",
+  "bugs": {
+    "url": "http://github.com/react-component/menu/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:react-component/menu.git"
+  },
+  "license": "MIT",
+  "maintainers": [
+    "yiminghe@gmail.com",
+    "hualei5280@gmail.com"
+  ],
+  "main": "./lib/index",
+  "module": "./es/index",
+  "files": [
+    "es",
+    "lib",
+    "assets/*.css",
+    "assets/*.less"
+  ],
+  "scripts": {
+    "compile": "father build && lessc assets/index.less assets/index.css",
+    "coverage": "father test --coverage",
+    "docs:build": "dumi build",
+    "docs:deploy": "gh-pages -d .doc",
+    "lint": "eslint src/ --ext .tsx,.ts,.jsx,.js",
+    "now-build": "npm run build",
+    "prepublishOnly": "npm run compile && np --yolo --no-publish",
+    "postpublish": "tnpm sync rc-menu",
+    "start": "dumi dev",
+    "test": "father test"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.10.1",
+    "classnames": "2.x",
+    "rc-motion": "^2.4.3",
+    "rc-overflow": "^1.2.0",
+    "rc-trigger": "^5.1.2",
+    "rc-util": "^5.12.0",
+    "shallowequal": "^1.1.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^5.16.4",
+    "@testing-library/react": "^13.0.0",
+    "@types/jest": "^26.0.23",
+    "@types/react": "^16.8.19",
+    "@types/react-dom": "^16.8.4",
+    "@types/warning": "^3.0.0",
+    "cross-env": "^7.0.0",
+    "dumi": "^1.1.0",
+    "eslint": "^7.0.0",
+    "father": "^2.22.0",
+    "father-build": "^1.18.6",
+    "gh-pages": "^3.1.0",
+    "less": "^3.10.3",
+    "np": "^6.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "regenerator-runtime": "^0.13.7",
+    "typescript": "^4.0.5"
+  },
+  "peerDependencies": {
+    "react": ">=16.9.0",
+    "react-dom": ">=16.9.0"
+  }
+}

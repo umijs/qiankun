@@ -1,0 +1,1 @@
+{"version":3,"file":"TrimSpacesTransform.d.ts","sourceRoot":"","sources":["../../src/transforms/TrimSpacesTransform.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,YAAY,EAAsC,MAAM,UAAU,CAAC;AAE5E;;GAEG;AACH,qBAAa,mBAAmB;WAChB,SAAS,CAAC,YAAY,EAAE,YAAY,GAAG,YAAY;CA8FlE"}

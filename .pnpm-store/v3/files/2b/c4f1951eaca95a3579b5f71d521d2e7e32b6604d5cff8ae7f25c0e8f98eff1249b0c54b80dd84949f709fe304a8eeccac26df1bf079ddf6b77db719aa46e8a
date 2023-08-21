@@ -1,0 +1,5 @@
+{
+  "id": "[tex]/bussproofs",
+  "component": "input/tex/extensions/bussproofs",
+  "targets": ["input/tex/bussproofs"]
+}

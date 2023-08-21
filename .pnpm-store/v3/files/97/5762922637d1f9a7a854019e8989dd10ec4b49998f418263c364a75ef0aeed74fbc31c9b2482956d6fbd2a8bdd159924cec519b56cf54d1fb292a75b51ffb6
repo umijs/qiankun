@@ -1,0 +1,71 @@
+{
+  "name": "find-pkg",
+  "description": "Find the first directory with a package.json, recursing up, starting with the given directory. Similar to look-up but does not support globs and only searches for package.json. Async and sync.",
+  "version": "0.1.2",
+  "homepage": "https://github.com/jonschlinkert/find-pkg",
+  "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
+  "repository": "jonschlinkert/find-pkg",
+  "bugs": {
+    "url": "https://github.com/jonschlinkert/find-pkg/issues"
+  },
+  "license": "MIT",
+  "files": [
+    "index.js"
+  ],
+  "main": "index.js",
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "dependencies": {
+    "find-file-up": "^0.1.2"
+  },
+  "devDependencies": {
+    "delete": "^0.3.2",
+    "gulp-format-md": "^0.1.9",
+    "mocha": "^2.5.3",
+    "resolve-dir": "^0.1.0"
+  },
+  "keywords": [
+    "filepath",
+    "find",
+    "findup",
+    "findup-sync",
+    "json",
+    "lookup",
+    "package",
+    "package-json",
+    "pkg",
+    "resolve",
+    "sync"
+  ],
+  "verb": {
+    "related": {
+      "list": [
+        "find-file-up",
+        "load-module-pkg",
+        "load-pkg",
+        "look-up",
+        "module-root"
+      ]
+    },
+    "reflinks": [
+      "find-file-up",
+      "look-up",
+      "verb"
+    ],
+    "toc": false,
+    "layout": "default",
+    "tasks": [
+      "readme"
+    ],
+    "plugins": [
+      "gulp-format-md"
+    ],
+    "lint": {
+      "reflinks": true
+    }
+  }
+}

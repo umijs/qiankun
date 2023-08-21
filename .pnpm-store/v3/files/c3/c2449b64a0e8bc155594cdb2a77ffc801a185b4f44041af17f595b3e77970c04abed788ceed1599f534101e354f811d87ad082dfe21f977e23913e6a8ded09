@@ -1,0 +1,21 @@
+export declare const prefixes: {
+    wait: string;
+    error: string;
+    fatal: string;
+    warn: string;
+    ready: string;
+    info: string;
+    event: string;
+    debug: string;
+    profile: string;
+};
+export declare function wait(...message: any[]): void;
+export declare function error(...message: any[]): void;
+export declare function warn(...message: any[]): void;
+export declare function ready(...message: any[]): void;
+export declare function info(...message: any[]): void;
+export declare function event(...message: any[]): void;
+export declare function debug(...message: any[]): void;
+export declare function fatal(...message: any[]): void;
+export declare function profile(id: string, ...message: any[]): void;
+export declare function getLatestLogFilePath(): string | null;

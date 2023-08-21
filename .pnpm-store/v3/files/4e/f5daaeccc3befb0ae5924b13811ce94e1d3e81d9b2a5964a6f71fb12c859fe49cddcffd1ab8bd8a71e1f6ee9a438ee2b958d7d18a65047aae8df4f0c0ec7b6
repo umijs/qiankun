@@ -1,0 +1,8 @@
+{
+  "component": "startup",
+  "targets": [
+    "components/loader.ts",
+    "components/package.ts",
+    "components/startup.ts"
+  ]
+}

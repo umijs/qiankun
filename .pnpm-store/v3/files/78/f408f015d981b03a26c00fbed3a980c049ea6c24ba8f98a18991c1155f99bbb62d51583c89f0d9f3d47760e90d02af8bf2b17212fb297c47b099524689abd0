@@ -1,0 +1,43 @@
+{
+  "name": "ansi-escape-sequences",
+  "author": "Lloyd Brookes <75pound@gmail.com>",
+  "version": "6.2.2",
+  "description": "A simple library containing all known terminal ansi escape codes and sequences.",
+  "repository": "https://github.com/75lb/ansi-escape-sequences",
+  "type": "module",
+  "exports": {
+    "import": "./index.js",
+    "require": "./dist/index.cjs"
+  },
+  "license": "MIT",
+  "keywords": [
+    "ansi",
+    "terminal",
+    "colour",
+    "color",
+    "command line",
+    "cursor"
+  ],
+  "engines": {
+    "node": ">=12.17"
+  },
+  "scripts": {
+    "test": "npm run dist && npm run test:ci",
+    "test:ci": "test-runner test.js",
+    "docs": "jsdoc2md -d 1 -t README.hbs index.js > README.md",
+    "dist": "rollup -c"
+  },
+  "dependencies": {
+    "array-back": "^6.2.2"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.0.2",
+    "jsdoc-to-markdown": "^8.0.0",
+    "rollup": "^3.21.3",
+    "test-runner": "^0.10.1"
+  },
+  "files": [
+    "index.js",
+    "dist"
+  ]
+}

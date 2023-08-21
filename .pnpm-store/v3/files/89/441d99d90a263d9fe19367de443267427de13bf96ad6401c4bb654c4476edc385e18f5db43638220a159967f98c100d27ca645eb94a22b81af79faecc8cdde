@@ -1,0 +1,93 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+function _react() {
+  const data = _interopRequireDefault(require("react"));
+
+  _react = function _react() {
+    return data;
+  };
+
+  return data;
+}
+
+function _remarkParse() {
+  const data = _interopRequireDefault(require("remark-parse"));
+
+  _remarkParse = function _remarkParse() {
+    return data;
+  };
+
+  return data;
+}
+
+var _context = _interopRequireDefault(require("../../context"));
+
+var _ = _interopRequireDefault(require(".."));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+const blockTokenizers = _remarkParse().default.Parser.prototype.blockTokenizers;
+
+const oFencedCode = blockTokenizers.fencedCode;
+/**
+ * parser for parse modifier of code block
+ * @param meta  meta raw string
+ */
+
+function codeBlockModifierParser(meta) {
+  return (meta || '').split('|').reduce((result, item) => {
+    item = String.prototype.trim.call(item);
+
+    if (item) {
+      result[item] = true;
+    }
+
+    return result;
+  }, {});
+} // override original fencedCode tokenizer
+
+
+blockTokenizers.fencedCode = function fencedCode(...args) {
+  var _ctx$opts;
+
+  const result = oFencedCode.apply(this, args); // only process needed code block
+
+  if (result && ((_ctx$opts = _context.default.opts) === null || _ctx$opts === void 0 ? void 0 : _ctx$opts.resolve.previewLangs.indexOf(result.lang)) > -1) {
+    const modifier = codeBlockModifierParser(result.meta); // extract frontmatters for embedded demo
+
+    const _transformer$code = _.default.code(result.value),
+          content = _transformer$code.content,
+          meta = _transformer$code.meta;
+
+    if (modifier.pure) {
+      // clear useless meta if the lang with pure modifier
+      result.meta = result.meta.replace(/ ?\| ?pure/, '');
+    } else {
+      // customize type (use for rehype demo handler)
+      result.type = 'demo';
+      result.meta = _objectSpread(_objectSpread({}, modifier), meta);
+      result.value = content;
+    }
+  }
+
+  return result;
+};
+/**
+ * wrap remark-parse for parse code block to demo node
+ */
+
+
+var _default = _remarkParse().default;
+
+exports.default = _default;

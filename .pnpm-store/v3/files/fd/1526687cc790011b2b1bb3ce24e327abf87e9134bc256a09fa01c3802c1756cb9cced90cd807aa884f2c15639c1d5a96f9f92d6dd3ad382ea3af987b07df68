@@ -1,0 +1,13 @@
+import { IRoute } from '@umijs/types';
+import { IDumiOpts } from '..';
+export interface INavItem {
+    title: string;
+    path?: string;
+    [key: string]: any;
+    children: INavItem[];
+}
+export interface INav {
+    [key: string]: INavItem[];
+}
+declare const _default: (routes: IRoute[], opts: IDumiOpts, userCustomNavs: INav | INavItem[]) => INav;
+export default _default;

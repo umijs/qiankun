@@ -1,0 +1,70 @@
+{
+  "name": "mathjax-full",
+  "version": "3.2.2",
+  "description": "Beautiful and accessible math in all browsers. MathJax is an open-source JavaScript display engine for LaTeX, MathML, and AsciiMath notation that works in all browsers and in server-side node applications. This package includes the source code as well as the packaged components.",
+  "license": "Apache-2.0",
+  "main": "components/src/node-main/node-main.js",
+  "files": [
+    "/es5",
+    "/js",
+    "/ts",
+    "/components",
+    "LICENSE",
+    "README.md",
+    "CONTRIBUTING.md",
+    "tsconfig.json",
+    "tslint.json"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mathjax/Mathjax-src/"
+  },
+  "keywords": [
+    "MathJax",
+    "math",
+    "svg",
+    "HTML",
+    "MathML",
+    "TeX",
+    "AsciiMath"
+  ],
+  "scripts": {
+    "clean:js": "npx rimraf js",
+    "clean:es5": "npx rimraf es5",
+    "clean:lib": "npx rimraf 'components/src/**/lib'",
+    "clean": "npm run --silent clean:js && npm run --silent clean:es5 && npm run --silent clean:lib",
+    "copy:mj2": "npx copyfiles -u 1 'ts/input/asciimath/mathjax2/**/*' js",
+    "copy:mml3": "npx copyfiles -u 1 'ts/input/mathml/mml3/mml3.sef.json' js",
+    "precompile": "npm run --silent clean:js",
+    "compile": "npx tsc",
+    "postcompile": "npm run --silent copy:mj2 && npm run --silent copy:mml3",
+    "premake-components": "npm run --silent clean:es5 && npm run --silent clean:lib",
+    "make-components": "cd components && node bin/makeAll src | grep --line-buffered 'Building\\|Webpacking\\|Copying\\|npx'",
+    "premake-mml3-xslt": "cd ts/input/mathml/mml3 && grep '^\\s*\\(<\\|or\\|xmlns\\|excl\\|\">\\)' mml3.ts > mml3.xsl",
+    "make-mml3-xslt": "cd ts/input/mathml/mml3 && npx xslt3 -t -xsl:mml3.xsl -export:mml3.sef.json -nogo",
+    "postmake-mml3-xslt": "npx rimraf ts/input/mathml/mml3/mml3.xsl"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.17.12",
+    "@babel/preset-env": "^7.17.12",
+    "babel-loader": "^8.2.5",
+    "copyfiles": "^2.4.1",
+    "diff": "^5.0.0",
+    "rimraf": "^3.0.2",
+    "tape": "^5.5.3",
+    "terser-webpack-plugin": "^5.3.1",
+    "tslint": "^6.1.3",
+    "tslint-jsdoc-rules": "^0.2.0",
+    "tslint-unix-formatter": "^0.2.0",
+    "typescript": "^4.6.4",
+    "typescript-tools": "^0.3.1",
+    "webpack": "^5.72.1",
+    "webpack-cli": "^4.9.2"
+  },
+  "dependencies": {
+    "esm": "^3.2.25",
+    "mhchemparser": "^4.1.0",
+    "mj-context-menu": "^0.6.1",
+    "speech-rule-engine": "^4.0.6"
+  }
+}

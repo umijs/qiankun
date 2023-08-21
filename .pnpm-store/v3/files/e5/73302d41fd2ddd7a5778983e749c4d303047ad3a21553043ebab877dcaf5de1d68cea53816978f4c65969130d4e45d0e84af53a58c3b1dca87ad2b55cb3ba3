@@ -1,0 +1,64 @@
+{
+  "name": "make-fetch-happen",
+  "version": "2.6.0",
+  "description": "Opinionated, caching, retrying fetch client",
+  "main": "index.js",
+  "files": [
+    "*.js",
+    "lib"
+  ],
+  "scripts": {
+    "prerelease": "npm t",
+    "release": "standard-version -s",
+    "postrelease": "npm publish && git push --follow-tags",
+    "pretest": "standard lib test *.js",
+    "test": "nyc --all -- tap --timeout=35 -J test/*.js",
+    "update-coc": "weallbehave -o . && git add CODE_OF_CONDUCT.md && git commit -m 'docs(coc): updated CODE_OF_CONDUCT.md'",
+    "update-contrib": "weallcontribute -o . && git add CONTRIBUTING.md && git commit -m 'docs(contributing): updated CONTRIBUTING.md'"
+  },
+  "repository": "https://github.com/zkat/make-fetch-happen",
+  "keywords": [
+    "http",
+    "request",
+    "fetch",
+    "mean girls",
+    "caching",
+    "cache",
+    "subresource integrity"
+  ],
+  "author": {
+    "name": "Kat Marchán",
+    "email": "kzm@sykosomatic.org",
+    "twitter": "maybekatz"
+  },
+  "license": "CC0-1.0",
+  "dependencies": {
+    "agentkeepalive": "^3.3.0",
+    "cacache": "^10.0.0",
+    "http-cache-semantics": "^3.8.0",
+    "http-proxy-agent": "^2.0.0",
+    "https-proxy-agent": "^2.1.0",
+    "lru-cache": "^4.1.1",
+    "mississippi": "^1.2.0",
+    "node-fetch-npm": "^2.0.2",
+    "promise-retry": "^1.1.1",
+    "socks-proxy-agent": "^3.0.1",
+    "ssri": "^5.0.0"
+  },
+  "devDependencies": {
+    "bluebird": "^3.5.0",
+    "mkdirp": "^0.5.1",
+    "nock": "^9.0.14",
+    "npmlog": "^4.1.2",
+    "nyc": "^11.0.3",
+    "require-inject": "^1.4.2",
+    "rimraf": "^2.5.4",
+    "safe-buffer": "^5.1.1",
+    "standard": "^10.0.1",
+    "standard-version": "^4.2.0",
+    "tacks": "^1.2.6",
+    "tap": "^10.7.0",
+    "weallbehave": "^1.0.0",
+    "weallcontribute": "^1.0.7"
+  }
+}

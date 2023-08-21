@@ -1,0 +1,58 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = jsxify;
+
+function _react() {
+  const data = _interopRequireDefault(require("react"));
+
+  _react = function _react() {
+    return data;
+  };
+
+  return data;
+}
+
+function _hastUtilToJsx() {
+  const data = _interopRequireDefault(require("@mapbox/hast-util-to-jsx"));
+
+  _hastUtilToJsx = function _hastUtilToJsx() {
+    return data;
+  };
+
+  return data;
+}
+
+function _unistUtilVisit() {
+  const data = _interopRequireDefault(require("unist-util-visit"));
+
+  _unistUtilVisit = function _unistUtilVisit() {
+    return data;
+  };
+
+  return data;
+}
+
+var _utils = require("../utils");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+/**
+ * rehype compiler for compile hast to jsx
+ */
+function jsxify() {
+  this.Compiler = function compiler(ast) {
+    // format props for JSX element
+    (0, _unistUtilVisit().default)(ast, 'element', node => {
+      node.properties = (0, _utils.formatJSXProps)(node.properties);
+    });
+    let JSX = (0, _hastUtilToJsx().default)(ast, {
+      wrapper: 'fragment'
+    }) || ''; // TODO: find a elegant way to keep camelCase props like defaultShowCode or hideActions
+
+    JSX = JSX.replace(/hide-actions={\[/g, 'hideActions={[').replace(/default-show-code={true}/g, 'defaultShowCode').replace(/([a-z]{2}-)-([a-z])-([a-z])/g, (_, a, b, c) => `${a}${`${b}${c}`.toUpperCase()}`);
+    return JSX;
+  };
+}

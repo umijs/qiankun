@@ -1,0 +1,32 @@
+{
+  "name": "dumi",
+  "version": "1.1.0-beta.24",
+  "description": "dumi",
+  "main": "index.js",
+  "module": "index.module.js",
+  "types": "index.d.ts",
+  "bin": "bin/dumi.js",
+  "files": [
+    "lib",
+    "bin",
+    "theme.d.ts",
+    "index.d.ts"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/umijs/dumi",
+    "directory": "dumi"
+  },
+  "homepage": "http://github.com/umijs/dumi",
+  "bugs": "http://github.com/umijs/dumi/issues",
+  "authors": [
+    "ycjcl868 <chaolinjin@gmail.com> (https://github.com/ycjcl868)",
+    "PeachScript <scdzwyxst@gmail.com> (https://github.com/PeachScript)"
+  ],
+  "dependencies": {
+    "@umijs/preset-dumi": "1.1.0-beta.23",
+    "umi": "^3.0.0"
+  },
+  "license": "MIT",
+  "gitHead": "c8b708ece8dcf71e5b640bf04dbdced7da97f818"
+}

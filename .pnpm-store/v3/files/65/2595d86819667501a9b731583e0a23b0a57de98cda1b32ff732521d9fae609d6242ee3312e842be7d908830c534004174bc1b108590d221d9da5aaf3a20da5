@@ -1,0 +1,49 @@
+{
+  "name": "@umijs/case-sensitive-paths-webpack-plugin",
+  "version": "1.0.1",
+  "description": "A webpack plugin to enforce case-sensitive paths when resolving module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "dev": "father dev",
+    "build": "father build",
+    "test": "jest",
+    "test:cov": "jest --collectCoverage",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "webpack",
+    "plugin",
+    "case-sensitive"
+  ],
+  "authors": [
+    "PeachScript <scdzwyxst@gmail.com>"
+  ],
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@types/jest": "^27",
+    "@types/node": "^18.0.3",
+    "@umijs/test": "^4.0.7",
+    "css-loader": "^6.7.1",
+    "father": "^4.0.0-alpha.3",
+    "jest": "^27",
+    "style-loader": "^3.3.1",
+    "ts-node": "^10.9.1",
+    "webpack": "^5.73.0",
+    "webpack-cli": "^4.10.0"
+  },
+  "packageManager": "pnpm@7.3.0",
+  "prettier": {
+    "pluginSearchDirs": false,
+    "printWidth": 80,
+    "proseWrap": "never",
+    "singleQuote": true,
+    "trailingComma": "all"
+  }
+}

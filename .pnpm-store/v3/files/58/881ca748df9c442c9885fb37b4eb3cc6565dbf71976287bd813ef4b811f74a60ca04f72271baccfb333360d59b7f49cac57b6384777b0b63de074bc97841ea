@@ -1,0 +1,38 @@
+{
+  "name": "reserved-words",
+  "version": "0.1.2",
+  "description": "ECMAScript reserved words checker",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "jshint && jscs lib test && mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zxqfox/reserved-words.git"
+  },
+  "keywords": [
+    "ES3",
+    "ES5",
+    "ES6",
+    "ReservedWord",
+    "Keyword",
+    "checker"
+  ],
+  "author": "Alexej Yaroshevich <zxqfox@gmail.com> (http://github.com/zxqfox)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zxqfox/reserved-words/issues"
+  },
+  "homepage": "https://github.com/zxqfox/reserved-words#readme",
+  "devDependencies": {
+    "jscs": "^1.13.1",
+    "jscs-jsdoc": "^1.1.0",
+    "jshint": "^2.8.0",
+    "mocha": "^2.2.5"
+  },
+  "files": [
+    "lib",
+    "README.md",
+    "LICENSE"
+  ]
+}

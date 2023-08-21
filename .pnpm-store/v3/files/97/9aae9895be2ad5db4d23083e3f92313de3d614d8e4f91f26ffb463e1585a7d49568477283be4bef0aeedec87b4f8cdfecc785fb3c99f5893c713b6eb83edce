@@ -1,0 +1,35 @@
+{
+  "name": "kebab-case",
+  "version": "1.0.2",
+  "description": "Convert a string to kebab-case, i.e. its dash separated form",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint *.js",
+    "pretest": "npm run lint -s",
+    "test": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joakimbeng/kebab-case.git"
+  },
+  "keywords": [
+    "kebab-case",
+    "kebab",
+    "dash",
+    "dasherize",
+    "dashify",
+    "dash-case",
+    "train-case",
+    "lisp-case"
+  ],
+  "author": "Joakim Carlstein <joakim.carlstein@gmail.com> (https://joakim.beng.se/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/joakimbeng/kebab-case/issues"
+  },
+  "homepage": "https://github.com/joakimbeng/kebab-case#readme",
+  "devDependencies": {
+    "eslint": "^7.21.0",
+    "zora": "^4.0.2"
+  }
+}

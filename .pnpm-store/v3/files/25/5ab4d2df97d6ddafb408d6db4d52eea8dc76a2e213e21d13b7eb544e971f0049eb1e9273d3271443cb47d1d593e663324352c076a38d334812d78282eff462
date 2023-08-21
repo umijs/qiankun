@@ -1,0 +1,61 @@
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+import { BenchmarkResult } from './types';
+export interface ConfidenceInterval {
+    low: number;
+    high: number;
+}
+export interface SummaryStats {
+    size: number;
+    mean: number;
+    meanCI: ConfidenceInterval;
+    variance: number;
+    standardDeviation: number;
+    relativeStandardDeviation: number;
+}
+export interface ResultStats {
+    result: BenchmarkResult;
+    stats: SummaryStats;
+}
+export interface ResultStatsWithDifferences extends ResultStats {
+    differences: Array<Difference | null>;
+}
+export interface Difference {
+    absolute: ConfidenceInterval;
+    relative: ConfidenceInterval;
+}
+export declare function summaryStats(data: number[]): SummaryStats;
+/**
+ * Return whether the given confidence interval contains a value.
+ */
+export declare function intervalContains(interval: ConfidenceInterval, value: number): boolean;
+export interface AutoSampleConditions {
+    absolute: number[];
+    relative: number[];
+}
+/**
+ * Return whether all difference confidence intervals are unambiguously located
+ * on one side or the other of all given auto sample conditions.
+ *
+ * For example, given the conditions 0 and 1:
+ *
+ *    <--->                   true
+ *        <--->               false
+ *            <--->           true
+ *                <--->       false
+ *                    <--->   true
+ *        <----------->       false
+ *
+ *  |-------|-------|-------| ms difference
+ * -1       0       1       2
+ */
+export declare function autoSampleConditionsResolved(resultStats: ResultStatsWithDifferences[], conditions: AutoSampleConditions): boolean;
+/**
+ * Given an array of results, return a new array of results where each result
+ * has additional statistics describing how it compares to each other result.
+ */
+export declare function computeDifferences(stats: ResultStats[]): ResultStatsWithDifferences[];
+export declare function computeDifference(a: SummaryStats, b: SummaryStats): Difference;

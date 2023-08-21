@@ -1,0 +1,223 @@
+{
+  "title": "Is Text or Binary?",
+  "name": "istextorbinary",
+  "version": "2.6.0",
+  "description": "Determine if a filename and/or buffer is text or binary. Smarter detection than the other solutions.",
+  "homepage": "https://github.com/bevry/istextorbinary",
+  "license": "MIT",
+  "keywords": [
+    "bin",
+    "binary",
+    "check",
+    "detect",
+    "encoding",
+    "ext",
+    "extension",
+    "extensions",
+    "file",
+    "is binary file",
+    "is binary",
+    "is text file",
+    "is text or binary file",
+    "is text or binary",
+    "is text",
+    "is",
+    "isbinary",
+    "isbinaryfile",
+    "istext",
+    "istextfile",
+    "path",
+    "text"
+  ],
+  "badges": {
+    "list": [
+      "travisci",
+      "npmversion",
+      "npmdownloads",
+      "daviddm",
+      "daviddmdev",
+      "---",
+      "patreon",
+      "flattr",
+      "liberapay",
+      "buymeacoffee",
+      "opencollective",
+      "crypto",
+      "paypal",
+      "wishlist"
+    ],
+    "config": {
+      "buymeacoffeeUsername": "balupton",
+      "cryptoURL": "https://bevry.me/crypto",
+      "flattrUsername": "balupton",
+      "liberapayUsername": "bevry",
+      "opencollectiveUsername": "bevry",
+      "patreonUsername": "bevry",
+      "paypalURL": "https://bevry.me/paypal",
+      "wishlistURL": "https://bevry.me/wishlist",
+      "travisTLD": "com"
+    }
+  },
+  "funding": "https://bevry.me/fund",
+  "author": "2012+ Bevry Pty Ltd <us@bevry.me> (http://bevry.me), 2011 Benjamin Lupton <b@lupton.cc> (http://balupton.com)",
+  "maintainers": [
+    "Benjamin Lupton <b@lupton.cc> (http://balupton.com)",
+    "Rob Loach <robloach@gmail.com> (https://github.com/robloach)",
+    "Michael Mooring <mike@mdm.cc> (https://github.com/mikeumus)"
+  ],
+  "contributors": [
+    "Benjamin Lupton <b@lupton.cc> (http://balupton.com)",
+    "Shinnosuke Watanabe <snnskwtnb@gmail.com> (http://shinnn.github.io)",
+    "Ian Sibner <sibnerian@gmail.com> (http://www.sibnerian.com/)",
+    "Sean <sean@albinodrought.com> (http://albinodrought.com/)",
+    "dependabot[bot] (http://github.com/apps/dependabot)",
+    "shinnn (http://qiita.com/shinnn)"
+  ],
+  "bugs": {
+    "url": "https://github.com/bevry/istextorbinary/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bevry/istextorbinary.git"
+  },
+  "engines": {
+    "node": ">=0.12"
+  },
+  "editions": [
+    {
+      "description": "esnext source code with require for modules",
+      "directory": "source",
+      "entry": "index.js",
+      "tags": [
+        "javascript",
+        "esnext",
+        "require"
+      ],
+      "engines": {
+        "node": "6 || 8 || 10 || 12 || 13",
+        "browsers": false
+      }
+    },
+    {
+      "description": "esnext compiled for browsers with require for modules",
+      "directory": "edition-browsers",
+      "entry": "index.js",
+      "tags": [
+        "javascript",
+        "require"
+      ],
+      "engines": {
+        "node": false,
+        "browsers": "defaults"
+      }
+    },
+    {
+      "description": "esnext compiled for node.js 0.12 with require for modules",
+      "directory": "edition-node-0.12",
+      "entry": "index.js",
+      "tags": [
+        "javascript",
+        "require"
+      ],
+      "engines": {
+        "node": "0.12 || 4 || 6 || 8 || 10 || 12 || 13",
+        "browsers": false
+      }
+    }
+  ],
+  "main": "index.js",
+  "browser": "edition-browsers/index.js",
+  "dependencies": {
+    "binaryextensions": "^2.1.2",
+    "editions": "^2.2.0",
+    "textextensions": "^2.5.0"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.7.0",
+    "@babel/core": "^7.7.2",
+    "@babel/plugin-proposal-object-rest-spread": "^7.6.2",
+    "@babel/preset-env": "^7.7.1",
+    "assert-helpers": "4.10.0",
+    "eslint": "^6.6.0",
+    "eslint-config-bevry": "^1.2.1",
+    "eslint-config-prettier": "^6.5.0",
+    "eslint-plugin-prettier": "^3.1.1",
+    "jsdoc": "^3.6.3",
+    "kava": "^3.2.0",
+    "minami": "^1.2.3",
+    "prettier": "^1.19.1",
+    "projectz": "^1.10.0",
+    "surge": "^0.21.3",
+    "valid-directory": "^1.0.0"
+  },
+  "scripts": {
+    "our:clean": "rm -Rf ./docs ./edition* ./es2015 ./es5 ./out ./.next",
+    "our:compile": "npm run our:compile:edition-browsers && npm run our:compile:edition-node-0.12",
+    "our:compile:edition-browsers": "env BABEL_ENV=edition-browsers babel --out-dir ./edition-browsers ./source",
+    "our:compile:edition-node-0.12": "env BABEL_ENV=edition-node-0.12 babel --out-dir ./edition-node-0.12 ./source",
+    "our:deploy": "echo no need for this project",
+    "our:meta": "npm run our:meta:docs && npm run our:meta:projectz",
+    "our:meta:docs": "npm run our:meta:docs:jsdoc",
+    "our:meta:docs:jsdoc": "rm -Rf ./docs && jsdoc --recurse --pedantic --access all --destination ./docs --package ./package.json --readme ./README.md --template ./node_modules/minami ./source && mv ./docs/$npm_package_name/$npm_package_version/* ./docs/ && rm -Rf ./docs/$npm_package_name/$npm_package_version",
+    "our:meta:projectz": "projectz compile",
+    "our:release": "npm run our:release:prepare && npm run our:release:check-changelog && npm run our:release:check-dirty && npm run our:release:tag && npm run our:release:push",
+    "our:release:check-changelog": "cat ./HISTORY.md | grep v$npm_package_version || (echo add a changelog entry for v$npm_package_version && exit -1)",
+    "our:release:check-dirty": "git diff --exit-code",
+    "our:release:prepare": "npm run our:clean && npm run our:compile && npm run our:test && npm run our:meta",
+    "our:release:push": "git push origin master && git push origin --tags",
+    "our:release:tag": "export MESSAGE=$(cat ./HISTORY.md | sed -n \"/## v$npm_package_version/,/##/p\" | sed 's/## //' | awk 'NR>1{print buf}{buf = $0}') && test \"$MESSAGE\" || (echo 'proper changelog entry not found' && exit -1) && git tag v$npm_package_version -am \"$MESSAGE\"",
+    "our:setup": "npm run our:setup:install",
+    "our:setup:install": "npm install",
+    "our:test": "npm run our:verify && npm test",
+    "our:verify": "npm run our:verify:directory && npm run our:verify:eslint && npm run our:verify:prettier",
+    "our:verify:directory": "npx valid-directory",
+    "our:verify:eslint": "eslint --fix --ignore-pattern '**/*.d.ts' --ignore-pattern '**/vendor/' --ignore-pattern '**/node_modules/' --ext .mjs,.js,.jsx,.ts,.tsx ./source",
+    "our:verify:prettier": "prettier --write ./source/**",
+    "test": "node ./test.js"
+  },
+  "eslintConfig": {
+    "extends": [
+      "bevry"
+    ]
+  },
+  "prettier": {
+    "semi": false,
+    "singleQuote": true
+  },
+  "babel": {
+    "env": {
+      "edition-browsers": {
+        "sourceType": "script",
+        "presets": [
+          [
+            "@babel/preset-env",
+            {
+              "targets": "defaults",
+              "modules": "commonjs"
+            }
+          ]
+        ],
+        "plugins": [
+          "@babel/proposal-object-rest-spread"
+        ]
+      },
+      "edition-node-0.12": {
+        "sourceType": "script",
+        "presets": [
+          [
+            "@babel/preset-env",
+            {
+              "targets": {
+                "node": "0.12"
+              },
+              "modules": "commonjs"
+            }
+          ]
+        ],
+        "plugins": [
+          "@babel/proposal-object-rest-spread"
+        ]
+      }
+    }
+  }
+}

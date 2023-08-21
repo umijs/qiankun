@@ -1,0 +1,57 @@
+#!/usr/bin/env node
+
+'use strict'
+
+// Force colors for packages that depend on https://www.npmjs.com/package/supports-color
+// but do this only in TTY mode
+if (process.stdout.isTTY) {
+  // istanbul ignore next
+  process.env.FORCE_COLOR = '1'
+}
+
+// Do not terminate main Listr process on SIGINT
+process.on('SIGINT', () => {})
+
+const pkg = require('../package.json')
+require('please-upgrade-node')(
+  Object.assign({}, pkg, {
+    engines: {
+      node: '>=8.12.0'
+    }
+  })
+)
+
+const cmdline = require('commander')
+const debugLib = require('debug')
+const lintStaged = require('../src')
+
+const debug = debugLib('lint-staged:bin')
+
+cmdline
+  .version(pkg.version)
+  .option('-c, --config [path]', 'Path to configuration file')
+  .option('-r, --relative', 'Pass relative filepaths to tasks')
+  .option('-x, --shell', 'Skip parsing of tasks for better shell support')
+  .option('-q, --quiet', 'Disable lint-staged’s own console output')
+  .option('-d, --debug', 'Enable debug mode')
+  .parse(process.argv)
+
+if (cmdline.debug) {
+  debugLib.enable('lint-staged*')
+}
+
+debug('Running `lint-staged@%s`', pkg.version)
+
+lintStaged({
+  configPath: cmdline.config,
+  relative: !!cmdline.relative,
+  shell: !!cmdline.shell,
+  quiet: !!cmdline.quiet,
+  debug: !!cmdline.debug
+})
+  .then(passed => {
+    process.exitCode = passed ? 0 : 1
+  })
+  .catch(() => {
+    process.exitCode = 1
+  })

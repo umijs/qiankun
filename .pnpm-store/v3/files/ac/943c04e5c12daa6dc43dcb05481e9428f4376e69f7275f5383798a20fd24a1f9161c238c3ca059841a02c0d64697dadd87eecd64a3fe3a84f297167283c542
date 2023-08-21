@@ -1,0 +1,87 @@
+{
+  "name": "hast-util-to-text",
+  "version": "2.0.1",
+  "description": "hast utility to get the plain-text value of a node according to the `innerText` algorithm",
+  "license": "MIT",
+  "keywords": [
+    "unist",
+    "hast",
+    "hast-util",
+    "util",
+    "utility",
+    "html",
+    "string",
+    "content",
+    "text",
+    "innertext"
+  ],
+  "repository": "syntax-tree/hast-util-to-text",
+  "bugs": "https://github.com/syntax-tree/hast-util-to-text/issues",
+  "funding": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/unified"
+  },
+  "author": "Titus Wormer <tituswormer@gmail.com> (https://wooorm.com)",
+  "contributors": [
+    "Titus Wormer <tituswormer@gmail.com> (https://wooorm.com)"
+  ],
+  "files": [
+    "index.js"
+  ],
+  "dependencies": {
+    "hast-util-is-element": "^1.0.0",
+    "repeat-string": "^1.0.0",
+    "unist-util-find-after": "^3.0.0"
+  },
+  "devDependencies": {
+    "browserify": "^17.0.0",
+    "hastscript": "^6.0.0",
+    "nyc": "^15.0.0",
+    "prettier": "^2.0.0",
+    "remark-cli": "^9.0.0",
+    "remark-preset-wooorm": "^8.0.0",
+    "tape": "^5.0.0",
+    "tinyify": "^3.0.0",
+    "unist-builder": "^2.0.0",
+    "xo": "^0.34.0"
+  },
+  "scripts": {
+    "format": "remark . -qfo && prettier . -w --loglevel warn && xo --fix",
+    "build-bundle": "browserify . -s hastUtilToText -o hast-util-to-text.js",
+    "build-mangle": "browserify . -s hastUtilToText -p tinyify -o hast-util-to-text.min.js",
+    "build": "npm run build-bundle && npm run build-mangle",
+    "test-api": "node test",
+    "test-coverage": "nyc --reporter lcov tape test.js",
+    "test": "npm run format && npm run build && npm run test-coverage"
+  },
+  "nyc": {
+    "check-coverage": true,
+    "lines": 100,
+    "functions": 100,
+    "branches": 100
+  },
+  "prettier": {
+    "tabWidth": 2,
+    "useTabs": false,
+    "singleQuote": true,
+    "bracketSpacing": false,
+    "semi": false,
+    "trailingComma": "none"
+  },
+  "xo": {
+    "prettier": true,
+    "esnext": false,
+    "ignores": [
+      "hast-util-to-text.js"
+    ],
+    "rules": {
+      "unicorn/escape-case": "off",
+      "no-constant-condition": "off"
+    }
+  },
+  "remarkConfig": {
+    "plugins": [
+      "preset-wooorm"
+    ]
+  }
+}

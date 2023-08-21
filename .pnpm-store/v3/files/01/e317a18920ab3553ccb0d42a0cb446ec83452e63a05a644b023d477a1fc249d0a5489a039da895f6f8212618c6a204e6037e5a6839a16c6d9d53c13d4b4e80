@@ -1,0 +1,5 @@
+{
+  "component": "input/asciimath",
+  "targets": ["input/asciimath.ts", "input/asciimath"],
+  "excludeSubdirs": "true"
+}

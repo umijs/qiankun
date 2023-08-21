@@ -1,0 +1,296 @@
+"use strict";
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.writeBackSchemaIfNeeded = exports.parseConfigFile = void 0;
+const fsExtra = __importStar(require("fs-extra"));
+const jsonschema = __importStar(require("jsonschema"));
+const path = __importStar(require("path"));
+const sanitize_filename_1 = __importDefault(require("sanitize-filename"));
+const browser_1 = require("./browser");
+const config_1 = require("./config");
+const defaults = __importStar(require("./defaults"));
+const format_1 = require("./format");
+const types_1 = require("./types");
+const util_1 = require("./util");
+/**
+ * Validate the given JSON object parsed from a config file, and expand it into
+ * a fully specified configuration.
+ */
+async function parseConfigFile(parsedJson) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const schema = require('../config.schema.json');
+    const result = jsonschema.validate(parsedJson, schema);
+    if (result.errors.length > 0) {
+        throw new Error([...new Set(result.errors.map(customizeJsonSchemaError))].join('\n'));
+    }
+    const validated = parsedJson;
+    const root = validated.root || '.';
+    const benchmarks = [];
+    for (const benchmark of validated.benchmarks) {
+        for (const expanded of applyExpansions(benchmark)) {
+            benchmarks.push(applyDefaults(await parseBenchmark(expanded, root)));
+        }
+    }
+    // Update trace logDir with label per spec
+    const labelFn = (0, format_1.makeUniqueSpecLabelFn)(benchmarks);
+    for (const spec of benchmarks) {
+        if (spec.browser.trace !== undefined) {
+            spec.browser.trace.logDir = path.join(spec.browser.trace.logDir, (0, sanitize_filename_1.default)(labelFn(spec)));
+        }
+    }
+    if (validated.horizons !== undefined) {
+        if (validated.autoSampleConditions !== undefined) {
+            throw new Error('Please use only "autoSampleConditions" and not "horizons".');
+        }
+        console.warn('\nNOTE: The "horizons" setting has been renamed to "autoSampleConditions".\n' +
+            'Please rename it.\n');
+        validated.autoSampleConditions = validated.horizons;
+    }
+    return {
+        root,
+        sampleSize: validated.sampleSize,
+        timeout: validated.timeout,
+        autoSampleConditions: validated.autoSampleConditions !== undefined
+            ? (0, config_1.parseAutoSampleConditions)(validated.autoSampleConditions)
+            : undefined,
+        benchmarks,
+        resolveBareModules: validated.resolveBareModules,
+    };
+}
+exports.parseConfigFile = parseConfigFile;
+/**
+ * Some of the automatically generated jsonschema errors are unclear, e.g. when
+ * there is a union of complex types they are reported as "[schema1],
+ * [schema2]" etc.
+ */
+function customizeJsonSchemaError(error) {
+    let str;
+    if (error.property.match(/^instance\.benchmarks\[\d+\]\.measurement$/)) {
+        str =
+            `${error.property} is not any of: ${[...types_1.measurements].join(', ')}` +
+                ' or an object like `performanceEntry: string`';
+    }
+    else {
+        str = error.toString();
+    }
+    return str.replace(/^instance/, 'config');
+}
+async function parseBenchmark(benchmark, root) {
+    const spec = {};
+    if (benchmark.name !== undefined) {
+        spec.name = benchmark.name;
+    }
+    if (benchmark.browser !== undefined) {
+        let browser;
+        if (typeof benchmark.browser === 'string') {
+            browser = Object.assign(Object.assign({}, (0, browser_1.parseBrowserConfigString)(benchmark.browser)), { windowSize: {
+                    width: defaults.windowWidth,
+                    height: defaults.windowHeight,
+                } });
+        }
+        else {
+            browser = parseBrowserObject(benchmark.browser);
+        }
+        (0, browser_1.validateBrowserConfig)(browser);
+        spec.browser = browser;
+    }
+    if (benchmark.measurement === 'callback') {
+        spec.measurement = [
+            {
+                mode: 'callback',
+            },
+        ];
+    }
+    else if (benchmark.measurement === 'fcp') {
+        spec.measurement = [
+            {
+                mode: 'performance',
+                entryName: 'first-contentful-paint',
+            },
+        ];
+    }
+    else if (benchmark.measurement === 'global') {
+        spec.measurement = [
+            {
+                mode: 'expression',
+                expression: benchmark.measurementExpression || defaults.measurementExpression,
+            },
+        ];
+    }
+    else if (Array.isArray(benchmark.measurement)) {
+        spec.measurement = benchmark.measurement;
+    }
+    else if (benchmark.measurement !== undefined) {
+        spec.measurement = [benchmark.measurement];
+    }
+    const url = benchmark.url;
+    if (url !== undefined) {
+        if ((0, util_1.isHttpUrl)(url)) {
+            spec.url = {
+                kind: 'remote',
+                url,
+            };
+        }
+        else {
+            let urlPath, queryString;
+            const q = url.indexOf('?');
+            if (q !== -1) {
+                urlPath = url.substring(0, q);
+                queryString = url.substring(q);
+            }
+            else {
+                urlPath = url;
+                queryString = '';
+            }
+            spec.url = {
+                kind: 'local',
+                urlPath: await (0, config_1.urlFromLocalPath)(root, urlPath),
+                queryString,
+            };
+            if (benchmark.packageVersions !== undefined) {
+                spec.url.version = {
+                    label: benchmark.packageVersions.label,
+                    dependencyOverrides: benchmark.packageVersions.dependencies,
+                };
+            }
+        }
+    }
+    return spec;
+}
+function parseBrowserObject(config) {
+    var _a;
+    const parsed = {
+        name: config.name,
+        headless: ('headless' in config && config.headless) || defaults.headless,
+        windowSize: ('windowSize' in config && config.windowSize) || {
+            width: defaults.windowWidth,
+            height: defaults.windowHeight,
+        },
+    };
+    if ('cpuThrottlingRate' in config) {
+        parsed.cpuThrottlingRate = config.cpuThrottlingRate;
+    }
+    if (config.remoteUrl) {
+        parsed.remoteUrl = config.remoteUrl;
+    }
+    if ('binary' in config && config.binary) {
+        parsed.binary = config.binary;
+    }
+    if ('addArguments' in config && config.addArguments) {
+        parsed.addArguments = config.addArguments;
+    }
+    if ('removeArguments' in config && config.removeArguments) {
+        parsed.removeArguments = config.removeArguments;
+    }
+    if ('preferences' in config && config.preferences) {
+        parsed.preferences = config.preferences;
+    }
+    if ('trace' in config && config.trace !== undefined) {
+        if (config.trace === true) {
+            parsed.trace = {
+                categories: defaults.traceCategories,
+                logDir: defaults.traceLogDir,
+            };
+        }
+        else if (typeof config.trace === 'object') {
+            parsed.trace = {
+                categories: (_a = config.trace.categories) !== null && _a !== void 0 ? _a : defaults.traceCategories,
+                logDir: config.trace.logDir === undefined
+                    ? defaults.traceLogDir
+                    : path.isAbsolute(config.trace.logDir)
+                        ? config.trace.logDir
+                        : path.join(process.cwd(), config.trace.logDir),
+            };
+        }
+    }
+    if ('profile' in config && config.profile !== undefined) {
+        parsed.profile = config.profile;
+    }
+    return parsed;
+}
+function applyExpansions(bench) {
+    if (bench.expand === undefined || bench.expand.length === 0) {
+        return [bench];
+    }
+    const expanded = [];
+    for (const expansion of bench.expand) {
+        for (const expandedBench of applyExpansions(expansion)) {
+            expanded.push(Object.assign(Object.assign({}, bench), expandedBench));
+        }
+    }
+    return expanded;
+}
+function applyDefaults(partialSpec) {
+    const url = partialSpec.url;
+    let { name, measurement, browser } = partialSpec;
+    if (url === undefined) {
+        // Note we can't validate this with jsonschema, because we only need to
+        // ensure we have a URL after recursive expansion; so at any given level
+        // the URL could be optional.
+        throw new Error('No URL specified');
+    }
+    if (url.kind === 'remote') {
+        if (name === undefined) {
+            name = url.url;
+        }
+    }
+    else {
+        if (name === undefined) {
+            name = url.urlPath + url.queryString;
+        }
+    }
+    if (browser === undefined) {
+        browser = {
+            name: defaults.browserName,
+            headless: defaults.headless,
+            windowSize: {
+                width: defaults.windowWidth,
+                height: defaults.windowHeight,
+            },
+        };
+    }
+    if (measurement === undefined) {
+        measurement = [defaults.measurement(url)];
+    }
+    return { name, url, browser, measurement };
+}
+async function writeBackSchemaIfNeeded(rawConfigObj, configFile) {
+    // Add the $schema field to the original config file if it's absent.
+    // We only want to do this if the file validated though, so we don't mutate
+    // a file that's not actually a tachometer config file.
+    if (!('$schema' in rawConfigObj)) {
+        const $schema = 'https://raw.githubusercontent.com/Polymer/tachometer/master/config.schema.json';
+        // Extra IDE features can be activated if the config file has a schema.
+        const withSchema = Object.assign({ $schema }, rawConfigObj);
+        const contents = JSON.stringify(withSchema, null, 2);
+        await fsExtra.writeFile(configFile, contents, { encoding: 'utf-8' });
+    }
+}
+exports.writeBackSchemaIfNeeded = writeBackSchemaIfNeeded;
+//# sourceMappingURL=configfile.js.map

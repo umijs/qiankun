@@ -1,0 +1,27 @@
+{
+  "name": "@changesets/config",
+  "version": "2.3.1",
+  "description": "Utilities for reading and parsing Changeset's config",
+  "main": "dist/config.cjs.js",
+  "module": "dist/config.esm.js",
+  "license": "MIT",
+  "repository": "https://github.com/changesets/changesets/tree/main/packages/config",
+  "files": [
+    "dist",
+    "schema.json"
+  ],
+  "dependencies": {
+    "@changesets/errors": "^0.1.4",
+    "@changesets/get-dependents-graph": "^1.3.6",
+    "@changesets/logger": "^0.0.5",
+    "@changesets/types": "^5.2.1",
+    "@manypkg/get-packages": "^1.1.3",
+    "fs-extra": "^7.0.1",
+    "micromatch": "^4.0.2"
+  },
+  "devDependencies": {
+    "@changesets/test-utils": "*",
+    "@types/micromatch": "^4.0.1",
+    "jest-in-case": "^1.0.2"
+  }
+}

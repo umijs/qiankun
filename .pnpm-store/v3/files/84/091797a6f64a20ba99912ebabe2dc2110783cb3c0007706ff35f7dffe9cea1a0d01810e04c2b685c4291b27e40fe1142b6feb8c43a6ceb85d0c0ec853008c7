@@ -1,0 +1,4 @@
+{
+  "component": "output/svg/fonts/tex",
+  "targets": ["output/svg/fonts/tex.ts", "output/svg/fonts/tex", "output/common/fonts/tex"]
+}

@@ -1,0 +1,42 @@
+{
+  "name": "koa-static",
+  "description": "Static file serving middleware for koa",
+  "repository": "koajs/static",
+  "version": "5.0.0",
+  "keywords": [
+    "koa",
+    "middleware",
+    "file",
+    "static",
+    "sendfile"
+  ],
+  "files": [
+    "index.js"
+  ],
+  "devDependencies": {
+    "eslint": "^4.19.1",
+    "eslint-config-standard": "^11.0.0",
+    "eslint-plugin-import": "^2.12.0",
+    "eslint-plugin-node": "^6.0.1",
+    "eslint-plugin-promise": "^3.8.0",
+    "eslint-plugin-standard": "^3.1.0",
+    "istanbul": "^0.4.5",
+    "koa": "^2.5.1",
+    "mocha": "^5.2.0",
+    "supertest": "^3.1.0"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "debug": "^3.1.0",
+    "koa-send": "^5.0.0"
+  },
+  "scripts": {
+    "lint": "eslint --fix .",
+    "test": "mocha --harmony --reporter spec --exit",
+    "test-cov": "node --harmony ./node_modules/.bin/istanbul cover ./node_modules/.bin/_mocha -- --exit",
+    "test-travis": "node --harmony ./node_modules/.bin/istanbul cover ./node_modules/.bin/_mocha --report lcovonly -- --exit"
+  },
+  "engines": {
+    "node": ">= 7.6.0"
+  }
+}

@@ -1,0 +1,6 @@
+import { RouteProcessor } from '.';
+declare const _default: RouteProcessor;
+/**
+ * Umi process route component from pages path but dumi process with cwd, so the path need to be converted
+ */
+export default _default;

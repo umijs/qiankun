@@ -1,0 +1,17 @@
+/// <reference types="node" />
+import fs from 'fs';
+interface IWatcherItem {
+    options: {
+        parentFilePath?: string;
+        watchFilePath?: string;
+        listener?: (event: string, filename: string) => void;
+    };
+    watcher: fs.FSWatcher;
+}
+export declare const triggerFileChange: (filePath: string) => void;
+export declare const getWatchersForFile: (filePath: string) => IWatcherItem[];
+export declare const watchFileChange: (filePath: string, listener: IWatcherItem['options']['listener']) => IWatcherItem;
+export declare const saveFileOnDepChange: (parentFilePath: string, depPath: string) => void;
+export declare const closeWatcher: (item: IWatcherItem) => void;
+export declare const closeWatchersForFile: (filePath: string) => void;
+export {};

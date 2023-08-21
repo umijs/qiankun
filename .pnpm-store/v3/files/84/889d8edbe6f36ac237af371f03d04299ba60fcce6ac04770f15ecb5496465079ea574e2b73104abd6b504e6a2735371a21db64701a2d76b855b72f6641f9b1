@@ -1,0 +1,45 @@
+{
+  "name": "file-name",
+  "description": "Get the basename of a filepath excluding extension. ",
+  "version": "0.1.0",
+  "homepage": "https://github.com/jonschlinkert/file-name",
+  "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
+  "repository": "jonschlinkert/file-name",
+  "bugs": {
+    "url": "https://github.com/jonschlinkert/file-name/issues"
+  },
+  "license": "MIT",
+  "files": [
+    "index.js"
+  ],
+  "main": "index.js",
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "devDependencies": {
+    "mocha": "*"
+  },
+  "keywords": [
+    "basename",
+    "file",
+    "filename",
+    "filepath",
+    "fp",
+    "name",
+    "path"
+  ],
+  "verb": {
+    "related": {
+      "description": "Other useful node.js path utils",
+      "list": [
+        "relative",
+        "is-absolute",
+        "is-relative",
+        "parse-filepath"
+      ]
+    }
+  }
+}

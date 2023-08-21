@@ -1,0 +1,5 @@
+{
+  "component": "a11y/sre",
+  "targets": ["a11y/sre.ts"]
+}
+

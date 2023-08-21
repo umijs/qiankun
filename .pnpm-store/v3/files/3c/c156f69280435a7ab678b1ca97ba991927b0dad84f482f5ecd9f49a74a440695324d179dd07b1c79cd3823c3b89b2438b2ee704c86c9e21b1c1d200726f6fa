@@ -1,0 +1,617 @@
+{
+  "name": "es5-imcompatible-versions",
+  "version": "0.1.86",
+  "description": "Collect all uglify bug versions on npm package.",
+  "main": "index.js",
+  "files": [
+    "index.js"
+  ],
+  "scripts": {
+    "test": "node test.js",
+    "release": "npm version patch && npm publish && git push origin master --tags"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/umijs/es5-imcompatible-versions.git"
+  },
+  "author": "chencheng <sorrycc@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/umijs/es5-imcompatible-versions/issues"
+  },
+  "homepage": "https://github.com/umijs/es5-imcompatible-versions#readme",
+  "config": {
+    "es5-imcompatible-versions": {
+      "antd-mobile": {
+        "^5.21.0": {
+          "version": "^5.21.0",
+          "reason": "see https://github.com/ant-design/ant-design-mobile"
+        }
+      },
+      "tapable": {
+        "^2.2.0": {
+          "version": "^2.2.0",
+          "reason": "see https://github.com/webpack/tapable"
+        }
+      },
+      "fuse.js": {
+        "^6.4.6": {
+          "version": "^6.4.6",
+          "reason": "see https://github.com/krisk/Fuse/blob/master/dist/fuse.esm.js#L1710"
+        }
+      },
+      "mathjs": {
+        "^9.4.1": {
+          "version": "^9.4.1",
+          "reason": "see https://github.com/josdejong/mathjs"
+        }
+      },
+      "ml-matrix": {
+        "^6.5.0": {
+          "version": "^6.5.0",
+          "reason": "see https://github.com/mljs/matrix/blob/master/src/correlation.js#L3"
+        }
+      },
+      "d3-dispatch": {
+        "^2.0.0": {
+          "version": "^2.0.0",
+          "reason": "see https://github.com/d3/d3-dispatch/blob/master/src/dispatch.js#L1"
+        },
+        "^3.0.0": {
+          "version": "^3.0.0",
+          "reason": "see https://github.com/d3/d3-dispatch/blob/master/src/dispatch.js#L1"
+        }
+      },
+      "d3-hierarchy": {
+        "^2.0.0": {
+          "version": "^2.0.0",
+          "reason": "see https://github.com/d3/d3-hierarchy/blob/master/src/hierarchy/each.js#L3"
+        },
+        "^3.0.0": {
+          "version": "^3.0.0",
+          "reason": "see https://github.com/d3/d3-hierarchy/blob/master/src/hierarchy/each.js#L3"
+        }
+      },
+      "d3-interpolate": {
+        "^2.0.0": {
+          "version": "^2.0.0",
+          "reason": "see https://github.com/d3/d3-interpolate/blob/main/src/constant.js#L1"
+        },
+        "^3.0.0": {
+          "version": "^3.0.0",
+          "reason": "see https://github.com/d3/d3-interpolate/blob/main/src/constant.js#L1"
+        }
+      },
+      "d3-color": {
+        "^2.0.0": {
+          "version": "^2.0.0",
+          "reason": "see https://github.com/d3/d3-color/blob/main/src/math.js#L1"
+        },
+        "^3.0.0": {
+          "version": "^3.0.0",
+          "reason": "see https://github.com/d3/d3-color/blob/main/src/math.js#L1"
+        }
+      },
+      "asn1.js": {
+        "^5.0.0": {
+          "version": "^5.0.0",
+          "reason": "see https://github.com/indutny/asn1.js/blob/83d1a2ff93353f1e742d6429e3aba2e403fb4d92/lib/asn1/base/node.js#L3"
+        }
+      },
+      "seinjs": {
+        "^1.1.14": {
+          "version": "^1.1.14",
+          "reason": "see https://npm.alibaba-inc.com/package/seinjs"
+        }
+      },
+      "ky": {
+        "^0.5.2": {
+          "version": "^0.5.2",
+          "reason": "see https://github.com/sindresorhus/ky/blob/master/index.js#L61"
+        }
+      },
+      "ityped": {
+        "^1.0.3": {
+          "version": "^1.0.3",
+          "reason": "see https://github.com/luisvinicius167/ityped/blob/master/src/index.js#L19"
+        }
+      },
+      "ext-name": {
+        "^5.0.0": {
+          "version": "^5.0.0",
+          "reason": "see https://github.com/kevva/ext-name/blob/master/index.js#L5"
+        }
+      },
+      "camelcase": {
+        "^4.0.0": {
+          "version": "^4.0.0",
+          "reason": "see https://github.com/sindresorhus/camelcase/blob/master/index.js#L3"
+        }
+      },
+      "query-string": {
+        "*": {
+          "version": "*",
+          "reason": "see https://github.com/sindresorhus/query-string/blob/597f14a/index.js#L8:31"
+        }
+      },
+      "escape-goat": {
+        "*": {
+          "version": "*",
+          "reason": "see https://github.com/sindresorhus/escape-goat/blob/v1.0.0/index.js#L19"
+        }
+      },
+      "get-value": {
+        "^3.0.0": {
+          "version": "^3.0.0",
+          "reason": "https://github.com/jonschlinkert/get-value/blob/3.0.1/index.js#L36"
+        }
+      },
+      "set-value": {
+        "^3.0.0": {
+          "version": "^3.0.0",
+          "reason": "https://github.com/jonschlinkert/set-value/blob/master/package.json#L24"
+        }
+      },
+      "strict-uri-encode": {
+        "^2.0.0": {
+          "version": "^2.0.0",
+          "reason": "https://github.com/kevva/strict-uri-encode/blob/v2.0.0/index.js#L2"
+        }
+      },
+      "gl-matrix": {
+        "^2.0.0": {
+          "version": "^2.0.0",
+          "reason": "https://github.com/toji/gl-matrix/blob/v2.4.0/src/gl-matrix/common.js#L27"
+        }
+      },
+      "@antv/g6": {
+        "^2.0.2": {
+          "version": "^2.0.2",
+          "reason": "see https://github.com/antvis/g6/blob/master/plugins/tool.minimap/index.js#L18"
+        },
+        "^3.0.0": {
+          "version": "^3.0.0",
+          "reason": "see https://github.com/antvis/g6/issues/839"
+        },
+        "^3.0.7-beta.1": {
+          "version": "^3.0.7-beta.1",
+          "reason": "see https://github.com/antvis/g6/issues/839"
+        }
+      },
+      "cgbi-to-png": {
+        "^1.0.7": {
+          "version": "^1.0.7",
+          "reason": "https://github.com/jakubknejzlik/cgbi-to-png/blob/master/index.js#L51"
+        }
+      },
+      "crc": {
+        "^3.7.0": {
+          "version": "^3.7.0",
+          "reason": "https://github.com/alexgorbatchev/node-crc/blob/master/crc1.js#L8"
+        }
+      },
+      "csv-parse": {
+        "^2.5.0": {
+          "version": "^2.5.0",
+          "reason": "https://github.com/adaltas/node-csv-parse/blob/master/lib/index.js#L33"
+        }
+      },
+      "difference-json": {
+        "^1.0.6": {
+          "version": "^1.0.6",
+          "reason": "https://github.com/ansteh/difference-json/blob/master/lib/index.js#L4"
+        }
+      },
+      "strip-ansi": {
+        "^4.0.0": {
+          "version": "^4.0.0",
+          "reason": "https://github.com/chalk/strip-ansi/blob/v4.0.0/index.js#L4"
+        },
+        "^5.0.0": {
+          "version": "^5.0.0",
+          "reason": "https://github.com/chalk/strip-ansi/blob/v5.0.0/index.js#L4"
+        }
+      },
+      "ansi-regex": {
+        "^3.0.0": {
+          "version": "^3.0.0",
+          "reason": "https://github.com/chalk/ansi-regex/blob/v3.0.0/index.js#L3"
+        },
+        "^4.0.0": {
+          "version": "^4.0.0",
+          "reason": "https://github.com/chalk/ansi-regex/blob/v4.0.0/index.js#L3"
+        }
+      },
+      "striptags": {
+        "^3.1.1": {
+          "version": "^3.1.1",
+          "reason": "https://github.com/ericnorris/striptags/blob/master/src/striptags.js#L14"
+        }
+      },
+      "autobind-decorator": {
+        "^2.2.0": {
+          "version": "^2.2.0",
+          "reason": "https://github.com/andreypopp/autobind-decorator/blob/master/src/index.js#L6 + https://github.com/andreypopp/autobind-decorator/blob/master/package.json#L6"
+        }
+      },
+      "@ckeditor/ckeditor5-build-decoupled-document": {
+        "^11.1.1": {
+          "version": "^11.1.1",
+          "reason": "https://github.com/ckeditor/ckeditor5-build-decoupled-document/blob/bb711811538ea18df1b2ee0a8d93ea3c739af4b6/build/ckeditor.js#L5"
+        }
+      },
+      "debug": {
+        "^4.1.0": {
+          "version": "^4.1.0",
+          "reason": "https://github.com/visionmedia/debug/blob/master/src/browser.js#L155"
+        }
+      },
+      "bezier-js": {
+        "^2.3.1": {
+          "version": "^2.3.1",
+          "reason": "https://github.com/Pomax/bezierjs/blob/gh-pages/lib/utils.js#L101"
+        }
+      },
+      "logform": {
+        "^2.1.2": {
+          "version": "^2.1.2",
+          "reason": "https://github.com/winstonjs/logform/blob/master/format.js#L7"
+        }
+      },
+      "superagent": {
+        "^4.1.0": {
+          "version": "^4.1.0",
+          "reason": "https://github.com/visionmedia/superagent/blob/master/lib/client.js#L5"
+        }
+      },
+      "split-on-first": {
+        "^1.0.0": {
+          "version": "^1.0.0",
+          "reason": "https://github.com/sindresorhus/split-on-first/blob/master/index.js#L3"
+        }
+      },
+      "pinyin": {
+        "^2.8.3": {
+          "version": "^2.8.3",
+          "reason": "https://github.com/hotoo/pinyin/blob/master/lib/pinyin.js#L34"
+        }
+      },
+      "pinyin4js": {
+        "^1.3.17": {
+          "version": "^1.3.17",
+          "reason": "https://github.com/superbiger/pinyin4js/blob/master/index.js#L12"
+        }
+      },
+      "array-move": {
+        "^2.1.0": {
+          "version": "^2.1.0",
+          "reason": "https://github.com/sindresorhus/array-move/blob/master/index.js#L3"
+        }
+      },
+      "dot-prop": {
+        "*": {
+          "version": "*",
+          "reason": "https://github.com/sindresorhus/dot-prop/blob/master/index.js#L5"
+        }
+      },
+      "normalize-url": {
+        "*": {
+          "version": "*",
+          "reason": "https://github.com/sindresorhus/normalize-url/blob/master/index.js#L6"
+        }
+      },
+      "prepend-http": {
+        "*": {
+          "version": "*",
+          "reason": "https://github.com/sindresorhus/prepend-http/blob/master/index.js#L2"
+        }
+      },
+      "sort-keys": {
+        "*": {
+          "version": "*",
+          "reason": "https://github.com/sindresorhus/sort-keys/blob/master/index.js#L4"
+        }
+      },
+      "dfa": {
+        "*": {
+          "version": "*",
+          "reason": "https://github.com/foliojs/dfa/blob/master/src/StateMachine.js#L8"
+        }
+      },
+      "react-pdf-js": {
+        "*": {
+          "version": "*",
+          "reason": "https://github.com/mikecousins/react-pdf-js"
+        }
+      },
+      "react-dnd-html5-backend": {
+        "^8.0.3": {
+          "version": "^8.0.3",
+          "reason": "https://github.com/react-dnd/react-dnd-html5-backend/blob/master/src/HTML5Backend.js#137"
+        }
+      },
+      "dnd-core": {
+        "*": {
+          "version": "*",
+          "reason": "https://github.com/react-dnd/dnd-core/blob/master/src/DragDropMonitor.js#L26"
+        }
+      },
+      "react-dnd": {
+        "*": {
+          "version": "*",
+          "reason": "https://github.com/react-dnd/react-dnd"
+        }
+      },
+      "antd-table-infinity": {
+        "^1.1.2": {
+          "version": "^1.1.2",
+          "reason": "https://github.com/Leonard-Li777/antd-table-infinity/blob/master/src/components/Table/InfinityTable/index.jsx#L7"
+        }
+      },
+      "ansi-colors": {
+        "^3.2.4": {
+          "version": "^3.2.4",
+          "reason": "https://github.com/Leonard-Li777/antd-table-infinity/blob/master/src/components/Table/InfinityTable/index.jsx#L7"
+        }
+      },
+      "jexl": {
+        "^2.1.1": {
+          "version": "^2.1.1",
+          "reason": "https://github.com/TomFrost/Jexl/issues/57"
+        }
+      },
+      "d3-array": {
+        "^2.1.0": {
+          "version": "^2.1.0",
+          "reason": "https://github.com/d3/d3-array/blob/master/src/count.js#L2"
+        }
+      },
+      "wrap-ansi": {
+        "^3.0.1": {
+          "version": "^3.0.1",
+          "reason": "https://github.com/chalk/wrap-ansi/blob/v3.0.1/index.js#L40"
+        },
+        "^4.0.0": {
+          "version": "^4.0.0",
+          "reason": "https://github.com/chalk/wrap-ansi/blob/master/index.js#L13"
+        },
+        "^5.1.0": {
+          "version": "^5.1.0",
+          "reason": "https://github.com/chalk/wrap-ansi/blob/master/index.js#L13"
+        }
+      },
+      "react-intl": {
+        "^3.3.2": {
+          "version": "^3.3.2",
+          "reason": "https://github.com/formatjs/react-intl/blob/v3.3.2/src/utils.ts#L36"
+        }
+      },
+      "ansi-styles": {
+        "^3.2.1": {
+          "version": "^3.2.1",
+          "reason": "https://github.com/chalk/ansi-styles/blob/v3.2.1/index.js#L2"
+        }
+      },
+      "supports-color": {
+        "^5.5.0": {
+          "version": "^5.5.0",
+          "reason": "https://github.com/chalk/supports-color/blob/v5.5.0/index.js#L2"
+        }
+      },
+      "chalk": {
+        "^2.4.2": {
+          "version": "^2.4.2",
+          "reason": "https://github.com/chalk/chalk/blob/v2.4.2/index.js#L2"
+        }
+      },
+      "@react-spring/animated": {
+        ">9.0.0-beta.0": {
+          "version": "*",
+          "reason": "https://github.com/react-spring/react-spring"
+        }
+      },
+      "@react-spring/core": {
+        ">9.0.0-beta.0": {
+          "version": "*",
+          "reason": "https://github.com/react-spring/react-spring"
+        }
+      },
+      "@react-spring/web": {
+        ">9.0.0-beta.0": {
+          "version": "*",
+          "reason": "https://github.com/react-spring/react-spring"
+        }
+      },
+      "@react-spring/rafz": {
+        "^9.5.2": {
+          "version": "^9",
+          "reason": "https://github.com/pmndrs/react-spring/blob/master/packages/rafz/src/index.ts"
+        }
+      },
+      "@react-spring/shared": {
+        "^9.5.2": {
+          "version": "^9",
+          "reason": "https://github.com/pmndrs/react-spring/tree/master/packages/shared"
+        }
+      },
+      "@supermap/iclient-common": {
+        "*": {
+          "version": "*",
+          "reason": "https://github.com/SuperMap/iClient-JavaScript/blob/master/src/common/index.js#L4"
+        }
+      },
+      "@supermap/iclient-leaflet": {
+        "*": {
+          "version": "*",
+          "reason": "https://github.com/SuperMap/iClient-JavaScript/blob/master/src/leaflet/index.js#L4"
+        }
+      },
+      "spritejs": {
+        "^2.29.5": {
+          "version": "^2.29.5",
+          "reason": "https://github.com/spritejs/spritejs/blob/master/dist/spritejs.esm.js#L3928"
+        }
+      },
+      "elasticsearch": {
+        "*": {
+          "version": "*",
+          "reason": "https://github.com/elastic/elasticsearch-js/blob/master/lib/Serializer.js#L11"
+        }
+      },
+      "swr": {
+        "^0.1.10": {
+          "version": "^0.1.10",
+          "reason": "https://github.com/zeit/swr"
+        },
+        "^0.2.0": {
+          "version": "^0.2.0",
+          "reason": "https://github.com/zeit/swr"
+        }
+      },
+      "brain.js": {
+        "^2.0.0-alpha.9": {
+          "version": "^2.0.0-alpha.9",
+          "reason": "https://github.com/BrainJS/brain.js/blob/master/dist/brain-browser.min.js#L14"
+        }
+      },
+      "ismobilejs": {
+        "^1.0.3": {
+          "version": "^1.0.3",
+          "reason": "https://unpkg.com/browse/ismobilejs@1.0.3/esm/isMobile.js"
+        }
+      },
+      "tslib": {
+        "^1.11.0": {
+          "version": "^1.11.0",
+          "reason": "https://github.com/microsoft/tslib/blob/master/tslib.es6.js#L106"
+        }
+      },
+      "event-target-shim": {
+        "*": {
+          "version": "*",
+          "reason": "https://github.com/mysticatea/event-target-shim/blob/master/dist/event-target-shim.js#L29"
+        }
+      },
+      "d3-force": {
+        "^2.0.1": {
+          "version": "^2.0.1",
+          "reason": "https://github.com/d3/d3-force"
+        }
+      },
+      "webtorrent": {
+        "^0.108.6": {
+          "version": "^0.108.6",
+          "reason": "https://github.com/webtorrent/webtorrent/blob/master/index.js#L4"
+        }
+      },
+      "flv.js": {
+        "^1.5.0": {
+          "version": "^1.5.0",
+          "reason": "https://github.com/bilibili/flv.js/blob/master/src/utils/polyfill.js#L19"
+        }
+      },
+      "pearplayer": {
+        "^2.5.10": {
+          "version": "^2.5.10",
+          "reason": "https://github.com/PearInc/PearPlayer.js/blob/master/dist/pear-player.js#L15617"
+        }
+      },
+      "nanoid": {
+        "^3.1.18": {
+          "version": "^3.1.18",
+          "reason": "https://github.com/ai/nanoid#ie"
+        }
+      },
+      "async": {
+        "^3.1.0": {
+          "version": "^3.1.0",
+          "reason": "https://github.com/caolan/async/blob/master/lib/internal/queue.js#L30"
+        }
+      },
+      "date-fns": {
+        "~2.21.2": {
+          "version": "~2.21.2",
+          "reason": "https://github.com/date-fns/date-fns/blob/v2.21.2/src/_lib/format/lightFormatters/index.ts#L18"
+        }
+      },
+      "abort-controller": {
+        "3.0.0": {
+          "version": "3.0.0",
+          "reason": "https://github.com/mysticatea/abort-controller/blob/a935d38e09eb95d6b633a8c42fcceec9969e7b05/src/abort-controller.ts#L33"
+        }
+      },
+      "qrcode": {
+        "1.5.0": {
+          "version": "1.5.0",
+          "reason": "https://github.com/soldair/node-qrcode/blob/f08fd572d7cca92c8b9d71b24cebccf61663d4a6/lib/core/byte-data.js#L22"
+        }
+      },
+      "apache-arrow": {
+        "<5.0.0": {
+          "version": "<5.0.0",
+          "reason": "https://github.com/apache/arrow/commit/93bdbf1df56ffd33af10de104c68cdcb85e54fa5#diff-078af6b8801d0e03590b0311cc2d27e8663bb98bd9c927977d208c6ee1211198R70-R71"
+        }
+      },
+      "jose": {
+        "^4.12.0": {
+          "version": "^4.12.0",
+          "reason": "https://github.com/panva/jose/blob/bba48249db55cb9ce86e739595ef53bf3422cced/dist/browser/jwks/local.js#L85"
+        }
+      },
+      "@aws-sdk/eventstream-serde-browser": {
+        "^3.183.0": {
+          "version": "^3.183.0",
+          "reason": "https://github.com/aws/aws-sdk-js-v3/commit/6a7fea46868573538cf76f3541d873027b54c0b0"
+        }
+      },
+      "@aws-sdk/eventstream-serde-universal": {
+        "^3.183.0": {
+          "version": "^3.183.0",
+          "reason": "https://github.com/aws/aws-sdk-js-v3/commit/6a7fea46868573538cf76f3541d873027b54c0b0"
+        }
+      },
+      "@aws-sdk/eventstream-codec": {
+        "^3.342.0": {
+          "version": "^3.342.0",
+          "reason": "https://github.com/aws/aws-sdk-js-v3/blob/d78d640be3657c70fda1b6ebd0f3f399ac16efa2/packages/eventstream-codec/src/MessageDecoderStream.ts#L21"
+        }
+      },
+      "react-virtualized-auto-sizer": {
+        "^1.0.8": {
+          "version": "^1.0.8",
+          "reason": "https://github.com/bvaughn/react-virtualized-auto-sizer/blob/9f7d6a5edbc3d3c97023864867e970ad8b2f4ef0/src/AutoSizer.ts#L41"
+        }
+      },
+      "gpt-tokenizer": {
+        "*": {
+          "version": "*",
+          "reason": "https://github.com/niieani/gpt-tokenizer/blob/30a57f7357eab13bdef80a26ee336a45624d5a22/package.json#L71"
+        }
+      },
+      "readable-stream": {
+        "^4.0.0": {
+          "version": "^4.0.0",
+          "reason": "https://github.com/nodejs/readable-stream/blob/49a45a92f4ccacd6ab496c5b5143b117bea2fa8b/build/build.mjs#L123"
+        }
+      },
+      "@smithy/eventstream-serde-browser": {
+        "*": {
+          "version": "*",
+          "reason": "https://github.com/awslabs/smithy-typescript/blob/170ac7648c4832fef5ed893a9aa99b176a0445fc/packages/eventstream-serde-browser/src/utils.ts#L8"
+        }
+      },
+      "@smithy/eventstream-serde-universal": {
+        "*": {
+          "version": "*",
+          "reason": "https://github.com/awslabs/smithy-typescript/blob/b1e7afa9bc419d6f5f20945c150cd1a9e9ffa0b3/packages/eventstream-serde-universal/src/getUnmarshalledStream.ts#L22"
+        }
+      },
+      "@smithy/eventstream-codec": {
+        "*": {
+          "version": "*",
+          "reason": "https://github.com/awslabs/smithy-typescript/blob/b1e7afa9bc419d6f5f20945c150cd1a9e9ffa0b3/packages/eventstream-codec/src/MessageDecoderStream.ts#L21"
+        }
+      }
+    }
+  }
+}

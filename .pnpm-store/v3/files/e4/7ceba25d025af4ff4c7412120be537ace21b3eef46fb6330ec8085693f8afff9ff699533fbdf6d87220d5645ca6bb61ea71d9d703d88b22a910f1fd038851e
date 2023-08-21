@@ -1,0 +1,15 @@
+import type * as ts from 'typescript';
+import type { FilesChange } from '../../../files-change';
+import type { FilesMatch } from '../../../files-match';
+import type { Issue } from '../../../issue';
+export declare function parseConfig(configFileName: string, configFileContext: string): ts.ParsedCommandLine;
+export declare function getParseConfigIssues(): Issue[];
+export declare function getParsedConfig(force?: boolean): ts.ParsedCommandLine;
+export declare function parseNextConfig(): readonly [ts.ParsedCommandLine | undefined, ts.ParsedCommandLine];
+export declare function invalidateConfig(): void;
+export declare function getConfigFilePathFromCompilerOptions(compilerOptions: ts.CompilerOptions): string;
+export declare function getConfigFilePathFromProgram(program: ts.Program): string;
+export declare function getConfigFilePathFromBuilderProgram(builderProgram: ts.BuilderProgram): string;
+export declare function didConfigFileChanged({ changedFiles, deletedFiles }: FilesChange): boolean;
+export declare function didDependenciesProbablyChanged(dependencies: FilesMatch, { changedFiles, deletedFiles }: FilesChange): boolean;
+export declare function didRootFilesChanged(): boolean | undefined;

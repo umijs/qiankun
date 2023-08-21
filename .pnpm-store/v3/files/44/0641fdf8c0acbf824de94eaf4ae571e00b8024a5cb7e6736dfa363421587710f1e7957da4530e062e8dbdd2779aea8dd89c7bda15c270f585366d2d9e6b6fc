@@ -1,0 +1,5 @@
+import parse from 'remark-parse';
+/**
+ * wrap remark-parse for parse code block to demo node
+ */
+export default parse;

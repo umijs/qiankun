@@ -1,0 +1,28 @@
+{
+  "compileOnSave": true,
+  "compilerOptions": {
+    "target": "ES5",
+    "downlevelIteration": true,
+    "module": "commonjs",
+    "declaration": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "removeComments": true,
+    "resolveJsonModule" : true,
+    "esModuleInterop": true  ,
+    "baseUrl": ".",
+    "paths": {
+      "mj-context-menu": ["node_modules/mj-context-menu"],
+      "speech-rule-engine": ["node_modules/speech-rule-engine"]
+    },
+    "lib": ["es6", "dom"],
+    "noLib": false,
+    "sourceMap": true,
+    "outDir": "js",
+    "typeRoots": ["./typings"]
+  },
+  "include": ["ts/**/*"],
+  "exclude": ["js", "es5", "components"]
+}

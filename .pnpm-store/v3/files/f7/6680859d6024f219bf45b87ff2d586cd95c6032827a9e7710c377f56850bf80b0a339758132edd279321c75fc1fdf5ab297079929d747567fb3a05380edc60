@@ -1,0 +1,40 @@
+/// <reference types="node" />
+import { MFSU } from '@umijs/mfsu';
+import type { Worker } from 'worker_threads';
+import webpack from '../compiled/webpack';
+import type { IOpts as IConfigOpts } from './config/config';
+import { IConfig } from './types';
+declare type IOpts = {
+    afterMiddlewares?: any[];
+    beforeMiddlewares?: any[];
+    onDevCompileDone?: Function;
+    onProgress?: Function;
+    onMFSUProgress?: Function;
+    port?: number;
+    host?: string;
+    ip?: string;
+    babelPreset?: any;
+    chainWebpack?: Function;
+    modifyWebpackConfig?: Function;
+    beforeBabelPlugins?: any[];
+    beforeBabelPresets?: any[];
+    extraBabelPlugins?: any[];
+    extraBabelPresets?: any[];
+    cwd: string;
+    rootDir?: string;
+    config: IConfig;
+    entry: Record<string, string>;
+    mfsuStrategy?: 'eager' | 'normal';
+    mfsuInclude?: string[];
+    srcCodeCache?: any;
+    startBuildWorker?: (deps: any[]) => Worker;
+    onBeforeMiddleware?: Function;
+    disableCopy?: boolean;
+} & Pick<IConfigOpts, 'cache' | 'pkg'>;
+export declare function ensureSerializableValue(obj: any): any;
+export declare function dev(opts: IOpts): Promise<void>;
+export declare function setup(opts: IOpts): Promise<{
+    mfsu: MFSU | null;
+    webpackConfig: webpack.Configuration;
+}>;
+export {};

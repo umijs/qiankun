@@ -1,0 +1,132 @@
+#! /usr/bin/env node
+
+
+/*************************************************************
+ *
+ *  Copyright (c) 2018 The MathJax Consortium
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+/**
+ * @fileoverview  webpack the component in the current directory
+ *
+ * @author dpvc@mathjax.org (Davide Cervone)
+ */
+
+
+const fs = require('fs');
+const path = require('path');
+const {spawn} = require('child_process');
+
+/**
+ * @param {string} name    The file name to turn into a Regular expression
+ * @return {RegExp}        The regular expression for the name,
+ */
+function fileRegExp(name) {
+  return new RegExp(name.replace(/([\\.{}[\]()?*^$])/g, '\\$1'), 'g');
+}
+
+/**
+ * @param {Object}    The file or asset data whose size is to be returned
+ * @return {string}   The string giving the size in KB
+ */
+function fileSize(file) {
+  return ' (' + (file.size / 1024).toFixed(2).replace(/\.?0+$/, '') + ' KB)';
+}
+
+/**
+ * Regular expressions for the components directory and the MathJax .js location
+ */
+const compRE = fileRegExp(path.dirname(__dirname));
+const rootRE = fileRegExp(path.join(path.dirname(path.dirname(__dirname)), 'js'));
+const nodeRE = fileRegExp(path.join(path.dirname(path.dirname(__dirname)), 'node_modules'));
+
+/**
+ * @return {JSON}   The parsed JSON from webpack
+ */
+async function readJSON() {
+  return new Promise((ok, fail) => {
+    const buffer = [];
+    const child = spawn('npx', ['webpack', '--json']);
+    child.stdout.on('data', (data) => buffer.push(String(data)));
+    child.stdout.on('close', (code) => {
+      const json = JSON.parse(buffer.join(''));
+      if (json.errors && json.errors.length) {
+        fail(json.errors[0].message);
+      }
+      ok(json);
+    });
+  });
+}
+
+/**
+ * Run webpack if there is a configuration file for it
+ *
+ * @param {string} dir   The directory to pack
+ */
+async function webpackLib(dir) {
+  try {
+    process.chdir(dir);
+    const dirRE = fileRegExp(path.resolve(dir));
+
+    //
+    // Get js directory from the webpack.config.js file
+    //
+    const jsdir = require(path.resolve(dir, 'webpack.config.js')).plugins[0].definitions.__JSDIR__;
+    const jsRE = fileRegExp(jsdir);
+    const libRE = fileRegExp(path.resolve(jsdir, '..', 'components'));
+
+    //
+    // Get the json from webpack and print the asset name and size
+    //
+    const json = await readJSON();
+    for (const asset of json.assets) {
+      console.log(asset.name + fileSize(asset));
+    }
+    //
+    // Sort the modules and print their names and sizes
+    //
+    const modules = json.modules;
+    for (const module of modules) {
+      module.name = path.resolve(dir, module.name)
+        .replace(/ \+ \d+ modules/, '')
+        .replace(dirRE, '.');
+    }
+    const list = [];
+    for (const module of modules) {
+      if (module.moduleType.match(/javascript/)) {
+        let name = module.name
+            .replace(compRE, '[components]')
+            .replace(rootRE, '[mathjax]')
+            .replace(nodeRE, '[node]')
+            .replace(jsRE,   '[js]')
+            .replace(libRE,  '[lib]');
+        if (name.charAt(0) !== '.' && name.charAt(0) !== '[') {
+          name = path.relative(dir, name);
+        }
+        list.push('  ' + name + fileSize(module));
+      }
+    }
+    console.log(
+      list
+        .filter(a => a.slice(2, 4) === './').sort()
+        .concat(list.filter(a => a.slice(2, 4) !== './').sort())
+        .join('\n')
+    );
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+webpackLib(process.argv[2] || '.');

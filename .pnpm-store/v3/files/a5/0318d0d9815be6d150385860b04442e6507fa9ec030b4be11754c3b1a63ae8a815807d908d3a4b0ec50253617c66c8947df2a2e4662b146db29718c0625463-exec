@@ -1,0 +1,168 @@
+#! /usr/bin/env node
+
+/*************************************************************
+ *
+ *  Copyright (c) 2018 The MathJax Consortium
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+/**
+ * @fileoverview  Processes all the build and webpack files in a directory
+ *                  or collection of directories
+ *
+ * @author dpvc@mathjax.org (Davide Cervone)
+ */
+
+
+const fs = require('fs');
+const path = require('path');
+const {execSync} = require('child_process');
+
+const options = {
+  recursive: true
+};
+
+/**
+ * Get the directories to process and check for options
+ */
+const dirs = process.argv.slice(2);
+
+if (dirs[0] === '--no-subdirs') {
+  dirs.shift();
+  options.recursive = false;
+}
+
+if (dirs.length === 0) {
+  dirs.push('.');
+}
+
+/**
+ * The commads to runb the bin/build scripts
+ *  (on Unix, could be done without the 'node ' prefix, but
+ *   for Windows, these are needed.)
+ */
+const build = `node '${path.join(__dirname, 'build')}'`;
+const copy = `node '${path.join(__dirname, 'copy')}'`;
+const pack = `node '${path.join(__dirname, 'pack')}'`;
+
+/**
+ * Regular expression for the components directory
+ */
+const compRE = new RegExp(path.dirname(__dirname).replace(/([\\.{}[\]()?*^$])/g, '\\$1'));
+const dirRE = new RegExp(process.cwd().replace(/([\\.{}[\]()?*^$])/g, '\\$1'));
+
+/**
+ * Process the contents of an array of directories
+ *
+ * @param {string} dirs   The directories to process
+ */
+function processList(dirs) {
+  for (const dir of dirs) {
+    const fulldir = path.resolve(dir);
+    processDir(fulldir, buildLib);
+    processDir(fulldir, webpackLib);
+    processDir(fulldir, copyLib);
+  }
+}
+
+/**
+ * Run an action (build or webpack) on a directory and its subdirectories
+ *
+ * @param {string} dir        The directory to process
+ * @param {Function} action   The action to take
+ */
+function processDir(dir, action) {
+  action(dir);
+  if (options.recursive) {
+    processSubdirs(dir, action);
+  }
+}
+
+/**
+ * Look for subdirectories and process them
+ *
+ * @param {string} dir        The directory whose subdirectories are to be processed
+ * @param {Function} action   The action to take
+ */
+function processSubdirs(dir, action) {
+  for (const name of fs.readdirSync(dir)) {
+    const file = path.join(dir, name);
+    if (fs.lstatSync(file).isDirectory()) {
+      processDir(file, action);
+    }
+  }
+}
+
+/**
+ * Run bin/build if there is a configuration file for it
+ *
+ * @param {string} dir   The directory to check
+ */
+function buildLib(dir) {
+  const file = path.join(dir, 'build.json');
+  if (!fs.existsSync(file)) return;
+  console.info('Building ' + dir.replace(compRE, '').replace(dirRE, '.'));
+  const wd = process.cwd();
+  try {
+    process.chdir(dir);
+    const result = execSync(build);
+    console.info('    ' + String(result).replace(/\n/g, '\n    '));
+  } catch (err) {
+    console.info('    ' + err.message);
+  }
+  process.chdir(wd);
+}
+
+/**
+ * Run webpack if there is a configuration file for it
+ *
+ * @param {string} dir   The directory to check
+ */
+function webpackLib(dir) {
+  const file = path.join(dir, 'webpack.config.js');
+  if (!fs.existsSync(file)) return;
+  console.info('Webpacking ' + dir.replace(compRE, '').replace(dirRE, '.'));
+  const wd = process.cwd();
+  try {
+    process.chdir(dir);
+    const result = execSync(pack);
+    console.info('    ' + String(result).replace(/\n/g, '\n    '));
+  } catch (err) {
+    console.info('    ' + err.message);
+  }
+  process.chdir(wd);
+}
+
+/**
+ * Copy the designated files if there is a configurtion file for it
+ *
+ * @param {string} dir   The directory to check
+ */
+function copyLib(dir) {
+  const file = path.join(dir, 'copy.json');
+  if (!fs.existsSync(file)) return;
+  console.info('Copying ' + dir.replace(compRE, ''));
+  try {
+    process.chdir(dir);
+    const result = execSync(copy);
+    console.info('    ' + String(result).replace(/\n/g, '\n    '));
+  } catch (err) {
+    console.info('    ' + err.message);
+  }
+}
+
+/**
+ * Process all the specified directories
+ */
+processList(dirs);

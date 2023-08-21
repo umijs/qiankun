@@ -1,0 +1,80 @@
+{
+  "name": "pacote",
+  "version": "2.7.38",
+  "description": "JavaScript package downloader",
+  "main": "index.js",
+  "files": [
+    "*.js",
+    "lib"
+  ],
+  "scripts": {
+    "prerelease": "npm t",
+    "release": "standard-version -s",
+    "postrelease": "npm publish && git push --follow-tags",
+    "pretest": "standard lib test *.js",
+    "test": "nyc --all -- tap -J test/*.js",
+    "test-docker": "docker run -it --rm --name pacotest -v \"$PWD\":/tmp -w /tmp node:latest npm test",
+    "update-coc": "weallbehave -o . && git add CODE_OF_CONDUCT.md && git commit -m 'docs(coc): updated CODE_OF_CONDUCT.md'",
+    "update-contrib": "weallcontribute -o . && git add CONTRIBUTING.md && git commit -m 'docs(contributing): updated CONTRIBUTING.md'"
+  },
+  "repository": "https://github.com/zkat/pacote",
+  "keywords": [
+    "packages",
+    "npm",
+    "git"
+  ],
+  "author": {
+    "name": "Kat Marchán",
+    "email": "kzm@sykosomatic.org",
+    "twitter": "maybekatz"
+  },
+  "contributors": [
+    {
+      "name": "Charlotte Spencer",
+      "email": "charlottelaspencer@gmail.com",
+      "twitter": "charlotteis"
+    },
+    {
+      "name": "Rebecca Turner",
+      "email": "me@re-becca.org"
+    }
+  ],
+  "license": "CC0-1.0",
+  "dependencies": {
+    "bluebird": "^3.5.0",
+    "cacache": "^9.2.9",
+    "glob": "^7.1.2",
+    "lru-cache": "^4.1.1",
+    "make-fetch-happen": "^2.4.13",
+    "minimatch": "^3.0.4",
+    "mississippi": "^1.2.0",
+    "normalize-package-data": "^2.4.0",
+    "npm-package-arg": "^5.1.2",
+    "npm-pick-manifest": "^1.0.4",
+    "osenv": "^0.1.4",
+    "promise-inflight": "^1.0.1",
+    "promise-retry": "^1.1.1",
+    "protoduck": "^4.0.0",
+    "safe-buffer": "^5.1.1",
+    "semver": "^5.3.0",
+    "ssri": "^4.1.6",
+    "tar-fs": "^1.15.3",
+    "tar-stream": "^1.5.4",
+    "unique-filename": "^1.1.0",
+    "which": "^1.2.12"
+  },
+  "devDependencies": {
+    "mkdirp": "^0.5.1",
+    "nock": "^9.0.13",
+    "npmlog": "^4.1.2",
+    "nyc": "^11.0.3",
+    "require-inject": "^1.4.2",
+    "rimraf": "^2.5.4",
+    "standard": "^10.0.1",
+    "standard-version": "^4.2.0",
+    "tacks": "^1.2.6",
+    "tap": "^10.7.0",
+    "weallbehave": "^1.2.0",
+    "weallcontribute": "^1.0.7"
+  }
+}

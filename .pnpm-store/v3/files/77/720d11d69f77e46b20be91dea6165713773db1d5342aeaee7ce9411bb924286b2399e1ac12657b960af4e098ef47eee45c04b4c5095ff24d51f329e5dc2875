@@ -1,0 +1,44 @@
+{
+  "name": "smart-buffer",
+  "version": "1.1.15",
+  "description": "A smarter Buffer that keeps track of its own read and write positions while growing endlessly.",
+  "main": "lib/smart-buffer.js",
+  "homepage": "https://github.com/JoshGlazebrook/smart-buffer/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JoshGlazebrook/smart-buffer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/JoshGlazebrook/smart-buffer/issues"
+  },
+  "keywords": [
+    "buffer",
+    "smart",
+    "serialize",
+    "packet",
+    "network",
+    "cursor",
+    "simple"
+  ],
+  "engines": {
+    "node": ">= 0.10.15",
+    "npm": ">= 1.3.5"
+  },
+  "author": "Josh Glazebrook",
+  "license": "MIT",
+  "readmeFilename": "README.md",
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "coveralls": "^2.11.15",
+    "istanbul": "^0.4.3",
+    "mocha": "^3.2.0",
+    "mocha-lcov-reporter": "^1.2.0"
+  },
+  "typings": "typings/index",
+  "dependencies": {},
+  "scripts": {
+    "test": "mocha test/smart-buffer.test.js",
+    "coverage": "istanbul cover node_modules/mocha/bin/_mocha recursive test",
+    "fullcoverage": "node_modules/.bin/istanbul -include-all-sources cover node_modules/mocha/bin/_mocha recursive test"
+  }
+}

@@ -1,0 +1,41 @@
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+const KNOWN_ASSET_TYPES = [
+  // images
+  "apng",
+  "png",
+  "jpe?g",
+  "jfif",
+  "pjpeg",
+  "pjp",
+  "gif",
+  "svg",
+  "ico",
+  "webp",
+  "avif",
+  // media
+  "mp4",
+  "webm",
+  "ogg",
+  "mp3",
+  "wav",
+  "flac",
+  "aac",
+  // fonts
+  "woff2?",
+  "eot",
+  "ttf",
+  "otf",
+  // other
+  "webmanifest",
+  "pdf",
+  "txt"
+];
+const KNOWN_ASSET_RE = new RegExp(`\\.(${KNOWN_ASSET_TYPES.join("|")})$`);
+const CSS_LANGS_RE = /\.(css|less|sass|scss|styl|stylus|pcss|postcss|sss)(?:$|\?)/;
+
+exports.CSS_LANGS_RE = CSS_LANGS_RE;
+exports.KNOWN_ASSET_RE = KNOWN_ASSET_RE;
+exports.KNOWN_ASSET_TYPES = KNOWN_ASSET_TYPES;

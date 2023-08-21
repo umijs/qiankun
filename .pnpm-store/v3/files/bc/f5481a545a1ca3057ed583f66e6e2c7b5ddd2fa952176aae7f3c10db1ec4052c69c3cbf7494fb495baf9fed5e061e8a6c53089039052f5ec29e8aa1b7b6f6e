@@ -1,0 +1,26 @@
+{
+  "name": "utf8-byte-length",
+  "version": "1.0.4",
+  "description": "Get utf8 byte length of string",
+  "main": "index.js",
+  "browser": "browser.js",
+  "scripts": {
+    "test": "tape test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/parshap/utf8-byte-length.git"
+  },
+  "keywords": [
+    "utf8"
+  ],
+  "author": "Carl Xiong <xiongc05@gmail.com>",
+  "license": "WTFPL",
+  "bugs": {
+    "url": "https://github.com/parshap/utf8-byte-length/issues"
+  },
+  "homepage": "https://github.com/parshap/utf8-byte-length#readme",
+  "devDependencies": {
+    "tape": "^4.2.2"
+  }
+}

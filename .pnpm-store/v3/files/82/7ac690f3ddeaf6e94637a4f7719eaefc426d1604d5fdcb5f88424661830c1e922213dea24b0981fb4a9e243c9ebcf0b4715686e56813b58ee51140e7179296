@@ -1,0 +1,81 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+function _react() {
+  const data = _interopRequireDefault(require("react"));
+
+  _react = function _react() {
+    return data;
+  };
+
+  return data;
+}
+
+function _demos() {
+  const data = _interopRequireDefault(require("@@/dumi/demos"));
+
+  _demos = function _demos() {
+    return data;
+  };
+
+  return data;
+}
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+/**
+ * return demo preview arguments for single page route
+ * @return [props, children] or [children]
+ */
+var _default = props => {
+  let result = [];
+  const uuid = props.match.params.uuid;
+  const inline = props.location.query.wrapper === undefined;
+
+  const demo = _demos().default[uuid];
+
+  if (demo) {
+    const previewerProps = _objectSpread(_objectSpread({}, demo.previewerProps), {}, {
+      // disallowed matryoshka
+      hideActions: (demo.previewerProps.hideActions || []).concat(['EXTERNAL'])
+    });
+
+    if (props.location.query.capture !== undefined) {
+      // unchain refer
+      previewerProps.motions = (previewerProps.motions || []).slice(); // unshift autoplay motion
+
+      previewerProps.motions.unshift('autoplay'); // append capture motion if not exist
+
+      if (previewerProps.motions.every(motion => !motion.startsWith('capture'))) {
+        // compatible with qiankun app
+        previewerProps.motions.push('capture:[id|=root]');
+      }
+    }
+
+    if (inline) {
+      // return demo component with motions handler
+      result = [_react().default.createElement(() => {
+        require('dumi/theme').useMotions(previewerProps.motions || [], document);
+
+        return _react().default.createElement('div', {}, _react().default.createElement(demo.component));
+      })];
+    } else {
+      // return demo component with previewer props, for render demo via Previewer.tsx in theme
+      result = [previewerProps, _react().default.createElement(demo.component)];
+    }
+  }
+
+  return result;
+};
+
+exports.default = _default;

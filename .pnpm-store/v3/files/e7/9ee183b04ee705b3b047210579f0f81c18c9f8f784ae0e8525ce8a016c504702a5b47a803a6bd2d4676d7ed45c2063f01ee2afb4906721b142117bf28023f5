@@ -1,0 +1,43 @@
+{
+  "name": "@umijs/bundler-esbuild",
+  "version": "4.0.76",
+  "description": "@umijs/bundler-esbuild",
+  "homepage": "https://github.com/umijs/umi/tree/master/packages/bundler-esbuild#readme",
+  "bugs": "https://github.com/umijs/umi/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/umijs/umi"
+  },
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "bundler-esbuild": "bin/bundler-esbuild.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "enhanced-resolve": "5.9.3",
+    "postcss": "^8.4.21",
+    "postcss-flexbugs-fixes": "5.0.2",
+    "postcss-preset-env": "7.5.0",
+    "@umijs/bundler-utils": "4.0.76",
+    "@umijs/utils": "4.0.76"
+  },
+  "devDependencies": {
+    "@alitajs/postcss-plugin-px2rem": "^0.0.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "authors": [
+    "chencheng <sorrycc@gmail.com> (https://github.com/sorrycc)"
+  ],
+  "scripts": {
+    "build": "umi-scripts father build",
+    "build:deps": "umi-scripts bundleDeps",
+    "dev": "umi-scripts father dev",
+    "test": "umi-scripts jest-turbo"
+  }
+}

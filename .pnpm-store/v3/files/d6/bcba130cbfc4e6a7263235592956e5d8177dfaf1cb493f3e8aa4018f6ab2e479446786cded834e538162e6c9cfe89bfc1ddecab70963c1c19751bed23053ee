@@ -1,0 +1,26 @@
+# IntelliJ IDEA
+.idea/
+*.ipr
+*.iml
+*.iws
+
+# OS trash
+
+*.log
+*.bak
+*~
+~*
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+nohup.out
+
+# NodeJS
+
+node_modules/
+public/generated/

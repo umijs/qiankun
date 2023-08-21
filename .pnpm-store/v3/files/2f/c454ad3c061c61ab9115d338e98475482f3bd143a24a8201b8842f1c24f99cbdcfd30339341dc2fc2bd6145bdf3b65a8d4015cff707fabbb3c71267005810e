@@ -1,0 +1,12 @@
+{
+    "name": "mhchemparser",
+    "version": "4.2.1",
+    "description": "Parser to convert mhchem syntax to LaTeX syntax, for downstream inclusion in MathJax, KaTeX and similar projects.",
+    "keywords": [ "mhchem", "MathJax", "LaTeX", "chemistry" ],
+    "homepage": "https://github.com/mhchem/mhchemParser",
+    "bugs": "https://github.com/mhchem/mhchemParser/issues",
+    "repository": "github:mhchem/mhchemParser",
+    "license": "Apache-2.0",
+    "author": "Martin Hensel",
+    "main": "dist/mhchemParser.js"
+}

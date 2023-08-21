@@ -1,0 +1,8 @@
+{
+  "component": "a11y/complexity",
+  "targets": [
+    "a11y/complexity.ts",
+    "a11y/complexity",
+    "a11y/semantic-enrich.ts"
+  ]
+}

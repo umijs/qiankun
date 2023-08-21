@@ -1,0 +1,65 @@
+import { AbstractOutputJax } from '../../core/OutputJax.js';
+import { MathDocument } from '../../core/MathDocument.js';
+import { MathItem, Metrics } from '../../core/MathItem.js';
+import { MmlNode } from '../../core/MmlTree/MmlNode.js';
+import { FontData, FontDataClass, CssFontData } from './FontData.js';
+import { OptionList } from '../../util/Options.js';
+import { CommonWrapper, AnyWrapper } from './Wrapper.js';
+import { CommonWrapperFactory, AnyWrapperFactory } from './WrapperFactory.js';
+import { StyleList, Styles } from '../../util/Styles.js';
+import { StyleList as CssStyleList, CssStyles } from '../../util/StyleList.js';
+export interface ExtendedMetrics extends Metrics {
+    family: string;
+}
+export declare type MetricMap<N> = Map<N, ExtendedMetrics>;
+export declare type UnknownBBox = {
+    w: number;
+    h: number;
+    d: number;
+};
+export declare type UnknownMap = Map<string, UnknownBBox>;
+export declare type UnknownVariantMap = Map<string, UnknownMap>;
+export declare abstract class CommonOutputJax<N, T, D, W extends AnyWrapper, F extends AnyWrapperFactory, FD extends FontData<any, any, any>, FC extends FontDataClass<any, any, any>> extends AbstractOutputJax<N, T, D> {
+    static NAME: string;
+    static OPTIONS: OptionList;
+    static commonStyles: CssStyleList;
+    cssStyles: CssStyles;
+    document: MathDocument<N, T, D>;
+    math: MathItem<N, T, D>;
+    container: N;
+    table: AnyWrapper;
+    pxPerEm: number;
+    font: FD;
+    factory: F;
+    nodeMap: Map<MmlNode, W>;
+    testInline: N;
+    testDisplay: N;
+    protected unknownCache: UnknownVariantMap;
+    constructor(options?: OptionList, defaultFactory?: typeof CommonWrapperFactory, defaultFont?: FC);
+    typeset(math: MathItem<N, T, D>, html: MathDocument<N, T, D>): N;
+    protected createNode(): N;
+    protected setScale(node: N): void;
+    toDOM(math: MathItem<N, T, D>, node: N, html?: MathDocument<N, T, D>): void;
+    protected abstract processMath(math: MmlNode, node: N): void;
+    getBBox(math: MathItem<N, T, D>, html: MathDocument<N, T, D>): any;
+    getMetrics(html: MathDocument<N, T, D>): void;
+    getMetricsFor(node: N, display: boolean): ExtendedMetrics;
+    protected getMetricMaps(html: MathDocument<N, T, D>): MetricMap<N>[];
+    protected getTestElement(node: N, display: boolean): N;
+    protected measureMetrics(node: N, getFamily: boolean): ExtendedMetrics;
+    styleSheet(html: MathDocument<N, T, D>): N;
+    protected addFontStyles(styles: CssStyles): void;
+    protected addWrapperStyles(styles: CssStyles): void;
+    protected addClassStyles(CLASS: typeof CommonWrapper, styles: CssStyles): void;
+    protected setDocument(html: MathDocument<N, T, D>): void;
+    html(type: string, def?: OptionList, content?: (N | T)[], ns?: string): N;
+    text(text: string): T;
+    fixed(m: number, n?: number): string;
+    abstract unknownText(text: string, variant: string): N;
+    measureText(text: string, variant: string, font?: CssFontData): UnknownBBox;
+    measureTextNodeWithCache(text: N, chars: string, variant: string, font?: CssFontData): UnknownBBox;
+    abstract measureTextNode(text: N): UnknownBBox;
+    measureXMLnode(xml: N): UnknownBBox;
+    cssFontStyles(font: CssFontData, styles?: StyleList): StyleList;
+    getFontData(styles: Styles): CssFontData;
+}

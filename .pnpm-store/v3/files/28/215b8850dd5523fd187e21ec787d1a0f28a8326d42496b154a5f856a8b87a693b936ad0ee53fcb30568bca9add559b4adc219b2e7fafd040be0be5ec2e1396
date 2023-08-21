@@ -1,0 +1,19 @@
+/**
+ * @license
+ * Copyright 2020 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+import * as webdriver from 'selenium-webdriver';
+import { Server } from './server';
+import { Measurement } from './types';
+/**
+ * Try to take a measurement in milliseconds from the given browser. Returns
+ * undefined if the measurement is not available (which may just mean we need to
+ * wait some more time).
+ */
+export declare function measure(driver: webdriver.WebDriver, measurement: Measurement, server: Server | undefined): Promise<number | undefined>;
+/**
+ * Return a good-enough label for the given measurement, to disambiguate cases
+ * where there are multiple measurements on the same page.
+ */
+export declare function measurementName(measurement: Measurement): string;

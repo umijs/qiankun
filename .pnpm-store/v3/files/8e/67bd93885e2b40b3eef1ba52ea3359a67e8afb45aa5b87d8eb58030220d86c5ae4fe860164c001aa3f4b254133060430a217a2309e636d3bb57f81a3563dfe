@@ -1,0 +1,5 @@
+{
+  "id": "[tex]/textcomp",
+  "component": "input/tex/extensions/textcomp",
+  "targets": ["input/tex/textcomp"]
+}

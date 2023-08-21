@@ -1,0 +1,16 @@
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+import { Config } from './config';
+import { Opts } from './flags';
+import { Server } from './server';
+import { BenchmarkSpec } from './types';
+/**
+ * Derive the set of benchmark specifications we should run according to the
+ * given options, which may require checking the layout on disk of the
+ * benchmarks/ directory.
+ */
+export declare function specsFromOpts(opts: Opts): Promise<BenchmarkSpec[]>;
+export declare function specUrl(spec: BenchmarkSpec, servers: Map<BenchmarkSpec, Server>, config: Config): string;

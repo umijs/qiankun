@@ -1,0 +1,5 @@
+{
+  "name": "webpack",
+  "author": "Tobias Koppers @sokra",
+  "types": "types.d.ts"
+}

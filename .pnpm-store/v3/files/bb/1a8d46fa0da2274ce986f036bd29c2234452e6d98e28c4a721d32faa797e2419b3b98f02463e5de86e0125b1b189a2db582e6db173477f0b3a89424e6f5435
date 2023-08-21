@@ -1,0 +1,20 @@
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+/// <reference types="node" />
+import { ExecFileOptions } from 'child_process';
+/** Return whether the given string is a valid HTTP URL. */
+export declare function isHttpUrl(str: string): boolean;
+export declare function fileKind(path: string): Promise<'file' | 'dir' | undefined>;
+export declare function runNpm(args: string[], options?: ExecFileOptions): Promise<string | Buffer>;
+/**
+ * Promisified version of setTimeout.
+ */
+export declare const wait: (ms: number) => Promise<unknown>;
+/**
+ * A function that should never be called. But if it somehow is anyway, throw an
+ * exception with the given message.
+ */
+export declare function throwUnreachable(_unreachable: never, message: string): void;

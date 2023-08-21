@@ -1,0 +1,53 @@
+{
+  "name": "eslint-ast-utils",
+  "version": "1.1.0",
+  "description": "Utility library to manipulate ASTs",
+  "license": "MIT",
+  "repository": "jfmengels/eslint-ast-utils",
+  "author": {
+    "name": "Jeroen Engels",
+    "email": "jfm.engels@gmail.com",
+    "url": "github.com/jfmengels"
+  },
+  "engines": {
+    "node": ">=4"
+  },
+  "scripts": {
+    "test": "xo && nyc ava"
+  },
+  "files": [
+    "index.js",
+    "lib"
+  ],
+  "keywords": [
+    "eslint",
+    "ast",
+    "utils",
+    "Utility"
+  ],
+  "dependencies": {
+    "lodash.get": "^4.4.2",
+    "lodash.zip": "^4.2.0"
+  },
+  "devDependencies": {
+    "ava": "^0.16.0",
+    "babel-eslint": "^7.0.0",
+    "espree": "^3.3.2",
+    "nyc": "^7.1.0",
+    "xo": "^0.17.0"
+  },
+  "xo": {
+    "esnext": true
+  },
+  "nyc": {
+    "reporter": [
+      "lcov",
+      "text"
+    ],
+    "check-coverage": true,
+    "lines": 100,
+    "statements": 100,
+    "functions": 100,
+    "branches": 100
+  }
+}

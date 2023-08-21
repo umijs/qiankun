@@ -1,0 +1,26 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+function _react() {
+  const data = _interopRequireDefault(require("react"));
+
+  _react = function _react() {
+    return data;
+  };
+
+  return data;
+}
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var _default = () => {
+  return {
+    plugins: [require.resolve('./plugins/features/theme'), require.resolve('./plugins/title'), require.resolve('./plugins/description'), require.resolve('./plugins/logo'), require.resolve('./plugins/locales'), require.resolve('./plugins/mode'), require.resolve('./plugins/menus'), require.resolve('./plugins/navs'), require.resolve('./plugins/resolve'), require.resolve('./plugins/core'), require.resolve('./plugins/algolia'), require.resolve('./plugins/commands/assets'), require.resolve('./plugins/features/demos'), require.resolve('./plugins/features/404')]
+  };
+};
+
+exports.default = _default;

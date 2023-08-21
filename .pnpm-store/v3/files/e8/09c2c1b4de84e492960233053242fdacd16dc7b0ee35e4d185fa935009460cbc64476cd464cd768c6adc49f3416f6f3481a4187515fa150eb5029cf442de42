@@ -1,0 +1,69 @@
+{
+  "name": "postcss-focus-within",
+  "version": "5.0.4",
+  "description": "Use the :focus-within pseudo-selector in CSS",
+  "author": "Jonathan Neal <jonathantneal@hotmail.com>",
+  "license": "CC0-1.0",
+  "homepage": "https://github.com/csstools/postcss-plugins/tree/main/plugins/postcss-focus-within#readme",
+  "bugs": "https://github.com/csstools/postcss-plugins/issues",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "CHANGELOG.md",
+    "LICENSE.md",
+    "README.md",
+    "dist"
+  ],
+  "scripts": {
+    "build": "rollup -c ../../rollup/default.js",
+    "clean": "node -e \"fs.rmSync('./dist', { recursive: true, force: true });\"",
+    "lint": "eslint ./src --ext .js --ext .ts --ext .mjs --no-error-on-unmatched-pattern",
+    "prepublishOnly": "npm run clean && npm run build && npm run test",
+    "stryker": "stryker run --logLevel error",
+    "test": "postcss-tape --ci && npm run test:exports",
+    "test:exports": "node ./test/_import.mjs && node ./test/_require.cjs"
+  },
+  "engines": {
+    "node": "^12 || ^14 || >=16"
+  },
+  "dependencies": {
+    "postcss-selector-parser": "^6.0.9"
+  },
+  "devDependencies": {
+    "postcss": "^8.3.6",
+    "postcss-tape": "^6.0.1"
+  },
+  "peerDependencies": {
+    "postcss": "^8.4"
+  },
+  "keywords": [
+    "postcss",
+    "css",
+    "postcss-plugin",
+    "focus",
+    "within",
+    "polyfill",
+    "pseudos",
+    "selectors",
+    "accessibility",
+    "a11y",
+    "descendants",
+    "ancestors"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/csstools/postcss-plugins.git",
+    "directory": "plugins/postcss-focus-within"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  }
+}

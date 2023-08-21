@@ -1,0 +1,44 @@
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+import { MountPoint } from './server';
+import { BenchmarkSpec, GitDependency, NpmPackageJson, PackageVersion } from './types';
+interface GitDependencyWithTempDir extends GitDependency {
+    tempDir: string;
+    sha: string;
+}
+/**
+ * Parse an array of strings of the form <package>@<version>.
+ */
+export declare function parsePackageVersions(flags: string[]): PackageVersion[];
+export interface ServerPlan {
+    /** The benchmarks this server will handle. */
+    specs: BenchmarkSpec[];
+    /** NPM installations needed for this server. */
+    npmInstalls: NpmInstall[];
+    /** URL to disk path mappings. */
+    mountPoints: MountPoint[];
+}
+export interface NpmInstall {
+    installDir: string;
+    packageJson: NpmPackageJson;
+}
+export declare function makeServerPlans(benchmarkRoot: string, npmInstallRoot: string, specs: BenchmarkSpec[]): Promise<{
+    plans: ServerPlan[];
+    gitInstalls: GitDependencyWithTempDir[];
+}>;
+export declare function hashStrings(...strings: string[]): string;
+export declare const tachometerVersion: any;
+/**
+ * Write the given package.json to the given directory and run "npm install" in
+ * it. If the directory already exists, don't do anything except log.
+ */
+export declare function prepareVersionDirectory({ installDir, packageJson }: NpmInstall, forceCleanInstall: boolean): Promise<void>;
+/**
+ * Check out the given commit from the given git repo, and run setup commands.
+ * If the directory already exists, don't do anything except log.
+ */
+export declare function installGitDependency(gitInstall: GitDependencyWithTempDir, forceCleanInstall: boolean): Promise<void>;
+export {};

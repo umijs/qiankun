@@ -1,0 +1,24 @@
+{
+  "name": "@changesets/git",
+  "version": "2.0.0",
+  "description": "Some git helpers that changesets use to get information",
+  "main": "dist/git.cjs.js",
+  "module": "dist/git.esm.js",
+  "license": "MIT",
+  "repository": "https://github.com/changesets/changesets/tree/main/packages/git",
+  "dependencies": {
+    "@babel/runtime": "^7.20.1",
+    "@changesets/errors": "^0.1.4",
+    "@changesets/types": "^5.2.1",
+    "@manypkg/get-packages": "^1.1.3",
+    "is-subdir": "^1.1.1",
+    "micromatch": "^4.0.2",
+    "spawndamnit": "^2.0.0"
+  },
+  "devDependencies": {
+    "@changesets/test-utils": "*",
+    "@changesets/write": "*",
+    "file-url": "^3.0.0",
+    "fs-extra": "^7.0.1"
+  }
+}

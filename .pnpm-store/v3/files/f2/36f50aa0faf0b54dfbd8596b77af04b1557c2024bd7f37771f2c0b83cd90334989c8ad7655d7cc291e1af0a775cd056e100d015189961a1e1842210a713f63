@@ -1,0 +1,126 @@
+{
+    "name": "eslint-plugin-compat",
+    "version": "3.13.0",
+    "description": "Lint browser compatibility of API used",
+    "main": "lib/index.js",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/amilajack/eslint-plugin-compat.git"
+    },
+    "keywords": [
+        "eslint",
+        "browser",
+        "support",
+        "api",
+        "lint",
+        "caniuse",
+        "kangax"
+    ],
+    "author": "Amila Welihinda",
+    "contributors": [
+        "Amila Welihinda <amilajack@gmail.com> (https://github.com/amilajack)",
+        "John Tran <jptran318@gmail.com> (https://github.com/jooohhn)"
+    ],
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/amilajack/eslint-plugin-compat/issues"
+    },
+    "files": [
+        "lib"
+    ],
+    "homepage": "https://github.com/amilajack/eslint-plugin-compat#readme",
+    "scripts": {
+        "benchmarks": "ts-node-transpile-only test/benchmarks.ts",
+        "build": "rm -rf lib && babel src --out-dir lib --source-maps inline --extensions '.ts'",
+        "lint": "eslint --ignore-path .gitignore --ext .js,.ts .",
+        "spec": "jest --testPathIgnorePatterns test/e2e-repo.spec.ts /benchmarks-tmp",
+        "spec:e2e": "jest test/e2e-repo.spec.ts",
+        "test": "yarn lint && yarn build && yarn spec",
+        "tsc": "tsc",
+        "version": "yarn build"
+    },
+    "jest": {
+        "testEnvironment": "node",
+        "testPathIgnorePatterns": [
+            "/benchmarks-tmp/"
+        ]
+    },
+    "devDependencies": {
+        "@babel/cli": "^7.14.8",
+        "@babel/core": "^7.15.0",
+        "@babel/preset-env": "^7.15.0",
+        "@babel/preset-typescript": "^7.15.0",
+        "@semantic-release/changelog": "^5.0.1",
+        "@semantic-release/git": "^9.0.0",
+        "@types/benchmark": "^2.1.1",
+        "@types/browserslist": "^4.15.0",
+        "@types/caniuse-lite": "^1.0.1",
+        "@types/eslint": "^7.28.0",
+        "@types/jest": "^27.0.1",
+        "@types/lodash.memoize": "^4.1.6",
+        "@types/semver": "^7.3.8",
+        "@typescript-eslint/eslint-plugin": "^4.29.2",
+        "@typescript-eslint/parser": "^4.29.2",
+        "benchmark": "^2.1.4",
+        "browserslist-config-erb": "^0.0.1",
+        "electron": "^13.2.1",
+        "eslint": "^7.32.0",
+        "eslint-config-airbnb-typescript": "^12.3.1",
+        "eslint-config-bliss": "^5.0.0",
+        "eslint-config-prettier": "^8.3.0",
+        "eslint-plugin-import": "^2.24.0",
+        "eslint-plugin-prettier": "^3.4.0",
+        "jest": "^27.0.6",
+        "prettier": "^2.3.2",
+        "semantic-release": "^17.4.5",
+        "simple-git": "^2.44.0",
+        "ts-node": "^10.2.1",
+        "typescript": "^4.3.5"
+    },
+    "prettier": {
+        "trailingComma": "es5",
+        "tabWidth": 2,
+        "semi": true
+    },
+    "dependencies": {
+        "@mdn/browser-compat-data": "^3.3.14",
+        "ast-metadata-inferer": "^0.7.0",
+        "browserslist": "^4.16.8",
+        "caniuse-lite": "^1.0.30001251",
+        "core-js": "^3.16.2",
+        "find-up": "^5.0.0",
+        "lodash.memoize": "4.1.2",
+        "semver": "7.3.5"
+    },
+    "peerDependencies": {
+        "eslint": "^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0"
+    },
+    "engines": {
+        "node": ">=9.x"
+    },
+    "collective": {
+        "type": "opencollective",
+        "url": "https://opencollective.com/eslint-plugin-compat",
+        "logo": "https://opencollective.com/opencollective/logo.txt"
+    },
+    "babel": {
+        "presets": [
+            [
+                "@babel/preset-env",
+                {
+                    "useBuiltIns": "usage",
+                    "corejs": 3,
+                    "targets": {
+                        "node": 10
+                    }
+                }
+            ],
+            "@babel/preset-typescript"
+        ]
+    },
+    "renovate": {
+        "extends": [
+            "bliss"
+        ]
+    }
+}

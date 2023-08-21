@@ -1,0 +1,71 @@
+{
+  "name": "remote-origin-url",
+  "description": "Get the git remote origin URL from your local git repository. Remember! A remote origin must exist first!",
+  "version": "0.5.3",
+  "homepage": "https://github.com/jonschlinkert/remote-origin-url",
+  "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
+  "contributors": [
+    "Brian Woodward (https://twitter.com/doowb)",
+    "Jon Schlinkert (http://twitter.com/jonschlinkert)"
+  ],
+  "repository": "jonschlinkert/remote-origin-url",
+  "bugs": {
+    "url": "https://github.com/jonschlinkert/remote-origin-url/issues"
+  },
+  "license": "MIT",
+  "files": [
+    "index.js"
+  ],
+  "main": "index.js",
+  "engines": {
+    "node": ">= 0.8.0"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "dependencies": {
+    "parse-git-config": "^1.1.1"
+  },
+  "devDependencies": {
+    "delete": "^1.1.0",
+    "gitty": "^3.6.0",
+    "gulp-format-md": "^1.0.0",
+    "mocha": "^3.4.2"
+  },
+  "keywords": [
+    "git",
+    "node",
+    "node.js",
+    "origin",
+    "remote",
+    "remote origin",
+    "remote origin url",
+    "url"
+  ],
+  "verb": {
+    "run": true,
+    "toc": false,
+    "layout": "default",
+    "tasks": [
+      "readme"
+    ],
+    "plugins": [
+      "gulp-format-md"
+    ],
+    "related": {
+      "list": [
+        "git-config-path",
+        "git-user-name",
+        "git-username",
+        "is-git-url",
+        "parse-github-url"
+      ]
+    },
+    "reflinks": [
+      "verb"
+    ],
+    "lint": {
+      "reflinks": true
+    }
+  }
+}

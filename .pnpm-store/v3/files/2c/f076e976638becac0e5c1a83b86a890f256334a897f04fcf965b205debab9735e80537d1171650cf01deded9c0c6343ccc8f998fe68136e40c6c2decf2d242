@@ -1,0 +1,47 @@
+{
+  "name": "remote-origin-url",
+  "description": "Get the git remote origin URL from your local git repository. Remember! A remote origin must exist first!",
+  "version": "0.4.0",
+  "homepage": "https://github.com/jonschlinkert/remote-origin-url",
+  "author": {
+    "name": "Jon Schlinkert",
+    "url": "https://github.com/jonschlinkert"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jonschlinkert/remote-origin-url.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jonschlinkert/remote-origin-url/issues"
+  },
+  "license": {
+    "type": "MIT",
+    "url": "https://github.com/jonschlinkert/remote-origin-url/blob/master/LICENSE"
+  },
+  "files": [
+    "index.js"
+  ],
+  "main": "index.js",
+  "engines": {
+    "node": ">= 0.8.0"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "dependencies": {
+    "parse-git-config": "^0.2.0"
+  },
+  "devDependencies": {
+    "should": "^5.0.1"
+  },
+  "keywords": [
+    "git",
+    "remote origin",
+    "remote origin url",
+    "node.js",
+    "node",
+    "remote",
+    "url",
+    "origin"
+  ]
+}

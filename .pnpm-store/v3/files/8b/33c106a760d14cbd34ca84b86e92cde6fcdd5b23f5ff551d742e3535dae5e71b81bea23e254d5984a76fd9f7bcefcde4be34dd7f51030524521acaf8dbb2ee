@@ -1,0 +1,66 @@
+{
+  "name": "react-error-boundary",
+  "version": "3.1.4",
+  "description": "Simple reusable React error boundary component",
+  "main": "dist/react-error-boundary.cjs.js",
+  "module": "dist/react-error-boundary.esm.js",
+  "browser": "dist/react-error-boundary.umd.js",
+  "types": "dist/index.d.ts",
+  "sideEffects": false,
+  "keywords": [
+    "react",
+    "error boundary",
+    "error handling"
+  ],
+  "author": "Brian Vaughn <brian.david.vaughn@gmail.com>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=10",
+    "npm": ">=6"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bvaughn/react-error-boundary"
+  },
+  "bugs": {
+    "url": "https://github.com/bvaughn/react-error-boundary/issues"
+  },
+  "homepage": "https://github.com/bvaughn/react-error-boundary#readme",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "kcd-scripts build --bundle",
+    "lint": "kcd-scripts lint",
+    "setup": "npm install && npm run validate -s",
+    "test": "kcd-scripts test",
+    "test:update": "npm test -- --updateSnapshot --coverage",
+    "typecheck": "kcd-scripts typecheck",
+    "validate": "kcd-scripts validate"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.12.5"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^5.11.6",
+    "@testing-library/react": "^11.2.2",
+    "@testing-library/user-event": "^12.2.2",
+    "@types/jest": "^26.0.15",
+    "@types/react": "^17.0.0",
+    "kcd-scripts": "^7.3.0",
+    "react": "^17.0.1",
+    "react-dom": "^17.0.1",
+    "typescript": "^4.1.2"
+  },
+  "peerDependencies": {
+    "react": ">=16.13.1"
+  },
+  "eslintConfig": {
+    "extends": "./node_modules/kcd-scripts/eslint.js",
+    "rules": {
+      "react/prop-types": "off",
+      "react/no-did-update-set-state": "off",
+      "babel/no-unused-expressions": "off"
+    }
+  }
+}

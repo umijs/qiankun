@@ -1,0 +1,117 @@
+{
+  "name": "single-spa",
+  "version": "6.0.0-beta.3",
+  "description": "The router for easy microfrontends",
+  "main": "lib/es2015/umd/single-spa.min.cjs",
+  "types": "typings/single-spa.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "development": {
+        "import": "./lib/es2015/esm/single-spa.dev.js",
+        "require": "./lib/es2015/umd/single-spa.dev.cjs"
+      },
+      "production": {
+        "import": "./lib/es2015/esm/single-spa.min.js",
+        "require": "./lib/es2015/umd/single-spa.min.cjs"
+      },
+      "default": {
+        "import": "./lib/es2015/esm/single-spa.min.js",
+        "require": "./lib/es2015/umd/single-spa.min.cjs"
+      }
+    },
+    "./package.json": "./package.json",
+    "./lib/*": "./lib/*"
+  },
+  "module": "lib/es2015/esm/single-spa.min.js",
+  "tsd": {
+    "testDir": "spec/typings",
+    "compilerOptions": {
+      "lib": [
+        "dom",
+        "ES2015"
+      ]
+    }
+  },
+  "files": [
+    "lib",
+    "typings/single-spa.d.ts"
+  ],
+  "homepage": "https://single-spa.js.org",
+  "repository": "https://github.com/single-spa/single-spa",
+  "bugs": "https://github.com/single-spa/single-spa/issues",
+  "keywords": [
+    "microfrontends",
+    "single",
+    "page",
+    "application",
+    "framework",
+    "react",
+    "angular",
+    "vue",
+    "router",
+    "microservices",
+    "frontend"
+  ],
+  "author": "Joel Denning",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.9.0",
+    "@babel/eslint-parser": "^7.14.7",
+    "@babel/plugin-syntax-dynamic-import": "^7.8.3",
+    "@babel/preset-env": "^7.9.0",
+    "@babel/runtime": "^7.14.6",
+    "@rollup/plugin-babel": "^5.3.0",
+    "@rollup/plugin-commonjs": "^19.0.0",
+    "@rollup/plugin-node-resolve": "^13.0.0",
+    "@rollup/plugin-replace": "^2.3.1",
+    "@types/jest": "^26.0.23",
+    "babel-jest": "^27.0.6",
+    "babel-plugin-dynamic-import-node": "^2.3.0",
+    "concurrently": "^6.2.0",
+    "cross-env": "^7.0.2",
+    "custom-event": "^1.0.1",
+    "eslint": "7.30.0",
+    "eslint-config-important-stuff": "^1.1.0",
+    "eslint-plugin-es5": "^1.5.0",
+    "husky": "^7.0.0",
+    "jest": "^27.0.6",
+    "js-correct-lockfile": "^1.0.0",
+    "pinst": "^2.1.6",
+    "prettier": "^2.0.2",
+    "pretty-quick": "^3.1.1",
+    "rimraf": "^3.0.2",
+    "rollup": "^2.2.0",
+    "rollup-plugin-analyzer": "^4.0.0",
+    "rollup-plugin-terser": "^7.0.2",
+    "tsd": "^0.17.0"
+  },
+  "browserslist": [
+    "ie >= 11",
+    "last 4 Safari major versions",
+    "last 10 Chrome major versions",
+    "last 10 Firefox major versions",
+    "last 4 Edge major versions"
+  ],
+  "ignore": [
+    "examples",
+    "docs"
+  ],
+  "scripts": {
+    "build": "pnpm run clean && concurrently pnpm:build:dev pnpm:build:prod",
+    "build:prod": "rollup -c --environment NODE_ENV:'production'",
+    "build:dev": "rollup -c",
+    "build:analyze": "rollup -c --environment ANALYZER:'analyzer'",
+    "watch": "rollup -c -w",
+    "clean": "rimraf lib",
+    "test": "concurrently -n w: 'pnpm:test:*'",
+    "test:browser": "cross-env BABEL_ENV=test jest --config jest-browser.config.js",
+    "test:node": "cross-env BABEL_ENV=test jest --config jest-node.config.js",
+    "test:types": "tsd",
+    "test:lockfile": "js-correct-lockfile pnpm",
+    "format": "prettier --write .",
+    "check-format": "prettier --check .",
+    "lint": "eslint src",
+    "_postinstall": "husky install"
+  }
+}

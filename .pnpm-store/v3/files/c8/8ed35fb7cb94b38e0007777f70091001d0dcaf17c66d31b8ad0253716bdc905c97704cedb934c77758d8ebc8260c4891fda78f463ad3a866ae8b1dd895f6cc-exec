@@ -1,0 +1,78 @@
+#! /usr/bin/env node
+
+/*************************************************************
+ *
+ *  Copyright (c) 2018 The MathJax Consortium
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+/**
+ * @fileoverview  Copies specified files to the distribution directory
+ *
+ * @author dpvc@mathjax.org (Davide Cervone)
+ */
+
+
+const fs = require('fs');
+const path = require('path');
+
+/**
+ * The amount of space for each level of indentation
+ */
+const INDENT = '  ';
+
+/**
+ * The configuration data for the copy operation
+ */
+const config = JSON.parse(fs.readFileSync(process.argv[2] || 'copy.json'));
+
+/**
+ * Get the directory for node modules (either the parent of the MathJax directory,
+ * or the MathJax node_modules directory, if it exists).
+ */
+const parent = path.resolve(__dirname, '..', '..');
+const nodeDir = (dir => (fs.existsSync(dir) ? dir : path.resolve(parent, '..')))(path.join(parent, 'node_modules'));
+
+/**
+ * Copy a file or directory tree
+ *
+ * @param {string} from     The directory to copy from
+ * @param {string} to       The directory to copy to
+ * @param {string} name     The name of the file or directory to copy
+ * @param {string} space    The indentation for output
+ */
+function copyFile(from, to, name, space) {
+  !fs.existsSync(to) && fs.mkdirSync(to, {recursive: true});
+  const copy = path.resolve(from, name);
+  const dest = path.resolve(to, name);
+  if (fs.lstatSync(copy).isDirectory()) {
+    console.info(space + name + '/');
+    for (const file of fs.readdirSync(copy)) {
+      copyFile(copy, dest, file, space + INDENT);
+    }
+  } else {
+    console.info(space + name);
+    fs.copyFileSync(copy, dest);
+  }
+}
+
+/**
+ * Copy the given files
+ */
+const wd = process.cwd();
+const to = path.resolve(wd, config.to);
+const from = path.resolve(wd, config.from.replace(/\[node\]/, nodeDir));
+for (const name of config.copy) {
+  copyFile(from, to, name, '');
+}

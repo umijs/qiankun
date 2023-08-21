@@ -1,0 +1,36 @@
+{
+  "name": "sanitize-filename",
+  "version": "1.6.3",
+  "description": "Sanitize a string for use as a filename",
+  "keywords": [
+    "file",
+    "name",
+    "filename",
+    "sanitize",
+    "validate",
+    "escape"
+  ],
+  "license": "WTFPL OR ISC",
+  "author": "Parsha Pourkhomami",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:parshap/node-sanitize-filename.git"
+  },
+  "scripts": {
+    "test": "tape test.js",
+    "test-browser": "airtap --local --open -- test.js",
+    "test-browser-sauce": "airtap -- test.js"
+  },
+  "dependencies": {
+    "truncate-utf8-bytes": "^1.0.0"
+  },
+  "devDependencies": {
+    "airtap": "^2.0.3",
+    "browserify": "^14.0.0",
+    "concat-stream": "^1.5.1",
+    "mktemp": "^0.4.0",
+    "tape": "^4.2.2"
+  }
+}

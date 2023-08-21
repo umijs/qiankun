@@ -1,0 +1,26 @@
+{
+    "name": "@types/vfile-message",
+    "version": "1.0.0",
+    "description": "TypeScript definitions for vfile-message",
+    "license": "MIT",
+    "contributors": [
+        {
+            "name": "Junyoung Choi",
+            "url": "https://github.com/rokt33r",
+            "githubUsername": "rokt33r"
+        }
+    ],
+    "main": "",
+    "types": "index",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git"
+    },
+    "scripts": {},
+    "dependencies": {
+        "@types/node": "*",
+        "@types/unist": "*"
+    },
+    "typesPublisherContentHash": "c9e8d0b8789a01785d14b644ec2ef91c4199498ff4dde73313c48616b3a079bd",
+    "typeScriptVersion": "3.0"
+}

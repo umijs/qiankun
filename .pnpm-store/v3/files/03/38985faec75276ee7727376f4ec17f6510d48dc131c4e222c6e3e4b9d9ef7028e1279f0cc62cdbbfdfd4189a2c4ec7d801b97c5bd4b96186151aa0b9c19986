@@ -1,0 +1,94 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+function _react() {
+  const data = _interopRequireDefault(require("react"));
+
+  _react = function _react() {
+    return data;
+  };
+
+  return data;
+}
+
+var _getMenuFromRoutes = require("./getMenuFromRoutes");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var _default = (routes, opts, userCustomNavs) => {
+  let localeNavs = {};
+  let customNavs = userCustomNavs || {};
+
+  if (opts.mode !== 'site') {
+    return {};
+  } // group navs by locale
+
+
+  routes.forEach(route => {
+    var _route$meta;
+
+    if ((_route$meta = route.meta) === null || _route$meta === void 0 ? void 0 : _route$meta.nav) {
+      var _opts$locales$, _localeNavs$locale;
+
+      const locale = route.meta.locale || ((_opts$locales$ = opts.locales[0]) === null || _opts$locales$ === void 0 ? void 0 : _opts$locales$[0]) || '*';
+      const navPath = (0, _getMenuFromRoutes.addHtmlSuffix)(route.meta.nav.path);
+      localeNavs[locale] = _objectSpread(_objectSpread({}, localeNavs[locale] || {}), {}, {
+        [navPath]: _objectSpread(_objectSpread(_objectSpread({}, ((_localeNavs$locale = localeNavs[locale]) === null || _localeNavs$locale === void 0 ? void 0 : _localeNavs$locale[navPath]) || {}), route.meta.nav || {}), {}, {
+          path: navPath
+        })
+      });
+    }
+  }); // deconstruct locale navs from mapping to array
+
+  Object.keys(localeNavs).forEach(key => {
+    localeNavs[key] = Object.values(localeNavs[key]).sort((prev, next) => {
+      const prevOrder = typeof prev.order === 'number' ? prev.order : Infinity;
+      const nextOrder = typeof next.order === 'number' ? next.order : Infinity; // compare order meta config first
+
+      const metaOrder = prevOrder === nextOrder ? 0 : prevOrder - nextOrder; // last compare path length
+
+      const pathOrder = prev.path.length - next.path.length; // then compare title ASCII
+      // eslint-disable-next-line
+
+      const ascOrder = prev.title > next.title ? 1 : prev.title < next.title ? -1 : 0;
+      return metaOrder || pathOrder || ascOrder;
+    });
+  }); // replace unique locale key with *
+
+  Object.keys(localeNavs).some((locale, _, locales) => {
+    if (locales.length === 1) {
+      localeNavs = {
+        '*': localeNavs[locale]
+      };
+    }
+
+    return true;
+  }); // merge user's navs & generated navs
+
+  if (Array.isArray(customNavs)) {
+    customNavs = Object.keys(localeNavs).reduce((result, locale) => {
+      result[locale] = customNavs;
+      return result;
+    }, {});
+  }
+
+  Object.keys(localeNavs).forEach(locale => {
+    if (customNavs[locale]) {
+      localeNavs[locale] = customNavs[locale].reduce( // concat original navs if navs has empty item from user
+      (result, nav) => result.concat(nav || localeNavs[locale]), []);
+    }
+  });
+  return localeNavs;
+};
+
+exports.default = _default;

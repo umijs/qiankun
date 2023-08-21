@@ -1,0 +1,56 @@
+{
+  "name": "cwd",
+  "description": "Easily get the CWD (current working directory) of a project based on package.json, optionally starting from a given path. (Node.js/javascript util)",
+  "version": "0.9.1",
+  "homepage": "https://github.com/jonschlinkert/cwd",
+  "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
+  "repository": "jonschlinkert/cwd",
+  "bugs": {
+    "url": "https://github.com/jonschlinkert/cwd/issues"
+  },
+  "license": "MIT",
+  "files": [
+    "index.js"
+  ],
+  "main": "index.js",
+  "engines": {
+    "node": ">=0.8"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "dependencies": {
+    "find-pkg": "^0.1.0"
+  },
+  "devDependencies": {
+    "mocha": "*",
+    "normalize-path": "^1.0.0"
+  },
+  "keywords": [
+    "current",
+    "cwd",
+    "dir",
+    "directory",
+    "file",
+    "filepath",
+    "path",
+    "paths",
+    "process",
+    "process.cwd",
+    "resolve",
+    "resolved",
+    "working"
+  ],
+  "verb": {
+    "related": {
+      "list": [
+        "is-absolute",
+        "is-relative",
+        "relative",
+        "global-paths",
+        "global-prefix",
+        "global-modules"
+      ]
+    }
+  }
+}

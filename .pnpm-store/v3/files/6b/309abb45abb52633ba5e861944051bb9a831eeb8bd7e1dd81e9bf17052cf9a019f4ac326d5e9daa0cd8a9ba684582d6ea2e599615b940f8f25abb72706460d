@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "maxNodeModuleJsDepth": 5,
+    "moduleResolution": "Node",
+    "strict": true,
+    "target": "ESNext",
+    "lib": ["DOM", "DOM.Iterable"]
+  },
+  "include": ["source"]
+}

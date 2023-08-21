@@ -1,0 +1,22 @@
+{
+  "name": "dumi-assets-types",
+  "version": "1.0.1",
+  "description": "Type definition for UI assets that build from dumi",
+  "types": "typings/index.d.ts",
+  "files": [
+    "typings"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/umijs/dumi",
+    "branch": "1.x",
+    "directory": "packages/assets-types"
+  },
+  "homepage": "https://github.com/umijs/dumi/tree/1.x/packages/assets-types#readme",
+  "bugs": "https://github.com/umijs/dumi/issues",
+  "authors": [
+    "PeachScript <scdzwyxst@gmail.com> (https://github.com/PeachScript)"
+  ],
+  "license": "MIT",
+  "gitHead": "b6afdac98b88ace4b119e16da6ee71158c265c0e"
+}

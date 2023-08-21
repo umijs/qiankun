@@ -1,0 +1,19 @@
+{
+  "name": "flatmap",
+  "version": "0.0.3",
+  "description": "The missing flatMap function for Node",
+  "main": "index.js",
+  "devDependencies": {
+    "mocha": "*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/inca/flatmapjs"
+  },
+  "keywords": [ "fp", "functional programming", "flatMap" ],
+  "author": "Boris Okunskiy",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/inca/flatmapjs/issues"
+  }
+}

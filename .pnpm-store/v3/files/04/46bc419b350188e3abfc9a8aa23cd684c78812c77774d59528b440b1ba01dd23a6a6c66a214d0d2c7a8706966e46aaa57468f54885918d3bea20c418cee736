@@ -1,0 +1,272 @@
+"use strict";
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.parseFlags = exports.optDefs = exports.defaultInstallDir = void 0;
+const os = __importStar(require("os"));
+const path = __importStar(require("path"));
+const browser_1 = require("./browser");
+const defaults = __importStar(require("./defaults"));
+const types_1 = require("./types");
+const commandLineArgs = require("command-line-args");
+exports.defaultInstallDir = path.join(os.tmpdir(), 'tachometer', 'versions');
+exports.optDefs = [
+    {
+        name: 'help',
+        description: 'Show documentation',
+        type: Boolean,
+        defaultValue: false,
+    },
+    {
+        name: 'version',
+        description: 'Show the installed version of tachometer',
+        type: Boolean,
+        defaultValue: false,
+    },
+    {
+        name: 'root',
+        description: `Root directory to search for benchmarks (default ${defaults.root})`,
+        type: String,
+    },
+    {
+        name: 'host',
+        description: 'Which host to run on',
+        type: String,
+        defaultValue: '127.0.0.1',
+    },
+    {
+        name: 'remote-accessible-host',
+        description: 'When using a browser over a remote WebDriver connection, ' +
+            'the URL that those browsers should use to access the local ' +
+            'tachometer server (default to value of --host).',
+        type: String,
+        defaultValue: '',
+    },
+    {
+        name: 'port',
+        description: 'Which ports to run on (comma-delimited preference list, ' +
+            '0 for random, default [8080, 8081, ..., 0])',
+        type: (flag) => flag.split(',').map(Number),
+        defaultValue: [8080, 8081, 8082, 8083, 0],
+    },
+    {
+        name: 'config',
+        description: 'Path to JSON config file (see README for format)',
+        type: String,
+        defaultValue: '',
+    },
+    {
+        name: 'package-version',
+        description: 'Specify an NPM package version to swap in (see README)',
+        alias: 'p',
+        type: String,
+        defaultValue: [],
+        lazyMultiple: true,
+    },
+    {
+        name: 'npm-install-dir',
+        description: `Where to install custom package versions ` +
+            `(default ${exports.defaultInstallDir})`,
+        type: String,
+        defaultValue: exports.defaultInstallDir,
+    },
+    {
+        name: 'force-clean-npm-install',
+        description: `Always do a from-scratch NPM install when using custom ` +
+            `package versions. If false (the default), NPM install directories ` +
+            `will be re-used as long as the dependency versions haven't changed.`,
+        type: Boolean,
+        defaultValue: false,
+    },
+    {
+        name: 'browser',
+        description: 'Which browsers to launch in automatic mode, ' +
+            `comma-delimited (${[...browser_1.supportedBrowsers].join(', ')}) ` +
+            `(default ${defaults.browserName})`,
+        alias: 'b',
+        type: String,
+    },
+    {
+        name: 'sample-size',
+        description: 'Minimum number of times to run each benchmark' +
+            ` (default ${defaults.sampleSize})`,
+        alias: 'n',
+        type: Number,
+    },
+    {
+        name: 'manual',
+        description: "Don't run automatically, just show URLs and collect results",
+        alias: 'm',
+        type: Boolean,
+        defaultValue: false,
+    },
+    {
+        name: 'json-file',
+        description: 'Save benchmark results to this JSON file.',
+        type: String,
+        defaultValue: '',
+    },
+    {
+        name: 'save',
+        description: 'Deprecated. Use --json-file instead. ' +
+            'Save benchmark JSON data to this file',
+        alias: 's',
+        type: String,
+        defaultValue: '',
+    },
+    {
+        name: 'csv-file',
+        description: 'Save benchmark results to this CSV file.',
+        type: String,
+        defaultValue: '',
+    },
+    {
+        name: 'csv-file-raw',
+        description: 'Save raw benchmark measurement samples to this CSV file.',
+        type: String,
+        defaultValue: '',
+    },
+    {
+        name: 'measure',
+        description: 'Which time interval to measure. Options:\n' +
+            '* callback: call bench.start() and bench.stop() (default)\n' +
+            '*   global: set window.tachometerResult = <milliseconds>\n' +
+            '*      fcp: first contentful paint',
+        type: (str) => {
+            if (!types_1.measurements.has(str)) {
+                throw new Error(`Expected --measure flag to be one of: ` +
+                    `${[...types_1.measurements.values()].join(', ')} ` +
+                    `but was '${str}'`);
+            }
+            return str;
+        },
+    },
+    {
+        name: 'measurement-expression',
+        description: 'Javascript expression to poll from page to retrieve global\n' +
+            'result. Only valid when --measure=global.',
+        type: String,
+        defaultValue: defaults.measurementExpression,
+    },
+    {
+        name: 'auto-sample-conditions',
+        description: 'The degrees of difference to try and resolve when auto-sampling ' +
+            '(milliseconds, comma-delimited, optionally signed, ' +
+            `default ${defaults.autoSampleConditions.join(',')})`,
+        type: String,
+    },
+    {
+        name: 'horizon',
+        description: 'Deprecated alias for --auto-sample-conditions',
+        type: String,
+    },
+    {
+        name: 'timeout',
+        description: 'The maximum number of minutes to spend auto-sampling ' +
+            `(default ${defaults.timeout}).`,
+        type: Number,
+    },
+    {
+        name: 'github-check',
+        description: 'Post benchmark results as a GitHub Check. A JSON object ' +
+            'with properties appId, installationId, repo, and commit.',
+        type: String,
+        defaultValue: '',
+    },
+    {
+        name: 'resolve-bare-modules',
+        description: 'Whether to automatically convert ES module imports with ' +
+            'bare module specifiers to paths (default true).',
+        type: booleanString('resolve-bare-modules'),
+        typeLabel: 'true|false',
+    },
+    {
+        name: 'window-size',
+        description: `"width,height" in pixels of the window to open for all browsers` +
+            ` (default "${defaults.windowWidth},${defaults.windowHeight}").`,
+        type: String,
+    },
+    {
+        name: 'trace',
+        description: '',
+        type: Boolean,
+    },
+    {
+        name: 'trace-log-dir',
+        description: '',
+        type: String,
+        defaultValue: defaults.traceLogDir,
+    },
+    {
+        name: 'trace-cat',
+        description: '',
+        type: String,
+        defaultValue: defaults.traceCategories.join(','),
+    },
+];
+/**
+ * Boolean flags that default to true are not supported
+ * (https://github.com/75lb/command-line-args/issues/71).
+ */
+function booleanString(flagName) {
+    return (str) => {
+        if (str === 'true' || str === '') {
+            return true;
+        }
+        else if (str === 'false') {
+            return false;
+        }
+        throw new Error(`Invalid --${flagName}. Expected true or false but was ${str}.`);
+    };
+}
+/**
+ * Parse the given CLI argument list.
+ */
+function parseFlags(argv) {
+    const opts = commandLineArgs(exports.optDefs, {
+        partial: true,
+        argv,
+    });
+    // Note that when a flag is used but not set to a value (i.e. "tachometer
+    // --resolve-bare-modules ..."), then the type function is not invoked, and
+    // the value will be null. Since in default-false cases (which aren't
+    // supported by command-line-args) that form should be true, we need to fix
+    // those cases up after parsing.
+    if (opts['resolve-bare-modules'] === null) {
+        opts['resolve-bare-modules'] = true;
+    }
+    if (opts['horizon']) {
+        if (opts['auto-sample-conditions']) {
+            throw new Error('Please use only --auto-sample-conditions and not --horizons.');
+        }
+        console.warn('\nNOTE: The --horizon flag has been renamed to --auto-sample-conditions.\n' +
+            'Please use --auto-sample-conditions going forward.\n');
+        opts['auto-sample-conditions'] = opts['horizon'];
+        delete opts['horizon'];
+    }
+    return opts;
+}
+exports.parseFlags = parseFlags;
+//# sourceMappingURL=flags.js.map

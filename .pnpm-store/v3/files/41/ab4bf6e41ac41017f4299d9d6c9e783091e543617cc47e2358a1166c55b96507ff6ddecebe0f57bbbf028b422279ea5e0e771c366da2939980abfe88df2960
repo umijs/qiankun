@@ -1,0 +1,99 @@
+{
+  "version": "4.16.3",
+  "name": "csv-parse",
+  "description": "CSV parsing implementing the Node.js `stream.Transform` API",
+  "keywords": [
+    "csv",
+    "parse",
+    "parser",
+    "convert",
+    "tsv",
+    "stream"
+  ],
+  "coffeelintConfig": {
+    "indentation": {
+      "level": "error",
+      "value": 2
+    },
+    "line_endings": {
+      "level": "error",
+      "value": "unix"
+    },
+    "max_line_length": {
+      "level": "ignore"
+    }
+  },
+  "author": "David Worms <david@adaltas.com> (https://www.adaltas.com)",
+  "contributors": [
+    "David Worms <david@adaltas.com> (https://www.adaltas.com)",
+    "Will White (https://github.com/willwhite)",
+    "Justin Latimer (https://github.com/justinlatimer)",
+    "jonseymour (https://github.com/jonseymour)",
+    "pascalopitz (https://github.com/pascalopitz)",
+    "Josh Pschorr (https://github.com/jpschorr)",
+    "Elad Ben-Israel (https://github.com/eladb)",
+    "Philippe Plantier (https://github.com/phipla)",
+    "Tim Oxley (https://github.com/timoxley)",
+    "Damon Oehlman (https://github.com/DamonOehlman)",
+    "Alexandru Topliceanu (https://github.com/topliceanu)",
+    "Visup (https://github.com/visup)",
+    "Edmund von der Burg (https://github.com/evdb)",
+    "Douglas Christopher Wilson (https://github.com/dougwilson)",
+    "Joe Eaves (https://github.com/Joeasaurus)",
+    "Mark Stosberg (https://github.com/markstos)"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wdavidw/node-csv-parse"
+  },
+  "homepage": "https://csv.js.org/parse/",
+  "devDependencies": {
+    "@babel/cli": "^7.14.8",
+    "@babel/core": "^7.15.0",
+    "@babel/preset-env": "^7.15.0",
+    "@types/mocha": "^9.0.0",
+    "@types/node": "^16.7.8",
+    "babelify": "^10.0.0",
+    "browserify": "^17.0.0",
+    "coffeescript": "^2.5.1",
+    "csv-generate": "^3.4.3",
+    "csv-spectrum": "^1.0.0",
+    "each": "^1.2.2",
+    "eslint": "^7.32.0",
+    "express": "^4.17.1",
+    "mocha": "^9.1.1",
+    "pad": "^3.2.0",
+    "should": "^13.2.3",
+    "stream-transform": "^2.1.3",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.4.2"
+  },
+  "files": [
+    "/lib"
+  ],
+  "main": "./lib",
+  "mocha": {
+    "throw-deprecation": true,
+    "require": [
+      "should",
+      "coffeescript/register",
+      "ts-node/register"
+    ],
+    "inline-diffs": true,
+    "timeout": 40000,
+    "reporter": "spec",
+    "recursive": true
+  },
+  "scripts": {
+    "build:babel": "cd lib && babel *.js -d es5 && cd ..",
+    "build:browserify": "browserify lib/index.js --transform babelify --standalone parse > lib/browser/index.js && browserify lib/sync.js --transform babelify --standalone parse > lib/browser/sync.js",
+    "build": "npm run build:babel && npm run build:browserify",
+    "preversion": "cp lib/*.ts lib/es5 && git add lib/es5/*.ts",
+    "pretest": "npm run build",
+    "lint": "eslint lib/*.js",
+    "test": "npm run lint && TS_NODE_COMPILER_OPTIONS='{\"strictNullChecks\":true}' mocha test/**/*.{coffee,ts}"
+  },
+  "types": "./lib/index.d.ts",
+  "gitHead": "0fd5209b6862655c384cda052abf38019b959e70"
+}

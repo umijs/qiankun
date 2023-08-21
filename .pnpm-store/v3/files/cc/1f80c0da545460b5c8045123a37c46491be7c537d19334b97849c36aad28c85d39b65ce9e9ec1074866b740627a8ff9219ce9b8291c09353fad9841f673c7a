@@ -1,0 +1,81 @@
+{
+  "name": "cssdb",
+  "version": "6.6.3",
+  "type": "module",
+  "description": "A comprehensive list of CSS features and their positions in the process of becoming implemented web standards",
+  "author": "Jonathan Neal <jonathantneal@hotmail.com>",
+  "license": "CC0-1.0",
+  "funding": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/csstools"
+  },
+  "repository": "csstools/cssdb",
+  "homepage": "https://github.com/csstools/cssdb#readme",
+  "bugs": "https://github.com/csstools/cssdb/issues",
+  "main": "cssdb.json",
+  "module": "cssdb.mjs",
+  "files": [
+    "cssdb.json",
+    "cssdb.mjs"
+  ],
+  "exports": {
+    ".": {
+      "import": "./cssdb.mjs",
+      "require": "./cssdb.json",
+      "default": "./cssdb.json"
+    }
+  },
+  "scripts": {
+    "start": "astro dev",
+    "prestart": "npm run preparesite",
+    "prebuild": "npm run preparesite",
+    "populatedb": "node tasks/populate-db.mjs",
+    "build": "astro build",
+    "prepublishOnly": "npm run populatedb",
+    "create-badges": "node tasks/write-badges.js",
+    "preparesite": "npm run populatedb && npm run create-badges",
+    "test": "npm run test:css && npm run test:json",
+    "test:css": "stylelint src/styles/style.css",
+    "test:json": "node tasks/test.cjs"
+  },
+  "devDependencies": {
+    "@astropub/webapi": "^0.10.14",
+    "@mdn/browser-compat-data": "^5.0.1",
+    "astro": "0.24.3",
+    "browserslist": "^4.20.3",
+    "caniuse-lite": "^1.0.30001346",
+    "fse": "^4.0.1",
+    "lodash.get": "^4.4.2",
+    "postcss": "^8.4.14",
+    "postcss-preset-env": "^7.7.0",
+    "pre-commit": "^1.2.2",
+    "stylelint": "^14.8.5",
+    "stylelint-config-standard": "^25.0.0"
+  },
+  "stylelint": {
+    "extends": "stylelint-config-standard",
+    "rules": {
+      "indentation": "tab",
+      "property-no-unknown": [
+        true,
+        {
+          "ignoreProperties": [
+            "font-smoothing"
+          ]
+        }
+      ],
+      "selector-class-pattern": null,
+      "no-descending-specificity": null,
+      "value-keyword-case": null,
+      "number-leading-zero": "never"
+    }
+  },
+  "keywords": [
+    "css",
+    "features",
+    "list",
+    "specifications",
+    "stages",
+    "tc39"
+  ]
+}

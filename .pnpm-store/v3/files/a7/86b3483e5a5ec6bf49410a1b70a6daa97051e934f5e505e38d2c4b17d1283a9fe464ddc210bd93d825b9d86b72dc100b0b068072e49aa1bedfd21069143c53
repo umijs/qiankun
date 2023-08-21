@@ -1,0 +1,126 @@
+{
+  "name": "stylelint-declaration-block-no-ignored-properties",
+  "description": "Disallow property values that are ignored due to another property value in the same rule.",
+  "version": "2.7.0",
+  "author": {
+    "name": "Krister Kari",
+    "url": "https://github.com/kristerkari/"
+  },
+  "bugs": {
+    "url": "https://github.com/kristerkari/stylelint-declaration-block-no-ignored-properties/issues"
+  },
+  "devDependencies": {
+    "babel-eslint": "^10.1.0",
+    "eslint": "^7.31.0",
+    "eslint-plugin-sort-requires": "^2.1.0",
+    "jest-cli": "^29.3.1",
+    "lint-staged": "^13.0.3",
+    "lodash": "^4.17.21",
+    "np": "^7.6.3",
+    "prettier": "^2.3.2",
+    "stylelint": "^15.1.0"
+  },
+  "peerDependencies": {
+    "stylelint": "^7.0.0 || ^8.0.0 || ^9.0.0 || ^10.0.0 || ^11.0.0 || ^12.0.0 || ^13.0.0 || ^14.0.0 || ^15.0.0"
+  },
+  "engines": {
+    "node": ">=6"
+  },
+  "eslintConfig": {
+    "parser": "babel-eslint",
+    "extends": "eslint:recommended",
+    "parserOptions": {
+      "ecmaVersion": 6
+    },
+    "env": {
+      "es6": true,
+      "jest": true,
+      "node": true
+    },
+    "plugins": [
+      "sort-requires"
+    ],
+    "globals": {
+      "testRule": true
+    },
+    "rules": {
+      "eqeqeq": "error",
+      "no-use-before-define": [
+        "error",
+        "nofunc"
+      ],
+      "sort-requires/sort-requires": "error",
+      "strict": [
+        "error",
+        "global"
+      ],
+      "arrow-spacing": "error",
+      "no-var": "error",
+      "object-shorthand": "error",
+      "prefer-const": "error",
+      "template-curly-spacing": "error"
+    }
+  },
+  "files": [
+    "index.js",
+    "utils",
+    "CHANGELOG.md",
+    "README.md"
+  ],
+  "homepage": "https://github.com/kristerkari/stylelint-declaration-block-no-ignored-properties#readme",
+  "jest": {
+    "clearMocks": true,
+    "collectCoverage": false,
+    "collectCoverageFrom": [
+      "index.js"
+    ],
+    "coverageDirectory": "./coverage/",
+    "coverageReporters": [
+      "lcov",
+      "text"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 75,
+        "functions": 75,
+        "lines": 75,
+        "statements": 75
+      }
+    },
+    "testEnvironment": "node",
+    "setupFiles": [
+      "./jest-setup.js"
+    ]
+  },
+  "keywords": [
+    "css",
+    "less",
+    "lint",
+    "linter",
+    "scss",
+    "stylelint",
+    "stylelint-plugin",
+    "sugarss"
+  ],
+  "license": "MIT",
+  "lint-staged": {
+    "**/*.{js,json}": [
+      "prettier --write",
+      "git add"
+    ]
+  },
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kristerkari/stylelint-declaration-block-no-ignored-properties.git"
+  },
+  "scripts": {
+    "jest": "jest",
+    "lint": "eslint . --ignore-path .gitignore",
+    "precommit": "lint-staged",
+    "pretest": "npm run lint",
+    "prettify": "prettier --write '**/*.{js,json}'",
+    "release": "np",
+    "test": "jest --coverage"
+  }
+}

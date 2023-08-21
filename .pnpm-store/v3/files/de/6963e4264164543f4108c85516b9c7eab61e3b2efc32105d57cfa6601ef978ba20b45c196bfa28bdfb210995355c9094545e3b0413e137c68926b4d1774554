@@ -1,0 +1,10 @@
+{
+	"root": true,
+
+	"extends": "@ljharb",
+
+	"rules": {
+		"id-length": [2, { "min": 1, "max": 27 }],
+		"operator-linebreak": [2, "after"]
+	}
+}

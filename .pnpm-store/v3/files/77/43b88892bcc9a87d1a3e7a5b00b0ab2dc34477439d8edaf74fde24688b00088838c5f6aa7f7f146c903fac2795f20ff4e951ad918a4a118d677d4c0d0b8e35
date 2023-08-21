@@ -1,0 +1,55 @@
+{
+    "name": "supports-hyperlinks",
+    "version": "1.0.1",
+    "description": "Detect if your terminal emulator supports hyperlinks",
+    "license": "MIT",
+    "repository": "jamestalmage/supports-hyperlinks",
+    "author": {
+        "name": "James Talmage",
+        "email": "james@talmage.io",
+        "url": "github.com/jamestalmage"
+    },
+    "engines": {
+        "node": ">=4"
+    },
+    "scripts": {
+        "test": "xo && nyc ava"
+    },
+    "files": [
+        "index.js",
+        "browser.js"
+    ],
+    "browser": "browser.js",
+    "keywords": [
+        "link",
+        "terminal",
+        "hyperlink",
+        "cli"
+    ],
+    "dependencies": {
+        "has-flag": "^2.0.0",
+        "supports-color": "^5.0.0"
+    },
+    "devDependencies": {
+        "ava": "^0.20.0",
+        "babel-preset-env": "^1.6.1",
+        "babel-preset-stage-3": "^6.24.1",
+        "codecov": "^2.2.0",
+        "nyc": "^11.0.0",
+        "xo": "^0.18.2"
+    },
+    "ava": {
+        "babel": {
+            "presets": [
+                "env",
+                "stage-3"
+            ]
+        }
+    },
+    "nyc": {
+        "reporter": [
+            "lcov",
+            "text"
+        ]
+    }
+}

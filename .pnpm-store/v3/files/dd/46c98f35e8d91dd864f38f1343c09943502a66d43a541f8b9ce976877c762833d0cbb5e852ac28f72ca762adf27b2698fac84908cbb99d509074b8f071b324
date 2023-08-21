@@ -1,0 +1,78 @@
+{
+  "name": "remark-rehype",
+  "version": "5.0.0",
+  "description": "remark plugin to transform to rehype",
+  "license": "MIT",
+  "keywords": [
+    "unified",
+    "remark",
+    "rehype",
+    "plugin",
+    "html",
+    "hast",
+    "mdast",
+    "markdown"
+  ],
+  "repository": "remarkjs/remark-rehype",
+  "bugs": "https://github.com/remarkjs/remark-rehype/issues",
+  "author": "Titus Wormer <tituswormer@gmail.com> (https://wooorm.com)",
+  "contributors": [
+    "Titus Wormer <tituswormer@gmail.com> (https://wooorm.com)",
+    "John Otander <johnotander@gmail.com> (https://johno.com)"
+  ],
+  "files": [
+    "index.js"
+  ],
+  "dependencies": {
+    "mdast-util-to-hast": "^6.0.0"
+  },
+  "devDependencies": {
+    "browserify": "^16.0.0",
+    "nyc": "^14.0.0",
+    "prettier": "^1.0.0",
+    "rehype-stringify": "^6.0.0",
+    "remark-cli": "^6.0.0",
+    "remark-parse": "^6.0.0",
+    "remark-preset-wooorm": "^5.0.0",
+    "remark-stringify": "^6.0.0",
+    "tape": "^4.0.0",
+    "tinyify": "^2.0.0",
+    "unified": "^8.0.0",
+    "xo": "^0.24.0"
+  },
+  "scripts": {
+    "format": "remark . -qfo && prettier --write \"**/*.js\" && xo --fix",
+    "build-bundle": "browserify . -s remarkRehype > remark-rehype.js",
+    "build-mangle": "browserify . -s remarkRehype -p tinyify > remark-rehype.min.js",
+    "build": "npm run build-bundle && npm run build-mangle",
+    "test-api": "node test",
+    "test-coverage": "nyc --reporter lcov tape test.js",
+    "test": "npm run format && npm run build && npm run test-coverage"
+  },
+  "nyc": {
+    "check-coverage": true,
+    "lines": 100,
+    "functions": 100,
+    "branches": 100
+  },
+  "prettier": {
+    "tabWidth": 2,
+    "useTabs": false,
+    "singleQuote": true,
+    "bracketSpacing": false,
+    "semi": false,
+    "trailingComma": "none"
+  },
+  "xo": {
+    "prettier": true,
+    "esnext": false,
+    "ignores": [
+      "remark-rehype.js"
+    ]
+  },
+  "remarkConfig": {
+    "plugins": [
+      "preset-wooorm"
+    ]
+  }
+}

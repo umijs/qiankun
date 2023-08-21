@@ -1,0 +1,110 @@
+{
+  "name": "@umijs/bundler-utils",
+  "version": "4.0.76",
+  "homepage": "https://github.com/umijs/umi/tree/master/packages/bundler-utils#readme",
+  "bugs": "https://github.com/umijs/umi/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/umijs/umi"
+  },
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "compiled"
+  ],
+  "dependencies": {
+    "esbuild": "0.17.19",
+    "regenerate": "^1.4.2",
+    "regenerate-unicode-properties": "10.1.0",
+    "spdy": "^4.0.2",
+    "@umijs/utils": "4.0.76"
+  },
+  "devDependencies": {
+    "@babel/code-frame": "7.22.5",
+    "@babel/core": "7.22.5",
+    "@babel/generator": "7.22.5",
+    "@babel/helper-module-imports": "7.22.5",
+    "@babel/parser": "7.22.5",
+    "@babel/plugin-proposal-decorators": "7.22.5",
+    "@babel/plugin-proposal-do-expressions": "7.22.5",
+    "@babel/plugin-proposal-export-default-from": "7.22.5",
+    "@babel/plugin-proposal-function-bind": "7.22.5",
+    "@babel/plugin-proposal-partial-application": "7.22.5",
+    "@babel/plugin-proposal-pipeline-operator": "7.22.5",
+    "@babel/plugin-proposal-record-and-tuple": "7.22.5",
+    "@babel/plugin-transform-class-properties": "7.22.5",
+    "@babel/plugin-transform-export-namespace-from": "7.22.5",
+    "@babel/plugin-transform-private-methods": "7.22.5",
+    "@babel/plugin-transform-private-property-in-object": "7.22.5",
+    "@babel/plugin-transform-runtime": "7.22.5",
+    "@babel/preset-env": "7.22.5",
+    "@babel/preset-react": "7.22.5",
+    "@babel/preset-typescript": "7.22.5",
+    "@babel/register": "7.22.5",
+    "@babel/template": "7.22.5",
+    "@babel/traverse": "7.22.5",
+    "@babel/types": "7.22.5",
+    "@types/babel__code-frame": "7.0.3",
+    "@types/babel__core": "7.20.1",
+    "@types/babel__generator": "7.6.4",
+    "@types/babel__parser": "7.1.1",
+    "@types/babel__template": "7.4.1",
+    "@types/babel__traverse": "7.20.1",
+    "@types/express": "4.17.17",
+    "@types/less": "3.0.3",
+    "@types/spdy": "^3.4.5",
+    "cjs-module-lexer": "1.2.2",
+    "es-module-lexer": "0.10.5",
+    "express": "4.18.2",
+    "http-proxy-middleware": "2.0.6",
+    "less": "4.1.3",
+    "tapable": "2.2.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "authors": [
+    "chencheng <sorrycc@gmail.com> (https://github.com/sorrycc)"
+  ],
+  "compiledConfig": {
+    "deps": [
+      "cjs-module-lexer",
+      "es-module-lexer",
+      "esbuild",
+      "express",
+      "less",
+      "tapable",
+      "http-proxy-middleware",
+      "./bundles/babel/bundle"
+    ],
+    "externals": {
+      "cjs-module-lexer": "$$LOCAL",
+      "debug": "@umijs/utils/compiled/debug",
+      "esbuild": "$$LOCAL",
+      "es-module-lexer": "$$LOCAL",
+      "express": "$$LOCAL",
+      "less": "$$LOCAL",
+      "tapable": "$$LOCAL",
+      "regenerate": "regenerate"
+    },
+    "noMinify": [
+      "./bundles/babel/bundle"
+    ],
+    "extraDtsDeps": [
+      "@babel/code-frame",
+      "@babel/core",
+      "@babel/generator",
+      "@babel/parser",
+      "@babel/template",
+      "@babel/traverse",
+      "@babel/types"
+    ]
+  },
+  "scripts": {
+    "build": "umi-scripts father build",
+    "build:deps": "umi-scripts bundleDeps",
+    "dev": "umi-scripts father dev"
+  }
+}

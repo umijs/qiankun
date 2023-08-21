@@ -1,0 +1,5 @@
+{
+  "id": "[tex]/centernot",
+  "component": "input/tex/extensions/centernot",
+  "targets": ["input/tex/centernot"]
+}

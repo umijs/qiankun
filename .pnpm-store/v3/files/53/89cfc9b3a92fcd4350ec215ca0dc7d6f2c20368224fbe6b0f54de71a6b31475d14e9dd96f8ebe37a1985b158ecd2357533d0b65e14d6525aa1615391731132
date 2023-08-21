@@ -1,0 +1,69 @@
+{
+	"name": "@csstools/postcss-progressive-custom-properties",
+	"description": "Correctly declare progressive enhancements for CSS Custom Properties.",
+	"version": "1.3.0",
+	"author": "Jonathan Neal <jonathantneal@hotmail.com>",
+	"license": "CC0-1.0",
+	"engines": {
+		"node": "^12 || ^14 || >=16"
+	},
+	"main": "dist/index.cjs",
+	"module": "dist/index.mjs",
+	"types": "dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": "./dist/index.mjs",
+			"require": "./dist/index.cjs",
+			"default": "./dist/index.mjs"
+		}
+	},
+	"files": [
+		"CHANGELOG.md",
+		"LICENSE.md",
+		"README.md",
+		"dist"
+	],
+	"dependencies": {
+		"postcss-value-parser": "^4.2.0"
+	},
+	"peerDependencies": {
+		"postcss": "^8.3"
+	},
+	"scripts": {
+		"build": "node ./generate/matchers.mjs && eslint --fix ./src/matchers.ts && rollup -c ../../rollup/default.js",
+		"clean": "node -e \"fs.rmSync('./dist', { recursive: true, force: true });\"",
+		"docs": "node ../../.github/bin/generate-docs/install.mjs",
+		"lint": "npm run lint:eslint && npm run lint:package-json",
+		"lint:eslint": "eslint ./src --ext .js --ext .ts --ext .mjs --no-error-on-unmatched-pattern",
+		"lint:package-json": "node ../../.github/bin/format-package-json.mjs",
+		"prepublishOnly": "npm run clean && npm run build && npm run test",
+		"test": "node .tape.mjs && npm run test:exports",
+		"test:cli": "bash ./test/cli/test.sh",
+		"test:exports": "node ./test/_import.mjs && node ./test/_require.cjs",
+		"test:rewrite-expects": "REWRITE_EXPECTS=true node .tape.mjs"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/csstools/postcss-plugins.git",
+		"directory": "plugins/postcss-progressive-custom-properties"
+	},
+	"keywords": [
+		"css",
+		"custom",
+		"declarations",
+		"postcss",
+		"postcss-plugin",
+		"progressive",
+		"properties",
+		"utility",
+		"variables",
+		"vars"
+	],
+	"csstools": {
+		"exportName": "postcssProgressiveCustomProperties",
+		"humanReadableName": "PostCSS Progressive Custom Properties"
+	},
+	"volta": {
+		"extends": "../../package.json"
+	}
+}

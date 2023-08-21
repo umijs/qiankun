@@ -1,0 +1,4 @@
+{
+  "component": "a11y/explorer",
+  "targets": ["a11y/explorer.ts", "a11y/explorer"]
+}

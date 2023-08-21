@@ -1,0 +1,65 @@
+{
+  "name": "xmldom-sre",
+  "version": "0.1.31",
+  "description": "A W3C Standard XML DOM(Level2 CORE) implementation and parser(DOMParser/XMLSerializer).",
+  "keywords": [
+    "w3c",
+    "dom",
+    "xml",
+    "parser",
+    "javascript",
+    "DOMParser",
+    "XMLSerializer"
+  ],
+  "homepage": "https://github.com/zorkow/xmldom",
+  "author": "jindw <jindw@xidea.org> (http://www.xidea.org)",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/zorkow/xmldom.git"
+  },
+  "main": "./dom-parser.js",
+  "scripts": {
+    "test": "proof platform win32 && proof test */*/*.t.js || t/test"
+  },
+  "engines": {
+    "node": ">=0.1"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "proof": "0.0.28"
+  },
+  "maintainers": [
+    {
+      "name": "zorkow",
+      "email": "volker.sorge@gmail.com",
+      "url": "http://www.cs.bham.ac.uk/~vxs"
+    }
+  ],
+  "contributors": [
+    {
+      "name": "jindw",
+      "email": "jindw@xidea.org",
+      "url": "http://www.xidea.org"
+    },
+    {
+      "name": "Yaron Naveh",
+      "email": "yaronn01@gmail.com",
+      "web": "http://webservices20.blogspot.com/"
+    },
+    {
+      "name": "Harutyun Amirjanyan",
+      "email": "amirjanyan@gmail.com",
+      "web": "https://github.com/nightwing"
+    },
+    {
+      "name": "Alan Gutierrez",
+      "email": "alan@prettyrobots.com",
+      "web": "http://www.prettyrobots.com/"
+    }
+  ],
+  "bugs": {
+    "email": "volker.sorge@gmail.com",
+    "url": "https://github.com/jindw/xmldom/issues"
+  },
+  "license": "(LGPL-2.0 or MIT)"
+}

@@ -1,0 +1,5 @@
+{
+  "component": "ui/lazy",
+  "targets": ["ui/lazy"]
+}
+

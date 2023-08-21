@@ -1,0 +1,146 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+function _react() {
+  const data = _interopRequireWildcard(require("react"));
+
+  _react = function _react() {
+    return data;
+  };
+
+  return data;
+}
+
+var _ = require("..");
+
+function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function _getRequireWildcardCache() { return cache; }; return cache; }
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
+
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i]; return arr2; }
+
+function _iterableToArrayLimit(arr, i) { if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return; var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
+/**
+ * hooks for get search result by keywords (builtin search feature)
+ * @param keywords  search keywords
+ */
+const useBuiltinSearch = keywords => {
+  const _useContext = (0, _react().useContext)(_.context),
+        locale = _useContext.locale,
+        routes = _useContext.routes,
+        locales = _useContext.config.locales;
+
+  const _useState = (0, _react().useState)([]),
+        _useState2 = _slicedToArray(_useState, 2),
+        metas = _useState2[0],
+        setMetas = _useState2[1];
+
+  const _useState3 = (0, _react().useState)([]),
+        _useState4 = _slicedToArray(_useState3, 2),
+        items = _useState4[0],
+        setItems = _useState4[1];
+
+  (0, _react().useEffect)(() => {
+    setMetas(routes.filter(({
+      title,
+      meta
+    }) => {
+      var _locales$;
+
+      const isValidLocaleRoute = (meta === null || meta === void 0 ? void 0 : meta.locale) === locale;
+      const isValidDefaultLocaleRoute = // route locale euqal default locale
+      (meta === null || meta === void 0 ? void 0 : meta.locale) === ((_locales$ = locales[0]) === null || _locales$ === void 0 ? void 0 : _locales$.name) || // missing locale and there has no locale or global locale equal default locale
+      !(meta === null || meta === void 0 ? void 0 : meta.locale) && (!locales.length || locale === locales[0].name);
+      return title && (isValidDefaultLocaleRoute || isValidLocaleRoute);
+    }).reduce((result, route) => {
+      var _route$meta, _route$meta2;
+
+      const routeMetaItem = {
+        title: route.title,
+        path: route.path
+      };
+
+      if ((_route$meta = route.meta) === null || _route$meta === void 0 ? void 0 : _route$meta.group) {
+        routeMetaItem.parent = route.meta.group;
+      }
+
+      result.push(routeMetaItem);
+      result.push(...(((_route$meta2 = route.meta) === null || _route$meta2 === void 0 ? void 0 : _route$meta2.slugs) || []).filter(({
+        value
+      }) => value !== route.title).map(slug => ({
+        title: slug.value,
+        path: `${route.path}#${slug.heading}`,
+        parent: routeMetaItem
+      })));
+      return result;
+    }, []));
+  }, [routes.length, locale]);
+  (0, _react().useEffect)(() => {
+    const val = keywords === null || keywords === void 0 ? void 0 : keywords.trim().toUpperCase();
+
+    if (val) {
+      const result = []; // at least find 5 results
+
+      for (let i = 0; i < metas.length && result.length < 6; i += 1) {
+        if (metas[i].title.toUpperCase().indexOf(val) > -1) {
+          result.push(metas[i]);
+        }
+      }
+
+      setItems(result);
+    } else {
+      setItems([]);
+    }
+  }, [keywords, metas.length]);
+  return items;
+};
+/**
+ * hooks for bind Algolia search feature
+ */
+
+
+const useAlgoliaSearch = () => {
+  const _useContext2 = (0, _react().useContext)(_.context),
+        algolia = _useContext2.config.algolia;
+
+  const binder = (0, _react().useCallback)(selector => {
+    window.docsearch(_objectSpread({
+      inputSelector: selector
+    }, algolia));
+  }, [algolia]);
+  return binder;
+};
+/**
+ * use to bind algolia or return search result by keywords
+ */
+
+
+var _default = keywords => {
+  const _useContext3 = (0, _react().useContext)(_.context),
+        config = _useContext3.config;
+
+  const builtin = useBuiltinSearch(keywords);
+  const algolia = useAlgoliaSearch();
+  return config.algolia ? algolia : builtin;
+};
+
+exports.default = _default;

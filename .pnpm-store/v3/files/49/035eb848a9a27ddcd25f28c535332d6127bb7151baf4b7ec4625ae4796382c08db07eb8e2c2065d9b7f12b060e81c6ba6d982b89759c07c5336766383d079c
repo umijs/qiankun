@@ -1,0 +1,19 @@
+{
+  "compileOnSave": true,
+  "compilerOptions": {
+    "target": "ES5",
+    "downlevelIteration": true,
+    "declaration": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "removeComments": true,
+    "sourceMap": false,
+    "outDir": "dist"
+  },
+  "files": [
+    "src/mhchemParser.ts",
+    "src/mhchemParser.d.ts"
+  ]
+}

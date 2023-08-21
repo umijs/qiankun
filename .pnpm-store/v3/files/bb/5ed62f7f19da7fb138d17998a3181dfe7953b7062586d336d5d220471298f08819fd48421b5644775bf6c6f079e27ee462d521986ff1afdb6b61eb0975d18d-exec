@@ -1,0 +1,135 @@
+{
+    "name": "@types/hapi__joi",
+    "version": "17.1.9",
+    "description": "TypeScript definitions for @hapi/joi",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/hapi__joi",
+    "license": "MIT",
+    "contributors": [
+        {
+            "name": "Bart van der Schoor",
+            "url": "https://github.com/Bartvds",
+            "githubUsername": "Bartvds"
+        },
+        {
+            "name": "Laurence Dougal Myers",
+            "url": "https://github.com/laurence-myers",
+            "githubUsername": "laurence-myers"
+        },
+        {
+            "name": "Christopher Glantschnig",
+            "url": "https://github.com/cglantschnig",
+            "githubUsername": "cglantschnig"
+        },
+        {
+            "name": "David Broder-Rodgers",
+            "url": "https://github.com/DavidBR-SW",
+            "githubUsername": "DavidBR-SW"
+        },
+        {
+            "name": "Gael Magnan de Bornier",
+            "url": "https://github.com/GaelMagnan",
+            "githubUsername": "GaelMagnan"
+        },
+        {
+            "name": "Rytis Alekna",
+            "url": "https://github.com/ralekna",
+            "githubUsername": "ralekna"
+        },
+        {
+            "name": "Pavel Ivanov",
+            "url": "https://github.com/schfkt",
+            "githubUsername": "schfkt"
+        },
+        {
+            "name": "Youngrok Kim",
+            "url": "https://github.com/rokoroku",
+            "githubUsername": "rokoroku"
+        },
+        {
+            "name": "Dan Kraus",
+            "url": "https://github.com/dankraus",
+            "githubUsername": "dankraus"
+        },
+        {
+            "name": "Anjun Wang",
+            "url": "https://github.com/wanganjun",
+            "githubUsername": "wanganjun"
+        },
+        {
+            "name": "Rafael Kallis",
+            "url": "https://github.com/rafaelkallis",
+            "githubUsername": "rafaelkallis"
+        },
+        {
+            "name": "Conan Lai",
+            "url": "https://github.com/aconanlai",
+            "githubUsername": "aconanlai"
+        },
+        {
+            "name": "Peter Thorson",
+            "url": "https://github.com/zaphoyd",
+            "githubUsername": "zaphoyd"
+        },
+        {
+            "name": "Will Garcia",
+            "url": "https://github.com/thewillg",
+            "githubUsername": "thewillg"
+        },
+        {
+            "name": "Simon Schick",
+            "url": "https://github.com/SimonSchick",
+            "githubUsername": "SimonSchick"
+        },
+        {
+            "name": "Alejandro Fernandez Haro",
+            "url": "https://github.com/afharo",
+            "githubUsername": "afharo"
+        },
+        {
+            "name": "Silas Rech",
+            "url": "https://github.com/lenovouser",
+            "githubUsername": "lenovouser"
+        },
+        {
+            "name": "Anand Chowdhary",
+            "url": "https://github.com/AnandChowdhary",
+            "githubUsername": "AnandChowdhary"
+        },
+        {
+            "name": "Miro Yovchev",
+            "url": "https://github.com/myovchev",
+            "githubUsername": "myovchev"
+        },
+        {
+            "name": "David Recuenco",
+            "url": "https://github.com/RecuencoJones",
+            "githubUsername": "RecuencoJones"
+        },
+        {
+            "name": "Frederic Reisenhauer",
+            "url": "https://github.com/freisenhauer",
+            "githubUsername": "freisenhauer"
+        },
+        {
+            "name": "Stefan-Gabriel Muscalu",
+            "url": "https://github.com/legraphista",
+            "githubUsername": "legraphista"
+        },
+        {
+            "name": "Steven Barnett",
+            "url": "https://github.com/stevendesu",
+            "githubUsername": "stevendesu"
+        }
+    ],
+    "main": "",
+    "types": "index.d.ts",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "directory": "types/hapi__joi"
+    },
+    "scripts": {},
+    "dependencies": {},
+    "typesPublisherContentHash": "345381b24e9f64e679f30bf49c7a5569b4beb2299085ce654b0144e20b0bfb5b",
+    "typeScriptVersion": "4.2"
+}

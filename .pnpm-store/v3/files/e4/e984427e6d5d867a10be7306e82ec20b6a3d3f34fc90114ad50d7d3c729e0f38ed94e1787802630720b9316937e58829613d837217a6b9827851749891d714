@@ -1,0 +1,9 @@
+import * as MathCompoundStore from '../rule_engine/math_compound_store';
+export declare const store: typeof MathCompoundStore;
+export declare function loadLocale(locale?: string): Promise<string>;
+export declare function standardLoader(): typeof loadFile;
+export declare function retrieveFiles(locale: string): void;
+export declare function parseMaps(json: string): void;
+export declare function loadFile(locale: string): Promise<string>;
+export declare function loadFileSync(locale: string): Promise<string>;
+export declare function loadAjax(locale: string): Promise<string>;

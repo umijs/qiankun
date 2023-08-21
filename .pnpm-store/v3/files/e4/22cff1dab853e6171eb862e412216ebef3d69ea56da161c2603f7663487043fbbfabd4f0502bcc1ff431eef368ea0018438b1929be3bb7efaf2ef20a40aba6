@@ -1,0 +1,124 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+function _react() {
+  const data = require("react");
+  _react = function _react() {
+    return data;
+  };
+  return data;
+}
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i]; return arr2; }
+function _iterableToArrayLimit(arr, i) { var _i = null == arr ? null : "undefined" != typeof Symbol && arr[Symbol.iterator] || arr["@@iterator"]; if (null != _i) { var _s, _e, _x, _r, _arr = [], _n = !0, _d = !1; try { if (_x = (_i = _i.call(arr)).next, 0 === i) { if (Object(_i) !== _i) return; _n = !1; } else for (; !(_n = (_s = _x.call(_i)).done) && (_arr.push(_s.value), _arr.length !== i); _n = !0); } catch (err) { _d = !0, _e = err; } finally { try { if (!_n && null != _i.return && (_r = _i.return(), Object(_r) !== _r)) return; } finally { if (_d) throw _e; } } return _arr; } }
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+const COLOR_ATTR_NAME = 'data-prefers-color';
+const COLOR_LS_NAME = 'dumi:prefers-color';
+let colorChanger;
+class ColorChanger {
+  constructor() {
+    /**
+     * current color
+     * @note  initial value from head script in src/plugins/theme.ts
+     */
+    this.color = void 0;
+    /**
+     * color change callbacks
+     */
+    this.callbacks = [];
+    this.color = localStorage.getItem(COLOR_LS_NAME) || document.documentElement.getAttribute(COLOR_ATTR_NAME);
+    // listen prefers color change
+    ['light', 'dark'].forEach(color => {
+      const mediaQueryList = this.getColorMedia(color);
+      const handler = ev => {
+        // only apply media prefers color in auto mode
+        if (ev.matches && this.color === 'auto') {
+          document.documentElement.setAttribute(COLOR_ATTR_NAME, color);
+          this.applyCallbacks();
+        }
+      };
+      // compatible with Safari 13-
+      /* istanbul ignore else */
+      if (mediaQueryList.addEventListener) {
+        mediaQueryList.addEventListener('change', handler);
+      } else if (mediaQueryList.addListener) {
+        mediaQueryList.addListener(handler);
+      }
+    });
+  }
+  /**
+   * get media instance for prefers color
+   * @param color   prefers color
+   */
+  getColorMedia(color) {
+    return window.matchMedia(`(prefers-color-scheme: ${color})`);
+  }
+  /**
+   * detect color whether matches current color mode
+   * @param color   expected color
+   */
+  isColorMode(color) {
+    return this.getColorMedia(color).matches;
+  }
+  /**
+   * apply all event change callbacks
+   */
+  applyCallbacks() {
+    this.callbacks.forEach(cb => cb(this.color));
+  }
+  /**
+   * listen color change
+   * @param cb  callback
+   */
+  listen(cb) {
+    this.callbacks.push(cb);
+  }
+  /**
+   * unlisten color change
+   * @param cb  callback
+   */
+  unlisten(cb) {
+    this.callbacks.splice(this.callbacks.indexOf(cb), 1);
+  }
+  /**
+   * set prefers color
+   */
+  set(color) {
+    this.color = color;
+    localStorage.setItem(COLOR_LS_NAME, color);
+    this.applyCallbacks();
+    if (color === 'auto') {
+      document.documentElement.setAttribute(COLOR_ATTR_NAME, this.isColorMode('dark') ? 'dark' : 'light');
+    } else {
+      document.documentElement.setAttribute(COLOR_ATTR_NAME, color);
+    }
+    return color;
+  }
+}
+/**
+ * hook for get/set prefers-color-schema, use to control color mode for theme package
+ * @see https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-color-scheme
+ */
+var _default = () => {
+  const _useState = (0, _react().useState)(),
+    _useState2 = _slicedToArray(_useState, 2),
+    color = _useState2[0],
+    setColor = _useState2[1];
+  const changeColor = (0, _react().useCallback)(val => {
+    colorChanger.set(val);
+  }, []);
+  (0, _react().useEffect)(() => {
+    // lazy initialize, for SSR
+    colorChanger = colorChanger || new ColorChanger();
+    colorChanger.listen(setColor);
+    setColor(colorChanger.color);
+    return () => colorChanger.unlisten(setColor);
+  }, []);
+  return [color, changeColor];
+};
+exports.default = _default;

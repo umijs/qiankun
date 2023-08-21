@@ -1,0 +1,5 @@
+{
+  "component": "a11y/assistive-mml",
+  "targets": ["a11y/assistive-mml.ts"]
+}
+

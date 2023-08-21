@@ -1,0 +1,159 @@
+"use strict";
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.main = void 0;
+const source_map_support_1 = __importDefault(require("source-map-support"));
+source_map_support_1.default.install();
+const path = __importStar(require("path"));
+const ansi_escape_sequences_1 = __importDefault(require("ansi-escape-sequences"));
+const semver = __importStar(require("semver"));
+const command_line_usage_1 = __importDefault(require("command-line-usage"));
+const flags_1 = require("./flags");
+const config_1 = require("./config");
+const server_1 = require("./server");
+const versions_1 = require("./versions");
+const manual_1 = require("./manual");
+const runner_1 = require("./runner");
+const util_1 = require("./util");
+const installedVersion = () => 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+require(path.join('..', 'package.json')).version;
+async function main(argv) {
+    // Don't block anything on a network query to NPM.
+    const latestVersionPromise = latestVersionFromNpm();
+    let results;
+    try {
+        results = await realMain(argv);
+    }
+    catch (e) {
+        console.error(e);
+        process.exitCode = 1;
+    }
+    try {
+        notifyIfOutdated(await latestVersionPromise);
+    }
+    catch (e) {
+        // Don't set a non-zero exit code just because the NPM query failed. Maybe
+        // we're behind a firewall and can't contact NPM.
+        console.error(`\nFailed to check NPM for latest version:\n${e}`);
+    }
+    return results;
+}
+exports.main = main;
+async function latestVersionFromNpm() {
+    const stdout = await (0, util_1.runNpm)(['info', 'tachometer@latest', 'version']);
+    return stdout.toString('utf8').trim();
+}
+function notifyIfOutdated(latestVersion) {
+    const iv = installedVersion();
+    if (semver.lt(iv, latestVersion)) {
+        console.log(ansi_escape_sequences_1.default.format(`
+[bold magenta]{Update available!}
+The latest version of tachometer is [green]{${latestVersion}}
+You are running version [yellow]{${iv}}
+See what's new at [cyan]{https://github.com/Polymer/tachometer/blob/master/CHANGELOG.md}`));
+    }
+}
+async function realMain(argv) {
+    const opts = (0, flags_1.parseFlags)(argv);
+    if (opts.help) {
+        console.log((0, command_line_usage_1.default)([
+            {
+                header: 'tach',
+                content: `v${installedVersion()}\nhttps://github.com/PolymerLabs/tachometer`,
+            },
+            {
+                header: 'Usage',
+                content: `
+Run a benchmark from a local file:
+$ tach foo.html
+
+Compare a benchmark with different URL parameters:
+$ tach foo.html?i=1 foo.html?i=2
+
+Benchmark index.html in a directory:
+$ tach foo/bar
+
+Benchmark a remote URL's First Contentful Paint time:
+$ tach http://example.com
+`,
+            },
+            {
+                header: 'Options',
+                optionList: flags_1.optDefs,
+            },
+        ]));
+        return;
+    }
+    if (opts.version) {
+        console.log(installedVersion());
+        return;
+    }
+    const config = await (0, config_1.makeConfig)(opts);
+    if (config.legacyJsonFile) {
+        console.log(`Please use --json-file instead of --save. ` +
+            `--save will be removed in the next major version.`);
+    }
+    const { plans, gitInstalls } = await (0, versions_1.makeServerPlans)(config.root, opts['npm-install-dir'], config.benchmarks);
+    await Promise.all(gitInstalls.map((gitInstall) => (0, versions_1.installGitDependency)(gitInstall, config.forceCleanNpmInstall)));
+    const servers = new Map();
+    const promises = [];
+    for (const { npmInstalls, mountPoints, specs } of plans) {
+        promises.push(...npmInstalls.map((install) => (0, versions_1.prepareVersionDirectory)(install, config.forceCleanNpmInstall)));
+        promises.push((async () => {
+            const server = await server_1.Server.start({
+                host: opts.host,
+                ports: opts.port,
+                root: config.root,
+                npmInstalls,
+                mountPoints,
+                resolveBareModules: config.resolveBareModules,
+                cache: config.mode !== 'manual',
+            });
+            for (const spec of specs) {
+                servers.set(spec, server);
+            }
+        })());
+    }
+    await Promise.all(promises);
+    if (config.mode === 'manual') {
+        await (0, manual_1.manualMode)(config, servers);
+    }
+    else {
+        const runner = new runner_1.Runner(config, servers);
+        try {
+            return await runner.run();
+        }
+        finally {
+            const allServers = new Set([...servers.values()]);
+            await Promise.all([...allServers].map((server) => server.close()));
+        }
+    }
+}
+//# sourceMappingURL=cli.js.map

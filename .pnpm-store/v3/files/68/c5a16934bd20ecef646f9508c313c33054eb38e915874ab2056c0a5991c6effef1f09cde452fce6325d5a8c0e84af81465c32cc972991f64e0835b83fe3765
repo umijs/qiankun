@@ -1,0 +1,271 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = _default;
+
+function _react() {
+  const data = _interopRequireDefault(require("react"));
+
+  _react = function _react() {
+    return data;
+  };
+
+  return data;
+}
+
+function _fs() {
+  const data = _interopRequireDefault(require("fs"));
+
+  _fs = function _fs() {
+    return data;
+  };
+
+  return data;
+}
+
+function _path() {
+  const data = _interopRequireDefault(require("path"));
+
+  _path = function _path() {
+    return data;
+  };
+
+  return data;
+}
+
+var _getRouteConfig = _interopRequireDefault(require("../routes/getRouteConfig"));
+
+var _getNavFromRoutes = _interopRequireDefault(require("../routes/getNavFromRoutes"));
+
+var _getMenuFromRoutes = _interopRequireDefault(require("../routes/getMenuFromRoutes"));
+
+var _getLocaleFromRoutes = _interopRequireDefault(require("../routes/getLocaleFromRoutes"));
+
+var _getHostPkgAlias = _interopRequireDefault(require("../utils/getHostPkgAlias"));
+
+var _getRepoUrl = _interopRequireDefault(require("../utils/getRepoUrl"));
+
+var _symlink = _interopRequireDefault(require("../utils/symlink"));
+
+var _context = _interopRequireWildcard(require("../context"));
+
+function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function _getRequireWildcardCache() { return cache; }; return cache; }
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
+
+function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
+
+function mergeUserConfig(defaultOpts, api) {
+  const result = Object.assign({}, defaultOpts); // has default value keys
+
+  ['mode', 'title', 'locales'].forEach(key => {
+    result[key] = api.config[key] || result[key];
+  }); // non-default values keys
+
+  ['description', 'logo', 'menus', 'navs'].forEach(key => {
+    if (api.config[key] !== undefined) {
+      result[key] = api.config[key];
+    }
+  }); // nested resolve keys
+
+  ['includes', 'previewLangs', 'examples'].forEach(key => {
+    var _api$config$resolve;
+
+    if ((_api$config$resolve = api.config.resolve) === null || _api$config$resolve === void 0 ? void 0 : _api$config$resolve[key]) {
+      result.resolve[key] = api.config.resolve[key];
+    }
+  }); // use umi routes key
+
+  if (api.userConfig.routes) {
+    result.routes = api.userConfig.routes;
+  }
+
+  result.algolia = api.userConfig.algolia;
+  return result;
+}
+
+function _default(api) {
+  // apply default options
+  let pkg;
+
+  try {
+    pkg = require(_path().default.join(api.paths.cwd, 'package.json'));
+  } catch (err) {
+    pkg = {};
+  }
+
+  const defaultTitle = pkg.name || 'dumi';
+  const hostPkgAlias = (0, _getHostPkgAlias.default)(api.paths).filter(([pkgName]) => pkgName);
+  const defaultOpts = {
+    title: defaultTitle,
+    resolve: {
+      // default to include src, lerna pkg's src & docs folder
+      includes: hostPkgAlias.map(([_, pkgPath]) => _path().default.relative(api.paths.cwd, _path().default.join(pkgPath, 'src'))).concat(['docs']),
+      previewLangs: ['jsx', 'tsx'],
+      examples: ['examples']
+    },
+    locales: [['en-US', 'English'], ['zh-CN', '中文']],
+    mode: 'doc'
+  }; // save umi api & opts into context
+
+  const updateContext = () => (0, _context.init)(api, mergeUserConfig(defaultOpts, api)); // create symlink for packages
+
+
+  hostPkgAlias.forEach(([pkgName, pkgPath]) => {
+    const linkPath = _path().default.join(api.paths.cwd, 'node_modules', pkgName); // link current pkgs into node_modules, for import module resolve when writing demo
+
+
+    if (!_fs().default.existsSync(linkPath)) {
+      (0, _symlink.default)(pkgPath, linkPath);
+    }
+  }); // initial context
+
+  api.onStart(updateContext); // for update context when config change
+
+  api.onGenerateFiles( /*#__PURE__*/_asyncToGenerator(function* () {
+    var _pkg$repository, _pkg$repository2;
+
+    const opts = mergeUserConfig(defaultOpts, api);
+    const root = (yield api.getRoutes()).find(route => route.path === '/');
+    const childRoutes = root.routes;
+    const config = {
+      menus: (0, _getMenuFromRoutes.default)(childRoutes, opts, api.paths),
+      locales: (0, _getLocaleFromRoutes.default)(childRoutes, opts),
+      navs: (0, _getNavFromRoutes.default)(childRoutes, opts, opts.navs),
+      title: opts.title,
+      logo: opts.logo,
+      desc: opts.description,
+      mode: opts.mode,
+      repository: {
+        url: (0, _getRepoUrl.default)(((_pkg$repository = pkg.repository) === null || _pkg$repository === void 0 ? void 0 : _pkg$repository.url) || pkg.repository),
+        branch: ((_pkg$repository2 = pkg.repository) === null || _pkg$repository2 === void 0 ? void 0 : _pkg$repository2.branch) || 'master'
+      },
+      algolia: opts.algolia
+    };
+    api.writeTmpFile({
+      path: 'dumi/config.json',
+      content: JSON.stringify(config, null, 2)
+    });
+    updateContext();
+  })); // repalce default routes with generated routes
+
+  api.onPatchRoutesBefore( /*#__PURE__*/function () {
+    var _ref2 = _asyncToGenerator(function* ({
+      routes,
+      parentRoute
+    }) {
+      // only deal with the top level routes
+      if (!parentRoute) {
+        const result = yield (0, _getRouteConfig.default)(api, _context.default.opts); // clear original routes
+
+        routes.splice(0, routes.length); // append new routes
+
+        routes.push(...result);
+      }
+    });
+
+    return function (_x) {
+      return _ref2.apply(this, arguments);
+    };
+  }()); // add empty component for root layout
+  // TODO: move this logic into getRouteConfig and make sure tests passed
+
+  api.modifyRoutes(routes => {
+    routes.find(route => route.path === '/').component = '(props) => props.children';
+    return routes;
+  }); // remove useless /index.html from exportStatic feature
+
+  api.onPatchRoutes(({
+    routes,
+    parentRoute
+  }) => {
+    if (api.config.exportStatic && (parentRoute === null || parentRoute === void 0 ? void 0 : parentRoute.path) === '/') {
+      const rootHtmlIndex = routes.findIndex(route => route.path === '/index.html');
+      routes.splice(rootHtmlIndex, 1);
+    }
+  }); // exclude .md file for url-loader
+
+  api.modifyDefaultConfig(config => _objectSpread(_objectSpread({}, config), {}, {
+    urlLoaderExcludes: [/\.md$/],
+    // pass empty routes if pages path does not exist and no routes config
+    // to avoid umi throw src directory not exists error
+    routes: _fs().default.existsSync(api.paths.absSrcPath) && !api.userConfig.routes ? undefined : []
+  })); // configure loader for .md file
+
+  api.chainWebpack(config => {
+    var _oPlainTextTest$sourc;
+
+    const oPlainTextTest = config.module.rule('plaintext').get('test');
+    const babelLoader = config.module.rule('js').use('babel-loader').entries(); // remove md file test from umi
+
+    if (oPlainTextTest === null || oPlainTextTest === void 0 ? void 0 : (_oPlainTextTest$sourc = oPlainTextTest.source) === null || _oPlainTextTest$sourc === void 0 ? void 0 : _oPlainTextTest$sourc.includes('md')) {
+      config.module.rule('plaintext').set('test', new RegExp(oPlainTextTest.source.replace(/\|md|md\|/, ''), oPlainTextTest.flags));
+    } // add md file loader
+
+
+    config.module.rule('dumi').test(/\.md$/).use('babel-loader').loader(babelLoader.loader).options(babelLoader.options).end().use('dumi-loader').loader(require.resolve('../loader')).options({
+      previewLangs: _context.default.opts.resolve.previewLangs
+    }); // add alias for current package(s)
+
+    hostPkgAlias.forEach(([pkgName, pkgPath]) => {
+      let srcModule;
+
+      const srcPath = _path().default.join(pkgPath, 'src');
+
+      try {
+        srcModule = require(srcPath);
+      } catch (err) {
+        if (err.code !== 'MODULE_NOT_FOUND') {
+          srcModule = true;
+        }
+      } // use src path instead of main field in package.json if exists
+
+
+      if (srcModule) {
+        // exclude es & lib folder
+        if (!config.resolve.alias.has(`${pkgName}/es`)) {
+          config.resolve.alias.set(`${pkgName}/es`, srcPath);
+        }
+
+        if (!config.resolve.alias.has(`${pkgName}/lib`)) {
+          config.resolve.alias.set(`${pkgName}/lib`, srcPath);
+        }
+
+        if (!config.resolve.alias.has(pkgName)) {
+          config.resolve.alias.set(pkgName, srcPath);
+        }
+      } else if (!config.resolve.alias.has(pkgName)) {
+        config.resolve.alias.set(pkgName, pkgPath);
+      }
+    }); // alias dumi for theme, and set to umi to be able to use @umijs/preset-dumi alone
+
+    config.resolve.alias.set('dumi', process.env.UMI_DIR);
+    return config;
+  }); // watch .md files
+
+  api.addTmpGenerateWatcherPaths(() => {
+    const opts = mergeUserConfig(defaultOpts, api);
+    return [...opts.resolve.includes.map(key => _path().default.join(api.paths.cwd, key, '**/*.md')), ...opts.resolve.examples.map(key => _path().default.join(api.paths.cwd, key, '*.{tsx,jsx}'))];
+  }); // register plugin-analytics
+
+  if (!api.hasPlugins(['@umijs/plugin-analytics']) && // search plugins of other presets
+  api.service._extraPlugins.every(({
+    id
+  }) => id !== '@umijs/plugin-analytics')) {
+    api.registerPlugins([require.resolve('@umijs/plugin-analytics')]);
+  } // TODO: CLI help info
+  // TODO: site title support for routes
+
+}

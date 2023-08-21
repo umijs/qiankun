@@ -1,0 +1,347 @@
+#! /usr/bin/env node
+
+/*************************************************************
+ *
+ *  Copyright (c) 2018 The MathJax Consortium
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+/**
+ * @fileoverview  Builds the lib directory for a component
+ *
+ * @author dpvc@mathjax.org (Davide Cervone)
+ */
+
+
+const fs = require('fs');
+const path = require('path');
+
+/**
+ * The amount of space for each level of indentation
+ */
+const INDENT = '  ';
+
+/**
+ * The pattern to use when looking for explort commands to process
+ */
+const EXPORTPATTERN = /(^export(?:\s+default)?(?:\s+abstract)?\s+[^ {*}]+\s+[a-zA-Z0-9_.$]+)/m;
+
+const EXPORT_IGNORE = ['type', 'interface'];
+const EXPORT_PROCESS = ['let', 'const', 'var', 'function', 'class', 'namespace'];
+
+/**
+ * The relative path to the MathJax directory
+ */
+const mjPath = path.relative(process.cwd(), path.resolve(__dirname, '..', '..', 'js'));
+const mjGlobal = path.join('..', mjPath, 'components', 'global.js');
+
+/**
+ * Read the configuration for the component
+ */
+const config = JSON.parse(fs.readFileSync(process.argv[2] || 'build.json'));
+
+function getType() {
+  const component = config.component || 'part';
+  if (component.match(/\/(svg|chtml|common)\/fonts\//)) return RegExp.$1 + '-font';
+  if (component.match(/\/(mathml|tex)\/.+\//)) return RegExp.$1 + '-extension';
+  if (component.match(/^(.+)\//)) return RegExp.$1;
+  return component;
+}
+
+/**
+ * Extract the configuration values
+ */
+const COMPONENT = path.basename(config.component || 'part');                // name of the component
+const ID = config.id || config.component || 'part';                         // the ID of the component
+const TARGETS = config.targets || [];                                       // the files to include in the component
+const EXCLUDE = new Map((config.exclude || []).map(name => [name, true]));  // files to exclude from the component
+const EXCLUDESUBDIRS = config.excludeSubdirs === 'true';                    // exclude subdirectories or not
+const JS = config.js || config.mathjax || mjPath;                           // path to the compiled .js files
+const LIB = config.lib || './lib';                                          // path to the lib directory to create
+const TS = config.ts || JS.replace(/js$/, 'ts');                            // path to the .ts files
+const GLOBAL = config.global || mjGlobal;                                   // path to the global.js file
+const VERSION = config.version || mjGlobal.replace(/global/, 'version');    // path to the version.js file
+const TYPE = config.type || getType();                                      // the module type
+
+/**
+ * The list of files that need to be added to the lib directory
+ */
+let PACKAGE = [];
+
+/**
+ * Process an array of files/directories to be included in the component
+ *
+ * @param {string} base    The root directory for the .ts files
+ * @param {string} dir     The relative path within the root for the files to process
+ * @param {string[]} list  An array of file/directory names to process
+ * @param {boolean} top    True if this is the initial list of files
+ */
+function processList(base, dir, list, top = true) {
+  for (const item of list) {
+    const file = path.join(dir, item);
+    if (!EXCLUDE.has(file)) {
+      const stat = fs.statSync(path.resolve(base, file));
+      if (stat.isDirectory()) {
+        if (top || !EXCLUDESUBDIRS) {
+          processDir(base, file);
+        }
+      } else if (file.match(/\.ts$/)) {
+        processFile(base, file);
+      }
+    }
+  }
+}
+
+/**
+ * Process the contents of the directory
+ *
+ * @param {string} base    The root directory for the .ts files
+ * @param {string} dir     The relative path within the root for the directory to process
+ */
+function processDir(base, dir) {
+  const root = path.resolve(base, dir);
+  processList(base, dir, fs.readdirSync(root), false);
+}
+
+/**
+ * Process the contents of a .ts file
+ *
+ * Look for export commands within the file, and determine the objects
+ *   that they reference, then produce the library file that defines
+ *   them, and add the file to the package list.
+ *
+ * @param {string} base    The root directory for the .ts files
+ * @param {string} name    The path of the file relative to the base
+ */
+function processFile(base, name) {
+  console.info('  ' + name);
+  const file = fs.readFileSync(path.resolve(base, name)).toString();
+  const parts = file.split(EXPORTPATTERN);
+  const objects = processParts(parts);
+  const lines = processLines(name, objects);
+  makeFile(name, lines);
+  if (objects.length) {
+    PACKAGE.push(name);
+  }
+}
+
+/**
+ * Process the export lines to record the ones that need to be added to the
+ *   library file.
+ *
+ * @param {string[]} parts       The file broken into export lines and the text between them
+ * @return {string[]}            An array of names of exported objects
+ */
+function processParts(parts) {
+  const objects = [];
+  for (let i = 1; i < parts.length; i += 2) {
+    const words = parts[i].split(/\s+/);
+    const type = words[words.length - 2];
+    const name = words[words.length - 1];
+
+    if (words[1] === 'default' || type === 'default') {
+      objects.push('default');
+    } else if (EXPORT_PROCESS.indexOf(type) >= 0) {
+      objects.push(name);
+    } else if (EXPORT_IGNORE.indexOf(type) < 0) {
+      console.info("    Can't process '" + parts[i] + "'");
+    }
+  }
+  return objects;
+}
+
+/**
+ * Create the lines of the lib file using the object names from the file.
+ *
+ * @param {string} name       The path of the file relative to the root .ts directory
+ * @param {string[]} objects  Array of names of the object exported by the file
+ * @return {string[]}         Array of lines for the contents of the library file
+ */
+function processLines(file, objects) {
+  if (objects.length === 0) return [];
+  const dir = path.dirname(file).replace(/^\.$/, '');
+  const dots = dir.replace(/[^\/]+/g, '..') || '.';
+  const relative = path.join(dots, '..', JS, dir, path.basename(file)).replace(/\.ts$/, '.js');
+  const name = path.parse(file).name;
+  const lines = [
+    '"use strict";',
+    `Object.defineProperty(exports, '__esModule', {value: true});`
+  ];
+  let source = ((dir.replace(/\//g, '.') + '.' + name).replace(/^\./, '')
+                + (exists(path.resolve(JS, file.replace(/\.ts$/, ''))) ? '_ts' : ''))
+      .replace(/\.[^.]*/g, (x) => (x.substr(1).match(/[^a-zA-Z_]/) ? '[\'' + x.substr(1) + '\']' : x));
+  for (const id of objects) {
+    lines.push(`exports.${id} = MathJax._.${source}.${id};`);
+  }
+  return lines;
+}
+
+/**
+ * @param {string} file     Path to a file
+ * @return {boolean}        True if the file exists, false if not
+ */
+function exists(file) {
+  if (!fs.existsSync(file)) return false;
+  //
+  // For case-insensitive file systems (like Mac OS),
+  //   check that the file names match exactly
+  //
+  const [dir, name] = [path.dirname(file), path.basename(file)];
+  return fs.readdirSync(dir).indexOf(name) >= 0;
+}
+
+/**
+ * Recursively make any needed directories
+ *
+ * @param {string} dir   The directory relative to the library directory
+ */
+function makeDir(dir) {
+  const fulldir = path.resolve(LIB, dir);
+  if (fs.existsSync(fulldir)) return;
+  makeDir(path.dirname(fulldir));
+  fs.mkdirSync(fulldir);
+}
+
+/**
+ * Make a file in the library directory from the given lines of javascript
+ *
+ * @param {string} file     The name of the file relative to the root .ts directory
+ * @param {string[]} lines  The contents of the file to create
+ */
+function makeFile(file, lines) {
+  if (!lines.length) return;
+  const [dir, name] = [path.dirname(file), path.basename(file)];
+  makeDir(dir);
+  fs.writeFileSync(path.resolve(LIB, dir, name.replace(/\.ts$/, '.js')), lines.join('\n') + '\n');
+}
+
+/**
+ * Make the library file that adds all the exported objects into the MathJax global object
+ */
+function processGlobal() {
+  console.info('  ' + COMPONENT + '.ts');
+  const lines = [
+    `import {combineWithMathJax} from '${GLOBAL}';`,
+    `import {VERSION} from '${VERSION}';`,
+    '',
+  ];
+  const packages = [];
+  PACKAGE = PACKAGE.sort(sortDir);
+  while (PACKAGE.length) {
+    const dir = path.dirname(PACKAGE[0]).split(path.sep)[0];
+    packages.push(processPackage(lines, INDENT, dir));
+  }
+  const name = (ID.match(/[^a-zA-Z0-9_]/) ? `"${ID}"` : ID);
+  lines.push(
+    '',
+    'if (MathJax.loader) {',
+      INDENT + `MathJax.loader.checkVersion('${ID}', VERSION, '${TYPE}');`,
+    '}',
+    '',
+    `combineWithMathJax({_: {`,
+      INDENT + packages.join(',\n' + INDENT),
+    '}});'
+  );
+  fs.writeFileSync(path.join(LIB, COMPONENT + '.js'), lines.join('\n') + '\n');
+}
+
+/**
+ * Sort file paths alphabetically
+ */
+function sortDir(a, b) {
+  const A = a.replace(/\//g, '|');          // Replace directory separator by one that is after the alphnumerics
+  const B = b.replace(/\//g, '|');
+  return (A === B ? 0 : A < B ? -1 : 1);
+}
+
+let importCount = 0;
+/**
+ * Recursively process packages, collecting them into groups by subdirectory, properly indented
+ *
+ * @param {string[]} lines   The array where lines of code defining the packages are to be stored
+ * @param {string} space     The current level of indentation
+ * @param {string} dir       The subdirectory currently being processed
+ * @return {string}          The string to use to load all the objects from the given directory
+ */
+function processPackage(lines, space, dir) {
+  const packages = [];
+  //
+  //  Loop through the lines that are in the current directory
+  //
+  while (PACKAGE.length && (PACKAGE[0].substr(0, dir.length) === dir || dir === '.')) {
+    //
+    // If the current package is in this directory (not a subdirectory)
+    //   Get the location of transpiled mathjax file
+    //   Get the name to use for the data from that file
+    //   Create an entry for the file in the MathJax global that loads the reuired component
+    // Otherwise (its in a subdirectory)
+    //   Get the subdirectory name
+    //   Process the subdirectory using an additional indentation
+    //
+    if (path.dirname(PACKAGE[0]) === dir) {
+      const file = PACKAGE.shift();
+      const name = path.basename(file);
+      const relativefile = path.join('..', JS, dir, name).replace(/\.ts$/, '.js');
+      const component = 'module' + (++importCount);
+      lines.push(`import * as ${component} from '${relativefile}';`);
+      let property = name.replace(/\.ts$/, '');
+      if (property !== name && exists(path.resolve(JS, file.replace(/\.ts$/, '')))) {
+        property += '_ts';
+      }
+      if (property.match(/[^a-zA-Z0-9_]/)) {
+        property = `"${property}"`;
+      }
+      packages.push(`${property}: ${component}`);
+    } else {
+      let subdir = path.dirname(PACKAGE[0]);
+      while (path.dirname(subdir) !== dir && subdir !== '.') {
+        subdir = path.dirname(subdir);
+      }
+      packages.push(processPackage(lines, space + (dir === '.' ? '' : INDENT), subdir));
+    }
+  }
+  //
+  // Create the string defining the object that loads all the needed files into the proper places
+  //
+  if (dir === '.') return packages.join(',\n    ');
+  return path.basename(dir) + ': {\n' + INDENT + space + packages.join(',\n' + INDENT + space) + '\n' + space + '}';
+}
+
+/**
+ * @param {string} dir   The path to the directory tree to be removed (recursively)
+ */
+function rmDir(dir) {
+  if (!dir) return;
+  if (fs.existsSync(dir)) {
+    for (const name of fs.readdirSync(dir)) {
+      const file = path.join(dir, name);
+      if (fs.lstatSync(file).isDirectory()) {
+        rmDir(file);
+      } else {
+        fs.unlinkSync(file);
+      }
+    }
+    fs.rmdirSync(dir);
+  }
+}
+
+//
+// Remove the existing lib directory contents, if any.
+// Load all the target files from the MathJax .ts directory.
+// Create the file that loads all the target objects into the MathJax global object.
+//
+rmDir(LIB);
+console.info("Processing:");
+processList(TS, '', TARGETS);
+processGlobal();

@@ -1,0 +1,90 @@
+{
+  "name": "babel-plugin-module-resolver",
+  "version": "4.1.0",
+  "main": "lib/index.js",
+  "description": "Module resolver plugin for Babel",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tleunen/babel-plugin-module-resolver.git"
+  },
+  "engines": {
+    "node": ">= 8.0.0"
+  },
+  "files": [
+    "lib"
+  ],
+  "author": {
+    "name": "Tommy Leunen",
+    "email": "tommy.leunen@gmail.com",
+    "url": "http://tommyleunen.com"
+  },
+  "license": "MIT",
+  "keywords": [
+    "babel",
+    "babel-plugin",
+    "module",
+    "resolver",
+    "alias",
+    "rewrite",
+    "resolve",
+    "rename",
+    "mapping",
+    "require",
+    "import"
+  ],
+  "dependencies": {
+    "find-babel-config": "^1.2.0",
+    "glob": "^7.1.6",
+    "pkg-up": "^3.1.0",
+    "reselect": "^4.0.0",
+    "resolve": "^1.13.1"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.7.5",
+    "@babel/core": "^7.7.5",
+    "@babel/plugin-syntax-dynamic-import": "^7.7.4",
+    "@babel/plugin-transform-modules-commonjs": "^7.7.5",
+    "@babel/preset-env": "^7.7.6",
+    "babel-core": "^7.0.0-bridge.0",
+    "babel-jest": "^24.9.0",
+    "common-tags": "^1.8.0",
+    "eslint": "^6.7.2",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-config-prettier": "^6.7.0",
+    "eslint-plugin-import": "^2.19.1",
+    "husky": "^4.3.6",
+    "jest": "^24.9.0",
+    "lint-staged": "^10.5.3",
+    "prettier-eslint-cli": "^5.0.0",
+    "standard-version": "^9.0.0"
+  },
+  "scripts": {
+    "lint": "eslint src test",
+    "compile": "babel src --out-dir lib",
+    "pretest": "npm run lint",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch",
+    "prepublish": "npm run compile",
+    "release": "standard-version"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{js}": [
+      "prettier-eslint --write",
+      "git add"
+    ]
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testRegex": "/test/.*\\.test\\.js$",
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/log.js"
+    ]
+  }
+}

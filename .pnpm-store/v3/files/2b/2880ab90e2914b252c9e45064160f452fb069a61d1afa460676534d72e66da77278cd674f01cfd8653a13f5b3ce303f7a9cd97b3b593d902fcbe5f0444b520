@@ -1,0 +1,5 @@
+declare const _default: () => (ast: any) => void;
+/**
+ * rehype plugin for convert code block to SourceCode compomnent
+ */
+export default _default;

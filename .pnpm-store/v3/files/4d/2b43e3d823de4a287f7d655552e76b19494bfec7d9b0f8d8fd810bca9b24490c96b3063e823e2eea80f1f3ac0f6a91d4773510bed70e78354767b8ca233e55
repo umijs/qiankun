@@ -1,0 +1,66 @@
+{
+    "name": "@types/lodash",
+    "version": "4.14.129",
+    "description": "TypeScript definitions for Lo-Dash",
+    "license": "MIT",
+    "contributors": [
+        {
+            "name": "Brian Zengel",
+            "url": "https://github.com/bczengel",
+            "githubUsername": "bczengel"
+        },
+        {
+            "name": "Ilya Mochalov",
+            "url": "https://github.com/chrootsu",
+            "githubUsername": "chrootsu"
+        },
+        {
+            "name": "Stepan Mikhaylyuk",
+            "url": "https://github.com/stepancar",
+            "githubUsername": "stepancar"
+        },
+        {
+            "name": "AJ Richardson",
+            "url": "https://github.com/aj-r",
+            "githubUsername": "aj-r"
+        },
+        {
+            "name": "e-cloud",
+            "url": "https://github.com/e-cloud",
+            "githubUsername": "e-cloud"
+        },
+        {
+            "name": "Georgii Dolzhykov",
+            "url": "https://github.com/thorn0",
+            "githubUsername": "thorn0"
+        },
+        {
+            "name": "Jack Moore",
+            "url": "https://github.com/jtmthf",
+            "githubUsername": "jtmthf"
+        },
+        {
+            "name": "Dominique Rau",
+            "url": "https://github.com/DomiR",
+            "githubUsername": "DomiR"
+        }
+    ],
+    "main": "",
+    "types": "index",
+    "typesVersions": {
+        ">=3.1.0-0": {
+            "*": [
+                "ts3.1/*"
+            ]
+        }
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "directory": "types/lodash"
+    },
+    "scripts": {},
+    "dependencies": {},
+    "typesPublisherContentHash": "99733c4a013f658b4ea26c608c4cd0465c59c35a8015a52d510a1f414dff5c37",
+    "typeScriptVersion": "2.8"
+}

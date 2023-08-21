@@ -1,0 +1,35 @@
+import * as React from 'react';
+import type { CSSMotionProps } from 'rc-motion';
+import type { StretchType, AlignType, TransitionNameType, AnimationType, Point, MobileConfig } from '../interface';
+import type { PopupInnerRef } from './PopupInner';
+export interface PopupProps {
+    visible?: boolean;
+    style?: React.CSSProperties;
+    getClassNameFromAlign?: (align: AlignType) => string;
+    onAlign?: (element: HTMLElement, align: AlignType) => void;
+    getRootDomNode?: () => HTMLElement;
+    align?: AlignType;
+    destroyPopupOnHide?: boolean;
+    className?: string;
+    prefixCls: string;
+    onMouseEnter?: React.MouseEventHandler<HTMLElement>;
+    onMouseLeave?: React.MouseEventHandler<HTMLElement>;
+    onMouseDown?: React.MouseEventHandler<HTMLElement>;
+    onTouchStart?: React.TouchEventHandler<HTMLElement>;
+    onClick?: React.MouseEventHandler<HTMLDivElement>;
+    stretch?: StretchType;
+    children?: React.ReactNode;
+    point?: Point;
+    zIndex?: number;
+    mask?: boolean;
+    motion: CSSMotionProps;
+    maskMotion: CSSMotionProps;
+    forceRender?: boolean;
+    animation: AnimationType;
+    transitionName: TransitionNameType;
+    maskAnimation: AnimationType;
+    maskTransitionName: TransitionNameType;
+    mobile?: MobileConfig;
+}
+declare const Popup: React.ForwardRefExoticComponent<PopupProps & React.RefAttributes<PopupInnerRef>>;
+export default Popup;

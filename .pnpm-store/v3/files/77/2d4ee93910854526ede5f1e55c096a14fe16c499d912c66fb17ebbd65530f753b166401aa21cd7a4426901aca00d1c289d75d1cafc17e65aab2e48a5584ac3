@@ -1,0 +1,104 @@
+{
+  "name": "ast-metadata-inferer",
+  "version": "0.7.0",
+  "main": "compat.json",
+  "repository": "git@github.com:amilajack/ast-metadata-inferer.git",
+  "author": "Amila Welihinda <amilajack@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^27.0.1",
+    "@types/nightmare": "^2.10.5",
+    "@types/node": "^16.6.2",
+    "@typescript-eslint/eslint-plugin": "^4.29.2",
+    "@typescript-eslint/parser": "^4.29.2",
+    "electron": "^13.2.1",
+    "eslint": "^7.32.0",
+    "eslint-config-bliss": "^5.0.0",
+    "jest": "^27.0.6",
+    "nightmare": "^3.0.2",
+    "ts-jest": "^27.0.5",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.3.5"
+  },
+  "scripts": {
+    "build": "rm -rf lib && tsc && yarn metadata && yarn compat && yarn tsc",
+    "compat": "ts-node ./src/compat.ts",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "metadata": "ts-node ./src/metadata.ts",
+    "preversion": "yarn test && yarn compat",
+    "start": "yarn metadata",
+    "test": "jest && yarn build"
+  },
+  "files": [
+    "lib",
+    "compat.json",
+    "metadata.json"
+  ],
+  "devEngines": {
+    "node": ">=10"
+  },
+  "engineStrict": true,
+  "renovate": {
+    "extends": [
+      "bliss"
+    ]
+  },
+  "eslintConfig": {
+    "extends": [
+      "plugin:import/errors",
+      "plugin:import/typescript",
+      "prettier/@typescript-eslint",
+      "plugin:prettier/recommended",
+      "plugin:promise/recommended"
+    ],
+    "parserOptions": {
+      "ecmaVersion": 2018,
+      "sourceType": "module"
+    },
+    "rules": {
+      "import/extensions": "off",
+      "prettier/prettier": [
+        "error"
+      ]
+    },
+    "overrides": [
+      {
+        "extends": [
+          "bliss",
+          "plugin:import/typescript",
+          "plugin:@typescript-eslint/recommended",
+          "prettier/@typescript-eslint",
+          "plugin:prettier/recommended",
+          "plugin:promise/recommended"
+        ],
+        "files": [
+          "*.ts",
+          "*.tsx"
+        ],
+        "parser": "@typescript-eslint/parser",
+        "parserOptions": {
+          "ecmaVersion": 2018,
+          "sourceType": "module"
+        },
+        "rules": {
+          "import/default": "off",
+          "import/extensions": "off",
+          "import/no-extraneous-dependencies": "off",
+          "@typescript-eslint/no-var-requires": "off"
+        }
+      },
+      {
+        "files": [
+          "*.spec.ts",
+          "*.spec.tsx"
+        ],
+        "rules": {
+          "@typescript-eslint/ban-ts-ignore": "off"
+        }
+      }
+    ]
+  },
+  "dependencies": {
+    "@mdn/browser-compat-data": "^3.3.14"
+  }
+}

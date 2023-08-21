@@ -1,0 +1,44 @@
+{
+  "name": "postcss-selector-not",
+  "version": "5.0.0",
+  "description": "PostCSS plugin to transform :not() W3C CSS level 4 pseudo class to :not() CSS level 3 selectors",
+  "keywords": [
+    "postcss",
+    "postcss-plugin",
+    "selectors",
+    "selector",
+    "Not"
+  ],
+  "author": "Maxime Thirouin",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/postcss/postcss-selector-not.git"
+  },
+  "main": "dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "balanced-match": "^1.0.0"
+  },
+  "peerDependencies": {
+    "postcss": "^8.1.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.11.6",
+    "@babel/cli": "^7.11.6",
+    "@babel/preset-env": "^7.11.5",
+    "@babel/register": "^7.11.5",
+    "eslint": "^7.9.0",
+    "postcss": "^8.1.0",
+    "tape": "^5.0.1"
+  },
+  "scripts": {
+    "lint": "eslint ./src/*.js ./test/*.js",
+    "tape": "tape -r @babel/register test/*.js",
+    "test": "npm run lint && npm run babelify && npm run tape",
+    "babelify": "babel src --out-dir dist",
+    "prepublishOnly": "npm run babelify"
+  }
+}

@@ -1,0 +1,88 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+function _react() {
+  const data = _interopRequireDefault(require("react"));
+
+  _react = function _react() {
+    return data;
+  };
+
+  return data;
+}
+
+function _remarkRehype() {
+  const data = _interopRequireDefault(require("remark-rehype"));
+
+  _remarkRehype = function _remarkRehype() {
+    return data;
+  };
+
+  return data;
+}
+
+function _sylvanas() {
+  const data = require("sylvanas");
+
+  _sylvanas = function _sylvanas() {
+    return data;
+  };
+
+  return data;
+}
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function _objectWithoutProperties(source, excluded) { if (source == null) return {}; var target = _objectWithoutPropertiesLoose(source, excluded); var key, i; if (Object.getOwnPropertySymbols) { var sourceSymbolKeys = Object.getOwnPropertySymbols(source); for (i = 0; i < sourceSymbolKeys.length; i++) { key = sourceSymbolKeys[i]; if (excluded.indexOf(key) >= 0) continue; if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue; target[key] = source[key]; } } return target; }
+
+function _objectWithoutPropertiesLoose(source, excluded) { if (source == null) return {}; var target = {}; var sourceKeys = Object.keys(source); var key, i; for (i = 0; i < sourceKeys.length; i++) { key = sourceKeys[i]; if (excluded.indexOf(key) >= 0) continue; target[key] = source[key]; } return target; }
+
+/**
+ * handle demo type node from parse
+ */
+function demoHandler(h, _ref) {
+  let type = _ref.type,
+      lang = _ref.lang,
+      value = _ref.value,
+      position = _ref.position,
+      props = _objectWithoutProperties(_ref, ["type", "lang", "value", "position"]);
+
+  // split source codes for previewer
+  const clonedNode = {
+    lang,
+    value
+  };
+  const source = {
+    jsx: clonedNode.value
+  }; // set source code
+
+  if (lang === 'tsx') {
+    source.tsx = source.jsx;
+    source.jsx = (0, _sylvanas().parseText)(source.tsx);
+  }
+
+  return h(position, 'div', _objectSpread({
+    type: 'previewer',
+    lang,
+    source
+  }, props));
+}
+
+var _default = () => (0, _remarkRehype().default)({
+  handlers: {
+    demo: demoHandler
+  },
+  allowDangerousHTML: true
+});
+
+exports.default = _default;

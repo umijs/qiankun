@@ -1,0 +1,30 @@
+{
+  "name": "hast-util-is-conditional-comment",
+  "version": "1.0.4",
+  "description": "hast utility to check if a node is a conditional comment",
+  "license": "MIT",
+  "keywords": [
+    "unist",
+    "hast",
+    "hast-util",
+    "util",
+    "utility",
+    "html",
+    "conditional",
+    "comment"
+  ],
+  "repository": "https://github.com/rehypejs/rehype-minify/tree/main/packages/hast-util-is-conditional-comment",
+  "bugs": "https://github.com/rehypejs/rehype-minify/issues",
+  "funding": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/unified"
+  },
+  "author": "Titus Wormer <tituswormer@gmail.com> (https://wooorm.com)",
+  "contributors": [
+    "Titus Wormer <tituswormer@gmail.com>"
+  ],
+  "files": [
+    "index.js"
+  ],
+  "xo": false
+}

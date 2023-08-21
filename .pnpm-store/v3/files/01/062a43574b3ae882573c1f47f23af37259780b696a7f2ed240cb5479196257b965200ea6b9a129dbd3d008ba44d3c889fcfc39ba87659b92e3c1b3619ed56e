@@ -1,0 +1,24 @@
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+import { ResultStatsWithDifferences } from './stats';
+/**
+ * Format statistical results as a CSV file string.
+ */
+export declare function formatCsvStats(results: ResultStatsWithDifferences[]): string;
+/**
+ * Format raw sample results as a CSV file string.
+ *
+ * Columns correspond to benchmarks. Rows correspond to sample iterations. The
+ * first row is headers containing the benchmark names.
+ *
+ * For example:
+ *
+ * foo, bar, baz
+ * 1.2, 5.5, 9.4
+ * 1.8, 5.6, 9.1
+ * 1.3, 5.2, 9.8
+ */
+export declare function formatCsvRaw(results: ResultStatsWithDifferences[]): string;

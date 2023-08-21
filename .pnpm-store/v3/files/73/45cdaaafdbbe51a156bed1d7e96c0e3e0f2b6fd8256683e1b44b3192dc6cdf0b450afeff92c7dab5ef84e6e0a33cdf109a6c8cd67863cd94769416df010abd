@@ -1,0 +1,82 @@
+{
+  "name": "css-blank-pseudo",
+  "version": "3.0.3",
+  "description": "Style form elements when they are empty",
+  "author": "Jonathan Neal <jonathantneal@hotmail.com>",
+  "license": "CC0-1.0",
+  "homepage": "https://github.com/csstools/postcss-plugins/tree/main/plugins/css-blank-pseudo#readme",
+  "bugs": "https://github.com/csstools/postcss-plugins/issues",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
+    },
+    "./browser": {
+      "import": "./dist/browser.mjs",
+      "require": "./dist/browser.cjs",
+      "default": "./dist/browser.mjs"
+    },
+    "./browser-global": {
+      "default": "./dist/browser-global.js"
+    }
+  },
+  "files": [
+    "CHANGELOG.md",
+    "LICENSE.md",
+    "README.md",
+    "dist",
+    "browser.js"
+  ],
+  "bin": {
+    "css-blank-pseudo": "dist/cli.cjs"
+  },
+  "scripts": {
+    "build": "rollup -c ../../rollup/default.js && npm run copy-browser-scripts-to-old-location",
+    "clean": "node -e \"fs.rmSync('./dist', { recursive: true, force: true });\"",
+    "copy-browser-scripts-to-old-location": "node -e \"fs.copyFileSync('./dist/browser-global.js', './browser.js'); fs.copyFileSync('./dist/browser-global.js', './browser-legacy.js')\"",
+    "lint": "eslint ./src --ext .js --ext .ts --ext .mjs --no-error-on-unmatched-pattern",
+    "prepublishOnly": "npm run clean && npm run build && npm run test",
+    "stryker": "stryker run --logLevel error",
+    "test": "node .tape.mjs && npm run test:exports",
+    "test:rewrite-expects": "REWRITE_EXPECTS=true node .tape.mjs",
+    "cli": "css-blank-pseudo",
+    "test:exports": "node ./test/_import.mjs && node ./test/_require.cjs"
+  },
+  "engines": {
+    "node": "^12 || ^14 || >=16"
+  },
+  "dependencies": {
+    "postcss-selector-parser": "^6.0.9"
+  },
+  "peerDependencies": {
+    "postcss": "^8.4"
+  },
+  "keywords": [
+    "postcss",
+    "css",
+    "postcss-plugin",
+    "javascript",
+    "js",
+    "polyfill",
+    "blank",
+    "empty",
+    "pseudo",
+    "selectors",
+    "accessibility",
+    "a11y",
+    "input",
+    "select",
+    "textarea"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/csstools/postcss-plugins.git",
+    "directory": "plugins/css-blank-pseudo"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  }
+}

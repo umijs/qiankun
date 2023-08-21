@@ -1,0 +1,5 @@
+declare const _default: () => (ast: any, vFile: any) => void;
+/**
+ * rehype plugin for collect slugs & add id for headings
+ */
+export default _default;

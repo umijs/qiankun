@@ -1,0 +1,82 @@
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+import * as table from 'table';
+import { ResultStats } from './stats';
+import { BenchmarkSpec } from './types';
+export declare const spinner: string[];
+/**
+ * An abstraction for the various dimensions of data we display.
+ */
+interface Dimension {
+    label: string;
+    format: (r: ResultStats) => string;
+    tableConfig?: table.ColumnUserConfig;
+}
+export interface ResultTable {
+    dimensions: Dimension[];
+    results: ResultStats[];
+}
+export interface AutomaticResults {
+    fixed: ResultTable;
+    unfixed: ResultTable;
+}
+/**
+ * Create an automatic mode result table.
+ */
+export declare function automaticResultTable(results: ResultStats[]): AutomaticResults;
+/**
+ * Format a terminal text result table where each result is a row:
+ *
+ * +--------+--------+
+ * | Header | Header |
+ * +--------+--------+
+ * | Value  | Value  |
+ * +--------+--------+
+ * | Value  | Value  |
+ * +--------+--------+
+ */
+export declare function verticalTermResultTable({ dimensions, results, }: ResultTable): string;
+/**
+ * Format a terminal text result table where each result is a column:
+ *
+ * +--------+-------+-------+
+ * | Header | Value | Value |
+ * +--------+-------+-------+
+ * | Header | Value | Value |
+ * +--------+-------+-------+
+ */
+export declare function horizontalTermResultTable({ dimensions, results, }: ResultTable): string;
+/**
+ * Format an HTML result table where each result is a row:
+ *
+ * <table>
+ *   <tr> <th>Header</th> <th>Header</th> </tr>
+ *   <tr> <td>Value</td> <td>Value</td> </tr>
+ *   <tr> <td>Value</td> <td>Value</td> </tr>
+ * </table>
+ */
+export declare function verticalHtmlResultTable({ dimensions, results, }: ResultTable): string;
+/**
+ * Format an HTML result table where each result is a column:
+ *
+ * <table>
+ *   <tr> <th>Header</th> <td>Value</td> <td>Value</td> </tr>
+ *   <tr> <th>Header</th> <td>Value</td> <td>Value</td> </tr>
+ * </table>
+ */
+export declare function horizontalHtmlResultTable({ dimensions, results, }: ResultTable): string;
+/**
+ * Create a function that will return the shortest unambiguous label for a
+ * benchmark spec, given the full array of specs
+ */
+export declare function makeUniqueSpecLabelFn(specs: BenchmarkSpec[]): (spec: BenchmarkSpec) => string;
+/**
+ * A one-line summary of a benchmark, e.g. for a progress bar:
+ *
+ *   chrome my-benchmark [@my-version]
+ */
+export declare function benchmarkOneLiner(spec: BenchmarkSpec): string;
+export {};

@@ -1,0 +1,16 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: "circleci/node:latest"
+    steps:
+      - checkout
+      - run:
+          name: install
+          command: npm install
+      - run:
+          name: validate
+          command: npm run validate
+      - run:
+          name: release
+          command: echo installing semantic-release && npx -p semantic-release@15 -c 'echo running semantic-release && semantic-release'

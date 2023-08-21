@@ -1,0 +1,13 @@
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+import { Server } from './server';
+import { Config } from './config';
+import { BenchmarkSpec } from './types';
+/**
+ * Let the user run benchmarks manually. This process will not exit until
+ * the user sends a termination signal.
+ */
+export declare function manualMode(config: Config, servers: Map<BenchmarkSpec, Server>): Promise<void>;

@@ -1,0 +1,51 @@
+{
+  "name": "babel-plugin-transform-define",
+  "description": "Babel plugin that replaces member expressions and typeof statements with strings",
+  "version": "2.0.1",
+  "contributors": [
+    "Eric Baer <me@ericbaer.com> (https://github.com/baer)",
+    "Michael Jackson <mjijackson@gmail.com> (https://github.com/mjackson)",
+    "Andy Edwards <jedwards@fastmail.com> (https://github.com/jedwards1211)"
+  ],
+  "homepage": "https://github.com/FormidableLabs/babel-plugin-transform-define",
+  "bugs": {
+    "url": "https://github.com/FormidableLabs/babel-plugin-transform-define/issues"
+  },
+  "repository": "git://github.com/FormidableLabs/babel-plugin-transform-define.git",
+  "private": false,
+  "dependencies": {
+    "lodash": "^4.17.11",
+    "traverse": "0.6.6"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.6.4",
+    "@babel/core": "^7.6.4",
+    "@babel/preset-env": "^7.6.3",
+    "babel-eslint": "^10.0.3",
+    "eslint": "^5.13.0",
+    "eslint-config-formidable": "^4.0.0",
+    "eslint-plugin-filenames": "^1.3.2",
+    "eslint-plugin-import": "^2.16.0",
+    "eslint-plugin-promise": "^4.0.1",
+    "mocha": "^6.2.2"
+  },
+  "main": "lib",
+  "scripts": {
+    "preversion": "yarn run check",
+    "lint": "eslint .",
+    "test": "mocha test/index.js",
+    "check": "yarn run lint && yarn run test"
+  },
+  "engines": {
+    "node": ">= 8.x.x"
+  },
+  "license": "MIT",
+  "keywords": [
+    "babel-plugin",
+    "babel-transform",
+    "babel",
+    "define",
+    "DefinePlugin",
+    "webpack"
+  ]
+}

@@ -1,0 +1,22 @@
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+import { BrowserName } from './browser';
+import { LocalUrl, Measurement, RemoteUrl } from './types';
+export declare const windowWidth = 1024;
+export declare const windowHeight = 768;
+export declare const root = ".";
+export declare const browserName: BrowserName;
+export declare const headless = false;
+export declare const sampleSize = 50;
+export declare const timeout = 3;
+export declare const autoSampleConditions: readonly ["0%"];
+export declare const mode = "automatic";
+export declare const resolveBareModules = true;
+export declare const forceCleanNpmInstall = false;
+export declare const measurementExpression = "window.tachometerResult";
+export declare const traceLogDir: string;
+export declare const traceCategories: string[];
+export declare function measurement(url: LocalUrl | RemoteUrl): Measurement;

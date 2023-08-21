@@ -1,0 +1,36 @@
+{
+  "name": "socks-proxy-agent",
+  "version": "3.0.1",
+  "description": "A SOCKS proxy `http.Agent` implementation for HTTP and HTTPS",
+  "main": "./index.js",
+  "scripts": {
+    "test": "mocha --reporter spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/TooTallNate/node-socks-proxy-agent.git"
+  },
+  "keywords": [
+    "socks",
+    "socks4",
+    "socks4a",
+    "proxy",
+    "http",
+    "https",
+    "agent"
+  ],
+  "author": "Nathan Rajlich <nathan@tootallnate.net> (http://n8.io/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/TooTallNate/node-socks-proxy-agent/issues"
+  },
+  "dependencies": {
+    "agent-base": "^4.1.0",
+    "socks": "^1.1.10"
+  },
+  "devDependencies": {
+    "mocha": "^3.4.2",
+    "raw-body": "^2.2.0",
+    "socksv5": "0.0.6"
+  }
+}

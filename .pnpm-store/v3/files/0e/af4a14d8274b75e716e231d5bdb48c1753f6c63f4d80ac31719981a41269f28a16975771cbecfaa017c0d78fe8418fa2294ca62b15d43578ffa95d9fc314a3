@@ -1,0 +1,39 @@
+{
+  "name": "stylelint-config-css-modules",
+  "version": "1.5.0",
+  "description": "CSS modules shareable config for stylelint",
+  "keywords": [
+    "stylelint",
+    "stylelint-config",
+    "css-modules"
+  ],
+  "author": {
+    "name": "Pascal Duez",
+    "url": "https://github.com/pascalduez"
+  },
+  "homepage": "https://github.com/pascalduez/stylelint-config-css-modules",
+  "bugs": "https://github.com/pascalduez/stylelint-config-css-modules/issues",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/pascalduez/stylelint-config-css-modules.git"
+  },
+  "license": "Unlicense",
+  "main": "index.js",
+  "files": [
+    "CHANGELOG.md",
+    "index.js",
+    "README.md",
+    "UNLICENSE"
+  ],
+  "scripts": {
+    "test": "ava"
+  },
+  "devDependencies": {
+    "ava": "^2.4.0",
+    "stylelint": "^11.0.0",
+    "stylelint-config-standard": "^19.0.0"
+  },
+  "peerDependencies": {
+    "stylelint": "7.x - 11.x"
+  }
+}

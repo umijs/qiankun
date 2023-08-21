@@ -1,0 +1,88 @@
+{
+  "name": "rc-tabs",
+  "version": "11.16.1",
+  "description": "tabs ui component for react",
+  "engines": {
+    "node": ">=8.x"
+  },
+  "keywords": [
+    "react",
+    "react-component",
+    "react-tabs"
+  ],
+  "files": [
+    "lib",
+    "es",
+    "dist",
+    "assets/index.css"
+  ],
+  "main": "./lib/index",
+  "module": "./es/index",
+  "homepage": "http://github.com/react-component/tabs",
+  "author": "yiminghe@gmail.com",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:react-component/tabs.git"
+  },
+  "bugs": {
+    "url": "http://github.com/react-component/tabs/issues"
+  },
+  "license": "MIT",
+  "scripts": {
+    "start": "dumi dev",
+    "build": "dumi build",
+    "docs:deploy": "gh-pages -d .doc",
+    "compile": "father build && npm run compile:style",
+    "test": "father test",
+    "coverage": "father test --coverage",
+    "now-build": "npm run build",
+    "lint": "eslint src/ docs/examples/ --ext .tsx,.ts,.jsx,.js",
+    "compile:style": "lessc --js assets/index.less assets/index.css",
+    "prepublishOnly": "npm run lint && npm run test && npm run compile && np --yolo --no-publish"
+  },
+  "devDependencies": {
+    "@types/classnames": "^2.2.10",
+    "@types/enzyme": "^3.10.5",
+    "@types/jest": "^25.2.3",
+    "@types/react": "^17.0.14",
+    "@types/react-dom": "^16.9.8",
+    "@umijs/fabric": "^2.3.1",
+    "coveralls": "^3.0.6",
+    "cross-env": "^7.0.2",
+    "dumi": "^1.1.0",
+    "enzyme": "^3.7.0",
+    "enzyme-adapter-react-16": "^1.7.0",
+    "enzyme-to-json": "^3.3.4",
+    "eslint": "^7.0.0",
+    "fastclick": "~1.0.6",
+    "father": "^2.29.2",
+    "gh-pages": "^3.1.0",
+    "history": "^1.17.0",
+    "immutability-helper": "^3.0.1",
+    "less": "^3.11.1",
+    "np": "^7.5.0",
+    "preact": "^8.2.1",
+    "preact-compat": "^3.16.0",
+    "react": "^16.0.0",
+    "react-dnd": "^10.0.0",
+    "react-dnd-html5-backend": "^10.0.0",
+    "react-dom": "^16.0.0",
+    "react-router": "^3.0.0",
+    "react-sticky": "^6.0.3",
+    "react-test-renderer": "^16.0.0",
+    "sortablejs": "^1.7.0",
+    "typescript": "^4.0.5"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.11.2",
+    "classnames": "2.x",
+    "rc-dropdown": "~4.0.0",
+    "rc-menu": "~9.6.0",
+    "rc-resize-observer": "^1.0.0",
+    "rc-util": "^5.5.0"
+  },
+  "peerDependencies": {
+    "react": ">=16.9.0",
+    "react-dom": ">=16.9.0"
+  }
+}

@@ -1,0 +1,85 @@
+{
+	"name": "@csstools/postcss-color-function",
+	"description": "Use the color() function in CSS",
+	"version": "1.1.1",
+	"author": "Jonathan Neal <jonathantneal@hotmail.com>",
+	"license": "CC0-1.0",
+	"funding": {
+		"type": "opencollective",
+		"url": "https://opencollective.com/csstools"
+	},
+	"engines": {
+		"node": "^12 || ^14 || >=16"
+	},
+	"main": "dist/index.cjs",
+	"module": "dist/index.mjs",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": "./dist/index.mjs",
+			"require": "./dist/index.cjs",
+			"default": "./dist/index.mjs"
+		}
+	},
+	"files": [
+		"CHANGELOG.md",
+		"LICENSE.md",
+		"README.md",
+		"dist"
+	],
+	"dependencies": {
+		"@csstools/postcss-progressive-custom-properties": "^1.1.0",
+		"postcss-value-parser": "^4.2.0"
+	},
+	"peerDependencies": {
+		"postcss": "^8.2"
+	},
+	"devDependencies": {
+		"postcss-lab-function": "^4.0.3"
+	},
+	"scripts": {
+		"build": "rollup -c ../../rollup/default.js",
+		"clean": "node -e \"fs.rmSync('./dist', { recursive: true, force: true });\"",
+		"docs": "node ../../.github/bin/generate-docs/install.mjs && node ../../.github/bin/generate-docs/readme.mjs",
+		"lint": "npm run lint:eslint && npm run lint:package-json",
+		"lint:eslint": "eslint ./src --ext .js --ext .ts --ext .mjs --no-error-on-unmatched-pattern",
+		"lint:package-json": "node ../../.github/bin/format-package-json.mjs",
+		"prepublishOnly": "npm run clean && npm run build && npm run test",
+		"test": "node .tape.mjs && npm run test:exports",
+		"test:exports": "node ./test/_import.mjs && node ./test/_require.cjs",
+		"test:rewrite-expects": "REWRITE_EXPECTS=true node .tape.mjs"
+	},
+	"homepage": "https://github.com/csstools/postcss-plugins/tree/main/plugins/postcss-color-function#readme",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/csstools/postcss-plugins.git",
+		"directory": "plugins/postcss-color-function"
+	},
+	"bugs": "https://github.com/csstools/postcss-plugins/issues",
+	"keywords": [
+		"color",
+		"color",
+		"colors",
+		"css",
+		"design",
+		"display-p3",
+		"postcss",
+		"postcss-plugin",
+		"prophoto-rgb",
+		"rec2020",
+		"rgb",
+		"rgba",
+		"srgb-linear",
+		"syntax",
+		"xyz"
+	],
+	"csstools": {
+		"cssdbId": "color-function",
+		"exportName": "postcssColorFunction",
+		"humanReadableName": "PostCSS Color Function",
+		"specUrl": "https://www.w3.org/TR/css-color-4/#funcdef-color"
+	},
+	"volta": {
+		"extends": "../../package.json"
+	}
+}

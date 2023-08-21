@@ -1,0 +1,42 @@
+{
+  "name": "co-body",
+  "version": "6.1.0",
+  "repository": "cojs/co-body",
+  "description": "request body parsing for co",
+  "keywords": [
+    "request",
+    "parse",
+    "parser",
+    "json",
+    "co",
+    "generators",
+    "urlencoded"
+  ],
+  "dependencies": {
+    "inflation": "^2.0.0",
+    "qs": "^6.5.2",
+    "raw-body": "^2.3.3",
+    "type-is": "^1.6.16"
+  },
+  "devDependencies": {
+    "autod": "^3.0.1",
+    "egg-bin": "^4.7.0",
+    "eslint": "^4.19.1",
+    "eslint-config-egg": "^7.0.0",
+    "koa": "^1.6.0",
+    "safe-qs": "^6.0.1",
+    "should": "^11.2.0",
+    "supertest": "^3.1.0"
+  },
+  "license": "MIT",
+  "scripts": {
+    "lint": "eslint .",
+    "autod": "autod",
+    "test": "egg-bin test -r should",
+    "cov": "eslint . && egg-bin cov -r should"
+  },
+  "files": [
+    "index.js",
+    "lib/"
+  ]
+}

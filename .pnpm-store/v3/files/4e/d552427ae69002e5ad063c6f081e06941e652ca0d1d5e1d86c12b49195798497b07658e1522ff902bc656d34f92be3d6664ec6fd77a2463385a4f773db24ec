@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, '__esModule', {value: true});
+exports.computeLineData = MathJax._.output.svg.Notation.computeLineData;
+exports.lineData = MathJax._.output.svg.Notation.lineData;
+exports.lineOffset = MathJax._.output.svg.Notation.lineOffset;
+exports.RenderLine = MathJax._.output.svg.Notation.RenderLine;
+exports.Border = MathJax._.output.svg.Notation.Border;
+exports.Border2 = MathJax._.output.svg.Notation.Border2;
+exports.DiagonalStrike = MathJax._.output.svg.Notation.DiagonalStrike;
+exports.DiagonalArrow = MathJax._.output.svg.Notation.DiagonalArrow;
+exports.Arrow = MathJax._.output.svg.Notation.Arrow;

@@ -1,0 +1,40 @@
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+import { Opts } from './flags';
+import { CheckConfig } from './github';
+import { AutoSampleConditions } from './stats';
+import { BenchmarkSpec } from './types';
+/**
+ * Validated and fully specified configuration.
+ */
+export interface Config {
+    root: string;
+    sampleSize: number;
+    timeout: number;
+    benchmarks: BenchmarkSpec[];
+    autoSampleConditions: AutoSampleConditions;
+    mode: 'automatic' | 'manual';
+    jsonFile: string;
+    legacyJsonFile: string;
+    githubCheck?: CheckConfig;
+    resolveBareModules: boolean;
+    remoteAccessibleHost: string;
+    forceCleanNpmInstall: boolean;
+    csvFileStats: string;
+    csvFileRaw: string;
+}
+export declare function makeConfig(opts: Opts): Promise<Config>;
+export declare function applyDefaults(partial: Partial<Config>): Config;
+/**
+ * Derives the URL that we'll use to benchmark using the given HTML file or
+ * directory on disk, relative to the root directory we'll be serving. Throws if
+ * it's a file that doesn't exist, or a directory without an index.html.
+ */
+export declare function urlFromLocalPath(rootDir: string, diskPath: string): Promise<string>;
+/**
+ * Parse auto sample condition strings.
+ */
+export declare function parseAutoSampleConditions(strs: string[]): AutoSampleConditions;

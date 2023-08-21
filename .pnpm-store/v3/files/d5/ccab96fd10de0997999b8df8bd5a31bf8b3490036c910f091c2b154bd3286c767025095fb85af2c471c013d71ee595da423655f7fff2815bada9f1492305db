@@ -1,0 +1,98 @@
+{
+	"mouse": [
+		"click",
+		"contextmenu",
+		"dblclick",
+		"mousedown",
+		"mouseenter",
+		"mouseleave",
+		"mousemove",
+		"mouseover",
+		"mouseout",
+		"mouseup"
+	],
+	"keyboard": [
+		"keydown",
+		"keypress",
+		"keyup"
+	],
+	"frame": [
+		"abort",
+		"beforeunload",
+		"error",
+		"hashchange",
+		"load",
+		"pageshow",
+		"pagehide",
+		"resize",
+		"scroll",
+		"unload"
+	],
+	"form": [
+		"blur",
+		"change",
+		"focus",
+		"focusin",
+		"focusout",
+		"input",
+		"invalid",
+		"reset",
+		"search",
+		"select",
+		"submit"
+	],
+	"drag": [
+		"drag",
+		"dragend",
+		"dragenter",
+		"dragleave",
+		"dragover",
+		"dragstart",
+		"drop"
+	],
+	"clipboard": [
+		"copy",
+		"cut",
+		"paste"
+	],
+	"print": [
+		"afterprint",
+		"beforeprint"
+	],
+	"media": [
+		"abort",
+		"canplay",
+		"canplaythrough",
+		"durationchange",
+		"ended",
+		"error",
+		"loadeddata",
+		"loadedmetadata",
+		"loadstart",
+		"pause",
+		"play",
+		"playing",
+		"progress",
+		"ratechange",
+		"seeked",
+		"seeking",
+		"stalled",
+		"suspend",
+		"timeupdate",
+		"volumechange",
+		"waiting"
+	],
+	"server-sent": [
+		"error",
+		"message",
+		"open"
+	],
+	"misc": [
+		"wheel",
+		"online",
+		"offline",
+		"show",
+		"toggle",
+		"wheel"
+	]
+}

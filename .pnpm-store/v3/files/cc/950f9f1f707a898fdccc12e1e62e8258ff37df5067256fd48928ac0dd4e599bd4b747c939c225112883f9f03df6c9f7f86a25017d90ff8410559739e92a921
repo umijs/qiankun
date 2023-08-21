@@ -1,0 +1,63 @@
+"use strict";
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.measurement = exports.traceCategories = exports.traceLogDir = exports.measurementExpression = exports.forceCleanNpmInstall = exports.resolveBareModules = exports.mode = exports.autoSampleConditions = exports.timeout = exports.sampleSize = exports.headless = exports.browserName = exports.root = exports.windowHeight = exports.windowWidth = void 0;
+const path = __importStar(require("path"));
+exports.windowWidth = 1024;
+exports.windowHeight = 768;
+exports.root = '.';
+exports.browserName = 'chrome';
+exports.headless = false;
+exports.sampleSize = 50;
+exports.timeout = 3;
+exports.autoSampleConditions = ['0%'];
+exports.mode = 'automatic';
+exports.resolveBareModules = true;
+exports.forceCleanNpmInstall = false;
+exports.measurementExpression = 'window.tachometerResult';
+exports.traceLogDir = path.join(process.cwd(), 'logs');
+exports.traceCategories = [
+    'blink',
+    'blink.user_timing',
+    'v8',
+    'v8.execute',
+    'disabled-by-default-v8.compile',
+    // Seems to sometimes cause errors in Chrome's about:tracing
+    // "disabled-by-default-v8.cpu_profiler",
+    'disabled-by-default-v8.gc',
+    'disabled-by-default-v8.turbofan',
+];
+function measurement(url) {
+    if (url.kind === 'remote') {
+        return {
+            mode: 'performance',
+            entryName: 'first-contentful-paint',
+        };
+    }
+    return { mode: 'callback' };
+}
+exports.measurement = measurement;
+//# sourceMappingURL=defaults.js.map

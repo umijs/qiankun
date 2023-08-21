@@ -1,0 +1,24 @@
+import React from 'react';
+import { IRouteProps, IRouteComponentProps } from '@umijs/types';
+import { IThemeContext } from './context';
+import 'prismjs/themes/prism.css';
+import 'katex/dist/katex.min.css';
+export interface IOuterLayoutProps {
+    mode: IThemeContext['config']['mode'];
+    title: IThemeContext['config']['title'];
+    logo: IThemeContext['config']['logo'];
+    description: IThemeContext['config']['description'];
+    repository: IThemeContext['config']['repository'];
+    navs: IThemeContext['config']['navs'];
+    menus: IThemeContext['config']['menus'];
+    locales: IThemeContext['config']['locales'];
+    algolia: IThemeContext['config']['algolia'];
+}
+export declare type IDumiRoutes = (IRouteProps & {
+    meta?: any;
+})[];
+/**
+ * outer theme layout
+ */
+declare const OuterLayout: React.FC<IOuterLayoutProps & IRouteComponentProps>;
+export default OuterLayout;

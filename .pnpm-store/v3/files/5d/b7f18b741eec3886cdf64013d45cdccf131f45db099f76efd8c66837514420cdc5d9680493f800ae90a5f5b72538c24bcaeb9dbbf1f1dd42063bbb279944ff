@@ -1,0 +1,56 @@
+{
+  "name": "safe-regex",
+  "version": "2.1.1",
+  "description": "detect possibly catastrophic, exponential-time regular expressions",
+  "main": "index.js",
+  "dependencies": {
+    "regexp-tree": "~0.1.1"
+  },
+  "devDependencies": {
+    "jest": "^24.9.0"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js"
+    ],
+    "testRegex": "test.*\\.spec\\.js$",
+    "collectCoverage": true,
+    "coverageReporters": [
+      "text-summary",
+      "html",
+      "lcov"
+    ],
+    "collectCoverageFrom": [
+      "*.js"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "statements": 100,
+        "branches": 100,
+        "functions": 100,
+        "lines": 100
+      }
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/davisjam/safe-regex.git"
+  },
+  "homepage": "https://github.com/davisjam/safe-regex",
+  "keywords": [
+    "catastrophic",
+    "exponential",
+    "regex",
+    "safe",
+    "sandbox"
+  ],
+  "author": {
+    "name": "James C. (Jamie) Davis",
+    "email": "davisjam@vt.edu",
+    "url": "http://people.cs.vt.edu/~davisjam"
+  },
+  "license": "MIT"
+}

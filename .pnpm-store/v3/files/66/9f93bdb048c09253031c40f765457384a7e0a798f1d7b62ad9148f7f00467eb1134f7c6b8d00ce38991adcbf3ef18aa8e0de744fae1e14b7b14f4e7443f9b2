@@ -1,0 +1,8 @@
+{
+  "component": "input/mml",
+  "targets": [
+    "input/mathml.ts",
+    "input/mathml"
+  ],
+  "excludeSubdirs": "true"
+}

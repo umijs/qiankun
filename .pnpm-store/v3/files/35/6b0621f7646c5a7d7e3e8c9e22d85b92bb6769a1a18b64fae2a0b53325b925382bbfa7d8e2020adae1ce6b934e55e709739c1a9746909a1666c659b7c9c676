@@ -1,0 +1,156 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.getModuleResolveContent = exports.getModuleResolvePkg = exports.getModuleResolvePath = void 0;
+
+function _react() {
+  const data = _interopRequireDefault(require("react"));
+
+  _react = function _react() {
+    return data;
+  };
+
+  return data;
+}
+
+function _fs() {
+  const data = _interopRequireDefault(require("fs"));
+
+  _fs = function _fs() {
+    return data;
+  };
+
+  return data;
+}
+
+function _path() {
+  const data = _interopRequireDefault(require("path"));
+
+  _path = function _path() {
+    return data;
+  };
+
+  return data;
+}
+
+function _slash() {
+  const data = _interopRequireDefault(require("slash2"));
+
+  _slash = function _slash() {
+    return data;
+  };
+
+  return data;
+}
+
+function _enhancedResolve() {
+  const data = _interopRequireDefault(require("enhanced-resolve"));
+
+  _enhancedResolve = function _enhancedResolve() {
+    return data;
+  };
+
+  return data;
+}
+
+var _context = _interopRequireDefault(require("../context"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const DEFAULT_EXT = ['.tsx', '.jsx', '.js', '.ts'];
+/**
+ * resolve module path base on umi context (alias)
+ */
+
+const getModuleResolvePath = ({
+  basePath,
+  sourcePath,
+  extensions = DEFAULT_EXT,
+  silent
+}) => {
+  try {
+    var _ctx$umi, _ctx$umi$config;
+
+    return (0, _slash().default)(_enhancedResolve().default.create.sync({
+      extensions,
+      alias: ((_ctx$umi = _context.default.umi) === null || _ctx$umi === void 0 ? void 0 : (_ctx$umi$config = _ctx$umi.config) === null || _ctx$umi$config === void 0 ? void 0 : _ctx$umi$config.alias) || {},
+      symlinks: false,
+      mainFiles: ['index', 'package.json']
+    })(_fs().default.statSync(basePath).isDirectory() ? basePath : _path().default.parse(basePath).dir, sourcePath));
+  } catch (err) {
+    if (!silent) {
+      var _ctx$umi2;
+
+      (_ctx$umi2 = _context.default.umi) === null || _ctx$umi2 === void 0 ? void 0 : _ctx$umi2.logger.error(`[dumi]: cannot resolve module ${sourcePath} from ${basePath}`);
+    }
+
+    throw err;
+  }
+};
+/**
+ * resolve module version
+ */
+
+
+exports.getModuleResolvePath = getModuleResolvePath;
+
+const getModuleResolvePkg = ({
+  basePath,
+  sourcePath,
+  extensions = DEFAULT_EXT
+}) => {
+  var _resolvePath$match;
+
+  let version;
+  let name;
+  let peerDependencies;
+  const resolvePath = getModuleResolvePath({
+    basePath,
+    sourcePath,
+    extensions
+  });
+  const modulePath = (_resolvePath$match = resolvePath.match(/^(.*?node_modules\/(?:@[^/]+\/)?[^/]+)/)) === null || _resolvePath$match === void 0 ? void 0 : _resolvePath$match[1];
+
+  const pkgPath = _path().default.join(modulePath, 'package.json');
+
+  if (modulePath && _fs().default.existsSync(pkgPath)) {
+    const pkg = require(pkgPath);
+
+    version = pkg.version;
+    name = pkg.name;
+    peerDependencies = pkg.peerDependencies;
+  } else {
+    var _ctx$umi3;
+
+    (_ctx$umi3 = _context.default.umi) === null || _ctx$umi3 === void 0 ? void 0 : _ctx$umi3.logger.error(`[dumi]: cannot find valid package.json for module ${modulePath}`);
+  }
+
+  return {
+    name,
+    version,
+    peerDependencies
+  };
+};
+/**
+ * resolve module content
+ */
+
+
+exports.getModuleResolvePkg = getModuleResolvePkg;
+
+const getModuleResolveContent = ({
+  basePath,
+  sourcePath,
+  extensions = DEFAULT_EXT
+}) => {
+  const resolvePath = getModuleResolvePath({
+    basePath,
+    sourcePath,
+    extensions
+  });
+  return resolvePath ? _fs().default.readFileSync(resolvePath).toString() : '';
+};
+
+exports.getModuleResolveContent = getModuleResolveContent;

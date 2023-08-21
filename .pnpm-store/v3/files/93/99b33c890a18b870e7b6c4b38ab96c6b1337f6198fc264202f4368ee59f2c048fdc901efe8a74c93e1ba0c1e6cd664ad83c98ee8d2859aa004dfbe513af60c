@@ -1,0 +1,197 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "async": {
+            "type": "boolean",
+            "description": "When true, plugin will not block compilation to finish issues checking"
+        },
+        "typescript": {
+            "$ref": "#/definitions/TypeScriptOptions"
+        },
+        "formatter": {
+            "$ref": "#/definitions/FormatterOptions"
+        },
+        "issue": {
+            "$ref": "#/definitions/IssueOptions"
+        },
+        "logger": {
+            "$ref": "#/definitions/Logger"
+        },
+        "devServer": {
+            "type": "boolean",
+            "description": "Enable reporting to Webpack Dev Server."
+        }
+    },
+    "additionalProperties": false,
+    "definitions": {
+        "Formatter": {
+            "instanceof": "Function"
+        },
+        "ComplexFormatterPreferences": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "$ref": "#/definitions/FormatterType"
+                },
+                "pathType": {
+                    "$ref": "#/definitions/FormatterPathType"
+                },
+                "options": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
+            },
+            "required": ["type"]
+        },
+        "FormatterType": {
+            "type": "string",
+            "enum": ["basic", "codeframe"]
+        },
+        "FormatterPathType": {
+            "type": "string",
+            "enum": ["relative", "absolute"]
+        },
+        "IssueMatch": {
+            "type": "object",
+            "properties": {
+                "severity": {
+                    "type": "string",
+                    "enum": ["error", "warning"]
+                },
+                "code": {
+                    "type": "string"
+                },
+                "file": {
+                    "type": "string"
+                }
+            }
+        },
+        "IssuePredicate": {
+            "instanceof": "Function"
+        },
+        "IssuePredicateOption": {
+            "oneOf": [
+                {
+                    "$ref": "#/definitions/IssuePredicate"
+                },
+                {
+                    "$ref": "#/definitions/IssueMatch"
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/definitions/IssuePredicate"
+                            },
+                            {
+                                "$ref": "#/definitions/IssueMatch"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "Logger": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "error": {
+                            "instanceof": "Function"
+                        },
+                        "log": {
+                            "instanceof": "Function"
+                        }
+                    }
+                },
+                {
+                    "type": "string",
+                    "enum": ["webpack-infrastructure"]
+                }
+            ]
+        },
+        "TypeScriptOptions": {
+            "type": "object",
+            "properties": {
+                "memoryLimit": {
+                    "type": "number",
+                    "description": "Memory limit for TypeScript reporter process."
+                },
+                "configFile": {
+                    "type": "string",
+                    "description": "Path to tsconfig.json. By default plugin uses context or process.cwd() to localize tsconfig.json file."
+                },
+                "context": {
+                    "type": "string",
+                    "description": "The base path for finding files specified in the tsconfig.json. Same as context option from the ts-loader."
+                },
+                "build": {
+                    "type": "boolean",
+                    "description": "The equivalent of the `--build` flag from the `tsc`."
+                },
+                "mode": {
+                    "type": "string",
+                    "enum": ["readonly", "write-tsbuildinfo", "write-dts", "write-references"],
+                    "description": "`readonly` keeps all emitted files in memory, `write-tsbuildinfo` which writes only .tsbuildinfo files, `write-dts` writes .tsbuildinfo and type definition files, and `write-references` which writes both .tsbuildinfo and referenced projects output"
+                },
+                "compilerOptions": {
+                    "type": "object",
+                    "description": "Custom compilerOptions to be passed to the TypeScript compiler.",
+                    "additionalProperties": true
+                },
+                "diagnosticOptions": {
+                    "type": "object",
+                    "description": "Types of diagnostics to be reported.",
+                    "properties": {
+                        "syntactic": {
+                            "type": "boolean"
+                        },
+                        "semantic": {
+                            "type": "boolean"
+                        },
+                        "declaration": {
+                            "type": "boolean"
+                        },
+                        "global": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "profile": {
+                    "type": "boolean",
+                    "description": "Measures and prints timings related to the TypeScript performance."
+                },
+                "typescriptPath": {
+                    "type": "string",
+                    "description": "If supplied this is a custom path where TypeScript can be found."
+                }
+            }
+        },
+        "FormatterOptions": {
+            "oneOf": [
+                {
+                    "$ref": "#/definitions/FormatterType"
+                },
+                {
+                    "$ref": "#/definitions/ComplexFormatterPreferences"
+                },
+                {
+                    "$ref": "#/definitions/Formatter"
+                }
+            ]
+        },
+        "IssueOptions": {
+            "type": "object",
+            "properties": {
+                "include": {
+                    "$ref": "#/definitions/IssuePredicateOption"
+                },
+                "exclude": {
+                    "$ref": "#/definitions/IssuePredicateOption"
+                }
+            }
+        }
+    }
+}

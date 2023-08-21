@@ -1,0 +1,88 @@
+{
+  "name": "remark-rehype",
+  "version": "8.1.0",
+  "description": "remark plugin to transform to rehype",
+  "license": "MIT",
+  "keywords": [
+    "unified",
+    "remark",
+    "rehype",
+    "remark-plugin",
+    "rehype-plugin",
+    "plugin",
+    "html",
+    "hast",
+    "mdast",
+    "markdown"
+  ],
+  "repository": "remarkjs/remark-rehype",
+  "bugs": "https://github.com/remarkjs/remark-rehype/issues",
+  "funding": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/unified"
+  },
+  "author": "Titus Wormer <tituswormer@gmail.com> (https://wooorm.com)",
+  "contributors": [
+    "Titus Wormer <tituswormer@gmail.com> (https://wooorm.com)",
+    "John Otander <johnotander@gmail.com> (https://johno.com)"
+  ],
+  "files": [
+    "index.js",
+    "types/index.d.ts"
+  ],
+  "types": "types/index.d.ts",
+  "dependencies": {
+    "mdast-util-to-hast": "^10.2.0"
+  },
+  "devDependencies": {
+    "browserify": "^17.0.0",
+    "dtslint": "^4.0.0",
+    "nyc": "^15.0.0",
+    "prettier": "^2.0.0",
+    "rehype-stringify": "^8.0.0",
+    "remark-cli": "^9.0.0",
+    "remark-parse": "^9.0.0",
+    "remark-preset-wooorm": "^8.0.0",
+    "remark-stringify": "^9.0.0",
+    "tape": "^5.0.0",
+    "tinyify": "^3.0.0",
+    "unified": "^9.0.0",
+    "xo": "^0.38.0"
+  },
+  "scripts": {
+    "format": "remark . -qfo && prettier . -w --loglevel warn && xo --fix",
+    "build-bundle": "browserify . -s remarkRehype > remark-rehype.js",
+    "build-mangle": "browserify . -s remarkRehype -p tinyify > remark-rehype.min.js",
+    "build": "npm run build-bundle && npm run build-mangle",
+    "test-api": "node test",
+    "test-coverage": "nyc --reporter lcov tape test.js",
+    "test-types": "dtslint types",
+    "test": "npm run format && npm run build && npm run test-coverage && npm run test-types"
+  },
+  "nyc": {
+    "check-coverage": true,
+    "lines": 100,
+    "functions": 100,
+    "branches": 100
+  },
+  "prettier": {
+    "tabWidth": 2,
+    "useTabs": false,
+    "singleQuote": true,
+    "bracketSpacing": false,
+    "semi": false,
+    "trailingComma": "none"
+  },
+  "xo": {
+    "prettier": true,
+    "esnext": false,
+    "ignores": [
+      "remark-rehype.js"
+    ]
+  },
+  "remarkConfig": {
+    "plugins": [
+      "preset-wooorm"
+    ]
+  }
+}

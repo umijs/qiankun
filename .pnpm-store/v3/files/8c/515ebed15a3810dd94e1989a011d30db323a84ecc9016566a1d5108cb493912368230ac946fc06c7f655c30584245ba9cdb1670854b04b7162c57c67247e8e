@@ -1,0 +1,105 @@
+"use strict";
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.legacyJsonOutput = exports.jsonOutput = void 0;
+const systeminformation = __importStar(require("systeminformation"));
+const measure_1 = require("./measure");
+function jsonOutput(results) {
+    const benchmarks = [];
+    for (const result of results) {
+        const differences = [];
+        for (const difference of result.differences) {
+            if (difference === null) {
+                differences.push(null);
+            }
+            else {
+                differences.push({
+                    absolute: {
+                        low: difference.absolute.low,
+                        high: difference.absolute.high,
+                    },
+                    percentChange: {
+                        low: difference.relative.low * 100,
+                        high: difference.relative.high * 100,
+                    },
+                });
+            }
+        }
+        benchmarks.push({
+            name: result.result.name,
+            bytesSent: result.result.bytesSent,
+            version: result.result.version ? result.result.version : undefined,
+            measurement: Object.assign({ name: (0, measure_1.measurementName)(result.result.measurement) }, result.result.measurement),
+            browser: Object.assign(Object.assign({}, result.result.browser), { userAgent: result.result.userAgent }),
+            mean: {
+                low: result.stats.meanCI.low,
+                high: result.stats.meanCI.high,
+            },
+            differences,
+            samples: result.result.millis,
+        });
+    }
+    return { benchmarks };
+}
+exports.jsonOutput = jsonOutput;
+// TODO(aomarks) Remove this in next major version.
+async function legacyJsonOutput(results) {
+    // TODO Add git info.
+    const battery = await systeminformation.battery();
+    const cpu = await systeminformation.cpu();
+    const currentLoad = await systeminformation.currentLoad();
+    const memory = await systeminformation.mem();
+    return {
+        benchmarks: results,
+        datetime: new Date().toISOString(),
+        system: {
+            cpu: {
+                manufacturer: cpu.manufacturer,
+                model: cpu.model,
+                family: cpu.family,
+                speed: cpu.speed.toFixed(2),
+                cores: cpu.cores,
+            },
+            load: {
+                average: currentLoad.avgLoad,
+                current: currentLoad.currentLoad,
+            },
+            battery: {
+                hasBattery: battery.hasBattery,
+                connected: battery.acConnected,
+            },
+            memory: {
+                total: memory.total,
+                free: memory.free,
+                used: memory.used,
+                active: memory.active,
+                available: memory.available,
+            },
+        },
+    };
+}
+exports.legacyJsonOutput = legacyJsonOutput;
+//# sourceMappingURL=json-output.js.map

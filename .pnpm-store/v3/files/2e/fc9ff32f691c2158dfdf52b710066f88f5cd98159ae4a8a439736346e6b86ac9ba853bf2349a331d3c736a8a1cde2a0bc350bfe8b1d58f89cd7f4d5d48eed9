@@ -1,0 +1,6 @@
+import { RouteProcessor } from '.';
+declare const _default: RouteProcessor;
+/**
+ * generate redirects for missing group index routes & legacy route paths
+ */
+export default _default;

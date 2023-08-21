@@ -1,0 +1,3 @@
+/// <reference types="react" />
+declare const _default: ({ to, ...props }: import("react-router-dom").LinkProps<{}> | import("react-router-dom").NavLinkProps<{}>) => JSX.Element;
+export default _default;

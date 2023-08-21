@@ -1,0 +1,4 @@
+/**
+ * rehype plugin to handle img source from local
+ */
+export default function img(): (ast: any) => void;

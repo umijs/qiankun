@@ -1,0 +1,67 @@
+{
+	"name": "is-arrow-function",
+	"version": "2.0.3",
+	"description": "Determine if a function is an ES6 arrow function or not.",
+	"main": "index.js",
+	"scripts": {
+		"test": "npm run lint && node --es-staging --harmony test/index.js && npm run security",
+		"coverage": "covert test/index.js",
+		"coverage-quiet": "covert test/index.js --quiet",
+		"lint": "npm run jscs && npm run eslint",
+		"jscs": "jscs *.js */*.js",
+		"eslint": "eslint *.js */*.js",
+		"security": "nsp package"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/ljharb/is-arrow-function.git"
+	},
+	"keywords": [
+		"arrow",
+		"arrow function",
+		"es6",
+		"fat",
+		"fat arrow",
+		"function",
+		"=>"
+	],
+	"author": "Jordan Harband",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/ljharb/is-arrow-function/issues"
+	},
+	"dependencies": {
+		"is-callable": "^1.0.4"
+	},
+	"devDependencies": {
+		"tape": "^4.1.0",
+		"covert": "^1.1.0",
+		"jscs": "^2.1.0",
+		"make-arrow-function": "^1.0.0",
+		"eslint": "^1.1.0",
+		"@ljharb/eslint-config": "^1.0.4",
+		"nsp": "^1.0.3"
+	},
+	"testling": {
+		"files": "test/index.js",
+		"browsers": [
+			"iexplore/6.0..latest",
+			"firefox/3.0..6.0",
+			"firefox/15.0..latest",
+			"firefox/nightly",
+			"chrome/4.0..10.0",
+			"chrome/20.0..latest",
+			"chrome/canary",
+			"opera/10.0..latest",
+			"opera/next",
+			"safari/4.0..latest",
+			"ipad/6.0..latest",
+			"iphone/6.0..latest",
+			"android-browser/4.2"
+		]
+	},
+	"engines": {
+		"node": ">= 0.4"
+	}
+}
+

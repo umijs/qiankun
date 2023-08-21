@@ -1,0 +1,39 @@
+{
+  "name": "@umijs/renderer-mpa",
+  "version": "3.5.41",
+  "description": "@umijs/renderer-mpa",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "lib",
+    "src",
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/umijs/umi"
+  },
+  "keywords": [
+    "umi"
+  ],
+  "authors": [
+    "chencheng <sorrycc@gmail.com> (https://github.com/sorrycc)"
+  ],
+  "license": "MIT",
+  "bugs": "http://github.com/umijs/umi/issues",
+  "homepage": "https://github.com/umijs/umi/tree/3.x/packages/renderer-mpa#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@types/react": "^16.9.43",
+    "@types/react-dom": "^16.9.8",
+    "@umijs/runtime": "3.5.41"
+  },
+  "peerDependencies": {
+    "react": "16.x || 17.x",
+    "react-dom": "16.x || 17.x"
+  },
+  "sideEffects": false,
+  "module": "dist/index.esm.js"
+}

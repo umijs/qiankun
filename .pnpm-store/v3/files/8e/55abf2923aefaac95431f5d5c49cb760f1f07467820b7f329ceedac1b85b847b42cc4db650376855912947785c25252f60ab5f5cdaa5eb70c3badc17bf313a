@@ -1,0 +1,71 @@
+{
+  "name": "koa-bodyparser",
+  "version": "4.4.1",
+  "description": "a body parser for Koa",
+  "main": "index.js",
+  "scripts": {
+    "lint": "xo",
+    "lint:fix": "xo --fix",
+    "test": "mocha --require should test/*.spec.js --exit",
+    "coverage": "nyc npm run test --reporter=lcov",
+    "ci": "npm run lint && npm run coverage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/koajs/bodyparser.git"
+  },
+  "files": [
+    "index.js"
+  ],
+  "keywords": [
+    "bodyParser",
+    "json",
+    "urlencoded",
+    "koa",
+    "body"
+  ],
+  "author": {
+    "name": "dead_horse",
+    "email": "dead_horse@qq.com",
+    "url": " http://deadhorse.me"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "eslint-config-xo-lass": "^1.0.3",
+    "husky": "^4.2.5",
+    "koa": "^2",
+    "mocha": "^10.2.0",
+    "nyc": "^15.0.1",
+    "should": "^13.2.3",
+    "supertest": "^4.0.2",
+    "xo": "0.25.4"
+  },
+  "dependencies": {
+    "co-body": "^6.0.0",
+    "copy-to": "^2.0.1",
+    "type-is": "^1.6.18"
+  },
+  "xo": {
+    "prettier": true,
+    "space": true,
+    "extends": [
+      "xo-lass"
+    ],
+    "rules": {
+      "node/no-deprecated-api": "off",
+      "no-unused-vars": "off",
+      "no-prototype-builtins": "off",
+      "prefer-rest-params": "off"
+    },
+    "ignores": [
+      "test/**"
+    ]
+  },
+  "engines": {
+    "node": ">=8.0.0"
+  },
+  "bugs": {
+    "url": "https://github.com/koajs/body-parser/issues"
+  },
+  "homepage": "https://github.com/koajs/body-parser"
+}

@@ -1,0 +1,35 @@
+{
+  "name": "npm-package-arg",
+  "version": "5.1.2",
+  "description": "Parse the things that can be arguments to `npm install`",
+  "main": "npa.js",
+  "directories": {
+    "test": "test"
+  },
+  "files": [
+    "npa.js"
+  ],
+  "dependencies": {
+    "hosted-git-info": "^2.4.2",
+    "osenv": "^0.1.4",
+    "semver": "^5.1.0",
+    "validate-npm-package-name": "^3.0.0"
+  },
+  "devDependencies": {
+    "standard": "9.0.2",
+    "tap": "^10.3.0"
+  },
+  "scripts": {
+    "test": "standard && tap -J --coverage test/*.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/npm/npm-package-arg"
+  },
+  "author": "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/npm/npm-package-arg/issues"
+  },
+  "homepage": "https://github.com/npm/npm-package-arg"
+}

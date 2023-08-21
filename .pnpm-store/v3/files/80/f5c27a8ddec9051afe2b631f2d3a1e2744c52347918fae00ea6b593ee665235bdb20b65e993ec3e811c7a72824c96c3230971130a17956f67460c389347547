@@ -1,0 +1,123 @@
+"use strict";
+/**
+ * @license
+ * Copyright 2020 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.installOnDemand = exports.getOnDemandDependencies = exports.onDemandDependenciesFromPackageJSON = exports.getPackageRoot = exports.getPackageJSONPath = exports.assertResolvable = void 0;
+const child_process_1 = require("child_process");
+const util_1 = require("util");
+const fs_1 = require("fs");
+const path_1 = __importDefault(require("path"));
+const pkg_install_1 = require("pkg-install");
+const pkg_up_1 = __importDefault(require("pkg-up"));
+const execPromise = (0, util_1.promisify)(child_process_1.exec);
+/**
+ * Asynchronously checks to see if a module is resolvable. This gives the
+ * invoker information that is similar to what they would get from using
+ * require.resolve. However, require.resolve is backed by an unclearable
+ * internal cache, which this helper bypasses via a child process.
+ *
+ * @see https://github.com/nodejs/node/issues/31803
+ */
+const assertResolvable = async (id) => {
+    await execPromise(`"${process.execPath}" -e "require.resolve(process.env.ID)"`, {
+        cwd: (await (0, exports.getPackageRoot)()) || process.cwd(),
+        env: Object.assign(Object.assign({}, process.env), { ID: id }),
+    });
+};
+exports.assertResolvable = assertResolvable;
+const getPackageJSONPath = async () => {
+    // NOTE: This used to search starting with module.path, but module.path was
+    // not added until Node.js v11. In order to preserve Node.js v10 compatibility
+    // we use __dirname instead, which should be mostly the same thing (docs are
+    // fuzzy on the specific differences, unfortunately).
+    // @see https://nodejs.org/docs/latest/api/modules.html#modules_module_path
+    // @see https://nodejs.org/docs/latest/api/modules.html#modules_dirname
+    return (0, pkg_up_1.default)({ cwd: __dirname });
+};
+exports.getPackageJSONPath = getPackageJSONPath;
+const getPackageRoot = async () => {
+    const packageJSONPath = await (0, exports.getPackageJSONPath)();
+    return packageJSONPath != null ? path_1.default.dirname(packageJSONPath) : null;
+};
+exports.getPackageRoot = getPackageRoot;
+/**
+ * Extract a map of allowed "on-demand" dependencies from a given
+ * package.json-shaped object.
+ */
+const onDemandDependenciesFromPackageJSON = (packageJSON) => {
+    const onDemandDependencies = new Map();
+    const onDemandList = (packageJSON === null || packageJSON === void 0 ? void 0 : packageJSON.installsOnDemand) || [];
+    for (const packageName of onDemandList) {
+        onDemandDependencies.set(packageName, '*');
+    }
+    return onDemandDependencies;
+};
+exports.onDemandDependenciesFromPackageJSON = onDemandDependenciesFromPackageJSON;
+/**
+ * So-called "on-demand" dependencies are any packages that match the
+ * following requirements:
+ *
+ *  - They are enumerated in the non-normative package.json field
+ *    "installsOnDemand"
+ *
+ * This function resolves a map of package names and semver ranges including all
+ * packages that match these requirements.
+ */
+exports.getOnDemandDependencies = (() => {
+    let cached = null;
+    return async () => {
+        if (cached == null) {
+            const packageJSONPath = await (0, exports.getPackageJSONPath)();
+            if (packageJSONPath != null) {
+                const rawPackageJSON = await fs_1.promises.readFile(packageJSONPath, {
+                    encoding: 'utf-8',
+                });
+                const packageJSON = JSON.parse(rawPackageJSON.toString());
+                cached = (0, exports.onDemandDependenciesFromPackageJSON)(packageJSON);
+            }
+        }
+        return cached;
+    };
+})();
+/**
+ * Install an "on-demand" package, resolving after the package has been
+ * installed. Only packages designated as installable on-demand can be
+ * installed this way (see documentation for "getOnDemandDependenies" for more
+ * details). An attempt to install any other package this way will be rejected.
+ *
+ * On-demand packages are installed to this package's node_modules directory.
+ * Any package that can already be resolved from this package's root directory
+ * will be skipped.
+ */
+const installOnDemand = async (packageName) => {
+    try {
+        await (0, exports.assertResolvable)(packageName);
+        return;
+    }
+    catch (_error) { }
+    let dependencies = new Map();
+    try {
+        dependencies = await (0, exports.getOnDemandDependencies)();
+    }
+    catch (error) {
+        console.error(error);
+    }
+    if (!dependencies.has(packageName)) {
+        throw new Error(`Package "${packageName}" cannot be installed on demand. ${dependencies}`);
+    }
+    const version = dependencies.get(packageName);
+    await (0, pkg_install_1.install)({ [packageName]: version }, {
+        stdio: 'inherit',
+        cwd: (await (0, exports.getPackageRoot)()) || process.cwd(),
+        noSave: true,
+    });
+    console.log(`Package "${packageName}@${version} installed."`);
+};
+exports.installOnDemand = installOnDemand;
+//# sourceMappingURL=install.js.map

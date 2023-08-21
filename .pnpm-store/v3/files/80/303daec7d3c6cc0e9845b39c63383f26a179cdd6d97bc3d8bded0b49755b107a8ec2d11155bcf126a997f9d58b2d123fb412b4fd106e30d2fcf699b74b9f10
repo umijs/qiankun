@@ -1,0 +1,104 @@
+{
+  "name": "@typescript-eslint/eslint-plugin",
+  "version": "6.3.0",
+  "description": "TypeScript plugin for ESLint",
+  "files": [
+    "dist",
+    "docs",
+    "index.d.ts",
+    "rules.d.ts",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "commonjs",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json",
+    "./use-at-your-own-risk/rules": {
+      "types": "./rules.d.ts",
+      "default": "./dist/rules/index.js"
+    }
+  },
+  "engines": {
+    "node": "^16.0.0 || >=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/typescript-eslint/typescript-eslint.git",
+    "directory": "packages/eslint-plugin"
+  },
+  "bugs": {
+    "url": "https://github.com/typescript-eslint/typescript-eslint/issues"
+  },
+  "license": "MIT",
+  "keywords": [
+    "eslint",
+    "eslintplugin",
+    "eslint-plugin",
+    "typescript"
+  ],
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "check-docs": "jest tests/docs.test.ts --runTestsByPath --silent --runInBand",
+    "check-configs": "jest tests/configs.test.ts --runTestsByPath --silent --runInBand",
+    "clean": "tsc -b tsconfig.build.json --clean",
+    "postclean": "rimraf dist && rimraf coverage",
+    "format": "prettier --write \"./**/*.{ts,mts,cts,tsx,js,mjs,cjs,jsx,json,md,css}\" --ignore-path ../../.prettierignore",
+    "generate:breaking-changes": "yarn tsx tools/generate-breaking-changes.mts",
+    "generate:configs": "yarn tsx tools/generate-configs.ts",
+    "lint": "nx lint",
+    "test": "jest --coverage --logHeapUsage",
+    "test-single": "jest --no-coverage",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@eslint-community/regexpp": "^4.5.1",
+    "@typescript-eslint/scope-manager": "6.3.0",
+    "@typescript-eslint/type-utils": "6.3.0",
+    "@typescript-eslint/utils": "6.3.0",
+    "@typescript-eslint/visitor-keys": "6.3.0",
+    "debug": "^4.3.4",
+    "graphemer": "^1.4.0",
+    "ignore": "^5.2.4",
+    "natural-compare": "^1.4.0",
+    "natural-compare-lite": "^1.4.0",
+    "semver": "^7.5.4",
+    "ts-api-utils": "^1.0.1"
+  },
+  "devDependencies": {
+    "@types/debug": "*",
+    "@types/marked": "*",
+    "@types/natural-compare": "*",
+    "@types/prettier": "*",
+    "@typescript-eslint/rule-schema-to-typescript-types": "6.3.0",
+    "@typescript-eslint/rule-tester": "6.3.0",
+    "ajv": "^6.12.6",
+    "chalk": "^5.3.0",
+    "cross-fetch": "*",
+    "jest-specific-snapshot": "*",
+    "json-schema": "*",
+    "markdown-table": "^3.0.3",
+    "marked": "^5.1.1",
+    "prettier": "*",
+    "title-case": "^3.0.3",
+    "typescript": "*"
+  },
+  "peerDependencies": {
+    "@typescript-eslint/parser": "^6.0.0 || ^6.0.0-alpha",
+    "eslint": "^7.0.0 || ^8.0.0"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
+  },
+  "funding": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/typescript-eslint"
+  },
+  "gitHead": "0a1de14ba2e4a519d976ef34e81c96d316c49c33"
+}

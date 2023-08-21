@@ -1,0 +1,6 @@
+import { IPreviewerComponentProps } from '..';
+declare const _default: (motions: IPreviewerComponentProps['motions'], wrapper: Element) => [() => void, boolean];
+/**
+ * hook for execute dumi motions
+ */
+export default _default;

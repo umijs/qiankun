@@ -1,0 +1,9 @@
+'use strict';
+
+var parse = require('./parse');
+var stringify = require('./stringify');
+module.exports = {
+  parse: parse,
+  stringify: stringify
+};
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbImluZGV4LmVzNiJdLCJuYW1lcyI6WyJwYXJzZSIsInJlcXVpcmUiLCJzdHJpbmdpZnkiLCJtb2R1bGUiLCJleHBvcnRzIl0sIm1hcHBpbmdzIjoiOztBQUFBLElBQU1BLFFBQVFDLFFBQVEsU0FBUixDQUFkO0FBQ0EsSUFBTUMsWUFBWUQsUUFBUSxhQUFSLENBQWxCO0FBQ0FFLE9BQU9DLE9BQVAsR0FBaUI7QUFDZkosY0FEZTtBQUVmRTtBQUZlLENBQWpCIiwiZmlsZSI6ImluZGV4LmpzIiwic291cmNlc0NvbnRlbnQiOlsiY29uc3QgcGFyc2UgPSByZXF1aXJlKCcuL3BhcnNlJylcbmNvbnN0IHN0cmluZ2lmeSA9IHJlcXVpcmUoJy4vc3RyaW5naWZ5Jylcbm1vZHVsZS5leHBvcnRzID0ge1xuICBwYXJzZSxcbiAgc3RyaW5naWZ5XG59XG4iXX0=

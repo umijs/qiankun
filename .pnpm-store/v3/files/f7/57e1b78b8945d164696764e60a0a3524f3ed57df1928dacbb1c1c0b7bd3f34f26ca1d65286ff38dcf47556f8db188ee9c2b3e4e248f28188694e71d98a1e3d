@@ -1,0 +1,30 @@
+{
+  "name": "tinypool",
+  "version": "0.7.0",
+  "description": "A minimal and tiny Node.js Worker Thread Pool implementation, a fork of piscina, but with fewer features",
+  "type": "module",
+  "main": "./dist/esm/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/**"
+  ],
+  "packageManager": "pnpm@8.4.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aslemammad/tinypool.git"
+  },
+  "keywords": [
+    "fast",
+    "worker threads",
+    "thread pool"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/aslemammad/tinypool/issues"
+  },
+  "homepage": "https://github.com/aslemammad/tinypool#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

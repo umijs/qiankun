@@ -1,0 +1,50 @@
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+import * as webdriver from 'selenium-webdriver';
+import { BenchmarkSpec } from './types';
+import { ResultStatsWithDifferences } from './stats';
+import { Config } from './config';
+import { Server } from './server';
+export declare class Runner {
+    private readonly config;
+    private readonly specs;
+    private readonly servers;
+    private readonly browsers;
+    private readonly bar;
+    private readonly results;
+    /**
+     * How many times we will load a page and try to collect all measurements
+     * before fully failing.
+     */
+    private readonly maxAttempts;
+    /**
+     * Maximum milliseconds we will wait for all measurements to be collected per
+     * attempt before reloading and trying a new attempt.
+     */
+    private readonly attemptTimeout;
+    /**
+     * How many milliseconds we will wait between each poll for measurements.
+     */
+    private readonly pollTime;
+    private completeGithubCheck?;
+    private hitTimeout;
+    constructor(config: Config, servers: Map<BenchmarkSpec, Server>);
+    run(): Promise<Array<ResultStatsWithDifferences> | undefined>;
+    private launchBrowsers;
+    private closeBrowsers;
+    /**
+     * Do one throw-away run per benchmark to warm up our server (especially
+     * when expensive bare module resolution is enabled), and the browser.
+     */
+    private warmup;
+    private recordSamples;
+    private takeMinimumSamples;
+    private takeAdditionalSamples;
+    private takeSamples;
+    capturePerfTraces(spec: BenchmarkSpec, driver: webdriver.WebDriver, sampleLabel: string): Promise<void>;
+    makeResults(): ResultStatsWithDifferences[];
+    private outputResults;
+}

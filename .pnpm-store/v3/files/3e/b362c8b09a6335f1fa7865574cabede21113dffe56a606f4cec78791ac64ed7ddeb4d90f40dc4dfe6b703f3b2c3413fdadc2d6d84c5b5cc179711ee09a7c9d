@@ -1,0 +1,7 @@
+{
+  "to": "../../../../../../es5/input/mml/extensions",
+  "from": "../../../../../../ts/input/mathml/mml3",
+  "copy": [
+    "mml3.sef.json"
+  ]
+}

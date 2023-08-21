@@ -1,0 +1,35 @@
+{
+	"root": true,
+
+	"extends": "@ljharb",
+
+	"rules": {
+		"complexity": [1, 10],
+		"eqeqeq": [2, "allow-null"],
+		"func-names": 0,
+		"id-length": [2, { "min": 1, "max": 23 }],
+		"max-depth": [2, 5],
+		"max-len": 0,
+		"max-lines-per-function": [2, { "max": 250 }],
+		"max-statements": [1, 10],
+		"max-statements-per-line": [2, { "max": 2 }],
+		"new-cap": [2, { "capIsNewExceptions": ["BigInt"] }],
+		"no-extra-parens": [1],
+		"no-implicit-coercion": [2, {
+			"boolean": false,
+			"number": false,
+			"string": true
+		}],
+		"no-restricted-syntax": [2, "BreakStatement", "ContinueStatement", "DebuggerStatement", "LabeledStatement", "WithStatement"],
+	},
+
+	"overrides": [
+		{
+			"files": "test/**",
+			"rules": {
+				"func-name-matching": 0,
+				"prefer-regex-literals": 0,
+			},
+		},
+	],
+}

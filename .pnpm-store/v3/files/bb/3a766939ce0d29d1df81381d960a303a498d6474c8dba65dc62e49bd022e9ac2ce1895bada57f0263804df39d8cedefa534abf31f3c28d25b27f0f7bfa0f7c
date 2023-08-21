@@ -1,0 +1,66 @@
+{
+  "name": "git-config-path",
+  "description": "Resolve the path to the user's local or global .gitconfig.",
+  "version": "1.0.1",
+  "homepage": "https://github.com/jonschlinkert/git-config-path",
+  "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
+  "repository": "jonschlinkert/git-config-path",
+  "bugs": {
+    "url": "https://github.com/jonschlinkert/git-config-path/issues"
+  },
+  "license": "MIT",
+  "files": [
+    "index.js"
+  ],
+  "main": "index.js",
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "dependencies": {
+    "extend-shallow": "^2.0.1",
+    "fs-exists-sync": "^0.1.0",
+    "homedir-polyfill": "^1.0.0"
+  },
+  "devDependencies": {
+    "gulp-format-md": "^0.1.7",
+    "mocha": "^2.4.5"
+  },
+  "keywords": [
+    "config",
+    "git",
+    "gitconfig",
+    "global",
+    "path",
+    "resolve"
+  ],
+  "verb": {
+    "run": true,
+    "toc": false,
+    "layout": "default",
+    "tasks": [
+      "readme"
+    ],
+    "plugins": [
+      "gulp-format-md"
+    ],
+    "related": {
+      "list": [
+        "git-branch",
+        "git-repo-name",
+        "git-user-name",
+        "git-username",
+        "is-git-url",
+        "parse-git-config"
+      ]
+    },
+    "reflinks": [
+      "verb"
+    ],
+    "lint": {
+      "reflinks": true
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ES2015",
+    "module": "commonjs",
+    "declaration": true,
+    "outDir": "lib",
+    "strict": true,
+    "removeComments": true,
+    "esModuleInterop": true
+  },
+  "include": ["src/**/*"]
+}

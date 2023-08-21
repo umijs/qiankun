@@ -1,0 +1,280 @@
+"use strict";
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.openAndSwitchToNewTab = exports.makeDriver = exports.validateBrowserConfig = exports.parseBrowserConfigString = exports.browserSignature = exports.fcpBrowsers = exports.supportedBrowsers = void 0;
+const webdriver = __importStar(require("selenium-webdriver"));
+const chrome = __importStar(require("selenium-webdriver/chrome"));
+const edge = __importStar(require("selenium-webdriver/edge"));
+const firefox = __importStar(require("selenium-webdriver/firefox"));
+const install_1 = require("./install");
+const util_1 = require("./util");
+/** Browsers we can drive. */
+exports.supportedBrowsers = new Set([
+    'chrome',
+    'firefox',
+    'safari',
+    'edge',
+    'ie',
+]);
+// Note that the edgedriver package doesn't work on recent versions of
+// Windows 10, so users must manually install following Microsoft's
+// documentation.
+const browserWebdriverModules = new Map([
+    ['chrome', 'chromedriver'],
+    ['firefox', 'geckodriver'],
+    ['ie', 'iedriver'],
+]);
+/** Cases where Tachometer's browser name scheme does not equal WebDriver's. */
+const webdriverBrowserNames = new Map([
+    ['edge', 'MicrosoftEdge'],
+    ['ie', 'internet explorer'],
+]);
+/** Browsers that support headless mode. */
+const headlessBrowsers = new Set(['chrome', 'firefox']);
+/** Browsers for which we can find the first contentful paint (FCP) time. */
+exports.fcpBrowsers = new Set(['chrome']);
+/**
+ * Create a deterministic unique string key for the given BrowserConfig.
+ */
+function browserSignature(config) {
+    var _a, _b, _c, _d, _e, _f, _g;
+    return JSON.stringify([
+        config.name,
+        config.headless,
+        (_a = config.remoteUrl) !== null && _a !== void 0 ? _a : '',
+        config.windowSize.width,
+        config.windowSize.height,
+        (_b = config.binary) !== null && _b !== void 0 ? _b : '',
+        (_c = config.addArguments) !== null && _c !== void 0 ? _c : [],
+        (_d = config.removeArguments) !== null && _d !== void 0 ? _d : [],
+        (_e = config.cpuThrottlingRate) !== null && _e !== void 0 ? _e : 1,
+        (_f = config.preferences) !== null && _f !== void 0 ? _f : {},
+        (_g = config.profile) !== null && _g !== void 0 ? _g : '',
+    ]);
+}
+exports.browserSignature = browserSignature;
+/**
+ * Parse and validate a browser string specification. Examples:
+ *
+ *   chrome
+ *   chrome-headless
+ *   chrome@<remote-selenium-server>
+ */
+function parseBrowserConfigString(str) {
+    let remoteUrl;
+    const at = str.indexOf('@');
+    if (at !== -1) {
+        remoteUrl = str.substring(at + 1);
+        str = str.substring(0, at);
+    }
+    const headless = str.endsWith('-headless');
+    if (headless === true) {
+        str = str.replace(/-headless$/, '');
+    }
+    const name = str;
+    const config = { name, headless };
+    if (remoteUrl !== undefined) {
+        config.remoteUrl = remoteUrl;
+    }
+    return config;
+}
+exports.parseBrowserConfigString = parseBrowserConfigString;
+/**
+ * Throw if any property of the given BrowserConfig is invalid.
+ */
+function validateBrowserConfig({ name, headless, remoteUrl, windowSize, }) {
+    if (!exports.supportedBrowsers.has(name)) {
+        throw new Error(`Browser ${name} is not supported, ` +
+            `only ${[...exports.supportedBrowsers].join(', ')} are currently supported.`);
+    }
+    if (headless === true && !headlessBrowsers.has(name)) {
+        throw new Error(`Browser ${name} does not support headless mode.`);
+    }
+    if (remoteUrl !== undefined && !(0, util_1.isHttpUrl)(remoteUrl)) {
+        throw new Error(`Invalid browser remote URL "${remoteUrl}".`);
+    }
+    if (windowSize.width < 0 || windowSize.height < 0) {
+        throw new Error(`Invalid window size, width and height must be >= 0.`);
+    }
+}
+exports.validateBrowserConfig = validateBrowserConfig;
+/**
+ * Configure a WebDriver suitable for benchmarking the given browser.
+ */
+async function makeDriver(config) {
+    const browserName = config.name;
+    const webdriverModuleName = browserWebdriverModules.get(browserName);
+    if (webdriverModuleName != null) {
+        await (0, install_1.installOnDemand)(webdriverModuleName);
+        require(webdriverModuleName);
+    }
+    const builder = new webdriver.Builder();
+    const webdriverName = webdriverBrowserNames.get(config.name) || config.name;
+    builder.forBrowser(webdriverName);
+    builder.setChromeOptions(chromeOpts(config));
+    builder.setFirefoxOptions(firefoxOpts(config));
+    if (config.remoteUrl !== undefined) {
+        builder.usingServer(config.remoteUrl);
+    }
+    else if (config.name === 'edge') {
+        // There appears to be bug where WebDriver doesn't automatically start or
+        // find an Edge service and throws "Cannot read property 'start' of null"
+        // so we need to start the service ourselves.
+        // See https://stackoverflow.com/questions/48577924.
+        builder.setEdgeService(new edge.ServiceBuilder());
+    }
+    const driver = await builder.build();
+    if (config.name === 'safari' ||
+        config.name === 'edge' ||
+        config.name === 'ie') {
+        // Safari, Edge, and IE don't have flags we can use to launch with a given
+        // window size, but webdriver can resize the window after we've started
+        // up. Some versions of Safari have a bug where it is required to also
+        // provide an x/y position (see
+        // https://github.com/SeleniumHQ/selenium/issues/3796).
+        const rect = config.name === 'safari'
+            ? Object.assign(Object.assign({}, config.windowSize), { x: 0, y: 0 }) : config.windowSize;
+        await driver.manage().window().setRect(rect);
+    }
+    return driver;
+}
+exports.makeDriver = makeDriver;
+function chromeOpts(config) {
+    const opts = new chrome.Options();
+    if (config.binary) {
+        opts.setChromeBinaryPath(config.binary);
+    }
+    if (config.headless === true) {
+        opts.addArguments('--headless');
+    }
+    if (config.addArguments) {
+        opts.addArguments(...config.addArguments);
+    }
+    if (config.removeArguments) {
+        opts.excludeSwitches(...config.removeArguments);
+    }
+    if (config.trace) {
+        const loggingPrefs = new webdriver.logging.Preferences();
+        loggingPrefs.setLevel('browser', webdriver.logging.Level.ALL);
+        loggingPrefs.setLevel('performance', webdriver.logging.Level.ALL);
+        opts.setLoggingPrefs(loggingPrefs);
+        opts.setPerfLoggingPrefs({
+            enableNetwork: true,
+            enablePage: true,
+            traceCategories: config.trace.categories.join(','),
+        });
+    }
+    const { width, height } = config.windowSize;
+    opts.addArguments(`--window-size=${width},${height}`);
+    if (config.profile) {
+        opts.addArguments(`user-data-dir=${config.profile}`);
+    }
+    return opts;
+}
+function firefoxOpts(config) {
+    const opts = new firefox.Options();
+    if (config.preferences) {
+        for (const [name, value] of Object.entries(config.preferences)) {
+            opts.setPreference(name, value);
+        }
+    }
+    if (config.binary) {
+        opts.setBinary(config.binary);
+    }
+    if (config.headless === true) {
+        opts.addArguments('-headless');
+    }
+    const { width, height } = config.windowSize;
+    opts.addArguments(`-width=${width}`);
+    opts.addArguments(`-height=${height}`);
+    if (config.addArguments) {
+        opts.addArguments(...config.addArguments);
+    }
+    if (config.profile) {
+        // Note there is also a `-profile` flag for Firefox that could be set with
+        // `addArguments`, but using that causes Selenium to timeout trying to
+        // connect to the browser process. This `setProfile` method creates a
+        // temporary copy of the profile.
+        opts.setProfile(config.profile);
+    }
+    return opts;
+}
+/**
+ * Open a new tab and switch to it. Assumes that the driver is on a page that
+ * hasn't replaced `window.open` (e.g. the initial blank tab that we always
+ * switch back to after running a benchmark).
+ */
+async function openAndSwitchToNewTab(driver, config) {
+    // Chrome and Firefox add new tabs to the end of the handle list, but Safari
+    // adds them to the beginning. Just look for the new one instead of making
+    // any assumptions about this order.
+    const tabsBefore = await driver.getAllWindowHandles();
+    if (tabsBefore.length !== 1) {
+        throw new Error(`Expected only 1 open tab, got ${tabsBefore.length}`);
+    }
+    // "noopener=yes" prevents the new window from being able to access the
+    // first window. We set that here because in Chrome (and perhaps other
+    // browsers) we see a very significant improvement in the reliability of
+    // measurements, in particular it appears to eliminate interference between
+    // code across runs. It is likely this flag increases process isolation in a
+    // way that prevents code caching across tabs.
+    await driver.executeScript('window.open("", "", "noopener=yes");');
+    // Firefox (and maybe other browsers) won't always report the new tab ID
+    // immediately, so we'll need to poll for it.
+    const maxRetries = 20;
+    const retrySleepMs = 250;
+    let retries = 0;
+    let newTabId;
+    while (true) {
+        const tabsAfter = await driver.getAllWindowHandles();
+        const newTabs = tabsAfter.filter((tab) => tab !== tabsBefore[0]);
+        if (newTabs.length === 1) {
+            newTabId = newTabs[0];
+            break;
+        }
+        retries++;
+        if (newTabs.length > 1 || retries > maxRetries) {
+            throw new Error(`Expected to create 1 new tab, got ${newTabs.length}`);
+        }
+        await new Promise((resolve) => setTimeout(resolve, retrySleepMs));
+    }
+    await driver.switchTo().window(newTabId);
+    if (config.name === 'ie' || config.name === 'safari') {
+        // For IE and Safari (with rel=noopener) we get a new window instead of a
+        // new tab, so we need to resize every time.
+        const rect = config.name === 'safari'
+            ? Object.assign(Object.assign({}, config.windowSize), { x: 0, y: 0 }) : config.windowSize;
+        await driver.manage().window().setRect(rect);
+    }
+    const driverWithSendDevToolsCommand = driver;
+    if (driverWithSendDevToolsCommand.sendDevToolsCommand &&
+        config.cpuThrottlingRate !== undefined) {
+        // Enables CPU throttling to emulate slow CPUs.
+        await driverWithSendDevToolsCommand.sendDevToolsCommand('Emulation.setCPUThrottlingRate', { rate: config.cpuThrottlingRate });
+    }
+}
+exports.openAndSwitchToNewTab = openAndSwitchToNewTab;
+//# sourceMappingURL=browser.js.map

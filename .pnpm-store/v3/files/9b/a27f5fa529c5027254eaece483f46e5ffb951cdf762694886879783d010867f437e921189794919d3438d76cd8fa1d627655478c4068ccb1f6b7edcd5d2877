@@ -1,0 +1,63 @@
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+import { BrowserConfig } from './browser';
+import { ResultStatsWithDifferences } from './stats';
+import { BenchmarkResult, Measurement } from './types';
+export interface JsonOutputFile {
+    benchmarks: Benchmark[];
+}
+interface BrowserConfigResult extends BrowserConfig {
+    userAgent?: string;
+}
+interface Benchmark {
+    name: string;
+    bytesSent: number;
+    version?: string;
+    measurement: Measurement;
+    browser?: BrowserConfigResult;
+    mean: ConfidenceInterval;
+    differences: Array<Difference | null>;
+    samples: number[];
+}
+interface Difference {
+    absolute: ConfidenceInterval;
+    percentChange: ConfidenceInterval;
+}
+interface ConfidenceInterval {
+    low: number;
+    high: number;
+}
+export declare function jsonOutput(results: ResultStatsWithDifferences[]): JsonOutputFile;
+export interface LegacyJsonOutputFormat {
+    benchmarks: BenchmarkResult[];
+    datetime: string;
+    system: {
+        cpu: {
+            manufacturer: string;
+            model: string;
+            family: string;
+            speed: string;
+            cores: number;
+        };
+        load: {
+            average: number;
+            current: number;
+        };
+        battery: {
+            hasBattery: boolean;
+            connected: boolean;
+        };
+        memory: {
+            total: number;
+            free: number;
+            used: number;
+            active: number;
+            available: number;
+        };
+    };
+}
+export declare function legacyJsonOutput(results: BenchmarkResult[]): Promise<LegacyJsonOutputFormat>;
+export {};

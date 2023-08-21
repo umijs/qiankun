@@ -1,0 +1,4 @@
+/**
+ * rehype compiler for compile hast to jsx
+ */
+export default function jsxify(): void;

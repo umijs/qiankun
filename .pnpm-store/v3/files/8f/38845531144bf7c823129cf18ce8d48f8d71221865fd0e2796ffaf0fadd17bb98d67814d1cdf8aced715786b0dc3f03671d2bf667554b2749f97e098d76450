@@ -1,0 +1,4 @@
+/**
+ * remark plugin for generate file meta
+ */
+export default function yamlProcessor(): (ast: any, vFile: any) => void;

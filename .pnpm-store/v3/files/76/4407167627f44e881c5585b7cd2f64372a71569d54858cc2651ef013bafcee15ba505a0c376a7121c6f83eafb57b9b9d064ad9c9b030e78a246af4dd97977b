@@ -1,0 +1,27 @@
+{
+  "name": "shortid",
+  "version": "2.2.16",
+  "description": "Amazingly short non-sequential url-friendly unique id generator.",
+  "main": "index.js",
+  "keywords": [
+    "short",
+    "tiny",
+    "id",
+    "uuid",
+    "bitly",
+    "shorten",
+    "mongoid",
+    "shortid",
+    "tinyid"
+  ],
+  "author": "Dylan Greene <dylang@gmail.com>",
+  "repository": "dylang/shortid",
+  "browser": {
+    "./lib/random/random-byte.js": "./lib/random/random-byte-browser.js",
+    "./lib/util/cluster-worker-id.js": "./lib/util/cluster-worker-id-browser.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "nanoid": "^2.1.0"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@changesets/changelog-git",
+  "version": "0.1.14",
+  "description": "A changelog entry generator for git that writes hashes",
+  "main": "dist/changelog-git.cjs.js",
+  "module": "dist/changelog-git.esm.js",
+  "license": "MIT",
+  "repository": "https://github.com/changesets/changesets/tree/main/packages/changelog-git",
+  "dependencies": {
+    "@changesets/types": "^5.2.1"
+  }
+}

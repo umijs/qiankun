@@ -1,0 +1,38 @@
+{
+  "name": "@umijs/babel-preset-umi",
+  "version": "3.5.41",
+  "description": "@umijs/babel-preset-umi",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "app.js",
+    "node.js",
+    "dependency.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/umijs/umi"
+  },
+  "keywords": [
+    "umi"
+  ],
+  "authors": [
+    "chencheng <sorrycc@gmail.com> (https://github.com/sorrycc)"
+  ],
+  "license": "MIT",
+  "bugs": "http://github.com/umijs/umi/issues",
+  "homepage": "https://github.com/umijs/umi/tree/3.x/packages/babel-preset-umi#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@babel/runtime": "7.18.6",
+    "@umijs/babel-plugin-auto-css-modules": "3.5.41",
+    "@umijs/babel-plugin-import-to-await-require": "3.5.41",
+    "@umijs/babel-plugin-lock-core-js-3": "3.5.41",
+    "@umijs/babel-plugin-no-anonymous-default-export": "3.5.41",
+    "@umijs/deps": "3.5.41",
+    "@umijs/utils": "3.5.41"
+  }
+}

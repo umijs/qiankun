@@ -1,0 +1,43 @@
+import { PropertyList } from '../Tree/Node.js';
+export declare type OperatorDef = [number, number, number, PropertyList];
+export declare type OperatorList = {
+    [name: string]: OperatorDef;
+};
+export declare type RangeDef = [number, number, number, string, string?];
+export declare function OPDEF(lspace: number, rspace: number, texClass?: number, properties?: PropertyList): OperatorDef;
+export declare const MO: {
+    ORD: OperatorDef;
+    ORD11: OperatorDef;
+    ORD21: OperatorDef;
+    ORD02: OperatorDef;
+    ORD55: OperatorDef;
+    NONE: OperatorDef;
+    OP: OperatorDef;
+    OPFIXED: OperatorDef;
+    INTEGRAL: OperatorDef;
+    INTEGRAL2: OperatorDef;
+    BIN3: OperatorDef;
+    BIN4: OperatorDef;
+    BIN01: OperatorDef;
+    BIN5: OperatorDef;
+    TALLBIN: OperatorDef;
+    BINOP: OperatorDef;
+    REL: OperatorDef;
+    REL1: OperatorDef;
+    REL4: OperatorDef;
+    RELSTRETCH: OperatorDef;
+    RELACCENT: OperatorDef;
+    WIDEREL: OperatorDef;
+    OPEN: OperatorDef;
+    CLOSE: OperatorDef;
+    INNER: OperatorDef;
+    PUNCT: OperatorDef;
+    ACCENT: OperatorDef;
+    WIDEACCENT: OperatorDef;
+};
+export declare const RANGES: RangeDef[];
+export declare function getRange(text: string): RangeDef | null;
+export declare const MMLSPACING: number[][];
+export declare const OPTABLE: {
+    [form: string]: OperatorList;
+};

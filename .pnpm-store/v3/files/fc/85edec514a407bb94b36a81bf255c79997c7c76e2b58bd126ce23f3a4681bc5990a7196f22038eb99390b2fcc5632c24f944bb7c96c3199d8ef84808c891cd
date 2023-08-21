@@ -1,0 +1,21 @@
+sudo: false
+
+language: node_js
+
+node_js:
+  - '11'
+  - '10'
+
+cache:
+  directories:
+    - node_modules
+
+deploy:
+  provider: npm
+  email: constverum@gmail.com
+  api_key:
+    secure: CU96QF0v8iN0KjFWffAozbNkV9Qo6MqxLgRXnrA3yQNZ7XZogkNiz6CBWklrgOPeDoR6nn525pa6uFkR/ubKfcEB8hvYEXbOC+HQdlnEv/8iahq1PDkienX5GGMPU5Ad3o65Em/lsXJ+uP7TdzIjzSUOhNIxSy2VaeAdMlXdjZNMhESosAu4TJzlR1226yyzra80YhR/1EtG6kMuqrwiBpRmw2V4yoxNeGHHTqtNOxchTysMo0SANgxT1bZiIwmGR9j2SV2rtRiGg1oIGZVL1bijQ+bWLYC8HbtFPEuBC0z1RL5waqQzpGtVinmf1zQbo9W1ruuH28w4YtIq+Gtws9KEnJrLI9WkwYbRjI3MwwOl8orXqJ4dVw/e/tmQ3J6EH4MZMlKP/eCM6PLVwhszEzUH/iTO/h1odcxkSIxOhRQxJlfCRAWjP5wWfgbKEKF4XYv5r/vgQUMEX7auG9Zyv18B0I03igBigjcBAm7RHzJ7iu8q0Al4paZPgDe4uNVYbNDzLr0AwByLFuB66Z9herkkIi2jMe3U8xO1GpC39NFfOR+RqtVyNvfKjnEcH6RkQq2/ffyPZG+TRp6oOSpIgewjwfyBjM/J5H9dpHl7zDAKeIlIMpVqdM+2NqNleFqmZYiXpUnAaLNyd6DL6WZwGa7k32KqmePggYKSfRxOgLY=
+  on:
+    tags: true
+    branch: master
+    node_js: 10

@@ -1,0 +1,71 @@
+{
+  "name": "node-fetch-npm",
+  "version": "2.0.4",
+  "description": "An npm cli-oriented fork of the excellent node-fetch",
+  "main": "src/index.js",
+  "files": [
+    "src/*.js"
+  ],
+  "engines": {
+    "node": ">=4"
+  },
+  "scripts": {
+    "prerelease": "npm t",
+    "postrelease": "npm publish && git push --follow-tags",
+    "pretest": "standard src/*",
+    "release": "standard-version -s",
+    "test": "mocha test/test.js",
+    "report": "nyc --reporter lcov --reporter text mocha -R spec test/test.js",
+    "coverage": "nyc --reporter json --reporter text mocha -R spec test/test.js && codecov -f coverage/coverage-final.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/npm/node-fetch-npm.git"
+  },
+  "keywords": [
+    "fetch",
+    "http",
+    "promise"
+  ],
+  "author": "David Frank",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/npm/node-fetch-npm/issues"
+  },
+  "contributors": [
+    {
+      "name": "Rebecca Turner",
+      "email": "me@re-becca.org",
+      "twitter": "ReBeccaOrg"
+    },
+    {
+      "name": "Kat Marchán",
+      "email": "kzm@sykosomatic.org",
+      "twitter": "maybekatz"
+    }
+  ],
+  "homepage": "https://github.com/npm/node-fetch-npm",
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "chai-as-promised": "^6.0.0",
+    "chai-iterator": "^1.1.1",
+    "chai-string": "^1.4.0",
+    "codecov": "^1.0.1",
+    "cross-env": "^3.1.4",
+    "form-data": "^2.2.0",
+    "is-builtin-module": "^1.0.0",
+    "mocha": "^3.5.0",
+    "nyc": "^10.3.2",
+    "parted": "^0.1.1",
+    "promise": "^7.3.1",
+    "resumer": "0.0.0",
+    "standard": "^10.0.3",
+    "standard-version": "^4.2.0",
+    "whatwg-url": "^4.8.0"
+  },
+  "dependencies": {
+    "encoding": "^0.1.11",
+    "json-parse-better-errors": "^1.0.0",
+    "safe-buffer": "^5.1.1"
+  }
+}

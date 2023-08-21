@@ -1,0 +1,46 @@
+[![view on npm](https://badgen.net/npm/v/ansi-escape-sequences)](https://www.npmjs.org/package/ansi-escape-sequences)
+[![npm module downloads](https://badgen.net/npm/dt/ansi-escape-sequences)](https://www.npmjs.org/package/ansi-escape-sequences)
+[![Gihub repo dependents](https://badgen.net/github/dependents-repo/75lb/ansi-escape-sequences)](https://github.com/75lb/ansi-escape-sequences/network/dependents?dependent_type=REPOSITORY)
+[![Gihub package dependents](https://badgen.net/github/dependents-pkg/75lb/ansi-escape-sequences)](https://github.com/75lb/ansi-escape-sequences/network/dependents?dependent_type=PACKAGE)
+[![Node.js CI](https://github.com/75lb/ansi-escape-sequences/actions/workflows/node.js.yml/badge.svg)](https://github.com/75lb/ansi-escape-sequences/actions/workflows/node.js.yml)
+[![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg)](https://github.com/feross/standard)
+
+# ansi-escape-sequences
+
+A simple library containing all known terminal [ansi escape codes and sequences](http://en.wikipedia.org/wiki/ANSI_escape_code). Useful for adding colour to your command-line output, or building a dynamic text user interface.
+
+## API Reference
+
+{{#module name="ansi-escape-sequences"}}
+{{>body~}}
+{{>member-index~}}
+{{>members~}}
+{{/module}}
+
+## Load anywhere
+
+This library is compatible with Node.js, the Web and any style of module loader. It can be loaded anywhere, natively without transpilation.
+
+Node.js:
+
+```js
+const ansi = require('ansi-escape-sequences')
+```
+
+Within Node.js with ECMAScript Module support enabled:
+
+```js
+import ansi from 'ansi-escape-sequences'
+```
+
+Within a modern browser ECMAScript Module:
+
+```js
+import ansi from './node_modules/ansi-escape-sequences/dist/index.mjs'
+```
+
+* * *
+
+&copy; 2014-23 Lloyd Brookes \<75pound@gmail.com\>.
+
+Tested by [test-runner](https://github.com/test-runner-js/test-runner). Documented by [jsdoc-to-markdown](https://github.com/jsdoc2md/jsdoc-to-markdown).

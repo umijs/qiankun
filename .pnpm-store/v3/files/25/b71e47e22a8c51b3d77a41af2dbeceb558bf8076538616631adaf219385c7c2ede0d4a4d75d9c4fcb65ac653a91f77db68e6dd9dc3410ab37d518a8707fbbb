@@ -1,0 +1,31 @@
+{
+    "name": "@types/chai-subset",
+    "version": "1.3.3",
+    "description": "TypeScript definitions for chai-subset",
+    "license": "MIT",
+    "contributors": [
+        {
+            "name": "Sam Noedel",
+            "url": "https://github.com/delta62",
+            "githubUsername": "delta62"
+        },
+        {
+            "name": "Andrew Brown",
+            "url": "https://github.com/AGBrown",
+            "githubUsername": "AGBrown"
+        }
+    ],
+    "main": "",
+    "types": "index",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "directory": "types/chai-subset"
+    },
+    "scripts": {},
+    "dependencies": {
+        "@types/chai": "*"
+    },
+    "typesPublisherContentHash": "b3f324d9f4a8144026376e3fe5ba477e97f99b39f25c2a4422cbe0786549c4cf",
+    "typeScriptVersion": "3.0"
+}

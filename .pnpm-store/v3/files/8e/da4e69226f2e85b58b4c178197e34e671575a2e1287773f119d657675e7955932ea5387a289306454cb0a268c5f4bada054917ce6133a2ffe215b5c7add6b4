@@ -1,0 +1,13 @@
+export declare const isNothing: (value: any) => any;
+export declare const isString: any;
+export declare const toAbsolutePath: (path: string) => any;
+export declare const ensureString: any;
+export declare const compact: (input: string[]) => string[];
+export declare const toStringArray: any;
+export declare const isFileSync: (path: string) => any;
+export declare const readFileSync: (path: string) => any;
+export declare const filePathsP: (basePath: string, ns: string) => Promise<string[]>;
+export declare const hash: (...values: any[]) => any;
+export declare function getValueP(path: string, defaultValue?: any): Promise<any>;
+export declare const toGetValue: (data: any) => any;
+export declare const toJson: (value: any) => string;

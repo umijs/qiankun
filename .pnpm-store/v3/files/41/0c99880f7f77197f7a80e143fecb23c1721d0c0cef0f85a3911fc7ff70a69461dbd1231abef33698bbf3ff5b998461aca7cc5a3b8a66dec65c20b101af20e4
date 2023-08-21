@@ -1,0 +1,69 @@
+{
+	"name": "eslint-plugin-unicorn",
+	"version": "8.0.2",
+	"description": "Various awesome ESLint rules",
+	"license": "MIT",
+	"repository": "sindresorhus/eslint-plugin-unicorn",
+	"author": {
+		"name": "Sindre Sorhus",
+		"email": "sindresorhus@gmail.com",
+		"url": "sindresorhus.com"
+	},
+	"engines": {
+		"node": ">=6"
+	},
+	"scripts": {
+		"test": "xo && nyc ava",
+		"integration": "./test/integration/test.js"
+	},
+	"files": [
+		"index.js",
+		"rules"
+	],
+	"keywords": [
+		"eslint",
+		"eslintplugin",
+		"eslint-plugin",
+		"unicorn",
+		"linter",
+		"lint",
+		"style",
+		"xo"
+	],
+	"dependencies": {
+		"clean-regexp": "^1.0.0",
+		"eslint-ast-utils": "^1.0.0",
+		"import-modules": "^1.1.0",
+		"lodash.camelcase": "^4.1.1",
+		"lodash.defaultsdeep": "^4.6.0",
+		"lodash.kebabcase": "^4.0.1",
+		"lodash.snakecase": "^4.0.1",
+		"lodash.topairs": "^4.3.0",
+		"lodash.upperfirst": "^4.2.0",
+		"reserved-words": "^0.1.2",
+		"safe-regex": "^2.0.1"
+	},
+	"devDependencies": {
+		"ava": "^1.1.0",
+		"babel-eslint": "^10.0.0",
+		"chalk": "^2.4.2",
+		"coveralls": "^3.0.0",
+		"del": "^3.0.0",
+		"eslint": "^5.12.0",
+		"eslint-ava-rule-tester": "^3.0.0",
+		"execa": "^1.0.0",
+		"listr": "^0.14.1",
+		"nyc": "^13.1.0",
+		"pify": "^4.0.1",
+		"tempy": "^0.2.1",
+		"xo": "^0.24.0"
+	},
+	"peerDependencies": {
+		"eslint": ">=5.0.0"
+	},
+	"ava": {
+		"files": [
+			"test/*.js"
+		]
+	}
+}

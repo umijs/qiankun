@@ -1,0 +1,96 @@
+{
+  "name": "vite-node",
+  "version": "0.34.1",
+  "description": "Vite as Node.js runtime",
+  "author": "Anthony Fu <anthonyfu117@hotmail.com>",
+  "license": "MIT",
+  "funding": "https://opencollective.com/vitest",
+  "homepage": "https://github.com/vitest-dev/vitest/blob/main/packages/vite-node#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vitest-dev/vitest.git",
+    "directory": "packages/vite-node"
+  },
+  "bugs": {
+    "url": "https://github.com/vitest-dev/vitest/issues"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.mjs"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "require": "./dist/client.cjs",
+      "import": "./dist/client.mjs"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "require": "./dist/server.cjs",
+      "import": "./dist/server.mjs"
+    },
+    "./utils": {
+      "types": "./dist/utils.d.ts",
+      "require": "./dist/utils.cjs",
+      "import": "./dist/utils.mjs"
+    },
+    "./hmr": {
+      "types": "./dist/hmr.d.ts",
+      "require": "./dist/hmr.cjs",
+      "import": "./dist/hmr.mjs"
+    },
+    "./source-map": {
+      "types": "./dist/source-map.d.ts",
+      "require": "./dist/source-map.cjs",
+      "import": "./dist/source-map.mjs"
+    },
+    "./constants": {
+      "types": "./dist/constants.d.ts",
+      "require": "./dist/constants.cjs",
+      "import": "./dist/constants.mjs"
+    },
+    "./*": "./*"
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "*": [
+        "./dist/*",
+        "./dist/index.d.ts"
+      ]
+    }
+  },
+  "bin": {
+    "vite-node": "./vite-node.mjs"
+  },
+  "files": [
+    "dist",
+    "*.d.ts",
+    "*.mjs"
+  ],
+  "engines": {
+    "node": ">=v14.18.0"
+  },
+  "dependencies": {
+    "cac": "^6.7.14",
+    "debug": "^4.3.4",
+    "mlly": "^1.4.0",
+    "pathe": "^1.1.1",
+    "picocolors": "^1.0.0",
+    "vite": "^3.0.0 || ^4.0.0"
+  },
+  "devDependencies": {
+    "@jridgewell/trace-mapping": "^0.3.18",
+    "@types/debug": "^4.1.8",
+    "rollup": "^2.79.1"
+  },
+  "scripts": {
+    "build": "rimraf dist && rollup -c",
+    "dev": "rollup -c --watch --watch.include 'src/**' -m inline",
+    "typecheck": "tsc --noEmit"
+  }
+}

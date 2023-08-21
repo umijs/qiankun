@@ -1,0 +1,48 @@
+{
+  "name": "umi",
+  "version": "3.5.41",
+  "description": "umi",
+  "main": "index.js",
+  "types": "types.d.ts",
+  "files": [
+    "lib",
+    "dist",
+    "types.d.ts",
+    "bin",
+    "deps.js",
+    "deps.d.ts"
+  ],
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/umijs/umi"
+  },
+  "keywords": [
+    "umi"
+  ],
+  "authors": [
+    "chencheng <sorrycc@gmail.com> (https://github.com/sorrycc)"
+  ],
+  "license": "MIT",
+  "bugs": "http://github.com/umijs/umi/issues",
+  "homepage": "https://github.com/umijs/umi/tree/3.x/packages/umi#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@umijs/bundler-webpack": "3.5.41",
+    "@umijs/core": "3.5.41",
+    "@umijs/deps": "3.5.41",
+    "@umijs/preset-built-in": "3.5.41",
+    "@umijs/runtime": "3.5.41",
+    "@umijs/types": "3.5.41",
+    "@umijs/utils": "3.5.41",
+    "react": "16.x",
+    "react-dom": "16.x",
+    "v8-compile-cache": "2.3.0"
+  },
+  "bin": {
+    "umi": "bin/umi.js"
+  },
+  "module": "dist/index.esm.js"
+}

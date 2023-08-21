@@ -1,0 +1,433 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = previewer;
+exports.previewerTransforms = void 0;
+exports.registerPreviewerTransformer = registerPreviewerTransformer;
+function _fs() {
+  const data = _interopRequireDefault(require("fs"));
+  _fs = function _fs() {
+    return data;
+  };
+  return data;
+}
+function _path() {
+  const data = _interopRequireDefault(require("path"));
+  _path = function _path() {
+    return data;
+  };
+  return data;
+}
+function _unistUtilVisit() {
+  const data = _interopRequireDefault(require("unist-util-visit"));
+  _unistUtilVisit = function _unistUtilVisit() {
+    return data;
+  };
+  return data;
+}
+function _utils() {
+  const data = require("@umijs/utils");
+  _utils = function _utils() {
+    return data;
+  };
+  return data;
+}
+function _slash() {
+  const data = _interopRequireDefault(require("slash2"));
+  _slash = function _slash() {
+    return data;
+  };
+  return data;
+}
+var _context = _interopRequireDefault(require("../../../context"));
+var _demo = _interopRequireWildcard(require("../../demo"));
+var _ = _interopRequireDefault(require("../.."));
+var _utils2 = require("../../utils");
+var _builtin = _interopRequireDefault(require("./builtin"));
+var _watcher = require("../../../utils/watcher");
+function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function _getRequireWildcardCache(nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
+function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { _defineProperty(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
+function _defineProperty(obj, key, value) { key = _toPropertyKey(key); if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+function _toPropertyKey(arg) { var key = _toPrimitive(arg, "string"); return typeof key === "symbol" ? key : String(key); }
+function _toPrimitive(input, hint) { if (typeof input !== "object" || input === null) return input; var prim = input[Symbol.toPrimitive]; if (prim !== undefined) { var res = prim.call(input, hint || "default"); if (typeof res !== "object") return res; throw new TypeError("@@toPrimitive must return a primitive value."); } return (hint === "string" ? String : Number)(input); }
+const debug = (0, _utils().createDebug)('dumi:previewer');
+const previewerTransforms = [_builtin.default];
+/**
+ * cache id for each external demo file
+ */
+exports.previewerTransforms = previewerTransforms;
+const externalCache = new Map();
+/**
+ * record external demo id count
+ */
+const externalIdMap = new Map();
+/**
+ * record code block demo id count
+ */
+const mdCodeBlockIdMap = new Map();
+/**
+ * get unique id for previewer
+ * @param yaml          meta data
+ * @param mdAbsPath     md absolute path
+ * @param codeAbsPath   code absolute path, it is seem as mdAbsPath for embed demo
+ */
+function getPreviewerId(yaml, mdAbsPath, codeAbsPath) {
+  let id = yaml.identifier || yaml.uuid;
+  // do not generate identifier for inline demo
+  if (yaml.inline) {
+    return;
+  }
+  if (!id) {
+    if (mdAbsPath === codeAbsPath) {
+      // for code block demo, format: component-demo-N
+      const idMap = mdCodeBlockIdMap.get(mdAbsPath);
+      id = [idMap.id, idMap.count, 'demo'].filter(Boolean).join('-');
+      // record id count
+      const currentIdCount = idMap.map.get(id) || 0;
+      idMap.map.set(id, currentIdCount + 1);
+      // append count suffix
+      id += currentIdCount ? `-${currentIdCount}` : '';
+    } else {
+      // for external demo, format: dir-file-N
+      // use cache first
+      id = externalCache.get(codeAbsPath);
+      if (!id) {
+        const words = (0, _slash().default)(codeAbsPath)
+        // discard index & suffix like index.tsx
+        .replace(/(?:\/index)?(\.[\w-]+)?\.\w+$/, '$1').split(/\//).map(w => w.toLowerCase());
+        // /path/to/index.tsx -> to || /path/to.tsx -> to
+        const demoName = words[words.length - 1] || 'demo';
+        const prefix = words.slice(0, -1).filter(word => !/^(src|_?demos?|_?examples?)$/.test(word)).pop();
+        id = `${prefix}-${demoName}`;
+        // record id count
+        const currentIdCount = externalIdMap.get(id) || 0;
+        externalIdMap.set(id, currentIdCount + 1);
+        // append count suffix
+        id += currentIdCount ? `-${currentIdCount}` : '';
+        externalCache.set(codeAbsPath, id);
+      }
+    }
+  }
+  return id;
+}
+/**
+ * get demo dependencies meta data from previewer props
+ * @param props previewer props
+ * @param lang  node lang
+ */
+function getDemoDeps(props, lang) {
+  return _objectSpread(_objectSpread({}, Object.entries(props.dependencies || {}).reduce((deps, [pkg, {
+    version
+  }]) => Object.assign(deps, {
+    [pkg]: {
+      type: 'NPM',
+      // TODO: get real version rule from package.json
+      value: version
+    }
+  }), {})), Object.entries(props.sources).reduce((result, [file, item]) => Object.assign(result, _objectSpread({}, file === '_' ? {
+    [`index.${lang}`]: {
+      type: 'FILE',
+      value: (0, _utils2.decodeHoistImportToContent)(Object.values(item)[0])
+    }
+  } : {
+    [file]: {
+      type: 'FILE',
+      value: item.content || _fs().default.readFileSync(item.path, 'utf-8').toString()
+    }
+  })), {}));
+}
+/**
+ * get demo dependent files from previewer props
+ * @param props         previewer props
+ * @param demoFilePath  demo file path
+ */
+function getDependentFiles(props, demoFilePath) {
+  return Object.entries(props.sources).map(([file, val]) => file === '_' ? demoFilePath : val.path).filter(Boolean);
+}
+/**
+ * transform demo node to real component
+ * @param node          demo node
+ * @param mdAbsPath     md absolute path
+ * @param pTransformer  previewer transformer
+ * @param rendererProps demo render props
+ */
+function transformCode(node, mdAbsPath, pTransformer, rendererProps) {
+  // export third-party transformer directly
+  if (pTransformer.type !== 'builtin') {
+    return `() => React.createElement(${(0, _utils2.decodeImportRequireWithAutoDynamic)((0, _utils2.encodeImportRequire)(pTransformer.component), `demos_${pTransformer.type}`)}, ${JSON.stringify(rendererProps)}, [])`;
+  }
+  // export external demo directly
+  return node.properties.filePath ? (0, _utils2.encodeImportRequire)(node.properties.filePath) : (0, _demo.default)(node.properties.source, {
+    isTSX: /^tsx?$/.test(node.properties.lang),
+    fileAbsPath: node.properties.filePath || mdAbsPath
+  }).content;
+}
+/**
+ * transform meta data for node
+ * @param meta  node meta data from attribute & frontmatter
+ */
+function transformNodeMeta(meta) {
+  Object.keys(meta).forEach(key => {
+    const matched = key.match(/^desc(?:(\.[\w-]+$)|$)/);
+    // compatible with short-hand usage for description field in previous dumi versions
+    if (matched) {
+      key = `description${matched[1] || ''}`;
+      meta[key] = meta[matched[0]];
+      delete meta[matched[0]];
+    }
+    // transform markdown for description field
+    if (/^description(\.|$)/.test(key)) {
+      meta[key] = _.default.markdown(meta[key], null, {
+        type: 'html'
+      }).content;
+    }
+  });
+  return meta;
+}
+/**
+ * apply code block detecting event
+ * @param props         previewer props
+ * @param dependencies  block example asset value
+ * @param componentName the name of related component
+ */
+function applyCodeBlock(props, dependencies, componentName) {
+  var _ctx$umi;
+  (_ctx$umi = _context.default.umi) === null || _ctx$umi === void 0 ? void 0 : _ctx$umi.applyPlugins({
+    key: 'dumi.detectCodeBlock',
+    type: _context.default.umi.ApplyPluginsType.event,
+    args: {
+      type: 'BLOCK',
+      name: props.title,
+      description: props.description,
+      thumbnail: props.thumbnail,
+      tags: props.tags,
+      previewUrl: props.previewUrl,
+      atomAssetId: componentName,
+      identifier: props.identifier || props.uuid,
+      // for HiTu DSM, deprecated
+      uuid: props.uuid,
+      dependencies
+    }
+  });
+}
+/**
+ * apply demo detecting event
+ * @param props previewer props
+ */
+function applyDemo(props, code) {
+  var _ctx$umi2;
+  // hoist previewerProps.sources to reduce .dumi/demos size
+  Object.values(props.sources).forEach(file => {
+    if (file.path) {
+      file.content = file.content || (0, _utils2.encodeHoistImport)(file.path);
+      delete file.path;
+    }
+  });
+  (_ctx$umi2 = _context.default.umi) === null || _ctx$umi2 === void 0 ? void 0 : _ctx$umi2.applyPlugins({
+    key: 'dumi.detectDemo',
+    type: _context.default.umi.ApplyPluginsType.event,
+    args: {
+      uuid: props.identifier,
+      code,
+      previewerProps: props
+    }
+  });
+}
+/**
+ * watch dependent files watch for external demos, to update demo meta data
+ * @param node          demo node
+ * @param pTransformer  currying previewer transformer
+ * @param cTransformer  currying code transformer
+ * @param files         dependent files
+ */
+function listenExtDemoDepsChange(node, pTransformer, cTransformer, files) {
+  let isUpdated = false;
+  const listener = () => {
+    if (!isUpdated) {
+      isUpdated = true;
+      debug(`regenerate demo props for: ${node.properties.filePath}`);
+      // update source property
+      node.properties.source = _fs().default.readFileSync(node.properties.filePath, 'utf-8').toString();
+      const _pTransformer$fn = pTransformer.fn(),
+        previewerProps = _pTransformer$fn.previewerProps,
+        rendererProps = _pTransformer$fn.rendererProps;
+      try {
+        applyDemo(previewerProps, cTransformer(rendererProps));
+      } catch (e) {
+        /* nothing */
+      }
+      // continue to listen the next turn
+      listenExtDemoDepsChange(node, pTransformer, cTransformer, getDependentFiles(previewerProps, node.properties.filePath));
+    }
+  };
+  // watch dependent files change
+  files.concat(node.properties.filePath).filter(_fs().default.existsSync).forEach(file => (0, _watcher.listenFileOnceChange)(file, listener));
+}
+const visitor = function visitor(node, i, parent) {
+  var _node$properties;
+  if (node.tagName === 'div' && ((_node$properties = node.properties) === null || _node$properties === void 0 ? void 0 : _node$properties.type) === 'previewer') {
+    var _ctx$umi3;
+    node.properties.meta = node.properties.meta || {};
+    // discard debug demo in production
+    if (
+    // only for production
+    ((_ctx$umi3 = _context.default.umi) === null || _ctx$umi3 === void 0 ? void 0 : _ctx$umi3.env) === 'production' && (
+    // read debug flag from frontmatter(inline demo) or attributes(external demo)
+    node.properties.meta.debug ||
+    // read debug flag from external demo frontmatter
+    _fs().default.existsSync(node.properties.filePath || '') && _.default.code(_fs().default.readFileSync(node.properties.filePath, 'utf8').toString()).meta.debug)) {
+      parent.children.splice(i, 1);
+    } else {
+      var _this$vFile$data$demo;
+      // transform node to Previewer meta
+      let rendererProps;
+      let previewerProps;
+      let demoDeps;
+      let previewerTransformer;
+      // execute transformers to get the first valid result, and save currying transformer
+      previewerTransforms.some(item => {
+        const caller = () => item.fn({
+          attrs: _objectSpread({
+            src: node.properties.src
+          }, node.properties.meta),
+          mdAbsPath: this.data('fileAbsPath'),
+          node
+        });
+        const result = caller();
+        // get result from transformer
+        if (result) {
+          // generate demo id
+          const identifier = getPreviewerId(node.properties.meta, this.data('fileAbsPath'), node.properties.filePath || this.data('fileAbsPath'));
+          // fill fields for tranformer result
+          const decorateResult = o => {
+            // extra meta for external demo
+            if (node.properties.filePath) {
+              const _transformer$code = _.default.code(node.properties.source),
+                meta = _transformer$code.meta;
+              // save original attr meta on code tag, to avoid node meta override frontmatter in HMR
+              node.properties._ATTR_META = node.properties._ATTR_META || node.properties.meta;
+              node.properties.meta = Object.assign(meta, node.properties._ATTR_META);
+            }
+            // transform node meta data
+            node.properties.meta = transformNodeMeta(node.properties.meta);
+            // set componentName for previewer props
+            o.previewerProps.componentName = this.vFile.data.componentName;
+            // assign node meta to previewer props (allow user override props via frontmatter or attribute)
+            Object.assign(o.previewerProps, node.properties.meta);
+            // force override id for previewer props
+            o.previewerProps.identifier = identifier;
+            // fallback dependencies & sources
+            o.previewerProps.dependencies = o.previewerProps.dependencies || {};
+            o.previewerProps.sources = o.previewerProps.sources || {};
+            // generate demo dependencies from previewerProps.sources
+            demoDeps = getDemoDeps(o.previewerProps, node.properties.lang);
+            return o;
+          };
+          // export result
+          // save transformer
+          var _decorateResult = decorateResult(result);
+          var _decorateResult$rende = _decorateResult.rendererProps;
+          rendererProps = _decorateResult$rende === void 0 ? {} : _decorateResult$rende;
+          previewerProps = _decorateResult.previewerProps;
+          previewerTransformer = _objectSpread(_objectSpread({}, item), {}, {
+            fn: () => decorateResult(caller())
+          });
+        }
+        // use the first valid result
+        return result;
+      });
+      // generate demo code
+      const codeTransformer = props => transformCode(node, this.data('fileAbsPath'), previewerTransformer, props);
+      const code = codeTransformer(rendererProps);
+      // use to declare demos in the page component
+      this.vFile.data.demos = (this.vFile.data.demos || []).concat({
+        name: `${_demo.DEMO_COMPONENT_NAME}${(((_this$vFile$data$demo = this.vFile.data.demos) === null || _this$vFile$data$demo === void 0 ? void 0 : _this$vFile$data$demo.length) || 0) + 1}`,
+        code: previewerProps.inline ?
+        // insert directly for inline demo
+        `${(0, _utils2.decodeImportRequireWithAutoDynamic)(code, 'demos_md_inline')}` :
+        // render other demo by id from demos context
+        `DUMI_ALL_DEMOS['${previewerProps.identifier}'].component`,
+        inline: previewerProps.inline
+      });
+      if (previewerProps.inline) {
+        // append demo component directly for inline demo and other transformer result
+        parent.children[i] = {
+          previewer: true,
+          type: 'element',
+          tagName: `${_demo.DEMO_COMPONENT_NAME}${this.vFile.data.demos.length}`
+        };
+      } else {
+        parent.children[i] = {
+          previewer: true,
+          type: 'element',
+          tagName: 'Previewer',
+          // TODO: read props from common @@/dumi/demos module to reduce bundle size
+          properties: {
+            'data-previewer-props-replaced': previewerProps.identifier
+          },
+          children: [{
+            type: 'element',
+            tagName: `${_demo.DEMO_COMPONENT_NAME}${this.vFile.data.demos.length}`,
+            properties: {}
+          }]
+        };
+      }
+      // collect demo meta data, exclude inline demo
+      if (!previewerProps.inline) {
+        // watch depend files to update demo meta for external demo
+        if (node.properties.filePath) {
+          listenExtDemoDepsChange(node, previewerTransformer, codeTransformer, getDependentFiles(previewerProps, node.properties.filePath));
+        }
+        // apply umi plugins
+        applyCodeBlock(previewerProps, demoDeps, this.vFile.data.componentName);
+        applyDemo(previewerProps, code);
+      }
+    }
+  }
+};
+/**
+ * register custom previewer transformer
+ * @note    will be execute before builtin transformer
+ * @param t transformer
+ */
+function registerPreviewerTransformer(t) {
+  /* istanbul ignore else */
+  if (previewerTransforms.every(item => item.type !== t.type)) {
+    previewerTransforms.unshift(t);
+  } else {
+    var _ctx$umi4;
+    (_ctx$umi4 = _context.default.umi) === null || _ctx$umi4 === void 0 ? void 0 : _ctx$umi4.logger.error(`[dumi]: same previewer transformer [${t.type}] cannot be registered twice.`);
+  }
+}
+function previewer() {
+  return (ast, vFile) => {
+    // record code block id
+    if (this.data('fileAbsPath')) {
+      const mapObj = mdCodeBlockIdMap.get(this.data('fileAbsPath'));
+      if (!mapObj) {
+        // initialize map
+        const prefix = vFile.data.componentName || _path().default.basename((0, _slash().default)(this.data('fileAbsPath')).replace(/(?:\/(?:index|readme))?(\.[\w-]+)?\.md/i, '$1'));
+        mdCodeBlockIdMap.set(this.data('fileAbsPath'), {
+          // save builtin-rule id
+          id: prefix,
+          // save conflict count
+          count: Array.from(mdCodeBlockIdMap.values()).filter(m => m.id === prefix).length,
+          // create code block id map
+          map: new Map()
+        });
+      } else {
+        // clear single paths for a new transform flow
+        mapObj.map = new Map();
+      }
+    }
+    (0, _unistUtilVisit().default)(ast, 'element', visitor.bind({
+      vFile,
+      data: this.data
+    }));
+  };
+}

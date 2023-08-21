@@ -1,0 +1,241 @@
+@import (reference) '../style/variables.less';
+
+.@{prefix}-previewer {
+  background-color: #fff;
+  border: 1px solid @c-border;
+  border-radius: 1px;
+
+  + .@{prefix}-previewer {
+    margin-top: 32px;
+  }
+
+  &-demo {
+    padding: 40px 24px;
+  }
+
+  &-target {
+    border-color: fade(@c-primary, 50%);
+    box-shadow: 0 0 0 5px fade(@c-primary, 5%);
+  }
+
+  &-desc {
+    &:not(:empty) {
+      padding: 1em;
+      color: @c-text;
+      border-top: 1px solid @c-border;
+    }
+
+    .markdown > p:first-child {
+      margin-top: 0;
+    }
+
+    .markdown > p:last-child {
+      margin-bottom: 0;
+    }
+
+    &[data-title] {
+      position: relative;
+      padding-top: 1.2em;
+
+      > a:first-child {
+        position: absolute;
+        top: 0;
+        left: 1em;
+        margin-left: -4px;
+        padding: 0 4px;
+        color: @c-heading;
+        font-size: inherit;
+        font-weight: 500;
+        background-color: #fff;
+        transform: translateY(-50%);
+        pointer-events: auto;
+        cursor: pointer;
+      }
+
+      &:empty {
+        padding-top: 0;
+
+        // modify action area style when only has title field
+        + .@{prefix}-previewer-actions {
+          height: 46px;
+          border-top-style: solid;
+        }
+      }
+    }
+  }
+
+  &-actions {
+    display: flex;
+    height: 40px;
+    padding: 0 1em;
+    align-items: center;
+    border-top: 1px dashed @c-border;
+
+    > a {
+      display: flex;
+    }
+
+    button {
+      position: relative;
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      padding: 0;
+      border: 0;
+      box-sizing: border-box;
+      cursor: pointer;
+      opacity: 0.6;
+      outline: none;
+      transition: opacity 0.2s, background 0.2s;
+
+      // expand click area
+      &::after {
+        content: '';
+        position: absolute;
+        top: -8px;
+        left: -8px;
+        right: -8px;
+        bottom: -8px;
+      }
+
+      &:hover {
+        opacity: 0.8;
+      }
+
+      &:active {
+        opacity: 0.9;
+      }
+
+      &:disabled {
+        opacity: 0.2;
+        cursor: not-allowed;
+      }
+
+      &:not(:last-child) {
+        margin-right: 8px;
+      }
+
+      &[role='codesandbox'] {
+        background-position: -18px 0;
+      }
+
+      &[role='codepen'] {
+        background-position: -36px 0;
+      }
+
+      &[role='source'] {
+        background-position: -72px 0;
+      }
+
+      &[role='change-jsx'] {
+        background-position: -90px 0;
+      }
+
+      &[role='change-tsx'] {
+        background-position: -108px 0;
+      }
+
+      &[role='open-demo'] {
+        background-position: -126px 0;
+      }
+
+      &[role='motions'] {
+        background-position: -162px 0;
+      }
+
+      &[role='sketch-component'] {
+        background-position: -182px 0;
+      }
+
+      &[role='sketch-group'] {
+        background-position: -200px 0;
+      }
+
+      &[role='copy'][data-status='ready'] {
+        background-position: -54px 0;
+      }
+
+      &[role='copy'][data-status='copied'] {
+        pointer-events: none;
+        background-position: -54px -16px;
+      }
+    }
+
+    // split action buttons by a blank node
+    > span {
+      flex: 1;
+      display: inline-block;
+    }
+  }
+
+  &-source {
+    border-top: 1px dashed @c-border;
+
+    &-tab {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      overflow: auto;
+      border-top: 1px dashed @c-border;
+
+      li {
+        float: left;
+
+        button {
+          position: relative;
+          padding: 0 16px 0 32px;
+          font-size: 14px;
+          line-height: 36px;
+          border: 0;
+          border-top: 2px solid transparent;
+          border-bottom: 2px solid transparent;
+          outline: none;
+          background: transparent;
+          box-sizing: border-box;
+          cursor: pointer;
+          transition: all 0.3s;
+
+          &::before,
+          &::after {
+            content: '';
+            position: absolute;
+            margin-right: 4px;
+            display: inline-block;
+          }
+
+          &::before {
+            left: 16px;
+            top: 50%;
+            margin-top: -6px;
+            width: 10px;
+            height: 12px;
+            border: 1px solid @c-secondary;
+          }
+
+          &::after {
+            top: 50%;
+            left: 23px;
+            margin-top: -7px;
+            width: 4px;
+            height: 4px;
+            background: #fff;
+            border-bottom: 1px solid @c-secondary;
+            transform: rotate(45deg);
+          }
+        }
+
+        &:hover {
+          button {
+            color: @c-primary;
+          }
+        }
+
+        &.active {
+          button {
+            border-bottom-color: @c-primary;
+          }
+        }
+      }
+    }
+  }
+}

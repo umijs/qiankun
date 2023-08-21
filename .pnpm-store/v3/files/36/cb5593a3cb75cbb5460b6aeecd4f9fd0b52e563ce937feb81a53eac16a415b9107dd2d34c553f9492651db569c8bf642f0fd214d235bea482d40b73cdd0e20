@@ -1,0 +1,14 @@
+import { ComponentProps, ReactNode } from 'react';
+import { IRouteComponentProps } from '@umijs/types';
+declare type IGetDemoRenderArgs = [ComponentProps<any>, ReactNode] | [ReactNode] | [];
+declare const _default: (props: IRouteComponentProps<{
+    uuid: string;
+}, {
+    wrapper?: string;
+    capture?: string;
+}>) => IGetDemoRenderArgs;
+/**
+ * return demo preview arguments for single page route
+ * @return [props, children] or [children]
+ */
+export default _default;

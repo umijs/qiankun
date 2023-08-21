@@ -1,0 +1,510 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "definitions": {
+        "CallbackMeasurement": {
+            "additionalProperties": false,
+            "properties": {
+                "mode": {
+                    "enum": [
+                        "callback"
+                    ],
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "mode"
+            ],
+            "type": "object"
+        },
+        "ChromeConfig": {
+            "additionalProperties": false,
+            "properties": {
+                "addArguments": {
+                    "description": "Additional command-line arguments to pass when launching the browser.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "binary": {
+                    "description": "Path to the binary to use when launching this browser, instead of the\ndefault one.",
+                    "type": "string"
+                },
+                "cpuThrottlingRate": {
+                    "description": "Optional CPU Throttling rate. (1 is no throttle, 2 is 2x slowdown,\netc). This is currently only supported in headless mode.",
+                    "minimum": 1,
+                    "type": "number"
+                },
+                "headless": {
+                    "description": "Whether to launch the headless (no GUI) version of this browser.",
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "Name of the browser:\n\nOptions:\n  - chrome\n  - firefox\n  - safari\n  - edge\n  - ie",
+                    "enum": [
+                        "chrome"
+                    ],
+                    "type": "string"
+                },
+                "profile": {
+                    "description": "Path to a profile directory to use instead of the default temporary fresh\none.",
+                    "type": "string"
+                },
+                "remoteUrl": {
+                    "description": "A remote WebDriver server HTTP address to launch the browser from.",
+                    "type": "string"
+                },
+                "removeArguments": {
+                    "description": "Command-line arguments that WebDriver normally adds by default when\nlaunching the browser, which you would like to omit.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "trace": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/TraceConfig"
+                        },
+                        {
+                            "enum": [
+                                true
+                            ],
+                            "type": "boolean"
+                        }
+                    ],
+                    "description": "Optional config to turn on performance tracing."
+                },
+                "windowSize": {
+                    "$ref": "#/definitions/WindowSize",
+                    "description": "The size of new windows created from this browser. Defaults to 1024x768."
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "type": "object"
+        },
+        "ConfigFileBenchmark": {
+            "additionalProperties": false,
+            "description": "Expected format of a benchmark in a JSON config file.",
+            "properties": {
+                "browser": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/ChromeConfig"
+                        },
+                        {
+                            "$ref": "#/definitions/FirefoxConfig"
+                        },
+                        {
+                            "$ref": "#/definitions/SafariConfig"
+                        },
+                        {
+                            "$ref": "#/definitions/EdgeConfig"
+                        },
+                        {
+                            "$ref": "#/definitions/IEConfig"
+                        },
+                        {
+                            "type": "string"
+                        }
+                    ],
+                    "description": "Which browser to run the benchmark in.\n\nOptions:\n  - chrome (default)\n  - chrome-headless\n  - firefox\n  - firefox-headless\n  - safari\n  - edge\n  - ie"
+                },
+                "expand": {
+                    "description": "Recursively expand this benchmark configuration with any number of\nvariations. Useful for testing the same base configuration with e.g.\nmultiple browers or package versions.",
+                    "items": {
+                        "$ref": "#/definitions/ConfigFileBenchmark"
+                    },
+                    "type": "array"
+                },
+                "measurement": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/CallbackMeasurement"
+                        },
+                        {
+                            "$ref": "#/definitions/PerformanceEntryMeasurement"
+                        },
+                        {
+                            "$ref": "#/definitions/ExpressionMeasurement"
+                        },
+                        {
+                            "items": {
+                                "anyOf": [
+                                    {
+                                        "$ref": "#/definitions/CallbackMeasurement"
+                                    },
+                                    {
+                                        "$ref": "#/definitions/PerformanceEntryMeasurement"
+                                    },
+                                    {
+                                        "$ref": "#/definitions/ExpressionMeasurement"
+                                    }
+                                ],
+                                "description": "The kinds of intervals we can measure."
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "enum": [
+                                "callback",
+                                "fcp",
+                                "global"
+                            ],
+                            "type": "string"
+                        }
+                    ],
+                    "description": "Which time interval to measure.\n\nOptions:\n  - callback: bench.start() to bench.stop() (default for local paths)\n  - fcp: first contentful paint (default for fully qualified URLs)\n  - global: result returned from window.tachometerResult (or custom\n      expression set via measurementExpression)\n  - {\n      performanceEntry: {\n        //\nhttps://developer.mozilla.org/en-US/docs/Web/API/PerformanceEntry/name\n        name: string;\n      }\n    }"
+                },
+                "measurementExpression": {
+                    "description": "Expression to use to retrieve global result.  Defaults to\n`window.tachometerResult`.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "An optional label for this benchmark. Defaults to the URL.",
+                    "type": "string"
+                },
+                "packageVersions": {
+                    "$ref": "#/definitions/ConfigFilePackageVersion",
+                    "description": "Optional NPM dependency overrides to apply and install. Only supported with\nlocal paths."
+                },
+                "url": {
+                    "description": "A fully qualified URL, or a local path to an HTML file or directory. If a\ndirectory, must contain an index.html. Query parameters are permitted on\nlocal paths (e.g. 'my/benchmark.html?foo=bar').",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "ConfigFilePackageVersion": {
+            "additionalProperties": false,
+            "properties": {
+                "dependencies": {
+                    "$ref": "#/definitions/ExtendedPackageDependencyMap",
+                    "description": "Map from NPM package to version. Any version syntax supported by NPM is\nsupported here."
+                },
+                "label": {
+                    "description": "Required label to identify this version map.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "dependencies",
+                "label"
+            ],
+            "type": "object"
+        },
+        "EdgeConfig": {
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "description": "Name of the browser:\n\nOptions:\n  - chrome\n  - firefox\n  - safari\n  - edge\n  - ie",
+                    "enum": [
+                        "edge"
+                    ],
+                    "type": "string"
+                },
+                "remoteUrl": {
+                    "description": "A remote WebDriver server HTTP address to launch the browser from.",
+                    "type": "string"
+                },
+                "windowSize": {
+                    "$ref": "#/definitions/WindowSize",
+                    "description": "The size of new windows created from this browser. Defaults to 1024x768."
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "type": "object"
+        },
+        "ExpressionMeasurement": {
+            "additionalProperties": false,
+            "properties": {
+                "expression": {
+                    "type": "string"
+                },
+                "mode": {
+                    "enum": [
+                        "expression"
+                    ],
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "expression",
+                "mode"
+            ],
+            "type": "object"
+        },
+        "ExtendedPackageDependencyMap": {
+            "additionalProperties": {
+                "anyOf": [
+                    {
+                        "$ref": "#/definitions/GitDependency"
+                    },
+                    {
+                        "type": "string"
+                    }
+                ]
+            },
+            "description": "Tachometer's extensions to the NPM \"dependencies\" field, which allows for\nmore advanced configurations.",
+            "type": "object"
+        },
+        "FirefoxConfig": {
+            "additionalProperties": false,
+            "properties": {
+                "addArguments": {
+                    "description": "Additional command-line arguments to pass when launching the browser.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "binary": {
+                    "description": "Path to the binary to use when launching this browser, instead of the\ndefault one.",
+                    "type": "string"
+                },
+                "headless": {
+                    "description": "Whether to launch the headless (no GUI) version of this browser.",
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "Name of the browser:\n\nOptions:\n  - chrome\n  - firefox\n  - safari\n  - edge\n  - ie",
+                    "enum": [
+                        "firefox"
+                    ],
+                    "type": "string"
+                },
+                "preferences": {
+                    "additionalProperties": {
+                        "type": [
+                            "string",
+                            "number",
+                            "boolean"
+                        ]
+                    },
+                    "description": "Advanced preferences that are usually set from the about:config page\nin Firefox (see\nhttps://support.mozilla.org/en-US/kb/about-config-editor-firefox).",
+                    "type": "object"
+                },
+                "profile": {
+                    "description": "Path to a profile directory to use instead of the default temporary fresh\none.",
+                    "type": "string"
+                },
+                "remoteUrl": {
+                    "description": "A remote WebDriver server HTTP address to launch the browser from.",
+                    "type": "string"
+                },
+                "windowSize": {
+                    "$ref": "#/definitions/WindowSize",
+                    "description": "The size of new windows created from this browser. Defaults to 1024x768."
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "type": "object"
+        },
+        "GitDependency": {
+            "additionalProperties": false,
+            "description": "Configuration for cloning a Git repo at some ref with an optional package\nsub-path for monorepos, for use as an NPM dependency.",
+            "properties": {
+                "kind": {
+                    "enum": [
+                        "git"
+                    ],
+                    "type": "string"
+                },
+                "ref": {
+                    "type": "string"
+                },
+                "repo": {
+                    "type": "string"
+                },
+                "setupCommands": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "subdir": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "kind",
+                "ref",
+                "repo"
+            ],
+            "type": "object"
+        },
+        "IEConfig": {
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "description": "Name of the browser:\n\nOptions:\n  - chrome\n  - firefox\n  - safari\n  - edge\n  - ie",
+                    "enum": [
+                        "ie"
+                    ],
+                    "type": "string"
+                },
+                "remoteUrl": {
+                    "description": "A remote WebDriver server HTTP address to launch the browser from.",
+                    "type": "string"
+                },
+                "windowSize": {
+                    "$ref": "#/definitions/WindowSize",
+                    "description": "The size of new windows created from this browser. Defaults to 1024x768."
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "type": "object"
+        },
+        "PerformanceEntryMeasurement": {
+            "additionalProperties": false,
+            "properties": {
+                "entryName": {
+                    "type": "string"
+                },
+                "mode": {
+                    "enum": [
+                        "performance"
+                    ],
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "entryName",
+                "mode"
+            ],
+            "type": "object"
+        },
+        "SafariConfig": {
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "description": "Name of the browser:\n\nOptions:\n  - chrome\n  - firefox\n  - safari\n  - edge\n  - ie",
+                    "enum": [
+                        "safari"
+                    ],
+                    "type": "string"
+                },
+                "remoteUrl": {
+                    "description": "A remote WebDriver server HTTP address to launch the browser from.",
+                    "type": "string"
+                },
+                "windowSize": {
+                    "$ref": "#/definitions/WindowSize",
+                    "description": "The size of new windows created from this browser. Defaults to 1024x768."
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "type": "object"
+        },
+        "TraceConfig": {
+            "additionalProperties": false,
+            "description": "Configuration to turn on performance tracing",
+            "properties": {
+                "categories": {
+                    "description": "The tracing categories the browser should log. See Tachometer readme for a\ndescription of available categories. The source of the categories in\nChromium can be found here: https://chromium.googlesource.com/chromium/src/+/master/base/trace_event/builtin_categories.h",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "logDir": {
+                    "description": "The directory to log performance traces to",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "WindowSize": {
+            "additionalProperties": false,
+            "properties": {
+                "height": {
+                    "description": "Height of the browser window in pixels. Defaults to 768.",
+                    "minimum": 0,
+                    "type": "integer"
+                },
+                "width": {
+                    "description": "Width of the browser window in pixels. Defaults to 1024.",
+                    "minimum": 0,
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "height",
+                "width"
+            ],
+            "type": "object"
+        }
+    },
+    "description": "Expected format of the top-level JSON config file. Note this interface is\nused to generate the JSON schema for validation.",
+    "properties": {
+        "$schema": {
+            "description": "An optional reference to the JSON Schema for this file.\n\nIf none is given, and the file is a valid tachometer config file,\ntachometer will write back to the config file to give this a value.",
+            "type": "string"
+        },
+        "autoSampleConditions": {
+            "description": "The degrees of difference to try and resolve when auto-sampling\n(e.g. 0ms, +1ms, -1ms, 0%, +1%, -1%, default 0%).",
+            "items": {
+                "type": "string"
+            },
+            "type": "array"
+        },
+        "benchmarks": {
+            "description": "Benchmarks to run.",
+            "items": {
+                "$ref": "#/definitions/ConfigFileBenchmark"
+            },
+            "minItems": 1,
+            "type": "array"
+        },
+        "horizons": {
+            "description": "Deprecated alias for autoSampleConditions.",
+            "items": {
+                "type": "string"
+            },
+            "type": "array"
+        },
+        "resolveBareModules": {
+            "description": "Whether to automatically convert ES module imports with bare module\nspecifiers to paths.",
+            "type": "boolean"
+        },
+        "root": {
+            "description": "Root directory to serve benchmarks from (default current directory).",
+            "type": "string"
+        },
+        "sampleSize": {
+            "description": "Minimum number of times to run each benchmark (default 50).",
+            "minimum": 2,
+            "type": "integer"
+        },
+        "timeout": {
+            "description": "The maximum number of minutes to spend auto-sampling (default 3).",
+            "minimum": 0,
+            "type": "number"
+        }
+    },
+    "required": [
+        "benchmarks"
+    ],
+    "type": "object"
+}
+

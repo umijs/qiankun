@@ -1,0 +1,5 @@
+{
+  "component": "output/svg",
+  "targets": ["output/svg.ts", "output/svg", "output/common"],
+  "exclude": ["output/svg/fonts", "output/common/fonts"]
+}

@@ -1,0 +1,75 @@
+{
+  "name": "stylelint-order",
+  "version": "3.1.1",
+  "description": "A collection of order related linting rules for stylelint.",
+  "keywords": [
+    "stylelint-plugin",
+    "stylelint",
+    "css",
+    "lint",
+    "order"
+  ],
+  "author": "Aleks Hudochenkov <aleks@hudochenkov.com>",
+  "license": "MIT",
+  "repository": "hudochenkov/stylelint-order",
+  "bugs": {
+    "url": "https://github.com/hudochenkov/stylelint-order/issues"
+  },
+  "homepage": "https://github.com/hudochenkov/stylelint-order",
+  "engines": {
+    "node": ">=8.7.0"
+  },
+  "files": [
+    "rules",
+    "utils",
+    "!**/tests",
+    "index.js",
+    "!.DS_Store"
+  ],
+  "main": "index.js",
+  "dependencies": {
+    "lodash": "^4.17.15",
+    "postcss": "^7.0.17",
+    "postcss-sorting": "^5.0.1"
+  },
+  "peerDependencies": {
+    "stylelint": ">=10.0.1"
+  },
+  "devDependencies": {
+    "eslint": "^6.2.2",
+    "eslint-config-hudochenkov": "^3.0.1",
+    "eslint-config-prettier": "^6.1.0",
+    "husky": "^3.0.4",
+    "jest": "^24.9.0",
+    "lint-staged": "^9.2.5",
+    "prettier": "~1.18.2",
+    "stylelint": "^11.0.0"
+  },
+  "scripts": {
+    "pretest": "eslint .",
+    "test": "jest",
+    "jest": "jest",
+    "watch": "jest --watch",
+    "coverage": "jest --coverage",
+    "fix": "eslint . --fix && prettier '**/*.js' --write"
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "prettier --write",
+      "git add"
+    ]
+  },
+  "jest": {
+    "setupFiles": [
+      "./jest-setup.js"
+    ],
+    "testEnvironment": "node",
+    "testRegex": ".*\\.test\\.js$|rules/.*/tests/.*\\.js$"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  }
+}

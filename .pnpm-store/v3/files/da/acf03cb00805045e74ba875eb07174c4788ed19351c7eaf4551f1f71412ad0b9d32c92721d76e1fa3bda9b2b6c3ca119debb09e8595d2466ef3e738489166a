@@ -1,0 +1,82 @@
+{
+  "version": "2.1.3",
+  "name": "stream-transform",
+  "description": "Object transformations implementing the Node.js `stream.Transform` API",
+  "keywords": [
+    "stream",
+    "transform",
+    "csv",
+    "object"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "http://www.github.com/adaltas/node-stream-transform"
+  },
+  "author": "David Worms <david@adaltas.com> (https://www.adaltas.com)",
+  "homepage": "https://csv.js.org/transform/",
+  "coffeelintConfig": {
+    "indentation": {
+      "level": "error",
+      "value": 2
+    },
+    "line_endings": {
+      "level": "error",
+      "value": "unix"
+    },
+    "max_line_length": {
+      "level": "ignore"
+    }
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.14.8",
+    "@babel/core": "^7.15.0",
+    "@babel/preset-env": "^7.15.0",
+    "@types/mocha": "^9.0.0",
+    "@types/node": "^16.7.8",
+    "babelify": "^10.0.0",
+    "browserify": "^17.0.0",
+    "coffeescript": "~2.5.1",
+    "csv-generate": "^3.4.3",
+    "each": "^1.2.2",
+    "mocha": "~9.1.1",
+    "pad": "~3.2.0",
+    "should": "~13.2.3",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.4.2"
+  },
+  "files": [
+    "/lib"
+  ],
+  "main": "./lib",
+  "mocha": {
+    "throw-deprecation": true,
+    "require": [
+      "should",
+      "coffeescript/register",
+      "ts-node/register"
+    ],
+    "inline-diffs": true,
+    "timeout": 40000,
+    "reporter": "spec",
+    "recursive": true
+  },
+  "scripts": {
+    "build:babel": "cd lib && babel *.js -d es5 && cd ..",
+    "build:browserify": "browserify lib/index.js --transform babelify --standalone parse > lib/browser/index.js && browserify lib/sync.js --transform babelify --standalone parse > lib/browser/sync.js",
+    "build": "npm run build:babel && npm run build:browserify",
+    "preversion": "cp lib/*.ts lib/es5 && git add lib/es5/*.ts",
+    "pretest": "npm run build",
+    "test": "mocha test/**/*.{coffee,ts}"
+  },
+  "types": [
+    "./lib/es5/index.d.ts",
+    "./lib/es5/sync.d.ts",
+    "./lib/index.d.ts",
+    "./lib/sync.d.ts"
+  ],
+  "dependencies": {
+    "mixme": "^0.5.1"
+  },
+  "gitHead": "0fd5209b6862655c384cda052abf38019b959e70"
+}

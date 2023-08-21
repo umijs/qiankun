@@ -1,0 +1,39 @@
+{
+    "name": "@types/execa",
+    "version": "0.9.0",
+    "description": "TypeScript definitions for execa",
+    "license": "MIT",
+    "contributors": [
+        {
+            "name": "Douglas Duteil",
+            "url": "https://github.com/douglasduteil",
+            "githubUsername": "douglasduteil"
+        },
+        {
+            "name": "BendingBender",
+            "url": "https://github.com/BendingBender",
+            "githubUsername": "BendingBender"
+        },
+        {
+            "name": "Borek Bernard",
+            "url": "https://github.com/borekb",
+            "githubUsername": "borekb"
+        },
+        {
+            "name": "Mick Dekkers",
+            "url": "https://github.com/mickdekkers",
+            "githubUsername": "mickdekkers"
+        }
+    ],
+    "main": "",
+    "repository": {
+        "type": "git",
+        "url": "https://www.github.com/DefinitelyTyped/DefinitelyTyped.git"
+    },
+    "scripts": {},
+    "dependencies": {
+        "@types/node": "*"
+    },
+    "typesPublisherContentHash": "82ba4c597d403c0dd3f223e53a3b1947df7b949c5f1f3db0dee59b3b89d7eb0b",
+    "typeScriptVersion": "2.3"
+}

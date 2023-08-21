@@ -1,0 +1,104 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.closeWatchersForFile = exports.closeWatcher = exports.saveFileOnDepChange = exports.watchFileChange = exports.getWatchersForFile = exports.triggerFileChange = void 0;
+
+function _react() {
+  const data = _interopRequireDefault(require("react"));
+
+  _react = function _react() {
+    return data;
+  };
+
+  return data;
+}
+
+function _fs() {
+  const data = _interopRequireDefault(require("fs"));
+
+  _fs = function _fs() {
+    return data;
+  };
+
+  return data;
+}
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const isDev = () => process.env.NODE_ENV === 'development' || process.env.TEST_WATCHER;
+
+const watchers = [];
+
+const triggerFileChange = filePath => {
+  _fs().default.writeFileSync(filePath, _fs().default.readFileSync(filePath));
+};
+
+exports.triggerFileChange = triggerFileChange;
+
+const getWatchersForFile = filePath => {
+  const result = new Set();
+
+  function loop(loopFilePath) {
+    // find all related watchers, include dep file
+    watchers.forEach(item => {
+      if (item.options.watchFilePath === loopFilePath || item.options.parentFilePath === loopFilePath) {
+        result.add(item); // continue to close watcher for related files
+
+        if (item.options.watchFilePath !== loopFilePath) {
+          loop(item.options.watchFilePath);
+        }
+      }
+    });
+  }
+
+  loop(filePath);
+  return Array.from(result);
+};
+
+exports.getWatchersForFile = getWatchersForFile;
+
+const watchFileChange = (filePath, listener) => {
+  if (isDev()) {
+    // save watcher
+    const watcher = {
+      options: {
+        watchFilePath: filePath,
+        listener
+      },
+      watcher: _fs().default.watch(filePath, listener)
+    };
+    watchers.push(watcher);
+    return watcher;
+  }
+};
+
+exports.watchFileChange = watchFileChange;
+
+const saveFileOnDepChange = (parentFilePath, depPath) => {
+  if (isDev()) {
+    const watcher = watchFileChange(depPath, () => {
+      triggerFileChange(parentFilePath);
+    });
+    watcher.options.parentFilePath = parentFilePath;
+  }
+};
+
+exports.saveFileOnDepChange = saveFileOnDepChange;
+
+const closeWatcher = item => {
+  // close & remove watcher
+  item.watcher.close();
+  watchers.splice(watchers.indexOf(item), 1);
+};
+
+exports.closeWatcher = closeWatcher;
+
+const closeWatchersForFile = filePath => {
+  const relatedWatchers = getWatchersForFile(filePath); // close all related watchers
+
+  relatedWatchers.forEach(item => closeWatcher(item));
+};
+
+exports.closeWatchersForFile = closeWatchersForFile;

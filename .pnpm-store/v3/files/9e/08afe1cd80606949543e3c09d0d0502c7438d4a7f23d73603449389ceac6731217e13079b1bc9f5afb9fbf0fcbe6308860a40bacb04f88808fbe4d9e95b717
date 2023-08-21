@@ -1,0 +1,62 @@
+{
+  "name": "image-size",
+  "version": "0.8.3",
+  "description": "get dimensions of any image file",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "bin/image-size.js"
+  ],
+  "engines": {
+    "node": ">=6.9.0"
+  },
+  "bin": {
+    "image-size": "bin/image-size.js"
+  },
+  "scripts": {
+    "pretest": "tslint -p . && tsc && eslint specs",
+    "test": "nyc mocha specs",
+    "coverage": "nyc report --reporter=text-lcov | coveralls",
+    "clean": "rm -rf dist",
+    "build": "tsc",
+    "prepack": "npm run clean && npm run build"
+  },
+  "repository": "image-size/image-size",
+  "keywords": [
+    "image",
+    "size",
+    "dimensions",
+    "resolution",
+    "width",
+    "height",
+    "png",
+    "jpeg",
+    "bmp",
+    "gif",
+    "psd",
+    "tiff",
+    "webp",
+    "svg",
+    "icns",
+    "ico",
+    "cur"
+  ],
+  "author": "netroy <aditya@netroy.in> (http://netroy.in/)",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "12.7.8",
+    "chai": "4.2.0",
+    "coveralls": "3.0.6",
+    "eslint": "6.5.0",
+    "glob": "7.1.4",
+    "mocha": "6.2.1",
+    "nyc": "14.1.1",
+    "sinon": "7.5.0",
+    "tslint": "5.20.0",
+    "typescript": "3.6.3"
+  },
+  "dependencies": {
+    "queue": "6.0.1"
+  }
+}

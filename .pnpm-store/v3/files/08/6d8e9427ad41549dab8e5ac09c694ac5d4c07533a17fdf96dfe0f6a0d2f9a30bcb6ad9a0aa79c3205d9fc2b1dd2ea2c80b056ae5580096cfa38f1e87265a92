@@ -1,0 +1,48 @@
+{
+  "name": "thread-stream",
+  "version": "0.15.2",
+  "description": "A streaming way to send data to a Node.js Worker Thread",
+  "main": "index.js",
+  "dependencies": {
+    "real-require": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^12.0.0",
+    "@types/tap": "^15.0.0",
+    "desm": "^1.1.0",
+    "fastbench": "^1.0.1",
+    "husky": "^7.0.0",
+    "sonic-boom": "^2.0.1",
+    "standard": "^16.0.3",
+    "tap": "^16.0.0",
+    "ts-node": "^10.7.0",
+    "typescript": "^4.6.0",
+    "why-is-node-running": "^2.2.0"
+  },
+  "scripts": {
+    "test": "standard && npm run transpile && tap test/*.test.*js && tap --ts test/*.test.*ts",
+    "test:ci": "standard && npm run transpile && npm run test:ci:js && npm run test:ci:ts",
+    "test:ci:js": "tap --no-check-coverage --coverage-report=lcovonly \"test/**/*.test.*js\"",
+    "test:ci:ts": "tap --ts --no-check-coverage --coverage-report=lcovonly \"test/**/*.test.*ts\"",
+    "test:yarn": "npm run transpile && tap \"test/**/*.test.js\" --no-check-coverage",
+    "transpile": "sh ./test/ts/transpile.sh",
+    "prepare": "husky install"
+  },
+  "standard": { "ignore": ["test/ts/**/*"] },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mcollina/thread-stream.git"
+  },
+  "keywords": [
+    "worker",
+    "thread",
+    "threads",
+    "stream"
+  ],
+  "author": "Matteo Collina <hello@matteocollina.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mcollina/thread-stream/issues"
+  },
+  "homepage": "https://github.com/mcollina/thread-stream#readme"
+}

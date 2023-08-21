@@ -1,0 +1,4 @@
+import { IApi, IRoute } from '@umijs/types';
+import { IDumiOpts } from '../index';
+declare const _default: (api: IApi, opts: IDumiOpts) => Promise<IRoute[]>;
+export default _default;

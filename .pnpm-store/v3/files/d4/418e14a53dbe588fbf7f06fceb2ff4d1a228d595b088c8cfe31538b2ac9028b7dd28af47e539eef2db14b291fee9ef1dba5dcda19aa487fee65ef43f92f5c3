@@ -1,0 +1,5 @@
+{
+  "id": "[mml]/mml3",
+  "component": "input/mml/extensions/mml3",
+  "targets": ["input/mathml/mml3"]
+}

@@ -1,0 +1,36 @@
+{
+  "name": "@umijs/types",
+  "version": "3.5.41",
+  "description": "@umijs/types",
+  "main": "lib/index.js",
+  "types": "index",
+  "files": [
+    "index.d.ts",
+    "index.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/umijs/umi"
+  },
+  "keywords": [
+    "umi"
+  ],
+  "authors": [
+    "chencheng <sorrycc@gmail.com> (https://github.com/sorrycc)"
+  ],
+  "license": "MIT",
+  "bugs": "http://github.com/umijs/umi/issues",
+  "homepage": "https://github.com/umijs/umi/tree/3.x/packages/types#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@umijs/babel-preset-umi": "3.5.41",
+    "@umijs/core": "3.5.41",
+    "@umijs/deps": "3.5.41",
+    "@umijs/renderer-react": "3.5.41",
+    "@umijs/server": "3.5.41",
+    "@umijs/utils": "3.5.41",
+    "webpack-chain": "6.5.1"
+  }
+}

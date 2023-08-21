@@ -1,0 +1,11 @@
+import { CHTMLmenclose } from './Wrappers/menclose.js';
+import * as Notation from '../common/Notation.js';
+export * from '../common/Notation.js';
+export declare type RENDERER<N, T, D> = Notation.Renderer<CHTMLmenclose<N, T, D>, N>;
+export declare type DEFPAIR<N, T, D> = Notation.DefPair<CHTMLmenclose<N, T, D>, N>;
+export declare const RenderElement: <N, T, D>(name: string, offset?: string) => RENDERER<N, T, D>;
+export declare const Border: <N, T, D>(side: Notation.Side) => DEFPAIR<N, T, D>;
+export declare const Border2: <N, T, D>(name: string, side1: Notation.Side, side2: Notation.Side) => DEFPAIR<N, T, D>;
+export declare const DiagonalStrike: <N, T, D>(name: string, neg: number) => DEFPAIR<N, T, D>;
+export declare const DiagonalArrow: <N, T, D>(name: string) => DEFPAIR<N, T, D>;
+export declare const Arrow: <N, T, D>(name: string) => DEFPAIR<N, T, D>;

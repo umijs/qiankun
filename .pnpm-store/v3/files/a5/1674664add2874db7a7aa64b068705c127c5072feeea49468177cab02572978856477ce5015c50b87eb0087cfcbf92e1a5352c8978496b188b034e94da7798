@@ -1,0 +1,5 @@
+import { Node } from 'unist';
+declare const _default: (options?: {
+    [key: string]: any;
+}) => (ast: Node) => void;
+export default _default;

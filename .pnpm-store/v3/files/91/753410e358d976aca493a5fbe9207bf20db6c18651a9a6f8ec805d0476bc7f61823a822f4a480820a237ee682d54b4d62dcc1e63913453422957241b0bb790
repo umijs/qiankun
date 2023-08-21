@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    paths-ignore:
+        - 'docs/**'
+        - '*.md'
+  pull_request:
+    paths-ignore:
+        - 'docs/**'
+        - '*.md'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [10, 12, 14, 15, 16]
+
+    steps:
+      - uses: actions/checkout@v2.3.4
+      - name: Setup Node
+        uses: actions/setup-node@v2.1.5
+        with:
+          node-version: ${{matrix.node-version}}
+      - name: Install Dependencies
+        run: npm install
+        env:
+          NODE_ENV: development
+      - name: Lint-CI
+        run: npm run lint-ci
+      - name: Test-Types
+        run: npm run test-types
+      - name: Test-CI
+        run: npm run test-ci
+
+  automerge:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: fastify/github-action-merge-dependabot@v2.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}

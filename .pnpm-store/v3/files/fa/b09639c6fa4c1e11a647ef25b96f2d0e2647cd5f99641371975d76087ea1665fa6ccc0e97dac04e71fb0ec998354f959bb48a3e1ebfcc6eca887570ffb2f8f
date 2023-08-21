@@ -1,0 +1,55 @@
+language: node_js
+node_js: node
+
+matrix:
+  include:
+    # Node versions
+    - node_js: 0.10
+    - node_js: 0.12
+    - node_js: 1
+    - node_js: 2
+    - node_js: 3
+    - node_js: 4
+    - node_js: 5
+    - node_js: 6
+    - node_js: 7
+    - node_js: 8
+    - node_js: 9
+    - node_js: 10
+    - node_js: 12
+    - node_js: node
+
+    # Browser testing
+    - env:
+      - AIRTAP_TEST=1
+      - SAUCE_USERNAME: parshap
+      addons:
+        sauce_connect: true
+        jwt:
+          - secure: C7rEgVrfIFovn763aFbXwZrEvTapI1MDDSk8nmU/nseC8Zb++6wCHNbKeGPLaY1kgRNOJbIo9SoHWUoLhGjjHXiNamQfoRPgeD3MXe1qhUskwxOeqpXOFfZv6KEyi3YNjPrjVTgLqK/mfmH2HxHr2HIldP15z40cc5+SLxKS2Fk=
+        hosts:
+          - airtap.local
+
+    # Include all possible file systems
+    # Normal builds use AUFS
+    # See http://docs.travis-ci.com/user/ci-environment/
+    # HFS+
+    - os: osx
+    # ext4
+    - sudo: required
+      dist: trusty
+    # SIMFS
+    - sudo: required
+    # NTFS
+    - os: windows
+
+script: |
+  if [ -n "$AIRTAP_TEST" ]
+  then
+    # Work around this logic that doesn't work when using jwt by setting
+    # TRAVIS_SECURE_ENV_VARS=true.
+    # https://github.com/airtap/airtap/blob/00cfae3f38b59f5ff4001cb5e131964e72ab6f24/bin/airtap.js#L6
+    TRAVIS_SECURE_ENV_VARS=true npm run test-browser-sauce
+  else
+    npm test
+  fi

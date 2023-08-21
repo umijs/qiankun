@@ -1,0 +1,91 @@
+{
+  "name": "z-schema",
+  "version": "5.0.5",
+  "engines": {
+    "node": ">=8.0.0"
+  },
+  "description": "JSON schema validator",
+  "homepage": "https://github.com/zaggino/z-schema",
+  "authors": [
+    "Martin Zagora <zaggino@gmail.com>"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "JSON",
+    "Schema",
+    "Validator"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zaggino/z-schema.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zaggino/z-schema/issues"
+  },
+  "main": "src/ZSchema.js",
+  "bin": {
+    "z-schema": "./bin/z-schema"
+  },
+  "files": [
+    "bin",
+    "src",
+    "dist",
+    "LICENSE",
+    "README.md",
+    "index.d.ts"
+  ],
+  "types": "index.d.ts",
+  "scripts": {
+    "prepare": "grunt",
+    "prepublishOnly": "npm test",
+    "test": "jasmine-node test/ && grunt lint",
+    "test-z": "jasmine-node test/spec/ZSchemaTestSuiteSpec.js",
+    "grunt": "grunt"
+  },
+  "testling": {
+    "scripts": [
+      "test/lib/jasmine-2.0.1/jasmine.js",
+      "test/lib/jasmine-2.0.1/jasmine-html.js",
+      "test/lib/jasmine-2.0.1/boot.js",
+      "test/lib/jasmine-2.0.1/tap_reporter.js",
+      "test/Runner.js",
+      "dist/ZSchema-browser-min.js",
+      "dist/ZSchema-browser-test.js"
+    ],
+    "browsers": [
+      "iexplore/9..latest",
+      "chrome/4",
+      "chrome/28..latest",
+      "firefox/3.5",
+      "firefox/23..latest",
+      "safari/5.1..latest",
+      "opera/12..latest",
+      "iphone/6..latest",
+      "ipad/6..latest",
+      "android-browser/4.2..latest"
+    ]
+  },
+  "dependencies": {
+    "lodash.get": "^4.4.2",
+    "lodash.isequal": "^4.5.0",
+    "validator": "^13.7.0"
+  },
+  "optionalDependencies": {
+    "commander": "^9.4.1"
+  },
+  "devDependencies": {
+    "coveralls": "^3.1.1",
+    "grunt": "^1.4.1",
+    "grunt-browserify": "^5.3.0",
+    "grunt-cli": "^1.4.3",
+    "grunt-contrib-copy": "^1.0.0",
+    "grunt-contrib-jasmine": "^1.2.0",
+    "grunt-contrib-jshint": "^2.1.0",
+    "grunt-contrib-uglify": "^3.4.0",
+    "grunt-jscs": "^3.0.1",
+    "grunt-lineending": "^1.0.0",
+    "jasmine-node": "^1.14.5",
+    "jasmine-reporters": "^2.5.0",
+    "remapify": "^2.2.0"
+  }
+}

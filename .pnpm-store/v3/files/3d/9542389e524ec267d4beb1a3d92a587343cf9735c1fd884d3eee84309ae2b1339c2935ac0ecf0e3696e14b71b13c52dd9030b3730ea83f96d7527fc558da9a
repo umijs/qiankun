@@ -1,0 +1,27 @@
+{
+  "name": "rehype-remove-comments",
+  "version": "3.0.0",
+  "description": "rehype plugin to remove comments (except conditional comments)",
+  "license": "MIT",
+  "keywords": [
+    "unified",
+    "rehype",
+    "hast",
+    "javascript",
+    "src"
+  ],
+  "repository": "https://github.com/rehypejs/rehype-minify/tree/master/packages/rehype-remove-comments",
+  "bugs": "https://github.com/rehypejs/rehype-minify/issues",
+  "author": "Titus Wormer <tituswormer@gmail.com> (https://wooorm.com)",
+  "contributors": [
+    "Titus Wormer <tituswormer@gmail.com>"
+  ],
+  "files": [
+    "index.js"
+  ],
+  "dependencies": {
+    "unist-util-filter": "^1.0.0",
+    "hast-util-is-conditional-comment": "^1.0.0"
+  },
+  "xo": false
+}

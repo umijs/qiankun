@@ -1,0 +1,44 @@
+{
+  "name": "dom-align",
+  "description": "Align DOM Node Flexibly ",
+  "version": "1.12.4",
+  "license": "MIT",
+  "pika": true,
+  "sideEffects": false,
+  "keywords": [
+    "dom",
+    "align"
+  ],
+  "homepage": "http://github.com/yiminghe/dom-align",
+  "bugs": {
+    "url": "http://github.com/yiminghe/dom-align/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:yiminghe/dom-align.git"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@pika/pack": "0.5.x",
+    "@pika/plugin-build-node": "^0.6.0",
+    "@pika/plugin-build-types": "^0.6.0",
+    "@pika/plugin-standard-pkg": "^0.6.0",
+    "@pika/types": "^0.6.0",
+    "babel-preset-env": "^1.7.0",
+    "create-react-class": "^15.6.3",
+    "expect.js": "^0.3.1",
+    "jquery": "^3.4.1",
+    "lint-staged": "^9.2.1",
+    "pika-plugin-build-web-babel": "^0.6.0",
+    "pika-plugin-clean-dist-src": "^0.1.1",
+    "pre-commit": "1.x",
+    "prettier": "^1.18.2",
+    "rc-test": "6.x",
+    "rc-tools": "6.x",
+    "react": "16.x",
+    "react-dom": "16.x"
+  },
+  "module": "dist-web/index.js",
+  "main": "dist-node/index.js",
+  "types": "dist-types/index.d.ts"
+}

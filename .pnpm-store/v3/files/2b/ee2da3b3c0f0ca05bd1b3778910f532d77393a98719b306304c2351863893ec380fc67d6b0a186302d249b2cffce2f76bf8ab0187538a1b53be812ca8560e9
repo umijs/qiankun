@@ -1,0 +1,33 @@
+{
+  "name": "@bloomberg/record-tuple-polyfill",
+  "version": "0.0.4",
+  "description": "A polyfill for the Record and Tuple Stage 2 ECMAScript proposal.",
+  "main": "lib/index.umd.js",
+  "module": "lib/index.esm.js",
+  "files": [
+    "lib/*.js"
+  ],
+  "scripts": {
+    "clean": "rm -rf ./lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bloomberg/record-tuple-polyfill"
+  },
+  "keywords": [
+    "record",
+    "tuple",
+    "record and tuple",
+    "polyfill",
+    "ecmascript"
+  ],
+  "author": "Rick Button <rbutton2@bloomberg.net>",
+  "contributors": [
+    "Robin Ricard <rricard2@bloomberg.net>",
+    "Nicolò Ribaudo <nribaudo1@bloomberg.net>"
+  ],
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  }
+}

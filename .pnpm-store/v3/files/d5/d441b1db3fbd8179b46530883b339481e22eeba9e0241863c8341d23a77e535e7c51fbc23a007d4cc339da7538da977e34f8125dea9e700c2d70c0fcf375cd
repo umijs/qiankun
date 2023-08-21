@@ -1,0 +1,2 @@
+declare const _default: (url: string) => any;
+export default _default;

@@ -1,0 +1,9 @@
+/**
+ * transform props base on JSX rule
+ * @param props   original props
+ */
+export declare const formatJSXProps: (props: {
+    [key: string]: any;
+}) => {
+    [key: string]: any;
+};

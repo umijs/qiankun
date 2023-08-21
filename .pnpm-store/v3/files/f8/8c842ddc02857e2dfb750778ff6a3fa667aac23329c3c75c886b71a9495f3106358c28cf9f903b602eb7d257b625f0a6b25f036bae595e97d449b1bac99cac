@@ -1,0 +1,10 @@
+export default class FileCache {
+    cache: {
+        [key: string]: {
+            updatedTime: number;
+            value: any;
+        };
+    };
+    add(filePath: string, value: any): void;
+    get(filePath: string): any;
+}

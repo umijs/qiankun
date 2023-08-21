@@ -1,0 +1,2 @@
+import type * as ts from 'typescript';
+export declare function createWatchSolutionBuilderHost<TProgram extends ts.BuilderProgram>(parsedConfig: ts.ParsedCommandLine, createProgram?: ts.CreateProgram<TProgram>, reportDiagnostic?: ts.DiagnosticReporter, reportWatchStatus?: ts.WatchStatusReporter, reportSolutionBuilderStatus?: (diagnostic: ts.Diagnostic) => void, afterProgramCreate?: (program: TProgram) => void, afterProgramEmitAndDiagnostics?: (program: TProgram) => void): ts.SolutionBuilderWithWatchHost<TProgram>;

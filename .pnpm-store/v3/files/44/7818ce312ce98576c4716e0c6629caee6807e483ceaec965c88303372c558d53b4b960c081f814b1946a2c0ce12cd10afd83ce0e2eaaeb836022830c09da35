@@ -1,0 +1,33 @@
+{
+  "name": "rehype-stringify",
+  "version": "6.0.1",
+  "description": "HTML compiler for rehype",
+  "license": "MIT",
+  "keywords": [
+    "html",
+    "abstract",
+    "syntax",
+    "tree",
+    "ast",
+    "stringify"
+  ],
+  "homepage": "https://github.com/rehypejs/rehype",
+  "repository": "https://github.com/rehypejs/rehype/tree/master/packages/rehype-stringify",
+  "bugs": "https://github.com/rehypejs/rehype/issues",
+  "funding": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/unified"
+  },
+  "author": "Titus Wormer <tituswormer@gmail.com> (https://wooorm.com)",
+  "contributors": [
+    "Titus Wormer <tituswormer@gmail.com> (https://wooorm.com)"
+  ],
+  "files": [
+    "index.js"
+  ],
+  "dependencies": {
+    "hast-util-to-html": "^6.0.0",
+    "xtend": "^4.0.0"
+  },
+  "xo": false
+}

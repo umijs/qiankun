@@ -1,0 +1,28 @@
+{
+  "name": "@changesets/apply-release-plan",
+  "version": "6.1.4",
+  "description": "Takes a release plan and applies it to packages",
+  "main": "dist/apply-release-plan.cjs.js",
+  "module": "dist/apply-release-plan.esm.js",
+  "license": "MIT",
+  "repository": "https://github.com/changesets/changesets/tree/main/packages/apply-release-plan",
+  "dependencies": {
+    "@babel/runtime": "^7.20.1",
+    "@changesets/config": "^2.3.1",
+    "@changesets/get-version-range-type": "^0.3.2",
+    "@changesets/git": "^2.0.0",
+    "@changesets/types": "^5.2.1",
+    "@manypkg/get-packages": "^1.1.3",
+    "detect-indent": "^6.0.0",
+    "fs-extra": "^7.0.1",
+    "lodash.startcase": "^4.4.0",
+    "outdent": "^0.5.0",
+    "prettier": "^2.7.1",
+    "resolve-from": "^5.0.0",
+    "semver": "^7.5.3"
+  },
+  "devDependencies": {
+    "@changesets/test-utils": "*",
+    "spawndamnit": "^2.0.0"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "name": "rehype-katex",
+  "version": "3.1.0",
+  "description": "rehype plugin to transform inline and block math with KaTeX",
+  "license": "MIT",
+  "keywords": [
+    "unified",
+    "remark",
+    "rehype",
+    "rehype-plugin",
+    "plugin",
+    "mdast",
+    "markdown",
+    "hast",
+    "html",
+    "math",
+    "katex",
+    "latex",
+    "tex"
+  ],
+  "repository": "https://github.com/remarkjs/remark-math/tree/main/packages/rehype-katex",
+  "bugs": "https://github.com/remarkjs/remark-math/issues",
+  "funding": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/unified"
+  },
+  "author": "Junyoung Choi <fluke8259@gmail.com> (https://rokt33r.github.io)",
+  "contributors": [
+    "Junyoung Choi <fluke8259@gmail.com> (https://rokt33r.github.io)",
+    "Titus Wormer <tituswormer@gmail.com> (https://wooorm.com)"
+  ],
+  "files": [
+    "index.js"
+  ],
+  "main": "index.js",
+  "dependencies": {
+    "hast-util-to-text": "^2.0.0",
+    "katex": "^0.12.0",
+    "rehype-parse": "^6.0.0",
+    "unified": "^9.0.0",
+    "unist-util-visit": "^2.0.0"
+  },
+  "devDependencies": {},
+  "xo": false
+}

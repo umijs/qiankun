@@ -1,0 +1,76 @@
+{
+  "name": "hast-util-from-dom",
+  "version": "3.0.0",
+  "description": "hast utility to create a tree from the DOM",
+  "license": "ISC",
+  "keywords": [
+    "unist",
+    "hast",
+    "hast-util",
+    "util",
+    "utility",
+    "rehype",
+    "dom",
+    "html"
+  ],
+  "repository": "syntax-tree/hast-util-from-dom",
+  "bugs": "https://github.com/syntax-tree/hast-util-from-dom/issues",
+  "funding": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/unified"
+  },
+  "author": "Keith McKnight <keith@mcknig.ht> (https://keith.mcknig.ht)",
+  "contributors": [
+    "Keith McKnight <keith@mcknig.ht> (https://keith.mcknig.ht)",
+    "Titus Wormer <tituswormer@gmail.com> (https://wooorm.com)"
+  ],
+  "main": "dist/hast-util-from-dom.js",
+  "module": "dist/hast-util-from-dom.mjs",
+  "files": [
+    "dist/"
+  ],
+  "dependencies": {
+    "hastscript": "^6.0.0",
+    "web-namespaces": "^1.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.0.0",
+    "@babel/preset-env": "^7.0.0",
+    "@rollup/plugin-babel": "^5.0.0",
+    "babel-eslint": "^10.0.0",
+    "babel-jest": "^26.0.0",
+    "eslint": "^7.0.0",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-plugin-import": "^2.0.0",
+    "glob": "^7.0.0",
+    "jest-cli": "^26.0.0",
+    "remark-cli": "^8.0.0",
+    "remark-preset-wooorm": "^7.0.0",
+    "rollup": "^2.0.0"
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "lint": "remark . -qfo && eslint . --fix",
+    "test": "jest",
+    "test:dev": "jest --watchAll"
+  },
+  "jest": {
+    "collectCoverage": true,
+    "coveragePathIgnorePatterns": [
+      "/src/utils.js"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 100,
+        "functions": 100,
+        "lines": 100,
+        "statements": 100
+      }
+    }
+  },
+  "remarkConfig": {
+    "plugins": [
+      "preset-wooorm"
+    ]
+  }
+}

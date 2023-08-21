@@ -1,0 +1,262 @@
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+import { BrowserName } from './browser';
+import { Config } from './config';
+import { ExtendedPackageDependencyMap, Measurement } from './types';
+/**
+ * Expected format of the top-level JSON config file. Note this interface is
+ * used to generate the JSON schema for validation.
+ */
+export interface ConfigFile {
+    /**
+     * Root directory to serve benchmarks from (default current directory).
+     */
+    root?: string;
+    /**
+     * Minimum number of times to run each benchmark (default 50).
+     * @TJS-type integer
+     * @TJS-minimum 2
+     */
+    sampleSize?: number;
+    /**
+     * The maximum number of minutes to spend auto-sampling (default 3).
+     * @TJS-minimum 0
+     */
+    timeout?: number;
+    /**
+     * The degrees of difference to try and resolve when auto-sampling
+     * (e.g. 0ms, +1ms, -1ms, 0%, +1%, -1%, default 0%).
+     */
+    autoSampleConditions?: string[];
+    /**
+     * Deprecated alias for autoSampleConditions.
+     */
+    horizons?: string[];
+    /**
+     * Benchmarks to run.
+     * @TJS-minItems 1
+     */
+    benchmarks: ConfigFileBenchmark[];
+    /**
+     * Whether to automatically convert ES module imports with bare module
+     * specifiers to paths.
+     */
+    resolveBareModules?: boolean;
+    /**
+     * An optional reference to the JSON Schema for this file.
+     *
+     * If none is given, and the file is a valid tachometer config file,
+     * tachometer will write back to the config file to give this a value.
+     */
+    $schema?: string;
+}
+/**
+ * Expected format of a benchmark in a JSON config file.
+ */
+interface ConfigFileBenchmark {
+    /**
+     * A fully qualified URL, or a local path to an HTML file or directory. If a
+     * directory, must contain an index.html. Query parameters are permitted on
+     * local paths (e.g. 'my/benchmark.html?foo=bar').
+     */
+    url?: string;
+    /**
+     * An optional label for this benchmark. Defaults to the URL.
+     */
+    name?: string;
+    /**
+     * Which browser to run the benchmark in.
+     *
+     * Options:
+     *   - chrome (default)
+     *   - chrome-headless
+     *   - firefox
+     *   - firefox-headless
+     *   - safari
+     *   - edge
+     *   - ie
+     */
+    browser?: string | BrowserConfigs;
+    /**
+     * Which time interval to measure.
+     *
+     * Options:
+     *   - callback: bench.start() to bench.stop() (default for local paths)
+     *   - fcp: first contentful paint (default for fully qualified URLs)
+     *   - global: result returned from window.tachometerResult (or custom
+     *       expression set via measurementExpression)
+     *   - {
+     *       performanceEntry: {
+     *         //
+     * https://developer.mozilla.org/en-US/docs/Web/API/PerformanceEntry/name
+     *         name: string;
+     *       }
+     *     }
+     */
+    measurement?: ConfigFileMeasurement;
+    /**
+     * Expression to use to retrieve global result.  Defaults to
+     * `window.tachometerResult`.
+     */
+    measurementExpression?: string;
+    /**
+     * Optional NPM dependency overrides to apply and install. Only supported with
+     * local paths.
+     */
+    packageVersions?: ConfigFilePackageVersion;
+    /**
+     * Recursively expand this benchmark configuration with any number of
+     * variations. Useful for testing the same base configuration with e.g.
+     * multiple browers or package versions.
+     */
+    expand?: ConfigFileBenchmark[];
+}
+declare type ConfigFileMeasurement = 'callback' | 'fcp' | 'global' | Measurement | Array<Measurement>;
+declare type BrowserConfigs = ChromeConfig | FirefoxConfig | SafariConfig | EdgeConfig | IEConfig;
+interface BrowserConfigBase {
+    /**
+     * Name of the browser:
+     *
+     * Options:
+     *   - chrome
+     *   - firefox
+     *   - safari
+     *   - edge
+     *   - ie
+     */
+    name: BrowserName;
+    /**
+     * A remote WebDriver server HTTP address to launch the browser from.
+     */
+    remoteUrl?: string;
+    /**
+     * The size of new windows created from this browser. Defaults to 1024x768.
+     */
+    windowSize?: WindowSize;
+}
+interface WindowSize {
+    /**
+     * Width of the browser window in pixels. Defaults to 1024.
+     *
+     * @TJS-type integer
+     * @TJS-minimum 0
+     */
+    width: number;
+    /**
+     * Height of the browser window in pixels. Defaults to 768.
+     *
+     * @TJS-type integer
+     * @TJS-minimum 0
+     */
+    height: number;
+}
+interface ChromeConfig extends BrowserConfigBase {
+    name: 'chrome';
+    /**
+     * Whether to launch the headless (no GUI) version of this browser.
+     */
+    headless?: boolean;
+    /**
+     * Path to the binary to use when launching this browser, instead of the
+     * default one.
+     */
+    binary?: string;
+    /**
+     * Additional command-line arguments to pass when launching the browser.
+     */
+    addArguments?: string[];
+    /**
+     * Command-line arguments that WebDriver normally adds by default when
+     * launching the browser, which you would like to omit.
+     */
+    removeArguments?: string[];
+    /**
+     * Optional CPU Throttling rate. (1 is no throttle, 2 is 2x slowdown,
+     * etc). This is currently only supported in headless mode.
+     * @TJS-minimum 1
+     */
+    cpuThrottlingRate?: number;
+    /**
+     * Optional config to turn on performance tracing.
+     */
+    trace?: TraceConfig | true;
+    /**
+     * Path to a profile directory to use instead of the default temporary fresh
+     * one.
+     */
+    profile?: string;
+}
+/**
+ * Configuration to turn on performance tracing
+ */
+interface TraceConfig {
+    /**
+     * The tracing categories the browser should log. See Tachometer readme for a
+     * description of available categories. The source of the categories in
+     * Chromium can be found here: https://chromium.googlesource.com/chromium/src/+/master/base/trace_event/builtin_categories.h
+     */
+    categories?: string[];
+    /**
+     * The directory to log performance traces to
+     */
+    logDir?: string;
+}
+interface FirefoxConfig extends BrowserConfigBase {
+    name: 'firefox';
+    /**
+     * Whether to launch the headless (no GUI) version of this browser.
+     */
+    headless?: boolean;
+    /**
+     * Path to the binary to use when launching this browser, instead of the
+     * default one.
+     */
+    binary?: string;
+    /**
+     * Additional command-line arguments to pass when launching the browser.
+     */
+    addArguments?: string[];
+    /**
+     * Advanced preferences that are usually set from the about:config page
+     * in Firefox (see
+     * https://support.mozilla.org/en-US/kb/about-config-editor-firefox).
+     */
+    preferences?: {
+        [name: string]: string | number | boolean;
+    };
+    /**
+     * Path to a profile directory to use instead of the default temporary fresh
+     * one.
+     */
+    profile?: string;
+}
+interface SafariConfig extends BrowserConfigBase {
+    name: 'safari';
+}
+interface EdgeConfig extends BrowserConfigBase {
+    name: 'edge';
+}
+interface IEConfig extends BrowserConfigBase {
+    name: 'ie';
+}
+interface ConfigFilePackageVersion {
+    /**
+     * Required label to identify this version map.
+     */
+    label: string;
+    /**
+     * Map from NPM package to version. Any version syntax supported by NPM is
+     * supported here.
+     */
+    dependencies: ExtendedPackageDependencyMap;
+}
+/**
+ * Validate the given JSON object parsed from a config file, and expand it into
+ * a fully specified configuration.
+ */
+export declare function parseConfigFile(parsedJson: unknown): Promise<Partial<Config>>;
+export declare function writeBackSchemaIfNeeded(rawConfigObj: Partial<ConfigFile>, configFile: string): Promise<void>;
+export {};

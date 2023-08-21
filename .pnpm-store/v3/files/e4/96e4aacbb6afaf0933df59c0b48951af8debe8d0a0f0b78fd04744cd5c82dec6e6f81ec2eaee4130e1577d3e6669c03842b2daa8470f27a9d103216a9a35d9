@@ -1,0 +1,43 @@
+{
+  "name": "@microsoft/tsdoc-config",
+  "version": "0.16.2",
+  "description": "A loader for the tsdoc.json file",
+  "keywords": [
+    "TypeScript",
+    "documentation",
+    "doc",
+    "comments",
+    "JSDoc",
+    "parser",
+    "standard"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/microsoft/tsdoc",
+    "directory": "tsdoc-config"
+  },
+  "homepage": "https://tsdoc.org/",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "license": "MIT",
+  "dependencies": {
+    "@microsoft/tsdoc": "0.14.2",
+    "ajv": "~6.12.6",
+    "jju": "~1.4.0",
+    "resolve": "~1.19.0"
+  },
+  "devDependencies": {
+    "@rushstack/eslint-config": "~2.3.1",
+    "@rushstack/heft-node-rig": "0.1.28",
+    "@rushstack/heft": "^0.22.3",
+    "@types/heft-jest": "1.0.1",
+    "@types/jju": "1.4.1",
+    "@types/node": "10.17.13",
+    "@types/resolve": "1.17.1",
+    "eslint": "~7.12.1"
+  },
+  "scripts": {
+    "build": "heft test --clean",
+    "watch": "heft test --clean --watch"
+  }
+}

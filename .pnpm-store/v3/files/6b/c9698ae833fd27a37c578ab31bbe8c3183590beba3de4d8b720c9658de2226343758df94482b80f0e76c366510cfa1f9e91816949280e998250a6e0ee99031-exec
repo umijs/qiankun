@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+let sre = require('../lib/sre.js');
+(new sre.cli()).commandLine();
+

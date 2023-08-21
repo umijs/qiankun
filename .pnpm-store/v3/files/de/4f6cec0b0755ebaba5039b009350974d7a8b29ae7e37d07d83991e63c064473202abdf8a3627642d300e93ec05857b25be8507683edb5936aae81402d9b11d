@@ -1,0 +1,98 @@
+{
+	"name": "postcss-custom-selectors",
+	"description": "Use Custom Selectors in CSS",
+	"version": "6.0.3",
+	"contributors": [
+		{
+			"name": "Antonio Laguna",
+			"email": "antonio@laguna.es",
+			"url": "https://antonio.laguna.es"
+		},
+		{
+			"name": "Romain Menke",
+			"email": "romainmenke@gmail.com"
+		},
+		{
+			"name": "Jonathan Neal",
+			"email": "jonathantneal@hotmail.com"
+		},
+		{
+			"name": "Maxime Thirouin"
+		},
+		{
+			"name": "yisi"
+		}
+	],
+	"license": "MIT",
+	"funding": {
+		"type": "opencollective",
+		"url": "https://opencollective.com/csstools"
+	},
+	"engines": {
+		"node": "^12 || ^14 || >=16"
+	},
+	"main": "dist/index.cjs",
+	"module": "dist/index.mjs",
+	"exports": {
+		".": {
+			"import": "./dist/index.mjs",
+			"require": "./dist/index.cjs",
+			"default": "./dist/index.mjs"
+		}
+	},
+	"files": [
+		"CHANGELOG.md",
+		"LICENSE.md",
+		"README.md",
+		"dist"
+	],
+	"dependencies": {
+		"postcss-selector-parser": "^6.0.4"
+	},
+	"peerDependencies": {
+		"postcss": "^8.3"
+	},
+	"scripts": {
+		"build": "rollup -c ../../rollup/default.js",
+		"clean": "node -e \"fs.rmSync('./dist', { recursive: true, force: true });\"",
+		"docs": "node ../../.github/bin/generate-docs/install.mjs && node ../../.github/bin/generate-docs/readme.mjs",
+		"lint": "npm run lint:eslint && npm run lint:package-json",
+		"lint:eslint": "eslint ./src --ext .js --ext .ts --ext .mjs --no-error-on-unmatched-pattern",
+		"lint:package-json": "node ../../.github/bin/format-package-json.mjs",
+		"prepublishOnly": "npm run clean && npm run build && npm run test",
+		"test": "node .tape.cjs && node .tape.mjs && npm run test:exports",
+		"test:exports": "node ./test/_import.mjs && node ./test/_require.cjs",
+		"test:rewrite-expects": "REWRITE_EXPECTS=true node .tape.mjs && REWRITE_EXPECTS=true node .tape.cjs"
+	},
+	"homepage": "https://github.com/csstools/postcss-plugins/tree/main/plugins/postcss-custom-selectors#readme",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/csstools/postcss-plugins.git",
+		"directory": "plugins/postcss-custom-selectors"
+	},
+	"bugs": "https://github.com/csstools/postcss-plugins/issues",
+	"keywords": [
+		"at-rule",
+		"atrule",
+		"css",
+		"csswg",
+		"custom",
+		"declarative",
+		"extensions",
+		"postcss",
+		"postcss-plugin",
+		"rule",
+		"selectors",
+		"specification",
+		"w3c"
+	],
+	"csstools": {
+		"cssdbId": "custom-selectors",
+		"exportName": "postcssCustomSelectors",
+		"humanReadableName": "PostCSS Custom Selectors",
+		"specUrl": "https://drafts.csswg.org/css-extensions/#custom-selectors"
+	},
+	"volta": {
+		"extends": "../../package.json"
+	}
+}

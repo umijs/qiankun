@@ -1,0 +1,5 @@
+{
+  "id": "[tex]/empheq",
+  "component": "input/tex/extensions/empheq",
+  "targets": ["input/tex/empheq"]
+}

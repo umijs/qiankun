@@ -1,0 +1,58 @@
+{
+  "name": "@umijs/preset-built-in",
+  "version": "3.5.41",
+  "description": "@umijs/preset-built-in",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "bundled",
+    "lib"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/umijs/umi"
+  },
+  "keywords": [
+    "umi"
+  ],
+  "authors": [
+    "chencheng <sorrycc@gmail.com> (https://github.com/sorrycc)"
+  ],
+  "license": "MIT",
+  "bugs": "http://github.com/umijs/umi/issues",
+  "homepage": "https://github.com/umijs/umi/tree/3.x/packages/preset-built-in#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@types/react-router-config": "5.0.2",
+    "@umijs/babel-preset-umi": "3.5.41",
+    "@umijs/bundler-webpack": "3.5.41",
+    "@umijs/core": "3.5.41",
+    "@umijs/deps": "3.5.41",
+    "@umijs/renderer-mpa": "3.5.41",
+    "@umijs/renderer-react": "3.5.41",
+    "@umijs/runtime": "3.5.41",
+    "@umijs/server": "3.5.41",
+    "@umijs/types": "3.5.41",
+    "@umijs/utils": "3.5.41",
+    "ansi-html": "^0.0.9",
+    "core-js": "3.6.5",
+    "core-js-pure": "^3.8.1",
+    "error-stack-parser": "^2.0.6",
+    "es-module-lexer": "0.7.1",
+    "es5-imcompatible-versions": "^0.1.62",
+    "history-with-query": "4.10.4",
+    "html-entities": "^2.1.0",
+    "mime": "1.4.1",
+    "react-refresh": "0.10.0",
+    "react-router": "5.2.0",
+    "react-router-config": "5.1.1",
+    "react-router-dom": "5.2.0",
+    "regenerator-runtime": "0.13.5",
+    "schema-utils": "^3.0.0"
+  },
+  "peerDependencies": {
+    "react": "16.x || 17.x"
+  }
+}

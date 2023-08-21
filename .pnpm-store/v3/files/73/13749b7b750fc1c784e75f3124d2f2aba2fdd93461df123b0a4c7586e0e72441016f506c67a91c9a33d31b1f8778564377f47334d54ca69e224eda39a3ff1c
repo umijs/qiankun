@@ -1,0 +1,134 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+function _react() {
+  const data = _interopRequireDefault(require("react"));
+
+  _react = function _react() {
+    return data;
+  };
+
+  return data;
+}
+
+function _unified() {
+  const data = _interopRequireDefault(require("unified"));
+
+  _unified = function _unified() {
+    return data;
+  };
+
+  return data;
+}
+
+function _remarkFrontmatter() {
+  const data = _interopRequireDefault(require("remark-frontmatter"));
+
+  _remarkFrontmatter = function _remarkFrontmatter() {
+    return data;
+  };
+
+  return data;
+}
+
+function _remarkMath() {
+  const data = _interopRequireDefault(require("remark-math"));
+
+  _remarkMath = function _remarkMath() {
+    return data;
+  };
+
+  return data;
+}
+
+function _rehypeKatex() {
+  const data = _interopRequireDefault(require("rehype-katex"));
+
+  _rehypeKatex = function _rehypeKatex() {
+    return data;
+  };
+
+  return data;
+}
+
+function _rehypeAutolinkHeadings() {
+  const data = _interopRequireDefault(require("rehype-autolink-headings"));
+
+  _rehypeAutolinkHeadings = function _rehypeAutolinkHeadings() {
+    return data;
+  };
+
+  return data;
+}
+
+function _rehypeRemoveComments() {
+  const data = _interopRequireDefault(require("rehype-remove-comments"));
+
+  _rehypeRemoveComments = function _rehypeRemoveComments() {
+    return data;
+  };
+
+  return data;
+}
+
+function _rehypeStringify() {
+  const data = _interopRequireDefault(require("rehype-stringify"));
+
+  _rehypeStringify = function _rehypeStringify() {
+    return data;
+  };
+
+  return data;
+}
+
+var _parse = _interopRequireDefault(require("./parse"));
+
+var _rehype = _interopRequireDefault(require("./rehype"));
+
+var _slug = _interopRequireDefault(require("./slug"));
+
+var _meta = _interopRequireDefault(require("./meta"));
+
+var _code = _interopRequireDefault(require("./code"));
+
+var _link = _interopRequireDefault(require("./link"));
+
+var _img = _interopRequireDefault(require("./img"));
+
+var _previewer = _interopRequireDefault(require("./previewer"));
+
+var _raw = _interopRequireDefault(require("./raw"));
+
+var _jsxify = _interopRequireDefault(require("./jsxify"));
+
+var _isolation = _interopRequireDefault(require("./isolation"));
+
+var _sourceCode = _interopRequireDefault(require("./sourceCode"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var _default = (source, fileAbsPath, type) => {
+  const rehypeCompiler = {
+    jsx: [_jsxify.default],
+    html: [_rehypeStringify().default, {
+      allowDangerousHTML: true,
+      closeSelfClosing: true
+    }]
+  }[type];
+  const processor = (0, _unified().default)() // parse to remark
+  .use(_parse.default) // remark plugins
+  .use(_remarkFrontmatter().default).use(_remarkMath().default).use(_meta.default) // remark to rehype
+  .use(_rehype.default) // rehype plugins
+  .use(_rehypeKatex().default).use(_slug.default).use(_rehypeAutolinkHeadings().default).use(_link.default).use(_sourceCode.default).use(_raw.default).use(_rehypeRemoveComments().default, {
+    removeConditional: true
+  }).use(_img.default).use(_code.default).use(_previewer.default).use(_isolation.default).data('fileAbsPath', fileAbsPath).data('outputType', type); // apply compiler via type
+
+  processor.use(rehypeCompiler[0], rehypeCompiler[1]);
+  return processor.processSync(source);
+};
+
+exports.default = _default;

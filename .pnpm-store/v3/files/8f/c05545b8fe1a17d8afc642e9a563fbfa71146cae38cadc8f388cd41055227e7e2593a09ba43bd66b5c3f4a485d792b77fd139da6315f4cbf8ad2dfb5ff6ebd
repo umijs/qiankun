@@ -1,0 +1,178 @@
+"use strict";
+
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _react = _interopRequireWildcard(require("react"));
+
+var _config = _interopRequireDefault(require("@@/dumi/config"));
+
+var _AnchorLink = _interopRequireDefault(require("./components/AnchorLink"));
+
+var _context = _interopRequireDefault(require("./context"));
+
+require("prismjs/themes/prism.css");
+
+require("katex/dist/katex.min.css");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function _getRequireWildcardCache() { return cache; }; return cache; }
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || _typeof(obj) !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
+
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
+function _iterableToArrayLimit(arr, i) { if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return; var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
+/**
+ * hooks for get meta data of current route
+ * @param routes    project route configurations
+ * @param pathname  pathname of location
+ */
+var useCurrentRouteMeta = function useCurrentRouteMeta(routes, pathname) {
+  var handler = function handler() {
+    var _args$0$find;
+
+    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    var pathWithoutSuffix = args[1].replace(/[^^]\/$/, '');
+    return ((_args$0$find = args[0].find(function (_ref) {
+      var path = _ref.path;
+      return path === pathWithoutSuffix;
+    })) === null || _args$0$find === void 0 ? void 0 : _args$0$find.meta) || {};
+  };
+
+  var _useState = (0, _react.useState)(handler(routes, pathname)),
+      _useState2 = _slicedToArray(_useState, 2),
+      meta = _useState2[0],
+      setMeta = _useState2[1];
+
+  (0, _react.useLayoutEffect)(function () {
+    setMeta(handler(routes, pathname));
+  }, [pathname]);
+  return meta;
+};
+/**
+ * hooks for get locale from current route
+ * @param locales   project locale configurations
+ * @param pathname  pathname of location
+ */
+
+
+var useCurrentLocale = function useCurrentLocale(locales, pathname) {
+  var handler = function handler() {
+    var _args$0$find2, _locales$;
+
+    for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+      args[_key2] = arguments[_key2];
+    }
+
+    // get locale by route prefix
+    return ((_args$0$find2 = args[0].find(function (locale) {
+      return args[1].startsWith("/".concat(locale.name));
+    })) === null || _args$0$find2 === void 0 ? void 0 : _args$0$find2.name) || ((_locales$ = locales[0]) === null || _locales$ === void 0 ? void 0 : _locales$.name) || '*';
+  };
+
+  var _useState3 = (0, _react.useState)(handler(locales, pathname)),
+      _useState4 = _slicedToArray(_useState3, 2),
+      locale = _useState4[0],
+      setLocale = _useState4[1];
+
+  (0, _react.useLayoutEffect)(function () {
+    setLocale(handler(locales, pathname));
+  }, [pathname]);
+  return locale;
+};
+/**
+ * hooks for get menu data of current route
+ * @param config    context config
+ * @param locale    locale from current route
+ * @param pathname  pathname of location
+ */
+
+
+var useCurrentMenu = function useCurrentMenu(config, locale, pathname) {
+  var handler = function handler() {
+    var _args$0$menus$args$;
+
+    for (var _len3 = arguments.length, args = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+      args[_key3] = arguments[_key3];
+    }
+
+    var navs = args[0].navs[args[1]] || [];
+    var navPath = '*'; // find nav in reverse way to fallback to the first nav
+
+    for (var i = navs.length - 1; i >= 0; i -= 1) {
+      var nav = navs[i];
+      var items = [nav].concat(nav.children).filter(Boolean);
+      var matched = items.find(function (item) {
+        return item.path && new RegExp("^".concat(item.path.replace(/\.html$/, ''), "(/|.|$)")).test(args[2]);
+      });
+
+      if (matched) {
+        navPath = matched.path;
+        break;
+      }
+    }
+
+    return ((_args$0$menus$args$ = args[0].menus[args[1]]) === null || _args$0$menus$args$ === void 0 ? void 0 : _args$0$menus$args$[navPath]) || [];
+  };
+
+  var _useState5 = (0, _react.useState)(handler(config, locale, pathname)),
+      _useState6 = _slicedToArray(_useState5, 2),
+      menu = _useState6[0],
+      setMenu = _useState6[1];
+
+  (0, _react.useLayoutEffect)(function () {
+    setMenu(handler(config, locale, pathname));
+  }, [config.navs, config.menus, locale, pathname]);
+  return menu;
+};
+/**
+ * outer theme layout
+ */
+
+
+var OuterLayout = function OuterLayout(props) {
+  var location = props.location,
+      route = props.route,
+      children = props.children;
+  var meta = useCurrentRouteMeta(route.routes, location.pathname);
+  var locale = useCurrentLocale(_config.default.locales, location.pathname);
+  var menu = useCurrentMenu(_config.default, locale, location.pathname); // scroll to anchor if hash exists
+
+  (0, _react.useEffect)(function () {
+    if (location.hash) {
+      _AnchorLink.default.scrollToAnchor(location.hash.slice(1));
+    }
+  }, []);
+  return /*#__PURE__*/_react.default.createElement(_context.default.Provider, {
+    value: {
+      config: _config.default,
+      meta: meta,
+      locale: locale,
+      nav: _config.default.navs[locale] || [],
+      menu: menu,
+      base: !_config.default.locales.length || locale === _config.default.locales[0].name ? '/' : "/".concat(locale),
+      routes: route.routes
+    }
+  }, children);
+};
+
+var _default = OuterLayout;
+exports.default = _default;

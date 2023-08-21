@@ -1,0 +1,206 @@
+"use strict";
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.parseAutoSampleConditions = exports.urlFromLocalPath = exports.applyDefaults = exports.makeConfig = void 0;
+const fsExtra = __importStar(require("fs-extra"));
+const path = __importStar(require("path"));
+const browser_1 = require("./browser");
+const configfile_1 = require("./configfile");
+const defaults = __importStar(require("./defaults"));
+const github_1 = require("./github");
+const specs_1 = require("./specs");
+const util_1 = require("./util");
+async function makeConfig(opts) {
+    // These options are only controlled by flags.
+    const baseConfig = {
+        mode: (opts.manual === true ? 'manual' : 'automatic'),
+        jsonFile: opts['json-file'],
+        legacyJsonFile: opts['save'],
+        csvFileStats: opts['csv-file'],
+        csvFileRaw: opts['csv-file-raw'],
+        forceCleanNpmInstall: opts['force-clean-npm-install'],
+        githubCheck: opts['github-check']
+            ? (0, github_1.parseGithubCheckFlag)(opts['github-check'])
+            : undefined,
+        remoteAccessibleHost: opts['remote-accessible-host'],
+    };
+    let config;
+    if (opts.config) {
+        if (opts.root !== undefined) {
+            throw new Error('--root cannot be specified when using --config');
+        }
+        if (opts.browser !== undefined) {
+            throw new Error('--browser cannot be specified when using --config');
+        }
+        if (opts['sample-size'] !== undefined) {
+            throw new Error('--sample-size cannot be specified when using --config');
+        }
+        if (opts.timeout !== undefined) {
+            throw new Error('--timeout cannot be specified when using --config');
+        }
+        if (opts['auto-sample-conditions'] !== undefined) {
+            throw new Error('--auto-sample-conditions cannot be specified when using --config');
+        }
+        if (opts.measure !== undefined) {
+            throw new Error('--measure cannot be specified when using --config');
+        }
+        if (opts['resolve-bare-modules'] !== undefined) {
+            throw new Error('--resolve-bare-modules cannot be specified when using --config');
+        }
+        if (opts['window-size'] !== undefined) {
+            throw new Error('--window-size cannot be specified when using --config');
+        }
+        const rawConfigObj = await fsExtra.readJson(opts.config);
+        const validatedConfigObj = await (0, configfile_1.parseConfigFile)(rawConfigObj);
+        await (0, configfile_1.writeBackSchemaIfNeeded)(rawConfigObj, opts.config);
+        config = applyDefaults(Object.assign(Object.assign({}, baseConfig), validatedConfigObj));
+    }
+    else {
+        config = applyDefaults(Object.assign(Object.assign({}, baseConfig), { root: opts.root, sampleSize: opts['sample-size'], timeout: opts.timeout, autoSampleConditions: opts['auto-sample-conditions'] !== undefined
+                ? parseAutoSampleConditions(opts['auto-sample-conditions'].split(','))
+                : undefined, benchmarks: await (0, specs_1.specsFromOpts)(opts), resolveBareModules: opts['resolve-bare-modules'] }));
+    }
+    if (config.sampleSize <= 1) {
+        throw new Error('--sample-size must be > 1');
+    }
+    if (config.timeout < 0) {
+        throw new Error('--timeout must be >= 0');
+    }
+    if (config.benchmarks.length === 0) {
+        throw new Error('No benchmarks matched with the given flags');
+    }
+    for (const spec of config.benchmarks) {
+        for (const measurement of spec.measurement) {
+            if (measurement.mode === 'performance' &&
+                measurement.entryName === 'first-contentful-paint' &&
+                !browser_1.fcpBrowsers.has(spec.browser.name)) {
+                throw new Error(`Browser ${spec.browser.name} does not support the ` +
+                    `first contentful paint (FCP) measurement`);
+            }
+        }
+    }
+    return config;
+}
+exports.makeConfig = makeConfig;
+function applyDefaults(partial) {
+    return {
+        benchmarks: partial.benchmarks !== undefined ? partial.benchmarks : [],
+        csvFileStats: partial.csvFileStats !== undefined ? partial.csvFileStats : '',
+        csvFileRaw: partial.csvFileRaw !== undefined ? partial.csvFileRaw : '',
+        forceCleanNpmInstall: partial.forceCleanNpmInstall !== undefined
+            ? partial.forceCleanNpmInstall
+            : defaults.forceCleanNpmInstall,
+        githubCheck: partial.githubCheck,
+        autoSampleConditions: partial.autoSampleConditions !== undefined
+            ? partial.autoSampleConditions
+            : parseAutoSampleConditions([...defaults.autoSampleConditions]),
+        jsonFile: partial.jsonFile !== undefined ? partial.jsonFile : '',
+        legacyJsonFile: partial.legacyJsonFile !== undefined ? partial.legacyJsonFile : '',
+        sampleSize: partial.sampleSize !== undefined
+            ? partial.sampleSize
+            : defaults.sampleSize,
+        mode: partial.mode !== undefined ? partial.mode : defaults.mode,
+        remoteAccessibleHost: partial.remoteAccessibleHost !== undefined
+            ? partial.remoteAccessibleHost
+            : '',
+        resolveBareModules: partial.resolveBareModules !== undefined
+            ? partial.resolveBareModules
+            : defaults.resolveBareModules,
+        root: partial.root !== undefined ? partial.root : defaults.root,
+        timeout: partial.timeout !== undefined ? partial.timeout : defaults.timeout,
+    };
+}
+exports.applyDefaults = applyDefaults;
+/**
+ * Derives the URL that we'll use to benchmark using the given HTML file or
+ * directory on disk, relative to the root directory we'll be serving. Throws if
+ * it's a file that doesn't exist, or a directory without an index.html.
+ */
+async function urlFromLocalPath(rootDir, diskPath) {
+    const serverRelativePath = path.relative(rootDir, diskPath);
+    if (serverRelativePath.startsWith('..')) {
+        throw new Error('File or directory is not accessible from server root: ' + diskPath);
+    }
+    const kind = await (0, util_1.fileKind)(diskPath);
+    if (kind === undefined) {
+        throw new Error(`No such file or directory: ${diskPath}`);
+    }
+    let urlPath = `/${serverRelativePath.replace(path.win32.sep, '/')}`;
+    if (kind === 'dir') {
+        if ((await (0, util_1.fileKind)(path.join(diskPath, 'index.html'))) !== 'file') {
+            throw new Error(`Directory did not contain an index.html: ${diskPath}`);
+        }
+        // We need a trailing slash when serving a directory. Our static server
+        // will serve index.html at both /foo and /foo/, without redirects. But
+        // these two forms will have baseURIs that resolve relative URLs
+        // differently, and we want the form that would work the same as
+        // /foo/index.html.
+        urlPath += '/';
+    }
+    return urlPath;
+}
+exports.urlFromLocalPath = urlFromLocalPath;
+/**
+ * Parse auto sample condition strings.
+ */
+function parseAutoSampleConditions(strs) {
+    const absolute = new Set();
+    const relative = new Set();
+    for (const str of strs) {
+        if (!str.match(/^[-+]?(\d*\.)?\d+(ms|%)$/)) {
+            throw new Error(`Invalid auto sample condition ${str}`);
+        }
+        let num;
+        let absOrRel;
+        const isPercent = str.endsWith('%');
+        if (isPercent === true) {
+            num = Number(str.slice(0, -1)) / 100;
+            absOrRel = relative;
+        }
+        else {
+            // Otherwise ends with "ms".
+            num = Number(str.slice(0, -2)); // Note that Number("+1") === 1
+            absOrRel = absolute;
+        }
+        if (str.startsWith('+') || str.startsWith('-') || num === 0) {
+            // If the sign was explicit (e.g. "+0.1", "-0.1") then we're only
+            // interested in that signed condition.
+            absOrRel.add(num);
+        }
+        else {
+            // Otherwise (e.g. "0.1") we're interested in the condition as a
+            // difference in either direction.
+            absOrRel.add(-num);
+            absOrRel.add(num);
+        }
+    }
+    return {
+        absolute: [...absolute].sort((a, b) => a - b),
+        relative: [...relative].sort((a, b) => a - b),
+    };
+}
+exports.parseAutoSampleConditions = parseAutoSampleConditions;
+//# sourceMappingURL=config.js.map

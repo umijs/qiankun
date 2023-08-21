@@ -1,0 +1,81 @@
+"use strict";
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.throwUnreachable = exports.wait = exports.runNpm = exports.fileKind = exports.isHttpUrl = void 0;
+const child_process_1 = require("child_process");
+const fsExtra = __importStar(require("fs-extra"));
+const url_1 = require("url");
+const util_1 = require("util");
+/** Return whether the given string is a valid HTTP URL. */
+function isHttpUrl(str) {
+    try {
+        const url = new url_1.URL(str);
+        // Note an absolute Windows file path will parse as a URL (e.g.
+        // 'C:\\foo\\bar' => {protocol: 'c:', pathname: '\\foo\\bar', ...})
+        return url.protocol === 'http:' || url.protocol === 'https:';
+    }
+    catch (e) {
+        return false;
+    }
+}
+exports.isHttpUrl = isHttpUrl;
+async function fileKind(path) {
+    try {
+        const stat = await fsExtra.stat(path);
+        if (stat.isDirectory()) {
+            return 'dir';
+        }
+        if (stat.isFile()) {
+            return 'file';
+        }
+    }
+    catch (e) {
+        if (e.code === 'ENOENT') {
+            return undefined;
+        }
+        throw e;
+    }
+}
+exports.fileKind = fileKind;
+const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+async function runNpm(args, options) {
+    return (0, util_1.promisify)(child_process_1.execFile)(npmCmd, args, options).then(({ stdout }) => stdout);
+}
+exports.runNpm = runNpm;
+/**
+ * Promisified version of setTimeout.
+ */
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+exports.wait = wait;
+/**
+ * A function that should never be called. But if it somehow is anyway, throw an
+ * exception with the given message.
+ */
+function throwUnreachable(_unreachable, message) {
+    throw new Error(message);
+}
+exports.throwUnreachable = throwUnreachable;
+//# sourceMappingURL=util.js.map

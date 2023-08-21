@@ -1,0 +1,72 @@
+version: 2
+jobs:
+  test_with_node_6:
+    docker:
+      - image: circleci/node:6
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: npm install
+      - run:
+          name: Test
+          command: npm test
+  test_with_node_8:
+    docker:
+      - image: circleci/node:8
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: npm install
+      - run:
+          name: Test
+          command: npm test
+  test_with_node_9:
+    docker:
+      - image: circleci/node:9
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: npm install
+      - run:
+          name: Test
+          command: npm test
+  test_with_node_10:
+    docker:
+      - image: circleci/node:10
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: npm install
+      - run:
+          name: Test
+          command: npm test
+      - run:
+          name: Deploy coverage
+          command: bash <(curl -s https://codecov.io/bash)
+  test_with_node_11:
+    docker:
+      - image: circleci/node:11
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: npm install
+      - run:
+          name: Test
+          command: npm run test:coverage
+      - run:
+          name: Deploy coverage
+          command: bash <(curl -s https://codecov.io/bash)
+workflows:
+  version: 2
+  test_all:
+    jobs:
+      - test_with_node_6
+      - test_with_node_8
+      - test_with_node_9
+      - test_with_node_10
+      - test_with_node_11

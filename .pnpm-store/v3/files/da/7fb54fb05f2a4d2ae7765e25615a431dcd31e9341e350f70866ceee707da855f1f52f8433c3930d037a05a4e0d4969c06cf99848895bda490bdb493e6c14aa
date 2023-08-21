@@ -1,0 +1,162 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+function _react() {
+  const data = _interopRequireDefault(require("react"));
+
+  _react = function _react() {
+    return data;
+  };
+
+  return data;
+}
+
+function _fs() {
+  const data = _interopRequireDefault(require("fs"));
+
+  _fs = function _fs() {
+    return data;
+  };
+
+  return data;
+}
+
+function _path() {
+  const data = _interopRequireDefault(require("path"));
+
+  _path = function _path() {
+    return data;
+  };
+
+  return data;
+}
+
+function _slash() {
+  const data = _interopRequireDefault(require("slash2"));
+
+  _slash = function _slash() {
+    return data;
+  };
+
+  return data;
+}
+
+function _deepmerge() {
+  const data = _interopRequireDefault(require("deepmerge"));
+
+  _deepmerge = function _deepmerge() {
+    return data;
+  };
+
+  return data;
+}
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _objectWithoutProperties(source, excluded) { if (source == null) return {}; var target = _objectWithoutPropertiesLoose(source, excluded); var key, i; if (Object.getOwnPropertySymbols) { var sourceSymbolKeys = Object.getOwnPropertySymbols(source); for (i = 0; i < sourceSymbolKeys.length; i++) { key = sourceSymbolKeys[i]; if (excluded.indexOf(key) >= 0) continue; if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue; target[key] = source[key]; } } return target; }
+
+function _objectWithoutPropertiesLoose(source, excluded) { if (source == null) return {}; var target = {}; var sourceKeys = Object.keys(source); var key, i; for (i = 0; i < sourceKeys.length; i++) { key = sourceKeys[i]; if (excluded.indexOf(key) >= 0) continue; target[key] = source[key]; } return target; }
+
+function replaceLocaleForPath(pathname, prevLocale, nextLocale) {
+  const oPath = prevLocale ? pathname.replace(`/${prevLocale}`, '') : pathname;
+  return `/${nextLocale}${oPath}`.replace(/\/$/, '');
+}
+/**
+ * generate fallback routes for missing locales
+ */
+
+
+var fallback = function fallback(routes) {
+  var _this$options$locales;
+
+  const defaultLocale = (_this$options$locales = this.options.locales[0]) === null || _this$options$locales === void 0 ? void 0 : _this$options$locales[0];
+  const fallbacks = []; // for missing locale routes
+
+  this.data.locales.forEach(locale => {
+    const localePrefix = locale === defaultLocale ? '/' : `/${locale}`; // fallback root route path to README.md for each locale
+
+    if (!routes.some(route => route.path === localePrefix)) {
+      const localeFileAddon = locale === defaultLocale ? '' : `.${locale}`;
+      const readmePath = (0, _slash().default)(_path().default.join(this.umi.paths.cwd, `README${localeFileAddon}.md`));
+
+      if (_fs().default.existsSync(readmePath)) {
+        routes.unshift({
+          path: localePrefix,
+          component: `./README${localeFileAddon}.md`,
+          exact: true,
+          meta: {
+            locale,
+            title: 'README',
+            order: -Infinity
+          },
+          title: 'README'
+        });
+      }
+    } // do not deal with default locale for remaining non-default-locale routes
+
+
+    if (localePrefix !== '/') {
+      routes.forEach((_ref) => {
+        let routePath = _ref.path,
+            routeProps = _objectWithoutProperties(_ref, ["path"]);
+
+        const currentLocalePath = replaceLocaleForPath(routePath, routeProps.meta.locale, locale); // deal with every default route (without locale prefix)
+
+        if (!routePath.startsWith(localePrefix) && !routes.some(route => route.path === currentLocalePath)) {
+          var _fallbackRoute$meta$g, _fallbackRoute$meta$n;
+
+          const fallbackRoute = (0, _deepmerge().default)({
+            path: currentLocalePath
+          }, routeProps);
+          fallbackRoute.meta.locale = locale; // replace locale prefix for group path
+
+          if ((_fallbackRoute$meta$g = fallbackRoute.meta.group) === null || _fallbackRoute$meta$g === void 0 ? void 0 : _fallbackRoute$meta$g.path) {
+            var _fallbackRoute$meta$g2;
+
+            fallbackRoute.meta.group.path = replaceLocaleForPath(fallbackRoute.meta.group.path, routeProps.meta.locale, locale); // correct group title from brother group route
+
+            if ((_fallbackRoute$meta$g2 = fallbackRoute.meta.group) === null || _fallbackRoute$meta$g2 === void 0 ? void 0 : _fallbackRoute$meta$g2.title) {
+              const brotherRoute = routes.find(route => {
+                var _route$meta$group;
+
+                return ((_route$meta$group = route.meta.group) === null || _route$meta$group === void 0 ? void 0 : _route$meta$group.path) === fallbackRoute.meta.group.path && route.meta.locale === fallbackRoute.meta.locale;
+              });
+
+              if (brotherRoute) {
+                fallbackRoute.meta.group.title = brotherRoute.meta.group.title;
+              }
+            }
+          } // replace locale prefix for nav path
+
+
+          if ((_fallbackRoute$meta$n = fallbackRoute.meta.nav) === null || _fallbackRoute$meta$n === void 0 ? void 0 : _fallbackRoute$meta$n.path) {
+            var _fallbackRoute$meta$n2;
+
+            fallbackRoute.meta.nav.path = replaceLocaleForPath(fallbackRoute.meta.nav.path, routeProps.meta.locale, locale); // correct group title from brother group route
+
+            if ((_fallbackRoute$meta$n2 = fallbackRoute.meta.nav) === null || _fallbackRoute$meta$n2 === void 0 ? void 0 : _fallbackRoute$meta$n2.title) {
+              const brotherRoute = routes.find(route => {
+                var _route$meta$nav;
+
+                return ((_route$meta$nav = route.meta.nav) === null || _route$meta$nav === void 0 ? void 0 : _route$meta$nav.path) === fallbackRoute.meta.nav.path && route.meta.locale === fallbackRoute.meta.locale;
+              });
+
+              if (brotherRoute) {
+                fallbackRoute.meta.nav.title = brotherRoute.meta.nav.title;
+              }
+            }
+          }
+
+          fallbacks.push(fallbackRoute);
+        }
+      });
+    }
+  });
+  return routes.concat(fallbacks);
+};
+
+exports.default = fallback;

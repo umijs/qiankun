@@ -1,0 +1,57 @@
+{
+  "name": "babel-plugin-import",
+  "version": "1.12.1",
+  "description": "Component modular import plugin for babel.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ant-design/babel-plugin-import"
+  },
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "umi-tools build",
+    "test": "umi-tools test --coverage",
+    "debug": "umi-tools test",
+    "lint": "eslint --ext .js src",
+    "coveralls": "cat ./coverage/lcov.info | coveralls",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run build && np --no-cleanup --yolo --no-publish"
+  },
+  "pre-commit": [
+    "lint"
+  ],
+  "keywords": [
+    "babel-plugin",
+    "antd"
+  ],
+  "author": "chencheng <sorrycc@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.0.0",
+    "@babel/preset-react": "^7.0.0",
+    "babel-core": "^7.0.0-0",
+    "babel-preset-umi": "^1.0.0",
+    "coveralls": "^2.11.6",
+    "eslint": "^2.7.0",
+    "eslint-config-airbnb": "^6.2.0",
+    "material-ui": "^0.15.4",
+    "np": "^5.0.3",
+    "pre-commit": "~1.1.2",
+    "react-toolbox": "^1.2.5",
+    "umi-tools": "^0.1.4"
+  },
+  "babel": {
+    "presets": [
+      "umi"
+    ]
+  },
+  "files": [
+    "src",
+    "lib",
+    "package.json",
+    "README.md"
+  ],
+  "dependencies": {
+    "@babel/helper-module-imports": "^7.0.0",
+    "@babel/runtime": "^7.0.0"
+  }
+}

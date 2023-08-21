@@ -1,0 +1,5 @@
+{
+  "id": "[tex]/textmacros",
+  "component": "input/tex/extensions/textmacros",
+  "targets": ["input/tex/textmacros"]
+}

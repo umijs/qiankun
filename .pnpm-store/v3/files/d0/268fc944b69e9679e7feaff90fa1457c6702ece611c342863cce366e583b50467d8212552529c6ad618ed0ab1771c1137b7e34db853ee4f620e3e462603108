@@ -1,0 +1,5 @@
+{
+  "id": "[tex]/extpfeil",
+  "component": "input/tex/extensions/extpfeil",
+  "targets": ["input/tex/extpfeil"]
+}

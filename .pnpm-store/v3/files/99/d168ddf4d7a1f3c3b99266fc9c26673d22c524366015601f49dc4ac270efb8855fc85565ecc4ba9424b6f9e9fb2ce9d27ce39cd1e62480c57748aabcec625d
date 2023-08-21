@@ -1,0 +1,58 @@
+{
+  "name": "koa-send",
+  "description": "Transfer static files",
+  "version": "5.0.1",
+  "main": "index.js",
+  "keywords": [
+    "koa",
+    "file",
+    "static",
+    "sendfile"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/koajs/send.git"
+  },
+  "files": [
+    "index.js"
+  ],
+  "nyc": {
+    "reporter": [
+      "lcov",
+      "text-summary"
+    ],
+    "report-dir": "./coverage"
+  },
+  "devDependencies": {
+    "eslint": "^4.19.1",
+    "eslint-config-standard": "^11.0.0",
+    "eslint-plugin-import": "^2.12.0",
+    "eslint-plugin-node": "^6.0.1",
+    "eslint-plugin-promise": "^3.8.0",
+    "eslint-plugin-standard": "^3.1.0",
+    "iltorb": "^2.3.2",
+    "koa": "^2.5.1",
+    "mocha": "^5.2.0",
+    "nyc": "^15.0.0",
+    "should": "^13.2.1",
+    "supertest": "^3.1.0"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "debug": "^4.1.1",
+    "http-errors": "^1.7.3",
+    "resolve-path": "^1.4.0"
+  },
+  "scripts": {
+    "lint": "eslint --fix .",
+    "test": "npm run lint && mocha --require should --reporter spec --exit",
+    "test-cov": "nyc npm run test"
+  },
+  "engines": {
+    "node": ">= 8"
+  },
+  "bugs": {
+    "url": "https://github.com/koajs/send/issues"
+  },
+  "homepage": "https://github.com/koajs/send"
+}

@@ -1,0 +1,88 @@
+{
+  "name": "rehype-autolink-headings",
+  "version": "4.0.0",
+  "description": "rehype plugin to add links to headings",
+  "license": "MIT",
+  "keywords": [
+    "unified",
+    "rehype",
+    "rehype-plugin",
+    "plugin",
+    "heading",
+    "link",
+    "html"
+  ],
+  "repository": "rehypejs/rehype-autolink-headings",
+  "bugs": "https://github.com/rehypejs/rehype-autolink-headings/issues",
+  "funding": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/unified"
+  },
+  "author": "Titus Wormer <tituswormer@gmail.com> (https://wooorm.com)",
+  "contributors": [
+    "Titus Wormer <tituswormer@gmail.com> (https://wooorm.com)"
+  ],
+  "files": [
+    "index.js"
+  ],
+  "dependencies": {
+    "extend": "^3.0.1",
+    "hast-util-has-property": "^1.0.0",
+    "hast-util-is-element": "^1.0.0",
+    "unist-util-visit": "^2.0.0"
+  },
+  "devDependencies": {
+    "bail": "^1.0.0",
+    "browserify": "^16.0.0",
+    "is-hidden": "^1.0.0",
+    "negate": "^1.0.0",
+    "nyc": "^15.0.0",
+    "prettier": "^2.0.0",
+    "rehype": "^11.0.0",
+    "remark-cli": "^8.0.0",
+    "remark-preset-wooorm": "^7.0.0",
+    "tape": "^5.0.0",
+    "tinyify": "^2.0.0",
+    "to-vfile": "^6.0.0",
+    "xo": "^0.32.0"
+  },
+  "scripts": {
+    "format": "remark . -qfo && prettier . --write && xo --fix",
+    "build-bundle": "browserify index.js -s rehypeAutolinkHeadings > rehype-autolink-headings.js",
+    "build-mangle": "browserify index.js -s rehypeAutolinkHeadings -p tinyify > rehype-autolink-headings.min.js",
+    "build": "npm run build-bundle && npm run build-mangle",
+    "test-api": "node test",
+    "test-coverage": "nyc --reporter lcov tape test/index.js",
+    "test": "npm run format && npm run build && npm run test-coverage"
+  },
+  "nyc": {
+    "check-coverage": true,
+    "lines": 100,
+    "functions": 100,
+    "branches": 100
+  },
+  "prettier": {
+    "tabWidth": 2,
+    "useTabs": false,
+    "singleQuote": true,
+    "bracketSpacing": false,
+    "semi": false,
+    "trailingComma": "none"
+  },
+  "xo": {
+    "prettier": true,
+    "esnext": false,
+    "rules": {
+      "unicorn/no-fn-reference-in-iterator": "off",
+      "unicorn/prefer-optional-catch-binding": "off"
+    },
+    "ignores": [
+      "rehype-autolink-headings.js"
+    ]
+  },
+  "remarkConfig": {
+    "plugins": [
+      "preset-wooorm"
+    ]
+  }
+}

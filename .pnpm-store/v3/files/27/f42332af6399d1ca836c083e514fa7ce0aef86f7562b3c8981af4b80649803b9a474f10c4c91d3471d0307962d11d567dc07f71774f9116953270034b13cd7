@@ -1,0 +1,80 @@
+{
+  "name": "css-has-pseudo",
+  "version": "3.0.4",
+  "description": "Style elements relative to other elements in CSS",
+  "author": "Jonathan Neal <jonathantneal@hotmail.com>",
+  "license": "CC0-1.0",
+  "homepage": "https://github.com/csstools/postcss-plugins/tree/main/plugins/css-has-pseudo#readme",
+  "bugs": "https://github.com/csstools/postcss-plugins/issues",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
+    },
+    "./browser": {
+      "import": "./dist/browser.mjs",
+      "require": "./dist/browser.cjs",
+      "default": "./dist/browser.mjs"
+    },
+    "./browser-global": {
+      "default": "./dist/browser-global.js"
+    }
+  },
+  "files": [
+    "CHANGELOG.md",
+    "LICENSE.md",
+    "README.md",
+    "dist",
+    "browser.js"
+  ],
+  "bin": {
+    "css-has-pseudo": "dist/cli.cjs"
+  },
+  "scripts": {
+    "build": "rollup -c ../../rollup/default.js && npm run copy-browser-scripts-to-old-location",
+    "clean": "node -e \"fs.rmSync('./dist', { recursive: true, force: true });\"",
+    "copy-browser-scripts-to-old-location": "node -e \"fs.copyFileSync('./dist/browser-global.js', './browser.js')\"",
+    "lint": "eslint ./src --ext .js --ext .ts --ext .mjs --no-error-on-unmatched-pattern",
+    "prepublishOnly": "npm run clean && npm run build && npm run test",
+    "stryker": "stryker run --logLevel error",
+    "test": "postcss-tape --ci && npm run test:exports",
+    "test:exports": "node ./test/_import.mjs && node ./test/_require.cjs"
+  },
+  "engines": {
+    "node": "^12 || ^14 || >=16"
+  },
+  "dependencies": {
+    "postcss-selector-parser": "^6.0.9"
+  },
+  "devDependencies": {
+    "postcss": "^8.3.6",
+    "postcss-tape": "^6.0.1"
+  },
+  "peerDependencies": {
+    "postcss": "^8.4"
+  },
+  "keywords": [
+    "postcss",
+    "css",
+    "postcss-plugin",
+    "javascript",
+    "js",
+    "polyfill",
+    "has",
+    "contains",
+    "descendant",
+    "pseudo",
+    "selector"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/csstools/postcss-plugins.git",
+    "directory": "plugins/css-has-pseudo"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  }
+}

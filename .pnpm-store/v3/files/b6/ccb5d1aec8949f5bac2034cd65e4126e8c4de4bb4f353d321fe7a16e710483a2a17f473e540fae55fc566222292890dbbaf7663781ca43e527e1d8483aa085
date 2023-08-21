@@ -1,0 +1,63 @@
+{
+  "name": "git-repo-name",
+  "description": "Get the repository name from the git remote origin URL.",
+  "version": "0.6.0",
+  "homepage": "https://github.com/jonschlinkert/git-repo-name",
+  "author": "Jon Schlinkert (http://github.com/jonschlinkert)",
+  "repository": "jonschlinkert/git-repo-name",
+  "bugs": {
+    "url": "https://github.com/jonschlinkert/git-repo-name/issues"
+  },
+  "license": "MIT",
+  "files": [
+    "index.js",
+    "utils.js"
+  ],
+  "main": "index.js",
+  "engines": {
+    "node": ">=0.8"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "dependencies": {
+    "cwd": "^0.9.1",
+    "file-name": "^0.1.0",
+    "lazy-cache": "^1.0.4",
+    "remote-origin-url": "^0.5.1"
+  },
+  "devDependencies": {
+    "gulp-format-md": "^0.1.9",
+    "mocha": "^2.4.5"
+  },
+  "keywords": [
+    "gh",
+    "git",
+    "git repo",
+    "repo",
+    "repo name",
+    "repository"
+  ],
+  "verb": {
+    "related": {
+      "list": [
+        "git-user-email",
+        "git-username"
+      ]
+    },
+    "toc": false,
+    "layout": "default",
+    "tasks": [
+      "readme"
+    ],
+    "plugins": [
+      "gulp-format-md"
+    ],
+    "lint": {
+      "reflinks": true
+    },
+    "reflinks": [
+      "verb"
+    ]
+  }
+}

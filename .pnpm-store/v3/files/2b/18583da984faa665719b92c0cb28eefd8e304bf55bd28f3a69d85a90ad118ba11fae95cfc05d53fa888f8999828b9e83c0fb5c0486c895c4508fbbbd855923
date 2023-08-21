@@ -1,0 +1,39 @@
+{
+  "name": "import-modules",
+  "version": "1.1.0",
+  "description": "Import all modules in a directory",
+  "license": "MIT",
+  "repository": "sindresorhus/import-files",
+  "author": {
+    "name": "Sindre Sorhus",
+    "email": "sindresorhus@gmail.com",
+    "url": "sindresorhus.com"
+  },
+  "engines": {
+    "node": ">=4"
+  },
+  "scripts": {
+    "test": "xo && ava"
+  },
+  "files": [
+    "index.js"
+  ],
+  "keywords": [
+    "import",
+    "require",
+    "files",
+    "modules",
+    "all",
+    "directory",
+    "dir",
+    "folder",
+    "js",
+    "paths",
+    "multiple",
+    "index"
+  ],
+  "devDependencies": {
+    "ava": "*",
+    "xo": "*"
+  }
+}

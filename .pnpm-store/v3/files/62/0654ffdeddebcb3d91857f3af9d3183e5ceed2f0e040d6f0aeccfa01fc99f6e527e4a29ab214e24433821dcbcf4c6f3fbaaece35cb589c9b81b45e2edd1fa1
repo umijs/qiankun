@@ -1,0 +1,30 @@
+{
+  "name": "@umijs/babel-plugin-no-anonymous-default-export",
+  "version": "3.5.41",
+  "description": "@umijs/babel-plugin-no-anonymous-default-export",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "src"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/umijs/umi"
+  },
+  "keywords": [
+    "umi"
+  ],
+  "authors": [
+    "ycjcl868 <chaolinjin@gmail.com> (https://github.com/ycjcl868)"
+  ],
+  "license": "MIT",
+  "bugs": "http://github.com/umijs/umi/issues",
+  "homepage": "https://github.com/umijs/umi/tree/3.x/packages/babel-plugin-no-anonymous-default-export#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@umijs/utils": "3.5.41"
+  }
+}

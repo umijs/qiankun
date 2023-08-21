@@ -1,0 +1,31 @@
+{
+  "name": "@umijs/babel-plugin-lock-core-js-3",
+  "version": "3.5.41",
+  "description": "@umijs/babel-plugin-lock-core-js-3",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "src"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/umijs/umi"
+  },
+  "keywords": [
+    "umi"
+  ],
+  "authors": [
+    "chencheng <sorrycc@gmail.com> (https://github.com/sorrycc)"
+  ],
+  "license": "MIT",
+  "bugs": "http://github.com/umijs/umi/issues",
+  "homepage": "https://github.com/umijs/umi/tree/3.x/packages/babel-plugin-lock-core-js-3#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@umijs/utils": "3.5.41",
+    "core-js": "3.6.5"
+  }
+}

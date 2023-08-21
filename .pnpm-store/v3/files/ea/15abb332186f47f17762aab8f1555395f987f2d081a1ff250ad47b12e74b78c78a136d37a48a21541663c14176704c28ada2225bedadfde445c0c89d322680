@@ -1,0 +1,4 @@
+{
+  "component": "ui/menu",
+  "targets": ["ui/menu"]
+}

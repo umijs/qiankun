@@ -1,0 +1,8 @@
+import { IApi } from '@umijs/types';
+import { IDumiOpts } from '.';
+declare const context: {
+    umi?: IApi;
+    opts?: IDumiOpts;
+};
+export declare function init(umi: IApi, opts: IDumiOpts): void;
+export default context;

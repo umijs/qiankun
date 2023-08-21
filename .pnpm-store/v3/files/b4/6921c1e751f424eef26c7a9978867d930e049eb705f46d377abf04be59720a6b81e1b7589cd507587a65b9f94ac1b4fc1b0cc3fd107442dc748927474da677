@@ -1,0 +1,3 @@
+import { RouteProcessor } from '.';
+declare const _default: RouteProcessor;
+export default _default;

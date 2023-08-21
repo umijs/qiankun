@@ -1,0 +1,42 @@
+import { MmlNode } from '../../core/MmlTree/MmlNode.js';
+import { MmlMroot } from '../../core/MmlTree/MmlNodes/mroot.js';
+import { MmlMaction } from '../../core/MmlTree/MmlNodes/maction.js';
+import { MmlMsubsup, MmlMsub, MmlMsup } from '../../core/MmlTree/MmlNodes/msubsup.js';
+import { MmlMunderover, MmlMunder, MmlMover } from '../../core/MmlTree/MmlNodes/munderover.js';
+import { MmlVisitor } from '../../core/MmlTree/MmlVisitor.js';
+import { MmlFactory } from '../../core/MmlTree/MmlFactory.js';
+import { Collapse } from './collapse.js';
+import { OptionList } from '../../util/Options.js';
+export declare class ComplexityVisitor extends MmlVisitor {
+    static OPTIONS: OptionList;
+    complexity: {
+        [name: string]: number;
+    };
+    collapse: Collapse;
+    factory: MmlFactory;
+    options: OptionList;
+    constructor(factory: MmlFactory, options: OptionList);
+    visitTree(node: MmlNode): void;
+    visitNode(node: MmlNode, save: boolean): any;
+    visitDefault(node: MmlNode, save: boolean): number;
+    protected visitMfracNode(node: MmlNode, save: boolean): number;
+    protected visitMsqrtNode(node: MmlNode, save: boolean): number;
+    protected visitMrootNode(node: MmlMroot, save: boolean): number;
+    protected visitMphantomNode(node: MmlNode, save: boolean): number;
+    protected visitMsNode(node: MmlNode, save: boolean): number;
+    protected visitMsubsupNode(node: MmlMsubsup, save: boolean): number;
+    protected visitMsubNode(node: MmlMsub, save: boolean): number;
+    protected visitMsupNode(node: MmlMsup, save: boolean): number;
+    protected visitMunderoverNode(node: MmlMunderover, save: boolean): number;
+    protected visitMunderNode(node: MmlMunder, save: boolean): number;
+    protected visitMoverNode(node: MmlMover, save: boolean): number;
+    protected visitMencloseNode(node: MmlNode, save: boolean): number;
+    protected visitMactionNode(node: MmlMaction, save: boolean): number;
+    protected visitMsemanticsNode(node: MmlNode, save: boolean): number;
+    protected visitAnnotationNode(node: MmlNode, save: boolean): number;
+    protected visitAnnotation_xmlNode(node: MmlNode, save: boolean): number;
+    protected visitMglyphNode(node: MmlNode, save: boolean): number;
+    getComplexity(node: MmlNode): number;
+    protected setComplexity(node: MmlNode, complexity: number, save: boolean): number;
+    protected childrenComplexity(node: MmlNode): number;
+}

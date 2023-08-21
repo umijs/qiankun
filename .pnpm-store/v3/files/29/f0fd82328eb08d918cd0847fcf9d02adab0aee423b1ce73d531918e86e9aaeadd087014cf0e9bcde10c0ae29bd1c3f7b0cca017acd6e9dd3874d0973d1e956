@@ -1,0 +1,154 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = exports.DEMO_COMPONENT_NAME = void 0;
+Object.defineProperty(exports, "getCSSForDep", {
+  enumerable: true,
+  get: function get() {
+    return _dependencies.getCSSForDep;
+  }
+});
+Object.defineProperty(exports, "getDepsForDemo", {
+  enumerable: true,
+  get: function get() {
+    return _dependencies.default;
+  }
+});
+function _path() {
+  const data = _interopRequireDefault(require("path"));
+  _path = function _path() {
+    return data;
+  };
+  return data;
+}
+function babel() {
+  const data = _interopRequireWildcard(require("@babel/core"));
+  babel = function babel() {
+    return data;
+  };
+  return data;
+}
+function types() {
+  const data = _interopRequireWildcard(require("@babel/types"));
+  types = function types() {
+    return data;
+  };
+  return data;
+}
+function _traverse() {
+  const data = _interopRequireDefault(require("@babel/traverse"));
+  _traverse = function _traverse() {
+    return data;
+  };
+  return data;
+}
+function _generator() {
+  const data = _interopRequireDefault(require("@babel/generator"));
+  _generator = function _generator() {
+    return data;
+  };
+  return data;
+}
+function _utils() {
+  const data = require("@umijs/utils");
+  _utils = function _utils() {
+    return data;
+  };
+  return data;
+}
+var _options = require("./options");
+var _utils2 = require("../utils");
+var _dependencies = _interopRequireWildcard(require("./dependencies"));
+function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function _getRequireWildcardCache(nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
+function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+const DEMO_COMPONENT_NAME = 'DumiDemo';
+/**
+ * transform code block statments to preview
+ */
+exports.DEMO_COMPONENT_NAME = DEMO_COMPONENT_NAME;
+var _default = (raw, opts) => {
+  const code = babel().transformSync(raw, (0, _options.getBabelOptions)(opts));
+  const body = code.ast.program.body;
+  let reactVar;
+  let returnStatement;
+  // traverse all expression
+  (0, _traverse().default)(code.ast, {
+    VariableDeclaration(callPath) {
+      const callPathNode = callPath.node;
+      // save react import variables
+      if (callPathNode.declarations[0] && types().isIdentifier(callPathNode.declarations[0].id) && types().isCallExpression(callPathNode.declarations[0].init) && types().isCallExpression(callPathNode.declarations[0].init.arguments[0]) && types().isIdentifier(callPathNode.declarations[0].init.arguments[0].callee) && callPathNode.declarations[0].init.arguments[0].callee.name === 'require' && types().isStringLiteral(callPathNode.declarations[0].init.arguments[0].arguments[0]) && callPathNode.declarations[0].init.arguments[0].arguments[0].value === 'react') {
+        reactVar = callPathNode.declarations[0].id.name;
+      }
+    },
+    AssignmentExpression(callPath) {
+      const callPathNode = callPath.node;
+      if (callPathNode.operator === '=' && types().isMemberExpression(callPathNode.left) && (types().isStringLiteral(callPathNode.left.property) &&
+      // exports["default"]
+      callPathNode.left.property.value === 'default' || types().isIdentifier(callPathNode.left.property) &&
+      // exports.default
+      callPathNode.left.property.name === 'default') && types().isIdentifier(callPathNode.left.object) && callPathNode.left.object.name === 'exports') {
+        // remove original export expression
+        if (types().isIdentifier(callPathNode.right)) {
+          // save export function as return statement arg
+          if ((0, _utils2.isDynamicEnable)()) {
+            // for dynamic({ loader }), transform to return _default;
+            returnStatement = types().returnStatement(callPathNode.right);
+          } else {
+            // for function component, transform to _react['default'].createElement(_default, null);
+            const reactIdentifier = reactVar ? types().memberExpression(types().identifier(reactVar), types().stringLiteral('default'), true) : types().identifier('React');
+            returnStatement = types().returnStatement(types().callExpression(types().memberExpression(reactIdentifier, types().identifier('createElement')), [callPathNode.right]));
+          }
+          callPath.remove();
+        }
+        // remove uesless exports.default = void 0;
+        if (types().isUnaryExpression(callPathNode.right)) {
+          callPath.remove();
+        }
+      }
+    },
+    CallExpression(callPath) {
+      const callPathNode = callPath.node;
+      // transform all require
+      if (types().isIdentifier(callPathNode.callee) && callPathNode.callee.name === 'require' && types().isStringLiteral(callPathNode.arguments[0])) {
+        const isRelativeModule = callPathNode.arguments[0].value.startsWith('.');
+        // about header helpers: https://github.com/babel/babel/blob/master/packages/babel-plugin-transform-runtime/src/index.js#L177
+        const isHeaderHelpers = /@babel\/runtime\/helpers\/(interopRequireWildcard|interopRequireDefault)(\.js)?$/.test(callPathNode.arguments[0].value);
+        if (isRelativeModule) {
+          // transform all require('./other.jsx') to require('/absolute/path/to/other.jsx')
+          callPathNode.arguments[0].value = (0, _utils().winPath)(_path().default.join(_path().default.dirname(opts.fileAbsPath), callPathNode.arguments[0].value));
+        }
+        if ((0, _utils2.isDynamicEnable)() && !isHeaderHelpers) {
+          // transform require('react') to await import ('react')
+          callPath.replaceWith(
+          // @ts-ignore
+          types().awaitExpression(types().callExpression(types().import(), [types().stringLiteral(callPathNode.arguments[0].value)])));
+        }
+      }
+    }
+  });
+  // push return statement to program body
+  if (returnStatement) {
+    body.push(returnStatement);
+  }
+  // if user forgot to import react, redeclare it in local scope for throw error
+  if (!reactVar) {
+    body.unshift(types().variableDeclaration('var', [types().variableDeclarator(types().identifier('React'))]));
+  }
+  // create demo function
+  let demoFunction;
+  if ((0, _utils2.isDynamicEnable)()) {
+    // wrap as dynamic({ loader: async function () {} })
+    demoFunction = types().callExpression(types().identifier('dynamic'), [types().objectExpression([types().objectProperty(types().identifier('loader'), types().functionExpression(null, [], types().blockStatement(body), false, true)), types().objectProperty(types().identifier('loading'), types().arrowFunctionExpression([], types().nullLiteral()))])]);
+  } else {
+    // wrap as function DumiDemo() {}
+    demoFunction = types().functionExpression(types().identifier(DEMO_COMPONENT_NAME), [], types().blockStatement(body));
+  }
+  return {
+    // @ts-ignore
+    content: (0, _generator().default)(demoFunction, {}, raw).code
+  };
+};
+exports.default = _default;

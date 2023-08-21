@@ -1,0 +1,2 @@
+declare const _default: (source: string, fileAbsPath: string, type: 'jsx' | 'html') => import("vfile").VFile;
+export default _default;

@@ -1,0 +1,41 @@
+{
+  "name": "codesandbox-import-utils",
+  "version": "2.2.3",
+  "main": "lib/index.js",
+  "files": [
+    "lib/**"
+  ],
+  "scripts": {
+    "build": "rimraf lib && tsc -p tsconfig.json",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "prepublish": "yarn build"
+  },
+  "devDependencies": {
+    "rimraf": "^2.6.2"
+  },
+  "dependencies": {
+    "codesandbox-import-util-types": "^2.2.3",
+    "istextorbinary": "^2.2.1",
+    "lz-string": "^1.4.4"
+  },
+  "jest": {
+    "transform": {
+      ".(ts|tsx)": "<rootDir>../../node_modules/ts-jest/preprocessor.js"
+    },
+    "testEnvironment": "node",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "json"
+    ],
+    "testPathIgnorePatterns": [
+      "<rootDir>/node_modules/",
+      "<rootDir>/dist/",
+      "<rootDir>/lib/"
+    ],
+    "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx|js)$"
+  },
+  "gitHead": "e1207a66427baf8115f060d83298d34ce504e1e5"
+}

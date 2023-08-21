@@ -1,0 +1,60 @@
+{
+  "name": "protoduck",
+  "version": "4.0.0",
+  "description": "Fancy duck typing for the most serious of ducks.",
+  "main": "index.js",
+  "files": [
+    "index.js"
+  ],
+  "scripts": {
+    "prerelease": "npm t",
+    "postrelease": "npm publish && git push --follow-tags",
+    "pretest": "standard",
+    "release": "standard-version -s",
+    "test": "tap -J --coverage test/*.js",
+    "update-coc": "weallbehave -o . && git add CODE_OF_CONDUCT.md && git commit -m 'docs(coc): updated CODE_OF_CONDUCT.md'",
+    "update-contrib": "weallcontribute -o . && git add CONTRIBUTING.md && git commit -m 'docs(contributing): updated CONTRIBUTING.md'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zkat/protoduck.git"
+  },
+  "keywords": [
+    "oop",
+    "util",
+    "object oriented",
+    "duck type",
+    "ducktype",
+    "ducktyping",
+    "protocols",
+    "multimethod",
+    "clojure",
+    "haskell",
+    "rust",
+    "generic",
+    "functions",
+    "clos",
+    "polymorphism",
+    "impl",
+    "typeclass",
+    "traits"
+  ],
+  "author": "Kat Marchán <kzm@sykosomatic.org>",
+  "license": "CC0-1.0",
+  "bugs": {
+    "url": "https://github.com/zkat/protoduck/issues"
+  },
+  "homepage": "https://github.com/zkat/protoduck#readme",
+  "dependencies": {
+    "genfun": "^4.0.1"
+  },
+  "devDependencies": {
+    "mocha": "^3.2.0",
+    "nyc": "^10.2.0",
+    "standard": "^10.0.2",
+    "standard-version": "^4.0.0",
+    "tap": "^10.3.2",
+    "weallbehave": "^1.0.3",
+    "weallcontribute": "^1.0.8"
+  }
+}

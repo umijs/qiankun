@@ -1,0 +1,26 @@
+FROM ubuntu:14.04.5
+
+# Because there is no package cache in the image, you need to run:
+RUN apt-get update
+
+# Install nodejs
+RUN apt-get install curl -y
+RUN apt-get install python-software-properties -y
+RUN curl -sL https://deb.nodesource.com/setup_12.x | bash -
+RUN apt-get update --allow-unauthenticated
+RUN apt-get install -y nodejs --force-yes
+
+# Install smartwrap
+RUN apt-get install git -y
+RUN git clone https://www.github.com/tecfu/smartwrap
+
+# Install grunt
+RUN npm install grunt-cli -g
+
+# Install dev dependencies
+WORKDIR /smartwrap
+RUN npm install
+
+# Run unit tests
+RUN node -v
+RUN npm run test

@@ -1,0 +1,209 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+</head>
+<body>
+	<h1>mhchem Parser – Tests</h1>
+	<div id="output"><span style="color: red">Could not load parser. This is likely a CORS restriction, e.g. if you opened this document via file://.</span></div>
+	<script type="module">
+
+import { mhchemParser } from "../esm/mhchemParser.js";
+document.getElementById('output').innerHTML = '';
+
+/// create tests
+let errorsFound = false;
+function test(type, input, expected) {
+	let actual = mhchemParser.toTex(input, type);
+	if (actual !== expected) {
+		output('<span style="color: red">Test case failed. ' + input + '</span>');
+		errorsFound = true;
+	}
+}
+function output(html) {
+	let a = document.createElement('p');
+	a.innerHTML = html;
+	document.getElementById('output').appendChild(a);
+}
+
+///
+/// test cases
+///
+
+test('tex', 'm_{\\ce{H2O}} = \\pu{1.2kg}', 'm_{{\\mathrm{H}{\\vphantom{A}}_{\\smash[t]{2}}\\mathrm{O}}} = {1.2~\\mathrm{kg}}')
+
+///
+/// test cases from documentation
+///
+
+/// Chemical Equations
+test('ce', 'CO2 + C -> 2 CO', '{\\mathrm{CO}{\\vphantom{A}}_{\\smash[t]{2}} {}+{} \\mathrm{C} {}\\mathrel{\\longrightarrow}{} 2\\,\\mathrm{CO}}');
+test('ce', 'Hg^2+ ->[I-] HgI2 ->[I-] [Hg^{II}I4]^2-', '{\\mathrm{Hg}{\\vphantom{A}}^{2+} {}\\mathrel{\\xrightarrow{\\mathrm{I}{\\vphantom{A}}^{-}}}{} \\mathrm{HgI}{\\vphantom{A}}_{\\smash[t]{2}} {}\\mathrel{\\xrightarrow{\\mathrm{I}{\\vphantom{A}}^{-}}}{} [\\mathrm{Hg}{\\vphantom{A}}^{\\mathrm{II}}\\mathrm{I}{\\vphantom{A}}_{\\smash[t]{4}}]{\\vphantom{A}}^{2-}}');
+
+/// Chemical formulae
+test('ce', 'H2O', '{\\mathrm{H}{\\vphantom{A}}_{\\smash[t]{2}}\\mathrm{O}}');
+test('ce', 'Sb2O3', '{\\mathrm{Sb}{\\vphantom{A}}_{\\smash[t]{2}}\\mathrm{O}{\\vphantom{A}}_{\\smash[t]{3}}}');
+
+/// Charges
+test('ce', 'H+', '{\\mathrm{H}{\\vphantom{A}}^{+}}');
+test('ce', 'CrO4^2-', '{\\mathrm{CrO}{\\vphantom{A}}_{\\smash[t]{4}}{\\vphantom{A}}^{2-}}');
+test('ce', '[AgCl2]-', '{[\\mathrm{AgCl}{\\vphantom{A}}_{\\smash[t]{2}}]{\\vphantom{A}}^{-}}');
+test('ce', 'Y^99+', '{\\mathrm{Y}{\\vphantom{A}}^{99+}}');
+test('ce', 'Y^{99+}', '{\\mathrm{Y}{\\vphantom{A}}^{99+}}');
+
+/// Stoichiometric Numbers
+test('ce', '2 H2O', '{2\\,\\mathrm{H}{\\vphantom{A}}_{\\smash[t]{2}}\\mathrm{O}}');
+test('ce', '2H2O', '{2\\,\\mathrm{H}{\\vphantom{A}}_{\\smash[t]{2}}\\mathrm{O}}');
+test('ce', '0.5 H2O', '{0.5\\,\\mathrm{H}{\\vphantom{A}}_{\\smash[t]{2}}\\mathrm{O}}');
+test('ce', '1/2 H2O', '{\\mathchoice{\\textstyle\\frac{1}{2}}{\\frac{1}{2}}{\\frac{1}{2}}{\\frac{1}{2}}\\,\\mathrm{H}{\\vphantom{A}}_{\\smash[t]{2}}\\mathrm{O}}');
+test('ce', '(1/2) H2O', '{(1/2)\\,\\mathrm{H}{\\vphantom{A}}_{\\smash[t]{2}}\\mathrm{O}}');
+test('ce', '$n$ H2O', '{n \\,\\mathrm{H}{\\vphantom{A}}_{\\smash[t]{2}}\\mathrm{O}}');
+test('ce', 'n H2O', '{n\\,\\mathrm{H}{\\vphantom{A}}_{\\smash[t]{2}}\\mathrm{O}}');
+test('ce', 'nH2O', '{n\\,\\mathrm{H}{\\vphantom{A}}_{\\smash[t]{2}}\\mathrm{O}}');
+test('ce', 'n/2 H2O', '{\\mathchoice{\\textstyle\\frac{n}{2}}{\\frac{n}{2}}{\\frac{n}{2}}{\\frac{n}{2}}\\,\\mathrm{H}{\\vphantom{A}}_{\\smash[t]{2}}\\mathrm{O}}');
+
+/// Nuclides, Isotopes
+test('ce', '^{227}_{90}Th+', '{{\\vphantom{A}}^{\\hphantom{227}}_{\\hphantom{90}}\\mkern-1.5mu{\\vphantom{A}}^{\\smash[t]{\\vphantom{2}}\\llap{227}}_{\\vphantom{2}\\llap{\\smash[t]{90}}}\\mathrm{Th}{\\vphantom{A}}^{+}}');
+test('ce', '^227_90Th+', '{{\\vphantom{A}}^{\\hphantom{227}}_{\\hphantom{90}}\\mkern-1.5mu{\\vphantom{A}}^{\\smash[t]{\\vphantom{2}}\\llap{227}}_{\\vphantom{2}\\llap{\\smash[t]{90}}}\\mathrm{Th}{\\vphantom{A}}^{+}}');
+test('ce', '^{0}_{-1}n^{-}', '{{\\vphantom{A}}^{\\hphantom{0}}_{\\hphantom{-1}}\\mkern-1.5mu{\\vphantom{A}}^{\\smash[t]{\\vphantom{2}}\\llap{0}}_{\\vphantom{2}\\llap{\\smash[t]{-1}}}\\mathrm{n}{\\vphantom{A}}^{-}}');
+test('ce', '^0_-1n-', '{{\\vphantom{A}}^{\\hphantom{0}}_{\\hphantom{-1}}\\mkern-1.5mu{\\vphantom{A}}^{\\smash[t]{\\vphantom{2}}\\llap{0}}_{\\vphantom{2}\\llap{\\smash[t]{-1}}}\\mathrm{n}{\\vphantom{A}}^{-}}');
+test('ce', 'H{}^3HO', '{\\mathrm{H}\\mkern2mu{\\vphantom{A}}^{\\hphantom{3}}_{\\hphantom{}}\\mkern-1.5mu{\\vphantom{A}}^{\\smash[t]{\\vphantom{2}}\\llap{3}}_{\\vphantom{2}\\llap{\\smash[t]{}}}\\mathrm{HO}}');
+test('ce', 'H^3HO', '{\\mathrm{H}\\mkern2mu{\\vphantom{A}}^{\\hphantom{3}}_{\\hphantom{}}\\mkern-1.5mu{\\vphantom{A}}^{\\smash[t]{\\vphantom{2}}\\llap{3}}_{\\vphantom{2}\\llap{\\smash[t]{}}}\\mathrm{HO}}');
+
+/// Reaction Arrows
+test('ce', 'A -> B', '{\\mathrm{A} {}\\mathrel{\\longrightarrow}{} \\mathrm{B}}');
+test('ce', 'A <- B', '{\\mathrm{A} {}\\mathrel{\\longleftarrow}{} \\mathrm{B}}');
+test('ce', 'A <-> B', '{\\mathrm{A} {}\\mathrel{\\longleftrightarrow}{} \\mathrm{B}}');
+test('ce', 'A <--> B', '{\\mathrm{A} {}\\mathrel{\\longleftrightarrows}{} \\mathrm{B}}');
+test('ce', 'A <=> B', '{\\mathrm{A} {}\\mathrel{\\longrightleftharpoons}{} \\mathrm{B}}');
+test('ce', 'A <=>> B', '{\\mathrm{A} {}\\mathrel{\\longRightleftharpoons}{} \\mathrm{B}}');
+test('ce', 'A <<=> B', '{\\mathrm{A} {}\\mathrel{\\longLeftrightharpoons}{} \\mathrm{B}}');
+test('ce', 'A ->[H2O] B', '{\\mathrm{A} {}\\mathrel{\\xrightarrow{\\mathrm{H}{\\vphantom{A}}_{\\smash[t]{2}}\\mathrm{O}}}{} \\mathrm{B}}');
+test('ce', 'A ->[{text above}][{text below}] B', '{\\mathrm{A} {}\\mathrel{\\xrightarrow[{{\\text{text below}}}]{{\\text{text above}}}}{} \\mathrm{B}}');
+test('ce', 'A ->[$x$][$x_i$] B', '{\\mathrm{A} {}\\mathrel{\\xrightarrow[{x_i }]{x }}{} \\mathrm{B}}');
+
+/// Parentheses, Brackets, Braces
+test('ce', '(NH4)2S', '{(\\mathrm{NH}{\\vphantom{A}}_{\\smash[t]{4}}){\\vphantom{A}}_{\\smash[t]{2}}\\mathrm{S}}');
+test('ce', '[\\{(X2)3\\}2]^3+', '{[\\{(\\mathrm{X}{\\vphantom{A}}_{\\smash[t]{2}}){\\vphantom{A}}_{\\smash[t]{3}}\\}{\\vphantom{A}}_{\\smash[t]{2}}]{\\vphantom{A}}^{3+}}');
+test('ce', 'CH4 + 2 $\\left( \\ce{O2 + 79/21 N2} \\right)$', '{\\mathrm{CH}{\\vphantom{A}}_{\\smash[t]{4}} {}+{} 2\\,\\left(  \\mathrm{O}{\\vphantom{A}}_{\\smash[t]{2}} {}+{} \\mathchoice{\\textstyle\\frac{79}{21}}{\\frac{79}{21}}{\\frac{79}{21}}{\\frac{79}{21}}\\,\\mathrm{N}{\\vphantom{A}}_{\\smash[t]{2}} \\right) }');
+
+/// States of Aggregation
+test('ce', 'H2(aq)', '{\\mathrm{H}{\\vphantom{A}}_{\\smash[t]{2}}\\mskip2mu (\\mathrm{aq})}');
+test('ce', 'CO3^2-_{(aq)}', '{\\mathrm{CO}{\\vphantom{A}}_{\\smash[t]{3}}{\\vphantom{A}}^{2-}{\\vphantom{A}}_{\\smash[t]{\\mskip1mu (\\mathrm{aq})}}}');
+test('ce', 'CO3^2-{}_{(aq)}', '{\\mathrm{CO}{\\vphantom{A}}_{\\smash[t]{3}}{\\vphantom{A}}^{2-}{\\vphantom{A}}_{\\smash[t]{\\mskip1mu (\\mathrm{aq})}}}');
+test('ce', 'NaOH(aq,$\\infty$)', '{\\mathrm{NaOH}\\mskip2mu (\\mathrm{aq},\\infty )}');
+
+/// Crystal Systems
+test('ce', 'ZnS ($c$)', '{\\mathrm{ZnS}\\mskip2mu (c )}');
+test('ce', 'ZnS (\\ca$c$)', '{\\mathrm{ZnS}\\mskip2mu ({\\sim}c )}');
+
+/// Variables like __*x*, *n*, 2*n*+1__
+test('ce', 'NO_x', '{\\mathrm{NO}{\\vphantom{A}}_{\\smash[t]{x }}}');
+test('ce', 'Fe^n+', '{\\mathrm{Fe}{\\vphantom{A}}^{n +}}');
+test('ce', 'x Na(NH4)HPO4 ->[\Delta] (NaPO3)_x + x NH3 ^ + x H2O', '{x\\,\\mathrm{Na}(\\mathrm{NH}{\\vphantom{A}}_{\\smash[t]{4}})\\mathrm{HPO}{\\vphantom{A}}_{\\smash[t]{4}} {}\\mathrel{\\xrightarrow{\\mathrm{Delta}}}{} (\\mathrm{NaPO}{\\vphantom{A}}_{\\smash[t]{3}}){\\vphantom{A}}_{\\smash[t]{x }} {}+{} x\\,\\mathrm{NH}{\\vphantom{A}}_{\\smash[t]{3}} \\uparrow{}  {}+{} x\\,\\mathrm{H}{\\vphantom{A}}_{\\smash[t]{2}}\\mathrm{O}}');
+
+/// Greek Characters
+test('ce', '\mu-Cl', '{\\mathrm{mu}{-}\\mathrm{Cl}}');
+test('ce', '[Pt(\\eta^2-C2H4)Cl3]-', '{[\\mathrm{Pt}(\\mathrm{\\eta}{\\vphantom{A}}^{2}\\text{-}\\mathrm{C}{\\vphantom{A}}_{\\smash[t]{2}}\\mathrm{H}{\\vphantom{A}}_{\\smash[t]{4}})\\mathrm{Cl}{\\vphantom{A}}_{\\smash[t]{3}}]{\\vphantom{A}}^{-}}');
+test('ce', '\\beta +', '{\\mathrm{\\beta }{\\vphantom{A}}^{+}}');
+test('ce', '^40_18Ar + \\gamma{} + \\nu_e', '{{\\vphantom{A}}^{\\hphantom{40}}_{\\hphantom{18}}\\mkern-1.5mu{\\vphantom{A}}^{\\smash[t]{\\vphantom{2}}\\llap{40}}_{\\vphantom{2}\\llap{\\smash[t]{18}}}\\mathrm{Ar} {}+{} \\mathrm{\\gamma{}} {}+{} \\mathrm{\\nu}{\\vphantom{A}}_{\\smash[t]{e }}}');
+
+/// (Italic) Math
+test('ce', 'NaOH(aq,$\\infty$)', '{\\mathrm{NaOH}\\mskip2mu (\\mathrm{aq},\\infty )}');
+test('ce', 'Fe(CN)_{$\\frac{6}{2}$}', '{\\mathrm{Fe}(\\mathrm{CN}){\\vphantom{A}}_{\\smash[t]{\\frac{6}{2} }}}');
+test('ce', 'X_{$i$}^{$x$}', '{\\mathrm{X}{\\vphantom{A}}_{\\smash[t]{i }}{\\vphantom{A}}^{x }}');
+test('ce', 'X_$i$^$x$', '{\\mathrm{X}{\\vphantom{A}}_{\\smash[t]{i }}{\\vphantom{A}}^{x }}');
+
+/// Italic Text
+test('ce', '$cis${-}[PtCl2(NH3)2]', '{cis {\\text{-}}[\\mathrm{PtCl}{\\vphantom{A}}_{\\smash[t]{2}}(\\mathrm{NH}{\\vphantom{A}}_{\\smash[t]{3}}){\\vphantom{A}}_{\\smash[t]{2}}]}');
+test('ce', 'CuS($hP12$)', '{\\mathrm{CuS}(hP12 )}');
+
+/// Upright Text, Escape Parsing
+test('ce', '{Gluconic Acid} + H2O2', '{{\\text{Gluconic Acid}} {}+{} \\mathrm{H}{\\vphantom{A}}_{\\smash[t]{2}}\\mathrm{O}{\\vphantom{A}}_{\\smash[t]{2}}}');
+test('ce', 'X_{{red}}', '{\\mathrm{X}{\\vphantom{A}}_{\\smash[t]{\\text{red}}}}');
+test('ce', '{(+)}_589{-}[Co(en)3]Cl3', '{{\\text{(+)}}{\\vphantom{A}}_{\\smash[t]{589}}{\\text{-}}[\\mathrm{Co}(\\mathrm{en}){\\vphantom{A}}_{\\smash[t]{3}}]\\mathrm{Cl}{\\vphantom{A}}_{\\smash[t]{3}}}');
+
+/// Bonds
+test('ce', 'C6H5-CHO', '{\\mathrm{C}{\\vphantom{A}}_{\\smash[t]{6}}\\mathrm{H}{\\vphantom{A}}_{\\smash[t]{5}}{-}\\mathrm{CHO}}');
+test('ce', 'A-B=C#D', '{\\mathrm{A}{-}\\mathrm{B}{=}\\mathrm{C}{\\equiv}\\mathrm{D}}');
+test('ce', 'A\\bond{-}B\\bond{=}C\\bond{#}D', '{\\mathrm{A}{-}\\mathrm{B}{=}\\mathrm{C}{\\equiv}\\mathrm{D}}');
+test('ce', 'A\\bond{1}B\\bond{2}C\\bond{3}D', '{\\mathrm{A}{-}\\mathrm{B}{=}\\mathrm{C}{\\equiv}\\mathrm{D}}');
+test('ce', 'A\\bond{~}B\\bond{~-}C', '{\\mathrm{A}{\\tripledash}\\mathrm{B}{\\rlap{\\lower.1em{-}}\\raise.1em{\\tripledash}}\\mathrm{C}}');
+test('ce', 'A\\bond{~--}B\\bond{~=}C\\bond{-~-}D', '{\\mathrm{A}{\\rlap{\\lower.2em{-}}\\rlap{\\raise.2em{\\tripledash}}-}\\mathrm{B}{\\rlap{\\lower.2em{-}}\\rlap{\\raise.2em{\\tripledash}}-}\\mathrm{C}{\\rlap{\\lower.2em{-}}\\rlap{\\raise.2em{-}}\\tripledash}\\mathrm{D}}');
+test('ce', 'A\\bond{...}B\\bond{....}C', '{\\mathrm{A}{{\\cdot}{\\cdot}{\\cdot}}\\mathrm{B}{{\\cdot}{\\cdot}{\\cdot}{\\cdot}}\\mathrm{C}}');
+test('ce', 'A\\bond{->}B\\bond{<-}C', '{\\mathrm{A}{\\rightarrow}\\mathrm{B}{\\leftarrow}\\mathrm{C}}');
+
+/// Addition Compounds
+test('ce', 'KCr(SO4)2*12H2O', '{\\mathrm{KCr}(\\mathrm{SO}{\\vphantom{A}}_{\\smash[t]{4}}){\\vphantom{A}}_{\\smash[t]{2}}\\,{\\cdot}\\,12\\,\\mathrm{H}{\\vphantom{A}}_{\\smash[t]{2}}\\mathrm{O}}');
+test('ce', 'KCr(SO4)2.12H2O', '{\\mathrm{KCr}(\\mathrm{SO}{\\vphantom{A}}_{\\smash[t]{4}}){\\vphantom{A}}_{\\smash[t]{2}}\\,{\\cdot}\\,12\\,\\mathrm{H}{\\vphantom{A}}_{\\smash[t]{2}}\\mathrm{O}}');
+test('ce', 'KCr(SO4)2 * 12 H2O', '{\\mathrm{KCr}(\\mathrm{SO}{\\vphantom{A}}_{\\smash[t]{4}}){\\vphantom{A}}_{\\smash[t]{2}}\\,{\\cdot}\\,12\\,\\mathrm{H}{\\vphantom{A}}_{\\smash[t]{2}}\\mathrm{O}}');
+
+/// Oxidation States
+test('ce', 'Fe^{II}Fe^{III}2O4', '{\\mathrm{Fe}{\\vphantom{A}}^{\\mathrm{II}}\\mathrm{Fe}{\\vphantom{A}}^{\\mathrm{III}}{\\vphantom{A}}_{\\smash[t]{2}}\\mathrm{O}{\\vphantom{A}}_{\\smash[t]{4}}}');
+
+/// Unpaired Electrons, Radical Dots
+test('ce', 'OCO^{.-}', '{\\mathrm{OCO}{\\vphantom{A}}^{\\mkern1mu \\bullet\\mkern1mu -}}');
+test('ce', 'NO^{(2.)-}', '{\\mathrm{NO}{\\vphantom{A}}^{(2\\mkern1mu \\bullet\\mkern1mu )-}}');
+
+/// Kröger-Vink Notation
+test('ce', 'Li^x_{Li,1-2x}Mg^._{Li,x}$V$\'_{Li,x}Cl^x_{Cl}', '{\\mathrm{Li}{\\vphantom{A}}^{{\\times}}_{\\smash[t]{\\mathrm{Li}{,}\\mkern1mu 1-2x }}\\mathrm{Mg}{\\vphantom{A}}^{\\mkern1mu \\bullet\\mkern1mu }_{\\smash[t]{\\mathrm{Li}{,}\\mkern1mu x }}V {\\vphantom{A}}^{\\prime }_{\\smash[t]{\\mathrm{Li}{,}\\mkern1mu x }}\\mathrm{Cl}{\\vphantom{A}}^{{\\times}}_{\\smash[t]{\\mathrm{Cl}}}}');
+test('ce', 'O\'\'_{i,x}', '{\\mathrm{O}{\\vphantom{A}}^{\\prime \\prime }_{\\smash[t]{\\mathrm{i}{,}\\mkern1mu x }}}');
+test('ce', 'M^{..}_i', '{\\mathrm{M}{\\vphantom{A}}^{\\mkern1mu \\bullet\\mkern1mu \\mkern1mu \\bullet\\mkern1mu }_{\\smash[t]{\\mathrm{i}}}}');
+test('ce', '$V$^{4\'}_{Ti}', '{V {\\vphantom{A}}^{4\\prime }_{\\smash[t]{\\mathrm{Ti}}}}');
+test('ce', 'V_{V,1}C_{C,0.8}$V$_{C,0.2}', '{\\mathrm{V}{\\vphantom{A}}_{\\smash[t]{\\mathrm{V}{,}\\mkern1mu 1}}\\mathrm{C}{\\vphantom{A}}_{\\smash[t]{\\mathrm{C}{,}\\mkern1mu 0.8}}V {\\vphantom{A}}_{\\smash[t]{\\mathrm{C}{,}\\mkern1mu 0.2}}}');
+
+/// Equation Operators
+test('ce', 'A + B', '{\\mathrm{A} {}+{} \\mathrm{B}}');
+test('ce', 'A - B', '{\\mathrm{A} {}-{} \\mathrm{B}}');
+test('ce', 'A = B', '{\\mathrm{A} {}={} \\mathrm{B}}');
+test('ce', 'A \\pm B', '{\\mathrm{A} {}\\pm{} \\mathrm{B}}');
+
+/// Precipitate and Gas
+test('ce', 'SO4^2- + Ba^2+ -> BaSO4 v', '{\\mathrm{SO}{\\vphantom{A}}_{\\smash[t]{4}}{\\vphantom{A}}^{2-} {}+{} \\mathrm{Ba}{\\vphantom{A}}^{2+} {}\\mathrel{\\longrightarrow}{} \\mathrm{BaSO}{\\vphantom{A}}_{\\smash[t]{4}} \\downarrow{} }');
+test('ce', 'A v B (v) -> B ^ B (^)', '{\\mathrm{A} \\downarrow{} ~\\mathrm{B} \\downarrow{}  {}\\mathrel{\\longrightarrow}{} \\mathrm{B} \\uparrow{} ~\\mathrm{B} \\uparrow{} }');
+
+/// Other Symbols and Shortcuts
+test('ce', 'NO^*', '{\\mathrm{NO}{\\vphantom{A}}^{*}}');
+test('ce', '1s^2-N', '{1\\mathrm{s}{\\vphantom{A}}^{2}\\text{-}\\mathrm{N}}');
+test('ce', 'n-Pr', '{n \\text{-}\\mathrm{Pr}}');
+test('ce', 'iPr', '{\\mathrm{iPr}}');
+test('ce', '\\ca Fe', '{{\\sim}\\mathrm{Fe}}');
+test('ce', 'A, B, C; F', '{\\mathrm{A}{,}\\mkern6mu \\mathrm{B}{,}\\mkern6mu \\mathrm{C}{;}\\mkern6mu \\mathrm{F}}');
+test('ce', '{and others}', '{{\\text{and others}}}');
+
+/// Complex Examples
+test('ce', 'Zn^2+  <=>[+ 2OH-][+ 2H+]  $\\underset{\\text{amphoteres Hydroxid}}{\\ce{Zn(OH)2 v}}$  <=>[+ 2OH-][+ 2H+]  $\\underset{\\text{Hydroxozikat}}{\\ce{[Zn(OH)4]^2-}}$', '{\\mathrm{Zn}{\\vphantom{A}}^{2+} {}\\mathrel{\\underset{\\lower6mu{ {}+{} 2\\,\\mathrm{H}{\\vphantom{A}}^{+}}}{\\overset{ {}+{} 2\\,\\mathrm{OH}{\\vphantom{A}}^{-}}{\\longrightleftharpoons}}}{} \\underset{\\text{amphoteres Hydroxid}}{\\ce{Zn(OH)2 v}}  {}\\mathrel{\\underset{\\lower6mu{ {}+{} 2\\,\\mathrm{H}{\\vphantom{A}}^{+}}}{\\overset{ {}+{} 2\\,\\mathrm{OH}{\\vphantom{A}}^{-}}{\\longrightleftharpoons}}}{} \\underset{\\text{Hydroxozikat}}{\\ce{[Zn(OH)4]^2-}} }');
+test('ce', '$K = \\frac{[\\ce{Hg^2+}][\\ce{Hg}]}{[\\ce{Hg2^2+}]}$', '{K = \\frac{[\\ce{Hg^2+}][\\ce{Hg}]}{[\\ce{Hg2^2+}]} }');
+test('ce', '$K = \\ce{\\frac{[Hg^2+][Hg]}{[Hg2^2+]}}$', '{K =  \\frac{[\\mathrm{Hg}{\\vphantom{A}}^{2+}][\\mathrm{Hg}]}{[\\mathrm{Hg}{\\vphantom{A}}_{\\smash[t]{2}}{\\vphantom{A}}^{2+}]}}');
+test('ce', 'Hg^2+ ->[I-]  $\\underset{\\mathrm{red}}{\\ce{HgI2}}$  ->[I-]  $\\underset{\\mathrm{red}}{\\ce{[Hg^{II}I4]^2-}}$', '{\\mathrm{Hg}{\\vphantom{A}}^{2+} {}\\mathrel{\\xrightarrow{\\mathrm{I}{\\vphantom{A}}^{-}}}{} \\underset{\\mathrm{red}}{\\ce{HgI2}}  {}\\mathrel{\\xrightarrow{\\mathrm{I}{\\vphantom{A}}^{-}}}{} \\underset{\\mathrm{red}}{\\ce{[Hg^{II}I4]^2-}} }');
+
+/// \pu
+test('pu', '123 kJ', '{123~\\mathrm{kJ}}');
+test('pu', '123 mm2', '{123~\\mathrm{mm^{2}}}');
+test('pu', '123 J s', '{123~\\mathrm{J}\\mkern3mu \\mathrm{s}}');
+test('pu', '123 J*s', '{123~\\mathrm{J}\\mkern1mu{\\cdot}\\mkern1mu \\mathrm{s}}');
+test('pu', '123 kJ/mol', '{123~\\mathrm{kJ}/\\mathrm{mol}}');
+test('pu', '123 kJ//mol', '{123~\\mathchoice{\\textstyle\\frac{\\mathrm{kJ}}{\\mathrm{mol}}}{\\frac{\\mathrm{kJ}}{\\mathrm{mol}}}{\\frac{\\mathrm{kJ}}{\\mathrm{mol}}}{\\frac{\\mathrm{kJ}}{\\mathrm{mol}}}}');
+test('pu', '123 kJ mol^-1', '{123~\\mathrm{kJ}\\mkern3mu \\mathrm{mol^{-1}}}');
+test('pu', '123 kJ*mol-1', '{123~\\mathrm{kJ}\\mkern1mu{\\cdot}\\mkern1mu \\mathrm{mol^{-1}}}');
+test('pu', '123 kJ.mol-1', '{123~\\mathrm{kJ}\\mkern1mu{\\cdot}\\mkern1mu \\mathrm{mol^{-1}}}');
+test('pu', '1.2e3 kJ', '{1.2\\cdot 10^{3}~\\mathrm{kJ}}');
+test('pu', '1,2e3 kJ', '{1{,}2\\cdot 10^{3}~\\mathrm{kJ}}');
+test('pu', '1.2E3 kJ', '{1.2\\times 10^{3}~\\mathrm{kJ}}');
+test('pu', '1,2E3 kJ', '{1{,}2\\times 10^{3}~\\mathrm{kJ}}');
+test('pu', '1234', '{1234}');
+test('pu', '12345', '{12\\mkern2mu 345}');
+test('pu', '1\u00B0C', '{1~\\mathrm{{}^{\\circ}C}}');
+test('pu', '23.4782(32) m', '{23.4782(32)~\\mathrm{m}}');
+test('pu', '8.00001 \\pm 0.00005 nm', '{8.000\\mkern2mu 01 {}\\pm{} 0.000\\mkern2mu 05~\\mathrm{nm}}');
+test('pu', '.25', '{.25}');
+test('pu', '1 mol ', '{1~\\mathrm{mol}~}');
+test('pu', '123 l//100km', '{123~\\mathchoice{\\textstyle\\frac{\\mathrm{l}}{100~\\mathrm{km}}}{\\frac{\\mathrm{l}}{100~\\mathrm{km}}}{\\frac{\\mathrm{l}}{100~\\mathrm{km}}}{\\frac{\\mathrm{l}}{100~\\mathrm{km}}}}');
+
+if (!errorsFound) {
+	output('<span style="color: green">All test executed. All successful.</span>');
+}
+
+	</script>
+</body>
+</html>

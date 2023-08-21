@@ -1,0 +1,13 @@
+{
+    "name": "@types/table",
+    "version": "6.3.2",
+    "typings": null,
+    "description": "Stub TypeScript definitions entry for table, which provides its own types definitions",
+    "main": "",
+    "scripts": {},
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "table": "*"
+    }
+}

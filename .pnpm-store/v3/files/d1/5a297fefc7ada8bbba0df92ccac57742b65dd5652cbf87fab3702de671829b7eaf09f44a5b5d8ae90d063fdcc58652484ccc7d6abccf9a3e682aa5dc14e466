@@ -1,0 +1,26 @@
+import { TextParser } from './TextParser.js';
+export declare const TextMacrosMethods: {
+    Comment(parser: TextParser, _c: string): void;
+    Math(parser: TextParser, open: string): void;
+    MathModeOnly(parser: TextParser, c: string): void;
+    Misplaced(parser: TextParser, c: string): void;
+    OpenBrace(parser: TextParser, _c: string): void;
+    CloseBrace(parser: TextParser, _c: string): void;
+    OpenQuote(parser: TextParser, c: string): void;
+    CloseQuote(parser: TextParser, c: string): void;
+    Tilde(parser: TextParser, _c: string): void;
+    Space(parser: TextParser, _c: string): void;
+    SelfQuote(parser: TextParser, name: string): void;
+    Insert(parser: TextParser, _name: string, c: string): void;
+    Accent(parser: TextParser, name: string, c: string): void;
+    Emph(parser: TextParser, name: string): void;
+    SetFont(parser: TextParser, _name: string, variant: string): void;
+    SetSize(parser: TextParser, _name: string, size: number): void;
+    CheckAutoload(parser: TextParser, name: string): void;
+    Macro: import("../Types.js").ParseMethod;
+    Spacer: import("../Types.js").ParseMethod;
+    Hskip: import("../Types.js").ParseMethod;
+    rule: import("../Types.js").ParseMethod;
+    Rule: import("../Types.js").ParseMethod;
+    HandleRef: import("../Types.js").ParseMethod;
+};

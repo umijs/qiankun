@@ -1,0 +1,43 @@
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+import { CommandLineMeasurements } from './types';
+import commandLineUsage = require('command-line-usage');
+export declare const defaultInstallDir: string;
+export declare const optDefs: commandLineUsage.OptionDefinition[];
+export interface Opts {
+    help: boolean;
+    version: boolean;
+    root: string | undefined;
+    host: string;
+    port: number[];
+    config: string;
+    'package-version': string[];
+    'npm-install-dir': string;
+    browser: string | undefined;
+    'sample-size': number | undefined;
+    manual: boolean;
+    save: string;
+    measure: CommandLineMeasurements | undefined;
+    'measurement-expression': string | undefined;
+    'auto-sample-conditions': string | undefined;
+    timeout: number | undefined;
+    'github-check': string;
+    'resolve-bare-modules': boolean | undefined;
+    'remote-accessible-host': string;
+    'window-size': string;
+    'force-clean-npm-install': boolean;
+    'csv-file': string;
+    'csv-file-raw': string;
+    'json-file': string;
+    trace: boolean;
+    'trace-log-dir': string;
+    'trace-cat': string;
+    _unknown?: string[];
+}
+/**
+ * Parse the given CLI argument list.
+ */
+export declare function parseFlags(argv: string[]): Opts;

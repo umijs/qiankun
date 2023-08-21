@@ -1,0 +1,1 @@
+import './lib/textmacros.js';

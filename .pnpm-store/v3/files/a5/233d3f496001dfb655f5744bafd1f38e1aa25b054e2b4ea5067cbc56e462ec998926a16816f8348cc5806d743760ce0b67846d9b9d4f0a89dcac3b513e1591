@@ -1,0 +1,117 @@
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+import { BrowserConfig } from './browser';
+export declare class Deferred<T> {
+    readonly promise: Promise<T>;
+    resolve: (value: T) => void;
+    reject: (error: Error) => void;
+    constructor();
+}
+/**
+ * A mapping from NPM package name to version specifier, as used in a
+ * package.json's "dependencies" and "devDependencies".
+ */
+export interface PackageDependencyMap {
+    [pkg: string]: string;
+}
+/**
+ * Tachometer's extensions to the NPM "dependencies" field, which allows for
+ * more advanced configurations.
+ */
+export interface ExtendedPackageDependencyMap {
+    [pkg: string]: string | GitDependency;
+}
+/**
+ * Configuration for cloning a Git repo at some ref with an optional package
+ * sub-path for monorepos, for use as an NPM dependency.
+ */
+export interface GitDependency {
+    kind: 'git';
+    repo: string;
+    ref: string;
+    subdir?: string;
+    setupCommands?: string[];
+}
+/**
+ * The descriptor of a package version as specified by the --package-version
+ * flag.
+ */
+export interface PackageVersion {
+    label: string;
+    dependencyOverrides: ExtendedPackageDependencyMap;
+}
+/** The subset of the format of an NPM package.json file we care about. */
+export interface NpmPackageJson {
+    private: boolean;
+    dependencies: PackageDependencyMap;
+}
+/** The kinds of intervals we can measure. */
+export declare type Measurement = CallbackMeasurement | PerformanceEntryMeasurement | ExpressionMeasurement;
+export interface MeasurementBase {
+    name?: string;
+}
+export interface CallbackMeasurement extends MeasurementBase {
+    mode: 'callback';
+}
+export interface PerformanceEntryMeasurement extends MeasurementBase {
+    mode: 'performance';
+    entryName: string;
+}
+export interface ExpressionMeasurement extends MeasurementBase {
+    mode: 'expression';
+    expression: string;
+}
+export declare type CommandLineMeasurements = 'callback' | 'fcp' | 'global';
+export declare const measurements: Set<string>;
+/** A specification of a benchmark to run. */
+export interface BenchmarkSpec {
+    url: LocalUrl | RemoteUrl;
+    measurement: Measurement[];
+    name: string;
+    browser: BrowserConfig;
+}
+export interface LocalUrl {
+    kind: 'local';
+    version?: PackageVersion;
+    urlPath: string;
+    queryString: string;
+}
+export interface RemoteUrl {
+    kind: 'remote';
+    url: string;
+}
+export interface BenchmarkResponse {
+    millis: number;
+}
+/**
+ * Benchmark results for a particular measurement on a particular page, across
+ * all samples.
+ */
+export interface BenchmarkResult {
+    /**
+     * Label for this result. When there is more than one per page, this will
+     * contain both the page and measurement labels as "page [measurement]".
+     */
+    name: string;
+    /**
+     * The measurement that produced this result
+     */
+    measurement: Measurement;
+    /**
+     * A single page can return multiple measurements. The offset into the array
+     * of measurements in the spec that this particular result corresponds to.
+     */
+    measurementIndex: number;
+    /**
+     * Millisecond measurements for each sample.
+     */
+    millis: number[];
+    queryString: string;
+    version: string;
+    browser: BrowserConfig;
+    userAgent: string;
+    bytesSent: number;
+}

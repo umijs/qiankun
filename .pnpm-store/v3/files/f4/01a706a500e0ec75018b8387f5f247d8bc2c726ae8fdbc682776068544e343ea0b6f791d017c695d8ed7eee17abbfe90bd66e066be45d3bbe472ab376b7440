@@ -1,0 +1,74 @@
+{
+  "name": "resolve-dir",
+  "description": "Resolve a directory that is either local, global or in the user's home directory.",
+  "version": "0.1.1",
+  "homepage": "https://github.com/jonschlinkert/resolve-dir",
+  "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
+  "repository": "jonschlinkert/resolve-dir",
+  "bugs": {
+    "url": "https://github.com/jonschlinkert/resolve-dir/issues"
+  },
+  "license": "MIT",
+  "files": [
+    "index.js",
+    "LICENSE",
+    "README.md"
+  ],
+  "main": "index.js",
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "dependencies": {
+    "expand-tilde": "^1.2.2",
+    "global-modules": "^0.2.3"
+  },
+  "devDependencies": {
+    "gulp-format-md": "^0.1.9",
+    "mocha": "^2.5.3"
+  },
+  "keywords": [
+    "dir",
+    "directory",
+    "expansion",
+    "file",
+    "filepath",
+    "fp",
+    "global",
+    "home",
+    "modules",
+    "npm",
+    "path",
+    "resolve",
+    "tilde",
+    "user",
+    "user-home",
+    "userhome"
+  ],
+  "verb": {
+    "toc": false,
+    "layout": "default",
+    "tasks": [
+      "readme"
+    ],
+    "plugins": [
+      "gulp-format-md"
+    ],
+    "related": {
+      "list": [
+        "findup-sync",
+        "expand-tilde",
+        "resolve-modules"
+      ]
+    },
+    "reflinks": [
+      "verb",
+      "verb-generate-readme"
+    ],
+    "lint": {
+      "reflinks": true
+    }
+  }
+}

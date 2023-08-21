@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>{{section}} - jStat Documentation</title>
+	<link rel="stylesheet" href="assets/style.css" />
+	<link rel="stylesheet" href="assets/sh.css" />
+</head>
+<body>
+	<div id="container">
+    <header>
+      <h1>jStat {{version}} Documentation</h1>
+      <div id="gtoc">
+        <p><a href="index.html">Index</a> | <a href="all.html">View on single page</a></p>
+      </div>
+      <hr />
+    </header>
+	{{content}}
+	</div>
+	<script src="assets/sh_main.js"></script>
+	<script src="assets/sh_javascript.min.js"></script>
+	<script src="//cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
+	<script>highlight(undefined, undefined, 'pre');</script>
+</body>
+</html>

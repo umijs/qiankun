@@ -1,0 +1,23 @@
+export interface TransformResult {
+    content: string;
+    meta: {
+        [key: string]: any;
+    };
+}
+declare const _default: {
+    /**
+     * transform markdown to jsx & metas
+     * @param raw         raw content
+     * @param fileAbsPath source file path
+     * @param opts        transform options
+     */
+    markdown(raw: string, fileAbsPath: string | null, opts?: {
+        type: 'jsx' | 'html';
+    }): TransformResult;
+    /**
+     * split frontmatters & content for code block
+     * @param raw   raw content
+     */
+    code(raw: string): TransformResult;
+};
+export default _default;

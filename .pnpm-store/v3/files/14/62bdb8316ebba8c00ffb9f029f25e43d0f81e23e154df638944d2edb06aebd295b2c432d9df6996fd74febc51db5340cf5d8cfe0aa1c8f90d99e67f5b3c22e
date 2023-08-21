@@ -1,0 +1,39 @@
+{
+  "name": "@umijs/renderer-react",
+  "version": "3.5.41",
+  "description": "@umijs/renderer-react",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/umijs/umi"
+  },
+  "keywords": [
+    "umi"
+  ],
+  "sideEffects": false,
+  "authors": [
+    "chencheng <sorrycc@gmail.com> (https://github.com/sorrycc)"
+  ],
+  "license": "MIT",
+  "bugs": "http://github.com/umijs/umi/issues",
+  "homepage": "https://github.com/umijs/umi/tree/3.x/packages/renderer-react#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@types/react": "^16.9.43",
+    "@types/react-dom": "^16.9.8",
+    "@types/react-router-config": "^5.0.2",
+    "@umijs/runtime": "3.5.41",
+    "react-router-config": "5.1.1"
+  },
+  "peerDependencies": {
+    "react": "16.x || 17.x",
+    "react-dom": "16.x || 17.x"
+  },
+  "module": "dist/index.esm.js"
+}

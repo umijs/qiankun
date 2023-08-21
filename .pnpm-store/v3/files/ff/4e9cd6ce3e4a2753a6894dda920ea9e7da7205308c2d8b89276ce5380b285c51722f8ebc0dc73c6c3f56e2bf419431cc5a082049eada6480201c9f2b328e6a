@@ -1,0 +1,53 @@
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+/// <reference types="node" />
+import * as http from 'http';
+import { BenchmarkResponse } from './types';
+import { NpmInstall } from './versions';
+export interface ServerOpts {
+    host: string;
+    ports: number[];
+    root: string;
+    npmInstalls: NpmInstall[];
+    mountPoints: MountPoint[];
+    resolveBareModules: boolean;
+    cache: boolean;
+}
+export interface MountPoint {
+    diskPath: string;
+    urlPath: string;
+}
+export interface Session {
+    bytesSent: number;
+    userAgent: string;
+}
+export declare class Server {
+    readonly url: string;
+    readonly port: number;
+    private readonly server;
+    private session;
+    private deferredResults;
+    private readonly urlCache;
+    static start(opts: ServerOpts): Promise<Server>;
+    constructor(server: http.Server, opts: ServerOpts);
+    /**
+     * Mark the end of one session, return the data instrumented from it, and
+     * begin a new session.
+     */
+    endSession(): Session;
+    nextResults(): Promise<BenchmarkResponse>;
+    close(): Promise<void>;
+    private instrumentRequests;
+    /**
+     * Cache all downstream middleware responses by URL in memory. This is
+     * especially helpful when bare module resolution is enabled, because that
+     * requires expensive parsing of all HTML and JavaScript that we really don't
+     * want to do for every benchmark sample.
+     */
+    private cache;
+    private serveBenchLib;
+    private submitResults;
+}

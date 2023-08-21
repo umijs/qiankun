@@ -1,0 +1,174 @@
+"use strict";
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createCheck = exports.parseGithubCheckFlag = void 0;
+const got_1 = __importDefault(require("got"));
+const jsonwebtoken = __importStar(require("jsonwebtoken"));
+/**
+ * Parse the --github-check flag.
+ */
+function parseGithubCheckFlag(flag) {
+    const parsed = JSON.parse(flag);
+    if (!parsed.appId ||
+        !parsed.installationId ||
+        !parsed.repo ||
+        !parsed.commit) {
+        throw new Error(`Invalid --github-check flag. Must be a JSON object ` +
+            `with properties: appId, installationId, repo, and commit.`);
+    }
+    return {
+        label: String(parsed.label || 'Tachometer Benchmarks'),
+        appId: Number(parsed.appId),
+        installationId: Number(parsed.installationId),
+        repo: String(parsed.repo),
+        commit: String(parsed.commit),
+    };
+}
+exports.parseGithubCheckFlag = parseGithubCheckFlag;
+/**
+ * Create a pending GitHub check object and return a function that will mark
+ * the check completed with the given markdown.
+ */
+async function createCheck(config) {
+    const { label, appId, installationId, repo, commit } = config;
+    // We can directly store our GitHub App private key as a secret Travis
+    // environment variable (as opposed to committing it as a file and
+    // configuring to Travis decrypt it), but we have to be careful with the
+    // spaces and newlines that PEM files have, since Travis does a raw Bash
+    // substitution when it sets the variable.
+    //
+    // Given a PEM file from GitHub, the following command will escape spaces
+    // and newlines so that it can be safely pasted into the Travis UI. The
+    // spaces will get unescaped by Bash, and we'll unescape newlines ourselves.
+    //
+    //     cat <GITHUB_PEM_FILE>.pem \
+    //         | awk '{printf "%s\\\\n", $0}' | sed 's/ /\\ /g'
+    const appPrivateKey = (process.env.GITHUB_APP_PRIVATE_KEY || '')
+        .trim()
+        .replace(/\\n/g, '\n');
+    if (appPrivateKey === '') {
+        throw new Error('Missing or empty GITHUB_APP_PRIVATE_KEY environment variable, ' +
+            'which is required when using --github-check.');
+    }
+    const appToken = getAppToken(appId, appPrivateKey);
+    const installationToken = await getInstallationToken({
+        installationId,
+        appToken,
+    });
+    // Create the initial Check Run run now, so that it will show up in the
+    // GitHub UI as pending.
+    const checkId = await createCheckRun({
+        label,
+        repo,
+        commit,
+        installationToken,
+    });
+    return (markdown) => completeCheckRun({ label, repo, installationToken, checkId, markdown });
+}
+exports.createCheck = createCheck;
+/**
+ * Create a JSON Web Token (https://tools.ietf.org/html/rfc7519), which allows
+ * us to perform actions as a GitHub App.
+ *
+ * @param appId GitHub App ID. Can be found on the GitHub App settings page.
+ * @param privateKey Text of a PEM private key. Can be generated from the GitHub
+ *     App settings page. More info at
+ *     https://developer.github.com/apps/building-github-apps/authenticating-with-github-apps/
+ */
+function getAppToken(appId, privateKey) {
+    const expireMinutes = 10;
+    const issuedTimestamp = Math.floor(Date.now() / 1000);
+    const expireTimestamp = issuedTimestamp + expireMinutes * 60;
+    const payload = {
+        iss: appId,
+        iat: issuedTimestamp,
+        exp: expireTimestamp, // (exp)iration time
+    };
+    return jsonwebtoken.sign(payload, privateKey, { algorithm: 'RS256' });
+}
+/**
+ * Create an access token which allows us to perform actions as a GitHub App
+ * Installation.
+ */
+async function getInstallationToken({ installationId, appToken, }) {
+    const resp = await got_1.default.post(`https://api.github.com/installations/${installationId}/access_tokens`, {
+        headers: {
+            Accept: 'application/vnd.github.machine-man-preview+json',
+            Authorization: `Bearer ${appToken}`,
+        },
+    });
+    const data = JSON.parse(resp.body);
+    return data.token;
+}
+/**
+ * Create a new GitHub Check Run (a single invocation of a Check on some commit)
+ * and return its identifier.
+ */
+async function createCheckRun({ label, repo, commit, installationToken, }) {
+    const resp = await got_1.default.post(`https://api.github.com/repos/${repo}/check-runs`, {
+        headers: {
+            Accept: 'application/vnd.github.antiope-preview+json',
+            Authorization: `Bearer ${installationToken}`,
+        },
+        // https://developer.github.com/v3/checks/runs/#parameters
+        body: JSON.stringify({
+            head_sha: commit,
+            name: label,
+        }),
+    });
+    const data = JSON.parse(resp.body);
+    return data.id;
+}
+/**
+ * Update a GitHub Check run with the given markdown text and mark it as
+ * complete.
+ */
+async function completeCheckRun({ label, repo, installationToken, checkId, markdown, }) {
+    await got_1.default.patch(`https://api.github.com/repos/${repo}/check-runs/${checkId}`, {
+        headers: {
+            Accept: 'application/vnd.github.antiope-preview+json',
+            Authorization: `Bearer ${installationToken}`,
+        },
+        // https://developer.github.com/v3/checks/runs/#parameters-1
+        body: JSON.stringify({
+            name: label,
+            completed_at: new Date().toISOString(),
+            // Note that in the future we will likely want to be able to report
+            // a failing check (e.g. if there appears to be a difference greater
+            // than some threshold).
+            conclusion: 'neutral',
+            output: {
+                title: label,
+                summary: 'Benchmark results',
+                text: markdown,
+            },
+        }),
+    });
+}
+//# sourceMappingURL=github.js.map

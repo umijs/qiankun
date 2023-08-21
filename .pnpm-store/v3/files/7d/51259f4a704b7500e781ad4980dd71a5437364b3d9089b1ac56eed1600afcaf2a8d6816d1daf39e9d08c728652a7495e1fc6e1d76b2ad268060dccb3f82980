@@ -1,0 +1,29 @@
+{
+  "name": "jstat",
+  "version": "1.9.6",
+  "description": "Statistical Library for JavaScript",
+  "homepage": "http://github.com/jstat/jstat",
+  "main": "./dist/jstat.js",
+  "author": {
+    "name": "Trevor Norris",
+    "email": "trev.norris@gmail.com",
+    "url": "http://trevorjnorris.com"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://www.opensource.org/licenses/mit-license.php"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/jstat/jstat.git"
+  },
+  "devDependencies": {
+    "uglify-js": "^3.6.7",
+    "vows": "^0.8.3"
+  },
+  "scripts": {
+    "test": "./node_modules/vows/bin/vows --spec --isolate"
+  }
+}

@@ -1,0 +1,6 @@
+import { RouteProcessor } from '.';
+declare const _default: RouteProcessor;
+/**
+ * set locale for route
+ */
+export default _default;

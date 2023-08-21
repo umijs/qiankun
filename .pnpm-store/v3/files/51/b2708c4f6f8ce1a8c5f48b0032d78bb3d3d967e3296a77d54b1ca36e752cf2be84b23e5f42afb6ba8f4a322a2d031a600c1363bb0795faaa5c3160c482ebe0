@@ -1,0 +1,72 @@
+{
+  "name": "unist-util-filter",
+  "version": "1.0.2",
+  "description": "Create a new Unist tree with all nodes that pass the test implemented by the provided function",
+  "license": "MIT",
+  "keywords": [
+    "ast",
+    "clone",
+    "filter",
+    "immutable",
+    "node",
+    "test",
+    "tree",
+    "unist",
+    "util"
+  ],
+  "repository": "eush77/unist-util-filter",
+  "bugs": "https://github.com/eush77/unist-util-filter/issues",
+  "author": "Eugene Sharygin <eush77@gmail.com>",
+  "contributors": [
+    "Eugene Sharygin <eush77@gmail.com>",
+    "Titus Wormer <tituswormer@gmail.com> (https://wooorm.com)"
+  ],
+  "files": [
+    "index.js"
+  ],
+  "dependencies": {
+    "flatmap": "0.0.3",
+    "unist-util-is": "^3.0.0"
+  },
+  "devDependencies": {
+    "nyc": "^14.0.0",
+    "prettier": "^1.0.0",
+    "remark-cli": "^6.0.0",
+    "remark-preset-wooorm": "^5.0.0",
+    "tape": "^4.0.0",
+    "unist-builder": "^1.0.0",
+    "xo": "^0.24.0"
+  },
+  "scripts": {
+    "format": "remark . -qfo && prettier --write \"**/*.js\" && xo --fix",
+    "test-api": "node test",
+    "test-coverage": "nyc --reporter lcov tape test.js",
+    "test": "npm run format && npm run test-coverage"
+  },
+  "nyc": {
+    "check-coverage": true,
+    "lines": 100,
+    "functions": 100,
+    "branches": 100
+  },
+  "prettier": {
+    "tabWidth": 2,
+    "useTabs": false,
+    "singleQuote": true,
+    "bracketSpacing": false,
+    "semi": false,
+    "trailingComma": "none"
+  },
+  "xo": {
+    "prettier": true,
+    "esnext": false,
+    "ignores": [
+      "unist-util-position.js"
+    ]
+  },
+  "remarkConfig": {
+    "plugins": [
+      "preset-wooorm"
+    ]
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "name": "father",
+  "version": "4.3.1",
+  "description": "A bundless/bundle build tool",
+  "homepage": "https://github.com/umijs/father#readme",
+  "bugs": "https://github.com/umijs/father/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/umijs/father"
+  },
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "father": "bin/father.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "compiled"
+  ],
+  "scripts": {
+    "build": "pnpm tsc",
+    "dev": "pnpm build --watch",
+    "format": "prettier --write .",
+    "prepare": "husky install",
+    "release": "esno scripts/release.ts",
+    "test": "jest",
+    "test:cov": "jest --collectCoverage"
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "lint-staged": {
+    "*.{js,md,json}": [
+      "prettier --write --no-error-on-unmatched-pattern"
+    ],
+    "*.ts": [
+      "prettier --parser=typescript --write"
+    ]
+  },
+  "dependencies": {
+    "@microsoft/api-extractor": "7.36.3",
+    "@umijs/babel-preset-umi": "^4.0.74",
+    "@umijs/bundler-utils": "^4.0.74",
+    "@umijs/bundler-webpack": "^4.0.74",
+    "@umijs/case-sensitive-paths-webpack-plugin": "^1.0.1",
+    "@umijs/core": "^4.0.74",
+    "@umijs/utils": "^4.0.74",
+    "@vercel/ncc": "0.33.3",
+    "babel-plugin-dynamic-import-node": "2.3.3",
+    "babel-plugin-module-resolver": "4.1.0",
+    "babel-plugin-transform-define": "2.0.1",
+    "enhanced-resolve": "5.9.3",
+    "fast-glob": "3.2.12",
+    "file-system-cache": "2.0.0",
+    "loader-runner": "4.2.0",
+    "minimatch": "3.1.2",
+    "tsconfig-paths": "4.0.0",
+    "typescript": "~5.0.4",
+    "typescript-transform-paths": "3.4.6",
+    "v8-compile-cache": "2.3.0"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^17.6.1",
+    "@commitlint/config-conventional": "^17.6.1",
+    "@swc/core": "^1.3.53",
+    "@types/jest": "^27",
+    "@types/loader-runner": "2.2.4",
+    "@types/minimatch": "3.0.5",
+    "@types/node": "^18.15.13",
+    "@umijs/test": "^4.0.68",
+    "esno": "^0.16.3",
+    "git-repo-info": "^2.1.1",
+    "husky": "^8.0.3",
+    "jest": "^27",
+    "jest-mock-process": "^1.5.1",
+    "lint-staged": "^13.2.1",
+    "prettier": "^2.8.7",
+    "prettier-plugin-organize-imports": "^3.2.2",
+    "prettier-plugin-packagejson": "^2.4.3",
+    "rimraf": "^3.0.2",
+    "ts-node": "^10.9.1",
+    "zx": "^4.3.0"
+  },
+  "packageManager": "pnpm@8.6.9",
+  "publishConfig": {
+    "access": "public"
+  },
+  "authors": [
+    "chencheng <sorrycc@gmail.com> (https://github.com/sorrycc)",
+    "PeachScript <scdzwyxst@gmail.com> (https://github.com/PeachScript)"
+  ]
+}

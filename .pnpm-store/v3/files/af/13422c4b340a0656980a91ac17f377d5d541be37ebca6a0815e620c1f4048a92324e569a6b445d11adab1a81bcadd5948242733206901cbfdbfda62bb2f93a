@@ -1,0 +1,64 @@
+{
+  "name": "pkg-install",
+  "version": "1.0.0",
+  "description": "A wrapper making installation of Node.js packages from code easier",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "scripts": {
+    "prepare": "npm run build",
+    "start": "npm run dev",
+    "dev": "tsc --watch",
+    "build": "tsc",
+    "commit": "git-cz",
+    "docs": "typedoc --options typedoc.json",
+    "contrib:add": "all-contributors add",
+    "contrib:gen": "all-contributors generate",
+    "test": "jest"
+  },
+  "homepage": "https://pkg-install.dkundel.com/",
+  "keywords": [
+    "npm",
+    "yarn",
+    "install",
+    "cli",
+    "script"
+  ],
+  "author": "Dominik Kundel <dominik.kundel@gmail.com> (https://dkundel.com)",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^24.0.6",
+    "all-contributors-cli": "^6.1.1",
+    "commitizen": "^3.0.5",
+    "cz-conventional-changelog": "^2.1.0",
+    "jest": "^24.1.0",
+    "ora": "^3.1.0",
+    "ts-jest": "^24.0.0",
+    "typedoc": "^0.14.2",
+    "typedoc-plugin-external-module-name": "^2.0.0",
+    "typedoc-plugin-internal-external": "^2.0.1",
+    "typescript": "^3.3.3"
+  },
+  "bugs": {
+    "url": "https://github.com/dkundel/pkg-install/issues",
+    "email": "dominik.kundel@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dkundel/pkg-install.git"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "dependencies": {
+    "@types/execa": "^0.9.0",
+    "@types/node": "^11.9.4",
+    "execa": "^1.0.0"
+  },
+  "files": [
+    "lib/!(__tests__)",
+    "LICENSE",
+    "README.md"
+  ]
+}

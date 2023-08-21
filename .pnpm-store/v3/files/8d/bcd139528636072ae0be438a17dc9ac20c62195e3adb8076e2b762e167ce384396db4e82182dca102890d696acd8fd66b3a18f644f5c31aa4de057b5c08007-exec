@@ -1,0 +1,82 @@
+{
+    "name": "@types/selenium-webdriver",
+    "version": "4.1.15",
+    "description": "TypeScript definitions for Selenium WebDriverJS",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/selenium-webdriver",
+    "license": "MIT",
+    "contributors": [
+        {
+            "name": "Bill Armstrong",
+            "url": "https://github.com/BillArmstrong",
+            "githubUsername": "BillArmstrong"
+        },
+        {
+            "name": "Yuki Kokubun",
+            "url": "https://github.com/Kuniwak",
+            "githubUsername": "Kuniwak"
+        },
+        {
+            "name": "Craig Nishina",
+            "url": "https://github.com/cnishina",
+            "githubUsername": "cnishina"
+        },
+        {
+            "name": "Simon Gellis",
+            "url": "https://github.com/SupernaviX",
+            "githubUsername": "SupernaviX"
+        },
+        {
+            "name": "Ben Dixon",
+            "url": "https://github.com/bendxn",
+            "githubUsername": "bendxn"
+        },
+        {
+            "name": "Ziyu",
+            "url": "https://github.com/oddui",
+            "githubUsername": "oddui"
+        },
+        {
+            "name": "Johann Wolf",
+            "url": "https://github.com/beta-vulgaris",
+            "githubUsername": "beta-vulgaris"
+        },
+        {
+            "name": "Aleksey Chemakin",
+            "url": "https://github.com/Dzenly",
+            "githubUsername": "Dzenly"
+        },
+        {
+            "name": "David Burns",
+            "url": "https://github.com/AutomatedTester",
+            "githubUsername": "AutomatedTester"
+        },
+        {
+            "name": "Pirasis Leelatanon",
+            "url": "https://github.com/1pete",
+            "githubUsername": "1pete"
+        },
+        {
+            "name": "Harmandeep Singh",
+            "url": "https://github.com/SinghHrmn",
+            "githubUsername": "SinghHrmn"
+        },
+        {
+            "name": "Shubh Sheth",
+            "url": "https://github.com/shubhsheth",
+            "githubUsername": "shubhsheth"
+        }
+    ],
+    "main": "",
+    "types": "index.d.ts",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "directory": "types/selenium-webdriver"
+    },
+    "scripts": {},
+    "dependencies": {
+        "@types/ws": "*"
+    },
+    "typesPublisherContentHash": "c0c45fce89ad68fd9b35203ea70f8b6e996afebd353c43680124ffa7f8d59485",
+    "typeScriptVersion": "4.3"
+}

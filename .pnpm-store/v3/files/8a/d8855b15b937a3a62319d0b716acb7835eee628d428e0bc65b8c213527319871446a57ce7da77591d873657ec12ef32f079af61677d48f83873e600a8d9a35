@@ -1,0 +1,16 @@
+{
+  "component": "input/tex",
+  "targets": [
+    "input/tex.ts",
+    "input/tex",
+    "input/tex/base",
+    "input/tex/ams",
+    "input/tex/newcommand",
+    "input/tex/noundefined",
+    "input/tex/require",
+    "input/tex/autoload",
+    "input/tex/configmacros"
+  ],
+  "exclude": ["input/tex/AllPackages.ts"],
+  "excludeSubdirs": "true"
+}

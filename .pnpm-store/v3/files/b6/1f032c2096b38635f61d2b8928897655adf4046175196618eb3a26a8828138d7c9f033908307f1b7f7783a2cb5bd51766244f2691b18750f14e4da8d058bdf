@@ -1,0 +1,37 @@
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+/**
+ * Configuration data needed to create a GitHub Check.
+ *
+ * GitHub Checks are attached to a particular commit in a particular repo, and
+ * are created by GitHub Apps, which are installed into an org or repo.
+ *
+ * More info at https://developer.github.com/v3/apps/
+ *
+ * Note that we do not currently manage a generally-accessible GitHub App. We
+ * only support a fully self-service integration, whereby users are expected to
+ * create their own GitHub App, install it to their repos, grant full power to
+ * this binary to act as that App via a private key, and then piggyback on e.g.
+ * Travis CI to actually run the benchmarks. This avoids the need to run any
+ * services for the time being, but still lets us have our own standalone Check
+ * tab in the GitHub UI.
+ */
+export interface CheckConfig {
+    label: string;
+    appId: number;
+    installationId: number;
+    repo: string;
+    commit: string;
+}
+/**
+ * Parse the --github-check flag.
+ */
+export declare function parseGithubCheckFlag(flag: string): CheckConfig;
+/**
+ * Create a pending GitHub check object and return a function that will mark
+ * the check completed with the given markdown.
+ */
+export declare function createCheck(config: CheckConfig): Promise<(markdown: string) => void>;

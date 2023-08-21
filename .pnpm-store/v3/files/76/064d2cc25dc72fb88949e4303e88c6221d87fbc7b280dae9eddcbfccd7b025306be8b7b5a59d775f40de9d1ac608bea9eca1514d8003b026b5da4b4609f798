@@ -1,0 +1,181 @@
+{
+  "name": "errlop",
+  "version": "2.2.0",
+  "description": "An extended Error class that envelops a parent error, such that the stack trace contains the causation",
+  "homepage": "https://github.com/bevry/errlop",
+  "license": "MIT",
+  "keywords": [
+    "browser",
+    "dom",
+    "error",
+    "export-default",
+    "module",
+    "nerror",
+    "nested",
+    "nested-error",
+    "node",
+    "ono",
+    "simple",
+    "typed",
+    "types",
+    "typescript",
+    "verror"
+  ],
+  "badges": {
+    "list": [
+      "travisci",
+      "npmversion",
+      "npmdownloads",
+      "daviddm",
+      "daviddmdev",
+      "---",
+      "githubsponsors",
+      "patreon",
+      "flattr",
+      "liberapay",
+      "buymeacoffee",
+      "opencollective",
+      "crypto",
+      "paypal",
+      "wishlist"
+    ],
+    "config": {
+      "githubSponsorsUsername": "balupton",
+      "buymeacoffeeUsername": "balupton",
+      "cryptoURL": "https://bevry.me/crypto",
+      "flattrUsername": "balupton",
+      "liberapayUsername": "bevry",
+      "opencollectiveUsername": "bevry",
+      "patreonUsername": "bevry",
+      "paypalURL": "https://bevry.me/paypal",
+      "wishlistURL": "https://bevry.me/wishlist",
+      "travisTLD": "com"
+    }
+  },
+  "funding": "https://bevry.me/fund",
+  "author": "2018+ Benjamin Lupton <b@lupton.cc>",
+  "maintainers": [
+    "Benjamin Lupton (http://balupton.com)"
+  ],
+  "contributors": [
+    "Benjamin Lupton (http://balupton.com)"
+  ],
+  "bugs": {
+    "url": "https://github.com/bevry/errlop/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bevry/errlop.git"
+  },
+  "engines": {
+    "node": ">=0.8"
+  },
+  "editions": [
+    {
+      "description": "TypeScript source code with Import for modules",
+      "directory": "source",
+      "entry": "index.ts",
+      "tags": [
+        "typescript",
+        "import"
+      ],
+      "engines": false
+    },
+    {
+      "description": "TypeScript compiled against ES2019 for web browsers with Import for modules",
+      "directory": "edition-browsers",
+      "entry": "index.js",
+      "tags": [
+        "javascript",
+        "import"
+      ],
+      "engines": {
+        "node": false,
+        "browsers": "defaults"
+      }
+    },
+    {
+      "description": "TypeScript compiled against ES5 for Node.js with Require for modules",
+      "directory": "edition-es5",
+      "entry": "index.js",
+      "tags": [
+        "javascript",
+        "es5",
+        "require"
+      ],
+      "engines": {
+        "node": "0.8 || 0.10 || 0.12 || 4 || 6 || 8 || 10 || 12 || 13 || 14",
+        "browsers": false
+      }
+    }
+  ],
+  "types": "source/index.ts",
+  "type": "commonjs",
+  "main": "edition-es5/index.js",
+  "browser": "edition-browsers/index.js",
+  "module": "edition-browsers/index.js",
+  "devDependencies": {
+    "@bevry/update-contributors": "^1.0.1",
+    "@typescript-eslint/eslint-plugin": "^2.30.0",
+    "@typescript-eslint/parser": "^2.30.0",
+    "assert-helpers": "4.10.0",
+    "eslint": "^6.8.0",
+    "eslint-config-bevry": "^3.3.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-prettier": "^3.1.3",
+    "kava": "3.2.0",
+    "prettier": "^2.0.5",
+    "projectz": "^1.19.1",
+    "surge": "^0.21.3",
+    "typedoc": "^0.17.6",
+    "typescript": "^3.8.3",
+    "valid-directory": "^1.6.0",
+    "valid-module": "^1.0.0"
+  },
+  "scripts": {
+    "our:clean": "rm -Rf ./docs ./edition* ./es2015 ./es5 ./out ./.next",
+    "our:compile": "npm run our:compile:edition-browsers && npm run our:compile:edition-es5",
+    "our:compile:edition-browsers": "tsc --module ESNext --target ES2019 --outDir ./edition-browsers --project tsconfig.json && test -d edition-browsers/source && ( mv edition-browsers/source edition-temp && rm -Rf edition-browsers && mv edition-temp edition-browsers ) || true",
+    "our:compile:edition-es5": "tsc --module commonjs --target ES5 --outDir ./edition-es5 --project tsconfig.json && test -d edition-es5/source && ( mv edition-es5/source edition-temp && rm -Rf edition-es5 && mv edition-temp edition-es5 ) || true",
+    "our:deploy": "echo no need for this project",
+    "our:meta": "npm run our:meta:contributors && npm run our:meta:docs && npm run our:meta:projectz",
+    "our:meta:contributors": "npx @bevry/update-contributors",
+    "our:meta:docs": "npm run our:meta:docs:typedoc",
+    "our:meta:docs:typedoc": "rm -Rf ./docs && npx typedoc --mode file --exclude '**/+(*test*|node_modules)' --excludeExternals --name \"$npm_package_name\" --readme ./README.md --out ./docs ./source",
+    "our:meta:projectz": "npx projectz compile",
+    "our:release": "npm run our:release:prepare && npm run our:release:check-changelog && npm run our:release:check-dirty && npm run our:release:tag && npm run our:release:push",
+    "our:release:check-changelog": "cat ./HISTORY.md | grep v$npm_package_version || (echo add a changelog entry for v$npm_package_version && exit -1)",
+    "our:release:check-dirty": "git diff --exit-code",
+    "our:release:prepare": "npm run our:clean && npm run our:compile && npm run our:test && npm run our:meta",
+    "our:release:push": "git push origin master && git push origin --tags",
+    "our:release:tag": "export MESSAGE=$(cat ./HISTORY.md | sed -n \"/## v$npm_package_version/,/##/p\" | sed 's/## //' | awk 'NR>1{print buf}{buf = $0}') && test \"$MESSAGE\" || (echo 'proper changelog entry not found' && exit -1) && git tag v$npm_package_version -am \"$MESSAGE\"",
+    "our:setup": "npm run our:setup:install",
+    "our:setup:install": "npm install",
+    "our:test": "npm run our:verify && npm test",
+    "our:verify": "npm run our:verify:directory && npm run our:verify:eslint && npm run our:verify:module && npm run our:verify:prettier && npm run our:verify:typescript",
+    "our:verify:directory": "npx valid-directory",
+    "our:verify:eslint": "npx eslint --fix --ignore-pattern '**/*.d.ts' --ignore-pattern '**/vendor/' --ignore-pattern '**/node_modules/' --ext .mjs,.js,.jsx,.ts,.tsx ./source",
+    "our:verify:module": "npx valid-module",
+    "our:verify:prettier": "prettier --write .",
+    "our:verify:typescript": "tsc --noEmit --project tsconfig.json",
+    "test": "node ./edition-es5/test.js"
+  },
+  "eslintConfig": {
+    "extends": [
+      "bevry"
+    ]
+  },
+  "prettier": {
+    "semi": false,
+    "singleQuote": true
+  },
+  "boundation": {
+    "minimumSupportNodeVersion": "0.8",
+    "minimumTestNodeVersion": "0.8",
+    "compiler": "typescript",
+    "targets": [
+      "browser",
+      "ES5"
+    ]
+  }
+}

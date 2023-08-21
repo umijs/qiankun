@@ -1,0 +1,39 @@
+{
+  "name": "@umijs/runtime",
+  "version": "3.5.41",
+  "description": "@umijs/runtime",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/umijs/umi"
+  },
+  "keywords": [
+    "umi"
+  ],
+  "sideEffects": false,
+  "authors": [
+    "chencheng <sorrycc@gmail.com> (https://github.com/sorrycc)"
+  ],
+  "license": "MIT",
+  "bugs": "http://github.com/umijs/umi/issues",
+  "homepage": "https://github.com/umijs/umi/tree/3.x/packages/runtime#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@types/react-router": "5.1.12",
+    "@types/react-router-dom": "5.1.7",
+    "history-with-query": "4.10.4",
+    "react-router": "5.2.0",
+    "react-router-dom": "5.2.0",
+    "use-subscription": "1.5.1"
+  },
+  "peerDependencies": {
+    "react": "16.x || 17.x"
+  },
+  "module": "dist/index.esm.js"
+}

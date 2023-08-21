@@ -1,0 +1,5 @@
+{
+  "id": "[tex]/amscd",
+  "component": "input/tex/extensions/amscd",
+  "targets": ["input/tex/amscd"]
+}

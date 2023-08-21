@@ -1,0 +1,1 @@
+export default function loader(content: string): Promise<string>;

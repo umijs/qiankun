@@ -1,0 +1,36 @@
+{
+  "name": "@nicolo-ribaudo/chokidar-2",
+  "version": "2.1.8-no-fsevents.3",
+  "description": "A wrapper around chokidar@2 to be able to specify both @2 and @3 as dependencies",
+  "main": "./dist/main.js",
+  "types": "./types.d.ts",
+  "scripts": {
+    "build": "./build-chokidar.sh",
+    "bundle": "webpack ./chokidar/index.js -o ./dist -t node --mode development"
+  },
+  "dependencies": {},
+  "author": "Nicolò Ribaudo <nicolo.ribaudo@gmail.com>",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nicolo-ribaudo/chokidar-2"
+  },
+  "devDependencies": {
+    "anymatch": "^2.0.0",
+    "async-each": "^1.0.1",
+    "braces": "^2.3.2",
+    "glob-parent": "^5.1.2",
+    "inherits": "^2.0.3",
+    "is-binary-path": "^1.0.0",
+    "is-glob": "^4.0.0",
+    "normalize-path": "^3.0.0",
+    "path-is-absolute": "^1.0.0",
+    "readdirp": "^2.2.1",
+    "upath": "^1.1.1",
+    "webpack": "^5.53.0",
+    "webpack-cli": "^4.8.0"
+  }
+}

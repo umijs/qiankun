@@ -1,0 +1,48 @@
+/**
+ * @license
+ * Copyright 2020 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+export declare type OnDemandDependencies = Map<string, string>;
+/**
+ * Asynchronously checks to see if a module is resolvable. This gives the
+ * invoker information that is similar to what they would get from using
+ * require.resolve. However, require.resolve is backed by an unclearable
+ * internal cache, which this helper bypasses via a child process.
+ *
+ * @see https://github.com/nodejs/node/issues/31803
+ */
+export declare const assertResolvable: (id: string) => Promise<void>;
+export interface ContainsOnDemandDependencies {
+    [index: string]: unknown;
+    installsOnDemand?: string[];
+}
+export declare const getPackageJSONPath: () => Promise<string | null>;
+export declare const getPackageRoot: () => Promise<string | null>;
+/**
+ * Extract a map of allowed "on-demand" dependencies from a given
+ * package.json-shaped object.
+ */
+export declare const onDemandDependenciesFromPackageJSON: (packageJSON: ContainsOnDemandDependencies) => OnDemandDependencies;
+/**
+ * So-called "on-demand" dependencies are any packages that match the
+ * following requirements:
+ *
+ *  - They are enumerated in the non-normative package.json field
+ *    "installsOnDemand"
+ *
+ * This function resolves a map of package names and semver ranges including all
+ * packages that match these requirements.
+ */
+export declare const getOnDemandDependencies: () => Promise<OnDemandDependencies>;
+/**
+ * Install an "on-demand" package, resolving after the package has been
+ * installed. Only packages designated as installable on-demand can be
+ * installed this way (see documentation for "getOnDemandDependenies" for more
+ * details). An attempt to install any other package this way will be rejected.
+ *
+ * On-demand packages are installed to this package's node_modules directory.
+ * Any package that can already be resolved from this package's root directory
+ * will be skipped.
+ */
+export declare const installOnDemand: (packageName: string) => Promise<void>;

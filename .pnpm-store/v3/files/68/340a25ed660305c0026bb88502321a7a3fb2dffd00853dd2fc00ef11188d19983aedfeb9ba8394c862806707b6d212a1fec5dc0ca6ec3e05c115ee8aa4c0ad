@@ -1,0 +1,5 @@
+declare const _default: () => (ast: any) => import("unist").Node;
+/**
+ * rehype plugin for compile raw node to hast
+ */
+export default _default;

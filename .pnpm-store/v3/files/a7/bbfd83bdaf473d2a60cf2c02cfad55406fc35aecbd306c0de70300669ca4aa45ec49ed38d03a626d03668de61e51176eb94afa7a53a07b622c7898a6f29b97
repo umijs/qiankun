@@ -1,0 +1,61 @@
+{
+  "name": "postcss-markdown",
+  "version": "0.36.0",
+  "description": "PostCSS syntax for parsing Markdown",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gucong3000/postcss-markdown.git"
+  },
+  "keywords": [
+    "postcss",
+    "syntax",
+    "markdown",
+    "html",
+    "css",
+    "less",
+    "sass",
+    "scss",
+    "sss",
+    "sugarss"
+  ],
+  "author": "gucong",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gucong3000/postcss-markdown/issues"
+  },
+  "homepage": "https://github.com/gucong3000/postcss-markdown#readme",
+  "nyc": {
+    "reporter": [
+      "lcov",
+      "text"
+    ],
+    "all": true,
+    "cache": true,
+    "check-coverage": true
+  },
+  "scripts": {
+    "mocha": "mocha --no-timeouts",
+    "test": "nyc npm run mocha",
+    "debug": "npm run mocha -- --inspect-brk"
+  },
+  "dependencies": {
+    "remark": "^10.0.1",
+    "unist-util-find-all-after": "^1.0.2"
+  },
+  "peerDependencies": {
+    "postcss": ">=5.0.0",
+    "postcss-syntax": ">=0.36.0"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "codecov": "^3.1.0",
+    "mocha": "^5.2.0",
+    "nyc": "^13.1.0",
+    "postcss": "^7.0.7",
+    "postcss-html": ">=0.36.0",
+    "postcss-less": "^3.1.0",
+    "postcss-scss": "^2.0.0",
+    "postcss-syntax": ">=0.36.0",
+    "sugarss": "^2.0.0"
+  }
+}

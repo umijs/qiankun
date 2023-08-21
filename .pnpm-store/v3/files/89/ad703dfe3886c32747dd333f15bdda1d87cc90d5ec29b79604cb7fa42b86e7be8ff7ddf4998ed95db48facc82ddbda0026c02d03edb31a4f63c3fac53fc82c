@@ -1,0 +1,39 @@
+# PostCSS
+
+<img align="right" width="95" height="95"
+     alt="Philosopher’s stone, logo of PostCSS"
+     src="https://postcss.org/logo.svg">
+
+PostCSS is a tool for transforming styles with JS plugins.
+These plugins can lint your CSS, support variables and mixins,
+transpile future CSS syntax, inline images, and more.
+
+PostCSS is used by industry leaders including Wikipedia, Twitter, Alibaba,
+and JetBrains. The [Autoprefixer] PostCSS plugin is one of the most popular
+CSS processors.
+
+PostCSS takes a CSS file and provides an API to analyze and modify its rules
+(by transforming them into an [Abstract Syntax Tree]).
+This API can then be used by [plugins] to do a lot of useful things,
+e.g., to find errors automatically, or to insert vendor prefixes.
+
+**Twitter account:** [@postcss](https://twitter.com/postcss)<br>
+**中文翻译**:          [`docs/README-cn.md`](./docs/README-cn.md)
+
+For PostCSS commercial support (consulting, improving the front-end culture
+of your company, PostCSS plugins), contact [Evil Martians]
+at <postcss@evilmartians.com>.
+
+[Abstract Syntax Tree]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
+[Evil Martians]:        https://evilmartians.com/?utm_source=postcss
+[Autoprefixer]:         https://github.com/postcss/autoprefixer
+[plugins]:              https://github.com/postcss/postcss#plugins
+
+<a href="https://evilmartians.com/?utm_source=postcss">
+  <img src="https://evilmartians.com/badges/sponsored-by-evil-martians.svg"
+       alt="Sponsored by Evil Martians" width="236" height="54">
+</a>
+
+
+## Docs
+Read full docs **[here](https://postcss.org/)**.

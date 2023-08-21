@@ -1,0 +1,33 @@
+{
+  "name": "@umijs/babel-plugin-import-to-await-require",
+  "version": "3.5.41",
+  "description": "@umijs/babel-plugin-import-to-await-require",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "src"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/umijs/umi"
+  },
+  "keywords": [
+    "umi"
+  ],
+  "authors": [
+    "chencheng <sorrycc@gmail.com> (https://github.com/sorrycc)"
+  ],
+  "license": "MIT",
+  "bugs": "http://github.com/umijs/umi/issues",
+  "homepage": "https://github.com/umijs/umi/tree/3.x/packages/babel-plugin-import-to-await-require#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@umijs/utils": "3.5.41"
+  },
+  "devDependencies": {
+    "@babel/traverse": "7.18.8"
+  }
+}

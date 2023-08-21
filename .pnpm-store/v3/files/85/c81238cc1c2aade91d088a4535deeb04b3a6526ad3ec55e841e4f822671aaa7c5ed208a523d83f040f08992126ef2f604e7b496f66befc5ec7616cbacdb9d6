@@ -1,0 +1,46 @@
+{
+  "name": "pino-std-serializers",
+  "version": "4.0.0",
+  "description": "A collection of standard object serializers for Pino",
+  "main": "index.js",
+  "type": "commonjs",
+  "types": "index.d.ts",
+  "scripts": {
+    "lint": "standard | snazzy",
+    "lint-ci": "standard",
+    "test": "tap --no-cov 'test/**/*.test.js'",
+    "test-ci": "tap --cov --coverage-report=text 'test/**/*.test.js'",
+    "test-types": "tsc && tsd"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/pinojs/pino-std-serializers.git"
+  },
+  "keywords": [
+    "pino",
+    "logging"
+  ],
+  "author": "James Sumners <james.sumners@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/pinojs/pino-std-serializers/issues"
+  },
+  "homepage": "https://github.com/pinojs/pino-std-serializers#readme",
+  "precommit": [
+    "lint",
+    "test",
+    "test-types"
+  ],
+  "devDependencies": {
+    "@types/node": "^15.3.0",
+    "pre-commit": "^1.2.2",
+    "snazzy": "^9.0.0",
+    "standard": "^16.0.0",
+    "tap": "^14.0.0",
+    "tsd": "^0.15.1",
+    "typescript": "^4.2.4"
+  },
+  "tsd": {
+    "directory": "test/types"
+  }
+}

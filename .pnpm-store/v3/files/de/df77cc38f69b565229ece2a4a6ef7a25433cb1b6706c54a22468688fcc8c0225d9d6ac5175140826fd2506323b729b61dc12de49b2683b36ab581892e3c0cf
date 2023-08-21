@@ -1,0 +1,49 @@
+{
+  "name": "genfun",
+  "description": "Fast, prototype-friendly multimethods.",
+  "homepage": "http://github.com/zkat/genfun",
+  "keywords": [
+    "clos",
+    "functional",
+    "oop",
+    "util",
+    "object oriented",
+    "prototypes",
+    "multimethod",
+    "generic functions",
+    "multiple dispatch",
+    "polymorphism",
+    "polymorphic",
+    "protocols"
+  ],
+  "author": "Kat Marchán <kzm@sykosomatic.org>",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/zkat/genfun"
+  },
+  "main": "lib/genfun.js",
+  "version": "4.0.1",
+  "license": "CC0-1.0",
+  "files": [
+    "lib/*.js"
+  ],
+  "devDependencies": {
+    "mocha": "^3.2.0",
+    "nyc": "^10.2.0",
+    "standard": "^10.0.2",
+    "standard-version": "^4.0.0",
+    "weallbehave": "^1.0.3",
+    "weallcontribute": "^1.0.8"
+  },
+  "readmeFilename": "README.md",
+  "scripts": {
+    "prerelease": "npm t",
+    "postrelease": "npm publish && git push --follow-tags",
+    "pretest": "standard lib",
+    "release": "standard-version -s",
+    "test": "nyc -- mocha --reporter spec",
+    "update-coc": "weallbehave -o . && git add CODE_OF_CONDUCT.md && git commit -m 'docs(coc): updated CODE_OF_CONDUCT.md'",
+    "update-contrib": "weallcontribute -o . && git add CONTRIBUTING.md && git commit -m 'docs(contributing): updated CONTRIBUTING.md'"
+  },
+  "dependencies": {}
+}

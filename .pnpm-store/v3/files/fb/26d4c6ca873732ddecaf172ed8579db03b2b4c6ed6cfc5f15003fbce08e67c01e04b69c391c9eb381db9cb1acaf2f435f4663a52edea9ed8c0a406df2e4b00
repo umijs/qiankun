@@ -1,0 +1,18 @@
+{
+  "name": "@changesets/get-release-plan",
+  "version": "3.0.17",
+  "description": "Reads changesets and adds information on dependents that need bumping",
+  "main": "dist/get-release-plan.cjs.js",
+  "module": "dist/get-release-plan.esm.js",
+  "license": "MIT",
+  "repository": "https://github.com/changesets/changesets/tree/main/packages/get-release-plan",
+  "dependencies": {
+    "@babel/runtime": "^7.20.1",
+    "@changesets/assemble-release-plan": "^5.2.4",
+    "@changesets/config": "^2.3.1",
+    "@changesets/pre": "^1.0.14",
+    "@changesets/read": "^0.5.9",
+    "@changesets/types": "^5.2.1",
+    "@manypkg/get-packages": "^1.1.3"
+  }
+}

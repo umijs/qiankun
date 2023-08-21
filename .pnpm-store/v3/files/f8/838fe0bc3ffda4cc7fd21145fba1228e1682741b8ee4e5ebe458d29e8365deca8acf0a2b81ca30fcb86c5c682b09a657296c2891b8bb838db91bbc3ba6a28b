@@ -1,0 +1,53 @@
+{
+  "name": "agentkeepalive",
+  "version": "3.5.2",
+  "description": "Missing keepalive http.Agent",
+  "main": "index.js",
+  "browser": "browser.js",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "browser.js",
+    "lib"
+  ],
+  "scripts": {
+    "test": "egg-bin test",
+    "cov": "egg-bin cov",
+    "ci": "npm run lint && npm run cov",
+    "lint": "eslint lib test index.js",
+    "autod": "autod"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/node-modules/agentkeepalive.git"
+  },
+  "bugs": {
+    "url": "https://github.com/node-modules/agentkeepalive/issues"
+  },
+  "keywords": [
+    "http",
+    "https",
+    "agent",
+    "keepalive",
+    "agentkeepalive"
+  ],
+  "dependencies": {
+    "humanize-ms": "^1.2.1"
+  },
+  "devDependencies": {
+    "autod": "^3.0.1",
+    "egg-bin": "^1.11.1",
+    "egg-ci": "^1.8.0",
+    "eslint": "^4.19.1",
+    "eslint-config-egg": "^6.0.0",
+    "pedding": "^1.1.0"
+  },
+  "engines": {
+    "node": ">= 4.0.0"
+  },
+  "ci": {
+    "version": "4, 6, 8, 10"
+  },
+  "author": "fengmk2 <fengmk2@gmail.com> (https://fengmk2.com)",
+  "license": "MIT"
+}

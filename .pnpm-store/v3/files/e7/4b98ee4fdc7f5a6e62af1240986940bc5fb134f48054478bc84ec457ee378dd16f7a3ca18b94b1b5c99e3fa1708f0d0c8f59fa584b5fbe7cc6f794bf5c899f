@@ -1,0 +1,64 @@
+{
+  "name": "koa-node-resolve",
+  "version": "1.0.0-pre.9",
+  "description": "Koa middleware that transforms Node package specifiers to relative paths",
+  "main": "lib/koa-node-resolve.js",
+  "files": [
+    "lib/*",
+    "!lib/test"
+  ],
+  "scripts": {
+    "build": "npm run lint && npm run format && npm run depcheck && npm run clean && npm run compile",
+    "clean": "rimraf lib",
+    "compile": "tsc",
+    "depcheck": "depcheck --ignore-dirs=lib --ignores=\"rimraf,source-map-support,@types/*\"",
+    "format": "clang-format --style=file -i \"--glob=src/**/*.ts\"",
+    "lint": "tslint -p . --fix",
+    "test": "npm run test:raw --silent | tap-diff",
+    "test:raw": "tape -r source-map-support/register \"lib/test/*.test.js\" \"lib/test/**/*.test.js\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PolymerLabs/koa-node-resolve.git"
+  },
+  "bugs": {
+    "url": "https://github.com/PolymerLabs/koa-node-resolve/issues"
+  },
+  "homepage": "https://github.com/PolymerLabs/koa-node-resolve",
+  "keywords": [],
+  "license": "BSD-3-Clause",
+  "author": "The Polymer Project Authors",
+  "devDependencies": {
+    "@babel/types": "^7.4.4",
+    "@types/babel__traverse": "^7.0.6",
+    "@types/get-stream": "^3.0.2",
+    "@types/koa": "^2.0.48",
+    "@types/koa-route": "^3.2.4",
+    "@types/node": "^12.0.2",
+    "@types/path-is-inside": "^1.0.0",
+    "@types/resolve": "0.0.8",
+    "@types/supertest": "^2.0.7",
+    "@types/tape": "^4.2.33",
+    "clang-format": "^1.2.4",
+    "depcheck": "^0.8.0",
+    "koa": "^2.7.0",
+    "koa-route": "^3.2.0",
+    "rimraf": "^2.6.3",
+    "source-map-support": "^0.5.12",
+    "supertest": "^4.0.2",
+    "tap-diff": "^0.1.1",
+    "tape": "^4.10.1",
+    "tslint": "^5.16.0",
+    "typescript": "^3.4.5"
+  },
+  "dependencies": {
+    "@types/babel__generator": "^7.6.1",
+    "@babel/generator": "^7.4.4",
+    "@babel/parser": "^7.4.5",
+    "@babel/traverse": "^7.4.5",
+    "@types/parse5": "^5.0.0",
+    "get-stream": "^5.1.0",
+    "parse5": "^5.1.0",
+    "resolve": "^1.11.0"
+  }
+}
