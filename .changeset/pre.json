@@ -7,7 +7,5 @@
     "@qiankunjs/sandbox": "0.0.1-alpha.1",
     "@qiankunjs/shared": "0.0.1-alpha.1"
   },
-  "changesets": [
-    "forty-papayas-buy"
-  ]
+  "changesets": []
 }
