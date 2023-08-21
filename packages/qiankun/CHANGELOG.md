@@ -1,5 +1,15 @@
 # qiankun
 
+## 3.0.0-alpha.2
+
+### Patch Changes
+
+- 34c0bda5: fix dependecies
+- Updated dependencies
+  - @qiankunjs/loader@0.0.1-alpha.1
+  - @qiankunjs/sandbox@0.0.1-alpha.1
+  - @qiankunjs/shared@0.0.1-alpha.1
+
 ## 3.0.0-alpha.1
 
 ### Patch Changes
