@@ -1,7 +1,6 @@
 import { writeFileSync } from 'fs';
 import { join } from 'path';
 import globals from 'globals';
-import cfg from '../../.fatherrc';
 
 console.log('generate globals.ts...');
 // generate globals.ts
@@ -18,4 +17,4 @@ export const globals = window.Proxy ? ${JSON.stringify(
 );
 console.log('generate globals.ts succeed...');
 
-export default cfg;
+export { default } from '../../.fatherrc.cjs';

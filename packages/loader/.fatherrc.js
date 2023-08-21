@@ -1,1 +1,1 @@
-export { default } from '../../.fatherrc';
+export { default } from '../../.fatherrc.cjs';

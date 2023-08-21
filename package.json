@@ -31,7 +31,7 @@
     "dumi-theme-default": "^1.0.10",
     "eslint": "^8.46.0",
     "eslint-config-prettier": "^9.0.0",
-    "father": "^4.1.0",
+    "father": "^4.3.1",
     "husky": "^8.0.3",
     "lint-staged": "^9.4.2",
     "prettier": "^2.1.2",
@@ -48,15 +48,9 @@
   },
   "homepage": "https://github.com/kuitos/qiankun#readme",
   "lint-staged": {
-    "**/*.{js,ts,json,css,md}": [
-      "prettier --write --ignore-unknown"
-    ],
-    "packages/*/{src,types}/**/*.ts": [
-      "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty --fix"
-    ],
-    "packages/**/*.d.ts": [
-      "eslint --ext .ts"
-    ]
+    "**/*.{js,ts,json,css,md}": ["prettier --write --ignore-unknown"],
+    "packages/*/{src,types}/**/*.ts": ["eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty --fix"],
+    "packages/**/*.d.ts": ["eslint --ext .ts"]
   },
   "packageManager": "pnpm@8.4.0",
   "publishConfig": {

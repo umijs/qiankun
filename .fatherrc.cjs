@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   platform: 'browser',
   esm: {},
   cjs: {},
