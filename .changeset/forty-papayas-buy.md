@@ -1,5 +1,5 @@
 ---
-@qiankunjs/shared: patch
+'@qiankunjs/shared': patch
 ---
 
 fix: changeset
