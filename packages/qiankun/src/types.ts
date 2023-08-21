@@ -2,6 +2,7 @@
  * @author Kuitos
  * @since 2023-04-25
  */
+import type { LifeCycles as ParcelLifeCycles } from 'single-spa';
 import type { Parcel } from 'single-spa';
 
 declare global {
@@ -15,7 +16,7 @@ declare global {
   }
 }
 
-export type ObjectType = Record<string, any>;
+export type ObjectType = Record<string, unknown>;
 
 export type Entry = string;
 
@@ -40,7 +41,7 @@ export type AppConfiguration = {
   globalContext?: WindowProxy;
 };
 
-export type LifeCycleFn<T extends ObjectType> = (app: LoadableApp<T>, global: WindowProxy) => Promise<any>;
+export type LifeCycleFn<T extends ObjectType> = (app: LoadableApp<T>, global: WindowProxy) => Promise<void>;
 export type LifeCycles<T extends ObjectType> = {
   beforeLoad?: LifeCycleFn<T> | Array<LifeCycleFn<T>>; // function before app load
   beforeMount?: LifeCycleFn<T> | Array<LifeCycleFn<T>>; // function before app mount
@@ -50,3 +51,13 @@ export type LifeCycles<T extends ObjectType> = {
 };
 
 export type MicroApp = Parcel;
+
+type ExtraProps = {
+  container: HTMLElement;
+};
+type FlattenArray<T> = T extends Array<infer U> ? U : T;
+type FlattenArrayValue<T> = {
+  [P in keyof T]: FlattenArray<T[P]>;
+};
+
+export type MicroAppLifeCycles = FlattenArrayValue<ParcelLifeCycles<ExtraProps>>;

@@ -11,5 +11,6 @@ module.exports = {
     '@typescript-eslint/no-explicit-any': ['error', { fixToUnknown: true }],
     '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
     '@typescript-eslint/consistent-type-exports': ['error', { fixMixedExportsWithInlineTypeSpecifier: true }],
+    '@typescript-eslint/require-await': 'off',
   },
 };

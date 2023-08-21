@@ -3,9 +3,9 @@
  * @since 2020-05-15
  */
 
-import type { LifeCycles } from '../types';
+import type { LifeCycles, ObjectType } from '../types';
 
-export default function getAddOn(global: Window): LifeCycles<any> {
+export default function getAddOn(global: Window): LifeCycles<ObjectType> {
   return {
     async beforeLoad() {
       // eslint-disable-next-line no-param-reassign

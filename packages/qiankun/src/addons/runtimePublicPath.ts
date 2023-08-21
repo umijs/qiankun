@@ -2,11 +2,11 @@
  * @author Kuitos
  * @since 2019-11-12
  */
-import type { LifeCycles } from '../types';
+import type { LifeCycles, ObjectType } from '../types';
 
 const rawPublicPath = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
 
-export default function getAddOn(global: Window, publicPath = '/'): LifeCycles<any> {
+export default function getAddOn(global: Window, publicPath = '/'): LifeCycles<ObjectType> {
   let hasMountedOnce = false;
 
   return {
