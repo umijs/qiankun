@@ -8,6 +8,8 @@
   "include": [
     // whatever paths you intend to lint
     "src",
+    "vitest.workspace.ts",
+    "vitest.config.ts",
     ".fatherrc.js"
   ]
 }
