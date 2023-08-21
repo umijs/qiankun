@@ -19,13 +19,14 @@ export function loadMicroApp<T extends ObjectType>(
   // Must compute the container xpath at beginning to keep it consist around app running
   // If we compute it every time, the container dom structure most probably been changed and result in a different xpath value
   const containerXPath = getContainerXPath(container);
-  const appContainerXPathKey = `${name}-${containerXPath}`;
+  const getContainerXPathKey = (xpath: string) => `${name}-${xpath}`;
 
   let microApp: MicroApp;
   const wrapParcelConfigForRemount = (config: ParcelConfigObject): ParcelConfigObject => {
     let microAppConfig = config;
     if (container) {
       if (containerXPath) {
+        const appContainerXPathKey = getContainerXPathKey(containerXPath);
         const containerMicroApps = containerMicroAppsMap.get(appContainerXPathKey);
         if (containerMicroApps?.length) {
           const mount = [
@@ -66,6 +67,7 @@ export function loadMicroApp<T extends ObjectType>(
 
     if (container) {
       if (containerXPath) {
+        const appContainerXPathKey = getContainerXPathKey(containerXPath);
         const parcelConfigGetterPromise = appConfigPromiseGetterMap.get(appContainerXPathKey);
         if (parcelConfigGetterPromise) return wrapParcelConfigForRemount((await parcelConfigGetterPromise)(container));
       }
@@ -74,10 +76,13 @@ export function loadMicroApp<T extends ObjectType>(
     const parcelConfigObjectGetterPromise = load(app, userConfiguration, lifeCycles);
 
     if (container) {
-      if (containerXPath) appConfigPromiseGetterMap.set(appContainerXPathKey, parcelConfigObjectGetterPromise as any);
+      if (containerXPath) {
+        const appContainerXPathKey = `${name}-${containerXPath}`;
+        appConfigPromiseGetterMap.set(appContainerXPathKey, parcelConfigObjectGetterPromise);
+      }
     }
 
-    return ((await parcelConfigObjectGetterPromise) as any)(container);
+    return (await parcelConfigObjectGetterPromise)(container);
   };
 
   // if (!started && configuration?.autoStart !== false) {
@@ -92,6 +97,7 @@ export function loadMicroApp<T extends ObjectType>(
 
   if (container) {
     if (containerXPath) {
+      const appContainerXPathKey = getContainerXPathKey(containerXPath);
       // Store the microApps which they mounted on the same container
       const microAppsRef = containerMicroAppsMap.get(appContainerXPathKey) || [];
       microAppsRef.push(microApp);
@@ -100,6 +106,7 @@ export function loadMicroApp<T extends ObjectType>(
       const cleanup = () => {
         const index = microAppsRef.indexOf(microApp);
         microAppsRef.splice(index, 1);
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         microApp = null;
       };

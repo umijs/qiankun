@@ -9,10 +9,10 @@ import { concat, isFunction, mergeWith } from 'lodash';
 import type { ParcelConfigObject } from 'single-spa';
 import getAddOns from './addons';
 import { QiankunError } from './error';
-import type { AppConfiguration, LifeCycleFn, LifeCycles, LoadableApp, ObjectType } from './types';
+import type { AppConfiguration, LifeCycleFn, LifeCycles, LoadableApp, MicroAppLifeCycles, ObjectType } from './types';
 import { performanceGetEntriesByName, performanceMark, performanceMeasure, toArray } from './utils';
 
-export type ParcelConfigObjectGetter = (remountContainer?: string | HTMLElement) => ParcelConfigObject;
+export type ParcelConfigObjectGetter = (remountContainer?: HTMLElement) => ParcelConfigObject;
 
 export default async function <T extends ObjectType>(
   app: LoadableApp<T>,
@@ -43,13 +43,12 @@ export default async function <T extends ObjectType>(
   }
 
   const assetPublicPath = calcPublicPath(entry);
-  const {
-    beforeUnmount = [],
-    afterUnmount = [],
-    afterMount = [],
-    beforeMount = [],
-    beforeLoad = [],
-  } = mergeWith({}, getAddOns(global, assetPublicPath), lifeCycles, (v1, v2) => concat(v1 ?? [], v2 ?? []));
+  const { beforeUnmount = [], afterUnmount = [], afterMount = [], beforeMount = [], beforeLoad = [] } = mergeWith(
+    {},
+    getAddOns(global, assetPublicPath),
+    lifeCycles,
+    (v1, v2) => concat((v1 ?? []) as LifeCycleFn<T>, (v2 ?? []) as LifeCycleFn<T>),
+  );
 
   await execHooksChain(toArray(beforeLoad), app, global);
 
@@ -66,6 +65,8 @@ export default async function <T extends ObjectType>(
     const parcelConfig: ParcelConfigObject = {
       name: appName,
 
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       bootstrap,
 
       mount: [
@@ -101,6 +102,8 @@ export default async function <T extends ObjectType>(
     };
 
     if (typeof update === 'function') {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       parcelConfig.update = update;
     }
 
@@ -114,7 +117,7 @@ function execHooksChain<T extends ObjectType>(
   hooks: Array<LifeCycleFn<T>>,
   app: LoadableApp<T>,
   global: WindowProxy = window,
-): Promise<any> {
+): Promise<unknown> {
   if (hooks.length) {
     return hooks.reduce((chain, hook) => chain.then(() => hook(app, global)), Promise.resolve());
   }
@@ -123,12 +126,12 @@ function execHooksChain<T extends ObjectType>(
 }
 
 function getLifecyclesFromExports(
-  scriptExports: LifeCycles<any>,
+  scriptExports: MicroAppLifeCycles,
   appName: string,
   globalContext: WindowProxy,
   globalLatestSetProp?: PropertyKey,
-) {
-  const validateExportLifecycle = (exports: any) => {
+): MicroAppLifeCycles {
+  const validateExportLifecycle = (exports: ObjectType | undefined): boolean => {
     const { bootstrap, mount, unmount } = exports ?? {};
     return isFunction(bootstrap) && isFunction(mount) && isFunction(unmount);
   };
@@ -139,7 +142,7 @@ function getLifecyclesFromExports(
 
   // fallback to sandbox latest set property if it had
   if (globalLatestSetProp) {
-    const lifecycles = (<any>globalContext)[globalLatestSetProp];
+    const lifecycles = ((globalContext as unknown) as ObjectType)[globalLatestSetProp as never] as MicroAppLifeCycles;
     if (validateExportLifecycle(lifecycles)) {
       return lifecycles;
     }
@@ -152,7 +155,7 @@ function getLifecyclesFromExports(
   }
 
   // fallback to globalContext variable who named with ${appName} while module exports not found
-  const globalVariableExports = (globalContext as any)[appName];
+  const globalVariableExports = ((globalContext as unknown) as ObjectType)[appName as never] as MicroAppLifeCycles;
 
   if (validateExportLifecycle(globalVariableExports)) {
     return globalVariableExports;
