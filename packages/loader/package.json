@@ -23,8 +23,8 @@
     "import-html-entry": "^1.12.0",
     "tachometer": "^0.5.10"
   },
-  "files": [
-    "dist",
-    "src"
-  ]
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+  "files": ["dist", "src"]
 }

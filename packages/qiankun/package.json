@@ -28,10 +28,7 @@
     "type": "git",
     "url": "git+https://github.com/kuitos/qiankun.git"
   },
-  "files": [
-    "dist",
-    "src"
-  ],
+  "files": ["dist", "src"],
   "author": "Kuitos",
   "license": "MIT",
   "bugs": {
@@ -48,5 +45,8 @@
   },
   "devDependencies": {
     "@types/vfile-message": "1.x"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
   }
 }

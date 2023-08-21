@@ -1,4 +1,2 @@
 packages:
   - 'packages/*'
-  - 'examples/main'
-  - 'examples/react15'

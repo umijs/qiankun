@@ -10,10 +10,7 @@
     "build": "father build",
     "test": "cross-env NODE_ENV=test vitest --config ../../vitest.config.ts"
   },
-  "files": [
-    "dist",
-    "src"
-  ],
+  "files": ["dist", "src"],
   "author": "Kuitos",
   "license": "MIT",
   "dependencies": {
@@ -23,5 +20,8 @@
   },
   "devDependencies": {
     "globals": "^13.20.0"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
   }
 }
