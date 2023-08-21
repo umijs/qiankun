@@ -1,8 +1,8 @@
 ---
-'@qiankunjs/loader': prerelease alpha
-'qiankun': prerelease alpha
-'@qiankunjs/sandbox': prerelease alpha
-'@qiankunjs/shared': prerelease alpha
+'@qiankunjs/loader': prerelease
+'qiankun': prerelease
+'@qiankunjs/sandbox': prerelease
+'@qiankunjs/shared': prerelease
 ---
 
 Add Changeset
