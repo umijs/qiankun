@@ -1,5 +1,0 @@
----
-'qiankun': patch
----
-
-fix dependecies
