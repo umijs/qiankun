@@ -17,7 +17,7 @@
     "docs": "dumi dev",
     "build-docs": "dumi build",
     "ci": "pnpm run lint && pnpm run build && pnpm run test",
-    "ci:publish": "pnpm run build && pnpm publish -r --no-git-checks",
+    "ci:publish": "pnpm run build && changeset publish",
     "test": "cross-env NODE_ENV=test vitest",
     "prepare": "husky install"
   },

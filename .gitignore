@@ -20,3 +20,5 @@ package-lock.json
 .eslintcache
 .history
 .now
+.pnpm-store
+*.log
