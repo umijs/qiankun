@@ -1,5 +1,14 @@
 # @qiankunjs/loader
 
+## 0.0.1-alpha.2
+
+### Patch Changes
+
+- 33e65888: fix: changeset
+- Updated dependencies [33e65888]
+  - @qiankunjs/sandbox@0.0.1-alpha.2
+  - @qiankunjs/shared@0.0.1-alpha.2
+
 ## 0.0.1-alpha.1
 
 ### Patch Changes
