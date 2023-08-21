@@ -1,0 +1,11 @@
+{
+  "mode": "pre",
+  "tag": "alpha",
+  "initialVersions": {
+    "@qiankunjs/loader": "0.0.1-alpha.1",
+    "qiankun": "3.0.0-alpha.2",
+    "@qiankunjs/sandbox": "0.0.1-alpha.1",
+    "@qiankunjs/shared": "0.0.1-alpha.1"
+  },
+  "changesets": []
+}
