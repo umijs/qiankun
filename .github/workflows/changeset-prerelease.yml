@@ -1,10 +1,10 @@
 name: Changesets
+
 on:
   push:
     branches:
       - next
-env:
-  CI: true
+
 jobs:
   changelog:
     timeout-minutes: 15
@@ -15,10 +15,11 @@ jobs:
       - name: Setup PNPM
         uses: pnpm/action-setup@v2
 
-      - name: setup node.js
+      - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install
@@ -26,7 +27,8 @@ jobs:
       - name: Build Packages
         run: pnpm run build
 
-      - name: create and publish versions
+      - name: Create Release Pull Request or Publish
+        id: changesets
         uses: changesets/action@v1
         with:
           commit: "chore: update versions"
