@@ -40,7 +40,7 @@ export function getTargetValue(target: any, value: any): any {
 
     const boundValue = Function.prototype.bind.call(value, target);
 
-    // some callable function has custom fields, we need to copy the enumerable props to boundValue. such as moment function.
+    // some callable function has custom fields, we need to copy the own props to boundValue. such as moment function.
     Object.getOwnPropertyNames(value).forEach((key) => {
       // boundValue might be a proxy, we need to check the key whether exist in it
       if (!boundValue.hasOwnProperty(key)) {
