@@ -5,10 +5,7 @@
   "proseWrap": "never",
   "overrides": [
     {
-      "files": [
-        "*.json",
-        ".prettierrc"
-      ],
+      "files": ["*.json", ".prettierrc"],
       "options": {
         "parser": "json"
       }

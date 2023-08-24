@@ -42,8 +42,13 @@ export async function loadEntry(entry: Entry, container: HTMLElement, opts?: Imp
     void res.body
       .pipeThrough(new TextDecoderStream())
       .pipeTo(
-        new WritableDOMStream(container, null, (node) => {
-          const transformedNode = nodeTransformer(node, entry, { fetch, sandbox, moduleResolver });
+        new WritableDOMStream(container, null, (clone, node) => {
+          const transformedNode = nodeTransformer(clone, entry, {
+            fetch,
+            sandbox,
+            moduleResolver,
+            rawNode: (node as unknown) as Node,
+          }) as Node;
 
           const script = (transformedNode as unknown) as HTMLScriptElement;
           /*

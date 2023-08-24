@@ -163,7 +163,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
           const referenceNode = mountDOM.contains(refChild) ? refChild : null;
 
           // TODO paas fetch configuration and current entry url as baseURI
-          const node = transpileAssets(element, location.href, { fetch, sandbox });
+          const node = transpileAssets(element, location.href, { fetch, sandbox, rawNode: element });
 
           return rawDOMAppendOrInsertBefore.call(mountDOM, node, referenceNode);
         }
