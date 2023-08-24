@@ -74,6 +74,8 @@ export default function transpileScript(
       const code = scriptNode.textContent;
       if (code) {
         scriptNode.textContent = sandbox.makeEvaluateFactory(code, baseURI);
+        // mark the script have consumed
+        script.dataset.consumed = 'true';
         return script;
       }
     }

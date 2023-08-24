@@ -20,8 +20,21 @@ export function transpileAssets<T extends Node>(node: T, baseURI: string, opts: 
     }
 
     default:
-      return node;
+      break;
   }
+
+  // TODO need to deal with the text scenario of script
+  // const { nodeType } = node;
+  // switch (nodeType) {
+  //   case Node.TEXT_NODE: {
+  //     if (node.parentNode?.nodeName === 'script') {
+  //       break;
+  //     }
+  //     }
+  //
+  //   }
+  // }
+  return node;
 }
 
 export type { TransformerOpts };
