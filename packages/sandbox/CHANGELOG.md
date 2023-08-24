@@ -1,5 +1,14 @@
 # @qiankunjs/sandbox
 
+## 0.0.1-alpha.3
+
+### Patch Changes
+
+- daaa9ccc: ✨support code block in sandbox
+- Updated dependencies [e12d29ae]
+- Updated dependencies [daaa9ccc]
+  - @qiankunjs/shared@0.0.1-alpha.3
+
 ## 0.0.1-alpha.2
 
 ### Patch Changes
