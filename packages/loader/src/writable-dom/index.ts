@@ -37,15 +37,19 @@ type WritableDOM = {
   new (
     target: ParentNode,
     previousSibling?: ChildNode | null,
-    assetTransformer?: (node: Node) => Node,
+    assetTransformer?: (clone: Node, node: Node) => Node,
   ): WritableStream<string>;
-  (target: ParentNode, previousSibling?: ChildNode | null, assetTransformer?: (node: Node) => Node): Writable;
+  (
+    target: ParentNode,
+    previousSibling?: ChildNode | null,
+    assetTransformer?: (clone: Node, node: Node) => Node,
+  ): Writable;
 };
 function writableDOM(
   this: unknown,
   target: ParentNode,
   previousSibling?: ChildNode | null,
-  assetTransformer?: (node: Node) => Node,
+  assetTransformer?: <T extends Node>(clone: T, node: T) => T,
 ): Writable | WritableStream<string> {
   if (this instanceof writableDOM) {
     return new WritableStream(writableDOM(target, previousSibling, assetTransformer));
@@ -98,8 +102,7 @@ function writableDOM(
       while ((node = walker.nextNode())) {
         const link = getPreloadLink((scanNode = node));
         if (link) {
-          const transformedLink =
-            typeof assetTransformer === 'function' ? (assetTransformer(link) as HTMLLinkElement) : link;
+          const transformedLink = typeof assetTransformer === 'function' ? assetTransformer(link, link) : link;
           transformedLink.onload = transformedLink.onerror = () => target.removeChild(transformedLink);
           target.insertBefore(transformedLink, nextSibling);
         }
@@ -136,7 +139,7 @@ function writableDOM(
           inlineHostNode = null;
 
           if (typeof assetTransformer === 'function') {
-            clone = assetTransformer(clone);
+            clone = assetTransformer(clone, node);
           }
 
           if (parentNode === target) {

@@ -22,9 +22,11 @@ export default function transpileLink(link: HTMLLinkElement, baseURI: string, op
           type: 'application/javascript',
         }),
       );
-    } else {
-      link.href = getEntireUrl(hrefAttribute, baseURI);
+      return link;
     }
+
+    link.href = getEntireUrl(hrefAttribute, baseURI);
+    return link;
   }
 
   return link;
