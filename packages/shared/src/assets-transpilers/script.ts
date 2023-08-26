@@ -3,16 +3,19 @@
  * @since 2023-03-16
  */
 
-import type { Sandbox } from '@qiankunjs/sandbox';
-import type { MatchResult } from '../common';
+import type { MatchResult } from '../module-resolver';
 import { getEntireUrl } from '../utils';
+import type { AssetsTranspilerOpts } from './types';
 
-export type TransformerOpts = {
-  fetch: typeof window.fetch;
-  sandbox?: Sandbox;
-  moduleResolver?: (url: string) => MatchResult | undefined;
-  rawNode: Node;
-};
+declare global {
+  interface HTMLScriptElement {
+    fetchpriority?: 'high' | 'low';
+  }
+
+  interface RequestInit {
+    priority?: 'high' | 'low';
+  }
+}
 
 const isValidJavaScriptType = (type?: string): boolean => {
   const handleTypes = [
@@ -25,68 +28,144 @@ const isValidJavaScriptType = (type?: string): boolean => {
   return !type || handleTypes.indexOf(type) !== -1;
 };
 
+const getCredentials = (crossOrigin: string | null): RequestInit['credentials'] | undefined => {
+  switch (crossOrigin) {
+    case 'anonymous':
+      return 'same-origin';
+    case 'use-credentials':
+      return 'include';
+    default:
+      return undefined;
+  }
+};
+
+type PreTranspileResult =
+  | { mode: 'remote'; result: { src: string } }
+  | { mode: 'cache'; result: { src: string } & MatchResult }
+  | { mode: 'inline'; result: { code: string } }
+  | { mode: 'none'; result?: never };
+
+export const preTranspile = (
+  script: Partial<Pick<HTMLScriptElement, 'src' | 'type' | 'textContent'>>,
+  baseURI: string,
+  opts: AssetsTranspilerOpts,
+): PreTranspileResult => {
+  const { sandbox, moduleResolver } = opts;
+
+  const { src, type } = script;
+
+  if (sandbox) {
+    if (src) {
+      const entireUrl = getEntireUrl(src, baseURI);
+      const matchedScript = moduleResolver?.(entireUrl);
+      if (matchedScript) {
+        return {
+          mode: 'cache',
+          result: { src: entireUrl, ...matchedScript },
+        };
+      }
+
+      return {
+        mode: 'remote',
+        result: { src: entireUrl },
+      };
+    }
+
+    if (isValidJavaScriptType(type)) {
+      const rawNode = opts.rawNode as HTMLScriptElement;
+      const scriptNode = script.textContent ? script : rawNode.childNodes[0];
+
+      const code = scriptNode.textContent;
+      if (code) {
+        return {
+          mode: 'inline',
+          result: {
+            code,
+          },
+        };
+      }
+    }
+  }
+
+  return { mode: 'none' };
+};
+
 export default function transpileScript(
   script: HTMLScriptElement,
   baseURI: string,
-  opts: TransformerOpts,
+  opts: AssetsTranspilerOpts,
 ): HTMLScriptElement {
   // Can't use script.src directly, because it will be resolved to absolute path by browser with Node.baseURI
   // Such as <script src="./foo.js"></script> will be resolved to http://localhost:8000/foo.js while read script.src
   const srcAttribute = script.getAttribute('src');
-  const { sandbox, moduleResolver } = opts;
+  const { sandbox, fetch } = opts;
 
-  if (sandbox) {
-    if (srcAttribute) {
+  const { mode, result } = preTranspile(
+    {
+      src: srcAttribute || undefined,
+      type: script.type,
+      textContent: script.textContent,
+    },
+    baseURI,
+    opts,
+  );
+
+  switch (mode) {
+    case 'remote': {
+      const { src } = result;
+
+      // We must remove script src to avoid self execution as we need to fetch the script content and transpile it
       script.removeAttribute('src');
+      script.dataset.src = src;
 
-      const scriptSrc = getEntireUrl(srcAttribute, baseURI);
-
-      // try to resolve the script from module resolver
-      const matchedScript = moduleResolver?.(srcAttribute);
-      if (matchedScript) {
-        const { url, version } = matchedScript;
-        script.dataset.src = scriptSrc;
-        script.dataset.version = version;
-        // When the script hits the dependency reuse logic, the current script is not executed, and an empty script is returned directly
-        script.src = URL.createObjectURL(
-          new Blob([`// ${srcAttribute} has reused the execution result of ${url}`], {
-            type: 'application/javascript',
-          }),
-        );
-        return script;
-      }
-
-      script.dataset.src = scriptSrc;
-
-      const { fetch } = opts;
-      void fetch(scriptSrc)
+      const credentials = getCredentials(script.crossOrigin);
+      void fetch(src, { credentials })
         .then((res) => res.text())
         .then((code) => {
-          const codeFactory = sandbox.makeEvaluateFactory(code, scriptSrc);
-          script.src = URL.createObjectURL(new Blob([codeFactory], { type: 'application/javascript' }));
+          const codeFactory = sandbox!.makeEvaluateFactory(code, src);
+          script.src = URL.createObjectURL(new Blob([codeFactory], { type: 'text/javascript' }));
         });
+
       return script;
     }
 
-    if (isValidJavaScriptType(script.type)) {
+    case 'inline': {
       const rawNode = opts.rawNode as HTMLScriptElement;
       const scriptNode = script.textContent ? script : rawNode.childNodes[0];
-      const code = scriptNode.textContent;
-      if (code) {
-        scriptNode.textContent = sandbox.makeEvaluateFactory(code, baseURI);
-        // mark the script have consumed
-        script.dataset.consumed = 'true';
+      const { code } = result;
+
+      scriptNode.textContent = sandbox!.makeEvaluateFactory(code, baseURI);
+      // mark the script have consumed
+      script.dataset.consumed = 'true';
+
+      return script;
+    }
+
+    case 'cache': {
+      const { url, version, src } = result;
+
+      script.dataset.src = src;
+      script.dataset.version = version;
+      // When the script hits the dependency reuse logic, the current script is not executed, and an empty script is returned directly
+      script.src = URL.createObjectURL(
+        new Blob([`// ${src} has reused the execution result of ${url}`], {
+          type: 'text/javascript',
+        }),
+      );
+
+      return script;
+    }
+
+    case 'none':
+    default: {
+      if (srcAttribute) {
+        script.src = getEntireUrl(srcAttribute, baseURI);
         return script;
       }
+
+      return script;
     }
   }
-
-  if (srcAttribute) {
-    script.src = getEntireUrl(srcAttribute, baseURI);
-    return script;
-  }
-
-  return script;
 
   // TODO find entry exports
 }

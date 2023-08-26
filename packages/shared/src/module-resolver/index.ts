@@ -1,5 +1,5 @@
-import type { MatchResult } from '../common';
 import satisfies from 'semver/functions/satisfies';
+import type { MatchResult } from './types';
 
 type Dependency = {
   url: string;
@@ -65,3 +65,4 @@ function normalizeDependencies(dependencies: DependencyMap['dependencies']): Nor
     ...dependencies[name],
   }));
 }
+export type { MatchResult } from './types';

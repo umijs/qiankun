@@ -3,10 +3,10 @@
  * @since 2023-03-14
  */
 import transpileLink from './link';
-import type { TransformerOpts } from './script';
 import transpileScript from './script';
+import type { AssetsTranspilerOpts } from './types';
 
-export function transpileAssets<T extends Node>(node: T, baseURI: string, opts: TransformerOpts): T {
+export function transpileAssets<T extends Node>(node: T, baseURI: string, opts: AssetsTranspilerOpts): T {
   const htmlElement = (node as unknown) as HTMLElement;
   const { tagName } = htmlElement;
 
@@ -37,4 +37,4 @@ export function transpileAssets<T extends Node>(node: T, baseURI: string, opts: 
   return node;
 }
 
-export type { TransformerOpts };
+export type * from './types';
