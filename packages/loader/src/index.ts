@@ -1,4 +1,4 @@
-import type { TransformerOpts } from '@qiankunjs/shared';
+import type { BaseTranspilerOpts } from '@qiankunjs/shared';
 import { moduleResolver as defaultModuleResolver, transpileAssets } from '@qiankunjs/shared';
 import { Deferred } from './utils';
 import WritableDOMStream from './writable-dom';
@@ -17,7 +17,7 @@ type Entry = HTMLEntry;
 type ImportOpts = {
   decoder?: (chunk: string) => string;
   nodeTransformer?: typeof transpileAssets;
-} & TransformerOpts;
+} & BaseTranspilerOpts;
 
 /**
  * @param entry
@@ -48,7 +48,7 @@ export async function loadEntry(entry: Entry, container: HTMLElement, opts?: Imp
             sandbox,
             moduleResolver,
             rawNode: (node as unknown) as Node,
-          }) as Node;
+          });
 
           const script = (transformedNode as unknown) as HTMLScriptElement;
           /*
