@@ -55,7 +55,7 @@ export default async function <T extends ObjectType>(
   await loadEntry(entry, container, { fetch, sandbox: sandboxInstance });
 
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
-    {},
+    ({} as unknown) as MicroAppLifeCycles,
     appName,
     global,
     sandboxInstance?.latestSetProp,
