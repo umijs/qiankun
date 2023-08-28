@@ -108,15 +108,20 @@ export default function transpileScript(
       script.removeAttribute('src');
       script.dataset.src = src;
 
+      const syncMode = !script.getAttribute('async');
+      const priority: Priority = syncMode ? 'high' : 'low';
       const credentials = getCredentials(script.crossOrigin);
-      void fetch(src, { credentials })
+
+      void fetch(src, { credentials, priority })
         .then((res) => res.text())
         .then((code) => {
           const codeFactory = sandbox!.makeEvaluateFactory(code, src);
+
           // HTMLScriptElement default fetchPriority is 'auto', we should set it to 'high' to make it execute earlier while it's not async script
-          if (!script.getAttribute('async')) {
+          if (syncMode) {
             script.fetchPriority = 'high';
           }
+
           script.src = URL.createObjectURL(new Blob([codeFactory], { type: 'text/javascript' }));
         });
 
@@ -140,10 +145,13 @@ export default function transpileScript(
 
       script.dataset.src = src;
       script.dataset.version = version;
+
+      const syncMode = !script.getAttribute('async');
       // HTMLScriptElement default fetchPriority is 'auto', we should set it to 'high' to make it execute earlier while it's not async script
-      if (!script.getAttribute('async')) {
+      if (syncMode) {
         script.fetchPriority = 'high';
       }
+
       // When the script hits the dependency reuse logic, the current script is not executed, and an empty script is returned directly
       script.src = URL.createObjectURL(
         new Blob([`// ${src} is reusing the execution result of ${url}`], {
