@@ -40,7 +40,7 @@ const preTranspile = (
  * thus we need to set the attribute `as` to fetch instead of script or style to avoid preload cache missing.
  * see https://stackoverflow.com/questions/52635660/can-link-rel-preload-be-made-to-work-with-fetch/63814972#63814972
  */
-const trySetPreloadAsFetch = (link: HTMLLinkElement, baseURI: string, opts: AssetsTranspilerOpts): void => {
+const postProcessPreloadLink = (link: HTMLLinkElement, baseURI: string, opts: AssetsTranspilerOpts): void => {
   const { as, href } = link;
 
   const revokeAfterLoaded = (objectURL: string, link: HTMLLinkElement) => {
@@ -60,7 +60,7 @@ const trySetPreloadAsFetch = (link: HTMLLinkElement, baseURI: string, opts: Asse
       if (mode === 'cache') {
         const { url } = result;
         const objectURL = URL.createObjectURL(
-          new Blob([`// ${href} has reused the execution result of ${url}`], {
+          new Blob([`// ${href} is reusing the execution result of ${url}`], {
             type: 'text/javascript',
           }),
         );
@@ -77,7 +77,7 @@ const trySetPreloadAsFetch = (link: HTMLLinkElement, baseURI: string, opts: Asse
       if (mode === 'cache') {
         const { url } = result;
         const objectURL = URL.createObjectURL(
-          new Blob([`// ${href} has reused the execution result of ${url}`], {
+          new Blob([`// ${href} is reusing the execution result of ${url}`], {
             type: 'text/css',
           }),
         );
@@ -113,7 +113,7 @@ export default function transpileLink(
       link.dataset.href = src;
       link.dataset.version = version;
       link.href = URL.createObjectURL(
-        new Blob([`// ${src} has reused the execution result of ${url}`], {
+        new Blob([`// ${src} is reusing the execution result of ${url}`], {
           type: 'text/css',
         }),
       );
@@ -127,7 +127,7 @@ export default function transpileLink(
         link.href = getEntireUrl(hrefAttribute, baseURI);
 
         if (link.rel === 'preload') {
-          trySetPreloadAsFetch(link, baseURI, opts);
+          postProcessPreloadLink(link, baseURI, opts);
         }
 
         return link;

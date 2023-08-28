@@ -7,16 +7,6 @@ import type { MatchResult } from '../module-resolver';
 import { getEntireUrl } from '../utils';
 import type { AssetsTranspilerOpts } from './types';
 
-declare global {
-  interface HTMLScriptElement {
-    fetchpriority?: 'high' | 'low';
-  }
-
-  interface RequestInit {
-    priority?: 'high' | 'low';
-  }
-}
-
 const isValidJavaScriptType = (type?: string): boolean => {
   const handleTypes = [
     'text/javascript',
@@ -123,6 +113,10 @@ export default function transpileScript(
         .then((res) => res.text())
         .then((code) => {
           const codeFactory = sandbox!.makeEvaluateFactory(code, src);
+          // HTMLScriptElement default fetchPriority is 'auto', we should set it to 'high' to make it execute earlier while it's not async script
+          if (!script.getAttribute('async')) {
+            script.fetchPriority = 'high';
+          }
           script.src = URL.createObjectURL(new Blob([codeFactory], { type: 'text/javascript' }));
         });
 
@@ -146,9 +140,13 @@ export default function transpileScript(
 
       script.dataset.src = src;
       script.dataset.version = version;
+      // HTMLScriptElement default fetchPriority is 'auto', we should set it to 'high' to make it execute earlier while it's not async script
+      if (!script.getAttribute('async')) {
+        script.fetchPriority = 'high';
+      }
       // When the script hits the dependency reuse logic, the current script is not executed, and an empty script is returned directly
       script.src = URL.createObjectURL(
-        new Blob([`// ${src} has reused the execution result of ${url}`], {
+        new Blob([`// ${src} is reusing the execution result of ${url}`], {
           type: 'text/javascript',
         }),
       );
