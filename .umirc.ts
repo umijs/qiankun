@@ -71,23 +71,4 @@ export default defineConfig({
       text-shadow: 0 2px 5px rgba(0,0,0,.3);
     }`,
   ],
-  hire: {
-    title: '蚂蚁体验技术部正寻觅前端',
-    content: `
-<p><strong>招聘团队：</strong>蚂蚁体验技术部（玉伯）- 平台前端技术部（偏右）</p>
-<p><strong>招聘层级：</strong>P5 ~ P8</p>
-<p><strong>\u3000技术栈：</strong>不限</p>
-<p><strong>工作城市：</strong>杭州、上海、成都</p>
-<p><strong>面试效率：</strong>一周面完</p>
-<p><strong>团队作品：</strong></p>
-<ul>
-  <li>Ant Design · 西湖区最流行的设计语言</li>
-  <li>Umi · 企业级前端开发框架</li>
-  <li>dumi · React 组件研发工具</li>
-  <li>qiankun · 微前端星星最多的库</li>
-  <li>ahooks · React Hooks 库</li>
-</ul>`,
-    email: 'youzhi.lk@antgroup.com',
-    slogan: '在寻找心仪的工作吗？',
-  },
 });
