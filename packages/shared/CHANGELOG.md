@@ -4,7 +4,8 @@
 
 ### Patch Changes
 
-- 62d3b482: 🏷️ fix typings temporary ⚡️ support preload with dependencies reusing
+- 62d3b482: 🏷️ fix typings temporary 
+- ⚡️ support preload with dependencies reusing
   - @qiankunjs/sandbox@0.0.1-alpha.4
 
 ## 0.0.1-alpha.3
