@@ -6,7 +6,7 @@
     "declaration": true,
     "outDir": "./esm",
     "rootDir": "./",
-    "importHelpers": true,
+    "importHelpers": false,
     "downlevelIteration": true,
     "strict": true,
     "noImplicitAny": true,
