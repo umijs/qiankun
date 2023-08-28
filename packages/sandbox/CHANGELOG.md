@@ -1,5 +1,12 @@
 # @qiankunjs/sandbox
 
+## 0.0.1-alpha.4
+
+### Patch Changes
+
+- Updated dependencies [62d3b482]
+  - @qiankunjs/shared@0.0.1-alpha.4
+
 ## 0.0.1-alpha.3
 
 ### Patch Changes

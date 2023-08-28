@@ -1,5 +1,16 @@
 # qiankun
 
+## 3.0.0-alpha.5
+
+### Patch Changes
+
+- 62d3b482: 🏷️ fix typings temporary 
+- ⚡️ support preload with dependencies reusing
+- Updated dependencies [62d3b482]
+  - @qiankunjs/shared@0.0.1-alpha.4
+  - @qiankunjs/loader@0.0.1-alpha.4
+  - @qiankunjs/sandbox@0.0.1-alpha.4
+
 ## 3.0.0-alpha.4
 
 ### Patch Changes
