@@ -108,7 +108,7 @@ export default function transpileScript(
       script.removeAttribute('src');
       script.dataset.src = src;
 
-      const syncMode = !script.getAttribute('async');
+      const syncMode = !script.hasAttribute('async');
       const priority: Priority = syncMode ? 'high' : 'low';
       const credentials = getCredentials(script.crossOrigin);
 
