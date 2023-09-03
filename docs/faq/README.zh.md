@@ -30,9 +30,18 @@ qiankun 抛出这个错误是因为无法从微应用的 entry js 中识别出�
 
 6. 如果开发环境可以，生产环境不行，检查微应用的 `index.html` 和 `entry js` 是否正常返回，比如说返回了 `404.html`。
 
-7. 如果你正在使用 webpack5，请看[这个 issues](https://github.com/umijs/qiankun/issues/1092)。
+7. 如果你正在使用 webpack5，但没用使用模块联邦，请看[这个 issues](https://github.com/umijs/qiankun/issues/1092)。
+   
+8. 如果你正在使用 webpack5，并且使用了使用模块联邦。需要在 index 文件中暴露生命周期函数，然后在 bootstrap 文件向外暴露生命周期函数。 [issues](https://github.com/umijs/qiankun/issues/2256)。
+   
+  ```js
+  const promise = import("index");
+  export const bootstrap = () => promise.then(m => m.boostrap());
+  export const mount = () => promise.then(m => m.mount());
+  export const unmount = () => promise.then(m => m.unmount());
+  ```
 
-8. 检查主应用和微应用是否使用了 AMD 或 CommonJS 模块化。检查方法：单独运行微应用和主应用，在控制台输入如下代码：`(typeof exports === 'object' && typeof module === 'object') || (typeof define === 'function' && define.amd) || typeof exports === 'object'`，如果返回 `true`，则说明是这种情况，主要有以下两个解决办法：
+9.  检查主应用和微应用是否使用了 AMD 或 CommonJS 模块化。检查方法：单独运行微应用和主应用，在控制台输入如下代码：`(typeof exports === 'object' && typeof module === 'object') || (typeof define === 'function' && define.amd) || typeof exports === 'object'`，如果返回 `true`，则说明是这种情况，主要有以下两个解决办法：
 
     - 解决办法1：修改微应用 `webpack` 的 `libraryTarget` 为 `'window'` 。
 
@@ -50,7 +59,7 @@ qiankun 抛出这个错误是因为无法从微应用的 entry js 中识别出�
     - 解决办法2：微应用不打包成 umd ，直接在入口文件把生命周期函数挂载到 window 上，参考[非 webpack 构建的微应用](/zh/guide/tutorial#非-webpack-构建的微应用)。
 
 
-9.  如果在上述步骤完成后仍有问题，通常说明是浏览器兼容性问题导致的。可以尝试 **将有问题的微应用的 webpack `output.library` 配置成跟主应用中注册的 `name` 字段一致**，如：
+10.  如果在上述步骤完成后仍有问题，通常说明是浏览器兼容性问题导致的。可以尝试 **将有问题的微应用的 webpack `output.library` 配置成跟主应用中注册的 `name` 字段一致**，如：
 
 假如主应用配置是这样的：
 
