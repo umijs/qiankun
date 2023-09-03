@@ -32,7 +32,7 @@ To solve the exception, try the following steps:
 
 7. If you're using webpack5, please see [here](https://github.com/umijs/qiankun/issues/1092) 
 
-8. If you are using webpack5 and using module federation. You need to expose the life cycle function in the index file, and then expose the life cycle function externally in the bootstrap file. [issues](https://github.com/umijs/qiankun/issues/2256)。
+8. If you are using webpack5 and using module federation, you need to expose the life cycle function in the index file, and then expose the life cycle function externally in the bootstrap file.
    
   ```js
   const promise = import("index");
