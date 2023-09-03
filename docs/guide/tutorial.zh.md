@@ -131,7 +131,8 @@ start();
      webpack: (config) => {
        config.output.library = `${name}-[name]`;
        config.output.libraryTarget = 'umd';
-       config.output.jsonpFunction = `webpackJsonp_${name}`;
+       // webpack 5 需要把 jsonpFunction 替换成 chunkLoadingGlobal
+       config.output.jsonpFunction = `webpackJsonp_${name}`; 
        config.output.globalObject = 'window';
 
        return config;
@@ -240,7 +241,7 @@ start();
        output: {
          library: `${name}-[name]`,
          libraryTarget: 'umd', // 把微应用打包成 umd 库格式
-         jsonpFunction: `webpackJsonp_${name}`,
+         jsonpFunction: `webpackJsonp_${name}`, // webpack 5 需要把 jsonpFunction 替换成 chunkLoadingGlobal
        },
      },
    };
@@ -331,7 +332,7 @@ start();
      output: {
        library: `${appName}-[name]`,
        libraryTarget: 'umd',
-       jsonpFunction: `webpackJsonp_${appName}`,
+       jsonpFunction: `webpackJsonp_${appName}`, // webpack 5 需要把 jsonpFunction 替换成 chunkLoadingGlobal
      },
    };
    ```
