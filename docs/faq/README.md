@@ -30,7 +30,7 @@ To solve the exception, try the following steps:
 
 6. If the development environment is OK but the production environment is not, check whether the `index.html` and `entry js` of the micro app are returned normally, for example, `404.html` is returned.
 
-7. If you're using webpack5, please see [here](https://github.com/umijs/qiankun/issues/1092) 
+7. If you're using webpack5 and not using module federation, please see [here](https://github.com/umijs/qiankun/issues/1092#issuecomment-1109673224) 
 
 8. If you are using webpack5 and using module federation, you need to expose the life cycle function in the index file, and then expose the life cycle function externally in the bootstrap file.
    
