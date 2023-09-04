@@ -1,10 +1,17 @@
 import satisfies from 'semver/functions/satisfies';
 import type { MatchResult } from './types';
 
+declare global {
+  interface HTMLElement {
+    __cached_deps__?: string[];
+  }
+}
+
 type Dependency = {
   url: string;
   version: string;
   range: string;
+  peerDeps?: string[];
 };
 
 type NormalizedDependency = {
@@ -14,6 +21,8 @@ type NormalizedDependency = {
 type DependencyMap = {
   dependencies: Record<string, Dependency>;
 };
+
+export type { MatchResult } from './types';
 
 export function moduleResolver(
   url: string,
@@ -29,11 +38,21 @@ export function moduleResolver(
     const microAppDependency = normalizedDependencies.find((v) => v.url === url);
 
     if (microAppDependency) {
-      const mainDependencyMapString = mainAppContainer.querySelector(dependencyMapSelector)?.innerHTML;
+      const mainAppDependencyMapString = mainAppContainer.querySelector(dependencyMapSelector)?.innerHTML;
 
-      if (mainDependencyMapString) {
-        const mainDependencyMap = JSON.parse(mainDependencyMapString) as DependencyMap;
-        return findDependency(microAppDependency, normalizeDependencies(mainDependencyMap.dependencies));
+      if (mainAppDependencyMapString) {
+        const mainAppDependencyMap = JSON.parse(mainAppDependencyMapString) as DependencyMap;
+        const cachedDeps = (microAppContainer.__cached_deps__ ??= []);
+        const matchedDep = findDependency(
+          microAppDependency,
+          normalizeDependencies(mainAppDependencyMap.dependencies),
+          cachedDeps,
+        );
+
+        if (matchedDep) {
+          cachedDeps.push(matchedDep.name);
+          return matchedDep;
+        }
       }
     }
   }
@@ -43,14 +62,20 @@ export function moduleResolver(
 
 function findDependency(
   dependency: NormalizedDependency,
-  cachedDependencies: NormalizedDependency[],
+  mainAppDependencies: NormalizedDependency[],
+  cachedDependencies: string[],
 ): MatchResult | undefined {
-  const matched = cachedDependencies.find(
+  const matched = mainAppDependencies.find(
     (cachedDependency) =>
-      cachedDependency.name === dependency.name && satisfies(cachedDependency.version, dependency.range),
+      cachedDependency.name === dependency.name &&
+      satisfies(cachedDependency.version, dependency.range) &&
+      // peer dependencies must be cached before
+      dependency.peerDeps?.every((peerDep) => cachedDependencies.indexOf(peerDep) !== -1),
   );
+
   if (matched) {
     return {
+      name: matched.name,
       version: matched.version,
       url: matched.url,
     };
@@ -65,4 +90,3 @@ function normalizeDependencies(dependencies: DependencyMap['dependencies']): Nor
     ...dependencies[name],
   }));
 }
-export type { MatchResult } from './types';
