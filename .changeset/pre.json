@@ -8,8 +8,11 @@
     "@qiankunjs/shared": "0.0.1-alpha.1"
   },
   "changesets": [
+    "chilled-flies-raise",
     "forty-papayas-buy",
     "hip-dryers-study",
+    "itchy-beds-cry",
+    "purple-waves-end",
     "twelve-cows-whisper",
     "yellow-spies-punch"
   ]
