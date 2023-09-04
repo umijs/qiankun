@@ -1,6 +1,6 @@
 {
   "mode": "pre",
-  "tag": "alpha",
+  "tag": "beta",
   "initialVersions": {
     "@qiankunjs/loader": "0.0.1-alpha.1",
     "qiankun": "3.0.0-alpha.2",
