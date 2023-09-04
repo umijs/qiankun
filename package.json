@@ -36,7 +36,7 @@
     "father": "^4.3.1",
     "husky": "^8.0.3",
     "lint-staged": "^9.4.2",
-    "prettier": "^2.1.2",
+    "prettier": "^3.0.3",
     "typescript": "^5.1.6",
     "vitest": "^0.34.1"
   },
