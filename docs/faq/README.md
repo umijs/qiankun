@@ -30,9 +30,18 @@ To solve the exception, try the following steps:
 
 6. If the development environment is OK but the production environment is not, check whether the `index.html` and `entry js` of the micro app are returned normally, for example, `404.html` is returned.
 
-7. If you're using webpack5, please see [here](https://github.com/umijs/qiankun/issues/1092) 
+7. If you're using webpack5 and not using module federation, please see [here](https://github.com/umijs/qiankun/issues/1092#issuecomment-1109673224) 
 
-8. Check whether the main app and micro-app use AMD or CommonJS. Check method: run the main app and the micro-app independently, and enter the following code in the console: `(typeof exports === 'object' && typeof module === 'object') || (typeof define === 'function' && define.amd) || typeof exports === 'object'`，If it returns `true`，that it is caused by this reason, and there are mainly the following two solutions:
+8. If you are using webpack5 and using module federation, you need to expose the life cycle function in the index file, and then expose the life cycle function externally in the bootstrap file.
+   
+  ```js
+  const promise = import("index");
+  export const bootstrap = () => promise.then(m => m.boostrap());
+  export const mount = () => promise.then(m => m.mount());
+  export const unmount = () => promise.then(m => m.unmount());
+  ```
+
+9. Check whether the main app and micro-app use AMD or CommonJS. Check method: run the main app and the micro-app independently, and enter the following code in the console: `(typeof exports === 'object' && typeof module === 'object') || (typeof define === 'function' && define.amd) || typeof exports === 'object'`，If it returns `true`，that it is caused by this reason, and there are mainly the following two solutions:
 
     - Solution 1: Modify the `libraryTarget` of the micro-app `webpack` to `'window'`.
 
@@ -49,7 +58,7 @@ To solve the exception, try the following steps:
     ```
     - Solution 2: The micro-app is not bundle with `umd`, directly mount the life cycle function to the `window` in the entry file, refer to[Micro app built without webpack](/guide/tutorial#micro-app-built-without-webpack).
  
-9. If it still not works after the steps above, this is usually due to browser compatibility issues. Try to **set the webpack `output.library` of the broken sub app the same with your main app registration for your app**, such as:
+10. If it still not works after the steps above, this is usually due to browser compatibility issues. Try to **set the webpack `output.library` of the broken sub app the same with your main app registration for your app**, such as:
 
 Such as here is the main configuration:
 
