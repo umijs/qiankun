@@ -2,10 +2,10 @@
   "mode": "pre",
   "tag": "beta",
   "initialVersions": {
-    "@qiankunjs/loader": "0.0.1-beta.0",
-    "qiankun": "3.0.0-beta.0",
-    "@qiankunjs/sandbox": "0.0.1-beta.0",
-    "@qiankunjs/shared": "0.0.1-beta.0"
+    "@qiankunjs/loader": "0.0.1",
+    "qiankun": "3.0.0",
+    "@qiankunjs/sandbox": "0.0.1",
+    "@qiankunjs/shared": "0.0.1"
   },
   "changesets": [
     "chilled-flies-raise",
