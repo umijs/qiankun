@@ -36,7 +36,7 @@ qiankun 抛出这个错误是因为无法从微应用的 entry js 中识别出�
    
   ```js
   const promise = import("index");
-  export const bootstrap = () => promise.then(m => m.boostrap());
+  export const bootstrap = () => promise.then(m => m.bootstrap());
   export const mount = () => promise.then(m => m.mount());
   export const unmount = () => promise.then(m => m.unmount());
   ```
