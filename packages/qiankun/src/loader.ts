@@ -14,7 +14,7 @@ import { performanceGetEntriesByName, performanceMark, performanceMeasure, toArr
 
 export type ParcelConfigObjectGetter = (remountContainer?: HTMLElement) => ParcelConfigObject;
 
-export default async function <T extends ObjectType>(
+export default async function load<T extends ObjectType>(
   app: LoadableApp<T>,
   configuration?: AppConfiguration,
   lifeCycles?: LifeCycles<T>,
@@ -32,6 +32,8 @@ export default async function <T extends ObjectType>(
   let unmountSandbox = () => Promise.resolve();
   let sandboxInstance: Sandbox | undefined;
 
+  preprocessContainer(container);
+
   if (sandbox) {
     const sandboxContainer = createSandboxContainer(appName, () => container, { globalContext, extraGlobals: {} });
 
@@ -43,19 +45,22 @@ export default async function <T extends ObjectType>(
   }
 
   const assetPublicPath = calcPublicPath(entry);
-  const { beforeUnmount = [], afterUnmount = [], afterMount = [], beforeMount = [], beforeLoad = [] } = mergeWith(
-    {},
-    getAddOns(global, assetPublicPath),
-    lifeCycles,
-    (v1, v2) => concat((v1 ?? []) as LifeCycleFn<T>, (v2 ?? []) as LifeCycleFn<T>),
+  const {
+    beforeUnmount = [],
+    afterUnmount = [],
+    afterMount = [],
+    beforeMount = [],
+    beforeLoad = [],
+  } = mergeWith({}, getAddOns(global, assetPublicPath), lifeCycles, (v1, v2) =>
+    concat((v1 ?? []) as LifeCycleFn<T>, (v2 ?? []) as LifeCycleFn<T>),
   );
 
   await execHooksChain(toArray(beforeLoad), app, global);
 
-  await loadEntry(entry, container, { fetch, sandbox: sandboxInstance });
+  const lifecycles = await loadEntry<MicroAppLifeCycles>(entry, container, { fetch, sandbox: sandboxInstance });
 
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
-    ({} as unknown) as MicroAppLifeCycles,
+    lifecycles,
     appName,
     global,
     sandboxInstance?.latestSetProp,
@@ -113,6 +118,16 @@ export default async function <T extends ObjectType>(
   return parcelConfigGetter;
 }
 
+function preprocessContainer(container: HTMLElement) {
+  if (!container) {
+    throw new QiankunError('container is not existed');
+  }
+
+  while (container.firstChild) {
+    container.removeChild(container.firstChild);
+  }
+}
+
 function execHooksChain<T extends ObjectType>(
   hooks: Array<LifeCycleFn<T>>,
   app: LoadableApp<T>,
@@ -142,7 +157,7 @@ function getLifecyclesFromExports(
 
   // fallback to sandbox latest set property if it had
   if (globalLatestSetProp) {
-    const lifecycles = ((globalContext as unknown) as ObjectType)[globalLatestSetProp as never] as MicroAppLifeCycles;
+    const lifecycles = (globalContext as unknown as ObjectType)[globalLatestSetProp as never] as MicroAppLifeCycles;
     if (validateExportLifecycle(lifecycles)) {
       return lifecycles;
     }
@@ -155,7 +170,7 @@ function getLifecyclesFromExports(
   }
 
   // fallback to globalContext variable who named with ${appName} while module exports not found
-  const globalVariableExports = ((globalContext as unknown) as ObjectType)[appName as never] as MicroAppLifeCycles;
+  const globalVariableExports = (globalContext as unknown as ObjectType)[appName as never] as MicroAppLifeCycles;
 
   if (validateExportLifecycle(globalVariableExports)) {
     return globalVariableExports;

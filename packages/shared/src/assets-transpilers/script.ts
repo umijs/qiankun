@@ -6,6 +6,7 @@
 import type { MatchResult } from '../module-resolver';
 import { getEntireUrl } from '../utils';
 import type { AssetsTranspilerOpts } from './types';
+import { Mode } from './types';
 
 const isValidJavaScriptType = (type?: string): boolean => {
   const handleTypes = [
@@ -30,10 +31,10 @@ const getCredentials = (crossOrigin: string | null): RequestInit['credentials'] 
 };
 
 type PreTranspileResult =
-  | { mode: 'remote'; result: { src: string } }
-  | { mode: 'cache'; result: { src: string } & MatchResult }
-  | { mode: 'inline'; result: { code: string } }
-  | { mode: 'none'; result?: never };
+  | { mode: Mode.REMOTE_FROM_SANDBOX; result: { src: string } }
+  | { mode: Mode.CACHE_FROM_SANDBOX; result: { src: string } & MatchResult }
+  | { mode: Mode.INLINE_FROM_SANDBOX; result: { code: string } }
+  | { mode: Mode.NONE; result?: never };
 
 export const preTranspile = (
   script: Partial<Pick<HTMLScriptElement, 'src' | 'type' | 'textContent'>>,
@@ -50,13 +51,13 @@ export const preTranspile = (
       const matchedScript = moduleResolver?.(entireUrl);
       if (matchedScript) {
         return {
-          mode: 'cache',
+          mode: Mode.CACHE_FROM_SANDBOX,
           result: { src: entireUrl, ...matchedScript },
         };
       }
 
       return {
-        mode: 'remote',
+        mode: Mode.REMOTE_FROM_SANDBOX,
         result: { src: entireUrl },
       };
     }
@@ -68,7 +69,7 @@ export const preTranspile = (
       const code = scriptNode.textContent;
       if (code) {
         return {
-          mode: 'inline',
+          mode: Mode.INLINE_FROM_SANDBOX,
           result: {
             code,
           },
@@ -77,7 +78,7 @@ export const preTranspile = (
     }
   }
 
-  return { mode: 'none' };
+  return { mode: Mode.NONE };
 };
 
 export default function transpileScript(
@@ -101,7 +102,7 @@ export default function transpileScript(
   );
 
   switch (mode) {
-    case 'remote': {
+    case Mode.REMOTE_FROM_SANDBOX: {
       const { src } = result;
 
       // We must remove script src to avoid self execution as we need to fetch the script content and transpile it
@@ -128,7 +129,7 @@ export default function transpileScript(
       return script;
     }
 
-    case 'inline': {
+    case Mode.INLINE_FROM_SANDBOX: {
       const rawNode = opts.rawNode as HTMLScriptElement;
       const scriptNode = script.textContent ? script : rawNode.childNodes[0];
       const { code } = result;
@@ -140,7 +141,7 @@ export default function transpileScript(
       return script;
     }
 
-    case 'cache': {
+    case Mode.CACHE_FROM_SANDBOX: {
       const { url, version, src } = result;
 
       script.dataset.src = src;
@@ -162,7 +163,7 @@ export default function transpileScript(
       return script;
     }
 
-    case 'none':
+    case Mode.NONE:
     default: {
       if (srcAttribute) {
         script.src = getEntireUrl(srcAttribute, baseURI);

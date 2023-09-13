@@ -1,5 +1,6 @@
 import type { BaseTranspilerOpts } from '@qiankunjs/shared';
-import { moduleResolver as defaultModuleResolver, transpileAssets } from '@qiankunjs/shared';
+import { moduleResolver as defaultModuleResolver, QiankunError, transpileAssets } from '@qiankunjs/shared';
+import { TagTransformStream } from './TagTransformStream';
 import { Deferred } from './utils';
 import WritableDOMStream from './writable-dom';
 
@@ -24,7 +25,7 @@ type ImportOpts = {
  * @param container
  * @param opts
  */
-export async function loadEntry(entry: Entry, container: HTMLElement, opts?: ImportOpts): Promise<void> {
+export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts?: ImportOpts): Promise<T> {
   const {
     fetch = window.fetch,
     nodeTransformer = transpileAssets,
@@ -36,42 +37,67 @@ export async function loadEntry(entry: Entry, container: HTMLElement, opts?: Imp
 
   const res = await fetch(entry);
   if (res.body) {
-    const loadEntryDeferred = new Deferred<void>();
+    const loadEntryDeferred = new Deferred<T>();
     const streamFinishedDeferred = new Deferred<void>();
 
     void res.body
       .pipeThrough(new TextDecoderStream())
+      .pipeThrough(
+        new TagTransformStream([
+          { tag: '<head>', alt: '<qiankun-head>' },
+          { tag: '</head>', alt: '</qiankun-head>' },
+          { tag: '<body>', alt: '<qiankun-body>' },
+          { tag: '</body>', alt: '</qiankun-body>' },
+        ]),
+      )
       .pipeTo(
         new WritableDOMStream(container, null, (clone, node) => {
           const transformedNode = nodeTransformer(clone, entry, {
             fetch,
             sandbox,
             moduleResolver,
-            rawNode: (node as unknown) as Node,
+            rawNode: node as unknown as Node,
           });
 
-          const script = (transformedNode as unknown) as HTMLScriptElement;
+          const script = transformedNode as unknown as HTMLScriptElement;
           /*
            * If the entry script is executed, we can complete the entry process in advance
            * otherwise we need to wait until the last script is executed.
            * Notice that we only support external script as entry script thus we could do resolve the promise after the script is loaded.
            */
           if (script.tagName === 'SCRIPT' && (script.src || script.dataset.src)) {
+            const isEntryScript = async () => {
+              if (script.hasAttribute('entry')) return true;
+
+              await streamFinishedDeferred.promise;
+
+              const scripts = container.querySelectorAll('script[src]');
+              const lastScript = scripts[scripts.length - 1];
+              return lastScript === script;
+            };
+
             script.addEventListener(
               'load',
               // eslint-disable-next-line @typescript-eslint/no-misused-promises
               async () => {
-                if (script.hasAttribute('entry')) {
-                  loadEntryDeferred.resolve();
-                } else {
-                  await streamFinishedDeferred.promise;
-
-                  const scripts = container.querySelectorAll('script[src]');
-                  const lastScript = scripts[scripts.length - 1];
-
-                  if (lastScript === script) {
-                    loadEntryDeferred.resolve();
+                if (await isEntryScript()) {
+                  // the latest set prop is the entry script exposed global variable
+                  if (sandbox?.latestSetProp) {
+                    loadEntryDeferred.resolve(sandbox.globalThis[sandbox.latestSetProp as number] as T);
+                  } else {
+                    // TODO support non sandbox mode?
+                    loadEntryDeferred.resolve({} as T);
                   }
+                }
+              },
+              { once: true },
+            );
+            script.addEventListener(
+              'error',
+              // eslint-disable-next-line @typescript-eslint/no-misused-promises
+              async () => {
+                if (await isEntryScript()) {
+                  loadEntryDeferred.reject(new QiankunError(`entry ${entry} loading or executing failed!`));
                 }
               },
               { once: true },
@@ -81,10 +107,10 @@ export async function loadEntry(entry: Entry, container: HTMLElement, opts?: Imp
           return transformedNode;
         }),
       )
-      .then(() => streamFinishedDeferred.resolve());
+      .then(streamFinishedDeferred.resolve);
 
     return loadEntryDeferred.promise;
   }
 
-  // return {} as any;
+  throw new QiankunError(`entry ${entry} response body is empty!`);
 }
