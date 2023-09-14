@@ -2,6 +2,7 @@
  * @author Kuitos
  * @since 2023-04-25
  */
+import type { ImportOpts } from '@qiankunjs/loader';
 import { loadEntry } from '@qiankunjs/loader';
 import type { Sandbox } from '@qiankunjs/sandbox';
 import { createSandboxContainer } from '@qiankunjs/sandbox';
@@ -10,11 +11,17 @@ import type { ParcelConfigObject } from 'single-spa';
 import getAddOns from './addons';
 import { QiankunError } from './error';
 import type { AppConfiguration, LifeCycleFn, LifeCycles, LoadableApp, MicroAppLifeCycles, ObjectType } from './types';
-import { performanceGetEntriesByName, performanceMark, performanceMeasure, toArray } from './utils';
+import {
+  getPureHTMLStringWithoutScripts,
+  performanceGetEntriesByName,
+  performanceMark,
+  performanceMeasure,
+  toArray,
+} from './utils';
 
-export type ParcelConfigObjectGetter = (remountContainer?: HTMLElement) => ParcelConfigObject;
+export type ParcelConfigObjectGetter = (remountContainer: HTMLElement) => ParcelConfigObject;
 
-export default async function <T extends ObjectType>(
+export default async function load<T extends ObjectType>(
   app: LoadableApp<T>,
   configuration?: AppConfiguration,
   lifeCycles?: LifeCycles<T>,
@@ -32,8 +39,14 @@ export default async function <T extends ObjectType>(
   let unmountSandbox = () => Promise.resolve();
   let sandboxInstance: Sandbox | undefined;
 
+  let microAppContainer: HTMLElement = container;
+  clearContainer(microAppContainer);
+
   if (sandbox) {
-    const sandboxContainer = createSandboxContainer(appName, () => container, { globalContext, extraGlobals: {} });
+    const sandboxContainer = createSandboxContainer(appName, () => microAppContainer, {
+      globalContext,
+      extraGlobals: {},
+    });
 
     sandboxInstance = sandboxContainer.instance;
     global = sandboxInstance.globalThis;
@@ -43,25 +56,34 @@ export default async function <T extends ObjectType>(
   }
 
   const assetPublicPath = calcPublicPath(entry);
-  const { beforeUnmount = [], afterUnmount = [], afterMount = [], beforeMount = [], beforeLoad = [] } = mergeWith(
-    {},
-    getAddOns(global, assetPublicPath),
-    lifeCycles,
-    (v1, v2) => concat((v1 ?? []) as LifeCycleFn<T>, (v2 ?? []) as LifeCycleFn<T>),
+  const {
+    beforeUnmount = [],
+    afterUnmount = [],
+    afterMount = [],
+    beforeMount = [],
+    beforeLoad = [],
+  } = mergeWith({}, getAddOns(global, assetPublicPath), lifeCycles, (v1, v2) =>
+    concat((v1 ?? []) as LifeCycleFn<T>, (v2 ?? []) as LifeCycleFn<T>),
   );
 
   await execHooksChain(toArray(beforeLoad), app, global);
 
-  await loadEntry(entry, container, { fetch, sandbox: sandboxInstance });
+  const containerOpts: ImportOpts = { fetch, sandbox: sandboxInstance };
+
+  const lifecycles = await loadEntry<MicroAppLifeCycles>(entry, microAppContainer, containerOpts);
+
+  if (!lifecycles) throw new QiankunError(`${appName} entry ${entry} load failed as it not export lifecycles`);
 
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
-    ({} as unknown) as MicroAppLifeCycles,
+    lifecycles,
     appName,
     global,
     sandboxInstance?.latestSetProp,
   );
 
-  const parcelConfigGetter: ParcelConfigObjectGetter = (mountContainer = container) => {
+  const parcelConfigGetter: ParcelConfigObjectGetter = (remountContainer) => {
+    microAppContainer = remountContainer;
+
     const parcelConfig: ParcelConfigObject = {
       name: appName,
 
@@ -79,10 +101,17 @@ export default async function <T extends ObjectType>(
             }
           }
         },
+        async () => {
+          // if micro app container has no children that means now is remounting, we need to rerender the app manually
+          if (microAppContainer.firstChild === null) {
+            const htmlString = await getPureHTMLStringWithoutScripts(entry, fetch);
+            await loadEntry(htmlString, microAppContainer, containerOpts);
+          }
+        },
         mountSandbox,
         // exec the chain after rendering to keep the behavior with beforeLoad
         async () => execHooksChain(toArray(beforeMount), app, global),
-        async (props) => mount({ ...props, container: mountContainer }),
+        async (props) => mount({ ...props, container: microAppContainer }),
         // finish loading after app mounted
         async () => execHooksChain(toArray(afterMount), app, global),
         async () => {
@@ -95,9 +124,16 @@ export default async function <T extends ObjectType>(
 
       unmount: [
         async () => execHooksChain(toArray(beforeUnmount), app, global),
-        async (props) => unmount({ ...props, container: mountContainer }),
+        async (props) => unmount({ ...props, container: microAppContainer }),
         unmountSandbox,
         async () => execHooksChain(toArray(afterUnmount), app, global),
+        async () => {
+          clearContainer(microAppContainer);
+          // for gc
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          microAppContainer = null;
+        },
       ],
     };
 
@@ -111,6 +147,16 @@ export default async function <T extends ObjectType>(
   };
 
   return parcelConfigGetter;
+}
+
+function clearContainer(container: HTMLElement) {
+  if (!container) {
+    throw new QiankunError('container is not existed');
+  }
+
+  while (container.firstChild) {
+    container.removeChild(container.firstChild);
+  }
 }
 
 function execHooksChain<T extends ObjectType>(
@@ -142,7 +188,7 @@ function getLifecyclesFromExports(
 
   // fallback to sandbox latest set property if it had
   if (globalLatestSetProp) {
-    const lifecycles = ((globalContext as unknown) as ObjectType)[globalLatestSetProp as never] as MicroAppLifeCycles;
+    const lifecycles = (globalContext as unknown as ObjectType)[globalLatestSetProp as never] as MicroAppLifeCycles;
     if (validateExportLifecycle(lifecycles)) {
       return lifecycles;
     }
@@ -155,7 +201,7 @@ function getLifecyclesFromExports(
   }
 
   // fallback to globalContext variable who named with ${appName} while module exports not found
-  const globalVariableExports = ((globalContext as unknown) as ObjectType)[appName as never] as MicroAppLifeCycles;
+  const globalVariableExports = (globalContext as unknown as ObjectType)[appName as never] as MicroAppLifeCycles;
 
   if (validateExportLifecycle(globalVariableExports)) {
     return globalVariableExports;

@@ -44,19 +44,8 @@ function getXPathForElement(el: Node, document: Document): string | void {
   return xpath;
 }
 
-export function getContainer(container: string | HTMLElement): HTMLElement | null {
-  return typeof container === 'string' ? document.querySelector(container) : container;
-}
-
-export function getContainerXPath(container?: string | HTMLElement): string | void {
-  if (container) {
-    const containerElement = getContainer(container);
-    if (containerElement) {
-      return getXPathForElement(containerElement, document);
-    }
-  }
-
-  return undefined;
+export function getContainerXPath(container: HTMLElement): string | void {
+  return getXPathForElement(container, document);
 }
 
 const supportsUserTiming =
@@ -87,4 +76,15 @@ export function performanceMeasure(measureName: string, markName: string) {
     performance.clearMarks(markName);
     performance.clearMeasures(measureName);
   }
+}
+
+export async function getPureHTMLStringWithoutScripts(entry: string, fetch: typeof window.fetch): Promise<string> {
+  const htmlString = await fetch(entry).then((r) => r.text());
+
+  const domParser = new DOMParser();
+  const htmlDOM = domParser.parseFromString(htmlString, 'text/html');
+  // remove all script tags who are been loaded before
+  htmlDOM.querySelectorAll('script').forEach((script) => script.remove());
+
+  return htmlDOM.documentElement.outerHTML;
 }

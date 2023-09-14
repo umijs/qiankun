@@ -6,8 +6,11 @@ import type { MatchResult } from '../module-resolver';
 import { getEntireUrl } from '../utils';
 import { preTranspile as preTranspileScript } from './script';
 import type { AssetsTranspilerOpts, BaseTranspilerOpts } from './types';
+import { Mode } from './types';
 
-type PreTranspileResult = { mode: 'cache'; result: { src: string } & MatchResult } | { mode: 'none'; result?: never };
+type PreTranspileResult =
+  | { mode: Mode.CACHE_FROM_SANDBOX; result: { src: string } & MatchResult }
+  | { mode: Mode.NONE; result?: never };
 const preTranspile = (
   link: Partial<Pick<HTMLLinkElement, 'href'>>,
   baseURI: string,
@@ -23,7 +26,7 @@ const preTranspile = (
       const matchedAssets = moduleResolver?.(linkHref);
       if (matchedAssets) {
         return {
-          mode: 'cache',
+          mode: Mode.CACHE_FROM_SANDBOX,
           result: { src: linkHref, ...matchedAssets },
         };
       }
@@ -31,7 +34,7 @@ const preTranspile = (
   }
 
   return {
-    mode: 'none',
+    mode: Mode.NONE,
   };
 };
 
@@ -53,19 +56,24 @@ const postProcessPreloadLink = (link: HTMLLinkElement, baseURI: string, opts: As
     case 'script': {
       const { mode, result } = preTranspileScript({ src: href }, baseURI, opts);
 
-      if (mode === 'remote') {
-        link.as = 'fetch';
-      }
+      switch (mode) {
+        case Mode.REMOTE_FROM_SANDBOX: {
+          link.as = 'fetch';
+          break;
+        }
 
-      if (mode === 'cache') {
-        const { url } = result;
-        const objectURL = URL.createObjectURL(
-          new Blob([`// ${href} is reusing the execution result of ${url}`], {
-            type: 'text/javascript',
-          }),
-        );
-        link.href = objectURL;
-        revokeAfterLoaded(objectURL, link);
+        case Mode.CACHE_FROM_SANDBOX: {
+          const { url } = result;
+          const objectURL = URL.createObjectURL(
+            new Blob([`// ${href} is reusing the execution result of ${url}`], {
+              type: 'text/javascript',
+            }),
+          );
+          link.href = objectURL;
+          revokeAfterLoaded(objectURL, link);
+
+          break;
+        }
       }
 
       break;
@@ -74,15 +82,18 @@ const postProcessPreloadLink = (link: HTMLLinkElement, baseURI: string, opts: As
     case 'style': {
       const { mode, result } = preTranspile({ href }, baseURI, opts);
 
-      if (mode === 'cache') {
-        const { url } = result;
-        const objectURL = URL.createObjectURL(
-          new Blob([`// ${href} is reusing the execution result of ${url}`], {
-            type: 'text/css',
-          }),
-        );
-        link.href = objectURL;
-        revokeAfterLoaded(objectURL, link);
+      switch (mode) {
+        case Mode.CACHE_FROM_SANDBOX: {
+          const { url } = result;
+          const objectURL = URL.createObjectURL(
+            new Blob([`// ${href} is reusing the execution result of ${url}`], {
+              type: 'text/css',
+            }),
+          );
+          link.href = objectURL;
+          revokeAfterLoaded(objectURL, link);
+          break;
+        }
       }
 
       break;
@@ -108,7 +119,7 @@ export default function transpileLink(
   );
 
   switch (mode) {
-    case 'cache': {
+    case Mode.CACHE_FROM_SANDBOX: {
       const { src, version, url } = result;
       link.dataset.href = src;
       link.dataset.version = version;
@@ -121,7 +132,7 @@ export default function transpileLink(
       return link;
     }
 
-    case 'none':
+    case Mode.NONE:
     default: {
       if (hrefAttribute) {
         link.href = getEntireUrl(hrefAttribute, baseURI);

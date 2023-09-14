@@ -6,3 +6,4 @@ export * from './assets-transpilers';
 export * from './utils';
 export * from './module-resolver';
 export * from './common';
+export * from './error';
