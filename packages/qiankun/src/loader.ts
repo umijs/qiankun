@@ -2,6 +2,7 @@
  * @author Kuitos
  * @since 2023-04-25
  */
+import type { ImportOpts } from '@qiankunjs/loader';
 import { loadEntry } from '@qiankunjs/loader';
 import type { Sandbox } from '@qiankunjs/sandbox';
 import { createSandboxContainer } from '@qiankunjs/sandbox';
@@ -10,9 +11,15 @@ import type { ParcelConfigObject } from 'single-spa';
 import getAddOns from './addons';
 import { QiankunError } from './error';
 import type { AppConfiguration, LifeCycleFn, LifeCycles, LoadableApp, MicroAppLifeCycles, ObjectType } from './types';
-import { performanceGetEntriesByName, performanceMark, performanceMeasure, toArray } from './utils';
+import {
+  getPureHTMLStringWithoutScripts,
+  performanceGetEntriesByName,
+  performanceMark,
+  performanceMeasure,
+  toArray,
+} from './utils';
 
-export type ParcelConfigObjectGetter = (remountContainer?: HTMLElement) => ParcelConfigObject;
+export type ParcelConfigObjectGetter = (remountContainer: HTMLElement) => ParcelConfigObject;
 
 export default async function load<T extends ObjectType>(
   app: LoadableApp<T>,
@@ -32,10 +39,14 @@ export default async function load<T extends ObjectType>(
   let unmountSandbox = () => Promise.resolve();
   let sandboxInstance: Sandbox | undefined;
 
-  preprocessContainer(container);
+  let microAppContainer: HTMLElement = container;
+  clearContainer(microAppContainer);
 
   if (sandbox) {
-    const sandboxContainer = createSandboxContainer(appName, () => container, { globalContext, extraGlobals: {} });
+    const sandboxContainer = createSandboxContainer(appName, () => microAppContainer, {
+      globalContext,
+      extraGlobals: {},
+    });
 
     sandboxInstance = sandboxContainer.instance;
     global = sandboxInstance.globalThis;
@@ -57,7 +68,11 @@ export default async function load<T extends ObjectType>(
 
   await execHooksChain(toArray(beforeLoad), app, global);
 
-  const lifecycles = await loadEntry<MicroAppLifeCycles>(entry, container, { fetch, sandbox: sandboxInstance });
+  const containerOpts: ImportOpts = { fetch, sandbox: sandboxInstance };
+
+  const lifecycles = await loadEntry<MicroAppLifeCycles>(entry, microAppContainer, containerOpts);
+
+  if (!lifecycles) throw new QiankunError(`${appName} entry ${entry} load failed as it not export lifecycles`);
 
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
     lifecycles,
@@ -66,7 +81,9 @@ export default async function load<T extends ObjectType>(
     sandboxInstance?.latestSetProp,
   );
 
-  const parcelConfigGetter: ParcelConfigObjectGetter = (mountContainer = container) => {
+  const parcelConfigGetter: ParcelConfigObjectGetter = (remountContainer) => {
+    microAppContainer = remountContainer;
+
     const parcelConfig: ParcelConfigObject = {
       name: appName,
 
@@ -84,10 +101,17 @@ export default async function load<T extends ObjectType>(
             }
           }
         },
+        async () => {
+          // if micro app container has no children that means now is remounting, we need to rerender the app manually
+          if (microAppContainer.firstChild === null) {
+            const htmlString = await getPureHTMLStringWithoutScripts(entry, fetch);
+            await loadEntry(htmlString, microAppContainer, containerOpts);
+          }
+        },
         mountSandbox,
         // exec the chain after rendering to keep the behavior with beforeLoad
         async () => execHooksChain(toArray(beforeMount), app, global),
-        async (props) => mount({ ...props, container: mountContainer }),
+        async (props) => mount({ ...props, container: microAppContainer }),
         // finish loading after app mounted
         async () => execHooksChain(toArray(afterMount), app, global),
         async () => {
@@ -100,9 +124,16 @@ export default async function load<T extends ObjectType>(
 
       unmount: [
         async () => execHooksChain(toArray(beforeUnmount), app, global),
-        async (props) => unmount({ ...props, container: mountContainer }),
+        async (props) => unmount({ ...props, container: microAppContainer }),
         unmountSandbox,
         async () => execHooksChain(toArray(afterUnmount), app, global),
+        async () => {
+          clearContainer(microAppContainer);
+          // for gc
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          microAppContainer = null;
+        },
       ],
     };
 
@@ -118,7 +149,7 @@ export default async function load<T extends ObjectType>(
   return parcelConfigGetter;
 }
 
-function preprocessContainer(container: HTMLElement) {
+function clearContainer(container: HTMLElement) {
   if (!container) {
     throw new QiankunError('container is not existed');
   }

@@ -2,8 +2,8 @@
  * @author Kuitos
  * @since 2023-04-25
  */
-import type { LifeCycles as ParcelLifeCycles } from 'single-spa';
-import type { Parcel } from 'single-spa';
+import type { BaseLoaderOpts } from '@qiankunjs/shared';
+import type { LifeCycles as ParcelLifeCycles, Parcel } from 'single-spa';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
@@ -18,25 +18,24 @@ declare global {
 
 export type ObjectType = Record<string, unknown>;
 
-export type Entry = string;
+export type HTMLEntry = string;
 
 type AppMetadata = {
   // app name
   name: string;
   // app entry
-  entry: Entry;
+  entry: HTMLEntry;
 };
 
 // just for manual loaded apps, in single-spa it called parcel
 export type LoadableApp<T extends ObjectType> = AppMetadata & {
-  // where the app mount to, mutual exclusive with the legacy custom render function
+  // where the app mount to
   container: HTMLElement;
   // props pass to app
   props?: T;
 };
 
-export type AppConfiguration = {
-  fetch?: typeof window.fetch;
+export type AppConfiguration = Partial<BaseLoaderOpts> & {
   sandbox?: boolean;
   globalContext?: WindowProxy;
 };

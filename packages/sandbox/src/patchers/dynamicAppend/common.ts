@@ -4,7 +4,7 @@
  * @since 2019-10-21
  */
 import { transpileAssets } from '@qiankunjs/shared';
-import { qiankunHeadTagName } from '../consts';
+import { qiankunHeadTagName } from '../../consts';
 import type { SandboxConfig } from './types';
 
 const SCRIPT_TAG_NAME = 'SCRIPT';
@@ -127,7 +127,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
     newChild: T,
     refChild: Node | null = null,
   ) {
-    const element = (newChild as unknown) as HTMLElement;
+    const element = newChild as unknown as HTMLElement;
     const { rawDOMAppendOrInsertBefore, isInvokedByMicroApp, getSandboxConfig, target = 'body' } = opts;
     if (!isHijackingTag(element.tagName) || !isInvokedByMicroApp(element)) {
       return rawDOMAppendOrInsertBefore.call(this, element, refChild) as T;
@@ -140,14 +140,14 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
       switch (element.tagName) {
         case LINK_TAG_NAME:
         case STYLE_TAG_NAME: {
-          const stylesheetElement = (newChild as unknown) as HTMLLinkElement | HTMLStyleElement;
+          const stylesheetElement = newChild as unknown as HTMLLinkElement | HTMLStyleElement;
           Object.defineProperty(stylesheetElement, styleElementTargetSymbol, {
             value: target,
             writable: true,
             configurable: true,
           });
 
-          const container = (getContainer() as unknown) as HTMLElement;
+          const container = getContainer() as unknown as HTMLElement;
           // const mountDOM = target === 'head' ? getContainerHeadElement(container) : container;
           const mountDOM = container;
 
@@ -157,7 +157,7 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
         }
 
         case SCRIPT_TAG_NAME: {
-          const container = (getContainer() as unknown) as HTMLElement;
+          const container = getContainer() as unknown as HTMLElement;
           // const mountDOM = target === 'head' ? getContainerHeadElement(container) : container;
           const mountDOM = container;
           const referenceNode = mountDOM.contains(refChild) ? refChild : null;
@@ -188,7 +188,7 @@ function getNewRemoveChild(
   isInvokedByMicroApp: (element: HTMLElement) => boolean,
 ) {
   function removeChild<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, child: T) {
-    const childElement = (child as unknown) as HTMLElement;
+    const childElement = child as unknown as HTMLElement;
     const { tagName } = childElement;
     if (!isHijackingTag(tagName) || !isInvokedByMicroApp(childElement)) return rawRemoveChild.call(this, child) as T;
 
@@ -199,8 +199,7 @@ function getNewRemoveChild(
       switch (tagName) {
         case STYLE_TAG_NAME:
         case LINK_TAG_NAME: {
-          attachedElement =
-            dynamicLinkAttachedInlineStyleMap.get((childElement as unknown) as HTMLLinkElement) || child;
+          attachedElement = dynamicLinkAttachedInlineStyleMap.get(childElement as unknown as HTMLLinkElement) || child;
 
           // try to remove the dynamic style sheet
           const dynamicElementIndex = dynamicStyleSheetElements.indexOf(attachedElement as HTMLLinkElement);
@@ -212,8 +211,7 @@ function getNewRemoveChild(
         }
 
         case SCRIPT_TAG_NAME: {
-          attachedElement =
-            dynamicScriptAttachedCommentMap.get((childElement as unknown) as HTMLScriptElement) || child;
+          attachedElement = dynamicScriptAttachedCommentMap.get(childElement as unknown as HTMLScriptElement) || child;
           break;
         }
 
@@ -222,7 +220,7 @@ function getNewRemoveChild(
         }
       }
 
-      const appWrapper = (getContainer() as unknown) as HTMLElement;
+      const appWrapper = getContainer() as unknown as HTMLElement;
       // const container = target === 'head' ? getContainerHeadElement(appWrapper) : appWrapper;
       const container = appWrapper;
       // container might have been removed while app unmounting if the removeChild action was async
