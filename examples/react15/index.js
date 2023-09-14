@@ -28,9 +28,9 @@ export async function mount(props = {}) {
   styleElement.innerText = '.react15-icon { height: 400px }';
   document.head.appendChild(styleElement);
 
-  // setTimeout(() => {
-  //   document.head.removeChild(styleElement);
-  // }, 2000);
+  setTimeout(() => {
+    document.head.removeChild(styleElement);
+  }, 2000);
 }
 
 export async function unmount(props) {
