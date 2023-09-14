@@ -102,9 +102,11 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: I
             script.addEventListener(
               'error',
               // eslint-disable-next-line @typescript-eslint/no-misused-promises
-              async () => {
+              async (evt) => {
                 if (await isEntryScript()) {
-                  entryScriptLoadedDeferred.reject(new QiankunError(`entry ${entry} loading or executing failed!`));
+                  entryScriptLoadedDeferred.reject(
+                    new QiankunError(`entry ${entry} loading failed as entry script trigger error -> ${evt.message}`),
+                  );
                 }
               },
               { once: true },
