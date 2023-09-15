@@ -1,5 +1,15 @@
 # qiankun
 
+## 3.0.0-beta.7
+
+### Patch Changes
+
+- ffd77800: ✨support to transform head/body tags to qiankun head/body in stream
+- Updated dependencies [ffd77800]
+  - @qiankunjs/loader@0.0.1-beta.6
+  - @qiankunjs/sandbox@0.0.1-beta.6
+  - @qiankunjs/shared@0.0.1-beta.6
+
 ## 3.0.0-alpha.6
 
 ### Patch Changes

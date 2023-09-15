@@ -1,6 +1,6 @@
 {
   "name": "qiankun",
-  "version": "3.0.0-alpha.6",
+  "version": "3.0.0-beta.7",
   "description": "A completed implementation of Micro Frontends",
   "keywords": [
     "micro frontend",
