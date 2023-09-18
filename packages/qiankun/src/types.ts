@@ -3,7 +3,7 @@
  * @since 2023-04-25
  */
 import type { BaseLoaderOpts } from '@qiankunjs/shared';
-import type { LifeCycles as ParcelLifeCycles, Parcel } from 'single-spa';
+import type { LifeCycles as ParcelLifeCycles, Parcel, RegisterApplicationConfig } from 'single-spa';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
@@ -33,6 +33,12 @@ export type LoadableApp<T extends ObjectType> = AppMetadata & {
   container: HTMLElement;
   // props pass to app
   props?: T;
+};
+
+// for the route-based apps
+export type RegistrableApp<T extends ObjectType> = LoadableApp<T> & {
+  loader?: (loading: boolean) => void;
+  activeRule: RegisterApplicationConfig['activeWhen'];
 };
 
 export type AppConfiguration = Partial<BaseLoaderOpts> & {

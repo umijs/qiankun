@@ -1,13 +1,11 @@
 {
   "mode": "pre",
-  "tag": "beta",
+  "tag": "rc",
   "initialVersions": {
     "@qiankunjs/loader": "0.0.1",
     "qiankun": "3.0.0",
     "@qiankunjs/sandbox": "0.0.1",
     "@qiankunjs/shared": "0.0.1"
   },
-  "changesets": [
-    "plenty-eggs-collect"
-  ]
+  "changesets": ["clever-dragons-ring"]
 }
