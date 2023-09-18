@@ -8,20 +8,20 @@ import type { Sandbox } from '@qiankunjs/sandbox';
 import { createSandboxContainer } from '@qiankunjs/sandbox';
 import { concat, isFunction, mergeWith } from 'lodash';
 import type { ParcelConfigObject } from 'single-spa';
-import getAddOns from './addons';
-import { QiankunError } from './error';
-import type { AppConfiguration, LifeCycleFn, LifeCycles, LoadableApp, MicroAppLifeCycles, ObjectType } from './types';
+import getAddOns from '../addons';
+import { QiankunError } from '../error';
+import type { AppConfiguration, LifeCycleFn, LifeCycles, LoadableApp, MicroAppLifeCycles, ObjectType } from '../types';
 import {
   getPureHTMLStringWithoutScripts,
   performanceGetEntriesByName,
   performanceMark,
   performanceMeasure,
   toArray,
-} from './utils';
+} from '../utils';
 
 export type ParcelConfigObjectGetter = (remountContainer: HTMLElement) => ParcelConfigObject;
 
-export default async function load<T extends ObjectType>(
+export default async function loadApp<T extends ObjectType>(
   app: LoadableApp<T>,
   configuration?: AppConfiguration,
   lifeCycles?: LifeCycles<T>,

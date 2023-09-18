@@ -1,9 +1,10 @@
 import type { ParcelConfigObject } from 'single-spa';
-import { mountRootParcel } from 'single-spa';
-import type { ParcelConfigObjectGetter } from './loader';
-import load from './loader';
-import type { AppConfiguration, LifeCycles, LoadableApp, MicroApp, ObjectType } from './types';
-import { getContainerXPath, toArray } from './utils';
+import { mountRootParcel, patchHistoryApi } from 'single-spa';
+import type { ParcelConfigObjectGetter } from '../core/loader';
+import loadApp from '../core/loader';
+import type { AppConfiguration, LifeCycles, LoadableApp, MicroApp, ObjectType } from '../types';
+import { getContainerXPath, toArray } from '../utils';
+import { started } from './registerMicroApps';
 
 const appConfigPromiseGetterMap = new Map<string, Promise<ParcelConfigObjectGetter>>();
 const containerMicroAppsMap = new Map<string, MicroApp[]>();
@@ -68,7 +69,7 @@ export function loadMicroApp<T extends ObjectType>(
       if (parcelConfigGetterPromise) return wrapParcelConfigForRemount((await parcelConfigGetterPromise)(container));
     }
 
-    const parcelConfigObjectGetterPromise = load(app, userConfiguration, lifeCycles);
+    const parcelConfigObjectGetterPromise = loadApp(app, userConfiguration, lifeCycles);
 
     if (containerXPath) {
       const appContainerXPathKey = `${name}-${containerXPath}`;
@@ -78,13 +79,11 @@ export function loadMicroApp<T extends ObjectType>(
     return (await parcelConfigObjectGetterPromise)(container);
   };
 
-  // if (!started && configuration?.autoStart !== false) {
-  // We need to invoke start method of single-spa as the popstate event should be dispatched while the main app calling pushState/replaceState automatically,
-  // but in single-spa it will check the start status before it dispatch popstate
-  // see https://github.com/single-spa/single-spa/blob/f28b5963be1484583a072c8145ac0b5a28d91235/src/navigation/navigation-events.js#L101
-  // ref https://github.com/umijs/qiankun/pull/1071
-  // startSingleSpa({ urlRerouteOnly: frameworkConfiguration.urlRerouteOnly ?? defaultUrlRerouteOnly });
-  // }
+  // We need to invoke patchHistoryApi method of single-spa as the popstate event should be dispatched while the main app calling pushState/replaceState automatically,
+  // https://github.com/umijs/qiankun/pull/1071
+  if (!started) {
+    patchHistoryApi();
+  }
 
   microApp = mountRootParcel(memorizedLoadingFn, { domElement: document.createElement('div'), ...props });
 
