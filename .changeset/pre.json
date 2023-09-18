@@ -7,5 +7,5 @@
     "@qiankunjs/sandbox": "0.0.1",
     "@qiankunjs/shared": "0.0.1"
   },
-  "changesets": []
+  "changesets": ["clever-dragons-ring"]
 }
