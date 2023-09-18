@@ -5,4 +5,5 @@
 "@qiankunjs/shared": patch
 ---
 
+✨support to transform head/body tags to qiankun head/body in stream
 ✨add registerMicroApps api
