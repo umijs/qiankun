@@ -1,5 +1,12 @@
 # qiankun
 
+## 3.0.0-rc.0
+
+### Patch Changes
+
+- 806b823a: 🐛 fix tsc error
+- 6f799edd: ✨add registerMicroApps api
+
 ## 3.0.0-beta.7
 
 ### Patch Changes

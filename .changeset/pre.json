@@ -7,5 +7,9 @@
     "@qiankunjs/sandbox": "0.0.1",
     "@qiankunjs/shared": "0.0.1"
   },
-  "changesets": ["clever-dragons-ring"]
+  "changesets": [
+    "clever-dragons-ring",
+    "rare-lobsters-marry",
+    "short-kings-explain"
+  ]
 }
