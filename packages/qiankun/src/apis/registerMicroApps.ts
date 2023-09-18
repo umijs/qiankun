@@ -2,7 +2,7 @@ import { Deferred } from '@qiankunjs/shared';
 import { noop } from 'lodash';
 import type { StartOpts } from 'single-spa';
 import { registerApplication, start as startSingleSpa } from 'single-spa';
-import loadApp from '../core/loader';
+import loadApp from '../core/loadApp';
 import type { AppConfiguration, LifeCycles, ObjectType, RegistrableApp } from '../types';
 import { toArray } from '../utils';
 

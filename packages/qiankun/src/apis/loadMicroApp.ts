@@ -1,7 +1,7 @@
 import type { ParcelConfigObject } from 'single-spa';
 import { mountRootParcel, patchHistoryApi } from 'single-spa';
-import type { ParcelConfigObjectGetter } from '../core/loader';
-import loadApp from '../core/loader';
+import type { ParcelConfigObjectGetter } from '../core/loadApp';
+import loadApp from '../core/loadApp';
 import type { AppConfiguration, LifeCycles, LoadableApp, MicroApp, ObjectType } from '../types';
 import { getContainerXPath, toArray } from '../utils';
 import { started } from './registerMicroApps';
