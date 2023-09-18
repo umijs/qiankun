@@ -151,15 +151,16 @@ If it still reports an error, check whether the container DOM is placed on a rou
 
 ## `[import-html-entry]: error occurs while excuting xxx script http://xxx.xxx.xxx/x.js`
 ![](https://user-images.githubusercontent.com/22413530/109919189-41563d00-7cf3-11eb-8328-711228389d63.png)
-The first line is just an auxiliary information printed by qiankun through console.error, which is used to help users quickly know which js has an error, not a real exception. The real exception information is on the second line.
+The first line is just a helper info printed by qiankun via `console.error` to help users identify which js file threw the error faster. It is not an exception thrown by qiankun itself.
 
-For example, such an error indicates that when qiankun was executing the http://localhost:9100/index.bundle.js of the sub application, this js itself threw an exception. The specific exception information is Uncaught TypeError: Cannot read property 'call' of undefined.
+**The actual exception info is in the second line.**
 
-Sub-application exceptions can be attempted to be resolved through the following steps:
+For example in the error above, it means the child app itself threw an exception when executing http://localhost:9100/index.bundle.js. **And the actual exception message is `Uncaught TypeError: Cannot read property 'call' of undefined` in the second line.**
 
-Check the error js for syntax errors according to the specific exception information, such as missing semicolons, dependence on uninitialized variables, etc.
-Whether it depends on global variables provided by the main application, but the main application is not actually initialized.
-Compatibility issues. The js itself of the sub-application has syntax compatibility issues in the current runtime environment.
+Exceptions from the child app itself can be debugged and fixed with the following steps:
+1. Based on the specific exception message, check if the js file that errors has syntax errors, like missing semicolons, depending on uninitialized variables etc.
+2. Whether it depends on global variables provided by the main app, but the main app did not initialize them.
+3. Compatibility issues. The child app js itself has syntax compatibility issues in the current runtime environment.
 
 ## How to load micro apps on a routing page of the main app
 
