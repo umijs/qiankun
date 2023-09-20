@@ -44,17 +44,19 @@ export function registerMicroApps<T extends ObjectType>(apps: Array<RegistrableA
 }
 
 export function start(opts: StartOpts = {}) {
-  // frameworkConfiguration = { prefetch: true, singular: true, sandbox: true, ...opts };
-  // const { prefetch, urlRerouteOnly = defaultUrlRerouteOnly, ...importEntryOpts } = frameworkConfiguration;
+  if (!started) {
+    // frameworkConfiguration = { prefetch: true, singular: true, sandbox: true, ...opts };
+    // const { prefetch, urlRerouteOnly = defaultUrlRerouteOnly, ...importEntryOpts } = frameworkConfiguration;
 
-  // if (prefetch) {
-  //   doPrefetchStrategy(microApps, prefetch, importEntryOpts);
-  // }
+    // if (prefetch) {
+    //   doPrefetchStrategy(microApps, prefetch, importEntryOpts);
+    // }
 
-  // frameworkConfiguration = autoDowngradeForLowVersionBrowser(frameworkConfiguration);
+    // frameworkConfiguration = autoDowngradeForLowVersionBrowser(frameworkConfiguration);
 
-  startSingleSpa(opts);
-  started = true;
+    startSingleSpa(opts);
+    started = true;
 
-  frameworkStartedDefer.resolve();
+    frameworkStartedDefer.resolve();
+  }
 }

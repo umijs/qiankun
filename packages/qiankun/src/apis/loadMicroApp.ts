@@ -1,10 +1,10 @@
 import type { ParcelConfigObject } from 'single-spa';
-import { mountRootParcel, start as startSingleSpa } from 'single-spa';
+import { mountRootParcel } from 'single-spa';
 import type { ParcelConfigObjectGetter } from '../core/loadApp';
 import loadApp from '../core/loadApp';
 import type { AppConfiguration, LifeCycles, LoadableApp, MicroApp, ObjectType } from '../types';
 import { getContainerXPath, toArray } from '../utils';
-import { started } from './registerMicroApps';
+import { start, started } from './registerMicroApps';
 
 const appConfigPromiseGetterMap = new Map<string, Promise<ParcelConfigObjectGetter>>();
 const containerMicroAppsMap = new Map<string, MicroApp[]>();
@@ -84,7 +84,7 @@ export function loadMicroApp<T extends ObjectType>(
     // but in single-spa it will check the start status before it dispatch popstate
     // see https://github.com/single-spa/single-spa/blob/f28b5963be1484583a072c8145ac0b5a28d91235/src/navigation/navigation-events.js#L101
     // ref https://github.com/umijs/qiankun/pull/1071
-    startSingleSpa();
+    start();
   }
 
   microApp = mountRootParcel(memorizedLoadingFn, { domElement: document.createElement('div'), ...props });
