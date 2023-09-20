@@ -53,7 +53,7 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: I
             // { tag: 'body', alt: 'qiankun-body' },
           ],
           // { head: true },
-          {}
+          {},
         ),
       )
       .pipeTo(
