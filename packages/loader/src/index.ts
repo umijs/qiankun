@@ -52,7 +52,8 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: I
             // TODO support body replacement
             // { tag: 'body', alt: 'qiankun-body' },
           ],
-          { head: qiankunHeadTagName },
+          // { head: true },
+          {}
         ),
       )
       .pipeTo(

@@ -1,5 +1,5 @@
 import type { ParcelConfigObject } from 'single-spa';
-import { mountRootParcel, patchHistoryApi } from 'single-spa';
+import { mountRootParcel, start as startSingleSpa } from 'single-spa';
 import type { ParcelConfigObjectGetter } from '../core/loadApp';
 import loadApp from '../core/loadApp';
 import type { AppConfiguration, LifeCycles, LoadableApp, MicroApp, ObjectType } from '../types';
@@ -79,10 +79,12 @@ export function loadMicroApp<T extends ObjectType>(
     return (await parcelConfigObjectGetterPromise)(container);
   };
 
-  // We need to invoke patchHistoryApi method of single-spa as the popstate event should be dispatched while the main app calling pushState/replaceState automatically,
-  // https://github.com/umijs/qiankun/pull/1071
   if (!started) {
-    patchHistoryApi();
+    // We need to invoke start method of single-spa as the popstate event should be dispatched while the main app calling pushState/replaceState automatically,
+    // but in single-spa it will check the start status before it dispatch popstate
+    // see https://github.com/single-spa/single-spa/blob/f28b5963be1484583a072c8145ac0b5a28d91235/src/navigation/navigation-events.js#L101
+    // ref https://github.com/umijs/qiankun/pull/1071
+    startSingleSpa();
   }
 
   microApp = mountRootParcel(memorizedLoadingFn, { domElement: document.createElement('div'), ...props });
