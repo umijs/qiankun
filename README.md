@@ -58,7 +58,7 @@ And on top of these, it offers:
 ## 📦 Installation
 
 ```shell
-$ yarn add qiankun  # or npm i qiankun -S
+$ yarn add qiankun  # or npm i qiankun
 ```
 
 ## 📖 Documentation

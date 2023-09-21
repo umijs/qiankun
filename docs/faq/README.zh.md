@@ -152,9 +152,12 @@ qiankun 抛出这个错误是因为微应用加载后容器 DOM 节点不存在�
 
 ## `[import-html-entry]: error occurs while excuting xxx script http://xxx.xxx.xxx/x.js`
 ![](https://user-images.githubusercontent.com/22413530/109919189-41563d00-7cf3-11eb-8328-711228389d63.png)
-其中第一行只是 qiankun 通过 `console.error` 打印出来的一个辅助信息，目的是帮助用户更快的知道是哪个 js 报错了，并不是真的异常。真正的异常信息在第二行。
 
-比如上图这样一个报错，指的是 qiankun 在执行子应用的 `http://localhost:9100/index.bundle.js` 时，这个 js 本身抛异常了。而具体的异常信息就是 `Uncaught TypeError: Cannot read property 'call' of undefined`.
+其中第一行只是 qiankun 通过 `console.error` 打印出来的一个辅助信息，目的是帮助用户更快的知道是哪个 js 报错了，并不是 qiankun 本身发生了异常。
+
+**真正的异常信息在第二行。**
+
+比如上图这样一个报错，指的是子应用在执行 `http://localhost:9100/index.bundle.js` 时，这个 js 本身抛异常了。**而具体的异常信息就是第二行的 `Uncaught TypeError: Cannot read property 'call' of undefined`。**
 
 子应用本身的异常，可以尝试通过以下步骤排查解决：
 1. 根据具体的异常信息，检查报错的 js 是否有语法错误，比如少了分号、依赖了未初始化的变量等。
