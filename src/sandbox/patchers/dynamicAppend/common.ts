@@ -334,6 +334,8 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
                 element = null;
               },
               error: () => {
+                // if first load fail, this method comes in twice, and the second time element is already null. Need to filter out
+                if (!element) return;
                 manualInvokeElementOnError(element);
                 if (isRedfinedCurrentScript) {
                   // @ts-ignore
