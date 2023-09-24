@@ -11,6 +11,7 @@ interface QiankunPluginOptions {
   htmlWebpackPluginOptions?: HtmlWebpackPlugin.Options;
 }
 
+// 
 interface HtmlWebpackPluginHooks {
   htmlWebpackPluginAlterAssetTags?: {
     tapAsync: (pluginName: string, callback: (data: any, cb: any) => void) => void;
