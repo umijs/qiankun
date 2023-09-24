@@ -1,0 +1,21 @@
+{
+  "name": "qiankunoutputplugin",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "father build"
+  },
+  "files": ["dist", "src"],
+  "peerDependencies": {
+    "webpack": "^4.0.0 || ^5.0.0",
+    "html-webpack-plugin": "^5.0.0"
+  },
+  "author": "Hermanna",
+  "license": "MIT",
+  "devDependencies": {
+    "html-webpack-plugin": "^5.5.3"
+  }
+}
