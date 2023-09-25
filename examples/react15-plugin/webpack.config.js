@@ -1,5 +1,5 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const QiankunPlugin  = require('qiankun-plugin');
+const QiankunPlugin  = require('@qiankunjs/webpack-plugin');
 
 
 module.exports = {

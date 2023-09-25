@@ -1,5 +1,5 @@
 {
-  "name": "qiankun-plugin",
+  "name": "@qiankunjs/webpack-plugin",
   "version": "0.0.1",
   "description": "",
   "main": "./dist/cjs/index.js",
