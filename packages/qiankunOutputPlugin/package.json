@@ -1,6 +1,6 @@
 {
-  "name": "qiankunoutputplugin",
-  "version": "1.0.0",
+  "name": "qiankun-plugin",
+  "version": "0.0.1",
   "description": "",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -10,12 +10,8 @@
   },
   "files": ["dist", "src"],
   "peerDependencies": {
-    "webpack": "^4.0.0 || ^5.0.0",
-    "html-webpack-plugin": "^5.0.0"
+    "webpack": "^4.0.0 || ^5.0.0"
   },
   "author": "Hermanna",
-  "license": "MIT",
-  "devDependencies": {
-    "html-webpack-plugin": "^5.5.3"
-  }
+  "license": "MIT"
 }
