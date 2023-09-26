@@ -2,11 +2,23 @@
   "name": "@qiankunjs/create-qiankun",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "bin": {
+    "create-qiankun": "./dist/index.js"
   },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "father build"
+  },
+  "files": ["dist"],
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "fs-extra": "^10.1.0",
+    "prompts": "^2.4.2",
+    "minimist": "^1.2.6"
+  },
+  "devDependencies": {
+    "@types/prompts": "^2.4.4"
+  }
 }
