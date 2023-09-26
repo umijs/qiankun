@@ -12,7 +12,7 @@
     "build": "pnpm -r run build",
     "prerelease:alpha": "changeset pre enter alpha && changeset && changeset version",
     "release:alpha": "pnpm run build && changeset publish && changeset pre exit",
-    "lint": "eslint packages/*/src/**",
+    "lint": "eslint packages/",
     "prettier": "prettier --write .",
     "docs": "dumi dev",
     "build-docs": "dumi build",

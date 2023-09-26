@@ -1,3 +1,6 @@
 examples
 dist
 writable-dom
+
+# not linting test files
+__tests__/
