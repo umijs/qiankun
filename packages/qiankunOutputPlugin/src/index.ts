@@ -27,7 +27,7 @@ class QiankunPlugin {
     // 设置输出库的名称
     webpackCompilerOptions.output.library = `${this.packageName}`;
     // 设置输出格式为UMD
-    webpackCompilerOptions.output.libraryTarget = 'umd';
+    webpackCompilerOptions.output.libraryTarget = 'window';
     // 设置jsonp函数的名称，以确保它是唯一的
     webpackCompilerOptions.output.jsonpFunction = `webpackJsonp_${this.packageName}`;
   
