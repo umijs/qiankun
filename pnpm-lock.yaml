@@ -60,7 +60,7 @@ importers:
         specifier: ^0.34.1
         version: registry.npmmirror.com/vitest@0.34.5
 
-  examples/react15-plugin: {}
+  examples/react16-plugin: {}
 
   packages/loader:
     dependencies:
