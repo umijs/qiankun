@@ -24,10 +24,11 @@
     "webpack-dev-server": "^3.9.0"
   },
   "dependencies": {
-    "qiankun": "^2.10.10",
+    "@qiankunjs/renderer-react": "workspace:^",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "vue": "^2.6.11",
     "zone.js": "^0.10.2"
-  }
+  },
+  "repository": "git@github.com:umijs/qiankun.git"
 }

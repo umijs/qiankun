@@ -1,5 +1,6 @@
-import { loadMicroApp } from '../../packages/qiankun/dist/esm';
-// import { loadMicroApp } from 'qiankun';
+import React from 'react';
+import ReactDOM from 'react-dom';
+import { MicroApp } from '@qiankunjs/renderer-react';
 import './index.less';
 
 const microApps = [
@@ -7,24 +8,19 @@ const microApps = [
   { name: 'react16', entry: '//localhost:7100' },
 ];
 
-let prevApp;
 let prevAppName;
 document.querySelector('.mainapp-sidemenu').addEventListener('click', async (e) => {
   window.startTime = Date.now();
+
   const app = microApps.find((app) => app.name === e.target.dataset.value);
   if (app) {
     if (app.name === prevAppName) return;
 
-    await prevApp?.unmount();
-
-    prevApp = loadMicroApp(
-      {
-        name: app.name,
-        entry: app.entry,
-        container: document.querySelector('#subapp-container'),
-      },
-      { sandbox: true },
+    ReactDOM.render(
+      <MicroApp name={app.name} entry={app.entry} autoSetLoading />,
+      document.querySelector('#subapp-container'),
     );
+
     prevAppName = app.name;
   } else {
     console.log('not found any app');
