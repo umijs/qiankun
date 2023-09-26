@@ -47,9 +47,7 @@ module.exports = {
         collapseWhitespace: true,
       },
     }),
-    new QiankunPlugin({
-      version: 4,
-    }),
+    new QiankunPlugin(),
   ],
   externals: {
     react: 'React',
