@@ -1,5 +1,5 @@
 {
-  "name": "create-qiankun",
+  "name": "@qiankunjs/create-qiankun",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
