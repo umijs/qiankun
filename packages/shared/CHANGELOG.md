@@ -1,5 +1,12 @@
 # @qiankunjs/shared
 
+## 0.0.1-rc.1
+
+### Patch Changes
+
+- ebb2bcaa: 🐛fix findDependency logic while peerDeps is undefined
+  - @qiankunjs/sandbox@0.0.1-rc.1
+
 ## 0.0.1-beta.6
 
 ### Patch Changes
