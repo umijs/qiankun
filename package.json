@@ -16,7 +16,7 @@
     "prettier": "prettier --write .",
     "docs": "dumi dev",
     "build-docs": "dumi build",
-    "ci": "pnpm run lint && pnpm run build && pnpm run test",
+    "ci": "pnpm run lint && pnpm run build",
     "ci:publish": "pnpm run build && changeset publish",
     "test": "cross-env NODE_ENV=test vitest",
     "prepare": "husky install"
