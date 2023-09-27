@@ -1,8 +1,10 @@
 const QiankunPlugin  = require('@qiankunjs/webpack-plugin');
 
+
 module.exports = {
   webpack: config => {
     config.plugins.push(new QiankunPlugin());
+
     return config;
   },
   devServer: _ => {

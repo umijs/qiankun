@@ -1,12 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { Compiler, Configuration } from 'webpack';
+import { RawSource } from 'webpack-sources';
 
-// 获取当前工作目录
 const projectRoot: string = process.cwd();
-// 构建项目的package.json文件的路径
 const packageJsonPath: string = path.join(projectRoot, 'package.json');
-// 读取并解析package.json文件内容
 const packageJson: { name?: string } = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
 
 interface QiankunPluginOptions {
@@ -17,23 +15,40 @@ class QiankunPlugin {
   private packageName: string;
 
   constructor(options: QiankunPluginOptions = {}) {
-    // 设置包名，如果未提供，则使用package.json中的名称
     this.packageName = options.packageName || packageJson.name || '';
   }
 
   apply(compiler: Compiler): void {
-
     const webpackCompilerOptions = compiler.options as Configuration & { output: { jsonpFunction?: string } };
-    // 设置输出库的名称
     webpackCompilerOptions.output.library = `${this.packageName}`;
-    // 设置输出格式为UMD
     webpackCompilerOptions.output.libraryTarget = 'window';
-    // 设置jsonp函数的名称，以确保它是唯一的
     webpackCompilerOptions.output.jsonpFunction = `webpackJsonp_${this.packageName}`;
-  
     webpackCompilerOptions.output.globalObject = 'window';
-    // 设置全局的chunk加载函数名称
     webpackCompilerOptions.output.chunkLoadingGlobal = `webpackJsonp_${this.packageName}`;
+
+    compiler.hooks.emit.tapAsync('QiankunPlugin', (compilation, callback) => {
+      Object.keys(compilation.assets).forEach(filename => {
+        if (filename.endsWith('.html')) {
+          const htmlSource = compilation.assets[filename].source();
+          const htmlString = typeof htmlSource === 'string' ? htmlSource : htmlSource.toString('utf-8');
+          
+          // 找到所有的 <script> 标签
+          const scriptTags = htmlString.match(/<script[^>]*src="[^"]+"[^>]*><\/script>/g) || [];
+          // 筛选出不包含 defer 和 async 属性的标签
+          const nonAsyncOrDeferScripts = scriptTags.filter(tag => !(/defer|async/.test(tag)));
+
+          if (nonAsyncOrDeferScripts.length) {
+            // 获取最后一个 <script> 标签
+            const lastScriptTag = nonAsyncOrDeferScripts[nonAsyncOrDeferScripts.length - 1];
+            // 添加 entry 属性
+            const modifiedScriptTag = lastScriptTag.replace('<script', '<script entry');
+            const modifiedHtml = htmlString.replace(lastScriptTag, modifiedScriptTag);
+            compilation.assets[filename] = new RawSource(modifiedHtml) as any;
+          }
+        }
+      });
+      callback();
+    });
   }
 }
 
