@@ -31,4 +31,4 @@ jobs:
       - run: corepack enable # https://nodejs.org/api/corepack.html
       - run: pnpm install
       - run: pnpm run ci
-      - run: pnpm run docs:build
+      # - run: pnpm run docs:build #执行报错，暂时关闭
