@@ -75,6 +75,9 @@ importers:
       '@types/prompts':
         specifier: ^2.4.4
         version: 2.4.5
+      kolorist:
+        specifier: ^1.8.0
+        version: 1.8.0
 
   packages/loader:
     dependencies:
@@ -7513,6 +7516,10 @@ packages:
       vary: 1.1.2
     transitivePeerDependencies:
       - supports-color
+    dev: true
+
+  /kolorist@1.8.0:
+    resolution: {integrity: sha512-Y+60/zizpJ3HRH8DCss+q95yr6145JXZo46OTpFvDZWLfRCE4qChOyk1b26nMaNpfHHgxagk9dXT5OP0Tfe+dQ==}
     dev: true
 
   /language-subtag-registry@0.3.22:

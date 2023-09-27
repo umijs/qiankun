@@ -1,34 +1,87 @@
 <template>
   <div id="app">
-    <div id="nav">
-      <router-link to="/">Home</router-link>
-      |
-      <router-link to="/about">About</router-link>
+    <div class="mainapp">
+    <!-- 标题栏 -->
+    <header class="mainapp-header">
+      <h1>QianKun</h1>
+    </header>
+    <div class="mainapp-main">
+      <!-- 侧边栏 -->
+      <ul class="mainapp-sidemenu">
+        <li data-value='react16'>React16</li>
+        <li data-value='react15'>React15</li>
+      </ul>
+      <!-- 子应用  -->
+      <main id="subapp-container"></main>
     </div>
+  </div>
     <router-view/>
   </div>
 </template>
 
-<style>
-#app {
-  font-family: 'Avenir', Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
+<style lang="less">
+// 主应用慎用 reset 样式
+body {
+  margin: 0;
 }
 
-#nav {
-  padding-bottom: 20px;
+.mainapp {
+  // 防止被子应用的样式覆盖
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Hiragino Sans GB, Microsoft YaHei, Helvetica Neue, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol;
+  line-height: 1;
 }
 
-#nav a {
-  font-weight: bold;
-  color: #2c3e50;
-  text-decoration: none;
+.mainapp-header {
+  >h1 {
+    color: #333;
+    font-size: 36px;
+    font-weight: 700;
+    margin: 0;
+    padding: 36px;
+  }
 }
 
-#nav a.router-link-exact-active {
-  color: #42b983;
+.mainapp-main {
+  display: flex;
+
+  .mainapp-sidemenu {
+    width: 130px;
+    list-style: none;
+    margin: 0;
+    margin-left: 40px;
+    padding: 0;
+    border-right: 2px solid #aaa;
+
+    >li {
+      color: #aaa;
+      margin: 20px 0;
+      font-size: 18px;
+      font-weight: 400;
+      cursor: pointer;
+
+      &:hover {
+        color: #444;
+      }
+
+      &:first-child {
+        margin-top: 5px;
+      }
+    }
+  }
 }
+
+// 子应用区域
+#subapp-container {
+  flex-grow: 1;
+  position: relative;
+  margin: 0 40px;
+
+  .subapp-loading {
+    color: #444;
+    font-size: 28px;
+    font-weight: 600;
+    text-align: center;
+  }
+}
+
 </style>
