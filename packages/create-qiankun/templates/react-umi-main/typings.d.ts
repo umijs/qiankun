@@ -1,1 +1,0 @@
-import 'umi/typings';
