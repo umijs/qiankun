@@ -7,3 +7,7 @@
 /coverage
 .cache
 examples
+
+.changeset/*
+pnpm-lock.yaml
+packages/sandbox/src/core/sandbox/globals.ts
