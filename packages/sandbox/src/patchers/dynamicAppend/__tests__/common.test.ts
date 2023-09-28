@@ -3,7 +3,7 @@ import { getStyledElementCSSRules, rebuildCSSRules, recordStyledComponentsCSSRul
 vi.mock('import-html-entry', () => ({
   default: {
     execScripts: vi.fn(),
-  }
+  },
 }));
 
 const cssRuleText1 = '#foo { color: red; }';

@@ -21,9 +21,7 @@ export function getTargetValue<T>(target: unknown, value: T): T {
     // some callable function has custom fields, we need to copy the enumerable props to boundValue. such as moment function.
     // use for..in rather than Object.keys.forEach for performance reason
     for (const key in typedValue) {
-      ((boundValue as object) as Record<string, unknown>)[key] = ((typedValue as object) as Record<string, unknown>)[
-        key
-      ];
+      (boundValue as object as Record<string, unknown>)[key] = (typedValue as object as Record<string, unknown>)[key];
     }
 
     // copy prototype if bound function not have but target one have
