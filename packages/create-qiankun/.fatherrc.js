@@ -1,5 +1,5 @@
 export default {
-  platform: 'node', // 默认构建为 Node.js 环境的产物
+  platform: 'node',
   cjs: {
     input: 'src',
     output: 'dist',

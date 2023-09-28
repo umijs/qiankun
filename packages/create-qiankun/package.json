@@ -9,17 +9,22 @@
   "scripts": {
     "build": "father build"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "ejs": "^3.1.9",
+    "execa": "^8.0.1",
     "fs-extra": "^10.1.0",
+    "kolorist": "^1.8.0",
     "minimist": "^1.2.6",
     "prompts": "^2.4.2"
   },
   "devDependencies": {
-    "@types/prompts": "^2.4.4",
-    "kolorist": "^1.8.0"
+    "@types/fs-extra": "^11.0.2",
+    "@types/prompts": "^2.4.4"
   }
 }

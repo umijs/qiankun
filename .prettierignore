@@ -7,3 +7,5 @@
 /coverage
 .cache
 examples
+
+**/*.ejs

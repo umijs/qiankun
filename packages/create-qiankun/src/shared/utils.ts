@@ -1,0 +1,78 @@
+import fse from 'fs-extra';
+import path, { join } from 'node:path';
+
+// import execa from 'execa';
+/**
+ * 判断目标路径是否为文件夹
+ * @param targetPath
+ * @returns
+ */
+export function isDir(targetPath: string) {
+  try {
+    return fse.lstatSync(targetPath).isDirectory();
+  } catch (e: unknown) {
+    return false;
+  }
+}
+
+/**
+ * 判断目标路径是否为文件
+ * @param targetPath
+ * @returns
+ */
+export function isFile(targetPath: string) {
+  try {
+    return fse.lstatSync(targetPath).isFile();
+  } catch (e) {
+    return false;
+  }
+}
+
+export function simpleDetectMonorepoRoot(target: string) {
+  const upperPath = path.join(target, '../');
+  if (isFile(join(upperPath, 'pnpm-workspace.yaml'))) {
+    return upperPath;
+  }
+  return null;
+}
+
+export async function getPnpmMajorVersion() {
+  // try {
+  //   const { stdout } = await execa.execa('pnpm', ['--version']);
+  //   return parseInt(stdout.trim().split('.')[0], 10);
+  // } catch (e) {
+  //   throw new Error('Please install pnpm first');
+  // }
+}
+
+export async function initGit(projectRoot: string) {
+  // const isGit = fse.existsSync(join(projectRoot, '.git'));
+  // if (isGit) return;
+  // try {
+  //   await execa.execa('git', ['init'], { cwd: projectRoot });
+  // } catch {
+  //   console.log(`Initial the git repo failed`);
+  // }
+}
+
+export function directoryTraverse(
+  dir: string,
+  opts: {
+    dirCallback?: (dirPath: string) => void;
+    fileCallback?: (filePath: string) => void;
+  },
+) {
+  const { dirCallback, fileCallback } = opts;
+  for (const filename of fse.readdirSync(dir)) {
+    if (filename === '.git' || filename === 'node_modules') {
+      continue;
+    }
+    const fullPath = path.resolve(dir, filename);
+    if (isDir(fullPath)) {
+      dirCallback?.(fullPath);
+      directoryTraverse(fullPath, opts);
+      continue;
+    }
+    fileCallback?.(fullPath);
+  }
+}
