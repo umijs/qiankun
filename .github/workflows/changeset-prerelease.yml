@@ -19,7 +19,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install
@@ -31,8 +31,8 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-          commit: 'chore: update versions'
-          title: 'chore: update versions'
+          commit: "chore: update versions"
+          title: "chore: update versions"
           publish: pnpm ci:publish
           createGithubReleases: false
         env:

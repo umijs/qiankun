@@ -10,5 +10,5 @@ jobs:
     steps:
       - uses: actions-cool/emoji-helper@v1.0.0
         with:
-          type: 'release'
-          emoji: '+1, laugh, heart, hooray, rocket, eyes'
+          type: "release"
+          emoji: "+1, laugh, heart, hooray, rocket, eyes"

@@ -5,9 +5,11 @@
   "overrides": [
     {
       "files": ["*.json", ".prettierrc"],
-      "options": {
-        "parser": "json"
-      }
+      "options": { "parser": "json" }
+    },
+    {
+      "files": ["*.{yaml,yml}"],
+      "options": { "singleQuote": false }
     }
   ]
 }
