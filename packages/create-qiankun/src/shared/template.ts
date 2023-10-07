@@ -5,6 +5,10 @@ export enum MainFrameworkTemplate {
   'Vue3+Webpack' = 'vue3-main',
 }
 
+export enum SubFrameworkTemplate {
+  'React18+Webpack' = 'react18-webpack-sub',
+}
+
 type OptionType = { title: string; value: string };
 
 export function enumToArray(enumObject: Record<string, string>): OptionType[] {
@@ -19,3 +23,5 @@ export const mainFrameworkList = enumToArray(MainFrameworkTemplate);
 export const mainFrameworkItems = mainFrameworkList.map((item) => item.value);
 
 export const mainFrameworkFilesEffectsMap = new Map([['vue3-main', ['src/main.ejs']]]);
+
+export const subFrameworkList = enumToArray(SubFrameworkTemplate);
