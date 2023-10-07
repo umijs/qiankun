@@ -1,5 +1,5 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import fs from 'fs';
+import path from 'path';
 import { Compiler, Configuration } from 'webpack';
 import { RawSource } from 'webpack-sources';
 
@@ -52,4 +52,5 @@ class QiankunPlugin {
   }
 }
 
-module.exports = QiankunPlugin;
+export default QiankunPlugin;
+

@@ -1,25 +1,26 @@
-# qiankun-plugin
+# @qiankunjs/webpack-plugin
 
-`qiankun-plugin` 是一个为 [qiankun](https://github.com/umijs/qiankun) 微前端框架设计的 Webpack 插件，用于简化和自动化与 qiankun 集成的一些常见配置。
+`@qiankunjs/webpack-plugin` 是一个为 [qiankun](https://github.com/umijs/qiankun) 微前端框架设计的 Webpack 插件，用于简化和自动化与 qiankun 集成的一些常见配置。
 
 ## 功能
 
 - 自动设置输出库的名称和格式。
 - 确保 `jsonpFunction` 名称的唯一性。
 - 设置全局对象为 `window`，确保库可以在浏览器中运行。
+- 自动为 html 中的入口script标签加上entry标记
 
 ## 安装
 
 使用 npm:
 
 ```bash
-npm install qiankun-plugin --save-dev
+npm install @qiankunjs/webpack-plugin --save-dev
 ```
 
 或使用 yarn:
 
 ```bash
-yarn add qiankun-plugin --dev
+yarn add @qiankunjs/webpack-plugin --dev
 ```
 
 ## 使用
@@ -27,7 +28,7 @@ yarn add qiankun-plugin --dev
 在您的 `webpack.config.js` 或其他配置文件中：
 
 ```javascript
-const QiankunPlugin = require('qiankun-plugin');
+const QiankunPlugin = require('@qiankunjs/webpack-plugin').default;
 
 module.exports = {
   // ... 其他配置
