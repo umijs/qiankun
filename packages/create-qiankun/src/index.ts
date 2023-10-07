@@ -6,11 +6,12 @@ import path from 'node:path';
 import fse from 'fs-extra';
 import { IRoutePattern } from './shared/types';
 import { directoryTraverse, initGit, isDir, simpleDetectMonorepoRoot } from './shared/utils';
-import { mainFrameworkList, enumToArray } from './shared/template';
+import { mainFrameworkList, subFrameworkList, enumToArray } from './shared/template';
 
 interface PromptAnswer {
   projectName: string;
   mainFramework: string;
+  subFramework: string;
   mainRoute: IRoutePattern;
 }
 
@@ -44,6 +45,12 @@ export async function createQiankunDefaultProject() {
         type: 'select',
         message: 'Choose a framework for your main application',
         choices: mainFrameworkList,
+      },
+      {
+        name: 'subFramework',
+        type: 'select',
+        message: 'Choose a framework for your sub application',
+        choices: subFrameworkList,
       },
       {
         name: 'mainRoute',
@@ -90,7 +97,7 @@ export async function createQiankunDefaultProject() {
 async function renderTemplate(opts: RenderOptions) {
   const { projectRoot, inMonorepo, userChoose } = opts;
 
-  const { mainFramework } = userChoose;
+  const { mainFramework, subFramework } = userChoose;
 
   const templateDir = path.join(__dirname, '../template');
 
@@ -106,8 +113,10 @@ async function renderTemplate(opts: RenderOptions) {
   }
 
   const mainFrameworkFinalPath = path.join(tmpTemplateDir, mainFramework);
-
   await fse.copy(path.join(templateDir, mainFramework), mainFrameworkFinalPath);
+
+  const subFrameworkFinalPath = path.join(tmpTemplateDir, subFramework);
+  await fse.copy(path.join(templateDir, subFramework), subFrameworkFinalPath);
 
   await renderTemplateEffect(mainFrameworkFinalPath, userChoose);
 }
