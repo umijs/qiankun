@@ -1,7 +1,8 @@
 import fse from 'fs-extra';
-import path, { join } from 'node:path';
+import path, { join, posix } from 'node:path';
+import os from 'node:os';
+import execa from 'execa';
 
-// import execa from 'execa';
 /**
  * 判断目标路径是否为文件夹
  * @param targetPath
@@ -37,22 +38,27 @@ export function simpleDetectMonorepoRoot(target: string) {
 }
 
 export async function getPnpmMajorVersion() {
-  // try {
-  //   const { stdout } = await execa.execa('pnpm', ['--version']);
-  //   return parseInt(stdout.trim().split('.')[0], 10);
-  // } catch (e) {
-  //   throw new Error('Please install pnpm first');
-  // }
+  try {
+    const { stdout } = await execa('pnpm', ['--version']);
+    return parseInt(stdout.trim().split('.')[0], 10);
+  } catch (e) {
+    throw new Error('Please install pnpm first');
+  }
 }
 
 export async function initGit(projectRoot: string) {
-  // const isGit = fse.existsSync(join(projectRoot, '.git'));
-  // if (isGit) return;
-  // try {
-  //   await execa.execa('git', ['init'], { cwd: projectRoot });
-  // } catch {
-  //   console.log(`Initial the git repo failed`);
-  // }
+  const isGit = fse.existsSync(join(projectRoot, '.git'));
+  if (isGit) return;
+  try {
+    await execa('git', ['init'], { cwd: projectRoot });
+  } catch {
+    console.log(`Initial the git repo failed`);
+  }
+}
+
+export const isWindows = os.platform() === 'win32';
+export function normalizePath(path: string) {
+  return posix.normalize(isWindows ? path.replace(/\\/g, '/') : path);
 }
 
 export function directoryTraverse(
@@ -67,7 +73,7 @@ export function directoryTraverse(
     if (filename === '.git' || filename === 'node_modules') {
       continue;
     }
-    const fullPath = path.resolve(dir, filename);
+    const fullPath = normalizePath(path.resolve(dir, filename));
     if (isDir(fullPath)) {
       dirCallback?.(fullPath);
       directoryTraverse(fullPath, opts);
