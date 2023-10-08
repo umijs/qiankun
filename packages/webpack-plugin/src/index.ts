@@ -52,5 +52,6 @@ class QiankunPlugin {
   }
 }
 
+// 使用export default导出时，引用需要增加.default，不太友好，所以这里使用cjs导出。
 module.exports = QiankunPlugin;
 
