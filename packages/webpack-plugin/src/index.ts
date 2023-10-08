@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import fs from 'fs';
 import path from 'path';
-import { Compiler, Configuration } from 'webpack';
+import type { Compiler, Configuration } from 'webpack';
 import { RawSource } from 'webpack-sources';
 
 const projectRoot: string = process.cwd();
@@ -27,15 +28,15 @@ class QiankunPlugin {
     webpackCompilerOptions.output.chunkLoadingGlobal = `webpackJsonp_${this.packageName}`;
 
     compiler.hooks.emit.tapAsync('QiankunPlugin', (compilation, callback) => {
-      Object.keys(compilation.assets).forEach(filename => {
+      Object.keys(compilation.assets).forEach((filename) => {
         if (filename.endsWith('.html')) {
           const htmlSource = compilation.assets[filename].source();
           const htmlString = typeof htmlSource === 'string' ? htmlSource : htmlSource.toString('utf-8');
-          
+
           // 找到所有的 <script> 标签
           const scriptTags = htmlString.match(/<script[^>]*src="[^"]+"[^>]*><\/script>/g) || [];
           // 筛选出不包含 defer 和 async 属性的标签
-          const nonAsyncOrDeferScripts = scriptTags.filter(tag => !(/defer|async/.test(tag)));
+          const nonAsyncOrDeferScripts = scriptTags.filter((tag) => !/defer|async/.test(tag));
 
           if (nonAsyncOrDeferScripts.length) {
             // 获取最后一个 <script> 标签
@@ -43,6 +44,7 @@ class QiankunPlugin {
             // 添加 entry 属性
             const modifiedScriptTag = lastScriptTag.replace('<script', '<script entry');
             const modifiedHtml = htmlString.replace(lastScriptTag, modifiedScriptTag);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             compilation.assets[filename] = new RawSource(modifiedHtml) as any;
           }
         }
@@ -52,6 +54,5 @@ class QiankunPlugin {
   }
 }
 
-// 使用export default导出时，引用需要增加.default，不太友好，所以这里使用cjs导出。
+// 使用export default导出，引用时需要增加.default，不太友好，所以这里使用cjs导出。
 module.exports = QiankunPlugin;
-
