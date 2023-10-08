@@ -19,7 +19,7 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "moduleResolution": "node",
-    "typeRoots": ["typings", "node_modules/@types"],
+    "typeRoots": ["typings", "node_modules/@types", "node_modules"],
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "types": ["vitest/globals", "node"]

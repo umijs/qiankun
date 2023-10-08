@@ -10,7 +10,8 @@ import type { MatchResult } from '../module-resolver';
 export type BaseTranspilerOpts = BaseLoaderOpts & {
   moduleResolver?: (url: string) => MatchResult | undefined;
   // TODO: 先把 sandbox 类型设置如下，解除和 @qiankunjs/loader 相互依赖的问题
-  sandbox?: Record<string, unknown>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  sandbox?: Record<string, any>;
 };
 
 export type AssetsTranspilerOpts = BaseTranspilerOpts & { rawNode: Node };

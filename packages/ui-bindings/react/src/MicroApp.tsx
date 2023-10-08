@@ -158,11 +158,11 @@ export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<Mic
               const updatingTimestamp = microApp._updatingTimestamp!;
               if (Date.now() - updatingTimestamp < 200) {
                 console.warn(
-                  `[@qiankunjs/renderer-react] It seems like microApp ${name} is updating too many times in a short time(200ms), you may need to do some optimization to avoid the unnecessary re-rendering.`,
+                  `[@qiankunjs/react-binding] It seems like microApp ${name} is updating too many times in a short time(200ms), you may need to do some optimization to avoid the unnecessary re-rendering.`,
                 );
               }
 
-              console.info(`[@qiankunjs/renderer-react] MicroApp ${name} is updating with props: `, props);
+              console.info(`[@qiankunjs/react-binding] MicroApp ${name} is updating with props: `, props);
               microApp._updatingTimestamp = Date.now();
             }
 

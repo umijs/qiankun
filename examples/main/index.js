@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { MicroApp } from '@qiankunjs/renderer-react';
+import { MicroApp } from '@qiankunjs/react-binding';
 import './index.less';
 
 const microApps = [

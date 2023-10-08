@@ -1,5 +1,5 @@
 {
-  "name": "@qiankunjs/renderer-react",
+  "name": "@qiankunjs/react-binding",
   "version": "0.0.1-rc.1",
   "description": "",
   "main": "./dist/cjs/index.js",
@@ -18,7 +18,8 @@
     "lodash": "^4.17.11"
   },
   "devDependencies": {
-    "@types/react": "^18.0.0"
+    "@types/react": "^18.0.0",
+    "eslint-plugin-react": "latest"
   },
   "peerDependencies": {
     "react": ">=16.9.0",

@@ -1,4 +1,4 @@
-import cfg from '../../.fatherrc.cjs';
+import cfg from '../../../.fatherrc.cjs';
 
 export default {
   umd: {},

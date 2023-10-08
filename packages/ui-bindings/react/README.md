@@ -1,9 +1,9 @@
-# qiankun renderer react
+# qiankun react binding
 
 ## 安装
 
 ```bash
-npm i @qiankunjs/renderer-react
+npm i @qiankunjs/react-binding
 ```
 
 ## MicroApp 组件
@@ -11,7 +11,7 @@ npm i @qiankunjs/renderer-react
 直接通过 `<MicroApp />` 组件加载（或卸载）子应用，该组件提供了 loading 以及错误捕获相关的能力：
 
 ```tsx
-import { MicroApp } from '@qiankunjs/renderer-react';
+import { MicroApp } from '@qiankunjs/react-binding';
 
 export default function Page() {
   return <MicroApp name="app1" entry="http://localhost:8000" />;
@@ -35,7 +35,7 @@ export default function Page() {
 直接将 `autoSetLoading` 作为参数传入即可：
 
 ```tsx
-import { MicroApp } from '@qiankunjs/renderer-react';
+import { MicroApp } from '@qiankunjs/react-binding';
 
 export default function Page() {
   return <MicroApp name="app1" entry="http://localhost:8000" autoSetLoading />;
@@ -48,7 +48,7 @@ export default function Page() {
 
 ```tsx
 import CustomLoader from '@/components/CustomLoader';
-import { MicroApp } from '@qiankunjs/renderer-react';
+import { MicroApp } from '@qiankunjs/react-binding';
 
 export default function Page() {
   return (
@@ -64,7 +64,7 @@ export default function Page() {
 启用此能力后，当子应用加载出现异常时，会自动显示错误信息。可以向子应用传入 `autoCaptureError` 属性以开启子应用错误捕获能力：
 
 ```tsx
-import { MicroApp } from '@qiankunjs/renderer-react';
+import { MicroApp } from '@qiankunjs/react-binding';
 
 export default function Page() {
   return <MicroApp name="app1" entry="http://localhost:8000" autoCaptureError />;
@@ -77,7 +77,7 @@ export default function Page() {
 
 ```tsx
 import CustomErrorBoundary from '@/components/CustomErrorBoundary';
-import { MicroApp } from '@qiankunjs/renderer-react';
+import { MicroApp } from '@qiankunjs/react-binding';
 
 export default function Page() {
   return (
@@ -124,7 +124,7 @@ Qiankun 在 single-spa 的基础上实现了一些额外的生命钩子。按照
 
 ```tsx
 import { useRef } from 'react';
-import { MicroApp } from '@qiankunjs/renderer-react';
+import { MicroApp } from '@qiankunjs/react-binding';
 
 export default function Page() {
   const microAppRef = useRef();
