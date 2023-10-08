@@ -52,5 +52,5 @@ class QiankunPlugin {
   }
 }
 
-export default QiankunPlugin;
+module.exports = QiankunPlugin;
 

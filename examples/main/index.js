@@ -5,8 +5,6 @@ import './index.less';
 const microApps = [
   { name: 'react15', entry: '//localhost:7102' },
   { name: 'react16', entry: '//localhost:7100' },
-  { name: 'react15-plugin', entry: '//localhost:7103' },
-  { name: 'react16-plugin', entry: '//localhost:7100' },
 ];
 
 let prevApp;

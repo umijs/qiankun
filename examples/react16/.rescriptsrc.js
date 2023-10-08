@@ -1,4 +1,4 @@
-const QiankunPlugin  = require('../../packages/webpack-plugin/dist/cjs').default;
+const QiankunPlugin  = require('../../packages/webpack-plugin/dist/cjs');
 
 
 module.exports = {
