@@ -11,8 +11,8 @@ jobs:
       - name: close inactive issue without reprodction
         uses: actions-cool/issues-helper@v2.2.1
         with:
-          actions: 'close-issues'
-          labels: 'Need Reproduction'
+          actions: "close-issues"
+          labels: "Need Reproduction"
           inactive-day: 30
           body: |
             Since the issue was labeled with `Need Reproduction`, but no response in 30 days. This issue will be close. If you have any questions, you can comment and reply.
@@ -21,8 +21,8 @@ jobs:
       - name: close inactive issue not use template
         uses: actions-cool/issues-helper@v2.2.1
         with:
-          actions: 'close-issues'
-          labels: 'pls use issue template'
+          actions: "close-issues"
+          labels: "pls use issue template"
           inactive-day: 30
           body: |
             Since the issue was labeled with `pls use issue template`, but no response in 30 days. This issue will be close. If you have any questions, you can comment and reply.
@@ -31,8 +31,8 @@ jobs:
       - name: close inactive issue out of scope
         uses: actions-cool/issues-helper@v2.2.1
         with:
-          actions: 'close-issues'
-          labels: 'out-of-scope'
+          actions: "close-issues"
+          labels: "out-of-scope"
           inactive-day: 30
           body: |
             Since the issue was labeled with `out-of-scope`, but no response in 30 days. This issue will be close. If you have any questions, you can comment and reply.
@@ -41,8 +41,8 @@ jobs:
       - name: close inactive issue
         uses: actions-cool/issues-helper@v2.2.1
         with:
-          actions: 'close-issues'
-          labels: 'inactive'
+          actions: "close-issues"
+          labels: "inactive"
           inactive-day: 7
           body: |
             Since the issue was labeled with `inactive`, but no response in 7 days. This issue will be close. If you have any questions, you can comment and reply.

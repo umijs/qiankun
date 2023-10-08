@@ -83,7 +83,7 @@ export class Membrane {
 
     this.target = target;
 
-    this.realmGlobal = (new Proxy(this.target, {
+    this.realmGlobal = new Proxy(this.target, {
       set: (membraneTarget, p, value: never) => {
         if (!this.locking) {
           // We must keep its description while the property existed in incubatorContext before
@@ -221,7 +221,7 @@ export class Membrane {
       getPrototypeOf() {
         return Reflect.getPrototypeOf(incubatorContext);
       },
-    }) as unknown) as WindowProxy;
+    }) as unknown as WindowProxy;
   }
 
   addIntrinsics(

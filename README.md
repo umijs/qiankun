@@ -57,10 +57,10 @@ And on top of these, it offers:
 
 ## Packages
 
-| Package                                | Version (click for changelogs)                                                                                          |
-|----------------------------------------|:------------------------------------------------------------------------------------------------------------------------|
-| [qiankun](packages/qiankun)            | [![qiankun version](https://img.shields.io/npm/v/qiankun/next.svg?label=%20)](packages/qiankun/CHANGELOG.md)            |
-| [@qiankunjs/loader](packages/loader)   | [![qiankun version](https://img.shields.io/npm/v/@qiankunjs/loader/alpha.svg?label=%20)](packages/qiankun/CHANGELOG.md)  |
+| Package | Version (click for changelogs) |
+| --- | :-- |
+| [qiankun](packages/qiankun) | [![qiankun version](https://img.shields.io/npm/v/qiankun/next.svg?label=%20)](packages/qiankun/CHANGELOG.md) |
+| [@qiankunjs/loader](packages/loader) | [![qiankun version](https://img.shields.io/npm/v/@qiankunjs/loader/alpha.svg?label=%20)](packages/qiankun/CHANGELOG.md) |
 | [@qiankunjs/sandbox](packages/sandbox) | [![qiankun version](https://img.shields.io/npm/v/@qiankunjs/sandbox/alpha.svg?label=%20)](packages/qiankun/CHANGELOG.md) |
 
 ## 📦 Installation
