@@ -1,5 +1,5 @@
 packages:
-  - 'packages/*'
+  - "packages/*"
 #  - 'examples/react15'
 #  - 'examples/react16'
 #  - 'examples/main'

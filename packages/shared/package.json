@@ -19,10 +19,7 @@
     "lodash": "^4.17.11",
     "semver": "^7.5.3"
   },
-  "files": [
-    "dist",
-    "src"
-  ],
+  "files": ["dist", "src"],
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   }

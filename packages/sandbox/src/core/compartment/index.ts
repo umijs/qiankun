@@ -48,13 +48,15 @@ export class Compartment {
   }
 
   protected addConstantIntrinsicNames(intrinsics: string[]): void {
-    this.constantIntrinsicNames  = [...intrinsics, ...this.constantIntrinsicNames];
+    this.constantIntrinsicNames = [...intrinsics, ...this.constantIntrinsicNames];
   }
 
   makeEvaluateFactory(source: string, sourceURL?: string): string {
     const sourceMapURL = sourceURL ? `//# sourceURL=${sourceURL}\n` : '';
 
-    const globalObjectOptimizer = this.constantIntrinsicNames.length ? `const {${this.constantIntrinsicNames.join(',')}} = this;`: '';
+    const globalObjectOptimizer = this.constantIntrinsicNames.length
+      ? `const {${this.constantIntrinsicNames.join(',')}} = this;`
+      : '';
 
     nativeGlobal[this.id] = this.globalThis;
     // eslint-disable-next-line max-len

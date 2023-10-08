@@ -14,9 +14,10 @@
     "release:alpha": "pnpm run build && changeset publish && changeset pre exit",
     "lint": "eslint packages/",
     "prettier": "prettier --write .",
+    "prettier:check": "prettier -c .",
     "docs": "dumi dev",
     "build-docs": "dumi build",
-    "ci": "pnpm run lint && pnpm run build",
+    "ci": "pnpm run lint && pnpm run prettier:check && pnpm run build",
     "ci:publish": "pnpm run build && changeset publish",
     "test": "cross-env NODE_ENV=test vitest",
     "prepare": "husky install"

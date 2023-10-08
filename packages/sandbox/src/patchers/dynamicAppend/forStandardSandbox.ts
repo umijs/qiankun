@@ -98,7 +98,11 @@ function patchDocument(sandbox: Sandbox) {
       // must rebind the function to the target otherwise it will cause illegal invocation error
       if (isCallable(value) && !isBoundedFunction(value)) {
         return function proxyFunction(...args: unknown[]): unknown {
-          return Function.prototype.apply.call(value, target, args.map((arg) => (arg === receiver ? target : arg)));
+          return Function.prototype.apply.call(
+            value,
+            target,
+            args.map((arg) => (arg === receiver ? target : arg)),
+          );
         };
       }
 

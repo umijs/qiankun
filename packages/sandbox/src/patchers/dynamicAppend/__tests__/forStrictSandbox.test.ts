@@ -5,7 +5,7 @@ import { patchStandardSandbox } from '../forStrictSandbox';
 vi.mock('import-html-entry', () => ({
   default: {
     execScripts: vi.fn(),
-  }
+  },
 }));
 
 describe('forStrictSandbox test', () => {
