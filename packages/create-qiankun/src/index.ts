@@ -5,9 +5,9 @@ import { green, red } from 'kolorist';
 import path from 'node:path';
 import fse from 'fs-extra';
 import { IRoutePattern } from './shared/types';
-import { directoryTraverse, initGit, isDir, normalizePath, simpleDetectMonorepoRoot } from './shared/utils';
+import { initGit, isDir, simpleDetectMonorepoRoot } from './shared/utils';
 import { mainFrameworkList, subFrameworkList, enumToArray } from './shared/template';
-
+import { renderEJSforTemplate } from './shared/render';
 interface PromptAnswer {
   projectName: string;
   mainFramework: string;
@@ -118,16 +118,5 @@ async function renderTemplate(opts: RenderOptions) {
   const subFrameworkFinalPath = path.join(tmpTemplateDir, subFramework);
   await fse.copy(path.join(templateDir, subFramework), subFrameworkFinalPath);
 
-  await renderTemplateEffect(mainFrameworkFinalPath, userChoose);
-}
-
-async function renderTemplateEffect(target: string, userChoose: PromptAnswer) {
-  target = normalizePath(target);
-  directoryTraverse(target, {
-    fileCallback(filePath) {
-      console.log(filePath, 'filePath');
-      const [, resolvePath] = filePath.split(target);
-      console.log(resolvePath, 'resolvePath', filePath, 'target', target, '2222', path.resolve(filePath, target));
-    },
-  });
+  renderEJSforTemplate(mainFrameworkFinalPath, { mainRoute: userChoose.mainRoute });
 }
