@@ -7,6 +7,7 @@ import type { MatchResult } from '../module-resolver';
 import { getEntireUrl } from '../utils';
 import type { AssetsTranspilerOpts } from './types';
 import { Mode } from './types';
+import { createReusingObjectUrl } from './utils';
 
 const isValidJavaScriptType = (type?: string): boolean => {
   const handleTypes = [
@@ -31,9 +32,9 @@ const getCredentials = (crossOrigin: string | null): RequestInit['credentials'] 
 };
 
 type PreTranspileResult =
-  | { mode: Mode.REMOTE_FROM_SANDBOX; result: { src: string } }
-  | { mode: Mode.CACHE_FROM_SANDBOX; result: { src: string } & MatchResult }
-  | { mode: Mode.INLINE_FROM_SANDBOX; result: { code: string } }
+  | { mode: Mode.REMOTE_ASSETS_IN_SANDBOX; result: { src: string } }
+  | { mode: Mode.REUSED_DEP_IN_SANDBOX; result: { src: string } & MatchResult }
+  | { mode: Mode.INLINE_CODE_IN_SANDBOX; result: { code: string } }
   | { mode: Mode.NONE; result?: never };
 
 export const preTranspile = (
@@ -51,13 +52,13 @@ export const preTranspile = (
       const matchedScript = moduleResolver?.(entireUrl);
       if (matchedScript) {
         return {
-          mode: Mode.CACHE_FROM_SANDBOX,
+          mode: Mode.REUSED_DEP_IN_SANDBOX,
           result: { src: entireUrl, ...matchedScript },
         };
       }
 
       return {
-        mode: Mode.REMOTE_FROM_SANDBOX,
+        mode: Mode.REMOTE_ASSETS_IN_SANDBOX,
         result: { src: entireUrl },
       };
     }
@@ -69,7 +70,7 @@ export const preTranspile = (
       const code = scriptNode.textContent;
       if (code) {
         return {
-          mode: Mode.INLINE_FROM_SANDBOX,
+          mode: Mode.INLINE_CODE_IN_SANDBOX,
           result: {
             code,
           },
@@ -102,7 +103,7 @@ export default function transpileScript(
   );
 
   switch (mode) {
-    case Mode.REMOTE_FROM_SANDBOX: {
+    case Mode.REMOTE_ASSETS_IN_SANDBOX: {
       const { src } = result;
 
       // We must remove script src to avoid self execution as we need to fetch the script content and transpile it
@@ -129,7 +130,7 @@ export default function transpileScript(
       return script;
     }
 
-    case Mode.INLINE_FROM_SANDBOX: {
+    case Mode.INLINE_CODE_IN_SANDBOX: {
       const rawNode = opts.rawNode as HTMLScriptElement;
       const scriptNode = script.textContent ? script : rawNode.childNodes[0];
       const { code } = result;
@@ -141,7 +142,7 @@ export default function transpileScript(
       return script;
     }
 
-    case Mode.CACHE_FROM_SANDBOX: {
+    case Mode.REUSED_DEP_IN_SANDBOX: {
       const { url, version, src } = result;
 
       script.dataset.src = src;
@@ -154,11 +155,7 @@ export default function transpileScript(
       }
 
       // When the script hits the dependency reuse logic, the current script is not executed, and an empty script is returned directly
-      script.src = URL.createObjectURL(
-        new Blob([`// ${src} is reusing the execution result of ${url}`], {
-          type: 'text/javascript',
-        }),
-      );
+      script.src = createReusingObjectUrl(src, url, 'text/javascript');
 
       return script;
     }
