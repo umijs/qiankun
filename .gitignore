@@ -21,3 +21,6 @@ package-lock.json
 .now
 .pnpm-store
 *.log
+.dumi/tmp
+.dumi/tmp-test
+.dumi/tmp-production

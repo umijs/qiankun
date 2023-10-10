@@ -22,7 +22,10 @@
     "typeRoots": ["typings", "node_modules/@types"],
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "types": ["vitest/globals", "node"]
+    "types": ["vitest/globals", "node"],
+    "paths": {
+      "@@/*": [".dumi/tmp/*"]
+    }
   },
   "exclude": ["node_modules", "examples", "dist"]
 }
