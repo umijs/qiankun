@@ -2,7 +2,7 @@
   "name": "qiankun-monorepo",
   "private": true,
   "engines": {
-    "node": "16"
+    "node": ">=16"
   },
   "scripts": {
     "dev": "pnpm run build && npm run start:main && npm run start:react15",
