@@ -8,5 +8,5 @@ export type SandboxConfig = {
   appName: string;
   sandbox: Sandbox;
   dynamicStyleSheetElements: Array<HTMLStyleElement | HTMLLinkElement>;
-  getContainer: CallableFunction;
+  getContainer: () => HTMLElement;
 };
