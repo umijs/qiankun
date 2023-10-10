@@ -19,10 +19,10 @@ export function getTargetValue<T>(target: unknown, value: T): T {
     const boundValue = Function.prototype.bind.call(typedValue, target) as CallableFunction;
 
     // some callable function has custom fields, we need to copy the own props to boundValue. such as moment function.
-    getOwnPropertyNames(value).forEach((key) => {
+    getOwnPropertyNames(typedValue).forEach((key) => {
       // boundValue might be a proxy, we need to check the key whether exist in it
       if (!hasOwnProperty(boundValue, key)) {
-        defineProperty(boundValue, key, getOwnPropertyDescriptor(value, key)!);
+        defineProperty(boundValue, key, getOwnPropertyDescriptor(typedValue, key)!);
       }
     });
 
