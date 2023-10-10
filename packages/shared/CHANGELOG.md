@@ -1,5 +1,12 @@
 # @qiankunjs/shared
 
+## 0.0.1-rc.2
+
+### Patch Changes
+
+- b23d3d7b: 🐛fix preload is invalid while reused dependency is working
+  - @qiankunjs/sandbox@0.0.1-rc.2
+
 ## 0.0.1-rc.1
 
 ### Patch Changes
