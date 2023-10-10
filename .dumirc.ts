@@ -16,28 +16,30 @@ export default defineConfig({
     logo: 'https://gw.alipayobjects.com/zos/bmw-prod/8a74c1d3-16f3-4719-be63-15e467a68a24/km0cv8vn_w500_h500.png',
     nav: {
       mode: 'append',
-      zh: [
-        {
-          title: '版本公告',
-          children: [
-            { title: '发布日志', link: 'https://github.com/umijs/qiankun/releases' },
-            { title: '升级指南', link: '/zh/cookbook#从-1x-版本升级到-2x-版本' },
-            { title: '1.x 版本', link: 'https://v1.qiankun.umijs.org/zh/' },
-          ],
-        },
-        { title: 'GitHub', link: 'https://github.com/umijs/qiankun' },
-      ],
-      en: [
-        {
-          title: 'Version Notice',
-          children: [
-            { title: 'Changelog', link: 'https://github.com/umijs/qiankun/releases' },
-            { title: 'Upgrade Guide', link: '/cookbook#upgrade-from-1x-version-to-2x-version' },
-            { title: '1.x Version', link: 'https://v1.qiankun.umijs.org/' },
-          ],
-        },
-        { title: 'GitHub', link: 'https://github.com/umijs/qiankun' },
-      ],
+      value: {
+        zh: [
+          {
+            title: '版本公告',
+            children: [
+              { title: '发布日志', link: 'https://github.com/umijs/qiankun/releases' },
+              { title: '升级指南', link: '/zh/cookbook#从-1x-版本升级到-2x-版本' },
+              { title: '1.x 版本', link: 'https://v1.qiankun.umijs.org/zh/' },
+            ],
+          },
+          { title: 'GitHub', link: 'https://github.com/umijs/qiankun' },
+        ],
+        en: [
+          {
+            title: 'Version Notice',
+            children: [
+              { title: 'Changelog', link: 'https://github.com/umijs/qiankun/releases' },
+              { title: 'Upgrade Guide', link: '/cookbook#upgrade-from-1x-version-to-2x-version' },
+              { title: '1.x Version', link: 'https://v1.qiankun.umijs.org/' },
+            ],
+          },
+          { title: 'GitHub', link: 'https://github.com/umijs/qiankun' },
+        ],
+      },
     },
   },
   metas: [
