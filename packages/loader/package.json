@@ -26,8 +26,5 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
-  "files": [
-    "dist",
-    "src"
-  ]
+  "files": ["dist", "src"]
 }
