@@ -2,17 +2,17 @@
 toc: menu
 ---
 
-# Getting Started
+# 快速上手
 
-## Master Application
+## 主应用
 
-### 1. Installation
+### 1. 安装 qiankun
 
 ```bash
-$ yarn add qiankun # or npm i qiankun -S
+$ yarn add qiankun # 或者 npm i qiankun -S
 ```
 
-### 2. Register Sub Apps In Master Application
+### 2. 在主应用中注册微应用
 
 ```ts
 import { registerMicroApps, start } from 'qiankun';
@@ -35,38 +35,46 @@ registerMicroApps([
 start();
 ```
 
-After the sub-application information is registered, the matching logic of the qiankun will be automatically triggered once the browser url changes, and all the render methods corresponding to the subapplications whose activeRule methods returns `true` will be called, at the same time the subapplications' exposed lifecycle hooks will be called in turn.
+当微应用信息注册完之后，一旦浏览器的 url 发生变化，便会自动触发 qiankun 的匹配逻辑，所有 activeRule 规则匹配上的微应用就会被插入到指定的 container 中，同时依次调用微应用暴露出的生命周期钩子。
 
-## Sub Application
+如果微应用不是直接跟路由关联的时候，你也可以选择手动加载微应用的方式：
 
-Sub applications do not need to install any additional dependencies to integrate to qiankun master application.
+```ts
+import { loadMicroApp } from 'qiankun';
 
-### 1. Exports Lifecycles From Sub App Entry
+loadMicroApp({
+  name: 'app',
+  entry: '//localhost:7100',
+  container: '#yourContainer',
+});
+```
 
-The child application needs to export `bootstrap`,`mount`, `unmount` three lifecycle hooks in its own entry js (usually the entry js of webpack you configure) for the main application to call at the appropriate time.
+## 微应用
 
-```jsx
+微应用不需要额外安装任何其他依赖即可接入 qiankun 主应用。
+
+### 1. 导出相应的生命周期钩子
+
+微应用需要在自己的入口 js (通常就是你配置的 webpack 的 entry js) 导出 `bootstrap`、`mount`、`unmount` 三个生命周期钩子，以供主应用在适当的时机调用。
+
+```js
 /**
- * The bootstrap will only be called once when the child application is initialized.
- * The next time the child application re-enters, the mount hook will be called directly, and bootstrap will not be triggered repeatedly.
- * Usually we can do some initialization of global variables here,
- * such as application-level caches that will not be destroyed during the unmount phase.
+ * bootstrap 只会在微应用初始化的时候调用一次，下次微应用重新进入时会直接调用 mount 钩子，不会再重复触发 bootstrap。
+ * 通常我们可以在这里做一些全局变量的初始化，比如不会在 unmount 阶段被销毁的应用级别的缓存等。
  */
 export async function bootstrap() {
   console.log('react app bootstraped');
 }
 
 /**
- * The mount method is called every time the application enters,
- * usually we trigger the application's rendering method here.
+ * 应用每次进入都会调用 mount 方法，通常我们在这里触发应用的渲染方法
  */
 export async function mount(props) {
   ReactDOM.render(<App />, props.container ? props.container.querySelector('#root') : document.getElementById('root'));
 }
 
 /**
- * Methods that are called each time the application is switched/unloaded,
- * usually in this case we uninstall the application instance of the subapplication.
+ * 应用每次 切出/卸载 会调用的方法，通常在这里我们会卸载微应用的应用实例
  */
 export async function unmount(props) {
   ReactDOM.unmountComponentAtNode(
@@ -75,37 +83,23 @@ export async function unmount(props) {
 }
 
 /**
- * Optional lifecycle，just available with loadMicroApp way
+ * 可选生命周期钩子，仅使用 loadMicroApp 方式加载微应用时生效
  */
 export async function update(props) {
   console.log('update props', props);
 }
 ```
 
-As qiankun based on single-spa, you can find more documentation about the sub-application lifecycle [here](https://single-spa.js.org/docs/building-applications.html#registered-application-lifecycle).
+qiankun 基于 single-spa，所以你可以在[这里](https://single-spa.js.org/docs/building-applications.html#registered-application-lifecycle)找到更多关于微应用生命周期相关的文档说明。
 
-Refer to [example without bundler](/guide/tutorial#micro-app-built-without-webpack)
+无 webpack 等构建工具的应用接入方式请见[这里](/guide/tutorial#%E9%9D%9E-webpack-%E6%9E%84%E5%BB%BA%E7%9A%84%E5%BE%AE%E5%BA%94%E7%94%A8)
 
-### 2. Config Sub App Bundler
+### 2. 配置微应用的打包工具
 
-In addition to exposing the corresponding life-cycle hooks in the code, in order for the main application to correctly identify some of the information exposed by the sub-application, the sub-application bundler needs to add the following configuration:
+除了代码中暴露出相应的生命周期钩子之外，为了让主应用能正确识别微应用暴露出来的一些信息，微应用的打包工具需要增加如下配置：
 
 #### webpack:
 
-If using Webpack v5:
-```js
-const packageName = require('./package.json').name;
-
-module.exports = {
-  output: {
-    library: `${packageName}-[name]`,
-    libraryTarget: 'umd',
-    chunkLoadingGlobal: `webpackJsonp_${packageName}`,
-  },
-};
-```
-
-If using Webpack v4:
 ```js
 const packageName = require('./package.json').name;
 
@@ -118,4 +112,4 @@ module.exports = {
 };
 ```
 
-You can check the configuration description from [webpack doc](https://webpack.js.org/configuration/output/#outputlibrary)。
+相关配置介绍可以查看 [webpack 相关文档](https://webpack.js.org/configuration/output/#outputlibrary)。

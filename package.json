@@ -19,17 +19,19 @@
     "ci": "pnpm run lint && pnpm run build && pnpm run test",
     "ci:publish": "pnpm run build && changeset publish",
     "test": "cross-env NODE_ENV=test vitest",
-    "prepare": "husky install"
+    "prepare": "husky install && dumi setup"
   },
   "devDependencies": {
     "@changesets/cli": "^2.26.1",
+    "@commitlint/cli": "^17.7.2",
+    "@commitlint/config-conventional": "^17.7.0",
     "@types/lodash": "^4.14.129",
     "@types/node": "^18.15.3",
     "@typescript-eslint/eslint-plugin": "^6.3.0",
     "@typescript-eslint/parser": "^6.3.0",
     "babel-plugin-import": "^1.12.1",
     "cross-env": "^7.0.2",
-    "dumi": "^1.1.0-beta.24",
+    "dumi": "^2.2.12",
     "dumi-theme-default": "^1.0.10",
     "eslint": "^8.46.0",
     "eslint-config-prettier": "^9.0.0",
@@ -50,9 +52,15 @@
   },
   "homepage": "https://github.com/kuitos/qiankun#readme",
   "lint-staged": {
-    "**/*.{js,ts,json,css,md}": ["prettier --write --ignore-unknown"],
-    "packages/*/{src,types}/**/*.ts": ["eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty --fix"],
-    "packages/**/*.d.ts": ["eslint --ext .ts"]
+    "**/*.{js,ts,json,css,md}": [
+      "prettier --write --ignore-unknown"
+    ],
+    "packages/*/{src,types}/**/*.ts": [
+      "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty --fix"
+    ],
+    "packages/**/*.d.ts": [
+      "eslint --ext .ts"
+    ]
   },
   "packageManager": "pnpm@8.4.0",
   "publishConfig": {

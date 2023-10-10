@@ -1,44 +1,48 @@
 import { defineConfig } from 'dumi';
+import path from 'path';
 
 export default defineConfig({
-  mode: 'site',
   hash: true,
-  ssr: {},
+  //ssr: {},
   publicPath: process.env.NOW_DEPLOY ? '/' : '/qiankun/',
   base: process.env.NOW_DEPLOY ? '/' : '/qiankun',
   resolve: {
-    includes: ['docs'],
-    previewLangs: [],
+    docDirs: ['docs'],
+    codeBlockMode: 'passive',
   },
   locales: [
-    ['en', 'English'],
-    ['zh', '中文'],
+    { id: 'zh-CN', name: '中文' },
+    { id: 'en-US', name: 'English' },
   ],
-  navs: {
-    en: [
-      null,
-      {
-        title: 'Version Notice',
-        children: [
-          { title: 'Changelog', path: 'https://github.com/umijs/qiankun/releases' },
-          { title: 'Upgrade Guide', path: '/cookbook#upgrade-from-1x-version-to-2x-version' },
-          { title: '1.x Version', path: 'https://v1.qiankun.umijs.org/' },
-        ],
-      },
-      { title: 'GitHub', path: 'https://github.com/umijs/qiankun' },
-    ],
-    zh: [
-      null,
-      {
-        title: '版本公告',
-        children: [
-          { title: '发布日志', path: 'https://github.com/umijs/qiankun/releases' },
-          { title: '升级指南', path: '/zh/cookbook#从-1x-版本升级到-2x-版本' },
-          { title: '1.x 版本', path: 'https://v1.qiankun.umijs.org/zh/' },
-        ],
-      },
-      { title: 'GitHub', path: 'https://github.com/umijs/qiankun' },
-    ],
+  themeConfig: {
+    logo: 'https://gw.alipayobjects.com/zos/bmw-prod/8a74c1d3-16f3-4719-be63-15e467a68a24/km0cv8vn_w500_h500.png',
+    // nav: { // 不需要了，直接用dumi的约定式路由
+    //   mode: 'append',
+    //   value: {
+    //     zh: [
+    //       {
+    //         title: '版本公告',
+    //         children: [
+    //           { title: '发布日志', link: 'https://github.com/umijs/qiankun/releases' },
+    //           { title: '升级指南', link: '/zh/cookbook#从-1x-版本升级到-2x-版本' },
+    //           { title: '1.x 版本', link: 'https://v1.qiankun.umijs.org/zh/' },
+    //         ],
+    //       },
+    //       { title: 'GitHub', link: 'https://github.com/umijs/qiankun' },
+    //     ],
+    //     en: [
+    //       {
+    //         title: 'Version Notice',
+    //         children: [
+    //           { title: 'Changelog', link: 'https://github.com/umijs/qiankun/releases' },
+    //           { title: 'Upgrade Guide', link: '/cookbook#upgrade-from-1x-version-to-2x-version' },
+    //           { title: '1.x Version', link: 'https://v1.qiankun.umijs.org/' },
+    //         ],
+    //       },
+    //       { title: 'GitHub', link: 'https://github.com/umijs/qiankun' },
+    //     ],
+    //   },
+    // },
   },
   metas: [
     {
@@ -53,7 +57,7 @@ export default defineConfig({
   },
   exportStatic: {},
   logo: 'https://gw.alipayobjects.com/zos/bmw-prod/8a74c1d3-16f3-4719-be63-15e467a68a24/km0cv8vn_w500_h500.png',
-  favicon: 'https://gw.alipayobjects.com/mdn/rms_655822/afts/img/A*4sIUQpcos_gAAAAAAAAAAAAAARQnAQ',
+  favicons: ['https://gw.alipayobjects.com/mdn/rms_655822/afts/img/A*4sIUQpcos_gAAAAAAAAAAAAAARQnAQ'],
   theme: {
     '@c-primary': '#6451AB',
   },
@@ -71,4 +75,7 @@ export default defineConfig({
       text-shadow: 0 2px 5px rgba(0,0,0,.3);
     }`,
   ],
+  alias: {
+    qiankun: path.join(__dirname, 'packages/qiankun/src'),
+  }
 });

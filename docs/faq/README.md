@@ -1,26 +1,26 @@
 ---
 nav:
-  title: FAQ
+  title: 常见问题
 toc: menu
 ---
 
-# FAQ
+# 常见问题
 
 ## `Application died in status LOADING_SOURCE_CODE: You need to export the functional lifecycles in xxx entry`
 
-This error thrown as qiankun could not find the exported lifecycle method from your entry js.
+qiankun 抛出这个错误是因为无法从微应用的 entry js 中识别出其导出的生命周期钩子。
 
-To solve the exception, try the following steps:
+可以通过以下几个步骤解决这个问题：
 
-1. check you have exported the specified lifecycles, see the [doc](/guide/getting-started#1-exports-lifecycles-from-sub-app-entry)
+1. 检查微应用是否已经导出相应的生命周期钩子，参考[文档](/guide/getting-started#1-导出相应的生命周期钩子)。
 
-2. check you have set the specified configuration with your bundler, see the [doc](/guide/getting-started#2-config-sub-app-bundler)
+2. 检查微应用的 webpack 是否增加了指定的配置，参考[文档](/guide/getting-started#2-配置微应用的打包工具)。
 
-3. Check the webpack of micro app whether it configured with `output.globalObject` or not, be sure its value was `window` if it had, or remove it to use default value.
+3. 检查微应用的 webpack 是否配置了 `output.globalObject` 的值，如果有请确保其值为 `window`，或者移除该配置从而使用默认值。
 
-4. Check your `package.json` name field is unique between sub apps.
+4. 检查微应用的 `package.json` 中的 `name` 字段是否是微应用中唯一的。
 
-5. Check if the entry js in the sub-app's entry HTML is the last script to load. If not, move the order to make it be the last, or manually mark the entry js as `entry` in the HTML, such as:
+5. 检查微应用的 entry html 中入口的 js 是不是最后一个加载的脚本。如果不是，需要移动顺序将其变成最后一个加载的 js，或者在 html 中将入口 js 手动标记为 `entry`，如：
 
    ```html {2}
    <script src="/antd.js"></script>
@@ -28,13 +28,13 @@ To solve the exception, try the following steps:
    <script src="https://www.google.com/analytics.js"></script>
    ```
 
-6. If the development environment is OK but the production environment is not, check whether the `index.html` and `entry js` of the micro app are returned normally, for example, `404.html` is returned.
+6. 如果开发环境可以，生产环境不行，检查微应用的 `index.html` 和 `entry js` 是否正常返回，比如说返回了 `404.html`。
 
-7. If you're using webpack5, please see [here](https://github.com/umijs/qiankun/issues/1092) 
+7. 如果你正在使用 webpack5，请看[这个 issues](https://github.com/umijs/qiankun/issues/1092)。
 
-8. Check whether the main app and micro-app use AMD or CommonJS. Check method: run the main app and the micro-app independently, and enter the following code in the console: `(typeof exports === 'object' && typeof module === 'object') || (typeof define === 'function' && define.amd) || typeof exports === 'object'`，If it returns `true`，that it is caused by this reason, and there are mainly the following two solutions:
+8. 检查主应用和微应用是否使用了 AMD 或 CommonJS 模块化。检查方法：单独运行微应用和主应用，在控制台输入如下代码：`(typeof exports === 'object' && typeof module === 'object') || (typeof define === 'function' && define.amd) || typeof exports === 'object'`，如果返回 `true`，则说明是这种情况，主要有以下两个解决办法：
 
-    - Solution 1: Modify the `libraryTarget` of the micro-app `webpack` to `'window'`.
+    - 解决办法1：修改微应用 `webpack` 的 `libraryTarget` 为 `'window'` 。
 
     ```diff
     const packageName = require('./package.json').name;
@@ -47,14 +47,15 @@ To solve the exception, try the following steps:
       },
     };
     ```
-    - Solution 2: The micro-app is not bundle with `umd`, directly mount the life cycle function to the `window` in the entry file, refer to[Micro app built without webpack](/guide/tutorial#micro-app-built-without-webpack).
- 
-9. If it still not works after the steps above, this is usually due to browser compatibility issues. Try to **set the webpack `output.library` of the broken sub app the same with your main app registration for your app**, such as:
+    - 解决办法2：微应用不打包成 umd ，直接在入口文件把生命周期函数挂载到 window 上，参考[非 webpack 构建的微应用](/guide/tutorial#非-webpack-构建的微应用)。
 
-Such as here is the main configuration:
+
+9.  如果在上述步骤完成后仍有问题，通常说明是浏览器兼容性问题导致的。可以尝试 **将有问题的微应用的 webpack `output.library` 配置成跟主应用中注册的 `name` 字段一致**，如：
+
+假如主应用配置是这样的：
 
 ```ts {4}
-// main app
+// 主应用
 registerMicroApps([
   {
     name: 'brokenSubApp',
@@ -65,12 +66,12 @@ registerMicroApps([
 ]);
 ```
 
-Set the `output.library` the same with main app registration:
+将微应用的 `output.library` 改为跟主应用中注册的一致：
 
 ```js {4}
 module.exports = {
   output: {
-    // Keep the same with the registration in main app
+    // 这里改成跟主应用中注册的一致
     library: 'brokenSubApp',
     libraryTarget: 'umd',
     jsonpFunction: `webpackJsonp_${packageName}`,
@@ -80,11 +81,11 @@ module.exports = {
 
 ## `Application died in status NOT_MOUNTED: Target container with #container not existed after xxx mounted!`
 
-This error thrown as the container DOM does not exist after the micro app is loaded. The possible reasons are:
+qiankun 抛出这个错误是因为微应用加载后容器 DOM 节点不存在了。可能的原因有：
 
-1. The root id of the micro app conflicts with other DOM, and the solution is to modify the search range of the root id.
+1. 微应用的根 `id` 与其他 DOM 冲突。解决办法是：修改根 `id` 的查找范围。
 
-   `vue` micro app:
+   `vue` 微应用：
 
    ```js
    function render(props = {}) {
@@ -100,7 +101,7 @@ This error thrown as the container DOM does not exist after the micro app is loa
    }
    ```
 
-   `react` micro app：
+   `react` 微应用：
 
    ```js
    function render(props) {
@@ -116,49 +117,48 @@ This error thrown as the container DOM does not exist after the micro app is loa
    }
    ```
 
-2. Some js of micro app use `document.write`, such as AMAP 1.x version, Tencent Map 2.x version.
+2. 微应用的某些 js 里面使用了 `document.write`，比如高德地图 1.x 版本，腾讯地图 2.x 版本。
 
-   If it is caused by the map js, see if the upgrade can be resolved, for example, upgrade the AMAP map to version 2.x.
+   如果是地图 js 导致的，先看看升级能否解决，比如说高德地图升级到 2.x 版本即可。
 
-   If the upgrade cannot be resolved, it is recommended to put the map on the main app to load. The micro app also introduces this map js (used in run independently), but add the `ignore` attribute to the `<script>` tag:
+   如果升级无法解决，建议将地图放到主应用加载，微应用也引入这个地图 js（独立运行时使用），但是给 `<script>` 标签加上 `ignore` 属性：
 
    ```html
    <script src="https://map.qq.com/api/gljs?v=1.exp" ignore></script>
    ```
 
-   In other cases, please do not use `document.write`.
+   如果是其他的情况，请不要使用 `document.write` 。
 
 ## `Application died in status NOT_MOUNTED: Target container with #container not existed while xxx mounting!`
 
-This error usually occurs when the main app is Vue, and the container is written on a routing page and uses the routing transition effect. Some special transition effect caused the container not to exist in the mounting process of the micro app. The solution is to use other transition effects, or remove the routing transition.
+这个报错通常出现在主应用为 vue 时，容器写在了路由页面并且使用了路由过渡效果，一些特殊的过渡效果会导致微应用在 mounting 的过程中容器不存在，解决办法就是换成其他的过渡效果，或者去掉路由过渡。
 
 ## `Application died in status NOT_MOUNTED: Target container with #container not existed while xxx loading!`
 
-Similar to the above error, This error thrown as the container DOM does not exist when the micro app is loaded. Generally, it is caused by incorrect calling timing of the `start` function, just adjust the calling timing of the `start` function.
+与上面的报错类似，这个报错是因为微应用加载时容器 DOM 不存在。一般是因为 `start` 函数调用时机不正确导致的，调整 `start` 函数调用时机即可。
 
-How to determine the completion of the container DOM loading? The vue app can be called during the `mounted` life cycle, and the react app can be called during the `componentDidMount` life cycle.
+如何判断容器 DOM 加载完成？vue 应用可以在 `mounted` 生命周期调用，react 应用可以在 `componentDidMount` 生命周期调用。
 
-If it still reports an error, check whether the container DOM is placed on a routing page of the main app, please refer to [How to load micro apps on a routing page of the main app](#How to load micro apps on a routing page of the main app)
+如果仍然报错，检查容器 DOM 是否放在了主应用的某个路由页面，请参考[如何在主应用的某个路由页面加载微应用](#如何在主应用的某个路由页面加载微应用)。
 
 ## `[import-html-entry]: error occurs while excuting xxx script http://xxx.xxx.xxx/x.js`
 ![](https://user-images.githubusercontent.com/22413530/109919189-41563d00-7cf3-11eb-8328-711228389d63.png)
-The first line is just an auxiliary information printed by qiankun through console.error, which is used to help users quickly know which js has an error, not a real exception. The real exception information is on the second line.
+其中第一行只是 qiankun 通过 `console.error` 打印出来的一个辅助信息，目的是帮助用户更快的知道是哪个 js 报错了，并不是真的异常。真正的异常信息在第二行。
 
-For example, such an error indicates that when qiankun was executing the http://localhost:9100/index.bundle.js of the sub application, this js itself threw an exception. The specific exception information is Uncaught TypeError: Cannot read property 'call' of undefined.
+比如上图这样一个报错，指的是 qiankun 在执行子应用的 `http://localhost:9100/index.bundle.js` 时，这个 js 本身抛异常了。而具体的异常信息就是 `Uncaught TypeError: Cannot read property 'call' of undefined`.
 
-Sub-application exceptions can be attempted to be resolved through the following steps:
+子应用本身的异常，可以尝试通过以下步骤排查解决：
+1. 根据具体的异常信息，检查报错的 js 是否有语法错误，比如少了分号、依赖了未初始化的变量等。
+2. 是否依赖了主应用提供的全局变量，但实际主应用并未初始化。
+3. 兼容性问题。子应用这个 js 本身在当前运行环境存在语法兼容性问题。
 
-Check the error js for syntax errors according to the specific exception information, such as missing semicolons, dependence on uninitialized variables, etc.
-Whether it depends on global variables provided by the main application, but the main application is not actually initialized.
-Compatibility issues. The js itself of the sub-application has syntax compatibility issues in the current runtime environment.
+## 如何在主应用的某个路由页面加载微应用
 
-## How to load micro apps on a routing page of the main app
+必须保证微应用加载时主应用这个路由页面也加载了。
 
-It must be ensured that the routing page of the main app is also loaded when the micro app is loaded.
+`vue` + `vue-router` 技术栈的主应用：
 
-`vue` + `vue-router` main app:
-
-1. When the main app registers this route, add a `*` to `path`, **Note: If this route has other sub-routes, you need to register another route, just use this component**.
+1. 主应用注册这个路由时给 `path` 加一个 `*`，**注意：如果这个路由有其他子路由，需要另外注册一个路由，仍然使用这个组件即可**。
    ```js
    const routes = [
      {
@@ -168,7 +168,7 @@ It must be ensured that the routing page of the main app is also loaded when the
      },
    ];
    ```
-2. The `activeRule` of the micro app needs to include the route `path` of the main app.
+2. 微应用的 `activeRule` 需要包含主应用的这个路由 `path`。
    ```js
    registerMicroApps([
      {
@@ -179,7 +179,7 @@ It must be ensured that the routing page of the main app is also loaded when the
      },
    ]);
    ```
-3. Call the `start` function in the `mounted` cycle of the `Portal.vue` component, **be careful not to call it repeatedly**.
+3. 在 `Portal.vue` 这个组件的 `mounted` 周期调用 `start` 函数，**注意不要重复调用**。
    ```js
    import { start } from 'qiankun';
    export default {
@@ -192,11 +192,11 @@ It must be ensured that the routing page of the main app is also loaded when the
    };
    ```
 
-`react` + `react-router` main app：only need to make the activeRule of the sub app include the route of the main app.
+`react` + `react-router` 技术栈的主应用：只需要让微应用的 `activeRule` 包含主应用的这个路由即可。
 
-`angular` + `angular-router` main app，similar to the Vue app：
+`angular` + `angular-router` 技术栈的主应用，与 vue 项目类似：
 
-1. The main app registers a wildcard sub route for this route, and the content is empty.
+1. 主应用给这个路由注册一个通配符的子路由，内容为空。
 
    ```ts
    const routes: Routes = [
@@ -208,7 +208,7 @@ It must be ensured that the routing page of the main app is also loaded when the
    ];
    ```
 
-2. The `activeRule` of the micro app needs to include the route `path` of the main app.
+2. 微应用的 `activeRule` 需要包含主应用的这个路由 `path`。
    ```js
    registerMicroApps([
      {
@@ -219,7 +219,7 @@ It must be ensured that the routing page of the main app is also loaded when the
      },
    ]);
    ```
-3. Call the `start` function in the `ngAfterViewInit` cycle of this routing component, **be careful not to call it repeatedly**.
+3. 在这个路由组件的 `ngAfterViewInit` 周期调用 `start` 函数，**注意不要重复调用**。
    ```ts
    import { start } from 'qiankun';
    export class PortalComponent implements AfterViewInit {
@@ -232,11 +232,11 @@ It must be ensured that the routing page of the main app is also loaded when the
    }
    ```
 
-## Vue Router Error - `Uncaught TypeError: Cannot redefine property: $router`
+## Vue Router 报错 `Uncaught TypeError: Cannot redefine property: $router`
 
-If you pass `{ sandbox: true }` to `start()` function, `qiankun` will use `Proxy` to isolate global `window` object for sub applications. When you access `window.Vue` in sub application's code，it will check whether the `Vue` property in the proxyed `window` object. If the property does not exist, it will look it up in the global `window` object and return it.
+qiankun 中的代码使用 Proxy 去代理父页面的 window，来实现的沙箱，在微应用中访问 `window.Vue` 时，会先在自己的 window 里查找有没有 `Vue` 属性，如果没有就去父应用里查找。
 
-There are three lines code in the `vue-router` as followed, and it will access `window.Vue` once the `vue-router` module is loaded. And the `window.Vue` in following code is your master application's `Vue`.
+在 VueRouter 的代码里有这样三行代码，会在模块加载的时候就访问 `window.Vue` 这个变量，微应用中报这个错，一般是由于父应用中的 Vue 挂载到了父应用的 `window` 对象上了。
 
 ```javascript
 if (inBrowser && window.Vue) {
@@ -244,52 +244,54 @@ if (inBrowser && window.Vue) {
 }
 ```
 
-To solve the error, choose one of the options listed below:
+可以从以下方式中选择一种来解决问题：
 
-1. Use bundler to pack `Vue` library, instead of CDN or external module
-2. Rename `Vue` to other name in master application, eg: `window.Vue2 = window.Vue; delete window.Vue`
+1. 在主应用中不使用 CDN 等 external 的方式来加载 `Vue` 框架，使用前端打包软件来加载模块
+2. 在主应用中，将 `window.Vue` 变量改个名称，例如 `window.Vue2 = window.Vue; delete window.Vue`
 
-## Why dynamic imported assets missing?
+## 为什么微应用加载的资源会 404？
 
-Two way to solve that:
+原因是 webpack 加载资源时未使用正确的 `publicPath`。
 
-### 1. With webpack live public path config
+可以通过以下两个方式解决这个问题：
 
-qiankun will inject a live public path variable before your sub app bootstrap, what you need is to add this code at the top of your sub app entry js:
+### a. 使用 webpack 运行时 publicPath 配置
+
+qiankun 将会在微应用 bootstrap 之前注入一个运行时的 publicPath 变量，你需要做的是在微应用的 entry js 的顶部添加如下代码：
 
 ```js
 __webpack_public_path__ = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
 ```
 
-For more details, check the [webpack doc](https://webpack.js.org/guides/public-path/#on-the-fly).
+关于运行时 publicPath 的技术细节，可以参考 [webpack 文档](https://webpack.js.org/guides/public-path/#on-the-fly)。
 
-<Alert type="info">
-Runtime publicPath addresses the problem of incorrect scripts, styles, images, and other addresses for dynamically loaded in sub application.
-</Alert>
+:::info
+runtime publicPath 主要解决的是微应用动态载入的 脚本、样式、图片 等地址不正确的问题。
+:::
 
-### 2. With webpack static public path config
+### b. 使用 webpack 静态 publicPath 配置
 
-You need to set your publicPath configuration to an absolute url, and in development with webpack it might be:
+你需要将你的 webpack `publicPath` 配置设置成一个绝对地址的 url，比如在开发环境可能是：
 
 ```js
 {
   output: {
-    publicPath: `//localhost:${port}`;
+    publicPath: `//localhost:${port}`,
   }
 }
 ```
 
-### After the micro-app is bundled, the font files and images in the css load 404
+### 微应用打包之后 css 中的字体文件和图片加载 404
 
-The reason is that `qiankun` changed the external link style to the inline style, but the loading path of the font file and background image is a relative path.
+原因是 `qiankun` 将外链样式改成了内联样式，但是字体文件和背景图片的加载路径是相对路径。
 
-Once the `css` file is packaged, you cannot modify the path of the font file and background image by dynamically modifying the `publicPath`.
+而 `css` 文件一旦打包完成，就无法通过动态修改 `publicPath` 来修正其中的字体文件和背景图片的路径。
 
-There are mainly the following solutions:
+主要有以下几个解决方案：
 
-1. Upload all static resources such as pictures to `cdn`, and directly reference the address of `cdn` in `css` (**recommended**)
+1. 所有图片等静态资源上传至 `cdn`，`css` 中直接引用 `cdn` 地址（**推荐**）
 
-2. Use the `url-loader` of `webpack` to package font files and images as `base64` (suitable for projects with small font files and images)(**recommended**)
+2. 借助 `webpack` 的 `url-loader` 将字体文件和图片打包成 `base64`（适用于字体文件和图片体积小的项目）（**推荐**）
 
 ```js
 module.exports = {
@@ -309,7 +311,7 @@ module.exports = {
 };
 ```
 
-`vue-cli3` project:
+`vue-cli3` 项目写法：
 
 ```js
 module.exports = {
@@ -320,7 +322,7 @@ module.exports = {
 };
 ```
 
-`vue-cli5` project, use the `asset/inline` of `webpack` replace `url-loader`:
+`vue-cli5` 项目，使用 `asset/inline` 替代 `url-loader`，写法：
 
 ```js
 module.exports = {
@@ -331,7 +333,7 @@ module.exports = {
 };
 ```
 
-3. Use the `file-loader` of `webpack` to inject the full path when packaging it (suitable for projects with large font files and images)
+3. 借助 `webpack` 的 `file-loader` ，在打包时给其注入完整路径（适用于字体文件和图片体积比较大的项目）
 
 ```js
 const publicPath = process.env.NODE_ENV === 'production' ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
@@ -367,7 +369,7 @@ module.exports = {
 };
 ```
 
-`vue-cli3` project:
+`vue-cli3` 项目写法：
 
 ```js
 const publicPath = process.env.NODE_ENV === 'production' ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
@@ -397,7 +399,7 @@ module.exports = {
 };
 ```
 
-4. Combine the two schemes, convert small files to `base64`, and inject path prefixes for large files
+4. 将两种方案结合起来，小文件转 `base64` ，大文件注入路径前缀
 
 ```js
 const publicPath = process.env.NODE_ENV === 'production' ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
@@ -441,7 +443,7 @@ module.exports = {
 };
 ```
 
-`vue-cli3` project：
+`vue-cli3` 项目写法：
 
 ```js
 const publicPath = process.env.NODE_ENV === 'production' ? 'https://qiankun.umijs.org/' : `http://localhost:${port}`;
@@ -452,7 +454,7 @@ module.exports = {
       .use('url-loader')
       .loader('url-loader')
       .options({
-        limit: 4096, // Less than 4kb will be packaged as base64
+        limit: 4096, // 小于4kb将会被打包成 base64
         fallback: {
           loader: 'file-loader',
           options: {
@@ -467,7 +469,7 @@ module.exports = {
       .use('url-loader')
       .loader('url-loader')
       .options({
-        limit: 4096, // Less than 4kb will be packaged as base64
+        limit: 4096, // 小于4kb将会被打包成 base64
         fallback: {
           loader: 'file-loader',
           options: {
@@ -480,9 +482,9 @@ module.exports = {
 };
 ```
 
-5. The `vue-cli3` project can package `css` into `js` without generating files separately (not recommended, only suitable for projects with less `css`)
+5. `vue-cli3` 项目可以将 `css` 打包到 `js`里面，不单独生成文件(不推荐，仅适用于 `css` 较少的项目)
 
-Configuration reference [vue-cli3 official website](https://cli.vuejs.org/zh/config/#css-extract):
+配置参考 [vue-cli3 官网](https://cli.vuejs.org/zh/config/#css-extract):
 
 ```js
 module.exports = {
@@ -492,27 +494,29 @@ module.exports = {
 };
 ```
 
-## Must a sub app asset support cors?
+## 微应用静态资源一定要支持跨域吗？
 
-Yes it is.
+是的。
 
-Since qiankun get assets which imported by sub app via fetch, these static resources must be required to support [cors](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS).
+由于 qiankun 是通过 fetch 去获取微应用的引入的静态资源的，所以必须要求这些静态资源支持[跨域](https://developer.mozilla.org/zh/docs/Web/HTTP/Access_control_CORS)。
 
-See [Enable Nginx Cors](https://enable-cors.org/server_nginx.html).
+如果是自己的脚本，可以通过开发服务端跨域来支持。如果是三方脚本且无法为其添加跨域头，可以将脚本拖到本地，由自己的服务器 serve 来支持跨域。
 
-## How to solve that micro apps loaded failed due to abnormal scripts inserted dynamically by carriers
+参考：[Nginx 跨域配置](https://segmentfault.com/a/1190000012550346)
 
-Scripts inserted by carriers are usually marked with `async` to avoid loading of block micro apps. This is usually no problem, such as:
+## 如何解决由于运营商动态插入的脚本加载异常导致微应用加载失败的问题
+
+运营商插入的脚本通常会用 async 标记从而避免 block 微应用的加载，这种通常没问题，如：
 
 ```html
 <script async src="//www.rogue.com/rogue.js"></script>
 ```
 
-However, if some inserted scripts are not marked as `async`, once such scripts fail to run, the entire application will be blocked and subsequent scripts will no longer be executed. We can solve this problem in the following ways:
+但如果有些插入的脚本不是被标记成 async 的，这类脚本一旦运行失败，将会导致整个应用被 block 且后续的脚本也不再执行。我们可以通过以下几个方式来解决这个问题：
 
-### Use a custom `getTemplate` method
+### 使用自定义的 getTemplate 方法
 
-Filter abnormal scripts in the HTML template of the micro app through the `getTemplate` method implemented by yourself.
+通过自己实现的 getTemplate 方法过滤微应用 HTML 模板中的异常脚本
 
 ```js
 import { start } from 'qiankun';
@@ -524,9 +528,9 @@ start({
 });
 ```
 
-### Use custom fetch method
+### 使用自定义的 fetch 方法
 
-Intercept abnormal scripts through the `fetch` method implemented by yourself.
+通过自己实现的 fetch 方法拦截有问题的脚本
 
 ```js
 import { start } from 'qiankun';
@@ -546,15 +550,15 @@ start({
 });
 ```
 
-### Change the response Content-type of micro app's HTML to `text/plain` (ultimate solution)
+### 将微应用的 HTML 的 response content-type 改为 text/plain（终极方案）
 
-The principle is that the carriers can only recognize the request whose response's `content-type` is `text/html` and insert the script, and the response of the `text/plain` type will not be hijacked.
+原理是运营商只能识别 response content-type 为 text/html 的请求并插入脚本，text/plain 类型的响应则不会被劫持。
 
-How to modify the `content-type` of the response header of the micro-application HTML request, you can google it yourself, and there is a simpler and more efficient solution:
+修改微应用 HTML 的 content-type 方法可以自行 google，也有一个更简单高效的方案：
 
-1. Copy an `index.txt` file from `index.html` when the micro-app is published.
+1. 微应用发布时从 index.html 复制出一个 index.txt 文件出来
 
-2. Change `entry` in the main app to a txt address, for example:
+2. 将主应用中的 entry 改为 txt 地址，如：
 
    ```diff
    registerMicroApps(
@@ -565,13 +569,13 @@ How to modify the `content-type` of the response header of the micro-application
    );
    ```
 
-## How to guarantee the main app stylesheet isolated with sub apps?
+## 如何确保主应用跟微应用之间的样式隔离
 
-Qiankun will isolate stylesheet between your sub apps automatically, you can manually ensure isolation between master and child applications. Such as add a prefix to all classes in the master application, and if you are using [ant-design](https://ant.design), you can follow [this doc](https://ant.design/docs/react/customize-theme) to make it works.
+qiankun 将会自动隔离微应用之间的样式（开启沙箱的情况下），你可以通过手动的方式确保主应用与微应用之间的样式隔离。比如给主应用的所有样式添加一个前缀，或者假如你使用了 [ant-design](https://ant.design) 这样的组件库，你可以通过[这篇文档](https://ant.design/docs/react/customize-theme)中的配置方式给主应用样式自动添加指定的前缀。
 
-Example for antd：
+以 antd 为例：
 
-1. use webpack to modify antd less variable
+1. 配置 webpack 修改 less 变量
 
    ```diff
    {
@@ -585,30 +589,31 @@ Example for antd：
    }
    ```
 
-2. set antd [ConfigProvider](https://ant.design/components/config-provider-cn/)
+2. 配置 antd [ConfigProvider](https://ant.design/components/config-provider-cn/)
 
-   ```jsx
+   ```jsx | pure
    import { ConfigProvider } from 'antd';
 
-   export const MyApp = () => (
-     <ConfigProvider prefixCls="yourPrefix">
-       <App />
-     </ConfigProvider>
+   const MyApp = () => (
+    <ConfigProvider prefixCls="yourPrefix">
+      <App />
+    </ConfigProvider>
    );
+   export default MyApp
    ```
 
-Detailed documentation pls check [antd official guide](https://ant.design/docs/react/customize-theme).
+详细文档参考 [antd 官方指南](https://ant.design/docs/react/customize-theme)。
 
-<Alert type="info">
-In the latest version, you can also try to config ` {sandbox: {experimentalStyleIsolation: true}} ` to open the runtime scoped CSS feature, thus solving the problem of the style of the isolation between applications.
-PS: Currently, this feature is still in the experimental stage, if encounter some problems please submit an <a href="https://github.com/umijs/qiankun/issues/new?assignees=&labels=&template=bug_report.md&title=" target="_blank">issue</a> to help us improve together.
-</Alert>
+:::info
+在最新的 qiankun 版本中，你也可以尝试通过配置 `{ sandbox : { experimentalStyleIsolation: true } }` 的方式开启运行时的 scoped css 功能，从而解决应用间的样式隔离问题。
+PS：目前该特性还处于实验阶段，如果碰到一些问题欢迎提 <a href="https://github.com/umijs/qiankun/issues/new?assignees=&labels=&template=bug_report_cn.md&title=%5BBug%5D%E8%AF%B7%E9%81%B5%E5%BE%AA%E4%B8%8B%E6%96%87%E6%A8%A1%E6%9D%BF%E6%8F%90%E4%BA%A4%E9%97%AE%E9%A2%98%EF%BC%8C%E5%90%A6%E5%88%99%E6%82%A8%E7%9A%84%E9%97%AE%E9%A2%98%E4%BC%9A%E8%A2%AB%E5%85%B3%E9%97%AD" target="_blank">issue</a> 来帮助我们一起改善。
+:::
 
-## How to make sub app to run independently?
+## 如何独立运行微应用？
 
-Use the builtin global variable to identify the environment which provided by qiankun master:
+有些时候我们希望直接启动微应用从而更方便的开发调试，你可以使用这个全局变量来区分当前是否运行在 qiankun 的主应用的上下文中：
 
-```js
+```ts
 if (!window.__POWERED_BY_QIANKUN__) {
   render();
 }
@@ -616,50 +621,49 @@ if (!window.__POWERED_BY_QIANKUN__) {
 export const mount = async () => render();
 ```
 
-## Could I active two sub apps at the same time?
+## 如何同时激活两个微应用？
 
-When the subapp should be active depends on your `activeRule` config, like the example below, we set `activeRule` logic the same between `reactApp` and `react15App`:
+微应用何时被激活完全取决于你的 `activeRule` 配置，比如下面的例子里，我们将 `reactApp` 和 `react15App` 的 `activeRule` 逻辑设置成一致的：
 
 ```js {2,3,7}
 registerMicroApps([
-  // define the activeRule by your self
-  { name: 'reactApp', entry: '//localhost:7100', container, activeRule: () => window.isReactApp },
-  { name: 'react15App', entry: '//localhost:7102', container, activeRule: () => window.isReactApp },
-  { name: 'vue app', entry: '//localhost:7101', container, activeRule: () => window.isVueApp },
+  { name: 'reactApp', entry: '//localhost:7100', container, activeRule: () => isReactApp() },
+  { name: 'react15App', entry: '//localhost:7102', container, activeRule: () => isReactApp() },
+  { name: 'vueApp', entry: '//localhost:7101', container, activeRule: () => isVueApp() },
 ]);
 
 start({ singular: false });
 ```
 
-After setting `singular: false` in `start` method, `reactApp` and `react15App` should be active at the same time once `isReactApp` method returns `true`.
+当在 `start` 方法中配置好 `singular: false` 后，只要 `isReactApp()` 返回 `true` 时，`reactApp` 和 `react15App` 将会同时被 mount。
 
-<Alert>
-Notice that no more than one application that relies on router can be displayed on the page at the same time, as the browser has only one url location, if there is more than one routing apps, it will definitely result in one of them to be 404 found.
-</Alert>
+:::warning
+页面上不能同时显示多个依赖于路由的微应用，因为浏览器只有一个 url，如果有多个依赖路由的微应用同时被激活，那么必定会导致其中一个 404。
+:::
 
-## How to extract the common library？
+## 如何提取出公共的依赖库？
 
-> Don’t share a runtime, even if all teams use the same framework. - [Micro Frontends](https://micro-frontends.org/)
+> 不要共享运行时，即便所有的团队都是用同一个框架。- [微前端](https://micro-frontends.org/)
 
-Although sharing dependencies isn't a good idea, but if you really need it, you can external the common dependencies from sub apps and then import them in master app.
+虽然共享依赖并不建议，但如果你真的有这个需求，你可以在微应用中将公共依赖配置成 `external`，然后在主应用中导入这些公共依赖。
 
-In the future qiankun will provide a smarter way to make it automatically.
+qiankun 2.0 版本将提供一种更智能的方式使其自动化。
 
-## Does qiankun compatible with ie?
+## qiankun 能兼容 ie 吗？
 
-Yes.
+> 兼容.
 
-However, the IE environment (browsers that do not support Proxy) can only use the single-instance pattern, where the `singular` configuration will be set `true` automatically by qiankun if IE detected.
+但是 IE 环境下（不支持 Proxy 的浏览器）只能使用单实例模式，qiankun 会自动将 `singular` 配置为 `true`。
 
-You can find the singular usage [here](/api#startopts).
+你可以在[这里](/api#startopts)找到 singular 相关说明。
 
-### How to polyfill IE?
+### 如何给 ie 打补丁？
 
-If you want qiankun (or its dependent libraries, or your own application) to work properly in IE, you need to introduce the following polyfills at the portal **at least**:
+如果希望 qiankun （或其依赖库、或者您的应用本身）在 IE 下正常运行，你**至少**需要在应用入口引入以下这些 polyfills：
 
-<Alert type="info">
-What's <a href="https://developer.mozilla.org/en-US/docs/Glossary/Polyfill" target="_blank">polyfill</a>
-</Alert>
+:::info
+什么是 <a href="https://developer.mozilla.org/zh-CN/docs/Glossary/Polyfill" target="_blank">polyfill</a>
+:::
 
 ```javascript
 import 'whatwg-fetch';
@@ -670,38 +674,42 @@ import 'core-js/stable/string/starts-with';
 import 'core-js/web/url';
 ```
 
-**We recommend that you use @babel/preset-env plugin directly to polyfill IE automatically, all the instructions for @babel/preset-env you can found in [babel official document](https://babeljs.io/docs/en/babel-preset-env).**
+**通常我们建议您直接使用 @babel/preset-env 插件完成自动引入 IE 需要的 polyfill 的能力，所有的操作文档您都可以在 [babel 官方文档](https://babeljs.io/docs/en/babel-preset-env) 找到。**
 
-## Error `Here is no "fetch" on the window env, you need to polyfill it`
+:::info
+您也可以查看<a href="https://www.yuque.com/kuitos/gky7yw/qskte2" target="_blank">这篇文章</a>来获取更多 IE 兼容相关的知识。
+:::
 
-Qiankun use `window.fetch` to get resources of the micro applications, but [some browsers does not support it](https://caniuse.com/#search=fetch), you should get the [polyfill](https://github.com/github/fetch) in the entry.
+## 报错 `Here is no "fetch" on the window env, you need to polyfill it`
 
-## How to handle subapplication JSONP cross-domain errors?
+qiankun 依赖的 import-html-entry 通过 `window.fetch` 来获取微应用的资源， 部分[不支持 fetch 的浏览器](https://caniuse.com/#search=fetch)需要在入口处打上相应的 [polyfill](https://github.com/github/fetch)
 
-qiankun will convert the dynamic script loading of the subapplication (such as JSONP) into a fetch request, so the corresponding back-end service needs to support cross-domain, otherwise it will cause an error.
+## 微应用 JSONP 跨域错误怎么处理？
 
-In singular mode, you can use the `excludeAssetFilter` parameter to release this part of the resource request, but note that the resources released by this option will escape the sandbox, and the resulting side effects need to be handled by you.
+qiankun 会将微应用的动态 script 加载（例如 JSONP）转化为 fetch 请求，因此需要相应的后端服务支持跨域，否则会导致错误。
 
-If you use JSONP in not-singular mode, simply using `excludeAssetFilter` does not achieve good results, because each application is isolated by the sandbox; you can provide a unified JSONP tool in the main application, and the subapplication just calls the tool.
+在单实例模式下，你可以使用 `excludeAssetFilter` 参数来放行这部分资源请求，但是注意，被该选项放行的资源会逃逸出沙箱，由此带来的副作用需要你自行处理。
 
-## 404 after refresh of child application？
+若在多实例模式下使用 JSONP，单纯使用 `excludeAssetFilter` 并不能取得好的效果，因为各应用被沙箱所隔离；你可以在主应用提供统一的 JSONP 工具，微应用调用主应用提供的该工具来曲线救国。
 
-It is usually because you are routing in Browser mode, which requires the server to open it. Specific configuration mode reference:
+## 微应用路径下刷新后 404？
 
-- [HTML5 History Mode](https://router.vuejs.org/guide/essentials/history-mode.html)
-- [browserRouter](https://reactrouter.com/web/api/BrowserRouter)
+通常是因为你使用的是 browser 模式的路由，这种路由模式的开启需要服务端配合才行。具体配置方式参考：
 
-## How to configure the 404 page in the main application?
+- [HTML5 History 模式](https://router.vuejs.org/zh/guide/essentials/history-mode.html)
+- [browserHistory](https://react-guide.github.io/react-router-cn/docs/guides/basics/Histories.html#browserHistory)
 
-First of all, you cannot use the wildcard `*`. You can register the 404 page as a normal routing page, such as `/404`, and then judge in the routing hook function of the main project, if it is neither the main application routing nor the micro application , Then jump to the 404 page.
+## 主应用如何配置 404 页面？
 
-Take `vue-router` as an example, the pseudo code is as follows:
+首先不应该写通配符 `*` ，可以将 404 页面注册为一个普通路由页面，比如说 `/404` ，然后在主应用的路由钩子函数里面判断一下，如果既不是主应用路由，也不是微应用，就跳转到 404 页面。
+
+以`vue-router`为例，伪代码如下：
 
 ```js
 const childrenPath = ['/app1', '/app2'];
 router.beforeEach((to, from, next) => {
   if (to.name) {
-    // There is a name attribute, indicating that it is the route of the main project
+    // 有 name 属性，说明是主应用的路由
     return next();
   }
   if (childrenPath.some((item) => to.path.includes(item))) {
@@ -711,22 +719,22 @@ router.beforeEach((to, from, next) => {
 });
 ```
 
-## How to jump between micro apps?
+## 微应用之间如何跳转？
 
--Both the main application and the micro application are in the `hash` mode. The main application judges the micro application based on the `hash`, so this issue is not considered.
+- 主应用和微应用都是 `hash` 模式，主应用根据 `hash` 来判断微应用，则不用考虑这个问题。
 
--The main application judges the micro application based on the `path`
+- 主应用根据 `path` 来判断微应用
 
-It is not possible to directly use the routing instance of the micro-application to jump between micro-applications in the `history` mode or to jump to the main application page. The reason is that the routing instance jumps of the micro-application are all based on the `base` of the route. There are two ways to jump:
+  `history` 模式的微应用之间的跳转，或者微应用跳主应用页面，直接使用微应用的路由实例是不行的，原因是微应用的路由实例跳转都基于路由的 `base`。有两种办法可以跳转：
 
-1. `history.pushState()`: [mdn usage introduction](https://developer.mozilla.org/zh-CN/docs/Web/API/History/pushState)
-2. Pass the routing instance of the main application to the micro application through `props`, and the micro application will jump to this routing instance.
+  1. `history.pushState()`：[mdn 用法介绍](https://developer.mozilla.org/zh-CN/docs/Web/API/History/pushState)
+  2. 将主应用的路由实例通过 `props` 传给微应用，微应用这个路由实例跳转。
 
-## After the microapp file is updated, the old version of the file is still accessed
+## 微应用文件更新之后，访问的还是旧版文件
 
-The server needs to configure a response header for the `index.html` of the micro application: `Cache-Control no-cache`, which means to check whether it is updated every time it requests.
+服务器需要给微应用的 `index.html` 配置一个响应头：`Cache-Control no-cache`，意思就是每次请求都检查是否更新。
 
-Take `Nginx` as an example:
+以 `Nginx` 为例:
 
 ```
 location = /index.html {
@@ -734,9 +742,9 @@ location = /index.html {
 }
 ```
 
-## micro app styles was lost when using config entry
+## 使用 config entry 时微应用样式丢失
 
-Some scenarios we had to use config entry to load micro app (** not recommended **):
+有些场景下我们会使用 config entry 的方式加载微应用（**不推荐**）：
 
 ```js
 loadMicroApp({
@@ -748,7 +756,7 @@ loadMicroApp({
 });
 ```
 
-Since there is no HTML attached to entry JS for microapp, the mount hook simply says:
+微应用的 entry js 由于没有附属的 html，mount 钩子直接这么写的：
 
 ```js
 export async function mount(props) {
@@ -756,9 +764,9 @@ export async function mount(props) {
 }
 ```
 
-As `props.container` is not an empty container and will contain information such as the style sheet that the microapp registers through the styles configuration, when we render directly for the container that the react application is applying with 'props.container', all the original DOM structures in the container will be overwritten, causing the style sheet to be lost.
+因为 `props.container` 并不是一个空的容器，里面会包含微应用通过 styles 配置注册进来的样式表等信息，所以当我们直接以`props.container` 为 react 应用的容器渲染时，会把容器里原来的所有 dom 结构全部覆盖掉，从而导致样式表丢失。
 
-We need to build an empty render container for micro applications that use Config Entry to mount react applications:
+我们需要给使用 config entry 的微应用构造一个空的渲染容器，专门用来挂载 react 应用：
 
 ```diff
 loadMicroApp({
@@ -771,7 +779,7 @@ loadMicroApp({
 });
 ```
 
-The mount hook is not directly render to `props.container`, but to its 'root' node:
+mount 钩子里不是直接渲染到 `props.container` ，而是渲染到其 `root` 节点里：
 
 ```diff
 export async function mount(props) {
@@ -780,18 +788,18 @@ export async function mount(props) {
 }
 ```
 
-## How to solve the problem that cookies are not carried when pulling micro-app entries
+## 如何解决拉取微应用 entry 时 cookie 未携带的问题
 
-As the requests to pull micro-app entry are all cross-domain, when your micro-app relies on cookies (such as authentication), you need to customize the fetch method to enable the cors mode:
+因为拉取微应用 entry 的请求都是跨域的，所以当你的微应用是依赖 cookie (如登陆鉴权)的情况下，你需要通过自定义 fetch 的方式，开启 fetch 的 cors 模式：
 
-- If you load the microapps through [registerMicroApps](/api#registermicroappsapps-lifecycles), you need to configure a custom fetch in the start method, such as:
+- 如果你是通过 [registerMicroApps](/api#registermicroappsapps-lifecycles) 加载微应用的，你需要在 start 方法里配置自定义 fetch，如：
 
   ```js
   import { start } from 'qiankun';
 
   start({
     fetch(url, ...args) {
-      // Enable cors mode for the specified microapp
+      // 给指定的微应用 entry 开启跨域请求
       if (url === 'http://app.alipay.com/entry.html') {
         return window.fetch(url, {
           ...args,
@@ -805,14 +813,14 @@ As the requests to pull micro-app entry are all cross-domain, when your micro-ap
   });
   ```
 
-- If you load the microapp via [loadMicroApp](/api#loadmicroappapp-configuration), you need to configure a custom fetch when invoking, such as:
+- 如果你是通过 [loadMicroApp](/api#loadmicroappapp-configuration) 加载微应用的，你需要在调用时配置自定义 fetch，如：
 
   ```js
   import { loadMicroApp } from 'qiankun';
 
   loadMicroApp(app, {
     fetch(url, ...args) {
-      // Enable cors mode for the specified microapp
+      // 给指定的微应用 entry 开启跨域请求
       if (url === 'http://app.alipay.com/entry.html') {
         return window.fetch(url, {
           ...args,
@@ -824,4 +832,22 @@ As the requests to pull micro-app entry are all cross-domain, when your micro-ap
       return window.fetch(url, ...args);
     },
   });
+  ```
+
+- 如果你是通过 [umi plugin](https://umijs.org/zh-CN/plugins/plugin-qiankun) 来使用 qiankun 的，那么你只需要给对应的微应用开启 credentials 配置即可：
+
+  ```diff
+  export default {
+    qiankun: {
+      master: {
+        apps: [
+          {
+            name: 'app',
+            entry: '//app.alipay.com/entry.html',
+  +         credentials: true,
+          }
+        ]
+      }
+    }
+  }
   ```

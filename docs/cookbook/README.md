@@ -1,20 +1,20 @@
 ---
 nav:
-  title: Tutorial
+  title: 入门教程
 toc: menu
 ---
 
-# Tutorial
+# 入门教程
 
-## How to choose the routing mode of micro app
+## 微应用的路由模式如何选择
 
-The three routes `react-router`, `angular-router`, and `vue-router` all support the `hash` and `history` modes. The different modes used by micro apps are slightly different in `qiankun`.
+`react-router`，`angular-router`，`vue-router` 这三种路由，都支持 `hash` 和 `history` 模式，微应用使用不同的模式在 `qiankun` 中略有差别。
 
-### `activeRule` uses `location.pathname` to distinguish micro apps
+### `activeRule` 使用 `location.pathname` 区分微应用
 
-When the main app uses `location.pathname` to distinguish micro apps, micro apps can be in `hash` and `history` modes.
+主应用使用 `location.pathname` 来区分微应用时，微应用可以是 `hash` 和 `history` 模式。
 
-When registering micro apps, `activeRule` needs to be written like this:
+注册微应用时 `activeRule` 这样写即可：
 
 ```js
 registerMicroApps([
@@ -27,17 +27,17 @@ registerMicroApps([
 ]);
 ```
 
-1. When the micro app is in `history` mode, just set the route `base`.
+1. 当微应用是 `history` 模式时，设置路由 `base` 即可
 
-2. When the micro app is in the `hash` mode, the performance of the three routes is inconsistent
+2. 当微应用是 `hash` 模式时，三种路由的表现不一致
 
-   | routing        | main app jump `/app/#/about`   | special configuration     |
-   | -------------- | ------------------------------ | ------------------------- |
-   | vue-router     | Response `about` routing       | none                      |
-   | react-router   | not responding `about` routing | none                      |
-   | angular-router | Response `about` routing       | need to set `--base-href` |
+   | 路由           | 主应用跳转/app/#/about | 特殊配置             |
+   | -------------- | ---------------------- | -------------------- |
+   | vue-router     | 响应 about 路由        | 无                   |
+   | react-router   | 不响应 about 路由      | 无                   |
+   | angular-router | 响应 about 路由        | 需要设置 --base-href |
 
-   `Angular` app set `--base-href` in `package.json`:
+   `angular` 应用在 `package.json` 里面设置 `--base-href`：
 
    ```diff
    - "start": "ng serve",
@@ -46,28 +46,28 @@ registerMicroApps([
    + "build": "ng build --base-href /angular9",
    ```
 
-   After bundled and deployed, the `angular` micro app can be accessed by the main app, but the lazy-loaded route during independent access will report an error and the path is incorrect. There are two solutions:
+   打包部署后，`angular` 微应用可以被主应用访问。但是独立访问时，懒加载的路由会报错，路径不正确。这里有两个解决办法：
 
-   - Solution 1: Modify `public-path.js` to:
+   - 方法 1：修改 `public-path.js` 为：
 
      ```js
      __webpack_public_path__ = window.__POWERED_BY_QIANKUN__
        ? window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__
-       : `http://${ip}:${port}/`; // Fill in your actual deployment address
+       : `http://${ip}:${port}/`; // 填写你的实际部署地址
      ```
 
-   - Solution 2: Modify the bundling command and deploy the micro app in the `angular9` directory:
+   - 方法 2：修改打包命令，并且将微应用部署在 `angular9` 目录：
 
      ```diff
      - "build": "ng build",
      + "build": "ng build --base-href /angular9 --deploy-url /angular9/",
      ```
 
-### activeRule uses hash to distinguish micro apps
+### `activeRule` 使用 `location.hash` 区分微应用
 
-When the micro apps are all in the `hash` mode, `hash` can be used to distinguish the micro apps, and the routing mode of the main app is not limited.
+当微应用都是 `hash` 模式时可以使用 `hash` 区分微应用，主应用的路由模式不限。
 
-When registering micro apps, `activeRule` needs to be written like this:
+注册微应用时 `activeRule` 需要这样写：
 
 ```js
 const getActiveRule = (hash) => (location) => location.hash.startsWith(hash);
@@ -77,15 +77,14 @@ registerMicroApps([
     entry: 'http://localhost:8080',
     container: '#container',
     activeRule: getActiveRule('#/app-hash'),
-    // Here you can also write `activeRule:'#/app-hash'` directly,
-    // but if the main app is in history mode or the main app is deployed in a non-root directory, this writing will not take effect.
+    // 这里也可以直接写 activeRule: '#/app-hash'，但是如果主应用是 history 模式或者主应用部署在非根目录，这样写不会生效。
   },
 ]);
 ```
 
-The `react-router` and `angular-router` micro-apps need to set the value of `activeRule` to the route's `base`, written in the same way as `history`.
+`react-router` 和 `angular-router` 微应用需要设置 `activeRule` 的值为路由的 `base` ，写法同 `history` 模式。
 
-In the `hash` mode of the `vue-router` app, the `base` for routing is not supported. You need to create an additional empty routing page and use all other routes as its children:
+`vue-router` 的 `hash` 模式下不支持设置路由的 `base`，需要额外新建一个空的路由页面，将其他所有路由都作为它的 `children`：
 
 ```js
 const routes = [
@@ -94,81 +93,81 @@ const routes = [
     name: 'Home',
     component: Home,
     children: [
-      // All other routes are written here
+      // 其他的路由都写到这里
     ],
   },
 ];
 ```
 
-### When there are multiple micro apps at the same time
+### 同时存在多个微应用时
 
-If a page displays multiple micro apps at the same time, you need to use `loadMicroApp` to load them.
+如果一个页面同时展示多个微应用，需要使用 `loadMicroApp` 来加载。
 
-If these micro apps have routing jump requirements, to ensure that these routes do not interfere with each other, you need to use the `momery` routing. `vue-router` uses the `abstract` mode, `react-router` uses the `memory history` mode, and `angular-router` does not support it.
+如果这些微应用都有路由跳转的需求，要保证这些路由能互不干扰，需要使用 `momery` 路由。`vue-router` 使用 `abstract` 模式，`react-router` 使用 `memory history` 模式，`angular-router` 不支持。
 
-## How to deploy
+## 如何部署
 
-**Recommendation**: The main app and micro apps are developed and deployed independently, that is, they belong to different git repositories and services.
+**建议**：主应用和微应用都是独立开发和部署，即它们都属于不同的仓库和服务。
 
-### Scenario 1: The main app and micro apps are deployed to the same server (the same IP and port)
+### 场景 1：主应用和微应用部署到同一个服务器（同一个 IP 和端口）
 
-If the number of servers is limited, or cannot be cross-domain and other reasons, the main app and micro apps need to be deployed together.
+如果服务器数量有限，或不能跨域等原因需要把主应用和微应用部署到一起。
 
-The usual practice is to deploy the main app in the first-level directory and the micro apps in the second/third-level directory.
+通常的做法是主应用部署在一级目录，微应用部署在二/三级目录。
 
-If you want to deploy a micro app in a non-root directory, you need to do two things before bundling the micro app:
+微应用想部署在非根目录，在微应用打包之前需要做两件事：
 
-1. You must configure the `publicPath` when building `webpack` as the **directory name**. For more information, please see [webpack official instructions](https://webpack.js.org/configuration/output/#outputpublicpath) 和 [vue-cli3 official instructions](https://cli.vuejs.org/config/#publicpath).
+1. 必须配置 `webpack` 构建时的 `publicPath` 为**目录名称**，更多信息请看 [webpack 官方说明](https://www.webpackjs.com/configuration/output/#output-publicpath) 和 [vue-cli3 的官方说明](https://cli.vuejs.org/zh/config/#publicpath)
 
-2. The micro app of the `history` route needs to set the `base`, the value is **directory name**, which is used when the micro app is accessed independently.
+2. `history` 路由的微应用需要设置 `base` ，值为**目录名称**，用于独立访问时使用。
 
-Pay attention to three points after deployment:
+部署之后注意三点：
 
-1. `activeRule` cannot be the same as **the real access path of the micro app**, otherwise it will directly become the micro app page when refreshed on the main app page.
-2. The real access path of the micro app is the `entry` of the micro app, and the `entry` can be a relative path.
-3. The `/` at the end of the `entry` path of the micro app cannot be omitted, otherwise the `publicPath` will be set incorrectly. For example, if the access path of the child item is `http://localhost:8080/app1`, then `entry` It is `http://localhost:8080/app1/`.
+1. `activeRule` 不能和**微应用的真实访问路径一样**，否则在主应用页面刷新会直接变成微应用页面。
+2. 微应用的真实访问路径就是微应用的 `entry`，`entry` 可以为相对路径。
+3. 微应用的 `entry` 路径最后面的 `/` 不可省略，否则 `publicPath` 会设置错误，例如子项的访问路径是 `http://localhost:8080/app1`,那么 `entry` 就是 `http://localhost:8080/app1/`。
 
-There are two specific deployment methods, choose one of them.
+具体的部署有以下两种方式，选择其一即可。
 
-#### Solution 1: All micro apps are placed in a folder with a special name that do not have the same name as micro apps (**recommended**)
+#### 方案 1：微应用都放在在一个特殊名称（**不会和微应用重名**）的文件夹下（**建议使用**）
 
-Suppose we have a main app and 6 micro apps ( respectively `vue-hash`, `vue-history`, `react-hash`, `react-history`, `angular-hash`, `angular-history`) And place it as follows after bundling:
+假设我们有一个主应用和 6 个微应用（分别为 `vue-hash`、`vue-history`、`react-hash`、`react-history`、`angular-hash`、`angular-history` ），打包后如下放置：
 
 ```
-└── html/                     # root folder
+└── html/                     # 根文件夹
     |
-    ├── child/                # the folder of all micro apps
-    |   ├── vue-hash/         # the folder of the micro app `vue-hash`
-    |   ├── vue-history/      # the folder of the micro app `vue-history`
-    |   ├── react-hash/       # the folder of the micro app `react-hash`
-    |   ├── react-history/    # the folder of the micro app `react-history`
-    |   ├── angular-hash/     # the folder of the micro app `angular-hash`
-    |   ├── angular-history/  # the folder of the micro app `angular-history`
-    ├── index.html            # index.html of the main app
-    ├── css/                  # the css folder of the main app
-    ├── js/                   # the js folder of the main app
+    ├── child/                # 存放所有微应用的文件夹
+    |   ├── vue-hash/         # 存放微应用 vue-hash 的文件夹
+    |   ├── vue-history/      # 存放微应用 vue-history 的文件夹
+    |   ├── react-hash/       # 存放微应用 react-hash 的文件夹
+    |   ├── react-history/    # 存放微应用 react-history 的文件夹
+    |   ├── angular-hash/     # 存放微应用 angular-hash 的文件夹
+    |   ├── angular-history/  # 存放微应用 angular-history 的文件夹
+    ├── index.html            # 主应用的index.html
+    ├── css/                  # 主应用的css文件夹
+    ├── js/                   # 主应用的js文件夹
 ```
 
-At this time, you need to set the `publicPath` and the route `base` of the `history` mode when the micro app is built, and then bundle them into the corresponding directory.
+此时需要设置微应用构建时的 `publicPath` 和 `history` 模式的路由 `base`，然后才能打包放到对应的目录里。
 
-| app             | routing base            | publicPath              | real access path                             |
+| 项目            | 路由 base               | publicPath              | 真实访问路径                                 |
 | --------------- | ----------------------- | ----------------------- | -------------------------------------------- |
-| vue-hash        | none                    | /child/vue-hash/        | http://localhost:8080/child/vue-hash/        |
+| vue-hash        | 无                      | /child/vue-hash/        | http://localhost:8080/child/vue-hash/        |
 | vue-history     | /child/vue-history/     | /child/vue-history/     | http://localhost:8080/child/vue-history/     |
-| react-hash      | none                    | /child/react-hash/      | http://localhost:8080/child/react-hash/      |
+| react-hash      | 无                      | /child/react-hash/      | http://localhost:8080/child/react-hash/      |
 | react-history   | /child/react-history/   | /child/react-history/   | http://localhost:8080/child/react-history/   |
-| angular-hash    | none                    | /child/angular-hash/    | http://localhost:8080/child/angular-hash/    |
+| angular-hash    | 无                      | /child/angular-hash/    | http://localhost:8080/child/angular-hash/    |
 | angular-history | /child/angular-history/ | /child/angular-history/ | http://localhost:8080/child/angular-history/ |
 
-- `vue-history` micro app
+- vue-history 微应用
 
-  Routing's base configuration:
+  路由设置：
 
   ```js
-  base: window.__POWERED_BY_QIANKUN__ ? '/app-vue/' : '/child/vue-history/',
+  base: window.__POWERED_BY_QIANKUN__ ? '/app-vue-history/' : '/child/vue-history/',
   ```
 
-  Webpack's publicPath configuration（`vue.config.js`）:
+  webpack 打包 publicPath 配置（`vue.config.js`）：
 
   ```js
   module.exports = {
@@ -176,15 +175,15 @@ At this time, you need to set the `publicPath` and the route `base` of the `hist
   };
   ```
 
-- `react-history` micro app
+- react-history 微应用
 
-  Routing's base configuration:
+  路由设置：
 
   ```html
-  <BrowserRouter basename={window.__POWERED_BY_QIANKUN__ ? '/app-react' : '/child/react-history/'}>
+  <BrowserRouter basename={window.__POWERED_BY_QIANKUN__ ? '/app-react-history' : '/child/react-history/'}>
   ```
 
-  Webpack's publicPath configuration:
+  webpack 打包 publicPath 配置：
 
   ```js
   module.exports = {
@@ -194,27 +193,27 @@ At this time, you need to set the `publicPath` and the route `base` of the `hist
   };
   ```
 
-- `angular-history` micro app
+- angular-history 微应用
 
-  Routing's base configuration:
+  路由设置：
 
   ```js
   providers: [
     {
       provide: APP_BASE_HREF,
-      useValue: window.__POWERED_BY_QIANKUN__ ? '/app-angular/' : '/child/angular-history/',
+      useValue: window.__POWERED_BY_QIANKUN__ ? '/app-angular-history/' : '/child/angular-history/',
     },
   ];
   ```
 
-  The `publicPath` of webpack is set by `deploy-url`, modify `package.json`:
+  webpack 打包的 `publicPath` 通过 `deploy-url` 来修改，修改 `package.json`：
 
   ```diff
   - "build": "ng build",
   + "build": "ng build --deploy-url /child/angular-history/",
   ```
 
-Then the `registerMicroApps` function at this time is like this (you need to ensure that `activeRule` and `entry` are different):
+那么此时的注册函数是这样的（需要保证 `activeRule` 和 `entry` 不同）：
 
 ```js
 registerMicroApps([
@@ -230,11 +229,11 @@ registerMicroApps([
     container: '#container',
     activeRule: '/app-vue-history',
   },
-  // angular and react same as above
+  // angular 和 react 同上
 ],
 ```
 
-So far, the main app and the micro apps can run normally, but the main app and the `vue-history`, `react-history`, and `angular-history` micro apps are `history` routes. The problem of refreshing 404 needs to be solved. nginx` also needs to be configured:
+至此主应用已经和微应用都能跑起来了，但是主应用和 `vue-history`、`react-history`、`angular-history` 微应用是 `history` 路由，需要解决刷新 404 的问题，`nginx` 还需要配置一下：
 
 ```conf
 server {
@@ -252,35 +251,35 @@ server {
     index  index.html index.htm;
     try_files $uri $uri/ /child/vue-history/index.html;
   }
-  # The configuration of angular-history and react-history is the same as above
+  # angular 和 react 的history 配置同上
 }
 ```
 
-#### Solution 2: Place the micro apps directly in the secondary directory, but set a special `activeRule`
+#### 方案 2：微应用直接放在二级目录，但是设置特殊的 `activeRule`
 
 ```
-└── html/                 # root folder
+└── html/                     # 根文件夹
     |
-    ├── vue-hash/         # the folder of the micro app `vue-hash`
-    ├── vue-history/      # the folder of the micro app `vue-history`
-    ├── react-hash/       # the folder of the micro app `react-hash`
-    ├── react-history/    # the folder of the micro app `react-history`
-    ├── angular-hash/     # the folder of the micro app `angular-hash`
-    ├── angular-history/  # the folder of the micro app `angular-history`
-    ├── index.html        # index.html of the main app
-    ├── css/              # the css folder of the main app
-    ├── js/               # the js folder of the main app
+    ├── vue-hash/             # 存放微应用 vue-hash 的文件夹
+    ├── vue-history/          # 存放微应用 vue-history 的文件夹
+    ├── react-hash/           # 存放微应用 react-hash 的文件夹
+    ├── react-history/        # 存放微应用 react-history 的文件夹
+    ├── angular-hash/         # 存放微应用 angular-hash 的文件夹
+    ├── angular-history/      # 存放微应用 angular-history 的文件夹
+    ├── index.html            # 主应用的index.html
+    ├── css/                  # 主应用的css文件夹
+    ├── js/                   # 主应用的js文件夹
 ```
 
-The basic operation is the same as above, just make sure that `activeRule` is different from the storage path name of the micro app.
+基本操作和上面是一样的，只要保证 `activeRule` 和微应用的存放路径名不一样即可。
 
-### Scenario 2: The main app and micro apps are deployed on different servers and accessed through Nginx proxy
+### 场景 2：主应用和微应用部署在不同的服务器，使用 Nginx 代理访问
 
-This is generally done because **the main app is not allowed to access micro apps across domains**. The practice is to forward all requests for a special path on the main app server to the micro app server, that is, a "micro app deployed on the main app server" effect is achieved through the proxy.
+一般这么做是因为**不允许主应用跨域访问微应用**，做法就是将主应用服务器上一个特殊路径的请求全部转发到微应用的服务器上，即通过代理实现“微应用部署在主应用服务器上”的效果。
 
-For example, the main app is on the A server, and the micro app is on the B server. The path `/app1` is used to distinguish the micro app, that is, all requests starting with `/app1` on the A server are forwarded to the B server.
+例如，主应用在 A 服务器，微应用在 B 服务器，使用路径 `/app1` 来区分微应用，即 A 服务器上所有 `/app1` 开头的请求都转发到 B 服务器上。
 
-the `Nginx` proxy configuration of the main app is：
+此时主应用的 `Nginx` 代理配置为：
 
 ```
 /app1/ {
@@ -289,7 +288,7 @@ the `Nginx` proxy configuration of the main app is：
 }
 ```
 
-When the main app registers micro apps, `entry` can be a relative path, and `activeRule` cannot be the same as `entry` (otherwise the main app page refreshes and becomes a micro app):
+主应用注册微应用时，`entry` 可以为相对路径，`activeRule` 不可以和 `entry` 一样（否则主应用页面刷新就变成微应用）：
 
 ```js
 registerMicroApps([
@@ -302,7 +301,7 @@ registerMicroApps([
 ],
 ```
 
-For micro apps bundled by `webpack`, the `publicPath` bundled by the micro app's `webpack` needs to be configured as `/app1/`, otherwise the micro app's `index.html` can be requested correctly, But the path of `js/css` in the micro app's `index.html` will not carry `/app1/`.
+对于 `webpack` 构建的微应用，微应用的 `webpack` 打包的 `publicPath` 需要配置成 `/app1/`，否则微应用的 `index.html` 能正确请求，但是微应用 `index.html` 里面的 `js/css` 路径不会带上 `/app1/`。
 
 ```js
 module.exports = {
@@ -312,9 +311,9 @@ module.exports = {
 };
 ```
 
-After adding `/app1/` to the `publicPath` of the micro app, it must be deployed in the `/app1` directory, otherwise it cannot be accessed independently.
+微应用打包的 `publicPath` 加上 `/app1/` 之后，必须部署在 `/app1` 目录，否则无法独立访问。
 
-In addition, if you don't want the micro app to be accessed independently through the proxy path, you can judge based on some information requested. The requesting micro app in the main app is requested with `fetch`, which can include parameters and `cookie`. For example, judge by request header parameters:
+另外，如果不想微应用通过代理路径被独立访问，可以根据请求的一些信息判断下，主应用中请求微应用是用 `fetch` 请求的，可以带参数和 `cookie`。例如通过请求头参数判断：
 
 ```js
 if ($http_custom_referer != "main") {
@@ -322,18 +321,18 @@ if ($http_custom_referer != "main") {
 }
 ```
 
-## Upgrade from 1.x version to 2.x version
+## 从 1.x 版本升级到 2.x 版本
 
-The micro apps does not need to be changed, and the main app needs to be adjusted.
+微应用无需改动，主应用需要做一些调整。
 
-The basic modification of `registerMicroApps` function is as follows:
+`registerMicroApps` 函数基本修改如下：
 
-1. Remove the `render` parameter and only need to provide the container.
-2. Add the `loader` parameter to display the `loading` status. Originally, the `loading` status was provided to the `render` parameter.
-3. The `activeRule` parameter can be abbreviated as `/app`, which is compatible with the previous function writing.
-4. The `RegisterMicroAppsOpts` parameter is removed and placed in the parameter of the `start` function.
+1. 去掉 `render` 参数，只需要提供容器 `container` 即可。
+2. 增加 `loader` 参数，用于展示 `loading` 状态，原本 `loading` 状态是提供给 `render` 参数的。
+3. `activeRule` 参数可以简写为 `/app`，兼容之前的函数写法。
+4. `RegisterMicroAppsOpts` 参数去掉了，放在了 `start` 函数的参数里面。
 
-The basic modification of the `start` function is as follows:
+`start` 函数基本修改如下：
 
-1. The `jsSandbox` configuration has been removed and changed to `sandbox`, and the optional values have also been modified.
-2. Added `getPublicPath` and `getTemplate` to replace `RegisterMicroAppsOpts`.
+1. `jsSandbox` 配置去掉，改为 `sandbox` ，可选值也修改了。
+2. 新增了 `getPublicPath` 和 `getTemplate` ，用于替代`RegisterMicroAppsOpts`。

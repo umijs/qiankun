@@ -5,6 +5,8 @@ module.exports = {
   plugins: ['@typescript-eslint'],
   parserOptions: {
     tsconfigRootDir: __dirname,
+    'parser': "babel-eslint",
+    'allowImportExportEverywhere': true,
     project: ['./tsconfig.eslint.json', './packages/*/tsconfig.json'],
   },
   rules: {

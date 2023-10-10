@@ -2,7 +2,10 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
-    "lib": ["es2018", "dom"],
+    "lib": [
+      "es2018",
+      "dom"
+    ],
     "declaration": true,
     "importHelpers": false,
     "downlevelIteration": true,
@@ -19,10 +22,25 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "moduleResolution": "node",
-    "typeRoots": ["typings", "node_modules/@types"],
+    "typeRoots": [
+      "typings",
+      "node_modules/@types"
+    ],
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "types": ["vitest/globals", "node"]
+    "types": [
+      "vitest/globals",
+      "node"
+    ],
+    "paths": {
+      "@@/*": [
+        ".dumi/tmp/*"
+      ]
+    }
   },
-  "exclude": ["node_modules", "examples", "dist"]
+  "exclude": [
+    "node_modules",
+    "examples",
+    "dist"
+  ]
 }

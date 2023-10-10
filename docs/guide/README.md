@@ -1,70 +1,72 @@
 ---
 nav:
+  title: 指南
   order: 0
 toc: menu
 ---
 
-# Introduction
+# 介绍
 
-Qiankun is an implementation of [Micro Frontends](https://micro-frontends.org/), which based on [single-spa](https://github.com/CanopyTax/single-spa). It aims to make it easier and painless to build a production-ready microfront-end architecture system.
+qiankun 是一个基于 [single-spa](https://github.com/CanopyTax/single-spa) 的[微前端](https://micro-frontends.org/)实现库，旨在帮助大家能更简单、无痛的构建一个生产可用微前端架构系统。
 
-Qiankun hatched from [Ant Financial](https://en.wikipedia.org/wiki/Ant_Financial)’s unified front-end platform for cloud products based on micro-frontends architecture. After full testing and polishing of a number of online applications, we extracted its micro-frontends kernel and open sourced it. We hope to help the systems who has the same requirement more convenient to build its own micro-frontends application in the community. At the same time, with the help of community, qiankun will be polished and improved.
+qiankun 孵化自蚂蚁金融科技基于微前端架构的云产品统一接入平台，在经过一批线上应用的充分检验及打磨后，我们将其微前端内核抽取出来并开源，希望能同时帮助社区有类似需求的系统更方便的构建自己的微前端系统，同时也希望通过社区的帮助将 qiankun 打磨的更加成熟完善。
 
-At present qiankun has served more than 2000 online applications inside Ant, and it is definitely trustworthy in terms of ease of use and completeness.
+目前 qiankun 已在蚂蚁内部服务了超过 2000+ 线上应用，在易用性及完备性上，绝对是值得信赖的。
 
-## What Are Micro FrontEnds
+## 什么是微前端
 
 > Techniques, strategies and recipes for building a **modern web app** with **multiple teams** that can **ship features independently**. -- [Micro Frontends](https://micro-frontends.org/)
+>
+> 微前端是一种多个团队通过独立发布功能的方式来共同构建现代化 web 应用的技术手段及方法策略。
 
-Micro Frontends architecture has the following core values:
+微前端架构具备以下几个核心价值：
 
-- Technology Agnostic
+- 技术栈无关  
+  主框架不限制接入应用的技术栈，微应用具备完全自主权
 
-  The main framework does not restrict access to the technology stack of the application, and the sub-applications have full autonomy.
+- 独立开发、独立部署  
+  微应用仓库独立，前后端可独立开发，部署完成后主框架自动完成同步更新
 
-- Independent Development and Deployment
+- 增量升级
 
-  The sub application repo is independent, and the frontend and backend can be independently developed. After deployment, the main framework can be updated automatically.
+  在面对各种复杂场景时，我们通常很难对一个已经存在的系统做全量的技术栈升级或重构，而微前端是一种非常好的实施渐进式重构的手段和策略
 
-- Incremental Upgrade
+- 独立运行时  
+  每个微应用之间状态隔离，运行时状态不共享
 
-  In the face of various complex scenarios, it is often difficult for us to upgrade or refactor the entire technology stack of an existing system. Micro frontends is a very good method and strategy for implementing progressive refactoring.
+微前端架构旨在解决单体应用在一个相对长的时间跨度下，由于参与的人员、团队的增多、变迁，从一个普通应用演变成一个巨石应用([Frontend Monolith](https://www.youtube.com/watch?v=pU1gXA0rfwc))后，随之而来的应用不可维护的问题。这类问题在企业级 Web 应用中尤其常见。
 
-- Isolated Runtime
-
-  State is isolated between each subapplication and no shared runtime state.
-
-The micro-frontends architecture is designed to solve the application of a single application in a relatively long time span. As a result of the increase in the number of people and teams involved, it has evolved from a common application to a [Frontend Monolith](https://www.youtube.com/watch?v=pU1gXA0rfwc) then becomes unmaintainable. Such a problem is especially common in enterprise web applications.
-
-For more related introductions about micro frontends, I recommend that you check out these articles:
+更多关于微前端的相关介绍，推荐大家可以去看这几篇文章：
 
 - [Micro Frontends](https://micro-frontends.org/)
 - [Micro Frontends from martinfowler.com](https://martinfowler.com/articles/micro-frontends.html)
+- [可能是你见过最完善的微前端解决方案](https://zhuanlan.zhihu.com/p/78362028)
+- [微前端的核心价值](https://zhuanlan.zhihu.com/p/95085796)
 
-## Core Design Philosophy Of qiankun
+## qiankun 的核心设计理念
 
-- 🥄 Simple
+- 🥄 简单
 
-  Since the main application sub-applications can be independent of the technology stack, qiankun is just a jQuery-like library for users. You need to call several qiankun APIs to complete the micro frontends transformation of your application. At the same time, due to the design of qiankun's HTML entry and sandbox, accessing sub-applications is as simple as using an iframe.
+  由于主应用微应用都能做到技术栈无关，qiankun 对于用户而言只是一个类似 jQuery 的库，你需要调用几个 qiankun 的 API 即可完成应用的微前端改造。同时由于 qiankun 的 HTML entry 及沙箱的设计，使得微应用的接入像使用 iframe 一样简单。
 
-- 🍡 Decoupling/Technology Agnostic
+- 🍡 解耦/技术栈无关
 
-  As the core goal of the micro frontends is to disassemble the monolithic application into a number of loosely coupled micro applications that can be autonomous, all the designs of qiankun are follow this principle, such as HTML Entry, sandbox, and communicating mechanism between applications. Only in this way can we ensure that sub-applications truly have the ability to develop and run independently.
+  微前端的核心目标是将巨石应用拆解成若干可以自治的松耦合微应用，而 qiankun 的诸多设计均是秉持这一原则，如 HTML entry、沙箱、应用间通信等。这样才能确保微应用真正具备 独立开发、独立运行 的能力。
 
-## How Does Qiankun Works
+## 它是如何工作的
 
 TODO
 
-## Why Not Iframe
+## 为什么不是 iframe
 
-Check this article [Why Not Iframe](https://www.yuque.com/kuitos/gky7yw/gesexv)
+看这里 [Why Not Iframe](https://www.yuque.com/kuitos/gky7yw/gesexv)
 
-## Features
+## 特性
 
-- 📦 **Based On [single-spa](https://github.com/CanopyTax/single-spa)** , provide a more out-of-box APIs.
-- 📱 **Technology Agnostic**，any javascript framework can use/integrate, whether React/Vue/Angular/JQuery or the others.
-- 💪 **HTML Entry access mode**, allows you to access the son as simple application like use the iframe.
-- 🛡 **Style Isolation**, make sure styles don't interfere with each other.
-- 🧳 **JS Sandbox**, ensure that global variables/events do not conflict between sub-applications.
-- ⚡ **Prefetch Assets**, prefetch unopened sub-application assets during the browser idle time to speed up the sub-application opening speed.
-- 🔌 **Umi Plugin**, [@umijs/plugin-qiankun](https://github.com/umijs/plugins/tree/master/packages/plugin-qiankun) is provided for umi applications to switch to a micro frontends architecture system with one line code.
+- 📦 **基于 [single-spa](https://github.com/CanopyTax/single-spa)** 封装，提供了更加开箱即用的 API。
+- 📱 **技术栈无关**，任意技术栈的应用均可 使用/接入，不论是 React/Vue/Angular/JQuery 还是其他等框架。
+- 💪 **HTML Entry 接入方式**，让你接入微应用像使用 iframe 一样简单。
+- 🛡​ **样式隔离**，确保微应用之间样式互相不干扰。
+- 🧳 **JS 沙箱**，确保微应用之间 全局变量/事件 不冲突。
+- ⚡️ **资源预加载**，在浏览器空闲时间预加载未打开的微应用资源，加速微应用打开速度。
+- 🔌 **umi 插件**，提供了 [@umijs/plugin-qiankun](https://github.com/umijs/plugins/tree/master/packages/plugin-qiankun) 供 umi 应用一键切换成微前端架构系统。

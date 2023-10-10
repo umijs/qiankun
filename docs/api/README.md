@@ -4,38 +4,38 @@ nav:
 toc: menu
 ---
 
-# API
+# API 说明
 
-## Route based configuration
+## 基于路由配置
 
-Suitable for route-based scenarios.
+适用于 route-based 场景。
 
-By linking the micro-application to some url rules, the function of automatically loading the corresponding micro-application when the browser url changes.
+通过将微应用关联到一些 url 规则的方式，实现当浏览器 url 发生变化时，自动加载相应的微应用的功能。
 
-### `registerMicroApps(apps, lifeCycles?)`
+### registerMicroApps(apps, lifeCycles?)
 
-- Parameters
+- 参数
 
-  - apps - `Array<RegistrableApp>` - required, registration information for the child application
-  - lifeCycles - `LifeCycles` - optional, global sub app lifecycle hooks
+  - apps - `Array<RegistrableApp>` - 必选，微应用的一些注册信息
+  - lifeCycles - `LifeCycles` - 可选，全局的微应用生命周期钩子
 
-- Type
+- 类型
 
   - `RegistrableApp`
 
-    - name - `string` - required, the name of the child application and must be unique between the child applications.
+    - name - `string` - 必选，微应用的名称，微应用之间必须确保唯一。
 
-    - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - required, The entry of the micro application.
-      - If configured as `string`, it represents the access address of the micro application. such as `https://qiankun.umijs.org/guide/`.
-      - If configured as `object`, the value of `html` is the html content string of the micro application, not the access address of the micro application. The `publicPath` of the micro application will be set to `/`.
-    - container - `string | HTMLElement` - required，A selector or Element instance of the container node of a micro application. Such as `container: '#root'` or `container: document.querySelector('#root')`.
+    - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - 必选，微应用的入口。
+      - 配置为字符串时，表示微应用的访问地址，例如 `https://qiankun.umijs.org/guide/`。
+      - 配置为对象时，`html` 的值是微应用的 html 内容字符串，而不是微应用的访问地址。微应用的 `publicPath` 将会被设置为 `/`。
+    - container - `string | HTMLElement` - 必选，微应用的容器节点的选择器或者 Element 实例。如`container: '#root'` 或 `container: document.querySelector('#root')`。
 
-    - activeRule - - `string | (location: Location) => boolean | Array<string | (location: Location) => boolean> ` - required,activation rules for micro-apps.
+    - activeRule - `string | (location: Location) => boolean | Array<string | (location: Location) => boolean> ` - 必选，微应用的激活规则。
 
-      - Support direct configuration of string or string array, such as `activeRule: '/app1'` or `activeRule: ['/app1', '/app2']`, when configured as a string, it will directly follow the path part in the url Do a prefix match. A successful match indicates that the current application will be activated.
-      - Support to configure an active function or a group of active functions. The function will pass in the current location as a parameter. When the function returns true, it indicates that the current micro application will be activated. Such as `location => location.pathname.startsWith ('/app1')`.
+      - 支持直接配置字符串或字符串数组，如 `activeRule: '/app1'` 或 `activeRule: ['/app1', '/app2']`，当配置为字符串时会直接跟 url 中的路径部分做前缀匹配，匹配成功表明当前应用会被激活。
+      - 支持配置一个 active function 函数或一组 active function。函数会传入当前 location 作为参数，函数返回 true 时表明当前微应用会被激活。如 `location => location.pathname.startsWith('/app1')`。
 
-      Example rules:
+      规则示例：
 
       `'/app1'`
 
@@ -66,11 +66,11 @@ By linking the micro-application to some url rules, the function of automaticall
       - 🚫 https://app.com/pathname/app1
       - 🚫 https://app.com/app2
 
-      This function is called when the browser url changes, and `activeRule` returns `true` to indicate that the subapplication needs to be activated.
+      浏览器 url 发生变化会调用 activeRule 里的规则，`activeRule` 任意一个返回 `true` 时表明该微应用需要被激活。
 
-    - loader - `(loading: boolean) => void` - optional, function will be invoked while the loading state changed.
+    - loader - `(loading: boolean) => void` - 可选，loading 状态发生变化时会调用的方法。
 
-    - props - `object` - optional, data that the primary application needs to pass to the child application.
+    - props - `object` - 可选，主应用需要传递给微应用的数据。
 
   - `LifeCycles`
 
@@ -78,19 +78,19 @@ By linking the micro-application to some url rules, the function of automaticall
     type Lifecycle = (app: RegistrableApp) => Promise<any>;
     ```
 
-    - beforeLoad - `Lifecycle | Array<Lifecycle>` - optional
-    - beforeMount - `Lifecycle | Array<Lifecycle>` - optional
-    - afterMount - `Lifecycle | Array<Lifecycle>` - optional
-    - beforeUnmount - `Lifecycle | Array<Lifecycle>` - optional
-    - afterUnmount - `Lifecycle | Array<Lifecycle>` - optional
+    - beforeLoad - `Lifecycle | Array<Lifecycle>` - 可选
+    - beforeMount - `Lifecycle | Array<Lifecycle>` - 可选
+    - afterMount - `Lifecycle | Array<Lifecycle>` - 可选
+    - beforeUnmount - `Lifecycle | Array<Lifecycle>` - 可选
+    - afterUnmount - `Lifecycle | Array<Lifecycle>` - 可选
 
-- Usage
+- 用法
 
-  Configuration information for registered subapplications in the main application.
+  注册微应用的基础配置信息。当浏览器 url 发生变化时，会自动检查每一个微应用注册的 `activeRule` 规则，符合规则的应用将会被自动激活。
 
-- Sample
+- 示例
 
-  ```tsx
+  ```tsx | pure
   import { registerMicroApps } from 'qiankun';
 
   registerMicroApps(
@@ -114,32 +114,37 @@ By linking the micro-application to some url rules, the function of automaticall
 
 ### `start(opts?)`
 
-- Parameters
+- 参数
 
-  - opts - `Options` optional
+  - opts - `Options` 可选
 
-- Type
+- 类型
 
   - `Options`
 
-    - prefetch - `boolean | 'all' | string[] | (( apps: RegistrableApp[] ) => { criticalAppNames: string[]; minorAppsName: string[] })` - optional, whether to enable prefetch, default is `true`.
+    - prefetch - `boolean | 'all' | string[] | (( apps: RegistrableApp[] ) => { criticalAppNames: string[]; minorAppsName: string[] })` - 可选，是否开启预加载，默认为 `true`。
 
-      A configuration of `true` starts prefetching static resources for other subapplications after the first subapplication mount completes.
+      配置为 `true` 则会在第一个微应用 mount 完成后开始预加载其他微应用的静态资源
 
-      If configured as `'all'`, the main application `start` will begin to preload all subapplication static resources.
+      配置为 `'all'` 则主应用 `start` 后即开始预加载所有微应用静态资源
 
-      If configured as `string[]`, starts prefetching static resources for subapplications after the first subapplication mount completes which be declared in this list.
+      配置为 `string[]` 则会在第一个微应用 mounted 后开始加载数组内的微应用资源
 
-      If configured as `function`, the timing of all subapplication static resources will be controlled by yourself.
+      配置为 `function` 则可完全自定义应用的资源加载时机 (首屏应用及次屏应用)
 
-    - sandbox - `boolean` | `{ strictStyleIsolation?: boolean, experimentalStyleIsolation?: boolean }` - optional, whether to open the js sandbox, default is `true`.
+    - sandbox - `boolean` | `{ strictStyleIsolation?: boolean, experimentalStyleIsolation?: boolean }` - 可选，是否开启沙箱，默认为 `true`。
 
-      When configured as `{strictStyleIsolation: true}`, qiankun will convert the container dom of each application to a [shadow dom](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_shadow_DOM), to ensure that the style of the application will not leak to the global.
+      默认情况下沙箱可以确保单实例场景子应用之间的样式隔离，但是无法确保主应用跟子应用、或者多实例场景的子应用样式隔离。当配置为 `{ strictStyleIsolation: true }` 时表示开启严格的样式隔离模式。这种模式下 qiankun 会为每个微应用的容器包裹上一个 [shadow dom](https://developer.mozilla.org/zh-CN/docs/Web/Web_Components/Using_shadow_DOM) 节点，从而确保微应用的样式不会对全局造成影响。
 
-      And qiankun offered an experimental way to support css isolation, when experimentalStyleIsolation is set to true, qiankun will limit their scope of influence by add selector constraint, therefore styles of sub-app will like following case:
+      :::warning
+      基于 ShadowDOM 的严格样式隔离并不是一个可以无脑使用的方案，大部分情况下都需要接入应用做一些适配后才能正常在 ShadowDOM 中运行起来（比如 react 场景下需要解决这些 <a target="_blank" href="https://github.com/facebook/react/issues/10422">问题</a>，使用者需要清楚开启了 <code>strictStyleIsolation</code> 意味着什么。后续 qiankun 会提供更多官方实践文档帮助用户能快速的将应用改造成可以运行在 ShadowDOM 环境的微应用。
+      :::
 
-      ```css
-      // if app name is react16
+      除此以外，qiankun 还提供了一个实验性的样式隔离特性，当 experimentalStyleIsolation 被设置为 true 时，qiankun 会改写子应用所添加的样式为所有样式规则增加一个特殊的选择器规则来限定其影响范围，因此改写后的代码会表达类似为如下结构：
+
+
+      ```less
+      // 假设应用名是 react16
       .app-main {
         font-size: 14px;
       }
@@ -149,23 +154,24 @@ By linking the micro-application to some url rules, the function of automaticall
       }
       ```
 
-      notice: @keyframes, @font-face, @import, @page are not supported (i.e. will not be rewritten)
 
-    - singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - Optional, whether it is a singleton scenario, singleton means just rendered one micro app at one time. default is `true`.
+      注意: @keyframes, @font-face, @import, @page 将不被支持 (i.e. 不会被改写)
 
-    - fetch - `Function` - optional
+    - singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - 可选，是否为单实例场景，单实例指的是同一时间只会渲染一个微应用。默认为 `true`。
 
-    - getPublicPath - `(entry: Entry) => string` - optional，The parameter is the entry value of the micro application.
+    - fetch - `Function` - 可选，自定义的 fetch 方法。
 
-    - getTemplate - `(tpl: string) => string` - optional
+    - getPublicPath - `(entry: Entry) => string` - 可选，参数是微应用的 entry 值。
 
-    - excludeAssetFilter - `(assetUrl: string) => boolean` - optional，some special dynamic loaded micro app resources should not be handled by qiankun hijacking
+    - getTemplate - `(tpl: string) => string` - 可选。
 
-- Usage
+    - excludeAssetFilter - `(assetUrl: string) => boolean` - 可选，指定部分特殊的动态加载的微应用资源（css/js) 不被 qiankun 劫持处理。
 
-  Start qiankun.
+- 用法
 
-- Sample
+  启动 qiankun。
+
+- 示例
 
   ```ts
   import { start } from 'qiankun';
@@ -173,17 +179,17 @@ By linking the micro-application to some url rules, the function of automaticall
   start();
   ```
 
-### `setDefaultMountApp(appLink)`
+### setDefaultMountApp(appLink)
 
-- Parameters
+- 参数
 
-  - appLink - `string` - required
+  - appLink - `string` - 必选
 
-- Usage
+- 用法
 
-  Sets the child application that enters by default after the main application starts.
+  设置主应用启动后默认进入的微应用。
 
-- Sample
+- 示例
 
   ```ts
   import { setDefaultMountApp } from 'qiankun';
@@ -193,15 +199,15 @@ By linking the micro-application to some url rules, the function of automaticall
 
 ### `runAfterFirstMounted(effect)`
 
-- Parameters
+- 参数
 
-  - effect - `() => void` - required
+  - effect - `() => void` - 必选
 
-- Usage
+- 用法
 
-  Methods that need to be called after the first subapplication mount, such as turning on some monitoring or buried scripts.
+  第一个微应用 mount 后需要调用的方法，比如开启一些监控或者埋点脚本。
 
-- Sample
+- 示例
 
   ```ts
   import { runAfterFirstMounted } from 'qiankun';
@@ -209,37 +215,41 @@ By linking the micro-application to some url rules, the function of automaticall
   runAfterFirstMounted(() => startMonitor());
   ```
 
-## Manually load micro applications
+## 手动加载微应用
 
-It is suitable for scenarios where a micro application needs to be manually loaded / unloaded.
+适用于需要手动 加载/卸载 一个微应用的场景。
 
-<Alert type="info">
-Usually in this scenario, the micro application is a business component that can run independently without routing.
-Micro applications should not be split too fine, it is recommended to split according to the business domain. Functional units with close business associations should be made into one micro-application, and conversely, those with less close association can be considered to be split into multiple micro-applications.
-A criterion for judging whether the business is closely related: <strong>Look at whether this micro application has frequent communication needs with other micro applications</strong>. If it is possible to show that these two micro-applications are serving the same business scenario, it may be more appropriate to merge them into one micro-application.
-</Alert>
+
+通常这种场景下微应用是一个不带路由的可独立运行的业务组件。
+微应用不宜拆分过细，建议按照业务域来做拆分。业务关联紧密的功能单元应该做成一个微应用，反之关联不紧密的可以考虑拆分成多个微应用。
+一个判断业务关联是否紧密的标准：<strong>看这个微应用与其他微应用是否有频繁的通信需求</strong>。如果有可能说明这两个微应用本身就是服务于同一个业务场景，合并成一个微应用可能会更合适。
 
 ### `loadMicroApp(app, configuration?)`
 
-- Parameters
+- 参数
 
-  - app - `LoadableApp` - Required, basic information of micro application
+  - app - `LoadableApp` - 必选，微应用的基础信息
 
-    - name - `string` - Required, the name of the micro application must be unique among the micro applications.
-    - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - Required, The entry of the micro application(The detailed description is the same as above).
-    - container - `string | HTMLElement` - Required, selector or Element instance of the container node of the micro application. Such as `container: '#root'` or `container: document.querySelector('#root')`.
-    - props - `object` - Optional, the data that needs to be passed to the micro-application during initialization.
+    - name - `string` - 必选，微应用的名称，微应用之间必须确保唯一。
+    - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - 必选，微应用的入口（详细说明同上）。
+    - container - `string | HTMLElement` - 必选，微应用的容器节点的选择器或者 Element 实例。如`container: '#root'` 或 `container: document.querySelector('#root')`。
+    - props - `object` - 可选，初始化时需要传递给微应用的数据。
 
-  - configuration - `Configuration` - Optional, configuration information of the micro application
+  - configuration - `Configuration` - 可选，微应用的配置信息
 
-    - sandbox - `boolean` | `{ strictStyleIsolation?: boolean, experimentalStyleIsolation?: boolean }` - optional, whether to open the js sandbox, default is `true`.
+    - sandbox - `boolean` | `{ strictStyleIsolation?: boolean, experimentalStyleIsolation?: boolean }` - 可选，是否开启沙箱，默认为 `true`。
 
-      When configured as `{strictStyleIsolation: true}`, qiankun will convert the container dom of each application to a [shadow dom](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_shadow_DOM), to ensure that the style of the application will not leak to the global.
+      默认情况下沙箱可以确保单实例场景子应用之间的样式隔离，但是无法确保主应用跟子应用、或者多实例场景的子应用样式隔离。当配置为 `{ strictStyleIsolation: true }` 时表示开启严格的样式隔离模式。这种模式下 qiankun 会为每个微应用的容器包裹上一个 [shadow dom](https://developer.mozilla.org/zh-CN/docs/Web/Web_Components/Using_shadow_DOM) 节点，从而确保微应用的样式不会对全局造成影响。
 
-      And qiankun offered an experimental way to support css isolation, when experimentalStyleIsolation is set to true, qiankun will limit their scope of influence by add selector constraint, thereforce styles of sub-app will like following case:
+      :::warning
+        基于 ShadowDOM 的严格样式隔离并不是一个可以无脑使用的方案，大部分情况下都需要接入应用做一些适配后才能正常在 ShadowDOM 中运行起来（比如 react 场景下需要解决这些 <a target="_blank" href="https://github.com/facebook/react/issues/10422">问题</a>，使用者需要清楚开启了 <code>strictStyleIsolation</code> 意味着什么。后续 qiankun 会提供更多官方实践文档帮助用户能快速的将应用改造成可以运行在 ShadowDOM 环境的微应用。
+      :::
+      
+
+      除此以外，qiankun 还提供了一个实验性的样式隔离特性，当 experimentalStyleIsolation 被设置为 true 时，qiankun 会改写子应用所添加的样式为所有样式规则增加一个特殊的选择器规则来限定其影响范围，因此改写后的代码会表达类似为如下结构：
 
       ```css
-      // if app name is react16
+      // 假设应用名是 react16
       .app-main {
         font-size: 14px;
       }
@@ -249,19 +259,19 @@ A criterion for judging whether the business is closely related: <strong>Look at
       }
       ```
 
-      notice: @keyframes, @font-face, @import, @page are not supported (i.e. will not be rewritten)
+      注意事项: 目前 @keyframes, @font-face, @import, @page 等规则不会支持 (i.e. 不会被改写)
 
-    - singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - Optional, whether it is a singleton scenario, singleton means just rendered one micro app at one time. Default is `false`.
+    - singular - `boolean | ((app: RegistrableApp<any>) => Promise<boolean>);` - 可选，是否为单实例场景，单实例指的是同一时间只会渲染一个微应用。默认为 `false`。
 
-    - fetch - `Function` - Optional, custom fetch method.
+    - fetch - `Function` - 可选，自定义的 fetch 方法。
 
-    - getPublicPath - `(url: string) => string` - Optional，The parameter is the entry value of the micro application.
+    - getPublicPath - `(entry: Entry) => string` - 可选，参数是微应用的 entry 值。
 
-    - getTemplate - `(tpl: string) => string` - Optional
+    - getTemplate - `(tpl: string) => string` - 可选
 
-    - excludeAssetFilter - `(assetUrl: string) => boolean` - optional，some special dynamic loaded micro app resources should not be handled by qiankun hijacking
+    - excludeAssetFilter - `(assetUrl: string) => boolean` - 可选，指定部分特殊的动态加载的微应用资源（css/js) 不被 qiankun 劫持处理
 
-- Return - `MicroApp` - Micro application examples
+- 返回值 - `MicroApp` - 微应用实例
 
   - mount(): Promise&lt;null&gt;;
   - unmount(): Promise&lt;null&gt;;
@@ -272,26 +282,26 @@ A criterion for judging whether the business is closely related: <strong>Look at
   - mountPromise: Promise&lt;null&gt;;
   - unmountPromise: Promise&lt;null&gt;;
 
-- Usage
+- 用法
 
-  Load a micro application manually.
+  手动加载一个微应用。
 
-  If you need to support the main application to manually update the micro application, you need to export an update hook for the micro application entry:
+  如果需要能支持主应用手动 update 微应用，需要微应用 entry 再多导出一个 update 钩子：
 
   ```ts
   export async function mount(props) {
     renderApp(props);
   }
 
-  // Added update hook to allow the main application to manually update the micro application
+  // 增加 update 钩子以便主应用手动更新微应用
   export async function update(props) {
     renderPatch(props);
   }
   ```
 
-- Sample
+- 示例
 
-  ```jsx
+  ```jsx | pure
   import { loadMicroApp } from 'qiankun';
   import React from 'react';
 
@@ -324,22 +334,22 @@ A criterion for judging whether the business is closely related: <strong>Look at
 
 ### `prefetchApps(apps, importEntryOpts?)`
 
-- Parameters
+- 参数
 
-  - apps - `AppMetadata[]` - Required - list of preloaded apps
-  - importEntryOpts - Optional - Load configuration
+  - apps - `AppMetadata[]` - 必选 - 预加载的应用列表
+  - importEntryOpts - 可选 - 加载配置
 
-- Type
+- 类型
 
   - `AppMetadata`
-    - name - `string` - Required - Application name
-    - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - Required,The entry address of the microapp
+    - name - `string` - 必选 - 应用名
+    - entry - `string | { scripts?: string[]; styles?: string[]; html?: string }` - 必选，微应用的 entry 地址
 
-- Usage
+- 用法
 
-  Manually preload the specified micro application static resources. Only needed to manually load micro-application scenarios, you can directly configure the `prefetch` attribute based on the route automatic activation scenario.
+  手动预加载指定的微应用静态资源。仅手动加载微应用场景需要，基于路由自动激活场景直接配置 `prefetch` 属性即可。
 
-- Sample
+- 示例
 
   ```ts
   import { prefetchApps } from 'qiankun';
@@ -354,15 +364,15 @@ A criterion for judging whether the business is closely related: <strong>Look at
 
 ## `addGlobalUncaughtErrorHandler(handler)`
 
-- Parameters
+- 参数
 
-  - handler - `(...args: any[]) => void` - Required
+  - handler - `(...args: any[]) => void` - 必选
 
-- Usage
+- 用法
 
-  Add the global uncaught error hander.
+  添加全局的未捕获异常处理器。
 
-- Sample
+- 示例
 
   ```ts
   import { addGlobalUncaughtErrorHandler } from 'qiankun';
@@ -372,15 +382,15 @@ A criterion for judging whether the business is closely related: <strong>Look at
 
 ## `removeGlobalUncaughtErrorHandler(handler)`
 
-- Parameters
+- 参数
 
-  - handler - `(...args: any[]) => void` - Required
+  - handler - `(...args: any[]) => void` - 必选
 
-- Usage
+- 用法
 
-  Remove the global uncaught error hander.
+  移除全局的未捕获异常处理器。
 
-- Sample
+- 示例
 
   ```ts
   import { removeGlobalUncaughtErrorHandler } from 'qiankun';
@@ -390,56 +400,52 @@ A criterion for judging whether the business is closely related: <strong>Look at
 
 ## `initGlobalState(state)`
 
-- Parameters
+- 参数
 
-  - state - `Record<string, any>` - Required
+  - state - `Record<string, any>` - 必选
 
-- Usage
+- 用法
 
-  init global state, and return actions for communication. It is recommended to use in master, and slave get actions through props.
+  定义全局状态，并返回通信方法，建议在主应用使用，微应用通过 props 获取通信方法。
 
-- Return
+- 返回
 
   - MicroAppStateActions
 
-    - onGlobalStateChange: `(callback: OnGlobalStateChangeCallback, fireImmediately?: boolean) => void` - Listen the global status in the current application: when state changes will trigger callback; fireImmediately = true, will trigger callback immediately when use this method.
+    - onGlobalStateChange: `(callback: OnGlobalStateChangeCallback, fireImmediately?: boolean) => void`， 在当前应用监听全局状态，有变更触发 callback，fireImmediately = true 立即触发 callback
 
-    - setGlobalState: `(state: Record<string, any>) => boolean` - Set global state by first layer props, it can just modify first layer props what has defined.
+    - setGlobalState: `(state: Record<string, any>) => boolean`， 按一级属性设置全局状态，微应用中只能修改已存在的一级属性
 
-    - offGlobalStateChange: `() => boolean` - Remove Listener in this app, will default trigger when app unmount.
+    - offGlobalStateChange: `() => boolean`，移除当前应用的状态监听，微应用 umount 时会默认调用
 
-- Sample
+- 示例
 
-  Master:
+  主应用：
 
   ```ts
   import { initGlobalState, MicroAppStateActions } from 'qiankun';
 
-  // Initialize state
+  // 初始化 state
   const actions: MicroAppStateActions = initGlobalState(state);
 
   actions.onGlobalStateChange((state, prev) => {
-    // state: new state; prev old state
+    // state: 变更后的状态; prev 变更前的状态
     console.log(state, prev);
   });
   actions.setGlobalState(state);
   actions.offGlobalStateChange();
   ```
 
-  Slave:
+  微应用：
 
   ```ts
-  // get actions from mount
+  // 从生命周期 mount 中获取通信方法，使用方式和 master 一致
   export function mount(props) {
     props.onGlobalStateChange((state, prev) => {
-      // state: new state; prev old state
+      // state: 变更后的状态; prev 变更前的状态
       console.log(state, prev);
     });
+
     props.setGlobalState(state);
-
-    // It will trigger when slave umount,  not necessary to use in non special cases.
-    props.offGlobalStateChange();
-
-    // ...
   }
   ```

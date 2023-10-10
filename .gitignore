@@ -9,7 +9,9 @@ dist
 .nyc_output
 config.local.js
 .umi
-.umi-production
+.dumi/tmp
+.dumi/tmp-test
+.dumi/tmp-production
 .idea/
 .cache
 yarn.lock
