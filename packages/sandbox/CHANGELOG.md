@@ -1,5 +1,12 @@
 # @qiankunjs/sandbox
 
+## 0.0.1-rc.3
+
+### Patch Changes
+
+- 39301f19: 🔀 merge master
+  - @qiankunjs/shared@0.0.1-rc.3
+
 ## 0.0.1-rc.2
 
 ### Patch Changes
