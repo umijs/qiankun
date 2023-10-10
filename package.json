@@ -30,7 +30,6 @@
     "babel-plugin-import": "^1.12.1",
     "cross-env": "^7.0.2",
     "dumi": "^2.2.12",
-    "dumi-theme-default": "^1.0.10",
     "eslint": "^8.46.0",
     "eslint-config-prettier": "^9.0.0",
     "father": "^4.3.1",
