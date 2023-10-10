@@ -2,9 +2,8 @@
   "name": "qiankun-monorepo",
   "private": true,
   "engines": {
-    "node": ">=12.0.0"
+    "node": "16"
   },
-  "type": "module",
   "scripts": {
     "dev": "pnpm run build && npm run start:main && npm run start:react15",
     "start:main": "cd ./examples/main && npm start",
@@ -19,7 +18,7 @@
     "docs:build": "dumi build",
     "ci": "pnpm run lint && pnpm run prettier:check && pnpm run build",
     "ci:publish": "pnpm run build && changeset publish",
-    "test": "cross-env NODE_ENV=test vitest",
+    "test": "pnpm -r run test",
     "prepare": "husky install"
   },
   "devDependencies": {
