@@ -21,3 +21,5 @@ package-lock.json
 .now
 .pnpm-store
 *.log
+packages/qiankun/src/version.ts
+packages/sandbox/src/core/sandbox/globals.ts
