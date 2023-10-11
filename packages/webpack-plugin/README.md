@@ -1,54 +1,53 @@
 # @qiankunjs/webpack-plugin
 
-`@qiankunjs/webpack-plugin` 是一个为 [qiankun](https://github.com/umijs/qiankun) 微前端框架设计的 Webpack 插件，用于简化和自动化与 qiankun 集成的一些常见配置。
+`@qiankunjs/webpack-plugin` is a Webpack plugin designed for the [qiankun](https://github.com/umijs/qiankun) micro-frontend framework, aiming to simplify and automate some common configurations when integrating with qiankun.
 
-## 功能
+## Features
 
-- 自动设置输出库的名称和格式。
-- 确保 `jsonpFunction` 名称的唯一性。
-- 设置全局对象为 `window`，确保库可以在浏览器中运行。
-- 自动为 html 中的入口script标签加上entry标记
+- Automatically sets the name and format of the output library.
+- Ensures the uniqueness of the `jsonpFunction` name.
+- Sets the global object to `window`, ensuring the library can run in the browser.
+- Automatically adds an entry marker to the entry script tag in HTML.
 
-## 安装
+## Installation
 
-使用 npm:
+Using npm:
 
 ```bash
 npm install @qiankunjs/webpack-plugin --save-dev
 ```
 
-或使用 yarn:
+Or using yarn:
 
 ```bash
 yarn add @qiankunjs/webpack-plugin --dev
 ```
 
-## 使用
+## Usage
 
-在您的 `webpack.config.js` 或其他配置文件中：
+In your `webpack.config.js` or other configuration files:
 
 ```javascript
 const QiankunPlugin = require('@qiankunjs/webpack-plugin');
 
 module.exports = {
-  // ... 其他配置
+  // ... other configurations
   plugins: [
     new QiankunPlugin({
-      packageName: 'optionalPackageName',  // 可选，如果不提供，将使用 package.json 中的名称
+      packageName: 'optionalPackageName',  // Optional, if not provided, the name from package.json will be used
     })
   ]
 };
 ```
 
-## 选项
+## Options
 
-- `packageName`: 指定输出库的名称。如果未提供，将使用 `package.json` 中的名称。
+- `packageName`: Specifies the name of the output library. If not provided, the name from `package.json` will be used.
 
-## 贡献
+## Contributing
 
-欢迎任何形式的贡献！请提交 PR 或开启 issue 讨论。
+Any form of contribution is welcome! Please submit PRs or open issues for discussion.
 
-## 许可证
+## License
 
 MIT
-
