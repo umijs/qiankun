@@ -1,4 +1,4 @@
-lockfileVersion: '6.0'
+lockfileVersion: '6.1'
 
 settings:
   autoInstallPeers: true
@@ -238,15 +238,15 @@ packages:
     engines: {node: '>=6.9.0'}
     dependencies:
       '@ampproject/remapping': 2.2.1
-      '@babel/code-frame': 7.22.10
+      '@babel/code-frame': 7.22.13
       '@babel/generator': 7.22.10
       '@babel/helper-compilation-targets': 7.22.15
       '@babel/helper-module-transforms': 7.23.0(@babel/core@7.18.6)
       '@babel/helpers': 7.22.10
       '@babel/parser': 7.23.0
-      '@babel/template': 7.22.5
+      '@babel/template': 7.22.15
       '@babel/traverse': 7.22.10
-      '@babel/types': 7.22.10
+      '@babel/types': 7.23.0
       convert-source-map: 1.9.0
       debug: 4.3.4
       gensync: 1.0.0-beta.2
@@ -283,7 +283,7 @@ packages:
     resolution: {integrity: sha512-AIwwoOS8axIC5MZbhNHRLKi3D+DMpvDf9XUcu3pIVAfOHFT45f4AoDAltRbHIQomCipkCZxrNkfpOEHhJz/VKw==}
     engines: {node: '>=6.9.0'}
     dependencies:
-      '@babel/types': 7.22.10
+      '@babel/types': 7.23.0
       '@jridgewell/gen-mapping': 0.3.3
       jsesc: 2.5.2
     dev: true
@@ -327,9 +327,9 @@ packages:
     resolution: {integrity: sha512-y6EEzULok0Qvz8yyLkCvVX+02ic+By2UdOhylwUOvOn9dvYc9mKICJuuU1n1XBI02YWsNsnrY1kc6DVbjcXbtw==}
     engines: {node: '>=6.9.0'}
     dependencies:
-      '@babel/compat-data': 7.22.9
+      '@babel/compat-data': 7.22.20
       '@babel/helper-validator-option': 7.22.15
-      browserslist: 4.21.10
+      browserslist: 4.22.1
       lru-cache: 5.1.1
       semver: 6.3.1
     dev: true
@@ -625,7 +625,7 @@ packages:
     engines: {node: '>=6.0.0'}
     hasBin: true
     dependencies:
-      '@babel/types': 7.22.10
+      '@babel/types': 7.23.0
     dev: true
 
   /@babel/plugin-bugfix-safari-id-destructuring-collision-in-function-expression@7.22.15(@babel/core@7.22.10):
@@ -679,7 +679,7 @@ packages:
     peerDependencies:
       '@babel/core': ^7.0.0-0
     dependencies:
-      '@babel/compat-data': 7.22.9
+      '@babel/compat-data': 7.22.20
       '@babel/core': 7.22.10
       '@babel/helper-compilation-targets': 7.22.15
       '@babel/helper-plugin-utils': 7.22.5
@@ -925,7 +925,7 @@ packages:
       '@babel/core': ^7.0.0-0
     dependencies:
       '@babel/core': 7.22.10
-      '@babel/helper-module-imports': 7.22.5
+      '@babel/helper-module-imports': 7.22.15
       '@babel/helper-plugin-utils': 7.22.5
       '@babel/helper-remap-async-to-generator': 7.22.20(@babel/core@7.22.10)
     dev: true
@@ -999,7 +999,7 @@ packages:
     dependencies:
       '@babel/core': 7.22.10
       '@babel/helper-plugin-utils': 7.22.5
-      '@babel/template': 7.22.5
+      '@babel/template': 7.22.15
     dev: true
 
   /@babel/plugin-transform-destructuring@7.23.0(@babel/core@7.22.10):
@@ -1706,14 +1706,14 @@ packages:
     resolution: {integrity: sha512-zS/OKyqmD7lslOtFqbscH6gMLFYOfG1YPqCKfAW5KrTeolKqvB8UelR49Fpr6y93kYkW2Ik00mT1LOGiAGvizw==}
     engines: {node: '>=6.9.0'}
     dependencies:
-      '@babel/code-frame': 7.22.10
+      '@babel/code-frame': 7.22.13
       '@babel/generator': 7.22.10
       '@babel/helper-environment-visitor': 7.22.20
       '@babel/helper-function-name': 7.22.5
       '@babel/helper-hoist-variables': 7.22.5
       '@babel/helper-split-export-declaration': 7.22.6
       '@babel/parser': 7.23.0
-      '@babel/types': 7.22.10
+      '@babel/types': 7.23.0
       debug: 4.3.4
       globals: 11.12.0
     transitivePeerDependencies:
@@ -1742,7 +1742,7 @@ packages:
     resolution: {integrity: sha512-NdBNzPDwed30fZdDQtVR7ZgaO4UKjuaQFH9VArS+HMnurlOY0JWN+4ROlu/iapMFwjRQU4pOG4StZfDmulEwGA==}
     engines: {node: '>=6.9.0'}
     dependencies:
-      '@babel/helper-validator-identifier': 7.22.5
+      '@babel/helper-validator-identifier': 7.22.20
       to-fast-properties: 2.0.0
     dev: true
 
@@ -3964,7 +3964,7 @@ packages:
       remark-stringify: 9.0.1
       sitemap: 6.4.0
       slash2: 2.0.0
-      terser: 5.14.2
+      terser: 5.21.0
       umi: 3.5.41(react-router@5.2.0)
       unified: 8.4.2
       unist-util-visit: 2.0.3
@@ -14818,7 +14818,7 @@ packages:
     dependencies:
       '@babel/cli': 7.23.0(@babel/core@7.22.10)
       '@babel/core': 7.22.10
-      '@babel/helper-module-imports': 7.22.5
+      '@babel/helper-module-imports': 7.22.15
       '@babel/plugin-external-helpers': 7.22.5(@babel/core@7.22.10)
       '@babel/plugin-proposal-class-properties': 7.18.6(@babel/core@7.22.10)
       '@babel/plugin-proposal-object-rest-spread': 7.20.7(@babel/core@7.22.10)
@@ -16329,7 +16329,7 @@ packages:
       '@webassemblyjs/wasm-parser': 1.11.6
       acorn: 8.10.0
       acorn-import-assertions: 1.9.0(acorn@8.10.0)
-      browserslist: 4.21.10
+      browserslist: 4.22.1
       chrome-trace-event: 1.0.3
       enhanced-resolve: 5.15.0
       es-module-lexer: 1.3.1

@@ -2,7 +2,8 @@ import fse from 'fs-extra';
 import path, { join, posix } from 'node:path';
 import os from 'node:os';
 import execa from 'execa';
-import { RenderOptions } from '..';
+
+export * from './create-subapp'
 
 /**
  * 判断目标路径是否为文件夹
@@ -82,18 +83,4 @@ export function directoryTraverse(
     }
     fileCallback?.(fullPath);
   }
-}
-
-interface SubAppOptions extends RenderOptions {
-  appTargetDir: string
-}
-export async function createSubApp (options: SubAppOptions) {
-  const { projectRoot, appTargetDir, userChoose } = options
-  const { subAppName } = userChoose
-  const templatePath = path.join(projectRoot, subAppName!)
-
-  const appPath = join(appTargetDir, subAppName!)
-  await fse.copy(templatePath, appPath)
-  const data = await fse.readFile(path.join(appPath, 'package.json'))
-  console.log(data)
 }
