@@ -9,7 +9,7 @@ export default defineConfig({
     codeBlockMode: 'passive',
   },
   locales: [
-    { id: 'zh', name: '中文' },
+    { id: 'zh-CN', name: '中文' },
     { id: 'en', name: 'English' },
   ],
   themeConfig: {
@@ -17,7 +17,7 @@ export default defineConfig({
     nav: {
       mode: 'append',
       value: {
-        zh: [
+        'zh-CN': [
           {
             title: '版本公告',
             children: [
