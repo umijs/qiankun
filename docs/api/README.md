@@ -213,11 +213,11 @@ By linking the micro-application to some url rules, the function of automaticall
 
 It is suitable for scenarios where a micro application needs to be manually loaded / unloaded.
 
-<Alert type="info">
+:::info
 Usually in this scenario, the micro application is a business component that can run independently without routing.
 Micro applications should not be split too fine, it is recommended to split according to the business domain. Functional units with close business associations should be made into one micro-application, and conversely, those with less close association can be considered to be split into multiple micro-applications.
 A criterion for judging whether the business is closely related: <strong>Look at whether this micro application has frequent communication needs with other micro applications</strong>. If it is possible to show that these two micro-applications are serving the same business scenario, it may be more appropriate to merge them into one micro-application.
-</Alert>
+:::
 
 ### `loadMicroApp(app, configuration?)`
 
