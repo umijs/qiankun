@@ -9,7 +9,7 @@ export default defineConfig({
     codeBlockMode: 'passive',
   },
   locales: [
-    { id: 'en', name: 'English' },
+    { id: 'en-US', name: 'English' },
     { id: 'zh-CN', name: '中文' },
   ],
   themeConfig: {
@@ -28,7 +28,7 @@ export default defineConfig({
           },
           { title: 'GitHub', link: 'https://github.com/umijs/qiankun' },
         ],
-        en: [
+        'en-US': [
           {
             title: 'Version Notice',
             children: [
