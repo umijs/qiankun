@@ -2,7 +2,7 @@
   "name": "qiankun-monorepo",
   "private": true,
   "engines": {
-    "node": "16"
+    "node": ">=16"
   },
   "scripts": {
     "dev": "pnpm run build && npm run start:main && npm run start:react15",
@@ -19,7 +19,7 @@
     "ci": "pnpm run lint && pnpm run prettier:check && pnpm run build",
     "ci:publish": "pnpm run build && changeset publish",
     "test": "pnpm -r run test",
-    "prepare": "husky install"
+    "prepare": "husky install && dumi setup"
   },
   "devDependencies": {
     "@changesets/cli": "^2.26.1",
@@ -29,8 +29,7 @@
     "@typescript-eslint/parser": "^6.3.0",
     "babel-plugin-import": "^1.12.1",
     "cross-env": "^7.0.2",
-    "dumi": "^1.1.0-beta.24",
-    "dumi-theme-default": "^1.0.10",
+    "dumi": "^2.2.12",
     "eslint": "^8.46.0",
     "eslint-config-prettier": "^9.0.0",
     "father": "^4.3.1",

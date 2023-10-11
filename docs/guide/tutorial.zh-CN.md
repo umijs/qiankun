@@ -51,9 +51,9 @@ start();
 
 1. 新增 `public-path.js` 文件，用于修改运行时的 `publicPath`。[什么是运行时的 publicPath ？](https://webpack.docschina.org/guides/public-path/#on-the-fly)。
 
-<Alert>
+:::warning
 注意：运行时的 publicPath 和构建时的 publicPath 是不同的，两者不能等价替代。
-</Alert>
+:::
 
 2. 微应用建议使用 `history` 模式的路由，需要设置路由 `base`，值和它的 `activeRule` 是一样的。
 3. 在入口文件最顶部引入 `public-path.js`，修改并导出三个生命周期函数。
