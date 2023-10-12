@@ -5,6 +5,7 @@ module.exports = {
     project: ['./tsconfig.json'],
   },
   rules: {
+    'react/display-name': 'off',
     'react/prop-types': 'off',
   },
 };
