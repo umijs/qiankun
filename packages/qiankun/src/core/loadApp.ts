@@ -18,6 +18,7 @@ import {
   performanceMeasure,
   toArray,
 } from '../utils';
+import { version } from '../version';
 
 export type ParcelConfigObjectGetter = (remountContainer: HTMLElement) => ParcelConfigObject;
 
@@ -40,7 +41,7 @@ export default async function loadApp<T extends ObjectType>(
   let sandboxInstance: Sandbox | undefined;
 
   let microAppContainer: HTMLElement = container;
-  clearContainer(microAppContainer);
+  initContainer(microAppContainer, appName, sandbox);
 
   if (sandbox) {
     const sandboxContainer = createSandboxContainer(appName, () => microAppContainer, {
@@ -149,11 +150,21 @@ export default async function loadApp<T extends ObjectType>(
   return parcelConfigGetter;
 }
 
-function clearContainer(container: HTMLElement) {
+function initContainer(container: HTMLElement, appName: string, sandboxCfg: AppConfiguration['sandbox']): void {
   if (!container) {
     throw new QiankunError('container is not existed');
   }
 
+  while (container.firstChild) {
+    container.removeChild(container.firstChild);
+  }
+
+  container.dataset.name = appName;
+  container.dataset.version = version;
+  container.dataset.sandboxCfg = JSON.stringify(sandboxCfg);
+}
+
+function clearContainer(container: HTMLElement): void {
   while (container.firstChild) {
     container.removeChild(container.firstChild);
   }

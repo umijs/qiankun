@@ -27,13 +27,7 @@ export class Compartment {
   /**
    * Since the time of execution of the code in Compartment is determined by the browser, a unique compartmentSpecifier should be generated in Compartment
    */
-  private readonly id: CompartmentGlobalId = (() => {
-    // make sure the compartmentSpecifier is unique
-    while (nativeGlobal[getCompartmentGlobalId(compartmentCounter)]) {
-      compartmentCounter++;
-    }
-    return getCompartmentGlobalId(compartmentCounter);
-  })();
+  private readonly id: CompartmentGlobalId;
 
   private readonly _globalThis: WindowProxy;
 
@@ -41,6 +35,13 @@ export class Compartment {
 
   constructor(globalProxy: WindowProxy) {
     this._globalThis = globalProxy;
+
+    // make sure the compartmentSpecifier is unique
+    while (nativeGlobal[getCompartmentGlobalId(compartmentCounter)]) {
+      compartmentCounter++;
+    }
+    this.id = getCompartmentGlobalId(compartmentCounter);
+    nativeGlobal[this.id] = globalProxy;
   }
 
   get globalThis(): WindowProxy {
@@ -58,7 +59,6 @@ export class Compartment {
       ? `const {${this.constantIntrinsicNames.join(',')}} = this;`
       : '';
 
-    nativeGlobal[this.id] = this.globalThis;
     // eslint-disable-next-line max-len
     return `;(function(){with(this){${globalObjectOptimizer}${source}\n${sourceMapURL}}}).bind(window.${this.id})();`;
   }

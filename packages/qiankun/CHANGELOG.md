@@ -1,5 +1,24 @@
 # qiankun
 
+## 3.0.0-rc.5
+
+### Patch Changes
+
+- 268f64ae: ✨ set data-name on micro app container
+- Updated dependencies [39301f19]
+  - @qiankunjs/sandbox@0.0.1-rc.3
+  - @qiankunjs/loader@0.0.1-rc.4
+  - @qiankunjs/shared@0.0.1-rc.3
+
+## 3.0.0-rc.4
+
+### Patch Changes
+
+- Updated dependencies [b23d3d7b]
+  - @qiankunjs/shared@0.0.1-rc.2
+  - @qiankunjs/loader@0.0.1-rc.3
+  - @qiankunjs/sandbox@0.0.1-rc.2
+
 ## 3.0.0-rc.3
 
 ### Patch Changes
