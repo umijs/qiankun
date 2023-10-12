@@ -44,4 +44,4 @@ See details：[Getting Started](/guide/getting-started)
 
 | Github Discussions | DingTalk Group | WeChat Group |
 | --- | --- | --- |
-| [qiankun discussions](https://github.com/umijs/qiankun/discussions) | <img src="https://mdn.alipayobjects.com/huamei_zvchwx/afts/img/A*GG8zTJaUnTAAAAAAAAAAAAAADuWEAQ/original" width="150" /> | [view group QR code](https://github.com/umijs/qiankun/discussions/2343) |
+| [qiankun discussions](https://github.com/umijs/qiankun/discussions) | <img src="https://mdn.alipayobjects.com/huamei_zvchwx/afts/img/A*8b0oSIkESlwAAAAAAAAAAAAADuWEAQ/original" width="150" /> | [view group QR code](https://github.com/umijs/qiankun/discussions/2343) |
