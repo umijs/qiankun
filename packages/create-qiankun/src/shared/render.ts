@@ -2,7 +2,7 @@ import { directoryTraverse, normalizePath } from './utils';
 import fse from 'fs-extra';
 import ejs from 'ejs';
 
-export function renderEJSforTemplate(targetDirPath: string, data: Record<string, string>) {
+export function renderEJSforTemplate(targetDirPath: string, data: Record<string, string | number>) {
   targetDirPath = normalizePath(targetDirPath);
 
   directoryTraverse(targetDirPath, {

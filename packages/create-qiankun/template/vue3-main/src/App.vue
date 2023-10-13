@@ -25,26 +25,13 @@
 </template>
 
 <script setup>
-import { loadMicroApp } from "qiankun";
-import { shallowRef } from "vue";
-import { useRouter } from "vue-router";
-
+import { loadMicroApp } from 'qiankun';
+import { shallowRef } from 'vue';
+import { useRouter } from 'vue-router';
+import subApplication from './microApp/subs.json';
 const router = useRouter();
 
-const childApps = shallowRef([
-  {
-    name: "react18",
-    entry: "//localhost:7101",
-    container: "#subapp-container",
-    activeRule: "/react18",
-  },
-  {
-    name: "vue3",
-    entry: "//localhost:7891",
-    container: "#subapp-container",
-    activeRule: "/vue3",
-  },
-]);
+const childApps = shallowRef(subApplication);
 
 let preLoad = null;
 
@@ -57,19 +44,11 @@ function changeRouterAndLoadApp(app) {
   preLoad && preLoad.unmount();
 
   // 加载子应用
-  preLoad = loadMicroApp(
-    {
-      name: app.name,
-      entry: app.entry,
-      container: document.querySelector("#subapp-container"),
-    },
-    {
-      sandbox: {
-        strictStyleIsolation: true,
-        strictScriptIsolation: true,
-      },
-    }
-  );
+  preLoad = loadMicroApp({
+    name: app.name,
+    entry: app.entry,
+    container: document.querySelector('#subapp-container'),
+  });
 }
 </script>
 
