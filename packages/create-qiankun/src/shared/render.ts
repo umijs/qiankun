@@ -17,9 +17,13 @@ export interface RenderOptions {
 }
 
 export interface IRenderContext {
+  /** 模板根目录 */
   templateDir: string;
+  /** 临时目录, 一般创建 monorepo的根路径 packages 那一层，不是 monorepo 则跟 projectRoot 一样 */
   tmpDir: string;
+  /** 应用最终生成的文件夹路径 */
   applicationTargetPath: string;
+  /** monorepo的根路径 */
   monorepoDirPath?: string;
 }
 
