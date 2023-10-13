@@ -82,6 +82,7 @@ export default function transpileScript(
   const { sandbox, fetch } = opts;
 
   // To prevent webpack from skipping reload logic and causing the js not to re-execute when a micro app is loaded multiple times, the data-webpack attribute of the script must be removed.
+  // see https://github.com/webpack/webpack/blob/1f13ff9fe587e094df59d660b4611b1bd19aed4c/lib/runtime/LoadScriptRuntimeModule.js#L131-L136
   // FIXME We should determine whether the current micro application is being loaded for the second time. If not, this removal should not be performed.
   script.removeAttribute('data-webpack');
 
