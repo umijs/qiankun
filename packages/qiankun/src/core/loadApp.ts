@@ -56,6 +56,13 @@ export default async function loadApp<T extends ObjectType>(
     unmountSandbox = () => sandboxContainer.unmount();
   }
 
+  const containerOpts: ImportOpts = { fetch, sandbox: sandboxInstance };
+
+  const [firstScriptStartLoadPromise, entryScriptLoadedPromise] = await loadEntry<MicroAppLifeCycles>(
+    entry,
+    microAppContainer,
+    containerOpts,
+  );
   const assetPublicPath = calcPublicPath(entry);
   const {
     beforeUnmount = [],
@@ -66,15 +73,11 @@ export default async function loadApp<T extends ObjectType>(
   } = mergeWith({}, getAddOns(global, assetPublicPath), lifeCycles, (v1, v2) =>
     concat((v1 ?? []) as LifeCycleFn<T>, (v2 ?? []) as LifeCycleFn<T>),
   );
-
+  await firstScriptStartLoadPromise;
   await execHooksChain(toArray(beforeLoad), app, global);
 
-  const containerOpts: ImportOpts = { fetch, sandbox: sandboxInstance };
-
-  const lifecycles = await loadEntry<MicroAppLifeCycles>(entry, microAppContainer, containerOpts);
-
+  const lifecycles = await entryScriptLoadedPromise;
   if (!lifecycles) throw new QiankunError(`${appName} entry ${entry} load failed as it not export lifecycles`);
-
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
     lifecycles,
     appName,

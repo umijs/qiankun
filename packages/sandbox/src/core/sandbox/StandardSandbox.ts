@@ -1,11 +1,11 @@
-import { without } from 'lodash';
 import { hasOwnProperty } from '@qiankunjs/shared';
+import { without } from 'lodash';
 import { Compartment } from '../compartment';
 import type { Endowments } from '../membrane';
 import { Membrane } from '../membrane';
+import { globals as constantGlobals } from './globals';
 import type { Sandbox } from './types';
 import { SandboxType } from './types';
-import { globals as constantGlobals } from './globals';
 
 const whitelistBOMAPIs = ['requestAnimationFrame', 'cancelAnimationFrame'];
 
