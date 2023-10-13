@@ -3,7 +3,7 @@ import path, { join, posix } from 'node:path';
 import os from 'node:os';
 import execa from 'execa';
 
-export * from './create-subapp'
+export * from './create-subapp';
 
 /**
  * 判断目标路径是否为文件夹
@@ -53,8 +53,8 @@ export async function initGit(projectRoot: string) {
   if (isGit) return;
   try {
     await execa('git', ['init'], { cwd: projectRoot });
-  } catch {
-    console.log(`Initial the git repo failed`);
+  } catch (e) {
+    console.log(`Initial the git repo failed`, e);
   }
 }
 

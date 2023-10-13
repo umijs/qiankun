@@ -1,38 +1,18 @@
 #!/usr/bin/env node
 
 import prompts from 'prompts';
-import { green, red, yellow, bold } from 'kolorist';
+import { green, red, bold } from 'kolorist';
 import path from 'node:path';
-import fse from 'fs-extra';
 import minimist from 'minimist';
-import { IRoutePattern } from './shared/types';
-import { initGit, isDir, simpleDetectMonorepoRoot, createSubAppInMono, createSubApp } from './shared/utils';
+import type { PromptAnswer } from './shared/types';
+import { CreateKind, IRoutePattern, PackageManager } from './shared/types';
+import { isDir } from './shared/utils';
 
+import type { MainFrameworkTemplate, SubFrameworkTemplate } from './shared/template';
 import { mainFrameworkList, subFrameworkList, enumToArray } from './shared/template';
-import { renderEJSforTemplate } from './shared/render';
-import { generatePort } from './shared/utils/port';
+import { type RenderOptions, createApplication } from './shared/render';
+import { composeGeneratePorts, generatePort } from './shared/utils/port';
 import { injectSubsConfigToMainApp } from './shared/utils/qiankun';
-
-enum CreateKind {
-  CreateMainApp = '1',
-  CreateSubApp = '2',
-  CreateMainAndSubApp = '3',
-}
-
-interface PromptAnswer {
-  projectName: string;
-  createKind: CreateKind;
-  mainAppName?: string;
-  subAppName?: string | string[];
-  mainRoute?: IRoutePattern;
-}
-
-export interface RenderOptions {
-  projectRoot: string;
-  inMonorepo: boolean;
-  userChoose: PromptAnswer;
-}
-const [projectName, createKind, mainAppName, subAppName, mainRoute] = minimist(process.argv.slice(2))._;
 
 const KindLabelMap: { [key in CreateKind]: string } = {
   [CreateKind.CreateMainApp]: 'Just create main application',
@@ -50,68 +30,78 @@ export async function createQiankunDefaultProject() {
 
   console.log();
 
+  const [projectName, createKind, mainAppName, subAppName, mainRoute, packageManager] = minimist(
+    process.argv.slice(2),
+  )._;
+
   let result: PromptAnswer;
 
   const inputCreateKind = createKind && (String(createKind) as CreateKind);
   try {
-    const list: unknown[] = [];
-    !projectName &&
-      list.push({
+    result = (await prompts([
+      {
         name: 'projectName',
-        type: 'text',
+        type: projectName ? null : 'text',
         message: 'Project name:',
-      });
-    !createKind &&
-      list.push({
+      },
+      {
         name: 'createKind',
-        type: 'select',
+        type: createKind ? null : 'select',
         message: 'Choose a way to create',
         choices: Object.keys(KindLabelMap).map((key) => ({ title: KindLabelMap[key as CreateKind], value: key })),
-      });
-    !mainAppName &&
-      list.push({
+      },
+      {
         name: 'mainAppName',
-        type: (prev: string, values: PromptAnswer) => {
-          return [CreateKind.CreateMainApp, CreateKind.CreateMainAndSubApp].includes(
-            inputCreateKind || values.createKind,
-          )
-            ? 'select'
-            : null;
-        },
+        type: mainAppName
+          ? null
+          : (prev: string, values: PromptAnswer) => {
+              return [CreateKind.CreateMainApp, CreateKind.CreateMainAndSubApp].includes(
+                inputCreateKind || values.createKind,
+              )
+                ? 'select'
+                : null;
+            },
         message: 'Choose a framework for your main application',
         choices: mainFrameworkList,
-      });
-    !subAppName &&
-      list.push({
-        name: 'subAppName',
-        type: (prev: string, values: PromptAnswer) => {
-          const createKind = inputCreateKind || values.createKind;
-          let type = null;
-          if (createKind === CreateKind.CreateMainAndSubApp) {
-            type = 'multiselect';
-          } else if (createKind === CreateKind.CreateSubApp) {
-            type = 'select';
-          }
-          return type;
-        },
-        message: 'Choose a framework for your sub application',
-        choices: subFrameworkList,
-      });
-    !mainRoute &&
-      list.push({
+      },
+      {
         name: 'mainRoute',
-        type: (prev: string, values: PromptAnswer) => {
-          return [CreateKind.CreateMainApp, CreateKind.CreateMainAndSubApp].includes(
-            inputCreateKind || values.createKind,
-          )
-            ? 'select'
-            : null;
-        },
+        type: mainRoute
+          ? null
+          : (prev: string, values: PromptAnswer) => {
+              return [CreateKind.CreateMainApp, CreateKind.CreateMainAndSubApp].includes(
+                inputCreateKind || values.createKind,
+              )
+                ? 'select'
+                : null;
+            },
         message: 'Choose a route pattern for your main application',
         choices: enumToArray(IRoutePattern),
-      });
-
-    result = (await prompts(list)) as PromptAnswer;
+      },
+      {
+        name: 'subAppName',
+        type: subAppName
+          ? null
+          : (prev: string, values: PromptAnswer) => {
+              const createKind = inputCreateKind || values.createKind;
+              if (createKind === CreateKind.CreateMainAndSubApp) {
+                return 'multiselect';
+              }
+              if (createKind === CreateKind.CreateSubApp) {
+                return 'multiselect';
+              }
+              return null;
+            },
+        message: 'Choose a framework for your sub application',
+        choices: subFrameworkList,
+      },
+      {
+        name: 'packageManager',
+        message: 'Which package manager do you want to use?',
+        type: packageManager ? null : 'select',
+        choices: enumToArray(PackageManager),
+      },
+    ])) as PromptAnswer;
   } catch (e) {
     console.log(red('operation cancelled'));
     process.exit(1);
@@ -124,9 +114,10 @@ export async function createQiankunDefaultProject() {
   const userChoose: PromptAnswer = {
     projectName: projectName || result.projectName,
     createKind: createKind ? (String(createKind) as CreateKind) : result.createKind,
-    mainAppName: mainAppName || result.mainAppName,
-    subAppName: subAppName ? [subAppName] : result.subAppName,
+    mainAppName: (mainAppName as MainFrameworkTemplate) || result.mainAppName,
+    subAppName: subAppName ? ([subAppName] as SubFrameworkTemplate[]) : result.subAppName,
     mainRoute: (mainRoute as IRoutePattern) || result.mainRoute,
+    packageManager: (packageManager as PackageManager) || result.packageManager,
   };
 
   const targetDir = path.join(root, userChoose.projectName);
@@ -137,16 +128,15 @@ export async function createQiankunDefaultProject() {
   }
 
   // detach Monorepo
-  const monorepoRoot = simpleDetectMonorepoRoot(targetDir);
-  const inMonorepo = !!monorepoRoot;
-  const projectRoot = inMonorepo ? monorepoRoot : targetDir;
-
+  // const monorepoRoot = simpleDetectMonorepoRoot(targetDir);
+  // const inMonorepo = !!monorepoRoot;
+  // const projectRoot = inMonorepo ? monorepoRoot : targetDir;
+  const projectRoot = targetDir;
   // detach Pnpm todo
 
   // render
   await renderTemplate({
     projectRoot,
-    inMonorepo,
     userChoose,
   });
 
@@ -154,53 +144,68 @@ export async function createQiankunDefaultProject() {
   console.log(bold(green(`\n Done.`)));
 }
 
-async function createMainApplication(opts: RenderOptions) {
-  const { projectRoot, userChoose } = opts;
-  const { mainAppName, mainRoute } = userChoose;
-
-  const templateDir = path.join(__dirname, '../template');
-
-  const tmpTemplateDir = path.join(projectRoot);
-  let mainAppTargetPath = tmpTemplateDir;
-
-  if (userChoose.createKind === CreateKind.CreateMainAndSubApp) {
-    // 先构建monorepo
-    await fse.copy(path.join(templateDir, 'base'), tmpTemplateDir);
-    await initGit(tmpTemplateDir);
-
-    mainAppTargetPath = path.join(tmpTemplateDir, 'packages', mainAppName!);
-  }
-
-  await fse.copy(path.join(templateDir, mainAppName!), mainAppTargetPath);
-  await initGit(tmpTemplateDir);
-
-  const port = generatePort();
-
-  renderEJSforTemplate(mainAppTargetPath, { mainRoute: mainRoute!, port });
-
-  return mainAppTargetPath;
-}
-
 async function renderTemplate(opts: RenderOptions) {
-  const { createKind } = opts.userChoose;
+  const { createKind, mainAppName, mainRoute, subAppName, packageManager } = opts.userChoose;
 
-  let mainAppTargetPath = '';
+  let mainAppTargetPath = '',
+    monorepoRootPath: string | undefined;
+  const mainAppPort = generatePort();
+
+  // create main application
   if ([CreateKind.CreateMainApp, CreateKind.CreateMainAndSubApp].includes(createKind)) {
-    mainAppTargetPath = await createMainApplication(opts);
+    const mainAppInfo = await createApplication(
+      mainAppName!,
+      { port: mainAppPort, mainRoute },
+      { ...opts, gitInit: true },
+    );
+    mainAppTargetPath = mainAppInfo.applicationTargetPath;
+    monorepoRootPath = mainAppInfo.monorepoDirPath;
   }
 
+  // create sub applications
   if ([CreateKind.CreateSubApp, CreateKind.CreateMainAndSubApp].includes(createKind)) {
-    console.log();
-    console.log(yellow('create sub app start'));
-    console.log();
-    if (createKind === CreateKind.CreateSubApp) {
-      await createSubApp(opts);
-    } else if (createKind === CreateKind.CreateMainAndSubApp) {
-      const subsInfo = await createSubAppInMono(opts);
-      await injectSubsConfigToMainApp(mainAppTargetPath, subsInfo);
+    const subsPorts = composeGeneratePorts(
+      subAppName!.map(() => generatePort),
+      mainAppPort ? [mainAppPort] : [],
+    );
+
+    await Promise.all(
+      subAppName!.map((sub, i) =>
+        createApplication(
+          sub,
+          { port: subsPorts[i] },
+          {
+            ...opts,
+            gitInit: createKind === CreateKind.CreateSubApp || packageManager !== PackageManager.pnpm,
+            monorepoDirPath: monorepoRootPath,
+            // 创建主应用和子应用但是不是monorepo的时候需要改下root
+            // projectName放主应用内容,子应用文件夹与projectName文件夹同级
+            // projectRoot: packageManager === PackageManager.pnpm ? opts.projectRoot : process.cwd(),
+          },
+        ),
+      ),
+    );
+
+    if (createKind === CreateKind.CreateMainAndSubApp) {
+      await injectSubsConfigToMainApp(
+        mainAppTargetPath,
+        subAppName!.map((sub, i) => ({ subName: sub, port: subsPorts[i] })),
+      );
     }
-    console.log();
-    console.log(yellow('create sub app end'));
-    console.log();
   }
+
+  // if ([CreateKind.CreateSubApp, CreateKind.CreateMainAndSubApp].includes(createKind)) {
+  //   console.log();
+  //   console.log(yellow('create sub app start'));
+  //   console.log();
+  //   if (createKind === CreateKind.CreateSubApp) {
+  //     await createSubApp(opts);
+  //   } else if (createKind === CreateKind.CreateMainAndSubApp) {
+  //     const subsInfo = await createSubAppInMono(opts);
+  //     await injectSubsConfigToMainApp(mainAppTargetPath, subsInfo);
+  //   }
+  //   console.log();
+  //   console.log(yellow('create sub app end'));
+  //   console.log();
+  // }
 }

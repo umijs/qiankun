@@ -1,5 +1,9 @@
 const commonPorts = [21, 22, 23, 25, 53, 80, 110, 443, 3306, 8080];
 
+export function composeGeneratePorts(fns: Array<(r: number[]) => number>, excludes: number[] = []) {
+  return fns.reduce((acc, fn) => acc.concat(fn(acc)), excludes).slice(excludes.length);
+}
+
 export function generatePort(created: number[] = []) {
   // 特定的常用端口和系统端口
   let port;
