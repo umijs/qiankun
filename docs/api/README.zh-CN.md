@@ -1,6 +1,7 @@
 ---
 nav:
   title: API
+  order: 1
 toc: menu
 ---
 

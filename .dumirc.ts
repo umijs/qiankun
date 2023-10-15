@@ -1,7 +1,6 @@
 import { defineConfig } from 'dumi';
 
 export default defineConfig({
-  ssr: {},
   publicPath: process.env.NOW_DEPLOY ? '/' : '/qiankun/',
   base: process.env.NOW_DEPLOY ? '/' : '/qiankun',
   resolve: {
@@ -13,6 +12,7 @@ export default defineConfig({
     { id: 'zh-CN', name: '中文' },
   ],
   themeConfig: {
+    name: 'qiankun',
     logo: 'https://gw.alipayobjects.com/zos/bmw-prod/8a74c1d3-16f3-4719-be63-15e467a68a24/km0cv8vn_w500_h500.png',
     nav: {
       mode: 'append',
@@ -26,7 +26,6 @@ export default defineConfig({
               { title: '1.x 版本', link: 'https://v1.qiankun.umijs.org/zh/' },
             ],
           },
-          { title: 'GitHub', link: 'https://github.com/umijs/qiankun' },
         ],
         'en-US': [
           {
@@ -37,9 +36,11 @@ export default defineConfig({
               { title: '1.x Version', link: 'https://v1.qiankun.umijs.org/' },
             ],
           },
-          { title: 'GitHub', link: 'https://github.com/umijs/qiankun' },
         ],
       },
+    },
+    socialLinks: {
+      github: 'https://github.com/umijs/dumi',
     },
   },
   metas: [

@@ -1,6 +1,7 @@
 ---
 nav:
   title: FAQ
+  order: 2
 toc: menu
 ---
 
