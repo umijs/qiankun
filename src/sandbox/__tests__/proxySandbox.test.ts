@@ -293,16 +293,35 @@ it('document should work well with MutationObserver', (done) => {
   docProxy.document.body.innerHTML = '<div></div>';
 });
 
-it('bounded function should not be rebounded', () => {
-  const proxy = new ProxySandbox('bound-fn-test').proxy as any;
-  const fn = () => {};
-  const boundedFn = fn.bind(null);
-  proxy.fn1 = fn;
-  proxy.fn2 = boundedFn;
+it('native window function calling should always be bound with window', () => {
+  window.mockNativeWindowFunction = function mockNativeWindowFunction(this: any) {
+    if (this !== undefined && this !== window) {
+      throw new Error('Illegal Invocation!');
+    }
 
-  expect(proxy.fn1 === fn).toBeFalsy();
-  expect(proxy.fn2 === boundedFn).toBeTruthy();
-  expect(isBoundedFunction(proxy.fn1)).toBeTruthy();
+    return 'success';
+  };
+
+  const { proxy } = new ProxySandbox('mustBeBoundWithWindowReference');
+  expect(proxy.mockNativeWindowFunction()).toBe('success');
+});
+
+it('native bounded function should not be rebounded', () => {
+  const proxy = new ProxySandbox('bound-native-fn-test').proxy as any;
+  const boundedFn = atob.bind(null);
+  proxy.atob = boundedFn;
+
+  expect(proxy.atob === boundedFn).toBeTruthy();
+  expect(isBoundedFunction(proxy.atob)).toBeTruthy();
+});
+
+it('non-native function should not be rebounded', () => {
+  const proxy = new ProxySandbox('non-native-fn-bound-test').proxy as any;
+  function test() {}
+  proxy.fn = test;
+
+  expect(proxy.fn === test).toBeTruthy();
+  expect(isBoundedFunction(proxy.fn)).toBeFalsy();
 });
 
 it('frozen property should not be overwrite', () => {
@@ -332,12 +351,8 @@ it('frozen property should not be overwrite', () => {
 
 it('the prototype should be kept while we create a function with prototype on proxy', () => {
   const proxy = new ProxySandbox('new-function').proxy as any;
-
-  function test() {}
-
-  proxy.fn = test;
-  expect(proxy.fn === test).toBeFalsy();
-  expect(proxy.fn.prototype).toBe(test.prototype);
+  proxy.CustomEvent = CustomEvent;
+  expect(proxy.CustomEvent.prototype).toBe(CustomEvent.prototype);
 });
 
 it('some native window property was defined with getter in safari and firefox, and they will check the caller source', () => {
@@ -397,19 +412,6 @@ it('should get current running sandbox proxy correctly', async () => {
     expect(getCurrentRunningApp()?.window).toBe(proxy);
     expect(getCurrentRunningApp()?.name).toBe('running');
   });
-});
-
-it('native window function calling should always be bound with window', () => {
-  window.nativeWindowFunction = function nativeWindowFunction(this: any) {
-    if (this !== undefined && this !== window) {
-      throw new Error('Illegal Invocation!');
-    }
-
-    return 'success';
-  };
-
-  const { proxy } = new ProxySandbox('mustBeBoundWithWindowReference');
-  expect(proxy.nativeWindowFunction()).toBe('success');
 });
 
 describe('should work well while the property existed in global context before', () => {

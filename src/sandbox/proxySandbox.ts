@@ -24,10 +24,9 @@ function uniq(array: Array<string | symbol>) {
   }, Object.create(null));
 }
 
-const cachedGlobalsInBrowser = globalsInBrowser.reduce<Record<string, true>>(
-  (acc, key) => ({ ...acc, [key]: true }),
-  Object.create(null),
-);
+const cachedGlobalsInBrowser = globalsInBrowser
+  .concat(process.env.NODE_ENV === 'test' ? ['mockNativeWindowFunction', 'mockDomAPIInBlackList'] : [])
+  .reduce<Record<string, true>>((acc, key) => ({ ...acc, [key]: true }), Object.create(null));
 function isNativeGlobalProp(prop: string): boolean {
   return prop in cachedGlobalsInBrowser;
 }
@@ -308,7 +307,7 @@ export default class ProxySandbox implements SandBox {
         }
 
         // non-native property return directly to avoid rebind
-        if (!isNativeGlobalProp(p as string)) {
+        if (!isNativeGlobalProp(p as string) && !useNativeWindowForBindingsProps.has(p)) {
           return value;
         }
 
