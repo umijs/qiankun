@@ -1,4 +1,4 @@
-# qiankun react
+# qiankun ui binding for react
 
 ## 安装
 
