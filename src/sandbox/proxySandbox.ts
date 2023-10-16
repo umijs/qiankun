@@ -1,14 +1,14 @@
 /* eslint-disable no-param-reassign */
-import { without } from 'lodash';
 /**
  * @author Kuitos
  * @since 2020-3-31
  */
+import { without } from 'lodash';
 import type { SandBox } from '../interfaces';
 import { SandBoxType } from '../interfaces';
 import { isPropertyFrozen, nativeGlobal, nextTask } from '../utils';
 import { clearCurrentRunningApp, getCurrentRunningApp, getTargetValue, setCurrentRunningApp } from './common';
-import { globals } from './globals';
+import { globalsInBrowser, globalsInES2015 } from './globals';
 
 type SymbolTarget = 'target' | 'globalContext';
 
@@ -22,6 +22,14 @@ function uniq(array: Array<string | symbol>) {
   return array.filter(function filter(this: PropertyKey[], element) {
     return element in this ? false : ((this as any)[element] = true);
   }, Object.create(null));
+}
+
+const cachedGlobalsInBrowser = globalsInBrowser.reduce<Record<string, true>>(
+  (acc, key) => ({ ...acc, [key]: true }),
+  Object.create(null),
+);
+function isNativeGlobalProp(prop: string): boolean {
+  return prop in cachedGlobalsInBrowser;
 }
 
 // zone.js will overwrite Object.defineProperty
@@ -58,7 +66,9 @@ const mockGlobalThis = 'mockGlobalThis';
 const accessingSpiedGlobals = ['document', 'top', 'parent', 'eval'];
 const overwrittenGlobals = ['window', 'self', 'globalThis', 'hasOwnProperty'].concat(inTest ? [mockGlobalThis] : []);
 export const cachedGlobals = Array.from(
-  new Set(without(globals.concat(overwrittenGlobals).concat('requestAnimationFrame'), ...accessingSpiedGlobals)),
+  new Set(
+    without(globalsInES2015.concat(overwrittenGlobals).concat('requestAnimationFrame'), ...accessingSpiedGlobals),
+  ),
 );
 
 // transform cachedGlobals to object for faster element check
@@ -294,6 +304,11 @@ export default class ProxySandbox implements SandBox {
 
         // frozen value should return directly, see https://github.com/umijs/qiankun/issues/2015
         if (isPropertyFrozen(actualTarget, p)) {
+          return value;
+        }
+
+        // non-native property return directly to avoid rebind
+        if (!isNativeGlobalProp(p as string)) {
           return value;
         }
 
