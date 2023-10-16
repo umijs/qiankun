@@ -1,7 +1,4 @@
-import concat from 'lodash/concat';
-import isEqual from 'lodash/isEqual';
-import mergeWith from 'lodash/mergeWith';
-import noop from 'lodash/noop';
+import { concat, isEqual, mergeWith, noop } from 'lodash';
 import { loadMicroApp } from 'qiankun';
 import type { AppConfiguration, MicroApp as MicroAppTypeDefinition, LifeCycleFn, LifeCycles } from 'qiankun';
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
@@ -94,19 +91,17 @@ export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<Mic
         name,
         entry,
         container: containerRef.current!,
-        props: {
-          ...propsFromParams,
-        },
+        props: propsFromParams,
       },
       configuration,
       mergeWith({}, lifeCycles, (v1: LifeCycleFn<Record<string, unknown>>, v2: LifeCycleFn<Record<string, unknown>>) =>
-        concat(v1 ?? [], v2 ?? []),
+        concat(v1, v2),
       ),
     );
 
-    microAppRef.current?.mountPromise
-      ?.then(() => {
-        if (propsFromParams?.autoSetLoading) {
+    microAppRef.current.mountPromise
+      .then(() => {
+        if (propsFromParams.autoSetLoading) {
           setLoading(false);
         }
       })
@@ -116,8 +111,8 @@ export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<Mic
       });
 
     (['loadPromise', 'bootstrapPromise'] as const).forEach((key) => {
-      const promise = microAppRef.current?.[key];
-      promise?.catch((e: Error) => {
+      const promise = microAppRef.current![key];
+      promise.catch((e: Error) => {
         setComponentError(e);
         setLoading(false);
       });
@@ -146,8 +141,8 @@ export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<Mic
       } else {
         // 确保 microApp.update 调用是跟组件状态变更顺序一致的，且后一个微应用更新必须等待前一个更新完成
         microApp._updatingPromise = microApp._updatingPromise.then(() => {
-          const canUpdate = (microApp?: MicroAppType) =>
-            microApp?.update && microApp.getStatus() === 'MOUNTED' && !microApp._unmounting;
+          const canUpdate = (microApp: MicroAppType) =>
+            microApp.update && microApp.getStatus() === 'MOUNTED' && !microApp._unmounting;
           if (canUpdate(microApp)) {
             const props = {
               ...propsFromParams,
@@ -158,11 +153,11 @@ export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<Mic
               const updatingTimestamp = microApp._updatingTimestamp!;
               if (Date.now() - updatingTimestamp < 200) {
                 console.warn(
-                  `[@qiankunjs/react-binding] It seems like microApp ${name} is updating too many times in a short time(200ms), you may need to do some optimization to avoid the unnecessary re-rendering.`,
+                  `[@qiankunjs/react] It seems like microApp ${name} is updating too many times in a short time(200ms), you may need to do some optimization to avoid the unnecessary re-rendering.`,
                 );
               }
 
-              console.info(`[@qiankunjs/react-binding] MicroApp ${name} is updating with props: `, props);
+              console.info(`[@qiankunjs/react] MicroApp ${name} is updating with props: `, props);
               microApp._updatingTimestamp = Date.now();
             }
 
@@ -176,7 +171,7 @@ export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<Mic
     }
 
     return noop;
-  }, [useDeepCompare({ ...propsFromParams })]);
+  }, [useDeepCompare(propsFromParams)]);
 
   // 未配置自定义 loader 且开启了 autoSetLoading 场景下，使用插件默认的 loader，否则使用自定义 loader
   const microAppLoader =

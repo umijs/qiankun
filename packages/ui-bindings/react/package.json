@@ -1,5 +1,5 @@
 {
-  "name": "@qiankunjs/react-binding",
+  "name": "@qiankunjs/react",
   "version": "0.0.1-rc.1",
   "description": "",
   "main": "./dist/cjs/index.js",
