@@ -9,7 +9,7 @@
     "react-router-dom": "^5.1.2"
   },
   "scripts": {
-    "start": "rescripts start",
+    "dev": "rescripts start",
     "build": "rescripts build",
     "test": "rescripts test",
     "eject": "rescripts eject"
