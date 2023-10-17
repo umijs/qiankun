@@ -10,6 +10,9 @@ module.exports = defineConfig({
     headers: {
       "Access-Control-Allow-Origin": "*",
     },
+    client: {
+      overlay: false
+    }
   },
   configureWebpack: {
     output: {
