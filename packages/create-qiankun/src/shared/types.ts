@@ -8,7 +8,8 @@ export enum IRoutePattern {
 export enum PackageManager {
   npm = 'npm',
   yarn = 'yarn',
-  pnpm = 'pnpm workspace',
+  pnpm = 'pnpm',
+  pnpmWorkspace = 'pnpm workspace',
 }
 
 export interface PromptAnswer {

@@ -20,6 +20,13 @@ const KindLabelMap: { [key in CreateKind]: string } = {
   [CreateKind.CreateMainAndSubApp]: 'Create main application and sub applications',
 };
 
+const packageManagerMap: { [key in PackageManager]: string } = {
+  [PackageManager.npm]: 'npm',
+  [PackageManager.yarn]: 'yarn',
+  [PackageManager.pnpm]: 'pnpm',
+  [PackageManager.pnpmWorkspace]: 'pnpm with workspace',
+};
+
 createQiankunDefaultProject().catch((e) => {
   console.error(e);
 });
@@ -99,7 +106,10 @@ export async function createQiankunDefaultProject() {
         name: 'packageManager',
         message: 'Which package manager do you want to use?',
         type: packageManager ? null : 'select',
-        choices: enumToArray(PackageManager),
+        choices: Object.keys(packageManagerMap).map((key) => ({
+          title: packageManagerMap[key as PackageManager],
+          value: key,
+        })),
       },
     ])) as PromptAnswer;
   } catch (e) {

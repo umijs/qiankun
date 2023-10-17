@@ -43,7 +43,7 @@ export async function createApplication(
     monorepoDirPath: opts.monorepoDirPath,
   };
 
-  if (packageManager === PackageManager.pnpm) {
+  if (packageManager === PackageManager.pnpmWorkspace) {
     if (monorepoDirPath) {
       context.applicationTargetPath = monorepoDirPath;
     } else {
