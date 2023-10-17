@@ -1,5 +1,6 @@
 <template>
   <nav>
+    <h2>Vue3+Webpack</h2>
     <router-link to="/">Home</router-link> |
     <router-link to="/about">About</router-link>
   </nav>

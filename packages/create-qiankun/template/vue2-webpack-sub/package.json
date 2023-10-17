@@ -1,5 +1,5 @@
 {
-  "name": "vue3",
+  "name": "vue2-webpack-sub",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -8,10 +8,11 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "element-ui": "^2.15.1",
     "core-js": "^3.8.3",
-    "vue": "^3.2.13",
-    "vue-router": "^4.0.3",
-    "vuex": "^4.0.0"
+    "vue": "^2.6.14",
+    "vue-router": "^3.5.1",
+    "vuex": "^3.6.2"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",
@@ -27,6 +28,7 @@
     "eslint-plugin-vue": "^8.0.3",
     "less": "^4.0.0",
     "less-loader": "^8.0.0",
-    "prettier": "^2.4.1"
+    "prettier": "^2.4.1",
+    "vue-template-compiler": "^2.6.14"
   }
 }
