@@ -2,7 +2,11 @@
   "name": "base",
   "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "preinstall": "node ./scripts/checkPnpm.js",
+    "start": "node ./scripts/start.js"
   },
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "prompts": "^2.4.2"
+  }
 }
