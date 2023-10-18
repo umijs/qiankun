@@ -1,14 +1,14 @@
 /* eslint-disable no-param-reassign */
-import { without } from 'lodash';
 /**
  * @author Kuitos
  * @since 2020-3-31
  */
+import { without } from 'lodash';
 import type { SandBox } from '../interfaces';
 import { SandBoxType } from '../interfaces';
 import { isPropertyFrozen, nativeGlobal, nextTask } from '../utils';
-import { clearCurrentRunningApp, getCurrentRunningApp, getTargetValue, setCurrentRunningApp } from './common';
-import { globals } from './globals';
+import { clearCurrentRunningApp, getCurrentRunningApp, rebindTarget2Fn, setCurrentRunningApp } from './common';
+import { globalsInBrowser, globalsInES2015 } from './globals';
 
 type SymbolTarget = 'target' | 'globalContext';
 
@@ -22,6 +22,13 @@ function uniq(array: Array<string | symbol>) {
   return array.filter(function filter(this: PropertyKey[], element) {
     return element in this ? false : ((this as any)[element] = true);
   }, Object.create(null));
+}
+
+const cachedGlobalsInBrowser = globalsInBrowser
+  .concat(process.env.NODE_ENV === 'test' ? ['mockNativeWindowFunction'] : [])
+  .reduce<Record<string, true>>((acc, key) => ({ ...acc, [key]: true }), Object.create(null));
+function isNativeGlobalProp(prop: string): boolean {
+  return prop in cachedGlobalsInBrowser;
 }
 
 // zone.js will overwrite Object.defineProperty
@@ -58,7 +65,9 @@ const mockGlobalThis = 'mockGlobalThis';
 const accessingSpiedGlobals = ['document', 'top', 'parent', 'eval'];
 const overwrittenGlobals = ['window', 'self', 'globalThis', 'hasOwnProperty'].concat(inTest ? [mockGlobalThis] : []);
 export const cachedGlobals = Array.from(
-  new Set(without(globals.concat(overwrittenGlobals).concat('requestAnimationFrame'), ...accessingSpiedGlobals)),
+  new Set(
+    without(globalsInES2015.concat(overwrittenGlobals).concat('requestAnimationFrame'), ...accessingSpiedGlobals),
+  ),
 );
 
 // transform cachedGlobals to object for faster element check
@@ -297,14 +306,20 @@ export default class ProxySandbox implements SandBox {
           return value;
         }
 
+        // non-native property return directly to avoid rebind
+        if (!isNativeGlobalProp(p as string) && !useNativeWindowForBindingsProps.has(p)) {
+          return value;
+        }
+
         /* Some dom api must be bound to native window, otherwise it would cause exception like 'TypeError: Failed to execute 'fetch' on 'Window': Illegal invocation'
            See this code:
              const proxy = new Proxy(window, {});
+             // in nest sandbox fetch will be bind to proxy rather than window in master
              const proxyFetch = fetch.bind(proxy);
              proxyFetch('https://qiankun.com');
         */
         const boundTarget = useNativeWindowForBindingsProps.get(p) ? nativeGlobal : globalContext;
-        return getTargetValue(boundTarget, value);
+        return rebindTarget2Fn(boundTarget, value);
       },
 
       // trap in operator
