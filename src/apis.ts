@@ -98,6 +98,7 @@ export function loadMicroApp<T extends ObjectType>(
   lifeCycles?: FrameworkLifeCycles<T>,
 ): MicroApp {
   const { props, name } = app;
+  const { disableCache } = configuration || {};
 
   const container = 'container' in app ? app.container : undefined;
   // Must compute the container xpath at beginning to keep it consist around app running
@@ -151,7 +152,7 @@ export function loadMicroApp<T extends ObjectType>(
     );
     const { $$cacheLifecycleByAppName } = userConfiguration;
 
-    if (container) {
+    if (container && !disableCache) {
       // using appName as cache for internal experimental scenario
       if ($$cacheLifecycleByAppName) {
         const parcelConfigGetterPromise = appConfigPromiseGetterMap.get(name);
@@ -166,7 +167,7 @@ export function loadMicroApp<T extends ObjectType>(
 
     const parcelConfigObjectGetterPromise = loadApp(app, userConfiguration, lifeCycles);
 
-    if (container) {
+    if (container && !disableCache) {
       if ($$cacheLifecycleByAppName) {
         appConfigPromiseGetterMap.set(name, parcelConfigObjectGetterPromise);
       } else if (containerXPath) appConfigPromiseGetterMap.set(appContainerXPathKey, parcelConfigObjectGetterPromise);
@@ -185,7 +186,7 @@ export function loadMicroApp<T extends ObjectType>(
 
   microApp = mountRootParcel(memorizedLoadingFn, { domElement: document.createElement('div'), ...props });
 
-  if (container) {
+  if (container && !disableCache) {
     if (containerXPath) {
       // Store the microApps which they mounted on the same container
       const microAppsRef = containerMicroAppsMap.get(appContainerXPathKey) || [];

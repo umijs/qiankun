@@ -859,3 +859,31 @@ export async function mount(props) {
     }
   }
   ```
+
+  ## 为什么使用 loadMicroApp 多次加载相同微应用时，bootstrap 方法只会执行一次？
+
+  默认情况下，为了提升性能和避免内存泄漏的风险，在多次加载相同微应用的时候，qiankun 不会重复加载资源和执行代码，因此会跳过 bootstrap 钩子，直接 mount 微应用。
+
+  可以通过禁用缓存解决，但需要注意的是该方法可能会导致性能和内存的问题。
+
+    ```js
+  import { loadMicroApp } from 'qiankun';
+
+  loadMicroApp(app, {
+    disableCache: true, // 禁用缓存
+  });
+  ```
+
+  ## 为什么使用 loadMicroApp 多次加载相同微应用时，一些全局状态会保留？
+
+  默认情况下，为了提升性能和避免内存泄漏的风险，在多次加载相同微应用的时候，qiankun 不会重复加载资源和执行代码，会直接复用缓存在内存里的代码，因此会保留之前的全局状态。
+
+  可以通过禁用缓存解决，但需要注意的是该方法可能会导致性能和内存的问题。
+
+    ```js
+  import { loadMicroApp } from 'qiankun';
+
+  loadMicroApp(app, {
+    disableCache: true, // 禁用缓存
+  });
+  ```

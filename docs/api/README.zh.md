@@ -269,6 +269,8 @@ toc: menu
 
     - excludeAssetFilter - `(assetUrl: string) => boolean` - 可选，指定部分特殊的动态加载的微应用资源（css/js) 不被 qiankun 劫持处理
 
+    - disableCache - `boolean` - 可选，是否禁用缓存，在多次加载相同微应用的时候，qiankun 不会重复加载资源和执行代码，这样可以提升性能和避免内存泄漏的风险，默认为 `false`
+
 - 返回值 - `MicroApp` - 微应用实例
 
   - mount(): Promise&lt;null&gt;;

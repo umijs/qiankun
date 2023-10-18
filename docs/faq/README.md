@@ -832,3 +832,31 @@ As the requests to pull micro-app entry are all cross-domain, when your micro-ap
     },
   });
   ```
+
+  ## Why bootstrap hook only run once when loading the same micro app multi times by using loadMicroApp method?
+
+  By default，to improve performace and avoid the risk of memory leaks, qiankun will not load resources and excute code repeatedly when loading the same micro app multiple times, so it will skip bootstrap hook, and remount the micro app directly. 
+
+  You can disable cache to solve the problem, however, be ware this method may cause performance and memory problems.
+
+    ```js
+  import { loadMicroApp } from 'qiankun';
+
+  loadMicroApp(app, {
+    disableCache: true
+  });
+  ```
+
+  ## Why global data being cached when loading the same micro app multi times by using loadMicroApp method?
+
+  By default，to improve performace and avoid the risk of memory leaks, qiankun will not load resources and excute code repeatedly when loading the same micro app multiple times, so it will reuse the global data cache of last time.
+
+  You can disable cache to solve the problem, however, be ware this method may cause performance and memory problems.
+
+    ```js
+  import { loadMicroApp } from 'qiankun';
+
+  loadMicroApp(app, {
+    disableCache: true
+  });
+  ```
