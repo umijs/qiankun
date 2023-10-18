@@ -11,6 +11,7 @@ config.local.js
 .umi
 .umi-production
 .idea/
+.vscode/
 .cache
 yarn.lock
 es
