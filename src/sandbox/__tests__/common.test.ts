@@ -3,17 +3,17 @@
  * @since 2021-04-12
  */
 
-import { getTargetValue } from '../common';
+import { rebindTarget2Fn } from '../common';
 
 describe('getTargetValue', () => {
   it('should work well', () => {
-    const a1 = getTargetValue(window, undefined);
+    const a1 = rebindTarget2Fn(window, undefined);
     expect(a1).toEqual(undefined);
 
-    const a2 = getTargetValue(window, null);
+    const a2 = rebindTarget2Fn(window, null);
     expect(a2).toEqual(null);
 
-    const a3 = getTargetValue(window, function bindThis(this: any) {
+    const a3 = rebindTarget2Fn(window, function bindThis(this: any) {
       return this;
     });
     const a3returns = a3();
@@ -24,7 +24,7 @@ describe('getTargetValue', () => {
     function prototypeAddedAfterFirstInvocation(this: any, field: string) {
       this.field = field;
     }
-    const notConstructableFunction = getTargetValue(window, prototypeAddedAfterFirstInvocation);
+    const notConstructableFunction = rebindTarget2Fn(window, prototypeAddedAfterFirstInvocation);
     // `this` of not constructable function will be bound automatically, and it can not be changed by calling with special `this`
     const result = {};
     notConstructableFunction.call(result, '123');
@@ -32,7 +32,7 @@ describe('getTargetValue', () => {
     expect(window.field).toEqual('123');
 
     prototypeAddedAfterFirstInvocation.prototype.addedFn = () => {};
-    const constructableFunction = getTargetValue(window, prototypeAddedAfterFirstInvocation);
+    const constructableFunction = rebindTarget2Fn(window, prototypeAddedAfterFirstInvocation);
     // `this` coule be available if it be predicated as a constructable function
     const result2 = {};
     constructableFunction.call(result2, '456');
@@ -40,7 +40,7 @@ describe('getTargetValue', () => {
     // window.field not be affected
     expect(window.field).toEqual('123');
     // reference should be stable after first running
-    expect(constructableFunction).toBe(getTargetValue(window, prototypeAddedAfterFirstInvocation));
+    expect(constructableFunction).toBe(rebindTarget2Fn(window, prototypeAddedAfterFirstInvocation));
   });
 
   it('should work well while value have a readonly prototype on its prototype chain', () => {
@@ -56,7 +56,7 @@ describe('getTargetValue', () => {
 
     Object.setPrototypeOf(callableFunction, functionWithReadonlyPrototype);
 
-    const boundFn = getTargetValue(window, callableFunction);
+    const boundFn = rebindTarget2Fn(window, callableFunction);
     expect(boundFn.prototype).toBe(callableFunction.prototype);
   });
 
@@ -71,9 +71,9 @@ describe('getTargetValue', () => {
       },
     });
 
-    const boundFn1 = getTargetValue(window, callableFunction1);
-    const boundFn2 = getTargetValue(window, callableFunction2);
-    const boundFn3 = getTargetValue(window, callableFunction3);
+    const boundFn1 = rebindTarget2Fn(window, callableFunction1);
+    const boundFn2 = rebindTarget2Fn(window, callableFunction2);
+    const boundFn3 = rebindTarget2Fn(window, callableFunction3);
 
     expect(boundFn1.toString()).toBe(callableFunction1.toString());
     expect(boundFn2.toString()).toBe(callableFunction2.toString());

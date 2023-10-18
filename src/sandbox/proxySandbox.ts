@@ -7,7 +7,7 @@ import { without } from 'lodash';
 import type { SandBox } from '../interfaces';
 import { SandBoxType } from '../interfaces';
 import { isPropertyFrozen, nativeGlobal, nextTask } from '../utils';
-import { clearCurrentRunningApp, getCurrentRunningApp, getTargetValue, setCurrentRunningApp } from './common';
+import { clearCurrentRunningApp, getCurrentRunningApp, rebindTarget2Fn, setCurrentRunningApp } from './common';
 import { globalsInBrowser, globalsInES2015 } from './globals';
 
 type SymbolTarget = 'target' | 'globalContext';
@@ -25,7 +25,7 @@ function uniq(array: Array<string | symbol>) {
 }
 
 const cachedGlobalsInBrowser = globalsInBrowser
-  .concat(process.env.NODE_ENV === 'test' ? ['mockNativeWindowFunction', 'mockDomAPIInBlackList'] : [])
+  .concat(process.env.NODE_ENV === 'test' ? ['mockNativeWindowFunction'] : [])
   .reduce<Record<string, true>>((acc, key) => ({ ...acc, [key]: true }), Object.create(null));
 function isNativeGlobalProp(prop: string): boolean {
   return prop in cachedGlobalsInBrowser;
@@ -314,11 +314,12 @@ export default class ProxySandbox implements SandBox {
         /* Some dom api must be bound to native window, otherwise it would cause exception like 'TypeError: Failed to execute 'fetch' on 'Window': Illegal invocation'
            See this code:
              const proxy = new Proxy(window, {});
+             // in nest sandbox fetch will be bind to proxy rather than window in master
              const proxyFetch = fetch.bind(proxy);
              proxyFetch('https://qiankun.com');
         */
         const boundTarget = useNativeWindowForBindingsProps.get(p) ? nativeGlobal : globalContext;
-        return getTargetValue(boundTarget, value);
+        return rebindTarget2Fn(boundTarget, value);
       },
 
       // trap in operator

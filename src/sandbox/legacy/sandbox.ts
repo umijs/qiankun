@@ -4,7 +4,7 @@
  */
 import type { SandBox } from '../../interfaces';
 import { SandBoxType } from '../../interfaces';
-import { getTargetValue } from '../common';
+import { rebindTarget2Fn } from '../common';
 
 function isPropConfigurable(target: WindowProxy, prop: PropertyKey) {
   const descriptor = Object.getOwnPropertyDescriptor(target, prop);
@@ -125,7 +125,7 @@ export default class LegacySandbox implements SandBox {
         }
 
         const value = (rawWindow as any)[p];
-        return getTargetValue(rawWindow, value);
+        return rebindTarget2Fn(rawWindow, value);
       },
 
       // trap in operator
