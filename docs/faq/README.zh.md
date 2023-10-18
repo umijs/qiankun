@@ -31,19 +31,18 @@ qiankun 抛出这个错误是因为无法从微应用的 entry js 中识别出�
 6. 如果开发环境可以，生产环境不行，检查微应用的 `index.html` 和 `entry js` 是否正常返回，比如说返回了 `404.html`。
 
 7. 如果你正在使用 webpack5，但没用使用模块联邦，请看[这个 issues](https://github.com/umijs/qiankun/issues/1092#issuecomment-1109673224)。
-   
 8. 如果你正在使用 webpack5，并且使用了使用模块联邦。需要在 index 文件中暴露生命周期函数，然后在 bootstrap 文件向外暴露生命周期函数。
-   
-  ```js
-  const promise = import("index");
-  export const bootstrap = () => promise.then(m => m.bootstrap());
-  export const mount = () => promise.then(m => m.mount());
-  export const unmount = () => promise.then(m => m.unmount());
-  ```
+
+```js
+const promise = import('index');
+export const bootstrap = () => promise.then((m) => m.bootstrap());
+export const mount = () => promise.then((m) => m.mount());
+export const unmount = () => promise.then((m) => m.unmount());
+```
 
 9.  检查主应用和微应用是否使用了 AMD 或 CommonJS 模块化。检查方法：单独运行微应用和主应用，在控制台输入如下代码：`(typeof exports === 'object' && typeof module === 'object') || (typeof define === 'function' && define.amd) || typeof exports === 'object'`，如果返回 `true`，则说明是这种情况，主要有以下两个解决办法：
 
-    - 解决办法1：修改微应用 `webpack` 的 `libraryTarget` 为 `'window'` 。
+    - 解决办法 1：修改微应用 `webpack` 的 `libraryTarget` 为 `'window'` 。
 
     ```diff
     const packageName = require('./package.json').name;
@@ -56,10 +55,10 @@ qiankun 抛出这个错误是因为无法从微应用的 entry js 中识别出�
       },
     };
     ```
-    - 解决办法2：微应用不打包成 umd ，直接在入口文件把生命周期函数挂载到 window 上，参考[非 webpack 构建的微应用](/zh/guide/tutorial#非-webpack-构建的微应用)。
 
+    - 解决办法 2：微应用不打包成 umd ，直接在入口文件把生命周期函数挂载到 window 上，参考[非 webpack 构建的微应用](/zh/guide/tutorial#非-webpack-构建的微应用)。
 
-10.  如果在上述步骤完成后仍有问题，通常说明是浏览器兼容性问题导致的。可以尝试 **将有问题的微应用的 webpack `output.library` 配置成跟主应用中注册的 `name` 字段一致**，如：
+10. 如果在上述步骤完成后仍有问题，通常说明是浏览器兼容性问题导致的。可以尝试 **将有问题的微应用的 webpack `output.library` 配置成跟主应用中注册的 `name` 字段一致**，如：
 
 假如主应用配置是这样的：
 
@@ -151,6 +150,7 @@ qiankun 抛出这个错误是因为微应用加载后容器 DOM 节点不存在�
 如果仍然报错，检查容器 DOM 是否放在了主应用的某个路由页面，请参考[如何在主应用的某个路由页面加载微应用](#如何在主应用的某个路由页面加载微应用)。
 
 ## `[import-html-entry]: error occurs while excuting xxx script http://xxx.xxx.xxx/x.js`
+
 ![](https://user-images.githubusercontent.com/22413530/109919189-41563d00-7cf3-11eb-8328-711228389d63.png)
 
 其中第一行只是 qiankun 通过 `console.error` 打印出来的一个辅助信息，目的是帮助用户更快的知道是哪个 js 报错了，并不是 qiankun 本身发生了异常。
@@ -160,6 +160,7 @@ qiankun 抛出这个错误是因为微应用加载后容器 DOM 节点不存在�
 比如上图这样一个报错，指的是子应用在执行 `http://localhost:9100/index.bundle.js` 时，这个 js 本身抛异常了。**而具体的异常信息就是第二行的 `Uncaught TypeError: Cannot read property 'call' of undefined`。**
 
 子应用本身的异常，可以尝试通过以下步骤排查解决：
+
 1. 根据具体的异常信息，检查报错的 js 是否有语法错误，比如少了分号、依赖了未初始化的变量等。
 2. 是否依赖了主应用提供的全局变量，但实际主应用并未初始化。
 3. 兼容性问题。子应用这个 js 本身在当前运行环境存在语法兼容性问题。
@@ -859,3 +860,11 @@ export async function mount(props) {
     }
   }
   ```
+
+## 如何解决子应用给 window 对象添加事件处理函数不生效的问题
+
+由于子应用访问的 window 对象是被 qiankun 代理后的对象，因此直接给 window 对象添加事件处理函数是无效的，可以通过 addEventListener 给 window 添加事件监听器来解决该问题：
+
+```js
+window.addEventListener('eventName', eventHandler);
+```

@@ -30,34 +30,35 @@ To solve the exception, try the following steps:
 
 6. If the development environment is OK but the production environment is not, check whether the `index.html` and `entry js` of the micro app are returned normally, for example, `404.html` is returned.
 
-7. If you're using webpack5 and not using module federation, please see [here](https://github.com/umijs/qiankun/issues/1092#issuecomment-1109673224) 
+7. If you're using webpack5 and not using module federation, please see [here](https://github.com/umijs/qiankun/issues/1092#issuecomment-1109673224)
 
 8. If you are using webpack5 and using module federation, you need to expose the life cycle function in the index file, and then expose the life cycle function externally in the bootstrap file.
-   
-  ```js
-  const promise = import("index");
-  export const bootstrap = () => promise.then(m => m.bootstrap());
-  export const mount = () => promise.then(m => m.mount());
-  export const unmount = () => promise.then(m => m.unmount());
-  ```
+
+```js
+const promise = import('index');
+export const bootstrap = () => promise.then((m) => m.bootstrap());
+export const mount = () => promise.then((m) => m.mount());
+export const unmount = () => promise.then((m) => m.unmount());
+```
 
 9. Check whether the main app and micro-app use AMD or CommonJS. Check method: run the main app and the micro-app independently, and enter the following code in the console: `(typeof exports === 'object' && typeof module === 'object') || (typeof define === 'function' && define.amd) || typeof exports === 'object'`，If it returns `true`，that it is caused by this reason, and there are mainly the following two solutions:
 
-    - Solution 1: Modify the `libraryTarget` of the micro-app `webpack` to `'window'`.
+   - Solution 1: Modify the `libraryTarget` of the micro-app `webpack` to `'window'`.
 
-    ```diff
-    const packageName = require('./package.json').name;
-    module.exports = {
-      output: {
-        library: `${packageName}-[name]`,
-    -    libraryTarget: 'umd',
-    +    libraryTarget: 'window',
-        jsonpFunction: `webpackJsonp_${packageName}`,
-      },
-    };
-    ```
-    - Solution 2: The micro-app is not bundle with `umd`, directly mount the life cycle function to the `window` in the entry file, refer to[Micro app built without webpack](/guide/tutorial#micro-app-built-without-webpack).
- 
+   ```diff
+   const packageName = require('./package.json').name;
+   module.exports = {
+     output: {
+       library: `${packageName}-[name]`,
+   -    libraryTarget: 'umd',
+   +    libraryTarget: 'window',
+       jsonpFunction: `webpackJsonp_${packageName}`,
+     },
+   };
+   ```
+
+   - Solution 2: The micro-app is not bundle with `umd`, directly mount the life cycle function to the `window` in the entry file, refer to[Micro app built without webpack](/guide/tutorial#micro-app-built-without-webpack).
+
 10. If it still not works after the steps above, this is usually due to browser compatibility issues. Try to **set the webpack `output.library` of the broken sub app the same with your main app registration for your app**, such as:
 
 Such as here is the main configuration:
@@ -150,14 +151,15 @@ How to determine the completion of the container DOM loading? The vue app can be
 If it still reports an error, check whether the container DOM is placed on a routing page of the main app, please refer to [How to load micro apps on a routing page of the main app](#How to load micro apps on a routing page of the main app)
 
 ## `[import-html-entry]: error occurs while excuting xxx script http://xxx.xxx.xxx/x.js`
-![](https://user-images.githubusercontent.com/22413530/109919189-41563d00-7cf3-11eb-8328-711228389d63.png)
-The first line is just a helper info printed by qiankun via `console.error` to help users identify which js file threw the error faster. It is not an exception thrown by qiankun itself.
+
+![](https://user-images.githubusercontent.com/22413530/109919189-41563d00-7cf3-11eb-8328-711228389d63.png) The first line is just a helper info printed by qiankun via `console.error` to help users identify which js file threw the error faster. It is not an exception thrown by qiankun itself.
 
 **The actual exception info is in the second line.**
 
 For example in the error above, it means the child app itself threw an exception when executing http://localhost:9100/index.bundle.js. **And the actual exception message is `Uncaught TypeError: Cannot read property 'call' of undefined` in the second line.**
 
 Exceptions from the child app itself can be debugged and fixed with the following steps:
+
 1. Based on the specific exception message, check if the js file that errors has syntax errors, like missing semicolons, depending on uninitialized variables etc.
 2. Whether it depends on global variables provided by the main app, but the main app did not initialize them.
 3. Compatibility issues. The child app js itself has syntax compatibility issues in the current runtime environment.
@@ -725,9 +727,9 @@ router.beforeEach((to, from, next) => {
 
 It is not feasible to use the router instance of micro-application directly to jump between micro-applications or micro-applications to main application page, such as the `Link` component in react-router or router-link in vue, because the router instance jump of micro-applications is based on the 'base' of routes. There are such ways to jump:
 
-1. ` history. PushState () ` : [MDN usage introduction] (https://developer.mozilla.org/zh-CN/docs/Web/API/History/pushState)
-2. Direct use of native a full address label, such as: ` < a href = "http://localhost:8080/app1" > app1 < / a > `
-3. Modify the location href jump, such as: ` window. The location. The href = 'http://localhost:8080/app1' `
+1. `history. PushState ()` : [MDN usage introduction] (https://developer.mozilla.org/zh-CN/docs/Web/API/History/pushState)
+2. Direct use of native a full address label, such as: `< a href = "http://localhost:8080/app1" > app1 < / a >`
+3. Modify the location href jump, such as: `window. The location. The href = 'http://localhost:8080/app1'`
 
 ## After the microapp file is updated, the old version of the file is still accessed
 
@@ -832,3 +834,11 @@ As the requests to pull micro-app entry are all cross-domain, when your micro-ap
     },
   });
   ```
+
+## How to solve the problem that adding event handlers to window objects by subapplication does not take effect
+
+Since the window object accessed by the sub-application is the object after being proxed by qiankun, it is invalid to add an event handler directly to the window object, and you can solve the problem by adding an event listener to the window by addEventListener:
+
+```js
+window.addEventListener('eventName', eventHandler);
+```
