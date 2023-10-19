@@ -1,3 +1,4 @@
+import type { Sandbox } from '@qiankunjs/sandbox';
 import { qiankunHeadTagName } from '@qiankunjs/sandbox';
 import type { BaseTranspilerOpts } from '@qiankunjs/shared';
 import {
@@ -25,7 +26,7 @@ type Entry = HTMLEntry;
 export type ImportOpts = {
   decoder?: (chunk: string) => string;
   nodeTransformer?: typeof transpileAssets;
-} & BaseTranspilerOpts;
+} & BaseTranspilerOpts & { sandbox?: Sandbox };
 
 /**
  * @param entry

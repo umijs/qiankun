@@ -17,7 +17,7 @@ export function patchAtBootstrapping(appName: string, getContainer: () => HTMLEl
     [SandboxType.Snapshot]: [],
   } as const;
 
-  return patchersInSandbox[sandbox.type]?.map((patch) => patch());
+  return patchersInSandbox[sandbox.type].map((patch) => patch());
 }
 
 export function patchAtMounting(appName: string, getContainer: () => HTMLElement, sandbox: Sandbox): Free[] {
@@ -35,5 +35,5 @@ export function patchAtMounting(appName: string, getContainer: () => HTMLElement
     [SandboxType.Snapshot]: basePatchers,
   };
 
-  return patchersInSandbox[sandbox.type]?.map((patch) => patch());
+  return patchersInSandbox[sandbox.type].map((patch) => patch());
 }
