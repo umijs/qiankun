@@ -152,7 +152,9 @@ If it still reports an error, check whether the container DOM is placed on a rou
 
 ## `[import-html-entry]: error occurs while excuting xxx script http://xxx.xxx.xxx/x.js`
 
-![](https://user-images.githubusercontent.com/22413530/109919189-41563d00-7cf3-11eb-8328-711228389d63.png) The first line is just a helper info printed by qiankun via `console.error` to help users identify which js file threw the error faster. It is not an exception thrown by qiankun itself.
+![](https://user-images.githubusercontent.com/22413530/109919189-41563d00-7cf3-11eb-8328-711228389d63.png)
+
+The first line is just a helper info printed by qiankun via `console.error` to help users identify which js file threw the error faster. It is not an exception thrown by qiankun itself.
 
 **The actual exception info is in the second line.**
 
@@ -262,6 +264,8 @@ To solve the error, choose one of the options listed below:
 2. Rename `Vue` to other name in master application, eg: `window.Vue2 = window.Vue; delete window.Vue`
 
 ## Why dynamic imported assets missing?
+
+The reason is that webpack does not use the correct `publicPath` when loading the resource.
 
 Two way to solve that:
 
@@ -510,6 +514,8 @@ Yes it is.
 
 Since qiankun get assets which imported by sub app via fetch, these static resources must be required to support [cors](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS).
 
+If it is your own script, you can support it by developing server-side cross-domain. If it is a 3-legged script and cannot add cross-domain headers to it, you can drag the script to the local and have your own server serve support cross-domain.
+
 See [Enable Nginx Cors](https://enable-cors.org/server_nginx.html).
 
 ## How to solve that micro apps loaded failed due to abnormal scripts inserted dynamically by carriers
@@ -684,6 +690,10 @@ import 'core-js/web/url';
 
 **We recommend that you use @babel/preset-env plugin directly to polyfill IE automatically, all the instructions for @babel/preset-env you can found in [babel official document](https://babeljs.io/docs/en/babel-preset-env).**
 
+<Alert type="info">
+You can also check out<a href="https://www.yuque.com/kuitos/gky7yw/qskte2" target="_blank">this article</a>to learn more about IE compatibility.
+</Alert>
+
 ## Error `Here is no "fetch" on the window env, you need to polyfill it`
 
 Qiankun use `window.fetch` to get resources of the micro applications, but [some browsers does not support it](https://caniuse.com/#search=fetch), you should get the [polyfill](https://github.com/github/fetch) in the entry.
@@ -833,6 +843,24 @@ As the requests to pull micro-app entry are all cross-domain, when your micro-ap
       return window.fetch(url, ...args);
     },
   });
+  ```
+
+- If you are through [umi plugin](https://umijs.org/zh-CN/plugins/plugin-qiankun) to use qiankun，then you only need to enable the credentials configuration for the corresponding microapp:
+
+  ```diff
+  export default {
+    qiankun: {
+      master: {
+        apps: [
+          {
+            name: 'app',
+            entry: '//app.alipay.com/entry.html',
+  +         credentials: true,
+          }
+        ]
+      }
+    }
+  }
   ```
 
 ## How to solve the problem that adding event handlers to window objects by subapplication does not take effect
