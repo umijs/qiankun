@@ -91,6 +91,7 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: I
                 if (await isEntryScript()) {
                   // the latest set prop is the entry script exposed global variable
                   if (sandbox?.latestSetProp) {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     entryScriptLoadedDeferred.resolve(sandbox.globalThis[sandbox.latestSetProp as number] as T);
                   } else {
                     // TODO support non sandbox mode?

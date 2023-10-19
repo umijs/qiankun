@@ -7,7 +7,9 @@ module.exports = {
     tsconfigRootDir: __dirname,
     project: ['./tsconfig.eslint.json', './packages/*/tsconfig.json'],
   },
+  ignorePatterns: ['.eslintrc.cjs'],
   rules: {
+    '@typescript-eslint/no-unnecessary-condition': 'error',
     '@typescript-eslint/no-explicit-any': ['error', { fixToUnknown: true }],
     '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
     '@typescript-eslint/consistent-type-exports': ['error', { fixMixedExportsWithInlineTypeSpecifier: true }],
