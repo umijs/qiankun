@@ -5,7 +5,9 @@
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:webpack4": "cd ./tests/webpack4 && npm run build",
+    "build:webpack5": "cd ./tests/webpack5 && npm run build",
+    "test": "npm run build && npm run build:webpack4 && npm run build:webpack5 && vitest",
     "build": "father build"
   },
   "files": [
