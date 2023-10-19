@@ -7,18 +7,7 @@ import type { MatchResult } from '../module-resolver';
 import { getEntireUrl } from '../utils';
 import type { AssetsTranspilerOpts } from './types';
 import { Mode } from './types';
-import { createReusingObjectUrl } from './utils';
-
-const isValidJavaScriptType = (type?: string): boolean => {
-  const handleTypes = [
-    'text/javascript',
-    'module',
-    'application/javascript',
-    'text/ecmascript',
-    'application/ecmascript',
-  ];
-  return !type || handleTypes.indexOf(type) !== -1;
-};
+import { createReusingObjectUrl, isValidJavaScriptType } from './utils';
 
 const getCredentials = (crossOrigin: string | null): RequestInit['credentials'] | undefined => {
   switch (crossOrigin) {
@@ -91,6 +80,11 @@ export default function transpileScript(
   // Such as <script src="./foo.js"></script> will be resolved to http://localhost:8000/foo.js while read script.src
   const srcAttribute = script.getAttribute('src');
   const { sandbox, fetch } = opts;
+
+  // To prevent webpack from skipping reload logic and causing the js not to re-execute when a micro app is loaded multiple times, the data-webpack attribute of the script must be removed.
+  // see https://github.com/webpack/webpack/blob/1f13ff9fe587e094df59d660b4611b1bd19aed4c/lib/runtime/LoadScriptRuntimeModule.js#L131-L136
+  // FIXME We should determine whether the current micro application is being loaded for the second time. If not, this removal should not be performed.
+  script.removeAttribute('data-webpack');
 
   const { mode, result } = preTranspile(
     {

@@ -38,3 +38,5 @@ export function transpileAssets<T extends Node>(node: T, baseURI: string, opts: 
 }
 
 export type * from './types';
+
+export { isValidJavaScriptType } from './utils';
