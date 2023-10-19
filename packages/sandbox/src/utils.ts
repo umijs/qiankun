@@ -16,19 +16,16 @@ export function isConstructable(fn: CallableFunction): fn is CallableFunction {
 
   if (hasPrototypeMethods) return true;
 
-  const cachedValue = fnRegexCheckCacheMap.get(fn);
-  if (typeof cachedValue !== 'undefined') {
-    return cachedValue;
+  const cachedResult = fnRegexCheckCacheMap.get(fn);
+  if (typeof cachedResult !== 'undefined') {
+    return cachedResult;
   }
 
-  let constructable: boolean = hasPrototypeMethods;
-  if (!constructable) {
-    // fn.toString has a significant performance overhead, if hasPrototypeMethods check not passed, we will check the function string with regex
-    const fnString = fn.toString();
-    const constructableFunctionRegex = /^function\b\s[A-Z].*/;
-    const classRegex = /^class\b/;
-    constructable = constructableFunctionRegex.test(fnString) || classRegex.test(fnString);
-  }
+  // fn.toString has a significant performance overhead, if hasPrototypeMethods check not passed, we will check the function string with regex
+  const fnString = fn.toString();
+  const constructableFunctionRegex = /^function\b\s[A-Z].*/;
+  const classRegex = /^class\b/;
+  const constructable = constructableFunctionRegex.test(fnString) || classRegex.test(fnString);
 
   fnRegexCheckCacheMap.set(fn, constructable);
   return constructable;
@@ -56,7 +53,7 @@ export function isCallable(fn: unknown): fn is CallableFunction {
 const frozenPropertyCacheMap = new WeakMap<object, Record<PropertyKey, boolean>>();
 
 export function isPropertyFrozen(target: object, p?: PropertyKey): boolean {
-  if (!target || !p) {
+  if (!p) {
     return false;
   }
 
