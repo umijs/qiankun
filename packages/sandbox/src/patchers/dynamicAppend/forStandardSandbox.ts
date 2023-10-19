@@ -29,8 +29,8 @@ declare global {
   }
 
   interface Window {
-    __sandboxConfigWeakMap__: WeakMap<Sandbox, SandboxConfig>;
-    __currentLockingSandbox__: Sandbox;
+    __sandboxConfigWeakMap__?: WeakMap<Sandbox, SandboxConfig>;
+    __currentLockingSandbox__?: Sandbox;
   }
 
   interface Document {
@@ -47,20 +47,31 @@ Object.defineProperty(nativeGlobal, '__currentLockingSandbox__', {
   configurable: true,
 });
 
-const rawHeadInsertBefore = HTMLHeadElement.prototype.insertBefore;
-const rawHeadAppendChild = HTMLHeadElement.prototype.appendChild;
-
 // Share sandboxConfigWeakMap between multiple qiankun instance, thus they could access the same record
 nativeGlobal.__sandboxConfigWeakMap__ = nativeGlobal.__sandboxConfigWeakMap__ || new WeakMap<Sandbox, SandboxConfig>();
 const sandboxConfigWeakMap = nativeGlobal.__sandboxConfigWeakMap__;
 
 const elementAttachSandboxConfigMap = new WeakMap<HTMLElement, SandboxConfig>();
-const patchMap = new WeakMap<object, unknown>();
+const patchCacheWeakMap = new WeakMap<object, unknown>();
 
 const getSandboxConfig = (element: HTMLElement) => elementAttachSandboxConfigMap.get(element);
 const isInvokedByMicroApp = (element: HTMLElement) => elementAttachSandboxConfigMap.has(element);
 
 function patchDocument(sandbox: Sandbox): void {
+  if (patchCacheWeakMap.has(sandbox)) {
+    return;
+  }
+
+  const proxyDocumentFnsCache = new Map<
+    | 'appendChildOnHead'
+    | 'insertBeforeOnHead'
+    | 'removeChildOnHead'
+    | 'appendChildOnBody'
+    | 'insertBeforeOnBody'
+    | 'removeChildOnBody',
+    CallableFunction
+  >();
+
   const attachElementToSandbox = (element: HTMLElement) => {
     const sandboxConfig = sandboxConfigWeakMap.get(sandbox);
     if (sandboxConfig) {
@@ -100,32 +111,55 @@ function patchDocument(sandbox: Sandbox): void {
         case 'head': {
           const headElement = target.head;
           return new Proxy(headElement, {
+            set: (headElementTarget, p, value) => {
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              headElementTarget[p] = value;
+              return true;
+            },
             get(headElementTarget, p, headReceiver) {
               switch (p) {
                 case 'appendChild': {
-                  const appendChild = headElementTarget.appendChild;
-                  return getOverwrittenAppendChildOrInsertBefore(
-                    appendChild,
-                    getSandboxConfig,
-                    'head',
-                    isInvokedByMicroApp,
-                  ).bind(headElementTarget);
+                  let cachedAppendChild = proxyDocumentFnsCache.get('appendChildOnHead');
+                  if (!cachedAppendChild) {
+                    cachedAppendChild = getOverwrittenAppendChildOrInsertBefore(
+                      'appendChild',
+                      getSandboxConfig,
+                      'head',
+                      isInvokedByMicroApp,
+                    ).bind(headElementTarget);
+                    proxyDocumentFnsCache.set('appendChildOnHead', cachedAppendChild);
+                  }
+                  return cachedAppendChild;
                 }
+
                 case 'insertBefore': {
-                  const insertBefore = headElementTarget.insertBefore;
-                  return getOverwrittenAppendChildOrInsertBefore(
-                    insertBefore,
-                    getSandboxConfig,
-                    'head',
-                    isInvokedByMicroApp,
-                  ).bind(headElementTarget);
+                  let cachedInsertBefore = proxyDocumentFnsCache.get('insertBeforeOnHead');
+                  if (!cachedInsertBefore) {
+                    cachedInsertBefore = getOverwrittenAppendChildOrInsertBefore(
+                      'insertBefore',
+                      getSandboxConfig,
+                      'head',
+                      isInvokedByMicroApp,
+                    ).bind(headElementTarget);
+                    proxyDocumentFnsCache.set('insertBeforeOnHead', cachedInsertBefore);
+                  }
+                  return cachedInsertBefore;
                 }
 
                 case 'removeChild': {
-                  const removeChild = headElementTarget.removeChild;
-                  return getNewRemoveChild(removeChild, getSandboxConfig, 'head', isInvokedByMicroApp).bind(
-                    headElementTarget,
-                  );
+                  let cachedRemoveChild = proxyDocumentFnsCache.get('removeChildOnHead');
+                  if (!cachedRemoveChild) {
+                    cachedRemoveChild = getNewRemoveChild(
+                      'removeChild',
+                      getSandboxConfig,
+                      'head',
+                      isInvokedByMicroApp,
+                    ).bind(headElementTarget);
+                    proxyDocumentFnsCache.set('removeChildOnHead', cachedRemoveChild);
+                  }
+                  return cachedRemoveChild;
                 }
 
                 default: {
@@ -143,29 +177,45 @@ function patchDocument(sandbox: Sandbox): void {
             get(bodyElementTarget, p, bodyReceiver) {
               switch (p) {
                 case 'appendChild': {
-                  const appendChild = bodyElementTarget.appendChild;
-                  return getOverwrittenAppendChildOrInsertBefore(
-                    appendChild,
-                    getSandboxConfig,
-                    'body',
-                    isInvokedByMicroApp,
-                  ).bind(bodyElementTarget);
+                  let cachedAppendChild = proxyDocumentFnsCache.get('appendChildOnBody');
+                  if (!cachedAppendChild) {
+                    cachedAppendChild = getOverwrittenAppendChildOrInsertBefore(
+                      'appendChild',
+                      getSandboxConfig,
+                      'body',
+                      isInvokedByMicroApp,
+                    ).bind(bodyElementTarget);
+                    proxyDocumentFnsCache.set('appendChildOnBody', cachedAppendChild);
+                  }
+                  return cachedAppendChild;
                 }
+
                 case 'insertBefore': {
-                  const insertBefore = bodyElementTarget.insertBefore;
-                  return getOverwrittenAppendChildOrInsertBefore(
-                    insertBefore,
-                    getSandboxConfig,
-                    'body',
-                    isInvokedByMicroApp,
-                  ).bind(bodyElementTarget);
+                  let cachedInsertBefore = proxyDocumentFnsCache.get('insertBeforeOnBody');
+                  if (!cachedInsertBefore) {
+                    cachedInsertBefore = getOverwrittenAppendChildOrInsertBefore(
+                      'insertBefore',
+                      getSandboxConfig,
+                      'body',
+                      isInvokedByMicroApp,
+                    ).bind(bodyElementTarget);
+                    proxyDocumentFnsCache.set('insertBeforeOnBody', cachedInsertBefore);
+                  }
+                  return cachedInsertBefore;
                 }
 
                 case 'removeChild': {
-                  const removeChild = bodyElementTarget.removeChild;
-                  return getNewRemoveChild(removeChild, getSandboxConfig, 'body', isInvokedByMicroApp).bind(
-                    bodyElementTarget,
-                  );
+                  let cachedRemoveChild = proxyDocumentFnsCache.get('removeChildOnBody');
+                  if (!cachedRemoveChild) {
+                    cachedRemoveChild = getNewRemoveChild(
+                      'removeChild',
+                      getSandboxConfig,
+                      'body',
+                      isInvokedByMicroApp,
+                    ).bind(bodyElementTarget);
+                    proxyDocumentFnsCache.set('removeChildOnBody', cachedRemoveChild);
+                  }
+                  return cachedRemoveChild;
                 }
 
                 default: {
@@ -188,9 +238,9 @@ function patchDocument(sandbox: Sandbox): void {
                   const qiankunHead = getContainerHeadElement(containerConfig.getContainer());
 
                   // proxied head in micro app should use the proxied appendChild/removeChild/insertBefore methods
-                  qiankunHead.appendChild = HTMLHeadElement.prototype.appendChild;
-                  qiankunHead.insertBefore = HTMLHeadElement.prototype.insertBefore;
-                  qiankunHead.removeChild = HTMLHeadElement.prototype.removeChild;
+                  qiankunHead.appendChild = proxyDocument.head.appendChild;
+                  qiankunHead.insertBefore = proxyDocument.head.insertBefore;
+                  qiankunHead.removeChild = proxyDocument.head.removeChild;
 
                   return qiankunHead;
                 }
@@ -211,43 +261,41 @@ function patchDocument(sandbox: Sandbox): void {
     },
   });
 
-  if (!patchMap.has(sandbox)) {
-    sandbox.addIntrinsics({
-      document: { value: proxyDocument, writable: false, enumerable: true, configurable: true },
-    });
-    patchMap.set(sandbox, true);
-  }
+  sandbox.addIntrinsics({
+    document: { value: proxyDocument, writable: false, enumerable: true, configurable: true },
+  });
+  patchCacheWeakMap.set(sandbox, true);
 }
 
 function patchDOMPrototypeFns(): typeof noop {
   // patch MutationObserver.prototype.observe to avoid type error
   // https://github.com/umijs/qiankun/issues/2406
   const nativeMutationObserverObserveFn = MutationObserver.prototype.observe;
-  if (!patchMap.has(nativeMutationObserverObserveFn)) {
+  if (!patchCacheWeakMap.has(nativeMutationObserverObserveFn)) {
     const observe = function observe(this: MutationObserver, target: Node, options: MutationObserverInit) {
       const realTarget = target instanceof Document ? nativeDocument : target;
       return nativeMutationObserverObserveFn.call(this, realTarget, options);
     };
 
     MutationObserver.prototype.observe = observe;
-    patchMap.set(nativeMutationObserverObserveFn, observe);
+    patchCacheWeakMap.set(nativeMutationObserverObserveFn, observe);
   }
 
   // patch Node.prototype.compareDocumentPosition to avoid type error
   const prevCompareDocumentPosition = Node.prototype.compareDocumentPosition;
-  if (!patchMap.has(prevCompareDocumentPosition)) {
+  if (!patchCacheWeakMap.has(prevCompareDocumentPosition)) {
     Node.prototype.compareDocumentPosition = function compareDocumentPosition(this: Node, node) {
       const realNode = node instanceof Document ? nativeDocument : node;
       return prevCompareDocumentPosition.call(this, realNode);
     };
-    patchMap.set(prevCompareDocumentPosition, Node.prototype.compareDocumentPosition);
+    patchCacheWeakMap.set(prevCompareDocumentPosition, Node.prototype.compareDocumentPosition);
   }
 
   // TODO https://github.com/umijs/qiankun/pull/2415 Not support yet as getCurrentRunningApp api is not reliable
   // patch parentNode getter to avoid document === html.parentNode
   // https://github.com/umijs/qiankun/issues/2408#issuecomment-1446229105
   // const parentNodeDescriptor = Object.getOwnPropertyDescriptor(Node.prototype, 'parentNode');
-  // if (parentNodeDescriptor && !patchMap.has(parentNodeDescriptor)) {
+  // if (parentNodeDescriptor && !patchCacheWeakMap.has(parentNodeDescriptor)) {
   //   const { get: parentNodeGetter, configurable } = parentNodeDescriptor;
   //   if (parentNodeGetter && configurable) {
   //     const patchedParentNodeDescriptor = {
@@ -266,23 +314,27 @@ function patchDOMPrototypeFns(): typeof noop {
   //     };
   //     Object.defineProperty(Node.prototype, 'parentNode', patchedParentNodeDescriptor);
   //
-  //     patchMap.set(parentNodeDescriptor, patchedParentNodeDescriptor);
+  //     patchCacheWeakMap.set(parentNodeDescriptor, patchedParentNodeDescriptor);
   //   }
   // }
 
   return () => {
     MutationObserver.prototype.observe = nativeMutationObserverObserveFn;
-    patchMap.delete(nativeMutationObserverObserveFn);
+    patchCacheWeakMap.delete(nativeMutationObserverObserveFn);
 
     Node.prototype.compareDocumentPosition = prevCompareDocumentPosition;
-    patchMap.delete(prevCompareDocumentPosition);
+    patchCacheWeakMap.delete(prevCompareDocumentPosition);
 
     // if (parentNodeDescriptor) {
     //   Object.defineProperty(Node.prototype, 'parentNode', parentNodeDescriptor);
-    //   patchMap.delete(parentNodeDescriptor);
+    //   patchCacheWeakMap.delete(parentNodeDescriptor);
     // }
   };
 }
+
+// FIXME should not use global variable, should get it every time it is used, otherwise it may miss the runtime container or the business itself monkey patch logic
+const rawHeadInsertBefore = HTMLHeadElement.prototype.insertBefore;
+const rawHeadAppendChild = HTMLHeadElement.prototype.appendChild;
 
 export function patchStandardSandbox(
   appName: string,
@@ -337,7 +389,7 @@ export function patchStandardSandbox(
           if (typeof refNo === 'number' && refNo !== -1) {
             // the reference node may be dynamic script comment which is not rebuilt while remounting thus reference node no longer exists
             // in this case, we should append the style element to the end of mountDom
-            const refNode = mountDom.childNodes[refNo] || null;
+            const refNode = mountDom.childNodes[refNo];
             rawHeadInsertBefore.call(mountDom, stylesheetElement, refNode);
             return true;
           }

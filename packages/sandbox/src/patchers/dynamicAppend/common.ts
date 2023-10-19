@@ -120,7 +120,7 @@ export function getStyledElementCSSRules(styledElement: HTMLStyleElement): CSSRu
 }
 
 export function getOverwrittenAppendChildOrInsertBefore(
-  appendChild: typeof HTMLElement.prototype.insertBefore,
+  opType: 'appendChild' | 'insertBefore',
   getSandboxConfig: (element: HTMLElement) => SandboxConfig | undefined,
   target: DynamicDomMutationTarget = 'body',
   isInvokedByMicroApp: (element: HTMLElement) => boolean,
@@ -130,6 +130,8 @@ export function getOverwrittenAppendChildOrInsertBefore(
     newChild: T,
     refChild: Node | null = null,
   ): T {
+    const appendChild = this[opType];
+
     const element = newChild as unknown as HTMLElement;
     if (!isHijackingTag(element.tagName) || !isInvokedByMicroApp(element)) {
       return appendChild.call(this, element, refChild) as T;
@@ -200,12 +202,14 @@ export function getOverwrittenAppendChildOrInsertBefore(
 }
 
 export function getNewRemoveChild(
-  removeChild: typeof HTMLElement.prototype.removeChild,
+  opType: 'removeChild',
   containerConfigGetter: (element: HTMLElement) => SandboxConfig | undefined,
   target: DynamicDomMutationTarget,
   isInvokedByMicroApp: (element: HTMLElement) => boolean,
 ) {
   function removeChildInSandbox<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, child: T) {
+    const removeChild = this[opType];
+
     const childElement = child as unknown as HTMLElement;
     const { tagName } = childElement;
     if (!isHijackingTag(tagName) || !isInvokedByMicroApp(childElement)) {
