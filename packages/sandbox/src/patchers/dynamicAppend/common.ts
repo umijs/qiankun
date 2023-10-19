@@ -52,10 +52,7 @@ export function isHijackingTag(tagName?: string) {
  * @param element
  */
 export function isStyledComponentsLike(element: HTMLStyleElement) {
-  return (
-    !element.textContent &&
-    ((element.sheet as CSSStyleSheet)?.cssRules.length || getStyledElementCSSRules(element)?.length)
-  );
+  return !element.textContent && (element.sheet?.cssRules.length || getStyledElementCSSRules(element)?.length);
 }
 
 const appsCounterMap = new Map<string, { bootstrappingPatchCount: number; mountingPatchCount: number }>();
