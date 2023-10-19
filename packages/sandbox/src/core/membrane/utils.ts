@@ -3,7 +3,7 @@ import { isBoundedFunction, isCallable, isConstructable } from '../../utils';
 
 const functionBoundedValueMap = new WeakMap<CallableFunction, CallableFunction>();
 
-export function getTargetValue<T>(target: unknown, value: T): T {
+export function getTargetValue<T>(target: unknown, value: T, receiver: unknown): T {
   /*
     仅绑定 isCallable && !isBoundedFunction && !isConstructable 的函数对象，如 window.console、window.atob 这类，不然微应用中调用时会抛出 Illegal invocation 异常
     目前没有完美的检测方式，这里通过 prototype 中是否还有可枚举的拓展方法的方式来判断
@@ -16,7 +16,13 @@ export function getTargetValue<T>(target: unknown, value: T): T {
       return cachedBoundFunction as T;
     }
 
-    const boundValue = Function.prototype.bind.call(typedValue, target) as CallableFunction;
+    const boundValue = function proxyFunction(...args: unknown[]): unknown {
+      return Function.prototype.apply.call(
+        typedValue,
+        target,
+        args.map((arg) => (arg === receiver ? target : arg)),
+      );
+    };
 
     // some callable function has custom fields, we need to copy the own props to boundValue. such as moment function.
     getOwnPropertyNames(typedValue).forEach((key) => {
