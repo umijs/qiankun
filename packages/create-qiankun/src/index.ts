@@ -37,7 +37,7 @@ export async function createQiankunDefaultProject() {
 
   console.log();
 
-  const [projectName, createKind, mainAppName, subAppName, mainRoute, packageManager] = minimist(
+  const [projectName, createKind, mainAppName, subAppNameList, mainRoute, packageManager] = minimist(
     process.argv.slice(2),
   )._;
 
@@ -86,8 +86,8 @@ export async function createQiankunDefaultProject() {
         choices: enumToArray(IRoutePattern),
       },
       {
-        name: 'subAppName',
-        type: subAppName
+        name: 'subAppNameList',
+        type: subAppNameList
           ? null
           : (prev: string, values: PromptAnswer) => {
               const createKind = inputCreateKind || values.createKind;
@@ -125,7 +125,7 @@ export async function createQiankunDefaultProject() {
     projectName: projectName || result.projectName,
     createKind: createKind ? (String(createKind) as CreateKind) : result.createKind,
     mainAppName: (mainAppName as MainFrameworkTemplate) || result.mainAppName,
-    subAppName: subAppName ? ([subAppName] as SubFrameworkTemplate[]) : result.subAppName,
+    subAppNameList: subAppNameList ? ([subAppNameList] as SubFrameworkTemplate[]) : result.subAppNameList,
     mainRoute: (mainRoute as IRoutePattern) || result.mainRoute,
     packageManager: (packageManager as PackageManager) || result.packageManager,
   };
@@ -142,7 +142,9 @@ export async function createQiankunDefaultProject() {
   // const inMonorepo = !!monorepoRoot;
   // const projectRoot = inMonorepo ? monorepoRoot : targetDir;
   const projectRoot = targetDir;
-  // detach Pnpm todo
+  console.log(green(`\n Project will be created at: ${projectRoot}`));
+  console.log();
+  console.log(green(`\n Creating project...`));
 
   // render
   await renderTemplate({
@@ -150,13 +152,13 @@ export async function createQiankunDefaultProject() {
     userChoose,
   });
 
-  console.log(green(`${userChoose.projectName} created success!`));
+  console.log(green(`Created ${userChoose.projectName}  success!`));
   console.log();
   console.log(bold(green(`\n Done.`)));
 }
 
 async function renderTemplate(opts: RenderOptions) {
-  const { createKind, mainAppName, mainRoute, subAppName, packageManager } = opts.userChoose;
+  const { createKind, mainAppName, mainRoute, subAppNameList, packageManager } = opts.userChoose;
 
   let mainAppTargetPath = '',
     monorepoRootPath: string | undefined;
@@ -176,12 +178,12 @@ async function renderTemplate(opts: RenderOptions) {
   // create sub applications
   if ([CreateKind.CreateSubApp, CreateKind.CreateMainAndSubApp].includes(createKind)) {
     const subsPorts = composeGeneratePorts(
-      subAppName!.map(() => generatePort),
+      subAppNameList!.map(() => generatePort),
       mainAppPort ? [mainAppPort] : [],
     );
 
     await Promise.all(
-      subAppName!.map((sub, i) =>
+      subAppNameList!.map((sub, i) =>
         createApplication(
           sub,
           { port: subsPorts[i] },
@@ -200,7 +202,7 @@ async function renderTemplate(opts: RenderOptions) {
     if (createKind === CreateKind.CreateMainAndSubApp) {
       await injectSubsConfigToMainApp(
         mainAppTargetPath,
-        subAppName!.map((sub, i) => ({ subName: sub, port: subsPorts[i] })),
+        subAppNameList!.map((sub, i) => ({ subName: sub, port: subsPorts[i] })),
       );
     }
   }

@@ -16,7 +16,7 @@ export interface PromptAnswer {
   projectName: string;
   createKind: CreateKind;
   mainAppName?: MainFrameworkTemplate;
-  subAppName?: SubFrameworkTemplate[];
+  subAppNameList?: SubFrameworkTemplate[];
   mainRoute?: IRoutePattern;
   packageManager?: PackageManager;
 }
