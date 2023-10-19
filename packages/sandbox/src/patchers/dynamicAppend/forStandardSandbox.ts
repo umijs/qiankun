@@ -27,8 +27,8 @@ declare global {
   }
 
   interface Window {
-    __sandboxConfigWeakMap__: WeakMap<Sandbox, SandboxConfig>;
-    __currentLockingSandbox__: Sandbox;
+    __sandboxConfigWeakMap__?: WeakMap<Sandbox, SandboxConfig>;
+    __currentLockingSandbox__?: Sandbox;
   }
 
   interface Document {
@@ -260,7 +260,7 @@ export function patchStandardSandbox(
           if (typeof refNo === 'number' && refNo !== -1) {
             // the reference node may be dynamic script comment which is not rebuilt while remounting thus reference node no longer exists
             // in this case, we should append the style element to the end of mountDom
-            const refNode = mountDom.childNodes[refNo] || null;
+            const refNode = mountDom.childNodes[refNo];
             rawHeadInsertBefore.call(mountDom, stylesheetElement, refNode);
             return true;
           }

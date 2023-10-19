@@ -36,6 +36,7 @@ export function createSandboxContainer(
 ) {
   const { globalContext, extraGlobals = {} } = opts;
   let sandbox: Sandbox;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (window.Proxy) {
     sandbox = new StandardSandbox(appName, extraGlobals, globalContext);
   } else {

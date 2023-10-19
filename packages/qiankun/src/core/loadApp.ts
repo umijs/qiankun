@@ -154,10 +154,6 @@ export default async function loadApp<T extends ObjectType>(
 }
 
 function initContainer(container: HTMLElement, appName: string, sandboxCfg: AppConfiguration['sandbox']): void {
-  if (!container) {
-    throw new QiankunError('container is not existed');
-  }
-
   while (container.firstChild) {
     container.removeChild(container.firstChild);
   }
