@@ -124,7 +124,7 @@ export class Membrane {
         return true;
       },
 
-      get: (membraneTarget, p) => {
+      get: (membraneTarget, p, receiver) => {
         if (p === Symbol.unscopables) return unscopables;
 
         // properties in endowments returns directly
@@ -155,7 +155,7 @@ export class Membrane {
              proxyFetch('https://qiankun.com');
         */
         const boundTarget = useNativeWindowForBindingsProps.get(p) ? nativeGlobal : incubatorContext;
-        return getTargetValue(boundTarget, value);
+        return getTargetValue(boundTarget, value, receiver);
       },
 
       // trap in operator

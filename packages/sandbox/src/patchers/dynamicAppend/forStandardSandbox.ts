@@ -4,15 +4,17 @@
  * @since 2020-10-13
  */
 
+import type { noop } from 'lodash';
 import { nativeDocument, nativeGlobal } from '../../consts';
+import { getTargetValue } from '../../core/membrane/utils';
 import type { Sandbox } from '../../core/sandbox';
-import { isBoundedFunction, isCallable } from '../../utils';
 import type { Free } from '../types';
 import {
   calcAppCount,
   getContainerHeadElement,
+  getNewRemoveChild,
+  getOverwrittenAppendChildOrInsertBefore,
   isAllAppsUnmounted,
-  patchHTMLDynamicAppendPrototypeFunctions,
   rebuildCSSRules,
   recordStyledComponentsCSSRules,
   styleElementRefNodeNo,
@@ -55,7 +57,10 @@ const sandboxConfigWeakMap = nativeGlobal.__sandboxConfigWeakMap__;
 const elementAttachSandboxConfigMap = new WeakMap<HTMLElement, SandboxConfig>();
 const patchMap = new WeakMap<object, unknown>();
 
-function patchDocument(sandbox: Sandbox) {
+const getSandboxConfig = (element: HTMLElement) => elementAttachSandboxConfigMap.get(element);
+const isInvokedByMicroApp = (element: HTMLElement) => elementAttachSandboxConfigMap.has(element);
+
+function patchDocument(sandbox: Sandbox): void {
   const attachElementToSandbox = (element: HTMLElement) => {
     const sandboxConfig = sandboxConfigWeakMap.get(sandbox);
     if (sandboxConfig) {
@@ -65,7 +70,7 @@ function patchDocument(sandbox: Sandbox) {
 
   const proxyDocument = new Proxy(document, {
     set: (target, p, value) => {
-      target[p as string] = value;
+      target[p as keyof Document] = value;
       return true;
     },
     get: (target, p, receiver) => {
@@ -90,6 +95,86 @@ function patchDocument(sandbox: Sandbox) {
 
             return element;
           };
+        }
+
+        case 'head': {
+          const headElement = target.head;
+          return new Proxy(headElement, {
+            get(headElementTarget, p, headReceiver) {
+              switch (p) {
+                case 'appendChild': {
+                  const appendChild = headElementTarget.appendChild;
+                  return getOverwrittenAppendChildOrInsertBefore(
+                    appendChild,
+                    getSandboxConfig,
+                    'head',
+                    isInvokedByMicroApp,
+                  ).bind(headElementTarget);
+                }
+                case 'insertBefore': {
+                  const insertBefore = headElementTarget.insertBefore;
+                  return getOverwrittenAppendChildOrInsertBefore(
+                    insertBefore,
+                    getSandboxConfig,
+                    'head',
+                    isInvokedByMicroApp,
+                  ).bind(headElementTarget);
+                }
+
+                case 'removeChild': {
+                  const removeChild = headElementTarget.removeChild;
+                  return getNewRemoveChild(removeChild, getSandboxConfig, 'head', isInvokedByMicroApp).bind(
+                    headElementTarget,
+                  );
+                }
+
+                default: {
+                  const value = headElementTarget[p as keyof HTMLHeadElement];
+                  return getTargetValue(headElementTarget, value, headReceiver);
+                }
+              }
+            },
+          });
+        }
+
+        case 'body': {
+          const bodyElement = target.body;
+          return new Proxy(bodyElement, {
+            get(bodyElementTarget, p, bodyReceiver) {
+              switch (p) {
+                case 'appendChild': {
+                  const appendChild = bodyElementTarget.appendChild;
+                  return getOverwrittenAppendChildOrInsertBefore(
+                    appendChild,
+                    getSandboxConfig,
+                    'body',
+                    isInvokedByMicroApp,
+                  ).bind(bodyElementTarget);
+                }
+                case 'insertBefore': {
+                  const insertBefore = bodyElementTarget.insertBefore;
+                  return getOverwrittenAppendChildOrInsertBefore(
+                    insertBefore,
+                    getSandboxConfig,
+                    'body',
+                    isInvokedByMicroApp,
+                  ).bind(bodyElementTarget);
+                }
+
+                case 'removeChild': {
+                  const removeChild = bodyElementTarget.removeChild;
+                  return getNewRemoveChild(removeChild, getSandboxConfig, 'body', isInvokedByMicroApp).bind(
+                    bodyElementTarget,
+                  );
+                }
+
+                default: {
+                  const value = bodyElementTarget[p as keyof HTMLHeadElement];
+                  return getTargetValue(bodyElementTarget, value, bodyReceiver);
+                }
+              }
+            },
+          });
         }
 
         case 'querySelector': {
@@ -122,22 +207,19 @@ function patchDocument(sandbox: Sandbox) {
 
       const value = target[p as string];
       // must rebind the function to the target otherwise it will cause illegal invocation error
-      if (isCallable(value) && !isBoundedFunction(value)) {
-        return function proxyFunction(...args: unknown[]): unknown {
-          return Function.prototype.apply.call(
-            value,
-            target,
-            args.map((arg) => (arg === receiver ? target : arg)),
-          );
-        };
-      }
-
-      return value;
+      return getTargetValue(target, value, receiver);
     },
   });
 
-  sandbox.addIntrinsics({ document: { value: proxyDocument, writable: false, enumerable: true, configurable: true } });
+  if (!patchMap.has(sandbox)) {
+    sandbox.addIntrinsics({
+      document: { value: proxyDocument, writable: false, enumerable: true, configurable: true },
+    });
+    patchMap.set(sandbox, true);
+  }
+}
 
+function patchDOMPrototypeFns(): typeof noop {
   // patch MutationObserver.prototype.observe to avoid type error
   // https://github.com/umijs/qiankun/issues/2406
   const nativeMutationObserverObserveFn = MutationObserver.prototype.observe;
@@ -216,7 +298,7 @@ export function patchStandardSandbox(
     sandboxConfig = {
       appName,
       sandbox,
-      getContainer: getContainer,
+      getContainer,
       dynamicStyleSheetElements: [],
     };
     sandboxConfigWeakMap.set(sandbox, sandboxConfig);
@@ -224,12 +306,8 @@ export function patchStandardSandbox(
   // all dynamic style sheets are stored in proxy container
   const { dynamicStyleSheetElements } = sandboxConfig;
 
-  const unpatchDynamicAppendPrototypeFunctions = patchHTMLDynamicAppendPrototypeFunctions(
-    (element) => elementAttachSandboxConfigMap.has(element),
-    (element) => elementAttachSandboxConfigMap.get(element)!,
-  );
-
-  const unpatchDocument = patchDocument(sandbox);
+  patchDocument(sandbox);
+  const unpatchDOMPrototype = patchDOMPrototypeFns();
 
   if (!mounting) calcAppCount(appName, 'increase', 'bootstrapping');
   if (mounting) calcAppCount(appName, 'increase', 'mounting');
@@ -240,8 +318,7 @@ export function patchStandardSandbox(
 
     // release the overwritten prototype after all the micro apps unmounted
     if (isAllAppsUnmounted()) {
-      unpatchDynamicAppendPrototypeFunctions();
-      unpatchDocument();
+      unpatchDOMPrototype();
     }
 
     recordStyledComponentsCSSRules(dynamicStyleSheetElements as HTMLStyleElement[]);
