@@ -1,13 +1,7 @@
 import type { Sandbox } from '@qiankunjs/sandbox';
 import { qiankunHeadTagName } from '@qiankunjs/sandbox';
 import type { BaseTranspilerOpts } from '@qiankunjs/shared';
-import {
-  Deferred,
-  isValidJavaScriptType,
-  moduleResolver as defaultModuleResolver,
-  QiankunError,
-  transpileAssets,
-} from '@qiankunjs/shared';
+import { Deferred, moduleResolver as defaultModuleResolver, QiankunError, transpileAssets } from '@qiankunjs/shared';
 import { TagTransformStream } from './TagTransformStream';
 import { isUrlHasOwnProtocol } from './utils';
 import WritableDOMStream from './writable-dom';
@@ -23,8 +17,8 @@ type Entry = HTMLEntry;
 //   execute: (executor?: Promise<K>) => Promise<K>;
 // };
 //
-export type ImportOpts = {
-  decoder?: (chunk: string) => string;
+export type LoaderOpts = {
+  transformer?: TransformStream<string, string>;
   nodeTransformer?: typeof transpileAssets;
 } & BaseTranspilerOpts & { sandbox?: Sandbox };
 
@@ -33,14 +27,11 @@ export type ImportOpts = {
  * @param container
  * @param opts
  */
-export async function loadEntry<T>(
-  entry: Entry,
-  container: HTMLElement,
-  opts: ImportOpts,
-): Promise<[Promise<void>, Promise<T | void>]> {
+export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: LoaderOpts): Promise<T | void> {
   const {
     fetch,
     nodeTransformer = transpileAssets,
+    transformer,
     sandbox,
     moduleResolver = (url: string) => {
       return defaultModuleResolver(url, container, document.head);
@@ -50,12 +41,16 @@ export async function loadEntry<T>(
   const res = isUrlHasOwnProtocol(entry) ? await fetch(entry) : new Response(entry);
   if (res.body) {
     let noExternalScript = true;
-    const firstScriptStartLoadDeferred = new Deferred<void>();
     const entryScriptLoadedDeferred = new Deferred<T | void>();
     const entryHTMLLoadedDeferred = new Deferred<void>();
 
-    void res.body
-      .pipeThrough(new TextDecoderStream())
+    let readableStream = res.body.pipeThrough(new TextDecoderStream());
+
+    if (transformer) {
+      readableStream = readableStream.pipeThrough(transformer);
+    }
+
+    void readableStream
       .pipeThrough(
         new TagTransformStream(
           [
@@ -78,14 +73,6 @@ export async function loadEntry<T>(
           });
 
           const script = transformedNode as unknown as HTMLScriptElement;
-
-          if (
-            firstScriptStartLoadDeferred.status === 'pending' &&
-            script.tagName === 'SCRIPT' &&
-            isValidJavaScriptType(script.type)
-          ) {
-            firstScriptStartLoadDeferred.resolve();
-          }
 
           /*
            * If the entry script is executed, we can complete the entry process in advance
@@ -150,7 +137,7 @@ export async function loadEntry<T>(
         }
       });
 
-    return [firstScriptStartLoadDeferred.promise, entryScriptLoadedDeferred.promise];
+    return entryScriptLoadedDeferred.promise;
   }
 
   throw new QiankunError(`entry ${entry} response body is empty!`);
