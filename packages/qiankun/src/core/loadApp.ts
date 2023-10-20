@@ -2,7 +2,7 @@
  * @author Kuitos
  * @since 2023-04-25
  */
-import type { ImportOpts } from '@qiankunjs/loader';
+import type { LoaderOpts } from '@qiankunjs/loader';
 import { loadEntry } from '@qiankunjs/loader';
 import type { Sandbox } from '@qiankunjs/sandbox';
 import { createSandboxContainer } from '@qiankunjs/sandbox';
@@ -28,7 +28,7 @@ export default async function loadApp<T extends ObjectType>(
   lifeCycles?: LifeCycles<T>,
 ) {
   const { name: appName, entry, container } = app;
-  const { fetch = window.fetch, sandbox, globalContext = window } = configuration || {};
+  const { fetch = window.fetch, sandbox, globalContext = window, transformer } = configuration || {};
 
   const markName = `[qiankun] App ${appName} Loading`;
   if (process.env.NODE_ENV === 'development') {
@@ -56,13 +56,10 @@ export default async function loadApp<T extends ObjectType>(
     unmountSandbox = () => sandboxContainer.unmount();
   }
 
-  const containerOpts: ImportOpts = { fetch, sandbox: sandboxInstance };
+  const containerOpts: LoaderOpts = { fetch, sandbox: sandboxInstance, transformer };
 
-  const [firstScriptStartLoadPromise, entryScriptLoadedPromise] = await loadEntry<MicroAppLifeCycles>(
-    entry,
-    microAppContainer,
-    containerOpts,
-  );
+  const lifecyclesPromise = loadEntry<MicroAppLifeCycles>(entry, microAppContainer, containerOpts);
+
   const assetPublicPath = calcPublicPath(entry);
   const {
     beforeUnmount = [],
@@ -73,10 +70,10 @@ export default async function loadApp<T extends ObjectType>(
   } = mergeWith({}, getAddOns(global, assetPublicPath), lifeCycles, (v1, v2) =>
     concat((v1 ?? []) as LifeCycleFn<T>, (v2 ?? []) as LifeCycleFn<T>),
   );
-  await firstScriptStartLoadPromise;
+  // FIXME Due to the asynchronous execution of loadEntry, the DOM of the sub-app is inserted synchronously through appendChild, and inline scripts are also executed synchronously. Therefore, the beforeLoad may need to rely on transformer configuration to coordinate and ensure the order of asynchronous operations.
   await execHooksChain(toArray(beforeLoad), app, global);
 
-  const lifecycles = await entryScriptLoadedPromise;
+  const lifecycles = await lifecyclesPromise;
   if (!lifecycles) throw new QiankunError(`${appName} entry ${entry} load failed as it not export lifecycles`);
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
     lifecycles,
