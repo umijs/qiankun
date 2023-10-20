@@ -61,7 +61,7 @@ const isPropertyDescriptor = (v: unknown): boolean => {
 
 const cachedGlobalsInBrowser = globalsInBrowser
   .concat(process.env.NODE_ENV === 'test' ? ['mockNativeWindowFunction'] : [])
-  .reduce<Record<string, true>>((acc, key) => ({ ...acc, [key]: true }), Object.create(null));
+  .reduce<Record<string, true>>((acc, key) => ({ ...acc, [key]: true }), Object.create(null) as Record<string, true>);
 const isNativeGlobalProp = (prop: string): boolean => {
   return prop in cachedGlobalsInBrowser;
 };
