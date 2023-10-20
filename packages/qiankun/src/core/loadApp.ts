@@ -28,7 +28,7 @@ export default async function loadApp<T extends ObjectType>(
   lifeCycles?: LifeCycles<T>,
 ) {
   const { name: appName, entry, container } = app;
-  const { fetch = window.fetch, sandbox, globalContext = window } = configuration || {};
+  const { fetch = window.fetch, sandbox, globalContext = window, transformer } = configuration || {};
 
   const markName = `[qiankun] App ${appName} Loading`;
   if (process.env.NODE_ENV === 'development') {
@@ -56,7 +56,7 @@ export default async function loadApp<T extends ObjectType>(
     unmountSandbox = () => sandboxContainer.unmount();
   }
 
-  const containerOpts: LoaderOpts = { fetch, sandbox: sandboxInstance };
+  const containerOpts: LoaderOpts = { fetch, sandbox: sandboxInstance, transformer };
 
   const assetPublicPath = calcPublicPath(entry);
   const {
