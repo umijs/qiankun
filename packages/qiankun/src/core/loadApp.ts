@@ -2,7 +2,7 @@
  * @author Kuitos
  * @since 2023-04-25
  */
-import type { ImportOpts } from '@qiankunjs/loader';
+import type { LoaderOpts } from '@qiankunjs/loader';
 import { loadEntry } from '@qiankunjs/loader';
 import type { Sandbox } from '@qiankunjs/sandbox';
 import { createSandboxContainer } from '@qiankunjs/sandbox';
@@ -56,13 +56,8 @@ export default async function loadApp<T extends ObjectType>(
     unmountSandbox = () => sandboxContainer.unmount();
   }
 
-  const containerOpts: ImportOpts = { fetch, sandbox: sandboxInstance };
+  const containerOpts: LoaderOpts = { fetch, sandbox: sandboxInstance };
 
-  const [firstScriptStartLoadPromise, entryScriptLoadedPromise] = await loadEntry<MicroAppLifeCycles>(
-    entry,
-    microAppContainer,
-    containerOpts,
-  );
   const assetPublicPath = calcPublicPath(entry);
   const {
     beforeUnmount = [],
@@ -73,10 +68,9 @@ export default async function loadApp<T extends ObjectType>(
   } = mergeWith({}, getAddOns(global, assetPublicPath), lifeCycles, (v1, v2) =>
     concat((v1 ?? []) as LifeCycleFn<T>, (v2 ?? []) as LifeCycleFn<T>),
   );
-  await firstScriptStartLoadPromise;
   await execHooksChain(toArray(beforeLoad), app, global);
 
-  const lifecycles = await entryScriptLoadedPromise;
+  const lifecycles = await loadEntry<MicroAppLifeCycles>(entry, microAppContainer, containerOpts);
   if (!lifecycles) throw new QiankunError(`${appName} entry ${entry} load failed as it not export lifecycles`);
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
     lifecycles,
