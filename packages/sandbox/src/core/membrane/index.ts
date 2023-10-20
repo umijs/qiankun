@@ -10,7 +10,8 @@ import {
 } from '@qiankunjs/shared';
 import { nativeGlobal } from '../../consts';
 import { isPropertyFrozen } from '../../utils';
-import { getTargetValue } from './utils';
+import { globalsInBrowser } from '../globals';
+import { rebindTarget2Fn } from './utils';
 
 declare global {
   interface Window {
@@ -56,6 +57,13 @@ const isPropertyDescriptor = (v: unknown): boolean => {
     v !== null &&
     ['value', 'writable', 'get', 'set', 'configurable', 'enumerable'].some((p) => p in v)
   );
+};
+
+const cachedGlobalsInBrowser = globalsInBrowser
+  .concat(process.env.NODE_ENV === 'test' ? ['mockNativeWindowFunction'] : [])
+  .reduce<Record<string, true>>((acc, key) => ({ ...acc, [key]: true }), Object.create(null) as Record<string, true>);
+const isNativeGlobalProp = (prop: string): boolean => {
+  return prop in cachedGlobalsInBrowser;
 };
 
 export class Membrane {
@@ -148,14 +156,19 @@ export class Membrane {
           return value;
         }
 
+        // non-native property return directly to avoid rebind
+        if (!isNativeGlobalProp(p as string) && !useNativeWindowForBindingsProps.has(p)) {
+          return value;
+        }
+
         /* Some dom api must be bound to native window, otherwise it would cause exception like 'TypeError: Failed to execute 'fetch' on 'Window': Illegal invocation'
-           See this code:
-             const proxy = new Proxy(window, {});
-             const proxyFetch = fetch.bind(proxy);
-             proxyFetch('https://qiankun.com');
-        */
+         See this code:
+           const proxy = new Proxy(window, {});
+           const proxyFetch = fetch.bind(proxy);
+           proxyFetch('https://qiankun.com');
+      */
         const boundTarget = useNativeWindowForBindingsProps.get(p) ? nativeGlobal : incubatorContext;
-        return getTargetValue(boundTarget, value, receiver);
+        return rebindTarget2Fn(boundTarget, value, receiver);
       },
 
       // trap in operator
