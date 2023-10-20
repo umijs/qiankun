@@ -6,7 +6,7 @@
 
 import type { noop } from 'lodash';
 import { nativeDocument, nativeGlobal } from '../../consts';
-import { getTargetValue } from '../../core/membrane/utils';
+import { rebindTarget2Fn } from '../../core/membrane/utils';
 import type { Sandbox } from '../../core/sandbox';
 import type { Free } from '../types';
 import {
@@ -164,7 +164,7 @@ function patchDocument(sandbox: Sandbox): void {
 
                 default: {
                   const value = headElementTarget[p as keyof HTMLHeadElement];
-                  return getTargetValue(headElementTarget, value, headReceiver);
+                  return rebindTarget2Fn(headElementTarget, value, headReceiver);
                 }
               }
             },
@@ -220,7 +220,7 @@ function patchDocument(sandbox: Sandbox): void {
 
                 default: {
                   const value = bodyElementTarget[p as keyof HTMLHeadElement];
-                  return getTargetValue(bodyElementTarget, value, bodyReceiver);
+                  return rebindTarget2Fn(bodyElementTarget, value, bodyReceiver);
                 }
               }
             },
@@ -257,7 +257,7 @@ function patchDocument(sandbox: Sandbox): void {
 
       const value = target[p as string];
       // must rebind the function to the target otherwise it will cause illegal invocation error
-      return getTargetValue(target, value, receiver);
+      return rebindTarget2Fn(target, value, receiver);
     },
   });
 

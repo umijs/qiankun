@@ -3,14 +3,14 @@ import { isBoundedFunction, isCallable, isConstructable } from '../../utils';
 
 const functionBoundedValueMap = new WeakMap<CallableFunction, CallableFunction>();
 
-export function getTargetValue<T>(target: unknown, value: T, receiver: unknown): T {
+export function rebindTarget2Fn<T>(target: unknown, fn: T, receiver: unknown): T {
   /*
     仅绑定 isCallable && !isBoundedFunction && !isConstructable 的函数对象，如 window.console、window.atob 这类，不然微应用中调用时会抛出 Illegal invocation 异常
     目前没有完美的检测方式，这里通过 prototype 中是否还有可枚举的拓展方法的方式来判断
     @warning 这里不要随意替换成别的判断方式，因为可能触发一些 edge case（比如在 lodash.isFunction 在 iframe 上下文中可能由于调用了 top window 对象触发的安全异常）
    */
-  if (isCallable(value) && !isBoundedFunction(value) && !isConstructable(value as CallableFunction)) {
-    const typedValue = value as CallableFunction;
+  if (isCallable(fn) && !isBoundedFunction(fn) && !isConstructable(fn as CallableFunction)) {
+    const typedValue = fn as CallableFunction;
     const cachedBoundFunction = functionBoundedValueMap.get(typedValue);
     if (cachedBoundFunction) {
       return cachedBoundFunction as T;
@@ -55,7 +55,7 @@ export function getTargetValue<T>(target: unknown, value: T, receiver: unknown):
 
       if (valueHasInstanceToString || boundValueHasPrototypeToString) {
         const originToStringDescriptor = getOwnPropertyDescriptor(
-          valueHasInstanceToString ? value : Function.prototype,
+          valueHasInstanceToString ? fn : Function.prototype,
           'toString',
         );
 
@@ -66,9 +66,9 @@ export function getTargetValue<T>(target: unknown, value: T, receiver: unknown):
       }
     }
 
-    functionBoundedValueMap.set(value, boundValue);
+    functionBoundedValueMap.set(fn, boundValue);
     return boundValue as T;
   }
 
-  return value;
+  return fn;
 }

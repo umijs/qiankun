@@ -1,9 +1,9 @@
 import { hasOwnProperty } from '@qiankunjs/shared';
 import { without } from 'lodash';
 import { Compartment } from '../compartment';
+import { globalsInES2015 } from '../globals';
 import type { Endowments } from '../membrane';
 import { Membrane } from '../membrane';
-import { globals as constantGlobals } from './globals';
 import type { Sandbox } from './types';
 import { SandboxType } from './types';
 
@@ -75,7 +75,7 @@ export class StandardSandbox extends Compartment implements Sandbox {
       });
     }
 
-    const constantNames = Array.from(new Set(Object.keys(intrinsics).concat(constantGlobals).concat(whitelistBOMAPIs)));
+    const constantNames = Array.from(new Set(Object.keys(intrinsics).concat(globalsInES2015).concat(whitelistBOMAPIs)));
     // intrinsics should not be escaped from sandbox
     const unscopables = without(constantNames, ...Object.keys(intrinsics)).reduce(
       (acc, key) => ({ ...acc, [key]: true }) as Record<string, true>,
