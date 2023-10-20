@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- 317961eb: feat: add transformer options for app loader
+- 317961eb: ✨ add transformer options for app loader
 - 76b6bff7: 🐛 compatible with webpack chunk cache logic
 - Updated dependencies [488447ad]
 - Updated dependencies [dc4d9aef]
