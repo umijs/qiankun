@@ -10,14 +10,22 @@ export const hasOwnProperty = (caller: unknown, p: PropertyKey) => Object.protot
 export class Deferred<T> {
   promise: Promise<T>;
 
+  status: 'pending' | 'fulfilled' | 'rejected' = 'pending';
+
   resolve!: (value: T | PromiseLike<T>) => void;
 
   reject!: (reason?: unknown) => void;
 
   constructor() {
     this.promise = new Promise((resolve, reject) => {
-      this.resolve = resolve;
-      this.reject = reject;
+      this.resolve = (value: T | PromiseLike<T>) => {
+        this.status = 'fulfilled';
+        resolve(value);
+      };
+      this.reject = (reason?: unknown) => {
+        this.status = 'rejected';
+        reject(reason);
+      };
     });
   }
 }

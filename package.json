@@ -2,24 +2,24 @@
   "name": "qiankun-monorepo",
   "private": true,
   "engines": {
-    "node": ">=12.0.0"
+    "node": ">=16"
   },
-  "type": "module",
   "scripts": {
-    "dev": "pnpm run build && npm run start:main && npm run start:react15",
+    "start:example": "pnpm run build && npm run start:main && npm run start:react15",
     "start:main": "cd ./examples/main && npm start",
     "start:react15": "cd ./examples/react15 && npm start",
-    "build": "pnpm -r run build",
+    "build": "pnpm -r --filter=./packages/**/* run build",
     "prerelease:alpha": "changeset pre enter alpha && changeset && changeset version",
     "release:alpha": "pnpm run build && changeset publish && changeset pre exit",
-    "lint": "eslint packages/*/src/**",
+    "lint": "eslint packages/",
     "prettier": "prettier --write .",
-    "docs": "dumi dev",
-    "build-docs": "dumi build",
-    "ci": "pnpm run lint && pnpm run build && pnpm run test",
+    "prettier:check": "prettier -c .",
+    "docs:dev": "dumi dev",
+    "docs:build": "dumi build",
+    "ci": "pnpm run lint && pnpm run prettier:check && pnpm run build",
     "ci:publish": "pnpm run build && changeset publish",
-    "test": "cross-env NODE_ENV=test vitest",
-    "prepare": "husky install"
+    "test": "pnpm -r run test",
+    "prepare": "husky install && dumi setup"
   },
   "devDependencies": {
     "@changesets/cli": "^2.26.1",
@@ -29,8 +29,7 @@
     "@typescript-eslint/parser": "^6.3.0",
     "babel-plugin-import": "^1.12.1",
     "cross-env": "^7.0.2",
-    "dumi": "^1.1.0-beta.24",
-    "dumi-theme-default": "^1.0.10",
+    "dumi": "^2.2.12",
     "eslint": "^8.46.0",
     "eslint-config-prettier": "^9.0.0",
     "father": "^4.3.1",

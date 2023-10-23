@@ -12,7 +12,7 @@ jobs:
         if: github.event.label.name == 'pr welcome' || github.event.label.name == 'help wanted'
         uses: actions-cool/issues-helper@v2.0.0
         with:
-          actions: 'create-comment'
+          actions: "create-comment"
           issue-number: ${{ github.event.issue.number }}
           body: |
             Hello @${{ github.event.issue.user.login }}. We totally like your proposal/feedback, welcome to send us a Pull Request for it. Please be sure to fill in the default template in the Pull Request, provide changelog/documentation/test cases if needed and make sure CI passed, we will review it soon. We appreciate your effort in advance and looking forward to your contribution!
@@ -23,7 +23,7 @@ jobs:
         if: github.event.label.name == 'pls use issue template'
         uses: actions-cool/issues-helper@v2.0.0
         with:
-          actions: 'create-comment, close-issue'
+          actions: "create-comment, close-issue"
           issue-number: ${{ github.event.issue.number }}
           body: |
             Hello @${{ github.event.issue.user.login }}. To save both time, please use the issue template to report. This issue will be closed.
@@ -34,7 +34,7 @@ jobs:
         if: github.event.label.name == 'Need Reproduction'
         uses: actions-cool/issues-helper@v2.0.0
         with:
-          actions: 'create-comment'
+          actions: "create-comment"
           issue-number: ${{ github.event.issue.number }}
           body: |
             Hello @${{ github.event.issue.user.login }}. In order to facilitate location and troubleshooting, we need you to provide a realistic example. Please forking these link [codesandbox](https://codesandbox.io/) or clone [qiankun examples](https://github.com/umijs/qiankun/tree/master/examples) to your GitHub repository.

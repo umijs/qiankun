@@ -1,6 +1,7 @@
 ---
 nav:
   title: FAQ
+  order: 2
 toc: menu
 ---
 
@@ -263,9 +264,9 @@ __webpack_public_path__ = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
 
 For more details, check the [webpack doc](https://webpack.js.org/guides/public-path/#on-the-fly).
 
-<Alert type="info">
+:::info
 Runtime publicPath addresses the problem of incorrect scripts, styles, images, and other addresses for dynamically loaded in sub application.
-</Alert>
+:::
 
 ### 2. With webpack static public path config
 
@@ -599,10 +600,10 @@ Example for antd：
 
 Detailed documentation pls check [antd official guide](https://ant.design/docs/react/customize-theme).
 
-<Alert type="info">
+:::info
 In the latest version, you can also try to config ` {sandbox: {experimentalStyleIsolation: true}} ` to open the runtime scoped CSS feature, thus solving the problem of the style of the isolation between applications.
 PS: Currently, this feature is still in the experimental stage, if encounter some problems please submit an <a href="https://github.com/umijs/qiankun/issues/new?assignees=&labels=&template=bug_report.md&title=" target="_blank">issue</a> to help us improve together.
-</Alert>
+:::
 
 ## How to make sub app to run independently?
 
@@ -633,9 +634,9 @@ start({ singular: false });
 
 After setting `singular: false` in `start` method, `reactApp` and `react15App` should be active at the same time once `isReactApp` method returns `true`.
 
-<Alert>
+:::warning
 Notice that no more than one application that relies on router can be displayed on the page at the same time, as the browser has only one url location, if there is more than one routing apps, it will definitely result in one of them to be 404 found.
-</Alert>
+:::
 
 ## How to extract the common library？
 
@@ -657,9 +658,9 @@ You can find the singular usage [here](/api#startopts).
 
 If you want qiankun (or its dependent libraries, or your own application) to work properly in IE, you need to introduce the following polyfills at the portal **at least**:
 
-<Alert type="info">
+:::info
 What's <a href="https://developer.mozilla.org/en-US/docs/Glossary/Polyfill" target="_blank">polyfill</a>
-</Alert>
+:::
 
 ```javascript
 import 'whatwg-fetch';

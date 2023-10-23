@@ -1,11 +1,11 @@
-import { without } from 'lodash';
 import { hasOwnProperty } from '@qiankunjs/shared';
+import { without } from 'lodash';
 import { Compartment } from '../compartment';
+import { globalsInES2015 } from '../globals';
 import type { Endowments } from '../membrane';
 import { Membrane } from '../membrane';
 import type { Sandbox } from './types';
 import { SandboxType } from './types';
-import { globals as constantGlobals } from './globals';
 
 const whitelistBOMAPIs = ['requestAnimationFrame', 'cancelAnimationFrame'];
 
@@ -75,10 +75,10 @@ export class StandardSandbox extends Compartment implements Sandbox {
       });
     }
 
-    const constantNames = Array.from(new Set(Object.keys(intrinsics).concat(constantGlobals).concat(whitelistBOMAPIs)));
+    const constantNames = Array.from(new Set(Object.keys(intrinsics).concat(globalsInES2015).concat(whitelistBOMAPIs)));
     // intrinsics should not be escaped from sandbox
     const unscopables = without(constantNames, ...Object.keys(intrinsics)).reduce(
-      (acc, key) => ({ ...acc, [key]: true } as Record<string, true>),
+      (acc, key) => ({ ...acc, [key]: true }) as Record<string, true>,
       // Notes that babel will transpile spread operator to Object.assign({}, ...args), which will keep the prototype of Object in merged object,
       // while this result used as Symbol.unscopables, it will make properties in Object.prototype always be escaped from proxy sandbox as unscopables check will look up prototype chain as well,
       // such as hasOwnProperty, toString, valueOf, etc.

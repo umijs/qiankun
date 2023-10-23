@@ -1,5 +1,4 @@
 /* eslint-disable no-param-reassign */
-import { nativeGlobal } from '../../consts';
 import {
   create,
   defineProperty,
@@ -9,8 +8,10 @@ import {
   hasOwnProperty,
   keys,
 } from '@qiankunjs/shared';
+import { nativeGlobal } from '../../consts';
 import { isPropertyFrozen } from '../../utils';
-import { getTargetValue } from './utils';
+import { globalsInBrowser } from '../globals';
+import { rebindTarget2Fn } from './utils';
 
 declare global {
   interface Window {
@@ -29,6 +30,8 @@ const variableWhiteListInDev =
         // for react hot reload
         // see https://github.com/facebook/create-react-app/blob/66bf7dfc43350249e2f09d138a20840dae8a0a4a/packages/react-error-overlay/src/index.js#L180
         '__REACT_ERROR_OVERLAY_GLOBAL_HOOK__',
+        // for react development event issue, see https://github.com/umijs/qiankun/issues/2375
+        'event',
       ]
     : [];
 // who could escape the sandbox
@@ -54,6 +57,13 @@ const isPropertyDescriptor = (v: unknown): boolean => {
     v !== null &&
     ['value', 'writable', 'get', 'set', 'configurable', 'enumerable'].some((p) => p in v)
   );
+};
+
+const cachedGlobalsInBrowser = globalsInBrowser
+  .concat(process.env.NODE_ENV === 'test' ? ['mockNativeWindowFunction'] : [])
+  .reduce<Record<string, true>>((acc, key) => ({ ...acc, [key]: true }), Object.create(null) as Record<string, true>);
+const isNativeGlobalProp = (prop: string): boolean => {
+  return prop in cachedGlobalsInBrowser;
 };
 
 export class Membrane {
@@ -83,27 +93,27 @@ export class Membrane {
 
     this.target = target;
 
-    this.realmGlobal = (new Proxy(this.target, {
+    this.realmGlobal = new Proxy(this.target, {
       set: (membraneTarget, p, value: never) => {
         if (!this.locking) {
-          // We must keep its description while the property existed in incubatorContext before
-          if (!hasOwnProperty(membraneTarget, p) && hasOwnProperty(incubatorContext, p)) {
-            const descriptor = getOwnPropertyDescriptor(incubatorContext, p);
-            const { writable, configurable, enumerable } = descriptor!;
-            // only writable property can be overwritten
-            // here we ignored accessor descriptor of incubatorContext as it makes no sense to trigger its logic(which might make sandbox escaping instead)
-            // we force to set value by data descriptor
-            if (writable || hasOwnProperty(descriptor, 'set')) {
-              defineProperty(membraneTarget, p, { configurable, enumerable, writable: true, value });
-            }
-          } else {
-            membraneTarget[p] = value;
-          }
-
           // sync the property to incubatorContext
           if (typeof p === 'string' && whitelistVars.indexOf(p) !== -1) {
             // this.globalWhitelistPrevDescriptor[p] = Object.getOwnPropertyDescriptor(incubatorContext, p);
             incubatorContext[p as never] = value;
+          } else {
+            // We must keep its description while the property existed in incubatorContext before
+            if (!hasOwnProperty(membraneTarget, p) && hasOwnProperty(incubatorContext, p)) {
+              const descriptor = getOwnPropertyDescriptor(incubatorContext, p);
+              const { writable, configurable, enumerable } = descriptor!;
+              // only writable property can be overwritten
+              // here we ignored accessor descriptor of incubatorContext as it makes no sense to trigger its logic(which might make sandbox escaping instead)
+              // we force to set value by data descriptor
+              if (writable || hasOwnProperty(descriptor, 'set')) {
+                defineProperty(membraneTarget, p, { configurable, enumerable, writable: true, value });
+              }
+            } else {
+              membraneTarget[p] = value;
+            }
           }
 
           this.modifications.add(p);
@@ -122,12 +132,16 @@ export class Membrane {
         return true;
       },
 
-      get: (membraneTarget, p) => {
+      get: (membraneTarget, p, receiver) => {
         if (p === Symbol.unscopables) return unscopables;
 
         // properties in endowments returns directly
         if (hasOwnProperty(endowments, p)) {
           return membraneTarget[p];
+        }
+
+        if (p === 'string' && whitelistVars.indexOf(p) !== -1) {
+          return incubatorContext[p as never];
         }
 
         const actualTarget = propertiesWithGetter.has(p)
@@ -142,14 +156,19 @@ export class Membrane {
           return value;
         }
 
+        // non-native property return directly to avoid rebind
+        if (!isNativeGlobalProp(p as string) && !useNativeWindowForBindingsProps.has(p)) {
+          return value;
+        }
+
         /* Some dom api must be bound to native window, otherwise it would cause exception like 'TypeError: Failed to execute 'fetch' on 'Window': Illegal invocation'
-           See this code:
-             const proxy = new Proxy(window, {});
-             const proxyFetch = fetch.bind(proxy);
-             proxyFetch('https://qiankun.com');
-        */
+         See this code:
+           const proxy = new Proxy(window, {});
+           const proxyFetch = fetch.bind(proxy);
+           proxyFetch('https://qiankun.com');
+      */
         const boundTarget = useNativeWindowForBindingsProps.get(p) ? nativeGlobal : incubatorContext;
-        return getTargetValue(boundTarget, value);
+        return rebindTarget2Fn(boundTarget, value, receiver);
       },
 
       // trap in operator
@@ -221,7 +240,7 @@ export class Membrane {
       getPrototypeOf() {
         return Reflect.getPrototypeOf(incubatorContext);
       },
-    }) as unknown) as WindowProxy;
+    }) as unknown as WindowProxy;
   }
 
   addIntrinsics(

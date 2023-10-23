@@ -7,16 +7,16 @@ import transpileScript from './script';
 import type { AssetsTranspilerOpts } from './types';
 
 export function transpileAssets<T extends Node>(node: T, baseURI: string, opts: AssetsTranspilerOpts): T {
-  const htmlElement = (node as unknown) as HTMLElement;
+  const htmlElement = node as unknown as HTMLElement;
   const { tagName } = htmlElement;
 
   switch (tagName) {
     case 'SCRIPT': {
-      return (transpileScript(htmlElement as HTMLScriptElement, baseURI, opts) as unknown) as T;
+      return transpileScript(htmlElement as HTMLScriptElement, baseURI, opts) as unknown as T;
     }
 
     case 'LINK': {
-      return (transpileLink(htmlElement as HTMLLinkElement, baseURI, opts) as unknown) as T;
+      return transpileLink(htmlElement as HTMLLinkElement, baseURI, opts) as unknown as T;
     }
 
     default:
@@ -38,3 +38,5 @@ export function transpileAssets<T extends Node>(node: T, baseURI: string, opts: 
 }
 
 export type * from './types';
+
+export { isValidJavaScriptType } from './utils';

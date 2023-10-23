@@ -3,7 +3,7 @@ import type { MatchResult } from './types';
 
 declare global {
   interface HTMLElement {
-    __cached_deps__?: string[];
+    __matched_deps__?: string[];
   }
 }
 
@@ -42,15 +42,15 @@ export function moduleResolver(
 
       if (mainAppDependencyMapString) {
         const mainAppDependencyMap = JSON.parse(mainAppDependencyMapString) as DependencyMap;
-        const cachedDeps = (microAppContainer.__cached_deps__ ??= []);
+        const matchedDeps = (microAppContainer.__matched_deps__ ??= []);
         const matchedDep = findDependency(
           microAppDependency,
           normalizeDependencies(mainAppDependencyMap.dependencies),
-          cachedDeps,
+          matchedDeps,
         );
 
         if (matchedDep) {
-          cachedDeps.push(matchedDep.name);
+          matchedDeps.push(matchedDep.name);
           return matchedDep;
         }
       }
@@ -63,14 +63,14 @@ export function moduleResolver(
 function findDependency(
   dependency: NormalizedDependency,
   mainAppDependencies: NormalizedDependency[],
-  cachedDependencies: string[],
+  matchedDependencies: string[],
 ): MatchResult | undefined {
   const matched = mainAppDependencies.find(
-    (cachedDependency) =>
-      cachedDependency.name === dependency.name &&
-      satisfies(cachedDependency.version, dependency.range) &&
+    (mainAppDependency) =>
+      mainAppDependency.name === dependency.name &&
+      satisfies(mainAppDependency.version, dependency.range) &&
       // peer dependencies must be cached before
-      dependency.peerDeps?.every((peerDep) => cachedDependencies.indexOf(peerDep) !== -1),
+      (dependency.peerDeps || []).every((peerDep) => matchedDependencies.indexOf(peerDep) !== -1),
   );
 
   if (matched) {

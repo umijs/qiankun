@@ -1,6 +1,7 @@
 ---
 nav:
   title: Tutorial
+  order: 3
 toc: menu
 ---
 
