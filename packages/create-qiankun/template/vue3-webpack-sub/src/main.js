@@ -11,7 +11,7 @@ let history = null;
 
 function render(props = {}) {
   const { container } = props;
-  history = createWebHistory(window.__POWERED_BY_QIANKUN__ ? '/vue3' : '/');
+  history = createWebHistory(window.__POWERED_BY_QIANKUN__ ? '/vue3-webpack-sub' : '/');
   router = createRouter({
     history,
     routes,
@@ -33,8 +33,6 @@ export async function bootstrap() {
 
 export async function mount(props) {
   render(props);
-  instance.config.globalProperties.$onGlobalStateChange = props.onGlobalStateChange;
-  instance.config.globalProperties.$setGlobalState = props.setGlobalState;
 }
 
 export async function unmount() {

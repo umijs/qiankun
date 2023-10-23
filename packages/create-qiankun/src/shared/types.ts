@@ -8,14 +8,15 @@ export enum IRoutePattern {
 export enum PackageManager {
   npm = 'npm',
   yarn = 'yarn',
-  pnpm = 'pnpm workspace',
+  pnpm = 'pnpm',
+  pnpmWorkspace = 'pnpm workspace',
 }
 
 export interface PromptAnswer {
   projectName: string;
   createKind: CreateKind;
   mainAppName?: MainFrameworkTemplate;
-  subAppName?: SubFrameworkTemplate[];
+  subAppNameList?: SubFrameworkTemplate[];
   mainRoute?: IRoutePattern;
   packageManager?: PackageManager;
 }

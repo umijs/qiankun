@@ -34,7 +34,7 @@ export async function createApplication(
 ) {
   const { projectRoot, userChoose, gitInit = false } = opts;
   const { monorepoDirPath } = opts;
-  const { packageManager } = userChoose;
+  const { packageManager, projectName } = userChoose;
 
   const context: IRenderContext = {
     templateDir: path.join(__dirname, '../../template'),
@@ -43,12 +43,19 @@ export async function createApplication(
     monorepoDirPath: opts.monorepoDirPath,
   };
 
-  if (packageManager === PackageManager.pnpm) {
+  if (packageManager === PackageManager.pnpmWorkspace) {
     if (monorepoDirPath) {
       context.applicationTargetPath = monorepoDirPath;
     } else {
       // 先构建monorepo
       await fse.copy(path.join(context.templateDir, 'base'), context.tmpDir);
+      const pkg = (await fse.readJson(path.join(context.tmpDir, 'package.json'), { encoding: 'utf-8' })) as Record<
+        string,
+        unknown
+      >;
+      pkg.name = projectName;
+      await fse.writeJson(path.join(context.tmpDir, 'package.json'), pkg, { encoding: 'utf-8', spaces: 2 });
+
       if (gitInit) {
         await initGit(context.tmpDir);
       }
@@ -67,7 +74,7 @@ export async function createApplication(
 
   return {
     applicationTargetPath: context.applicationTargetPath,
-    monorepoDirPath: packageManager === PackageManager.pnpm ? context.monorepoDirPath : '',
+    monorepoDirPath: packageManager === PackageManager.pnpmWorkspace ? context.monorepoDirPath : '',
   };
 }
 

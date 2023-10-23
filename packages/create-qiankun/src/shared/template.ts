@@ -7,6 +7,9 @@ export enum MainFrameworkTemplate {
 
 export enum SubFrameworkTemplate {
   'React18+Webpack' = 'react18-webpack-sub',
+  'React16+Webpack' = 'react16-webpack-sub',
+  'Vue3+Webpack' = 'vue3-webpack-sub',
+  'Vue2+Webpack' = 'vue2-webpack-sub',
 }
 
 type OptionType = { title: string; value: string };
