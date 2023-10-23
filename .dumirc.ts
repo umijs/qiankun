@@ -22,8 +22,8 @@ export default defineConfig({
             title: '版本公告',
             children: [
               { title: '发布日志', link: 'https://github.com/umijs/qiankun/releases' },
-              { title: '升级指南', link: '/zh/cookbook#从-1x-版本升级到-2x-版本' },
-              { title: '1.x 版本', link: 'https://v1.qiankun.umijs.org/zh/' },
+              { title: '升级指南', link: '/zh/cookbook#从-2x-版本升级到-3x-版本' },
+              { title: '2.x 版本', link: 'https://v2.qiankun.umijs.org/zh/' },
             ],
           },
         ],
