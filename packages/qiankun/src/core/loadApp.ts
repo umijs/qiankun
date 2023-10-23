@@ -127,10 +127,6 @@ export default async function loadApp<T extends ObjectType>(
         async () => execHooksChain(toArray(afterUnmount), app, global),
         async () => {
           clearContainer(microAppContainer);
-          // for gc
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          microAppContainer = null;
         },
       ],
     };
