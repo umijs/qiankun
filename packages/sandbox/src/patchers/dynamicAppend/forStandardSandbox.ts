@@ -175,6 +175,7 @@ function patchDocument(sandbox: Sandbox, container: HTMLElement): CallableFuncti
   patchCacheWeakMap.set(container, true);
 
   return () => {
+    const containerHeadElement = getContainerHeadElement(container);
     // @ts-ignore
     delete containerHeadElement.appendChild;
     // @ts-ignore
