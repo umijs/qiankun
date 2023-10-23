@@ -3,7 +3,7 @@
  * @author Kuitos
  * @since 2019-10-21
  */
-import { QiankunError, transpileAssets } from '@qiankunjs/shared';
+import { transpileAssets } from '@qiankunjs/shared';
 import { qiankunHeadTagName } from '../../consts';
 import type { SandboxConfig } from './types';
 
@@ -52,7 +52,7 @@ export function isHijackingTag(tagName?: string) {
  * @param element
  */
 export function isStyledComponentsLike(element: HTMLStyleElement): boolean {
-  return !element.textContent && (element.sheet?.cssRules.length || getStyledElementCSSRules(element)?.length);
+  return Boolean(!element.textContent && (element.sheet?.cssRules.length || getStyledElementCSSRules(element)?.length));
 }
 
 const appsCounterMap = new Map<string, { bootstrappingPatchCount: number; mountingPatchCount: number }>();
@@ -93,8 +93,6 @@ const defineNonEnumerableProperty = (target: unknown, key: string | symbol, valu
 };
 
 const styledComponentCSSRulesMap = new WeakMap<HTMLStyleElement, CSSRuleList>();
-const dynamicScriptAttachedCommentMap = new WeakMap<HTMLScriptElement, Comment>();
-const dynamicLinkAttachedInlineStyleMap = new WeakMap<HTMLLinkElement, HTMLStyleElement>();
 
 export function recordStyledComponentsCSSRules(styleElements: HTMLStyleElement[]): void {
   styleElements.forEach((styleElement) => {
@@ -117,32 +115,26 @@ export function getStyledElementCSSRules(styledElement: HTMLStyleElement): CSSRu
 }
 
 export function getOverwrittenAppendChildOrInsertBefore(
-  opType: 'appendChild' | 'insertBefore',
+  nativeFn: typeof HTMLElement.prototype.appendChild | typeof HTMLElement.prototype.insertBefore,
   getSandboxConfig: (element: HTMLElement) => SandboxConfig | undefined,
   target: DynamicDomMutationTarget = 'body',
-  isInvokedByMicroApp: (element: HTMLElement) => boolean,
 ) {
   function appendChildInSandbox<T extends Node>(
     this: HTMLHeadElement | HTMLBodyElement,
     newChild: T,
     refChild: Node | null = null,
   ): T {
-    const appendChild = this[opType];
+    const appendChild = nativeFn;
 
     const element = newChild as unknown as HTMLElement;
-    if (!isHijackingTag(element.tagName) || !isInvokedByMicroApp(element)) {
+    const containerConfig = getSandboxConfig(element);
+
+    if (!isHijackingTag(element.tagName) || !containerConfig) {
       return appendChild.call(this, element, refChild) as T;
     }
 
     if (element.tagName) {
-      const containerConfig = getSandboxConfig(element);
-      if (!containerConfig) {
-        throw new QiankunError(
-          `You haven't set the container for ${element.tagName} element while calling appendChild/insertBefore!`,
-        );
-      }
-
-      const { getContainer, dynamicStyleSheetElements, sandbox } = containerConfig;
+      const { dynamicStyleSheetElements, sandbox } = containerConfig;
 
       switch (element.tagName) {
         case LINK_TAG_NAME:
@@ -154,16 +146,13 @@ export function getOverwrittenAppendChildOrInsertBefore(
             configurable: true,
           });
 
-          const container = getContainer();
-          const mountDOM = target === 'head' ? getContainerHeadElement(container) : container;
-
-          const referenceNode = mountDOM.contains(refChild) ? refChild : null;
+          const referenceNode = this.contains(refChild) ? refChild : null;
           let refNo: number | undefined;
           if (referenceNode) {
-            refNo = Array.from(mountDOM.childNodes).indexOf(referenceNode as ChildNode);
+            refNo = Array.from(this.childNodes).indexOf(referenceNode as ChildNode);
           }
 
-          const result = appendChild.call(mountDOM, stylesheetElement, referenceNode);
+          const result = appendChild.call(this, stylesheetElement, referenceNode);
 
           // record refNo thus we can keep order while remounting
           if (typeof refNo === 'number' && refNo !== -1) {
@@ -171,18 +160,15 @@ export function getOverwrittenAppendChildOrInsertBefore(
           }
           // record dynamic style elements after insert succeed
           dynamicStyleSheetElements.push(stylesheetElement);
+
           return result as T;
         }
 
         case SCRIPT_TAG_NAME: {
-          const container = getContainer();
-          const mountDOM = target === 'head' ? getContainerHeadElement(container) : container;
-          const referenceNode = mountDOM.contains(refChild) ? refChild : null;
-
           // TODO paas fetch configuration and current entry url as baseURI
           const node = transpileAssets(element, location.href, { fetch, sandbox, rawNode: element });
 
-          return appendChild.call(mountDOM, node, referenceNode) as T;
+          return appendChild.call(this, node, refChild) as T;
         }
 
         default:
@@ -199,37 +185,30 @@ export function getOverwrittenAppendChildOrInsertBefore(
 }
 
 export function getNewRemoveChild(
-  opType: 'removeChild',
+  nativeFn: typeof HTMLElement.prototype.removeChild,
   containerConfigGetter: (element: HTMLElement) => SandboxConfig | undefined,
-  target: DynamicDomMutationTarget,
-  isInvokedByMicroApp: (element: HTMLElement) => boolean,
 ) {
-  function removeChildInSandbox<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, child: T) {
-    const removeChild = this[opType];
+  function removeChildInSandbox<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, child: T): T {
+    const removeChild = nativeFn;
 
     const childElement = child as unknown as HTMLElement;
     const { tagName } = childElement;
-    if (!isHijackingTag(tagName) || !isInvokedByMicroApp(childElement)) {
-      return removeChild.call(this, child) as T;
+    const containerConfig = containerConfigGetter(childElement);
+
+    if (!isHijackingTag(tagName) || !containerConfig) {
+      return removeChild.call(this, childElement) as T;
     }
 
     try {
-      let attachedElement: Node;
-
-      const containerConfig = containerConfigGetter(childElement);
-      if (!containerConfig) {
-        throw new QiankunError(`You haven't set the container for ${tagName} element while calling removeChild!`);
-      }
-
-      const { getContainer, dynamicStyleSheetElements } = containerConfig;
+      const { dynamicStyleSheetElements } = containerConfig;
 
       switch (tagName) {
         case STYLE_TAG_NAME:
         case LINK_TAG_NAME: {
-          attachedElement = dynamicLinkAttachedInlineStyleMap.get(childElement as unknown as HTMLLinkElement) || child;
-
           // try to remove the dynamic style sheet
-          const dynamicElementIndex = dynamicStyleSheetElements.indexOf(attachedElement as HTMLLinkElement);
+          const dynamicElementIndex = dynamicStyleSheetElements.indexOf(
+            childElement as HTMLLinkElement | HTMLStyleElement,
+          );
           if (dynamicElementIndex !== -1) {
             dynamicStyleSheetElements.splice(dynamicElementIndex, 1);
           }
@@ -237,27 +216,20 @@ export function getNewRemoveChild(
           break;
         }
 
-        case SCRIPT_TAG_NAME: {
-          attachedElement = dynamicScriptAttachedCommentMap.get(childElement as unknown as HTMLScriptElement) || child;
-          break;
-        }
-
         default: {
-          attachedElement = child;
+          break;
         }
       }
 
-      const container = getContainer();
-      const mountDOM = target === 'head' ? getContainerHeadElement(container) : container;
       // container might have been removed while app unmounting if the removeChild action was async
-      if (mountDOM.contains(attachedElement)) {
-        return removeChild.call(attachedElement.parentNode, attachedElement) as T;
+      if (this.contains(childElement)) {
+        return removeChild.call(this, childElement) as T;
       }
     } catch (e) {
       console.warn(e);
     }
 
-    return removeChild.call(this, child) as T;
+    return removeChild.call(this, childElement) as T;
   }
 
   removeChildInSandbox[overwrittenSymbol] = true;
