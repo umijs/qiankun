@@ -1,5 +1,11 @@
 # @qiankunjs/sandbox
 
+## 0.0.1-rc.5
+
+### Patch Changes
+
+- 3d1d3367: fix: should patch the container head/body element immediately rather than patch its functions with proxy
+
 ## 0.0.1-rc.4
 
 ### Patch Changes
