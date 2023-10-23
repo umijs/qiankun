@@ -5,15 +5,22 @@
     "@qiankunjs/loader": "0.0.1",
     "qiankun": "3.0.0",
     "@qiankunjs/sandbox": "0.0.1",
-    "@qiankunjs/shared": "0.0.1"
+    "@qiankunjs/shared": "0.0.1",
+    "@qiankunjs/react": "0.0.1-rc.1"
   },
   "changesets": [
     "clever-dragons-ring",
     "green-tools-wonder",
     "large-jokes-smile",
     "long-flies-repair",
+    "loud-penguins-crash",
+    "metal-cougars-help",
+    "ninety-rivers-check",
     "rare-lobsters-marry",
+    "shiny-jeans-sip",
     "short-kings-explain",
+    "sour-roses-smile",
+    "tough-phones-chew",
     "warm-chefs-chew"
   ]
 }
