@@ -1,5 +1,6 @@
 ---
 nav:
+  title: Guide
   order: 0
 toc: menu
 ---

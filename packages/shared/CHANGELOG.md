@@ -1,5 +1,26 @@
 # @qiankunjs/shared
 
+## 0.0.1-rc.3
+
+### Patch Changes
+
+- Updated dependencies [39301f19]
+  - @qiankunjs/sandbox@0.0.1-rc.3
+
+## 0.0.1-rc.2
+
+### Patch Changes
+
+- b23d3d7b: 🐛fix preload is invalid while reused dependency is working
+  - @qiankunjs/sandbox@0.0.1-rc.2
+
+## 0.0.1-rc.1
+
+### Patch Changes
+
+- ebb2bcaa: 🐛fix findDependency logic while peerDeps is undefined
+  - @qiankunjs/sandbox@0.0.1-rc.1
+
 ## 0.0.1-beta.6
 
 ### Patch Changes

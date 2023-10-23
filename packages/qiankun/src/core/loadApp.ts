@@ -2,7 +2,7 @@
  * @author Kuitos
  * @since 2023-04-25
  */
-import type { ImportOpts } from '@qiankunjs/loader';
+import type { LoaderOpts } from '@qiankunjs/loader';
 import { loadEntry } from '@qiankunjs/loader';
 import type { Sandbox } from '@qiankunjs/sandbox';
 import { createSandboxContainer } from '@qiankunjs/sandbox';
@@ -18,6 +18,7 @@ import {
   performanceMeasure,
   toArray,
 } from '../utils';
+import { version } from '../version';
 
 export type ParcelConfigObjectGetter = (remountContainer: HTMLElement) => ParcelConfigObject;
 
@@ -27,7 +28,7 @@ export default async function loadApp<T extends ObjectType>(
   lifeCycles?: LifeCycles<T>,
 ) {
   const { name: appName, entry, container } = app;
-  const { fetch = window.fetch, sandbox, globalContext = window } = configuration || {};
+  const { fetch = window.fetch, sandbox, globalContext = window, transformer } = configuration || {};
 
   const markName = `[qiankun] App ${appName} Loading`;
   if (process.env.NODE_ENV === 'development') {
@@ -40,7 +41,7 @@ export default async function loadApp<T extends ObjectType>(
   let sandboxInstance: Sandbox | undefined;
 
   let microAppContainer: HTMLElement = container;
-  clearContainer(microAppContainer);
+  initContainer(microAppContainer, appName, sandbox);
 
   if (sandbox) {
     const sandboxContainer = createSandboxContainer(appName, () => microAppContainer, {
@@ -55,6 +56,8 @@ export default async function loadApp<T extends ObjectType>(
     unmountSandbox = () => sandboxContainer.unmount();
   }
 
+  const containerOpts: LoaderOpts = { fetch, sandbox: sandboxInstance, transformer };
+
   const assetPublicPath = calcPublicPath(entry);
   const {
     beforeUnmount = [],
@@ -65,15 +68,10 @@ export default async function loadApp<T extends ObjectType>(
   } = mergeWith({}, getAddOns(global, assetPublicPath), lifeCycles, (v1, v2) =>
     concat((v1 ?? []) as LifeCycleFn<T>, (v2 ?? []) as LifeCycleFn<T>),
   );
-
   await execHooksChain(toArray(beforeLoad), app, global);
 
-  const containerOpts: ImportOpts = { fetch, sandbox: sandboxInstance };
-
   const lifecycles = await loadEntry<MicroAppLifeCycles>(entry, microAppContainer, containerOpts);
-
   if (!lifecycles) throw new QiankunError(`${appName} entry ${entry} load failed as it not export lifecycles`);
-
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
     lifecycles,
     appName,
@@ -149,11 +147,17 @@ export default async function loadApp<T extends ObjectType>(
   return parcelConfigGetter;
 }
 
-function clearContainer(container: HTMLElement) {
-  if (!container) {
-    throw new QiankunError('container is not existed');
+function initContainer(container: HTMLElement, appName: string, sandboxCfg: AppConfiguration['sandbox']): void {
+  while (container.firstChild) {
+    container.removeChild(container.firstChild);
   }
 
+  container.dataset.name = appName;
+  container.dataset.version = version;
+  container.dataset.sandboxCfg = JSON.stringify(sandboxCfg);
+}
+
+function clearContainer(container: HTMLElement): void {
   while (container.firstChild) {
     container.removeChild(container.firstChild);
   }

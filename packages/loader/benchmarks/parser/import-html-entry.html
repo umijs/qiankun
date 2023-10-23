@@ -1,19 +1,18 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>import html entry for normal html</title>
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <title>import html entry for normal html</title>
+  </head>
+  <body>
+    <script type="module">
+      import * as bench from '/bench.js';
+      import processTpl from 'import-html-entry/esm/process-tpl.js';
+      import { htmlContent } from './html.js';
 
-<script type="module">
-  import * as bench from '/bench.js';
-  import processTpl from 'import-html-entry/esm/process-tpl.js';
-  import { htmlContent } from './html.js';
-
-  bench.start();
-  processTpl(htmlContent, location.href);
-  bench.stop();
-</script>
-</body>
+      bench.start();
+      processTpl(htmlContent, location.href);
+      bench.stop();
+    </script>
+  </body>
 </html>

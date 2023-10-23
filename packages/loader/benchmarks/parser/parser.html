@@ -1,19 +1,19 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>parser for normal html</title>
-</head>
+  <head>
+    <meta charset="UTF-8" />
+    <title>parser for normal html</title>
+  </head>
 
-<body>
-<script type="module">
-  import * as bench from '/bench.js';
-  import { parseHTML } from '../../es/parser.js';
-  import { htmlContent } from './html.js';
+  <body>
+    <script type="module">
+      import * as bench from '/bench.js';
+      import { parseHTML } from '../../es/parser.js';
+      import { htmlContent } from './html.js';
 
-  bench.start();
-  parseHTML(htmlContent, location.href);
-  bench.stop();
-</script>
-</body>
+      bench.start();
+      parseHTML(htmlContent, location.href);
+      bench.stop();
+    </script>
+  </body>
 </html>

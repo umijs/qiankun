@@ -1,8 +1,9 @@
+import type { Sandbox } from '@qiankunjs/sandbox';
 import { qiankunHeadTagName } from '@qiankunjs/sandbox';
 import type { BaseTranspilerOpts } from '@qiankunjs/shared';
-import { moduleResolver as defaultModuleResolver, QiankunError, transpileAssets } from '@qiankunjs/shared';
+import { Deferred, moduleResolver as defaultModuleResolver, QiankunError, transpileAssets } from '@qiankunjs/shared';
 import { TagTransformStream } from './TagTransformStream';
-import { Deferred, isUrlHasOwnProtocol } from './utils';
+import { isUrlHasOwnProtocol } from './utils';
 import WritableDOMStream from './writable-dom';
 
 type HTMLEntry = string;
@@ -16,20 +17,21 @@ type Entry = HTMLEntry;
 //   execute: (executor?: Promise<K>) => Promise<K>;
 // };
 //
-export type ImportOpts = {
-  decoder?: (chunk: string) => string;
+export type LoaderOpts = {
+  transformer?: TransformStream<string, string>;
   nodeTransformer?: typeof transpileAssets;
-} & BaseTranspilerOpts;
+} & BaseTranspilerOpts & { sandbox?: Sandbox };
 
 /**
  * @param entry
  * @param container
  * @param opts
  */
-export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: ImportOpts): Promise<T | void> {
+export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: LoaderOpts): Promise<T | void> {
   const {
     fetch,
     nodeTransformer = transpileAssets,
+    transformer,
     sandbox,
     moduleResolver = (url: string) => {
       return defaultModuleResolver(url, container, document.head);
@@ -40,10 +42,15 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: I
   if (res.body) {
     let noExternalScript = true;
     const entryScriptLoadedDeferred = new Deferred<T | void>();
-    const entryDocumentLoadedDeferred = new Deferred<void>();
+    const entryHTMLLoadedDeferred = new Deferred<void>();
 
-    void res.body
-      .pipeThrough(new TextDecoderStream())
+    let readableStream = res.body.pipeThrough(new TextDecoderStream());
+
+    if (transformer) {
+      readableStream = readableStream.pipeThrough(transformer);
+    }
+
+    void readableStream
       .pipeThrough(
         new TagTransformStream(
           [
@@ -66,6 +73,7 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: I
           });
 
           const script = transformedNode as unknown as HTMLScriptElement;
+
           /*
            * If the entry script is executed, we can complete the entry process in advance
            * otherwise we need to wait until the last script is executed.
@@ -74,10 +82,13 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: I
           if (script.tagName === 'SCRIPT' && (script.src || script.dataset.src)) {
             noExternalScript = false;
 
+            /**
+             * Script with entry attribute or the last script is the entry script
+             */
             const isEntryScript = async () => {
               if (script.hasAttribute('entry')) return true;
 
-              await entryDocumentLoadedDeferred.promise;
+              await entryHTMLLoadedDeferred.promise;
 
               const scripts = container.querySelectorAll('script[src]');
               const lastScript = scripts[scripts.length - 1];
@@ -88,9 +99,10 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: I
               'load',
               // eslint-disable-next-line @typescript-eslint/no-misused-promises
               async () => {
-                if (await isEntryScript()) {
+                if (entryScriptLoadedDeferred.status === 'pending' && (await isEntryScript())) {
                   // the latest set prop is the entry script exposed global variable
                   if (sandbox?.latestSetProp) {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                     entryScriptLoadedDeferred.resolve(sandbox.globalThis[sandbox.latestSetProp as number] as T);
                   } else {
                     // TODO support non sandbox mode?
@@ -104,7 +116,7 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: I
               'error',
               // eslint-disable-next-line @typescript-eslint/no-misused-promises
               async (evt) => {
-                if (await isEntryScript()) {
+                if (entryScriptLoadedDeferred.status === 'pending' && (await isEntryScript())) {
                   entryScriptLoadedDeferred.reject(
                     new QiankunError(`entry ${entry} loading failed as entry script trigger error -> ${evt.message}`),
                   );
@@ -118,7 +130,7 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: I
         }),
       )
       .then(() => {
-        entryDocumentLoadedDeferred.resolve();
+        entryHTMLLoadedDeferred.resolve();
 
         if (noExternalScript) {
           entryScriptLoadedDeferred.resolve();

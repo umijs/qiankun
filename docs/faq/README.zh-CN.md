@@ -1,6 +1,7 @@
 ---
 nav:
   title: 常见问题
+  order: 2
 toc: menu
 ---
 
@@ -265,9 +266,9 @@ __webpack_public_path__ = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
 
 关于运行时 publicPath 的技术细节，可以参考 [webpack 文档](https://webpack.js.org/guides/public-path/#on-the-fly)。
 
-<Alert type="info">
+:::info
 runtime publicPath 主要解决的是微应用动态载入的 脚本、样式、图片 等地址不正确的问题。
-</Alert>
+:::
 
 ### b. 使用 webpack 静态 publicPath 配置
 
@@ -603,10 +604,10 @@ qiankun 将会自动隔离微应用之间的样式（开启沙箱的情况下）
 
 详细文档参考 [antd 官方指南](https://ant.design/docs/react/customize-theme)。
 
-<Alert type="info">
+:::info
 在最新的 qiankun 版本中，你也可以尝试通过配置 `{ sandbox : { experimentalStyleIsolation: true } }` 的方式开启运行时的 scoped css 功能，从而解决应用间的样式隔离问题。
 PS：目前该特性还处于实验阶段，如果碰到一些问题欢迎提 <a href="https://github.com/umijs/qiankun/issues/new?assignees=&labels=&template=bug_report_cn.md&title=%5BBug%5D%E8%AF%B7%E9%81%B5%E5%BE%AA%E4%B8%8B%E6%96%87%E6%A8%A1%E6%9D%BF%E6%8F%90%E4%BA%A4%E9%97%AE%E9%A2%98%EF%BC%8C%E5%90%A6%E5%88%99%E6%82%A8%E7%9A%84%E9%97%AE%E9%A2%98%E4%BC%9A%E8%A2%AB%E5%85%B3%E9%97%AD" target="_blank">issue</a> 来帮助我们一起改善。
-</Alert>
+:::
 
 ## 如何独立运行微应用？
 
@@ -636,9 +637,9 @@ start({ singular: false });
 
 当在 `start` 方法中配置好 `singular: false` 后，只要 `isReactApp()` 返回 `true` 时，`reactApp` 和 `react15App` 将会同时被 mount。
 
-<Alert>
+:::warning
 页面上不能同时显示多个依赖于路由的微应用，因为浏览器只有一个 url，如果有多个依赖路由的微应用同时被激活，那么必定会导致其中一个 404。
-</Alert>
+:::
 
 ## 如何提取出公共的依赖库？
 
@@ -660,9 +661,9 @@ qiankun 2.0 版本将提供一种更智能的方式使其自动化。
 
 如果希望 qiankun （或其依赖库、或者您的应用本身）在 IE 下正常运行，你**至少**需要在应用入口引入以下这些 polyfills：
 
-<Alert type="info">
+:::info
 什么是 <a href="https://developer.mozilla.org/zh-CN/docs/Glossary/Polyfill" target="_blank">polyfill</a>
-</Alert>
+:::
 
 ```javascript
 import 'whatwg-fetch';
@@ -675,9 +676,9 @@ import 'core-js/web/url';
 
 **通常我们建议您直接使用 @babel/preset-env 插件完成自动引入 IE 需要的 polyfill 的能力，所有的操作文档您都可以在 [babel 官方文档](https://babeljs.io/docs/en/babel-preset-env) 找到。**
 
-<Alert type="info">
+:::info
 您也可以查看<a href="https://www.yuque.com/kuitos/gky7yw/qskte2" target="_blank">这篇文章</a>来获取更多 IE 兼容相关的知识。
-</Alert>
+:::
 
 ## 报错 `Here is no "fetch" on the window env, you need to polyfill it`
 

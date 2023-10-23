@@ -51,9 +51,9 @@ Micro apps are divided into projects with `webpack` and without `webpack`. The t
 
 1. Added `public-path.js` file, used to modify the runtime `publicPath`.[What is publicPath at runtime?](https://webpack.js.org/guides/public-path/#on-the-fly).
 
-<Alert>
+:::warning
 Note: `publicPath` at runtime and `publicPath` at build time are different, and the two cannot be equivalently substituted.
-</Alert>
+:::
 
 2. It is recommended to use the route of the `history` mode for the micro app. The route `base` needs to be set, and the value is the same as its `activeRule`.
 3. Import `public-path.js` at the top of the entry file, modify and export three `lifecycles` functions.

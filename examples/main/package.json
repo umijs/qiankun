@@ -29,5 +29,6 @@
     "react-dom": "^16.13.1",
     "vue": "^2.6.11",
     "zone.js": "^0.10.2"
-  }
+  },
+  "repository": "git@github.com:umijs/qiankun.git"
 }

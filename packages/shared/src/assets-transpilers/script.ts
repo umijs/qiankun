@@ -7,17 +7,7 @@ import type { MatchResult } from '../module-resolver';
 import { getEntireUrl } from '../utils';
 import type { AssetsTranspilerOpts } from './types';
 import { Mode } from './types';
-
-const isValidJavaScriptType = (type?: string): boolean => {
-  const handleTypes = [
-    'text/javascript',
-    'module',
-    'application/javascript',
-    'text/ecmascript',
-    'application/ecmascript',
-  ];
-  return !type || handleTypes.indexOf(type) !== -1;
-};
+import { createReusingObjectUrl, isValidJavaScriptType } from './utils';
 
 const getCredentials = (crossOrigin: string | null): RequestInit['credentials'] | undefined => {
   switch (crossOrigin) {
@@ -31,9 +21,9 @@ const getCredentials = (crossOrigin: string | null): RequestInit['credentials'] 
 };
 
 type PreTranspileResult =
-  | { mode: Mode.REMOTE_FROM_SANDBOX; result: { src: string } }
-  | { mode: Mode.CACHE_FROM_SANDBOX; result: { src: string } & MatchResult }
-  | { mode: Mode.INLINE_FROM_SANDBOX; result: { code: string } }
+  | { mode: Mode.REMOTE_ASSETS_IN_SANDBOX; result: { src: string } }
+  | { mode: Mode.REUSED_DEP_IN_SANDBOX; result: { src: string } & MatchResult }
+  | { mode: Mode.INLINE_CODE_IN_SANDBOX; result: { code: string } }
   | { mode: Mode.NONE; result?: never };
 
 export const preTranspile = (
@@ -51,13 +41,13 @@ export const preTranspile = (
       const matchedScript = moduleResolver?.(entireUrl);
       if (matchedScript) {
         return {
-          mode: Mode.CACHE_FROM_SANDBOX,
+          mode: Mode.REUSED_DEP_IN_SANDBOX,
           result: { src: entireUrl, ...matchedScript },
         };
       }
 
       return {
-        mode: Mode.REMOTE_FROM_SANDBOX,
+        mode: Mode.REMOTE_ASSETS_IN_SANDBOX,
         result: { src: entireUrl },
       };
     }
@@ -69,7 +59,7 @@ export const preTranspile = (
       const code = scriptNode.textContent;
       if (code) {
         return {
-          mode: Mode.INLINE_FROM_SANDBOX,
+          mode: Mode.INLINE_CODE_IN_SANDBOX,
           result: {
             code,
           },
@@ -91,6 +81,11 @@ export default function transpileScript(
   const srcAttribute = script.getAttribute('src');
   const { sandbox, fetch } = opts;
 
+  // To prevent webpack from skipping reload logic and causing the js not to re-execute when a micro app is loaded multiple times, the data-webpack attribute of the script must be removed.
+  // see https://github.com/webpack/webpack/blob/1f13ff9fe587e094df59d660b4611b1bd19aed4c/lib/runtime/LoadScriptRuntimeModule.js#L131-L136
+  // FIXME We should determine whether the current micro application is being loaded for the second time. If not, this removal should not be performed.
+  script.removeAttribute('data-webpack');
+
   const { mode, result } = preTranspile(
     {
       src: srcAttribute || undefined,
@@ -102,7 +97,7 @@ export default function transpileScript(
   );
 
   switch (mode) {
-    case Mode.REMOTE_FROM_SANDBOX: {
+    case Mode.REMOTE_ASSETS_IN_SANDBOX: {
       const { src } = result;
 
       // We must remove script src to avoid self execution as we need to fetch the script content and transpile it
@@ -129,7 +124,7 @@ export default function transpileScript(
       return script;
     }
 
-    case Mode.INLINE_FROM_SANDBOX: {
+    case Mode.INLINE_CODE_IN_SANDBOX: {
       const rawNode = opts.rawNode as HTMLScriptElement;
       const scriptNode = script.textContent ? script : rawNode.childNodes[0];
       const { code } = result;
@@ -141,7 +136,7 @@ export default function transpileScript(
       return script;
     }
 
-    case Mode.CACHE_FROM_SANDBOX: {
+    case Mode.REUSED_DEP_IN_SANDBOX: {
       const { url, version, src } = result;
 
       script.dataset.src = src;
@@ -154,11 +149,7 @@ export default function transpileScript(
       }
 
       // When the script hits the dependency reuse logic, the current script is not executed, and an empty script is returned directly
-      script.src = URL.createObjectURL(
-        new Blob([`// ${src} is reusing the execution result of ${url}`], {
-          type: 'text/javascript',
-        }),
-      );
+      script.src = createReusingObjectUrl(src, url, 'text/javascript');
 
       return script;
     }

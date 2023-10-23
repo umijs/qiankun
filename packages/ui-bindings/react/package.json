@@ -1,0 +1,35 @@
+{
+  "name": "@qiankunjs/react",
+  "version": "0.0.1-rc.1",
+  "description": "qiankun react ui binding",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./src/index.ts",
+  "sideEffects": false,
+  "scripts": {
+    "build": "father build",
+    "dev": "father dev",
+    "test": "cross-env NODE_ENV=test vitest"
+  },
+  "author": "Bravepg",
+  "license": "MIT",
+  "dependencies": {
+    "lodash": "^4.17.11"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "eslint-plugin-react": "^7.33.2",
+    "qiankun": "workspace:^",
+    "react": "^18.2.0"
+  },
+  "peerDependencies": {
+    "qiankun": "2.x || 3.x",
+    "react": ">=16.9.0",
+    "react-dom": ">=16.9.0"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+  "files": ["dist", "src"],
+  "repository": "git@github.com:umijs/qiankun.git"
+}
