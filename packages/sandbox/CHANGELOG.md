@@ -1,5 +1,16 @@
 # @qiankunjs/sandbox
 
+## 0.0.1-rc.4
+
+### Patch Changes
+
+- 488447ad: ✨ set proxy appendChild/insertBefore method for every sandbox rather than modify prototype on HTMLElement
+- dc4d9aef: 🐛parallel sandbox should use different compartment id
+- e7d788ef: feat: not rebind non-native global properties
+- 76b6bff7: 🐛 compatible with webpack chunk cache logic
+- Updated dependencies [76b6bff7]
+  - @qiankunjs/shared@0.0.1-rc.4
+
 ## 0.0.1-rc.3
 
 ### Patch Changes

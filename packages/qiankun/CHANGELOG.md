@@ -1,5 +1,21 @@
 # qiankun
 
+## 3.0.0-rc.6
+
+### Patch Changes
+
+- 317961eb: feat: add transformer options for app loader
+- e448082c: feat: make loadEntry and beforeLoad runs parallelly
+- 76b6bff7: 🐛 compatible with webpack chunk cache logic
+- Updated dependencies [488447ad]
+- Updated dependencies [dc4d9aef]
+- Updated dependencies [317961eb]
+- Updated dependencies [e7d788ef]
+- Updated dependencies [76b6bff7]
+  - @qiankunjs/sandbox@0.0.1-rc.4
+  - @qiankunjs/loader@0.0.1-rc.5
+  - @qiankunjs/shared@0.0.1-rc.4
+
 ## 3.0.0-rc.5
 
 ### Patch Changes

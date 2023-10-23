@@ -1,5 +1,11 @@
 # @qiankunjs/shared
 
+## 0.0.1-rc.4
+
+### Patch Changes
+
+- 76b6bff7: 🐛 compatible with webpack chunk cache logic
+
 ## 0.0.1-rc.3
 
 ### Patch Changes

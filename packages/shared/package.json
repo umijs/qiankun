@@ -1,6 +1,6 @@
 {
   "name": "@qiankunjs/shared",
-  "version": "0.0.1-rc.3",
+  "version": "0.0.1-rc.4",
   "description": "",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",

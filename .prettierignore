@@ -16,5 +16,4 @@ pnpm-lock.yaml
 packages/sandbox/src/core/sandbox/globals.ts
 
 # changeset 会修改这个文件，导致 prettier:check 失败
-packages/*/package.json
-
+packages/**/*/package.json
