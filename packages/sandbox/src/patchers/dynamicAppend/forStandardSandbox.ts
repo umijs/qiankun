@@ -56,7 +56,8 @@ const patchCacheWeakMap = new WeakMap<object, unknown>();
 
 const getSandboxConfig = (element: HTMLElement) => elementAttachSandboxConfigMap.get(element);
 
-function patchDocument(sandbox: Sandbox, container: HTMLElement): CallableFunction {
+function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): CallableFunction {
+  const container = getContainer();
   if (patchCacheWeakMap.has(container)) {
     return () => {};
   }
@@ -175,6 +176,7 @@ function patchDocument(sandbox: Sandbox, container: HTMLElement): CallableFuncti
   patchCacheWeakMap.set(container, true);
 
   return () => {
+    const container = getContainer();
     const containerHeadElement = getContainerHeadElement(container);
     // @ts-ignore
     delete containerHeadElement.appendChild;
@@ -281,7 +283,7 @@ export function patchStandardSandbox(
   // all dynamic style sheets are stored in proxy container
   const { dynamicStyleSheetElements } = sandboxConfig;
 
-  const unpatchDocument = patchDocument(sandbox, getContainer());
+  const unpatchDocument = patchDocument(sandbox, getContainer);
   const unpatchDOMPrototype = patchDOMPrototypeFns();
 
   if (!mounting) calcAppCount(appName, 'increase', 'bootstrapping');
@@ -305,8 +307,8 @@ export function patchStandardSandbox(
     // the dynamic style sheet would be removed automatically while unmounting
 
     return function rebuild() {
+      const container = getContainer();
       rebuildCSSRules(dynamicStyleSheetElements as HTMLStyleElement[], (stylesheetElement) => {
-        const container = getContainer();
         if (!container.contains(stylesheetElement)) {
           const mountDom =
             stylesheetElement[styleElementTargetSymbol] === 'head' ? getContainerHeadElement(container) : container;

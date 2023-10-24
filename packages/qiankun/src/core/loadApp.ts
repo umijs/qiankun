@@ -82,6 +82,8 @@ export default async function loadApp<T extends ObjectType>(
     sandboxInstance?.latestSetProp,
   );
 
+  let mountTimes = 1;
+
   const parcelConfigGetter: ParcelConfigObjectGetter = (remountContainer) => {
     const parcelConfig: ParcelConfigObject = {
       name: appName,
@@ -100,16 +102,13 @@ export default async function loadApp<T extends ObjectType>(
             }
           }
         },
-        // 添加 mount hook, 确保每次应用加载前容器存在
         async () => {
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          if (microAppContainer === null) {
-            microAppContainer = remountContainer;
-          }
-        },
-        async () => {
-          // if micro app container has no children that means now is remounting, we need to rerender the app manually
-          if (microAppContainer.firstChild === null) {
+          microAppContainer = remountContainer;
+
+          // while the micro app is remounting, we need to load the entry manually
+          if (mountTimes > 1) {
+            initContainer(microAppContainer, appName, sandbox);
+            // html scripts should be removed to avoid repeatedly execute
             const htmlString = await getPureHTMLStringWithoutScripts(entry, fetch);
             await loadEntry(htmlString, microAppContainer, containerOpts);
           }
@@ -126,6 +125,9 @@ export default async function loadApp<T extends ObjectType>(
             performanceMeasure(measureName, markName);
           }
         },
+        async () => {
+          mountTimes++;
+        },
       ],
 
       unmount: [
@@ -135,10 +137,6 @@ export default async function loadApp<T extends ObjectType>(
         async () => execHooksChain(toArray(afterUnmount), app, global),
         async () => {
           clearContainer(microAppContainer);
-          // for gc
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          microAppContainer = null;
         },
       ],
     };
