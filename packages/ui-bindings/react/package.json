@@ -1,6 +1,6 @@
 {
   "name": "@qiankunjs/react",
-  "version": "0.0.1-rc.5",
+  "version": "0.0.1-rc.6",
   "description": "react binding for qiankun",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",

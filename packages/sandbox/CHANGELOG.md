@@ -1,5 +1,11 @@
 # @qiankunjs/sandbox
 
+## 0.0.1-rc.6
+
+### Patch Changes
+
+- 2aca545c: fix: should invoke getContainer method to get container every time to avoid reference misordering
+
 ## 0.0.1-rc.5
 
 ### Patch Changes
