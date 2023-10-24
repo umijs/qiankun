@@ -83,8 +83,6 @@ export default async function loadApp<T extends ObjectType>(
   );
 
   const parcelConfigGetter: ParcelConfigObjectGetter = (remountContainer) => {
-    microAppContainer = remountContainer;
-
     const parcelConfig: ParcelConfigObject = {
       name: appName,
 
@@ -100,6 +98,13 @@ export default async function loadApp<T extends ObjectType>(
             if (marks && !marks.length) {
               performanceMark(markName);
             }
+          }
+        },
+        // 添加 mount hook, 确保每次应用加载前容器存在
+        async () => {
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          if (microAppContainer === null) {
+            microAppContainer = remountContainer;
           }
         },
         async () => {
