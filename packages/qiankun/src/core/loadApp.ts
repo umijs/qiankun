@@ -80,8 +80,6 @@ export default async function loadApp<T extends ObjectType>(
   );
 
   const parcelConfigGetter: ParcelConfigObjectGetter = (remountContainer) => {
-    microAppContainer = remountContainer;
-
     const parcelConfig: ParcelConfigObject = {
       name: appName,
 
@@ -103,7 +101,7 @@ export default async function loadApp<T extends ObjectType>(
         async () => {
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           if (microAppContainer === null) {
-            microAppContainer = container;
+            microAppContainer = remountContainer;
           }
         },
         async () => {
