@@ -118,7 +118,7 @@ Thanks to all the contributors!
 ## 🎁 Acknowledgements
 
 - [single-spa](https://github.com/CanopyTax/single-spa) What an awesome meta-framework for micro-frontends!
-- [import-html-entry](https://github.com/kuitos/import-html-entry/) An assets loader that supports html entry.
+- [writable-dom](https://github.com/marko-js/writable-dom/) Utility to stream HTML content into a live document.
 
 ## 📄 License
 
