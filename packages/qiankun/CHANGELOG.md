@@ -1,5 +1,11 @@
 # qiankun
 
+## 3.0.0-rc.9
+
+### Patch Changes
+
+- fe68e878: fix: should re-init container while app remounted from cache
+
 ## 3.0.0-rc.8
 
 ### Patch Changes
