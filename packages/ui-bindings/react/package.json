@@ -23,7 +23,7 @@
     "react": "^18.2.0"
   },
   "peerDependencies": {
-    "qiankun": "3.0.0-rc.10",
+    "qiankun": "3.0.0-rc.9",
     "react": ">=16.9.0",
     "react-dom": ">=16.9.0"
   },
