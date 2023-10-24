@@ -1,5 +1,11 @@
 # @qiankunjs/loader
 
+## 0.0.1-rc.7
+
+### Patch Changes
+
+- 1d9adcaa: fix: transformer should be generated in every load
+
 ## 0.0.1-rc.6
 
 ### Patch Changes
