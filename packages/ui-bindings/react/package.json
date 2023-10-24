@@ -1,7 +1,7 @@
 {
   "name": "@qiankunjs/react",
   "version": "0.0.1-rc.5",
-  "description": "qiankun react ui binding",
+  "description": "react binding for qiankun",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./src/index.ts",
