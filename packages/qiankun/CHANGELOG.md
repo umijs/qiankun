@@ -9,7 +9,6 @@
   - @qiankunjs/sandbox@0.0.1-rc.6
   - @qiankunjs/loader@0.0.1-rc.8
 
-## 3.0.0-rc.9
 
 ### Patch Changes
 
