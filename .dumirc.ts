@@ -40,7 +40,7 @@ export default defineConfig({
       },
     },
     socialLinks: {
-      github: 'https://github.com/umijs/dumi',
+      github: 'https://github.com/umijs/qiankun',
     },
   },
   metas: [
