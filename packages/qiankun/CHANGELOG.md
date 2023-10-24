@@ -10,7 +10,6 @@
   - @qiankunjs/loader@0.0.1-rc.8
 
 
-### Patch Changes
 
 - fe68e878: fix: should re-init container while app remounted from cache
 
