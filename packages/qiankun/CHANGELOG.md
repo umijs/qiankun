@@ -5,13 +5,10 @@
 ### Patch Changes
 
 - 2aca545c: fix: should invoke getContainer method to get container every time to avoid reference misordering
+- fe68e878: fix: should re-init container while app remounted from cache
 - Updated dependencies [2aca545c]
   - @qiankunjs/sandbox@0.0.1-rc.6
   - @qiankunjs/loader@0.0.1-rc.8
-
-
-
-- fe68e878: fix: should re-init container while app remounted from cache
 
 ## 3.0.0-rc.8
 
