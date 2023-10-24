@@ -1,6 +1,6 @@
 {
   "name": "@qiankunjs/react",
-  "version": "0.0.1-rc.3",
+  "version": "0.0.1-rc.4",
   "description": "qiankun react ui binding",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -23,7 +23,7 @@
     "react": "^18.2.0"
   },
   "peerDependencies": {
-    "qiankun": "3.0.0-rc.7",
+    "qiankun": "3.0.0-rc.8",
     "react": ">=16.9.0",
     "react-dom": ">=16.9.0"
   },
