@@ -11,9 +11,9 @@ export interface RenderOptions {
   userChoose: PromptAnswer;
   gitInit?: boolean;
   monorepoDirPath?: string;
-  // hooks?: {
-  //   beforeCopy: () => Promise<void>;
-  // };
+  hooks?: {
+    beforeRender: (context: IRenderContext, data: Record<string, unknown>) => Promise<void>;
+  };
 }
 
 export interface IRenderContext {
@@ -68,6 +68,10 @@ export async function createApplication(
 
   if (gitInit) {
     await initGit(context.applicationTargetPath);
+  }
+
+  if (opts.hooks?.beforeRender) {
+    await opts.hooks.beforeRender(context, data);
   }
 
   renderEJSforTemplate(context.applicationTargetPath, data);

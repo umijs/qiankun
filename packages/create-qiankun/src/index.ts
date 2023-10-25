@@ -11,7 +11,7 @@ import { isDir } from './shared/utils';
 import type { MainFrameworkTemplate, SubFrameworkTemplate } from './shared/template';
 import { mainFrameworkList, subFrameworkList, enumToArray } from './shared/template';
 import { type RenderOptions, createApplication } from './shared/render';
-import { composeGeneratePorts, generatePort } from './shared/utils/port';
+import { composeGeneratePorts, generatePort, injectCheckPortScript } from './shared/utils/port';
 import { injectSubsConfigToMainApp } from './shared/utils/qiankun';
 
 const KindLabelMap: { [key in CreateKind]: string } = {
@@ -152,7 +152,7 @@ export async function createQiankunDefaultProject() {
     userChoose,
   });
 
-  console.log(green(`Created ${userChoose.projectName}  success!`));
+  console.log(green(`\n Created ${userChoose.projectName}  success!`));
   console.log();
   console.log(bold(green(`\n Done.`)));
 }
@@ -189,11 +189,13 @@ async function renderTemplate(opts: RenderOptions) {
           { port: subsPorts[i] },
           {
             ...opts,
-            gitInit: createKind === CreateKind.CreateSubApp || packageManager !== PackageManager.pnpm,
+            gitInit: createKind === CreateKind.CreateSubApp || packageManager !== PackageManager.pnpmWorkspace,
             monorepoDirPath: monorepoRootPath,
-            // 创建主应用和子应用但是不是monorepo的时候需要改下root
-            // projectName放主应用内容,子应用文件夹与projectName文件夹同级
-            // projectRoot: packageManager === PackageManager.pnpm ? opts.projectRoot : process.cwd(),
+            hooks: {
+              async beforeRender(context, data) {
+                await injectCheckPortScript(context.applicationTargetPath, data);
+              },
+            },
           },
         ),
       ),
@@ -206,19 +208,4 @@ async function renderTemplate(opts: RenderOptions) {
       );
     }
   }
-
-  // if ([CreateKind.CreateSubApp, CreateKind.CreateMainAndSubApp].includes(createKind)) {
-  //   console.log();
-  //   console.log(yellow('create sub app start'));
-  //   console.log();
-  //   if (createKind === CreateKind.CreateSubApp) {
-  //     await createSubApp(opts);
-  //   } else if (createKind === CreateKind.CreateMainAndSubApp) {
-  //     const subsInfo = await createSubAppInMono(opts);
-  //     await injectSubsConfigToMainApp(mainAppTargetPath, subsInfo);
-  //   }
-  //   console.log();
-  //   console.log(yellow('create sub app end'));
-  //   console.log();
-  // }
 }

@@ -1,6 +1,5 @@
 {
   "private": true,
-  "author": "王泊然 <12530163+hakushin@user.noreply.gitee.com>",
   "scripts": {
     "dev": "umi dev",
     "build": "umi build",
