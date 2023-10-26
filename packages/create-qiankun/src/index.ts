@@ -13,7 +13,7 @@ import { mainFrameworkList, subFrameworkList, enumToArray } from './shared/templ
 import { type RenderOptions, createApplication } from './shared/render';
 import { composeGeneratePorts, generatePort, injectCheckPortScript } from './shared/utils/port';
 import { injectSubsConfigToMainApp } from './shared/utils/qiankun';
-import { injectWorkspaceScripts } from './shared/utils/monorepo';
+import { injectNormalScripts, injectWorkspaceScripts } from './shared/utils/scripts';
 
 const KindLabelMap: { [key in CreateKind]: string } = {
   [CreateKind.CreateMainApp]: 'Just create main application',
@@ -215,6 +215,10 @@ async function renderTemplate(opts: RenderOptions) {
     }
 
     if (createKind === CreateKind.CreateMainAndSubApp) {
+      if (packageManager !== PackageManager.pnpmWorkspace) {
+        await injectNormalScripts(opts);
+      }
+
       await injectSubsConfigToMainApp(
         mainAppTargetPath,
         subAppNameList!.map((sub, i) => ({ subName: sub, port: subsPorts[i] })),

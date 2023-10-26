@@ -1,7 +1,7 @@
 // fork get-port
 const os = require('os');
 const net = require('net');
-const { name as pkgName } = require('../package.json')
+const { name: pkgName } = require('../package.json')
 const port = <%= port %>;
 
 async function checkPortIsOccupied() {
