@@ -3,10 +3,14 @@
   "private": true,
   "scripts": {
     "preinstall": "node ./scripts/checkPnpm.js",
-    "start": "node ./scripts/start.js"
+    "dev": "node ./scripts/start.js",
+    "clean": "rimraf node_modules **/*/node_modules"
   },
   "license": "ISC",
   "devDependencies": {
-    "prompts": "^2.4.2"
+    "prompts": "^2.4.2",
+    "rimraf": "^3.0.2",
+    "prettier": "^3.0.3",
+    "eslint": "^8.28.0"
   }
 }

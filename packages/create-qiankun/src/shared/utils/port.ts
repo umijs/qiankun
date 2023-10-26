@@ -19,7 +19,6 @@ export function generatePort(created: number[] = []) {
 
 export async function injectCheckPortScript(projectRoot: string, data: Record<string, unknown>) {
   const scriptDir = path.resolve(__dirname, '../../../template/scripts');
-  console.log('injectCheckPortScript', projectRoot, 'src', scriptDir);
 
   await fse.copy(scriptDir, path.join(projectRoot, 'scripts'));
 

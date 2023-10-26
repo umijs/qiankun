@@ -45,75 +45,82 @@ export async function createQiankunDefaultProject() {
 
   const inputCreateKind = createKind && (String(createKind) as CreateKind);
   try {
-    result = (await prompts([
+    result = (await prompts(
+      [
+        {
+          name: 'projectName',
+          type: projectName ? null : 'text',
+          message: 'Project name:',
+        },
+        {
+          name: 'createKind',
+          type: createKind ? null : 'select',
+          message: 'Choose a way to create',
+          choices: Object.keys(KindLabelMap).map((key) => ({ title: KindLabelMap[key as CreateKind], value: key })),
+        },
+        {
+          name: 'mainAppName',
+          type: mainAppName
+            ? null
+            : (prev: string, values: PromptAnswer) => {
+                return [CreateKind.CreateMainApp, CreateKind.CreateMainAndSubApp].includes(
+                  inputCreateKind || values.createKind,
+                )
+                  ? 'select'
+                  : null;
+              },
+          message: 'Choose a framework for your main application',
+          choices: mainFrameworkList,
+        },
+        {
+          name: 'mainRoute',
+          type: mainRoute
+            ? null
+            : (prev: string, values: PromptAnswer) => {
+                return [CreateKind.CreateMainApp, CreateKind.CreateMainAndSubApp].includes(
+                  inputCreateKind || values.createKind,
+                )
+                  ? 'select'
+                  : null;
+              },
+          message: 'Choose a route pattern for your main application',
+          choices: enumToArray(IRoutePattern),
+        },
+        {
+          name: 'subAppNameList',
+          type: subAppNameList
+            ? null
+            : (prev: string, values: PromptAnswer) => {
+                const createKind = inputCreateKind || values.createKind;
+                if (createKind === CreateKind.CreateMainAndSubApp) {
+                  return 'multiselect';
+                }
+                if (createKind === CreateKind.CreateSubApp) {
+                  return 'multiselect';
+                }
+                return null;
+              },
+          message: 'Choose a framework for your sub application',
+          choices: subFrameworkList,
+        },
+        {
+          name: 'packageManager',
+          message: 'Which package manager do you want to use?',
+          type: packageManager ? null : 'select',
+          choices: Object.keys(packageManagerMap).map((key) => ({
+            title: packageManagerMap[key as PackageManager],
+            value: key,
+          })),
+        },
+      ],
       {
-        name: 'projectName',
-        type: projectName ? null : 'text',
-        message: 'Project name:',
+        onCancel: () => {
+          throw new Error('Operation cancelled');
+        },
       },
-      {
-        name: 'createKind',
-        type: createKind ? null : 'select',
-        message: 'Choose a way to create',
-        choices: Object.keys(KindLabelMap).map((key) => ({ title: KindLabelMap[key as CreateKind], value: key })),
-      },
-      {
-        name: 'mainAppName',
-        type: mainAppName
-          ? null
-          : (prev: string, values: PromptAnswer) => {
-              return [CreateKind.CreateMainApp, CreateKind.CreateMainAndSubApp].includes(
-                inputCreateKind || values.createKind,
-              )
-                ? 'select'
-                : null;
-            },
-        message: 'Choose a framework for your main application',
-        choices: mainFrameworkList,
-      },
-      {
-        name: 'mainRoute',
-        type: mainRoute
-          ? null
-          : (prev: string, values: PromptAnswer) => {
-              return [CreateKind.CreateMainApp, CreateKind.CreateMainAndSubApp].includes(
-                inputCreateKind || values.createKind,
-              )
-                ? 'select'
-                : null;
-            },
-        message: 'Choose a route pattern for your main application',
-        choices: enumToArray(IRoutePattern),
-      },
-      {
-        name: 'subAppNameList',
-        type: subAppNameList
-          ? null
-          : (prev: string, values: PromptAnswer) => {
-              const createKind = inputCreateKind || values.createKind;
-              if (createKind === CreateKind.CreateMainAndSubApp) {
-                return 'multiselect';
-              }
-              if (createKind === CreateKind.CreateSubApp) {
-                return 'multiselect';
-              }
-              return null;
-            },
-        message: 'Choose a framework for your sub application',
-        choices: subFrameworkList,
-      },
-      {
-        name: 'packageManager',
-        message: 'Which package manager do you want to use?',
-        type: packageManager ? null : 'select',
-        choices: Object.keys(packageManagerMap).map((key) => ({
-          title: packageManagerMap[key as PackageManager],
-          value: key,
-        })),
-      },
-    ])) as PromptAnswer;
+    )) as PromptAnswer;
   } catch (e) {
-    console.log(red('operation cancelled'));
+    console.log(red(`Operation cancelled`));
     process.exit(1);
   }
 
@@ -186,7 +193,7 @@ async function renderTemplate(opts: RenderOptions) {
       subAppNameList!.map((sub, i) =>
         createApplication(
           sub,
-          { port: subsPorts[i] },
+          { port: subsPorts[i], appName: sub },
           {
             ...opts,
             gitInit: createKind === CreateKind.CreateSubApp || packageManager !== PackageManager.pnpmWorkspace,
