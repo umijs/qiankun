@@ -13,6 +13,7 @@ import { mainFrameworkList, subFrameworkList, enumToArray } from './shared/templ
 import { type RenderOptions, createApplication } from './shared/render';
 import { composeGeneratePorts, generatePort, injectCheckPortScript } from './shared/utils/port';
 import { injectSubsConfigToMainApp } from './shared/utils/qiankun';
+import { injectWorkspaceScripts } from './shared/utils/monorepo';
 
 const KindLabelMap: { [key in CreateKind]: string } = {
   [CreateKind.CreateMainApp]: 'Just create main application',
@@ -159,6 +160,7 @@ export async function createQiankunDefaultProject() {
     userChoose,
   });
 
+  console.log();
   console.log(green(`\n Created ${userChoose.projectName}  success!`));
   console.log();
   console.log(bold(green(`\n Done.`)));
@@ -207,6 +209,10 @@ async function renderTemplate(opts: RenderOptions) {
         ),
       ),
     );
+
+    if (packageManager === PackageManager.pnpmWorkspace && monorepoRootPath) {
+      await injectWorkspaceScripts(monorepoRootPath);
+    }
 
     if (createKind === CreateKind.CreateMainAndSubApp) {
       await injectSubsConfigToMainApp(

@@ -26,8 +26,7 @@ export async function injectCheckPortScript(projectRoot: string, data: Record<st
 
   pkg.scripts = {
     predev: 'node scripts/checkPort.js',
-    // @ts-ignore
-    ...pkg.scripts,
+    ...(pkg.scripts as Record<string, unknown>),
   };
 
   await fse.writeFile(path.resolve(projectRoot, 'package.json'), JSON.stringify(pkg, null, 2));

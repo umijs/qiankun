@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "preinstall": "node ./scripts/checkPnpm.js",
-    "dev": "node ./scripts/start.js",
+    "dev": "pnpm -r --parallel --filter=./packages/* run dev",
     "clean": "rimraf node_modules **/*/node_modules"
   },
   "license": "ISC",

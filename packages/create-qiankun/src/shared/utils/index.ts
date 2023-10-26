@@ -3,8 +3,6 @@ import path, { join, posix } from 'node:path';
 import os from 'node:os';
 import execa from 'execa';
 
-export * from './create-subapp';
-
 /**
  * 判断目标路径是否为文件夹
  * @param targetPath
