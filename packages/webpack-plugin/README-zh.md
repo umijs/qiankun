@@ -34,9 +34,9 @@ module.exports = {
   // ... 其他配置
   plugins: [
     new QiankunPlugin({
-      packageName: 'optionalPackageName',  // 可选，如果不提供，将使用 package.json 中的名称
-    })
-  ]
+      packageName: 'optionalPackageName', // 可选，如果不提供，将使用 package.json 中的名称
+    }),
+  ],
 };
 ```
 
@@ -51,4 +51,3 @@ module.exports = {
 ## 许可证
 
 MIT
-

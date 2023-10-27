@@ -34,9 +34,9 @@ module.exports = {
   // ... other configurations
   plugins: [
     new QiankunPlugin({
-      packageName: 'optionalPackageName',  // Optional, if not provided, the name from package.json will be used
-    })
-  ]
+      packageName: 'optionalPackageName', // Optional, if not provided, the name from package.json will be used
+    }),
+  ],
 };
 ```
 
