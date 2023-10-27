@@ -1,5 +1,43 @@
 # qiankun
 
+## 3.0.0-rc.9
+
+### Patch Changes
+
+- 2aca545c: fix: should invoke getContainer method to get container every time to avoid reference misordering
+- fe68e878: fix: should re-init container while app remounted from cache
+- Updated dependencies [2aca545c]
+  - @qiankunjs/sandbox@0.0.1-rc.6
+  - @qiankunjs/loader@0.0.1-rc.8
+
+## 3.0.0-rc.8
+
+### Patch Changes
+
+- 1d9adcaa: fix: transformer should be generated in every load
+- Updated dependencies [1d9adcaa]
+  - @qiankunjs/loader@0.0.1-rc.7
+
+## 3.0.0-rc.7
+
+### Patch Changes
+
+- Updated dependencies [3d1d3367]
+  - @qiankunjs/sandbox@0.0.1-rc.5
+  - @qiankunjs/loader@0.0.1-rc.6
+
+## 3.0.0-rc.6
+
+### Patch Changes
+
+- 317961eb: feat: add transformer options for app loader
+- e448082c: feat: make loadEntry and beforeLoad runs parallelly
+- 76b6bff7: 🐛 compatible with webpack chunk cache logic
+- Updated dependencies [76b6bff7]
+  - @qiankunjs/sandbox@0.0.1-rc.4
+  - @qiankunjs/loader@0.0.1-rc.5
+  - @qiankunjs/shared@0.0.1-rc.4
+
 ## 3.0.0-rc.5
 
 ### Patch Changes
@@ -49,8 +87,6 @@
 
 ### Patch Changes
 
-- Updated dependencies [fcb49aad]
-- Updated dependencies [065d2c54]
 - Updated dependencies [931dc1f7]
   - @qiankunjs/shared@0.0.1-alpha.5
   - @qiankunjs/loader@0.0.1-alpha.5
@@ -71,7 +107,6 @@
 
 ### Patch Changes
 
-- Updated dependencies [e12d29ae]
 - Updated dependencies [daaa9ccc]
   - @qiankunjs/shared@0.0.1-alpha.3
   - @qiankunjs/loader@0.0.1-alpha.3

@@ -18,7 +18,7 @@ type Entry = HTMLEntry;
 // };
 //
 export type LoaderOpts = {
-  transformer?: TransformStream<string, string>;
+  streamTransformer?: () => TransformStream<string, string>;
   nodeTransformer?: typeof transpileAssets;
 } & BaseTranspilerOpts & { sandbox?: Sandbox };
 
@@ -31,14 +31,14 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
   const {
     fetch,
     nodeTransformer = transpileAssets,
-    transformer,
+    streamTransformer,
     sandbox,
     moduleResolver = (url: string) => {
       return defaultModuleResolver(url, container, document.head);
     },
   } = opts;
 
-  const res = isUrlHasOwnProtocol(entry) ? await fetch(entry) : new Response(entry);
+  const res = isUrlHasOwnProtocol(entry) ? await fetch(entry) : new Response(entry, { status: 200, statusText: 'OK' });
   if (res.body) {
     let noExternalScript = true;
     const entryScriptLoadedDeferred = new Deferred<T | void>();
@@ -46,8 +46,8 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
 
     let readableStream = res.body.pipeThrough(new TextDecoderStream());
 
-    if (transformer) {
-      readableStream = readableStream.pipeThrough(transformer);
+    if (streamTransformer) {
+      readableStream = readableStream.pipeThrough(streamTransformer());
     }
 
     void readableStream
@@ -135,6 +135,9 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
         if (noExternalScript) {
           entryScriptLoadedDeferred.resolve();
         }
+      })
+      .catch((e) => {
+        entryScriptLoadedDeferred.reject(e);
       });
 
     return entryScriptLoadedDeferred.promise;

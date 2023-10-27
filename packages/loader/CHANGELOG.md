@@ -1,5 +1,38 @@
 # @qiankunjs/loader
 
+## 0.0.1-rc.8
+
+### Patch Changes
+
+- Updated dependencies [2aca545c]
+  - @qiankunjs/sandbox@0.0.1-rc.6
+
+## 0.0.1-rc.7
+
+### Patch Changes
+
+- 1d9adcaa: fix: transformer should be generated in every load
+
+## 0.0.1-rc.6
+
+### Patch Changes
+
+- Updated dependencies [3d1d3367]
+  - @qiankunjs/sandbox@0.0.1-rc.5
+
+## 0.0.1-rc.5
+
+### Patch Changes
+
+- 317961eb: ✨ add transformer options for app loader
+- 76b6bff7: 🐛 compatible with webpack chunk cache logic
+- Updated dependencies [488447ad]
+- Updated dependencies [dc4d9aef]
+- Updated dependencies [e7d788ef]
+- Updated dependencies [76b6bff7]
+  - @qiankunjs/sandbox@0.0.1-rc.4
+  - @qiankunjs/shared@0.0.1-rc.4
+
 ## 0.0.1-rc.4
 
 ### Patch Changes

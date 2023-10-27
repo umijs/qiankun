@@ -1,11 +1,11 @@
-/* eslint-disable @typescript-eslint/unbound-method */
+/* eslint-disable */
 /**
  * @author Kuitos
  * @since 2020-10-13
  */
 
 import type { noop } from 'lodash';
-import { nativeDocument, nativeGlobal } from '../../consts';
+import { nativeDocument, nativeGlobal, qiankunHeadTagName } from '../../consts';
 import { rebindTarget2Fn } from '../../core/membrane/utils';
 import type { Sandbox } from '../../core/sandbox';
 import type { Free } from '../types';
@@ -55,22 +55,12 @@ const elementAttachSandboxConfigMap = new WeakMap<HTMLElement, SandboxConfig>();
 const patchCacheWeakMap = new WeakMap<object, unknown>();
 
 const getSandboxConfig = (element: HTMLElement) => elementAttachSandboxConfigMap.get(element);
-const isInvokedByMicroApp = (element: HTMLElement) => elementAttachSandboxConfigMap.has(element);
 
-function patchDocument(sandbox: Sandbox): void {
-  if (patchCacheWeakMap.has(sandbox)) {
-    return;
+function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): CallableFunction {
+  const container = getContainer();
+  if (patchCacheWeakMap.has(container)) {
+    return () => {};
   }
-
-  const proxyDocumentFnsCache = new Map<
-    | 'appendChildOnHead'
-    | 'insertBeforeOnHead'
-    | 'removeChildOnHead'
-    | 'appendChildOnBody'
-    | 'insertBeforeOnBody'
-    | 'removeChildOnBody',
-    CallableFunction
-  >();
 
   const attachElementToSandbox = (element: HTMLElement) => {
     const sandboxConfig = sandboxConfigWeakMap.get(sandbox);
@@ -109,122 +99,11 @@ function patchDocument(sandbox: Sandbox): void {
         }
 
         case 'head': {
-          const headElement = target.head;
-          return new Proxy(headElement, {
-            set: (headElementTarget, p, value) => {
-              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-              // @ts-ignore
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-              headElementTarget[p] = value;
-              return true;
-            },
-            get(headElementTarget, p, headReceiver) {
-              switch (p) {
-                case 'appendChild': {
-                  let cachedAppendChild = proxyDocumentFnsCache.get('appendChildOnHead');
-                  if (!cachedAppendChild) {
-                    cachedAppendChild = getOverwrittenAppendChildOrInsertBefore(
-                      'appendChild',
-                      getSandboxConfig,
-                      'head',
-                      isInvokedByMicroApp,
-                    ).bind(headElementTarget);
-                    proxyDocumentFnsCache.set('appendChildOnHead', cachedAppendChild);
-                  }
-                  return cachedAppendChild;
-                }
-
-                case 'insertBefore': {
-                  let cachedInsertBefore = proxyDocumentFnsCache.get('insertBeforeOnHead');
-                  if (!cachedInsertBefore) {
-                    cachedInsertBefore = getOverwrittenAppendChildOrInsertBefore(
-                      'insertBefore',
-                      getSandboxConfig,
-                      'head',
-                      isInvokedByMicroApp,
-                    ).bind(headElementTarget);
-                    proxyDocumentFnsCache.set('insertBeforeOnHead', cachedInsertBefore);
-                  }
-                  return cachedInsertBefore;
-                }
-
-                case 'removeChild': {
-                  let cachedRemoveChild = proxyDocumentFnsCache.get('removeChildOnHead');
-                  if (!cachedRemoveChild) {
-                    cachedRemoveChild = getNewRemoveChild(
-                      'removeChild',
-                      getSandboxConfig,
-                      'head',
-                      isInvokedByMicroApp,
-                    ).bind(headElementTarget);
-                    proxyDocumentFnsCache.set('removeChildOnHead', cachedRemoveChild);
-                  }
-                  return cachedRemoveChild;
-                }
-
-                default: {
-                  const value = headElementTarget[p as keyof HTMLHeadElement];
-                  return rebindTarget2Fn(headElementTarget, value, headReceiver);
-                }
-              }
-            },
-          });
+          return container.querySelector(qiankunHeadTagName) as HTMLHeadElement;
         }
 
         case 'body': {
-          const bodyElement = target.body;
-          return new Proxy(bodyElement, {
-            get(bodyElementTarget, p, bodyReceiver) {
-              switch (p) {
-                case 'appendChild': {
-                  let cachedAppendChild = proxyDocumentFnsCache.get('appendChildOnBody');
-                  if (!cachedAppendChild) {
-                    cachedAppendChild = getOverwrittenAppendChildOrInsertBefore(
-                      'appendChild',
-                      getSandboxConfig,
-                      'body',
-                      isInvokedByMicroApp,
-                    ).bind(bodyElementTarget);
-                    proxyDocumentFnsCache.set('appendChildOnBody', cachedAppendChild);
-                  }
-                  return cachedAppendChild;
-                }
-
-                case 'insertBefore': {
-                  let cachedInsertBefore = proxyDocumentFnsCache.get('insertBeforeOnBody');
-                  if (!cachedInsertBefore) {
-                    cachedInsertBefore = getOverwrittenAppendChildOrInsertBefore(
-                      'insertBefore',
-                      getSandboxConfig,
-                      'body',
-                      isInvokedByMicroApp,
-                    ).bind(bodyElementTarget);
-                    proxyDocumentFnsCache.set('insertBeforeOnBody', cachedInsertBefore);
-                  }
-                  return cachedInsertBefore;
-                }
-
-                case 'removeChild': {
-                  let cachedRemoveChild = proxyDocumentFnsCache.get('removeChildOnBody');
-                  if (!cachedRemoveChild) {
-                    cachedRemoveChild = getNewRemoveChild(
-                      'removeChild',
-                      getSandboxConfig,
-                      'body',
-                      isInvokedByMicroApp,
-                    ).bind(bodyElementTarget);
-                    proxyDocumentFnsCache.set('removeChildOnBody', cachedRemoveChild);
-                  }
-                  return cachedRemoveChild;
-                }
-
-                default: {
-                  const value = bodyElementTarget[p as keyof HTMLHeadElement];
-                  return rebindTarget2Fn(bodyElementTarget, value, bodyReceiver);
-                }
-              }
-            },
-          });
+          return container as HTMLBodyElement;
         }
 
         case 'querySelector': {
@@ -233,18 +112,11 @@ function patchDocument(sandbox: Sandbox): void {
             const selector = args[0];
             switch (selector) {
               case 'head': {
-                const containerConfig = sandboxConfigWeakMap.get(sandbox);
-                if (containerConfig) {
-                  const qiankunHead = getContainerHeadElement(containerConfig.getContainer());
+                return getContainerHeadElement(container);
+              }
 
-                  // proxied head in micro app should use the proxied appendChild/removeChild/insertBefore methods
-                  qiankunHead.appendChild = proxyDocument.head.appendChild;
-                  qiankunHead.insertBefore = proxyDocument.head.insertBefore;
-                  qiankunHead.removeChild = proxyDocument.head.removeChild;
-
-                  return qiankunHead;
-                }
-                break;
+              case 'body': {
+                return container;
               }
             }
 
@@ -261,10 +133,64 @@ function patchDocument(sandbox: Sandbox): void {
     },
   });
 
+  /*
+   * patch container head element after it is mounted
+   */
+  const observer = new MutationObserver(() => {
+    const containerHeadElement = container.querySelector(qiankunHeadTagName);
+    if (containerHeadElement) {
+      containerHeadElement.appendChild = getOverwrittenAppendChildOrInsertBefore(
+        document.head.appendChild,
+        getSandboxConfig,
+        'head',
+      );
+      containerHeadElement.insertBefore = getOverwrittenAppendChildOrInsertBefore(
+        document.head.insertBefore,
+        getSandboxConfig,
+        'head',
+      );
+      containerHeadElement.removeChild = getNewRemoveChild(document.head.removeChild, getSandboxConfig);
+
+      observer.disconnect();
+    }
+  });
+  observer.observe(container, { subtree: true, childList: true });
+
+  const containerBodyElement = container;
+  containerBodyElement.appendChild = getOverwrittenAppendChildOrInsertBefore(
+    document.body.appendChild,
+    getSandboxConfig,
+    'body',
+  );
+  containerBodyElement.insertBefore = getOverwrittenAppendChildOrInsertBefore(
+    document.head.insertBefore,
+    getSandboxConfig,
+    'body',
+  );
+  containerBodyElement.removeChild = getNewRemoveChild(document.body.removeChild, getSandboxConfig);
+
   sandbox.addIntrinsics({
     document: { value: proxyDocument, writable: false, enumerable: true, configurable: true },
   });
-  patchCacheWeakMap.set(sandbox, true);
+
+  patchCacheWeakMap.set(container, true);
+
+  return () => {
+    const container = getContainer();
+    const containerHeadElement = getContainerHeadElement(container);
+    // @ts-ignore
+    delete containerHeadElement.appendChild;
+    // @ts-ignore
+    delete containerHeadElement.insertBefore;
+    // @ts-ignore
+    delete containerHeadElement.removeChild;
+    // @ts-ignore
+    delete container.appendChild;
+    // @ts-ignore
+    delete container.insertBefore;
+    // @ts-ignore
+    delete container.removeChild;
+  };
 }
 
 function patchDOMPrototypeFns(): typeof noop {
@@ -350,7 +276,6 @@ export function patchStandardSandbox(
     sandboxConfig = {
       appName,
       sandbox,
-      getContainer,
       dynamicStyleSheetElements: [],
     };
     sandboxConfigWeakMap.set(sandbox, sandboxConfig);
@@ -358,7 +283,7 @@ export function patchStandardSandbox(
   // all dynamic style sheets are stored in proxy container
   const { dynamicStyleSheetElements } = sandboxConfig;
 
-  patchDocument(sandbox);
+  const unpatchDocument = patchDocument(sandbox, getContainer);
   const unpatchDOMPrototype = patchDOMPrototypeFns();
 
   if (!mounting) calcAppCount(appName, 'increase', 'bootstrapping');
@@ -367,6 +292,9 @@ export function patchStandardSandbox(
   return function free() {
     if (!mounting) calcAppCount(appName, 'decrease', 'bootstrapping');
     if (mounting) calcAppCount(appName, 'decrease', 'mounting');
+
+    // release the overwritten document
+    unpatchDocument();
 
     // release the overwritten prototype after all the micro apps unmounted
     if (isAllAppsUnmounted()) {
@@ -379,8 +307,8 @@ export function patchStandardSandbox(
     // the dynamic style sheet would be removed automatically while unmounting
 
     return function rebuild() {
+      const container = getContainer();
       rebuildCSSRules(dynamicStyleSheetElements as HTMLStyleElement[], (stylesheetElement) => {
-        const container = getContainer();
         if (!container.contains(stylesheetElement)) {
           const mountDom =
             stylesheetElement[styleElementTargetSymbol] === 'head' ? getContainerHeadElement(container) : container;

@@ -28,7 +28,7 @@ export default async function loadApp<T extends ObjectType>(
   lifeCycles?: LifeCycles<T>,
 ) {
   const { name: appName, entry, container } = app;
-  const { fetch = window.fetch, sandbox, globalContext = window, transformer } = configuration || {};
+  const { fetch = window.fetch, sandbox, globalContext = window, streamTransformer } = configuration || {};
 
   const markName = `[qiankun] App ${appName} Loading`;
   if (process.env.NODE_ENV === 'development') {
@@ -56,7 +56,9 @@ export default async function loadApp<T extends ObjectType>(
     unmountSandbox = () => sandboxContainer.unmount();
   }
 
-  const containerOpts: LoaderOpts = { fetch, sandbox: sandboxInstance, transformer };
+  const containerOpts: LoaderOpts = { fetch, sandbox: sandboxInstance, streamTransformer };
+
+  const lifecyclesPromise = loadEntry<MicroAppLifeCycles>(entry, microAppContainer, containerOpts);
 
   const assetPublicPath = calcPublicPath(entry);
   const {
@@ -68,9 +70,10 @@ export default async function loadApp<T extends ObjectType>(
   } = mergeWith({}, getAddOns(global, assetPublicPath), lifeCycles, (v1, v2) =>
     concat((v1 ?? []) as LifeCycleFn<T>, (v2 ?? []) as LifeCycleFn<T>),
   );
+  // FIXME Due to the asynchronous execution of loadEntry, the DOM of the sub-app is inserted synchronously through appendChild, and inline scripts are also executed synchronously. Therefore, the beforeLoad may need to rely on transformer configuration to coordinate and ensure the order of asynchronous operations.
   await execHooksChain(toArray(beforeLoad), app, global);
 
-  const lifecycles = await loadEntry<MicroAppLifeCycles>(entry, microAppContainer, containerOpts);
+  const lifecycles = await lifecyclesPromise;
   if (!lifecycles) throw new QiankunError(`${appName} entry ${entry} load failed as it not export lifecycles`);
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
     lifecycles,
@@ -79,9 +82,9 @@ export default async function loadApp<T extends ObjectType>(
     sandboxInstance?.latestSetProp,
   );
 
-  const parcelConfigGetter: ParcelConfigObjectGetter = (remountContainer) => {
-    microAppContainer = remountContainer;
+  let mountTimes = 1;
 
+  const parcelConfigGetter: ParcelConfigObjectGetter = (remountContainer) => {
     const parcelConfig: ParcelConfigObject = {
       name: appName,
 
@@ -100,8 +103,12 @@ export default async function loadApp<T extends ObjectType>(
           }
         },
         async () => {
-          // if micro app container has no children that means now is remounting, we need to rerender the app manually
-          if (microAppContainer.firstChild === null) {
+          microAppContainer = remountContainer;
+
+          // while the micro app is remounting, we need to load the entry manually
+          if (mountTimes > 1) {
+            initContainer(microAppContainer, appName, sandbox);
+            // html scripts should be removed to avoid repeatedly execute
             const htmlString = await getPureHTMLStringWithoutScripts(entry, fetch);
             await loadEntry(htmlString, microAppContainer, containerOpts);
           }
@@ -118,6 +125,9 @@ export default async function loadApp<T extends ObjectType>(
             performanceMeasure(measureName, markName);
           }
         },
+        async () => {
+          mountTimes++;
+        },
       ],
 
       unmount: [
@@ -127,10 +137,6 @@ export default async function loadApp<T extends ObjectType>(
         async () => execHooksChain(toArray(afterUnmount), app, global),
         async () => {
           clearContainer(microAppContainer);
-          // for gc
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          microAppContainer = null;
         },
       ],
     };
