@@ -1,6 +1,6 @@
 // todo
 export enum MainFrameworkTemplate {
-  'React18+Webpack(待开发勿选)' = '3',
+  'React18+Webpack' = 'react18-main',
   'React18+umi(待开发勿选)' = '2',
   'Vue3+Webpack' = 'vue3-main',
 }

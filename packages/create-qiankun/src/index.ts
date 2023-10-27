@@ -160,8 +160,8 @@ export async function createQiankunDefaultProject() {
     userChoose,
   });
 
-  console.log();
-  console.log(green(`\n Created ${userChoose.projectName}  success!`));
+  // console.log();
+  // console.log(green(`\n Created ${userChoose.projectName}  success!`));
   console.log();
   console.log(bold(green(`\n Done.`)));
 }
