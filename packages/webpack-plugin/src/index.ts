@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import type { Compiler, Configuration } from 'webpack';
+import type { Compiler, Configuration, Compilation } from 'webpack';
 import { RawSource } from 'webpack-sources';
 
 interface QiankunPluginOptions {
@@ -21,10 +21,10 @@ class QiankunPlugin {
     this.packageName = options.packageName || QiankunPlugin.packageJson.name || '';
   }
 
-  private static readPackageJson(): { name?: string } {
+  private static readPackageJson(): PackageJson {
     const projectRoot: string = process.cwd();
     const packageJsonPath: string = path.join(projectRoot, 'package.json');
-    return JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+    return JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8')) as PackageJson;
   }
 
   private static getWebpackVersion(): string {
@@ -33,7 +33,7 @@ class QiankunPlugin {
 
   apply(compiler: Compiler): void {
     this.configureWebpackOutput(compiler);
-    compiler.hooks.emit.tapAsync('QiankunPlugin', (compilation, callback) => {
+    compiler.hooks.emit.tapAsync('QiankunPlugin', (compilation: Compilation, callback: () => void) => {
       this.modifyHtmlAssets(compilation);
       callback();
     });
@@ -62,14 +62,15 @@ class QiankunPlugin {
     }
   }
 
-  private modifyHtmlAssets(compilation: any): void {
+  private modifyHtmlAssets(compilation: Compilation): void {
     Object.keys(compilation.assets).forEach((filename) => {
       if (filename.endsWith('.html')) {
         const htmlSource = compilation.assets[filename].source();
         const htmlString = typeof htmlSource === 'string' ? htmlSource : htmlSource.toString('utf-8');
 
         const modifiedHtml = this.addEntryAttributeToScripts(htmlString);
-        compilation.assets[filename] = new RawSource(modifiedHtml);
+        // eslint-disable-next-line
+        compilation.assets[filename] = new RawSource(modifiedHtml) as any;
       }
     });
   }
