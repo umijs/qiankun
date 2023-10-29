@@ -40,9 +40,20 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
 
   const res = isUrlHasOwnProtocol(entry) ? await fetch(entry) : new Response(entry, { status: 200, statusText: 'OK' });
   if (res.body) {
-    let noExternalScript = true;
     const entryScriptLoadedDeferred = new Deferred<T | void>();
-    const entryHTMLLoadedDeferred = new Deferred<void>();
+    const isEntryScript = (script: HTMLScriptElement): boolean => {
+      return script.hasAttribute('entry');
+    };
+    const onEntryLoaded = () => {
+      // the latest set prop is the entry script exposed global variable
+      if (sandbox?.latestSetProp) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        entryScriptLoadedDeferred.resolve(sandbox.globalThis[sandbox.latestSetProp as number] as T);
+      } else {
+        // TODO support non sandbox mode?
+        entryScriptLoadedDeferred.resolve({} as T);
+      }
+    };
 
     let readableStream = res.body.pipeThrough(new TextDecoderStream());
 
@@ -80,60 +91,40 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
            * Notice that we only support external script as entry script thus we could do resolve the promise after the script is loaded.
            */
           if (script.tagName === 'SCRIPT' && (script.src || script.dataset.src)) {
-            noExternalScript = false;
+            const prevOnload = script.onload;
+            script.onload = (...args) => {
+              script.onload = null;
 
-            /**
-             * Script with entry attribute or the last script is the entry script
-             */
-            const isEntryScript = async () => {
-              if (script.hasAttribute('entry')) return true;
+              if (entryScriptLoadedDeferred.status === 'pending' && isEntryScript(script)) {
+                onEntryLoaded();
+              }
 
-              await entryHTMLLoadedDeferred.promise;
-
-              const scripts = container.querySelectorAll('script[src]');
-              const lastScript = scripts[scripts.length - 1];
-              return lastScript === script;
+              prevOnload?.call(script, ...args);
             };
 
-            script.addEventListener(
-              'load',
-              // eslint-disable-next-line @typescript-eslint/no-misused-promises
-              async () => {
-                if (entryScriptLoadedDeferred.status === 'pending' && (await isEntryScript())) {
-                  // the latest set prop is the entry script exposed global variable
-                  if (sandbox?.latestSetProp) {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                    entryScriptLoadedDeferred.resolve(sandbox.globalThis[sandbox.latestSetProp as number] as T);
-                  } else {
-                    // TODO support non sandbox mode?
-                    entryScriptLoadedDeferred.resolve({} as T);
-                  }
-                }
-              },
-              { once: true },
-            );
-            script.addEventListener(
-              'error',
-              // eslint-disable-next-line @typescript-eslint/no-misused-promises
-              async (evt) => {
-                if (entryScriptLoadedDeferred.status === 'pending' && (await isEntryScript())) {
-                  entryScriptLoadedDeferred.reject(
-                    new QiankunError(`entry ${entry} loading failed as entry script trigger error -> ${evt.message}`),
-                  );
-                }
-              },
-              { once: true },
-            );
+            const prevOnError = script.onerror;
+            script.onerror = (...args) => {
+              script.onerror = null;
+
+              if (entryScriptLoadedDeferred.status === 'pending' && isEntryScript(script)) {
+                const eventMsg = typeof args[0] === 'string' ? args[0] : (args[0] as ErrorEvent).message;
+                entryScriptLoadedDeferred.reject(
+                  new QiankunError(`entry ${entry} loading failed as entry script trigger error -> ${eventMsg}`),
+                );
+              }
+
+              prevOnError?.call(script, ...args);
+            };
           }
 
           return transformedNode;
         }),
       )
       .then(() => {
-        entryHTMLLoadedDeferred.resolve();
-
-        if (noExternalScript) {
-          entryScriptLoadedDeferred.resolve();
+        // while the entry html stream is finished but there is no entry script found(entryScriptLoadedDeferred is not be resolved)
+        // we could use the latest set prop in sandbox to resolve the entry promise
+        if (entryScriptLoadedDeferred.status === 'pending') {
+          onEntryLoaded();
         }
       })
       .catch((e) => {
