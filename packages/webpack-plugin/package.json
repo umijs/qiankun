@@ -17,10 +17,12 @@
   "peerDependencies": {
     "webpack": "^4.0.0 || ^5.0.0"
   },
+  "dependencies": {
+    "webpack-sources": "^3.2.3"
+  },
   "author": "Hermanna",
   "license": "MIT",
   "devDependencies": {
-    "@types/webpack-sources": "^3.2.1",
-    "webpack-sources": "^3.2.3"
+    "@types/webpack-sources": "^3.2.1"
   }
 }
