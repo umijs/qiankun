@@ -1,5 +1,12 @@
 # qiankun
 
+## 3.0.0-rc.10
+
+### Patch Changes
+
+- Updated dependencies [1b0ffa2f]
+  - @qiankunjs/loader@0.0.1-rc.9
+
 ## 3.0.0-rc.9
 
 ### Patch Changes

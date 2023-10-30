@@ -1,5 +1,11 @@
 # @qiankunjs/loader
 
+## 0.0.1-rc.9
+
+### Patch Changes
+
+- 1b0ffa2f: fix(loader): we should invoke our script load listener before its own
+
 ## 0.0.1-rc.8
 
 ### Patch Changes

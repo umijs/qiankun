@@ -1,5 +1,11 @@
 # @qiankunjs/react
 
+## 0.0.1-rc.7
+
+### Patch Changes
+
+- qiankun@3.0.0-rc.10
+
 ## 0.0.1-rc.6
 
 ### Patch Changes
