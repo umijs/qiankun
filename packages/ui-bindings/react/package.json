@@ -1,6 +1,6 @@
 {
   "name": "@qiankunjs/react",
-  "version": "0.0.1-rc.6",
+  "version": "0.0.1-rc.7",
   "description": "react binding for qiankun",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -23,16 +23,13 @@
     "react": "^18.2.0"
   },
   "peerDependencies": {
-    "qiankun": "3.0.0-rc.9",
+    "qiankun": "3.x || 2.x",
     "react": ">=16.9.0",
     "react-dom": ">=16.9.0"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
-  "files": [
-    "dist",
-    "src"
-  ],
+  "files": ["dist", "src"],
   "repository": "git@github.com:umijs/qiankun.git"
 }

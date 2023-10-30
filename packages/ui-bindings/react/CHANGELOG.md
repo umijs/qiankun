@@ -1,5 +1,11 @@
 # @qiankunjs/react
 
+## 0.0.1-rc.7
+
+### Patch Changes
+
+- fix: use qiankun 2.x or 3.x as peerDependencies
+
 ## 0.0.1-rc.6
 
 ### Patch Changes
