@@ -1,34 +1,13 @@
 import { concat, isEqual, mergeWith, noop } from 'lodash';
 import type { AppConfiguration, LifeCycleFn, LifeCycles, MicroApp as MicroAppTypeDefinition } from 'qiankun';
 import { loadMicroApp } from 'qiankun';
-import type { Ref } from 'react';
+import { type SharedProps, type MicroAppType, type SharedSlots, unmountMicroApp } from '@qiankunjs/ui-shared';
+import type { LifeCycleFn } from 'qiankun';
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import ErrorBoundary from './ErrorBoundary';
 import MicroAppLoader from './MicroAppLoader';
 
-type MicroAppType = {
-  _unmounting?: boolean;
-  _updatingPromise?: Promise<null>;
-  _updatingTimestamp?: number;
-} & MicroAppTypeDefinition;
-
-export type Props = {
-  name: string;
-  entry: string;
-  settings?: AppConfiguration;
-  lifeCycles?: LifeCycles<Record<string, unknown>>;
-  loader?: (loading: boolean) => React.ReactNode;
-  errorBoundary?: (error: Error) => React.ReactNode;
-  autoSetLoading?: boolean;
-  autoCaptureError?: boolean;
-  // 仅开启 loader 时需要
-  wrapperClassName?: string;
-  className?: string;
-} & Record<string, unknown>;
-
-async function unmountMicroApp(microApp: MicroAppType) {
-  await microApp.mountPromise.then(() => microApp.unmount());
-}
+export type Props = SharedProps & SharedSlots<React.ReactNode> & Record<string, unknown>;
 
 function useDeepCompare<T>(value: T): T {
   const ref = useRef<T>(value);

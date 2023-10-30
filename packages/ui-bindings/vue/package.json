@@ -1,14 +1,15 @@
 {
-  "name": "@qiankunjs/react",
-  "version": "0.0.1-rc.12",
-  "description": "react binding for qiankun",
+  "name": "@qiankunjs/vue",
+  "version": "0.0.0",
+  "description": "vue binding for qiankun",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
-  "types": "./dist/esm/index.d.ts",
+  "types": "./src/index.ts",
   "sideEffects": false,
   "scripts": {
     "build": "father build",
-    "dev": "father dev"
+    "dev": "father dev",
+    "test": "cross-env NODE_ENV=test vitest"
   },
   "author": "Bravepg",
   "license": "MIT",
@@ -16,22 +17,21 @@
     "lodash": "^4.17.11"
   },
   "devDependencies": {
-    "@types/react": "^18.0.0",
-    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-vue": "^9.18.1",
     "qiankun": "workspace:^",
-    "react": "^18.2.0",
+    "vue": "^3.3.7",
     "@qiankunjs/ui-shared": "workspace:^"
   },
   "peerDependencies": {
-    "qiankun": "3.0.0-rc.15",
-    "react": ">=16.9.0",
-    "react-dom": ">=16.9.0"
+    "qiankun": "3.0.0-rc.9",
+    "vue": "^3.3.7"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "repository": "git@github.com:umijs/qiankun.git"
 }

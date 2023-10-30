@@ -1,4 +1,4 @@
-# qiankun react binding
+# qiankun vue binding
 
 ## Usage
 
