@@ -6,7 +6,8 @@
     "qiankun": "3.0.0",
     "@qiankunjs/sandbox": "0.0.1",
     "@qiankunjs/shared": "0.0.1",
-    "@qiankunjs/react": "0.0.1-rc.1"
+    "@qiankunjs/react": "0.0.1-rc.1",
+    "@qiankunjs/webpack-plugin": "0.0.1"
   },
   "changesets": [
     "clever-dragons-ring",
@@ -14,13 +15,16 @@
     "large-jokes-smile",
     "long-flies-repair",
     "loud-penguins-crash",
+    "lucky-bikes-scream",
     "metal-cougars-help",
+    "modern-kiwis-tap",
     "ninety-rivers-check",
     "rare-lobsters-marry",
     "selfish-lamps-thank",
     "shiny-jeans-sip",
     "short-kings-explain",
     "sour-roses-smile",
+    "thin-ways-allow",
     "three-hornets-hammer",
     "tough-beers-grow",
     "tough-phones-chew",
