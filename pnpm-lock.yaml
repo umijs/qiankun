@@ -159,13 +159,13 @@ importers:
       webpack:
         specifier: ^4.0.0 || ^5.0.0
         version: 5.88.2(webpack-cli@4.10.0)
+      webpack-sources:
+        specifier: ^3.2.3
+        version: 3.2.3
     devDependencies:
       '@types/webpack-sources':
         specifier: ^3.2.1
         version: 3.2.2
-      webpack-sources:
-        specifier: ^3.2.3
-        version: 3.2.3
 
   packages/webpack-plugin/tests/webpack4:
     devDependencies:
