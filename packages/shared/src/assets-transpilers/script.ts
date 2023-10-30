@@ -5,7 +5,7 @@
 
 import type { MatchResult } from '../module-resolver';
 import { getEntireUrl } from '../utils';
-import type { AssetsTranspilerOpts } from './types';
+import type { AssetsTranspilerOpts, ScriptTranspilerOpts } from './types';
 import { Mode } from './types';
 import { createReusingObjectUrl, isValidJavaScriptType } from './utils';
 
@@ -74,7 +74,7 @@ export const preTranspile = (
 export default function transpileScript(
   script: HTMLScriptElement,
   baseURI: string,
-  opts: AssetsTranspilerOpts,
+  opts: ScriptTranspilerOpts,
 ): HTMLScriptElement {
   // Can't use script.src directly, because it will be resolved to absolute path by browser with Node.baseURI
   // Such as <script src="./foo.js"></script> will be resolved to http://localhost:8000/foo.js while read script.src
@@ -110,15 +110,21 @@ export default function transpileScript(
 
       void fetch(src, { credentials, priority })
         .then((res) => res.text())
-        .then((code) => {
+        .then(async (code) => {
+          const { prevSyncScriptPromise, scriptFetchedDeferred } = opts;
           const codeFactory = sandbox!.makeEvaluateFactory(code, src);
 
-          // HTMLScriptElement default fetchPriority is 'auto', we should set it to 'high' to make it execute earlier while it's not async script
           if (syncMode) {
+            // if it's a sync script and there is a previous sync script, we should wait it to finish fetching
+            if (prevSyncScriptPromise) {
+              await prevSyncScriptPromise;
+            }
+            // HTMLScriptElement default fetchPriority is 'auto', we should set it to 'high' to make it execute earlier while it's not async script
             script.fetchPriority = 'high';
           }
 
           script.src = URL.createObjectURL(new Blob([codeFactory], { type: 'text/javascript' }));
+          scriptFetchedDeferred?.resolve();
         });
 
       return script;
@@ -164,6 +170,4 @@ export default function transpileScript(
       return script;
     }
   }
-
-  // TODO find entry exports
 }

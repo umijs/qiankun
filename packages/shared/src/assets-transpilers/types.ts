@@ -4,6 +4,7 @@
  */
 import type { BaseLoaderOpts } from '../common';
 import type { MatchResult } from '../module-resolver';
+import type { Deferred } from '../utils';
 
 export type BaseTranspilerOpts = BaseLoaderOpts & {
   moduleResolver?: (url: string) => MatchResult | undefined;
@@ -13,6 +14,12 @@ export type BaseTranspilerOpts = BaseLoaderOpts & {
 };
 
 export type AssetsTranspilerOpts = BaseTranspilerOpts & { rawNode: Node };
+
+export type ScriptTranspilerOpts = AssetsTranspilerOpts &
+  (
+    | { prevSyncScriptPromise: Promise<void>; scriptFetchedDeferred: Deferred<void> }
+    | { prevSyncScriptPromise?: undefined; scriptFetchedDeferred?: undefined }
+  );
 
 export enum Mode {
   REMOTE_ASSETS_IN_SANDBOX = 'RAIS',

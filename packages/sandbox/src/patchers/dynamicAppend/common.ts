@@ -3,7 +3,8 @@
  * @author Kuitos
  * @since 2019-10-21
  */
-import { transpileAssets } from '@qiankunjs/shared';
+import type { ScriptTranspilerOpts } from '@qiankunjs/shared';
+import { Deferred, transpileAssets } from '@qiankunjs/shared';
 import { qiankunHeadTagName } from '../../consts';
 import type { SandboxConfig } from './types';
 
@@ -14,6 +15,8 @@ const STYLE_TAG_NAME = 'STYLE';
 export const styleElementTargetSymbol = Symbol('target');
 export const styleElementRefNodeNo = Symbol('refNodeNo');
 const overwrittenSymbol = Symbol('qiankun-overwritten');
+
+const scriptFetchedDeferredWeakMap = new WeakMap<HTMLScriptElement, Deferred<void>>();
 
 type DynamicDomMutationTarget = 'head' | 'body';
 
@@ -134,12 +137,10 @@ export function getOverwrittenAppendChildOrInsertBefore(
     }
 
     if (element.tagName) {
-      const { dynamicStyleSheetElements, sandbox } = containerConfig;
-
       switch (element.tagName) {
         case LINK_TAG_NAME:
         case STYLE_TAG_NAME: {
-          const stylesheetElement = newChild as unknown as HTMLLinkElement | HTMLStyleElement;
+          const stylesheetElement = element as HTMLLinkElement | HTMLStyleElement;
           Object.defineProperty(stylesheetElement, styleElementTargetSymbol, {
             value: target,
             writable: true,
@@ -158,6 +159,7 @@ export function getOverwrittenAppendChildOrInsertBefore(
           if (typeof refNo === 'number' && refNo !== -1) {
             defineNonEnumerableProperty(stylesheetElement, styleElementRefNodeNo, refNo);
           }
+          const { dynamicStyleSheetElements } = containerConfig;
           // record dynamic style elements after insert succeed
           dynamicStyleSheetElements.push(stylesheetElement);
 
@@ -165,10 +167,39 @@ export function getOverwrittenAppendChildOrInsertBefore(
         }
 
         case SCRIPT_TAG_NAME: {
-          // TODO paas fetch configuration and current entry url as baseURI
-          const node = transpileAssets(element, location.href, { fetch, sandbox, rawNode: element });
+          const scriptElement = element as HTMLScriptElement;
+          const { sandbox, dynamicSyncScriptElements } = containerConfig;
 
-          return appendChild.call(this, node, refChild) as T;
+          const syncMode = !scriptElement.hasAttribute('async');
+          const scriptIndex = dynamicSyncScriptElements.indexOf(scriptElement);
+          const prevSyncScriptElement =
+            syncMode && scriptIndex > 0 ? dynamicSyncScriptElements[scriptIndex - 1] : undefined;
+          const prevSyncScriptPromise = prevSyncScriptElement
+            ? scriptFetchedDeferredWeakMap.get(prevSyncScriptElement)?.promise
+            : undefined;
+          const scriptFetchedDeferred = syncMode
+            ? new Deferred<void>(() => {
+                dynamicSyncScriptElements.splice(scriptIndex, 1);
+                scriptFetchedDeferredWeakMap.delete(scriptElement);
+              })
+            : undefined;
+
+          const node = transpileAssets(scriptElement, location.href, {
+            fetch,
+            sandbox,
+            rawNode: scriptElement,
+            prevSyncScriptPromise,
+            scriptFetchedDeferred,
+          } as ScriptTranspilerOpts);
+
+          const result = appendChild.call(this, node, refChild) as T;
+
+          if (syncMode) {
+            scriptFetchedDeferredWeakMap.set(scriptElement, scriptFetchedDeferred!);
+            dynamicSyncScriptElements.push(scriptElement);
+          }
+
+          return result;
         }
 
         default:
