@@ -28,7 +28,10 @@
     "type": "git",
     "url": "git+https://github.com/kuitos/qiankun.git"
   },
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "author": "Kuitos",
   "license": "MIT",
   "bugs": {

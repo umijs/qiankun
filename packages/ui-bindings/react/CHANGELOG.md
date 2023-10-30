@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- qiankun@3.0.0-rc.10
+- fix: use qiankun 2.x or 3.x as peerDependencies
 
 ## 0.0.1-rc.6
 
