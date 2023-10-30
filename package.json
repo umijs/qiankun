@@ -8,7 +8,7 @@
     "start:example": "pnpm run build && npm run start:main && npm run start:react15",
     "start:main": "cd ./examples/main && npm start",
     "start:react15": "cd ./examples/react15 && npm start",
-    "build": "pnpm -r --filter=./packages/**/* --filter=!./packages/**/tests/* run build,
+    "build": "pnpm -r --filter=./packages/**/* --filter=!./packages/**/tests/* run build",
     "prerelease:alpha": "changeset pre enter alpha && changeset && changeset version",
     "release:alpha": "pnpm run build && changeset publish && changeset pre exit",
     "lint": "eslint packages/",
