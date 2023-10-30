@@ -6,7 +6,7 @@
     "qiankun": "3.0.0",
     "@qiankunjs/sandbox": "0.0.1",
     "@qiankunjs/shared": "0.0.1",
-    "@qiankunjs/react": "0.0.1-rc.1",
+    "@qiankunjs/react": "0.0.1",
     "@qiankunjs/webpack-plugin": "0.0.1"
   },
   "changesets": [
