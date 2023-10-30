@@ -1,5 +1,8 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { name } = require('./package');
+const QiankunPlugin  = require('../../packages/webpack-plugin/dist/cjs');
+
+
 
 module.exports = {
   entry: './index.js',
@@ -51,6 +54,7 @@ module.exports = {
         collapseWhitespace: true,
       },
     }),
+    new QiankunPlugin(),
   ],
   externals: {
     react: 'React',
