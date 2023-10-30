@@ -107,6 +107,10 @@ Visit `http://localhost:7099`.
 
 See [Qiankun 3.0 Roadmap](https://github.com/umijs/qiankun/discussions/1378)
 
+## 🤝 Contributing
+
+See [contributing guide](./CONTRIBUTING.md).
+
 ## 👥 Contributors
 
 Thanks to all the contributors!
