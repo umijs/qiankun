@@ -89,6 +89,7 @@ export async function createQiankunDefaultProject() {
         },
         {
           name: 'subAppNameList',
+          min: 1,
           type: subAppNameList
             ? null
             : (prev: string, values: PromptAnswer) => {
