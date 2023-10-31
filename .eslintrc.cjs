@@ -4,6 +4,7 @@ const jsConfig = {
   extends: ['eslint:recommended', 'prettier'],
   rules: {
     'no-else-return': ['error', { allowElseIf: false }],
+    'object-shorthand': ['error', 'properties'],
   },
 };
 

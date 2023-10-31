@@ -2,7 +2,6 @@
  * @author Kuitos
  * @since 2023-04-26
  */
-import { noop, once } from 'lodash';
 
 // eslint-disable-next-line @typescript-eslint/unbound-method
 export const { create, defineProperty, getOwnPropertyDescriptor, getOwnPropertyNames, freeze, keys } = Object;
@@ -11,28 +10,35 @@ export const hasOwnProperty = (caller: unknown, p: PropertyKey) => Object.protot
 export class Deferred<T> {
   promise: Promise<T>;
 
-  status: 'pending' | 'fulfilled' | 'rejected' = 'pending';
+  #status: 'pending' | 'fulfilled' | 'rejected' = 'pending';
 
   resolve!: (value: T | PromiseLike<T>) => void;
 
   reject!: (reason?: unknown) => void;
 
-  constructor(resolvedCb?: (value: T | PromiseLike<T>) => void, rejectedCb?: (reason?: unknown) => void) {
-    const onceResolvedCb = resolvedCb ? once(resolvedCb) : noop;
-    const onceRejectCb = rejectedCb ? once(rejectedCb) : noop;
-
+  constructor() {
     this.promise = new Promise((resolve, reject) => {
       this.resolve = (value: T | PromiseLike<T>) => {
-        this.status = 'fulfilled';
+        this.#status = 'fulfilled';
         resolve(value);
-        onceResolvedCb(value);
       };
       this.reject = (reason?: unknown) => {
-        this.status = 'rejected';
+        this.#status = 'rejected';
         reject(reason);
-        onceRejectCb(reason);
       };
     });
+  }
+
+  isSettled(): boolean {
+    return this.#status !== 'pending';
+  }
+}
+
+export async function waitUntilSettled(promise: Promise<void>): Promise<void> {
+  try {
+    await promise;
+  } catch {
+    // do nothing
   }
 }
 

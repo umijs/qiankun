@@ -4,7 +4,7 @@
  * @since 2019-10-21
  */
 import type { ScriptTranspilerOpts } from '@qiankunjs/shared';
-import { Deferred, transpileAssets } from '@qiankunjs/shared';
+import { Deferred, transpileAssets, waitUntilSettled } from '@qiankunjs/shared';
 import { qiankunHeadTagName } from '../../consts';
 import type { SandboxConfig } from './types';
 
@@ -168,35 +168,44 @@ export function getOverwrittenAppendChildOrInsertBefore(
 
         case SCRIPT_TAG_NAME: {
           const scriptElement = element as HTMLScriptElement;
-          const { sandbox, dynamicSyncScriptElements } = containerConfig;
+          const { sandbox, dynamicExternalSyncScriptElements } = containerConfig;
 
-          const syncMode = !scriptElement.hasAttribute('async');
-          const scriptIndex = dynamicSyncScriptElements.indexOf(scriptElement);
-          const prevSyncScriptElement =
-            syncMode && scriptIndex > 0 ? dynamicSyncScriptElements[scriptIndex - 1] : undefined;
-          const prevSyncScriptPromise = prevSyncScriptElement
-            ? scriptFetchedDeferredWeakMap.get(prevSyncScriptElement)?.promise
-            : undefined;
-          const scriptFetchedDeferred = syncMode
-            ? new Deferred<void>(() => {
-                dynamicSyncScriptElements.splice(scriptIndex, 1);
-                scriptFetchedDeferredWeakMap.delete(scriptElement);
-              })
-            : undefined;
+          const externalSyncMode = scriptElement.hasAttribute('src') && !scriptElement.hasAttribute('async');
 
-          const node = transpileAssets(scriptElement, location.href, {
+          let scriptIndex = -1;
+          let prevScriptTranspiledDeferred: Deferred<void> | undefined;
+          let scriptTranspiledDeferred: Deferred<void> | undefined;
+
+          if (externalSyncMode) {
+            scriptIndex = dynamicExternalSyncScriptElements.indexOf(scriptElement);
+            const prevSyncScriptElement =
+              scriptIndex > 0 ? dynamicExternalSyncScriptElements[scriptIndex - 1] : undefined;
+            prevScriptTranspiledDeferred = prevSyncScriptElement
+              ? scriptFetchedDeferredWeakMap.get(prevSyncScriptElement)
+              : undefined;
+            scriptTranspiledDeferred = new Deferred<void>();
+          }
+
+          const transpiledScriptElement = transpileAssets(scriptElement, location.href, {
             fetch,
             sandbox,
             rawNode: scriptElement,
-            prevSyncScriptPromise,
-            scriptFetchedDeferred,
+            prevScriptTranspiledDeferred,
+            scriptTranspiledDeferred,
           } as ScriptTranspilerOpts);
 
-          const result = appendChild.call(this, node, refChild) as T;
+          const result = appendChild.call(this, transpiledScriptElement, refChild) as T;
 
-          if (syncMode) {
-            scriptFetchedDeferredWeakMap.set(scriptElement, scriptFetchedDeferred!);
-            dynamicSyncScriptElements.push(scriptElement);
+          // Previously it was an external synchronous script, and after the transpile, there was no src attribute, indicating that the script needs to wait for the src to be filled
+          if (externalSyncMode && !transpiledScriptElement.hasAttribute('src')) {
+            dynamicExternalSyncScriptElements.push(scriptElement);
+            scriptFetchedDeferredWeakMap.set(scriptElement, scriptTranspiledDeferred!);
+
+            void waitUntilSettled(scriptTranspiledDeferred!.promise).then(() => {
+              // we should clear the memory regardless the script loaded or failed
+              dynamicExternalSyncScriptElements.splice(scriptIndex, 1);
+              scriptFetchedDeferredWeakMap.delete(scriptElement);
+            });
           }
 
           return result;

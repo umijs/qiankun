@@ -90,31 +90,29 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
            * otherwise we need to wait until the last script is executed.
            * Notice that we only support external script as entry script thus we could do resolve the promise after the script is loaded.
            */
-          if (script.tagName === 'SCRIPT' && (script.src || script.dataset.src)) {
-            const prevOnload = script.onload;
-            script.onload = (...args) => {
-              script.onload = null;
+          if (script.tagName === 'SCRIPT' && (script.src || script.dataset.src) && isEntryScript(script)) {
+            const onScriptComplete = (
+              prevListener: typeof HTMLScriptElement.prototype.onload | typeof HTMLScriptElement.prototype.onerror,
+              event: Event,
+            ) => {
+              script.onload = script.onerror = null;
 
-              if (entryScriptLoadedDeferred.status === 'pending' && isEntryScript(script)) {
-                onEntryLoaded();
+              // In order to avoid the inline script to be executed immediately after the prev onload is executed, resulting in the failure of the sandbox to obtain the latestSetProp, here we must resolve the entryScriptLoadedDeferred firstly
+              if (!entryScriptLoadedDeferred.isSettled()) {
+                if (event.type === 'load') {
+                  onEntryLoaded();
+                } else {
+                  entryScriptLoadedDeferred.reject(
+                    new QiankunError(`entry ${entry} load failed as entry script ${script.dataset.src} load failed}`),
+                  );
+                }
               }
 
-              prevOnload?.call(script, ...args);
+              prevListener?.call(script, event);
             };
 
-            const prevOnError = script.onerror;
-            script.onerror = (...args) => {
-              script.onerror = null;
-
-              if (entryScriptLoadedDeferred.status === 'pending' && isEntryScript(script)) {
-                const eventMsg = typeof args[0] === 'string' ? args[0] : (args[0] as ErrorEvent).message;
-                entryScriptLoadedDeferred.reject(
-                  new QiankunError(`entry ${entry} loading failed as entry script trigger error -> ${eventMsg}`),
-                );
-              }
-
-              prevOnError?.call(script, ...args);
-            };
+            script.onload = onScriptComplete.bind(null, script.onload);
+            script.onerror = onScriptComplete.bind(null, script.onerror) as typeof HTMLScriptElement.prototype.onerror;
           }
 
           return transformedNode;
@@ -123,7 +121,7 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
       .then(() => {
         // while the entry html stream is finished but there is no entry script found(entryScriptLoadedDeferred is not be resolved)
         // we could use the latest set prop in sandbox to resolve the entry promise
-        if (entryScriptLoadedDeferred.status === 'pending') {
+        if (!entryScriptLoadedDeferred.isSettled()) {
           onEntryLoaded();
         }
       })

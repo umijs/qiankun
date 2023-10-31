@@ -17,8 +17,8 @@ export type AssetsTranspilerOpts = BaseTranspilerOpts & { rawNode: Node };
 
 export type ScriptTranspilerOpts = AssetsTranspilerOpts &
   (
-    | { prevSyncScriptPromise: Promise<void>; scriptFetchedDeferred: Deferred<void> }
-    | { prevSyncScriptPromise?: undefined; scriptFetchedDeferred?: undefined }
+    | { prevScriptTranspiledDeferred: Deferred<void>; scriptTranspiledDeferred: Deferred<void> }
+    | { prevScriptTranspiledDeferred?: undefined; scriptTranspiledDeferred?: undefined }
   );
 
 export enum Mode {
