@@ -1,4 +1,7 @@
 import type { AppConfiguration, MicroApp as MicroAppTypeDefinition, LifeCycles } from 'qiankun';
+import { loadMicroApp } from 'qiankun';
+import { mergeWith, concat } from 'lodash';
+import type { LifeCycleFn } from 'qiankun';
 
 export type MicroAppType = {
   _unmounting?: boolean;
@@ -26,4 +29,120 @@ export type SharedSlots<T> = {
 
 export async function unmountMicroApp(microApp: MicroAppType) {
   await microApp.mountPromise.then(() => microApp.unmount());
+}
+
+export function mountMicroApp({
+  setLoading,
+  setError,
+  setApp,
+  propsFromParams,
+  container,
+  props,
+}: {
+  setLoading?: (loading: boolean) => void;
+  setError?: (error?: Error) => void;
+  setApp?: (app?: MicroAppType) => void;
+  propsFromParams?: Record<string, unknown>;
+  props: SharedProps;
+  container?: HTMLDivElement;
+}) {
+  setError?.(undefined);
+  setLoading?.(true);
+
+  const configuration = {
+    globalContext: window,
+    ...(props.settings || {}),
+  };
+
+  const microApp = loadMicroApp(
+    {
+      name: props.name,
+      entry: props.entry,
+      container: container!,
+      props: propsFromParams,
+    },
+    configuration,
+    mergeWith(
+      {},
+      props.lifeCycles,
+      (v1: LifeCycleFn<Record<string, unknown>>, v2: LifeCycleFn<Record<string, unknown>>) => concat(v1, v2),
+    ),
+  );
+
+  setApp?.(microApp);
+
+  microApp.mountPromise
+    .then(() => {
+      if (props.autoSetLoading) {
+        setLoading?.(false);
+      }
+    })
+    .catch((err: Error) => {
+      setError?.(err);
+      setLoading?.(false);
+    });
+
+  (['loadPromise', 'bootstrapPromise'] as const).forEach((key) => {
+    const promise = microApp[key];
+
+    promise.catch((e: Error) => {
+      setError?.(e);
+      setLoading?.(false);
+    });
+  });
+}
+
+export function updateMicroApp({
+  name,
+  getApp,
+  setLoading,
+  propsFromParams,
+  source,
+}: {
+  name?: string;
+  getApp?: () => MicroAppType | undefined;
+  setLoading?: (loading: boolean) => void;
+  propsFromParams?: Record<string, unknown>;
+  source?: string;
+}) {
+  const microApp = getApp?.();
+
+  if (microApp) {
+    if (!microApp._updatingPromise) {
+      // 初始化 updatingPromise 为 microApp.mountPromise，从而确保后续更新是在应用 mount 完成之后
+      microApp._updatingPromise = microApp.mountPromise;
+      microApp._updatingTimestamp = Date.now();
+    } else {
+      // 确保 microApp.update 调用是跟组件状态变更顺序一致的，且后一个微应用更新必须等待前一个更新完成
+      microApp._updatingPromise = microApp._updatingPromise.then(() => {
+        const canUpdate = (microApp: MicroAppType) =>
+          microApp.update && microApp.getStatus() === 'MOUNTED' && !microApp._unmounting;
+        if (canUpdate(microApp)) {
+          const props = {
+            ...propsFromParams,
+            setLoading(l: boolean) {
+              setLoading?.(l);
+            },
+          };
+
+          if (process.env.NODE_ENV === 'development') {
+            const updatingTimestamp = microApp._updatingTimestamp!;
+            if (Date.now() - updatingTimestamp < 200) {
+              console.warn(
+                `[@qiankunjs/${source}] It seems like microApp ${name} is updating too many times in a short time(200ms), you may need to do some optimization to avoid the unnecessary re-rendering.`,
+              );
+            }
+
+            console.info(`[@qiankunjs/${source}] MicroApp ${name} is updating with props: `, props);
+            microApp._updatingTimestamp = Date.now();
+          }
+
+          // 返回 microApp.update 形成链式调用
+          return microApp.update?.(props);
+        }
+
+        return void 0;
+      });
+    }
+  }
 }
