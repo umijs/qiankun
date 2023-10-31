@@ -37,8 +37,10 @@ export class Deferred<T> {
 export async function waitUntilSettled(promise: Promise<void>): Promise<void> {
   try {
     await promise;
-  } catch {
-    // do nothing
+  } catch (e) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('waitUntilSettled error', e);
+    }
   }
 }
 
