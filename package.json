@@ -22,22 +22,23 @@
     "prepare": "husky install && dumi setup"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.26.1",
-    "@types/lodash": "^4.14.129",
-    "@types/node": "^18.15.3",
-    "@typescript-eslint/eslint-plugin": "^6.3.0",
-    "@typescript-eslint/parser": "^6.3.0",
-    "babel-plugin-import": "^1.12.1",
-    "cross-env": "^7.0.2",
-    "dumi": "^2.2.12",
-    "eslint": "^8.46.0",
+    "@changesets/cli": "^2.26.2",
+    "@types/lodash": "^4.14.200",
+    "@types/node": "^18.18.8",
+    "@typescript-eslint/eslint-plugin": "^6.9.1",
+    "@typescript-eslint/parser": "^6.9.1",
+    "babel-plugin-import": "^1.13.8",
+    "cross-env": "^7.0.3",
+    "dumi": "^2.2.14",
+    "eslint": "^8.52.0",
     "eslint-config-prettier": "^9.0.0",
-    "father": "^4.3.1",
+    "eslint-formatter-pretty": "^5.0.0",
+    "father": "^4.3.6",
     "husky": "^8.0.3",
-    "lint-staged": "^9.4.2",
+    "lint-staged": "^9.5.0",
     "prettier": "^3.0.3",
-    "typescript": "^5.1.6",
-    "vitest": "^0.34.1"
+    "typescript": "^5.2.2",
+    "vitest": "^0.34.6"
   },
   "repository": {
     "type": "git",
@@ -49,9 +50,15 @@
   },
   "homepage": "https://github.com/kuitos/qiankun#readme",
   "lint-staged": {
-    "**/*.{js,ts,json,css,md}": ["prettier --write --ignore-unknown"],
-    "packages/*/{src,types}/**/*.ts": ["eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty --fix"],
-    "packages/**/*.d.ts": ["eslint --ext .ts"]
+    "**/*.{js,ts,json,css,md}": [
+      "prettier --write --ignore-unknown"
+    ],
+    "packages/*/{src,types}/**/*.ts": [
+      "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty --fix"
+    ],
+    "packages/**/*.d.ts": [
+      "eslint --ext .ts"
+    ]
   },
   "packageManager": "pnpm@8.4.0",
   "publishConfig": {

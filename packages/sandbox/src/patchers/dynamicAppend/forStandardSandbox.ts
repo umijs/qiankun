@@ -275,7 +275,7 @@ export function patchStandardSandbox(
       appName,
       sandbox,
       dynamicStyleSheetElements: [],
-      dynamicSyncScriptElements: [],
+      dynamicExternalSyncScriptElements: [],
     };
     sandboxConfigWeakMap.set(sandbox, sandboxConfig);
   }
