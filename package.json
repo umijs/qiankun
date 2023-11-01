@@ -16,7 +16,7 @@
     "prettier:check": "prettier -c .",
     "docs:dev": "dumi dev",
     "docs:build": "dumi build",
-    "ci": "pnpm run lint && pnpm run prettier:check && pnpm run build",
+    "ci": "pnpm run build && pnpm run lint && pnpm run prettier:check",
     "ci:publish": "pnpm run build && changeset publish",
     "test": "pnpm -r run test",
     "prepare": "husky install && dumi setup"
