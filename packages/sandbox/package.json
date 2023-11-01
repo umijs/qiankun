@@ -4,16 +4,13 @@
   "description": "qiankun sandbox",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
-  "types": "./src/index.ts",
+  "types": "./dist/esm/index.d.ts",
   "sideEffects": false,
   "scripts": {
     "build": "father build",
     "test": "cross-env NODE_ENV=test vitest --config ../../vitest.config.ts"
   },
-  "files": [
-    "dist",
-    "src"
-  ],
+  "files": ["dist"],
   "author": "Kuitos",
   "license": "MIT",
   "dependencies": {

@@ -4,7 +4,7 @@
   "description": "",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
-  "types": "./src/index.ts",
+  "types": "./dist/esm/index.d.ts",
   "sideEffects": false,
   "scripts": {
     "build": "father build",
@@ -26,8 +26,5 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
-  "files": [
-    "dist",
-    "src"
-  ]
+  "files": ["dist"]
 }
