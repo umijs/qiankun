@@ -59,16 +59,37 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
   };
 
   if (speedy) {
+    const modifications: {
+      createElement?: typeof document.createElement;
+      querySelector?: typeof document.querySelector;
+    } = {};
+
     const proxyDocument = new Proxy(document, {
+      /**
+       * Read and write must be paired, otherwise the write operation will leak to the global
+       */
       set: (target, p, value) => {
-        (<any>target)[p] = value;
+        switch (p) {
+          case 'createElement': {
+            modifications.createElement = value;
+            break;
+          }
+          case 'querySelector': {
+            modifications.querySelector = value;
+            break;
+          }
+          default:
+            (<any>target)[p] = value;
+            break;
+        }
+
         return true;
       },
       get: (target, p, receiver) => {
         switch (p) {
           case 'createElement': {
             // Must store the original createElement function to avoid error in nested sandbox
-            const targetCreateElement = target.createElement;
+            const targetCreateElement = modifications.createElement || target.createElement;
             return function createElement(...args: Parameters<typeof document.createElement>) {
               if (!nativeGlobal.__currentLockingSandbox__) {
                 nativeGlobal.__currentLockingSandbox__ = sandbox.name;
@@ -87,7 +108,7 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
           }
 
           case 'querySelector': {
-            const targetQuerySelector = target.querySelector;
+            const targetQuerySelector = modifications.querySelector || target.querySelector;
             return function querySelector(...args: Parameters<typeof document.querySelector>) {
               const selector = args[0];
               switch (selector) {
