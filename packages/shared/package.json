@@ -19,7 +19,7 @@
     "semver": "^7.5.3"
   },
   "files": [
-    "dist",
+    "dist"
   ],
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
