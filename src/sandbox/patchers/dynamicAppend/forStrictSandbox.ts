@@ -66,10 +66,7 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
 
     const proxyDocument = new Proxy(document, {
       /**
-       * Read and write must be synchronized, otherwise the write operation will leak to the global
-       * @param target
-       * @param p
-       * @param value
+       * Read and write must be paired, otherwise the write operation will leak to the global
        */
       set: (target, p, value) => {
         switch (p) {
