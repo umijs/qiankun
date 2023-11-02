@@ -49,3 +49,14 @@ export function getEntireUrl(uri: string, baseURI: string): string {
   const entireUrl = new URL(uri, publicPath.toString());
   return entireUrl.toString();
 }
+
+/**
+ * Check if the running environment support qiankun3.0
+ *
+ */
+export function isRuntimeCompatible(): boolean {
+  return (
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    typeof Proxy === 'function' && typeof TransformStream === 'function' && typeof URL?.createObjectURL === 'function'
+  );
+}
