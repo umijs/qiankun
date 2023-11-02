@@ -108,7 +108,7 @@ function patchDocument(cfg: { sandbox: SandBox; speedy: boolean }) {
           }
 
           case 'querySelector': {
-            const targetQuerySelector = target.querySelector || modifications.querySelector;
+            const targetQuerySelector = modifications.querySelector || target.querySelector;
             return function querySelector(...args: Parameters<typeof document.querySelector>) {
               const selector = args[0];
               switch (selector) {
