@@ -1,5 +1,12 @@
 # @qiankunjs/shared
 
+## 0.0.1-rc.5
+
+### Patch Changes
+
+- 5f77347b: feat(sandbox): support dynamic sync scripts executed by order in sandbox
+- 8e54e129: feat: add isRuntimeCompatible api to check qiankun3 compatibility
+
 ## 0.0.1-rc.4
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@qiankunjs/loader",
-  "version": "0.0.1-rc.9",
+  "version": "0.0.1-rc.10",
   "description": "",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -26,5 +26,7 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
-  "files": ["dist"]
+  "files": [
+    "dist"
+  ]
 }
