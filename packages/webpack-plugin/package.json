@@ -4,13 +4,14 @@
   "description": "",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
   "scripts": {
     "build:webpack4": "cd ./tests/webpack4 && npm run build",
     "build:webpack5": "cd ./tests/webpack5 && npm run build",
     "test": "npm run build && npm run build:webpack4 && npm run build:webpack5 && vitest",
     "build": "father build"
   },
-  "files": ["dist", "src"],
+  "files": ["dist"],
   "peerDependencies": {
     "webpack": "^4.0.0 || ^5.0.0"
   },

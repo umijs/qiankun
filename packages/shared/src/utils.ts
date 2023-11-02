@@ -10,7 +10,7 @@ export const hasOwnProperty = (caller: unknown, p: PropertyKey) => Object.protot
 export class Deferred<T> {
   promise: Promise<T>;
 
-  status: 'pending' | 'fulfilled' | 'rejected' = 'pending';
+  #status: 'pending' | 'fulfilled' | 'rejected' = 'pending';
 
   resolve!: (value: T | PromiseLike<T>) => void;
 
@@ -19,14 +19,28 @@ export class Deferred<T> {
   constructor() {
     this.promise = new Promise((resolve, reject) => {
       this.resolve = (value: T | PromiseLike<T>) => {
-        this.status = 'fulfilled';
+        this.#status = 'fulfilled';
         resolve(value);
       };
       this.reject = (reason?: unknown) => {
-        this.status = 'rejected';
+        this.#status = 'rejected';
         reject(reason);
       };
     });
+  }
+
+  isSettled(): boolean {
+    return this.#status !== 'pending';
+  }
+}
+
+export async function waitUntilSettled(promise: Promise<void>): Promise<void> {
+  try {
+    await promise;
+  } catch (e) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('waitUntilSettled error', e);
+    }
   }
 }
 

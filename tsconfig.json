@@ -27,5 +27,5 @@
       "@@/*": ["./.dumi/tmp/*"]
     }
   },
-  "exclude": ["node_modules", "examples", "dist"]
+  "exclude": ["node_modules", "examples", "packages/**/dist"]
 }

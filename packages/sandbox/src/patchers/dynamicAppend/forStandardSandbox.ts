@@ -89,8 +89,6 @@ function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): Calla
             // only record the element which is created by the current sandbox, thus we can avoid the element created by nested sandboxes
             if (nativeGlobal.__currentLockingSandbox__ === sandbox) {
               attachElementToSandbox(element);
-              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-              // @ts-ignore
               delete nativeGlobal.__currentLockingSandbox__;
             }
 
@@ -277,6 +275,7 @@ export function patchStandardSandbox(
       appName,
       sandbox,
       dynamicStyleSheetElements: [],
+      dynamicExternalSyncScriptElements: [],
     };
     sandboxConfigWeakMap.set(sandbox, sandboxConfig);
   }

@@ -3,7 +3,8 @@
  * @author Kuitos
  * @since 2019-10-21
  */
-import { transpileAssets } from '@qiankunjs/shared';
+import type { ScriptTranspilerOpts } from '@qiankunjs/shared';
+import { Deferred, transpileAssets, waitUntilSettled } from '@qiankunjs/shared';
 import { qiankunHeadTagName } from '../../consts';
 import type { SandboxConfig } from './types';
 
@@ -14,6 +15,8 @@ const STYLE_TAG_NAME = 'STYLE';
 export const styleElementTargetSymbol = Symbol('target');
 export const styleElementRefNodeNo = Symbol('refNodeNo');
 const overwrittenSymbol = Symbol('qiankun-overwritten');
+
+const scriptFetchedDeferredWeakMap = new WeakMap<HTMLScriptElement, Deferred<void>>();
 
 type DynamicDomMutationTarget = 'head' | 'body';
 
@@ -134,12 +137,10 @@ export function getOverwrittenAppendChildOrInsertBefore(
     }
 
     if (element.tagName) {
-      const { dynamicStyleSheetElements, sandbox } = containerConfig;
-
       switch (element.tagName) {
         case LINK_TAG_NAME:
         case STYLE_TAG_NAME: {
-          const stylesheetElement = newChild as unknown as HTMLLinkElement | HTMLStyleElement;
+          const stylesheetElement = element as HTMLLinkElement | HTMLStyleElement;
           Object.defineProperty(stylesheetElement, styleElementTargetSymbol, {
             value: target,
             writable: true,
@@ -158,6 +159,7 @@ export function getOverwrittenAppendChildOrInsertBefore(
           if (typeof refNo === 'number' && refNo !== -1) {
             defineNonEnumerableProperty(stylesheetElement, styleElementRefNodeNo, refNo);
           }
+          const { dynamicStyleSheetElements } = containerConfig;
           // record dynamic style elements after insert succeed
           dynamicStyleSheetElements.push(stylesheetElement);
 
@@ -165,10 +167,48 @@ export function getOverwrittenAppendChildOrInsertBefore(
         }
 
         case SCRIPT_TAG_NAME: {
-          // TODO paas fetch configuration and current entry url as baseURI
-          const node = transpileAssets(element, location.href, { fetch, sandbox, rawNode: element });
+          const scriptElement = element as HTMLScriptElement;
+          const { sandbox, dynamicExternalSyncScriptElements } = containerConfig;
 
-          return appendChild.call(this, node, refChild) as T;
+          const externalSyncMode = scriptElement.hasAttribute('src') && !scriptElement.hasAttribute('async');
+
+          let scriptIndex = -1;
+          let prevScriptTranspiledDeferred: Deferred<void> | undefined;
+          let scriptTranspiledDeferred: Deferred<void> | undefined;
+
+          if (externalSyncMode) {
+            scriptIndex = dynamicExternalSyncScriptElements.indexOf(scriptElement);
+            const prevSyncScriptElement =
+              scriptIndex > 0 ? dynamicExternalSyncScriptElements[scriptIndex - 1] : undefined;
+            prevScriptTranspiledDeferred = prevSyncScriptElement
+              ? scriptFetchedDeferredWeakMap.get(prevSyncScriptElement)
+              : undefined;
+            scriptTranspiledDeferred = new Deferred<void>();
+          }
+
+          const transpiledScriptElement = transpileAssets(scriptElement, location.href, {
+            fetch,
+            sandbox,
+            rawNode: scriptElement,
+            prevScriptTranspiledDeferred,
+            scriptTranspiledDeferred,
+          } as ScriptTranspilerOpts);
+
+          const result = appendChild.call(this, transpiledScriptElement, refChild) as T;
+
+          // Previously it was an external synchronous script, and after the transpile, there was no src attribute, indicating that the script needs to wait for the src to be filled
+          if (externalSyncMode && !transpiledScriptElement.hasAttribute('src')) {
+            dynamicExternalSyncScriptElements.push(scriptElement);
+            scriptFetchedDeferredWeakMap.set(scriptElement, scriptTranspiledDeferred!);
+
+            void waitUntilSettled(scriptTranspiledDeferred!.promise).then(() => {
+              // we should clear the memory regardless the script loaded or failed
+              dynamicExternalSyncScriptElements.splice(scriptIndex, 1);
+              scriptFetchedDeferredWeakMap.delete(scriptElement);
+            });
+          }
+
+          return result;
         }
 
         default:
