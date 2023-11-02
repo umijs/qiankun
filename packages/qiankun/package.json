@@ -1,6 +1,6 @@
 {
   "name": "qiankun",
-  "version": "3.0.0-rc.9",
+  "version": "3.0.0-rc.10",
   "description": "A completed implementation of Micro Frontends",
   "keywords": [
     "micro frontend",
@@ -28,7 +28,9 @@
     "type": "git",
     "url": "git+https://github.com/kuitos/qiankun.git"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "author": "Kuitos",
   "license": "MIT",
   "bugs": {

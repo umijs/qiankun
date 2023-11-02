@@ -1,5 +1,14 @@
 # @qiankunjs/sandbox
 
+## 0.0.1-rc.7
+
+### Patch Changes
+
+- 5f77347b: feat(sandbox): support dynamic sync scripts executed by order in sandbox
+- Updated dependencies [5f77347b]
+- Updated dependencies [8e54e129]
+  - @qiankunjs/shared@0.0.1-rc.5
+
 ## 0.0.1-rc.6
 
 ### Patch Changes

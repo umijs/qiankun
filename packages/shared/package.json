@@ -1,6 +1,6 @@
 {
   "name": "@qiankunjs/shared",
-  "version": "0.0.1-rc.4",
+  "version": "0.0.1-rc.5",
   "description": "internal shared package for qiankun",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -18,7 +18,9 @@
     "lodash": "^4.17.11",
     "semver": "^7.5.3"
   },
-  "files": ["dist", "src"],
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   }

@@ -1,5 +1,16 @@
 # qiankun
 
+## 3.0.0-rc.10
+
+### Patch Changes
+
+- 8e54e129: feat: add isRuntimeCompatible api to check qiankun3 compatibility
+- Updated dependencies [5f77347b]
+- Updated dependencies [8e54e129]
+  - @qiankunjs/sandbox@0.0.1-rc.7
+  - @qiankunjs/shared@0.0.1-rc.5
+  - @qiankunjs/loader@0.0.1-rc.10
+
 ## 3.0.0-rc.9
 
 ### Patch Changes
