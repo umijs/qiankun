@@ -84,19 +84,22 @@ function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): Calla
     const container = getContainer();
     return getContainerBodyElement(container);
   };
-  const modifications: {
+  const modificationFns: {
     createElement?: typeof document.createElement;
     querySelector?: typeof document.querySelector;
   } = {};
   const proxyDocument = new Proxy(document, {
+    /**
+     * Read and write must be paired, otherwise the write operation will leak to the global
+     */
     set: (target, p, value) => {
       switch (p) {
         case 'createElement': {
-          modifications.createElement = value;
+          modificationFns.createElement = value;
           break;
         }
         case 'querySelector': {
-          modifications.querySelector = value;
+          modificationFns.querySelector = value;
           break;
         }
         default:
@@ -110,7 +113,7 @@ function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): Calla
       switch (p) {
         case 'createElement': {
           // Must store the original createElement function to avoid error in nested sandbox
-          const targetCreateElement = modifications.createElement || target.createElement;
+          const targetCreateElement = modificationFns.createElement || target.createElement;
           return function createElement(...args: Parameters<typeof document.createElement>) {
             if (!nativeGlobal.__currentLockingSandbox__) {
               nativeGlobal.__currentLockingSandbox__ = sandbox;
@@ -129,7 +132,7 @@ function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): Calla
         }
 
         case 'querySelector': {
-          const targetQuerySelector = modifications.querySelector || target.querySelector;
+          const targetQuerySelector = modificationFns.querySelector || target.querySelector;
           return function querySelector(...args: Parameters<typeof document.querySelector>) {
             const selector = args[0];
             switch (selector) {
