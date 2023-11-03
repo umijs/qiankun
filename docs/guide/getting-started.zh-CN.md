@@ -37,8 +37,9 @@ start();
 
 当微应用信息注册完之后，一旦浏览器的 url 发生变化，便会自动触发 qiankun 的匹配逻辑，所有 activeRule 规则匹配上的微应用就会被插入到指定的 container 中，同时依次调用微应用暴露出的生命周期钩子。
 
-如果微应用不是直接跟路由关联的时候，你也可以选择手动加载微应用的方式：
+如果微应用不是直接跟路由关联的时候，你也可以选择手动的方式或者组件的形式加载微应用：
 
+手动的方式加载微应用
 ```ts
 import { loadMicroApp } from 'qiankun';
 
@@ -48,6 +49,17 @@ loadMicroApp({
   container: '#yourContainer',
 });
 ```
+
+组件的形式加载微应用
+```tsx
+import { MicroApp } from '@qiankunjs/react';
+
+export default function Page() {
+  return <MicroApp name="app1" entry="http://localhost:8000" />;
+}
+```
+
+
 
 ## 微应用
 
