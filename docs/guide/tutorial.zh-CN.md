@@ -165,6 +165,26 @@ start();
    -   "eject": "react-scripts eject"
    ```
 
+### react 微应用组件
+1. 安装
+
+```bash
+npm i @qiankunjs/react
+```
+
+2. 使用 MicroApp 组件
+
+直接通过 `<MicroApp />` 组件加载（或卸载）子应用，该组件提供了 loading 以及错误捕获相关的能力：
+
+```tsx
+import { MicroApp } from '@qiankunjs/react';
+
+export default function Page() {
+  return <MicroApp name="app1" entry="http://localhost:8000" />;
+}
+```
+
+
 ### Vue 微应用
 
 以 `vue-cli 3+` 生成的 `vue 2.x` 项目为例，`vue 3` 版本等稳定后再补充。
