@@ -374,7 +374,7 @@ export function patchStandardSandbox(
           }
 
           return false;
-        })
+        }),
       );
     };
   };
