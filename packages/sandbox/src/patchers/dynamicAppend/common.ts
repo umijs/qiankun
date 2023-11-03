@@ -176,14 +176,14 @@ export function getOverwrittenAppendChildOrInsertBefore(
 
           const externalSyncMode = scriptElement.hasAttribute('src') && !scriptElement.hasAttribute('async');
 
-          let scriptIndex = -1;
           let prevScriptTranspiledDeferred: Deferred<void> | undefined;
           let scriptTranspiledDeferred: Deferred<void> | undefined;
 
           if (externalSyncMode) {
-            scriptIndex = dynamicExternalSyncScriptElements.indexOf(scriptElement);
-            const prevSyncScriptElement =
-              scriptIndex > 0 ? dynamicExternalSyncScriptElements[scriptIndex - 1] : undefined;
+            const dynamicScriptsLength = dynamicExternalSyncScriptElements.length;
+            const prevSyncScriptElement = dynamicScriptsLength
+              ? dynamicExternalSyncScriptElements[dynamicScriptsLength - 1]
+              : undefined;
             prevScriptTranspiledDeferred = prevSyncScriptElement
               ? scriptFetchedDeferredWeakMap.get(prevSyncScriptElement)
               : undefined;
@@ -202,7 +202,7 @@ export function getOverwrittenAppendChildOrInsertBefore(
 
           // Previously it was an external synchronous script, and after the transpile, there was no src attribute, indicating that the script needs to wait for the src to be filled
           if (externalSyncMode && !transpiledScriptElement.hasAttribute('src')) {
-            dynamicExternalSyncScriptElements.push(scriptElement);
+            const scriptIndex = dynamicExternalSyncScriptElements.push(scriptElement) - 1;
             scriptFetchedDeferredWeakMap.set(scriptElement, scriptTranspiledDeferred!);
 
             void waitUntilSettled(scriptTranspiledDeferred!.promise).then(() => {
