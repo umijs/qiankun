@@ -4,7 +4,7 @@
  * @since 2020-10-13
  */
 
-import { QiankunError } from '@qiankunjs/shared';
+import { Deferred, QiankunError } from '@qiankunjs/shared';
 import type { noop } from 'lodash';
 import { nativeDocument, nativeGlobal, qiankunHeadTagName } from '../../consts';
 import { rebindTarget2Fn } from '../../core/membrane/utils';
@@ -352,38 +352,51 @@ export function patchStandardSandbox(
 
     // As now the sub app content all wrapped with a special id container,
     // the dynamic style sheet could be removed automatically while unmounting
-    return function rebuild() {
+    return async function rebuild() {
       const container = getContainer();
-      rebuildCSSRules(dynamicStyleSheetElements as HTMLStyleElement[], (stylesheetElement) => {
-        if (!container.contains(stylesheetElement)) {
-          const mountDom =
-            stylesheetElement[styleElementTargetSymbol] === 'head'
-              ? (() => {
-                  const containerHeadElement = getContainerHeadElement(container);
-                  if (!containerHeadElement) {
-                    throw new QiankunError(
-                      `${appName} container ${qiankunHeadTagName} element not ready while rebuilding!`,
-                    );
-                  }
-                  return containerHeadElement;
-                })()
-              : container;
+      await Promise.all(
+        rebuildCSSRules(dynamicStyleSheetElements as HTMLStyleElement[], async (stylesheetElement) => {
+          if (!container.contains(stylesheetElement)) {
+            const mountDom =
+              stylesheetElement[styleElementTargetSymbol] === 'head'
+                ? (() => {
+                    const containerHeadElement = getContainerHeadElement(container);
+                    if (!containerHeadElement) {
+                      throw new QiankunError(
+                        `${appName} container ${qiankunHeadTagName} element not ready while rebuilding!`,
+                      );
+                    }
+                    return containerHeadElement;
+                  })()
+                : container;
 
-          const refNo = stylesheetElement[styleElementRefNodeNo];
-          if (typeof refNo === 'number' && refNo !== -1) {
-            // the reference node may be dynamic script comment which is not rebuilt while remounting thus reference node no longer exists
-            // in this case, we should append the style element to the end of mountDom
-            const refNode = mountDom.childNodes[refNo];
-            rawHeadInsertBefore.call(mountDom, stylesheetElement, refNode);
-            return true;
+            // micro app rendering should wait unit the rebuilding link element is loaded, otherwise it may cause style blink
+            // As one link element will just trigger loaded event once, although we append it multiple times, we need to clone it before every appending
+            const cloneStyleElement = document.importNode(stylesheetElement) as HTMLLinkElement;
+            const deferred = new Deferred<boolean>();
+            if (cloneStyleElement.rel === 'stylesheet' && cloneStyleElement.href) {
+              cloneStyleElement.onload = () => deferred.resolve(true);
+              cloneStyleElement.onerror = () => deferred.resolve(false);
+            } else {
+              deferred.resolve(true);
+            }
+
+            const refNo = stylesheetElement[styleElementRefNodeNo];
+            if (typeof refNo === 'number' && refNo !== -1) {
+              // the reference node may be dynamic script comment which is not rebuilt while remounting thus reference node no longer exists
+              // in this case, we should append the style element to the end of mountDom
+              const refNode = mountDom.childNodes[refNo];
+              rawHeadInsertBefore.call(mountDom, cloneStyleElement, refNode);
+            } else {
+              rawHeadAppendChild.call(mountDom, cloneStyleElement);
+            }
+
+            return deferred.promise;
           }
 
-          rawHeadAppendChild.call(mountDom, stylesheetElement);
-          return true;
-        }
-
-        return false;
-      });
+          return false;
+        }),
+      );
     };
   };
 }
