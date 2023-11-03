@@ -84,16 +84,33 @@ function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): Calla
     const container = getContainer();
     return getContainerBodyElement(container);
   };
+  const modifications: {
+    createElement?: typeof document.createElement;
+    querySelector?: typeof document.querySelector;
+  } = {};
   const proxyDocument = new Proxy(document, {
     set: (target, p, value) => {
-      target[p as keyof Document] = value;
+      switch (p) {
+        case 'createElement': {
+          modifications.createElement = value;
+          break;
+        }
+        case 'querySelector': {
+          modifications.querySelector = value;
+          break;
+        }
+        default:
+          target[p as keyof Document] = value;
+          break;
+      }
+
       return true;
     },
     get: (target, p, receiver) => {
       switch (p) {
         case 'createElement': {
           // Must store the original createElement function to avoid error in nested sandbox
-          const targetCreateElement = target.createElement;
+          const targetCreateElement = modifications.createElement || target.createElement;
           return function createElement(...args: Parameters<typeof document.createElement>) {
             if (!nativeGlobal.__currentLockingSandbox__) {
               nativeGlobal.__currentLockingSandbox__ = sandbox;
@@ -111,16 +128,8 @@ function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): Calla
           };
         }
 
-        case 'head': {
-          return getDocumentHeadElement();
-        }
-
-        case 'body': {
-          return getDocumentBodyElement();
-        }
-
         case 'querySelector': {
-          const targetQuerySelector = target.querySelector;
+          const targetQuerySelector = modifications.querySelector || target.querySelector;
           return function querySelector(...args: Parameters<typeof document.querySelector>) {
             const selector = args[0];
             switch (selector) {
@@ -136,11 +145,20 @@ function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): Calla
             return targetQuerySelector.call(target, ...args);
           };
         }
+
+        case 'head': {
+          return getDocumentHeadElement();
+        }
+
+        case 'body': {
+          return getDocumentBodyElement();
+        }
+
         default:
           break;
       }
 
-      const value = target[p as string];
+      const value = target[p as keyof Document];
       // must rebind the function to the target otherwise it will cause illegal invocation error
       return rebindTarget2Fn(target, value, receiver);
     },
