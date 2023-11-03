@@ -4,8 +4,6 @@
  * @since 2019-04-11
  */
 
-import { noop } from 'lodash';
-
 const rawAddEventListener = window.addEventListener;
 const rawRemoveEventListener = window.removeEventListener;
 
@@ -41,6 +39,6 @@ export default function patch(global: WindowProxy) {
     global.addEventListener = rawAddEventListener;
     global.removeEventListener = rawRemoveEventListener;
 
-    return noop;
+    return () => Promise.resolve();
   };
 }

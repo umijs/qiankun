@@ -70,7 +70,9 @@ export function createSandboxContainer(
 
       // must rebuild the side effects which added at bootstrapping firstly to recovery to nature state
       if (sideEffectsRebuildsAtBootstrapping.length) {
-        sideEffectsRebuildsAtBootstrapping.forEach((rebuild) => rebuild());
+        for (const rebuildSideEffects of sideEffectsRebuildsAtBootstrapping) {
+          await rebuildSideEffects();
+        }
       }
 
       /* ------------------------------------------ 2. 开启全局变量补丁 ------------------------------------------*/
@@ -80,7 +82,9 @@ export function createSandboxContainer(
       /* ------------------------------------------ 3. 重置一些初始化时的副作用 ------------------------------------------*/
       // 存在 rebuilds 则表明有些副作用需要重建
       if (sideEffectsRebuildsAtMounting.length) {
-        sideEffectsRebuildsAtMounting.forEach((rebuild) => rebuild());
+        for (const rebuildSideEffects of sideEffectsRebuildsAtMounting) {
+          await rebuildSideEffects();
+        }
       }
 
       // clean up rebuilds

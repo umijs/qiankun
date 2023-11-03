@@ -15,7 +15,6 @@ declare global {
 
 export default function patch() {
   // FIXME umi unmount feature request
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let rawHistoryListen = (_: unknown) => noop;
   const historyListeners: Array<typeof noop> = [];
   const historyUnListens: Array<typeof noop> = [];
@@ -38,7 +37,7 @@ export default function patch() {
   }
 
   return function free() {
-    let rebuild = noop;
+    let rebuild = () => Promise.resolve();
 
     /*
      还存在余量 listener 表明未被卸载，存在两种情况
@@ -47,7 +46,7 @@ export default function patch() {
      第二种情况下应用在下次 mount 之前需重新绑定该 listener
      */
     if (historyListeners.length) {
-      rebuild = () => {
+      rebuild = async () => {
         // 必须使用 window.g_history.listen 的方式重新绑定 listener，从而能保证 rebuild 这部分也能被捕获到，否则在应用卸载后无法正确的移除这部分副作用
         historyListeners.forEach((listener) => window.g_history?.listen(listener));
       };
