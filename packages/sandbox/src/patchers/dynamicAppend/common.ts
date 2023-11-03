@@ -36,8 +36,12 @@ declare global {
   }
 }
 
-export const getContainerHeadElement = (container: Element | ShadowRoot): Element => {
-  return container.querySelector(qiankunHeadTagName)!;
+export const getContainerHeadElement = (container: Element): HTMLHeadElement | null => {
+  return container.querySelector(qiankunHeadTagName);
+};
+
+export const getContainerBodyElement = (container: Element): HTMLBodyElement => {
+  return container as HTMLBodyElement;
 };
 
 export function isHijackingTag(tagName?: string) {
