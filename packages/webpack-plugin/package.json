@@ -21,6 +21,7 @@
     "webpack-sources": "^3.2.3"
   },
   "devDependencies": {
-    "@types/webpack-sources": "^3.2.1"
+    "@types/webpack-sources": "^3.2.1",
+    "webpack": "^4.0.0 || ^5.0.0"
   }
 }
