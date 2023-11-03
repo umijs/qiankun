@@ -5,7 +5,6 @@ const jsConfig = {
   rules: {
     'no-else-return': ['error', { allowElseIf: false }],
     'object-shorthand': ['error', 'properties'],
-    'no-shadow': 'off',
   },
 };
 
@@ -29,7 +28,6 @@ const tsConfig = {
     '@typescript-eslint/consistent-type-exports': ['error', { fixMixedExportsWithInlineTypeSpecifier: true }],
     '@typescript-eslint/require-await': 'off',
     '@typescript-eslint/array-type': ['error', { default: 'array-simple' }],
-    '@typescript-eslint/no-shadow': ['error', { ignoreFunctionTypeParameterNameValueShadow: true }],
   },
 };
 

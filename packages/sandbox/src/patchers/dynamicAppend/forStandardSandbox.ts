@@ -4,7 +4,6 @@
  * @since 2020-10-13
  */
 
-import { QiankunError } from '@qiankunjs/shared';
 import type { noop } from 'lodash';
 import { nativeDocument, nativeGlobal, qiankunHeadTagName } from '../../consts';
 import { rebindTarget2Fn } from '../../core/membrane/utils';
@@ -12,7 +11,6 @@ import type { Sandbox } from '../../core/sandbox';
 import type { Free } from '../types';
 import {
   calcAppCount,
-  getContainerBodyElement,
   getContainerHeadElement,
   getNewRemoveChild,
   getOverwrittenAppendChildOrInsertBefore,
@@ -64,26 +62,13 @@ function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): Calla
     return () => {};
   }
 
-  const unpatch = patchDocumentHeadAndBodyMethods(container);
-
   const attachElementToSandbox = (element: HTMLElement) => {
     const sandboxConfig = sandboxConfigWeakMap.get(sandbox);
     if (sandboxConfig) {
       elementAttachSandboxConfigMap.set(element, sandboxConfig);
     }
   };
-  const getDocumentHeadElement = () => {
-    const container = getContainer();
-    const containerHeadElement = getContainerHeadElement(container);
-    if (!containerHeadElement) {
-      throw new QiankunError(`${sandbox.name} head element not existed while accessing document.head!`);
-    }
-    return containerHeadElement;
-  };
-  const getDocumentBodyElement = () => {
-    const container = getContainer();
-    return getContainerBodyElement(container);
-  };
+
   const proxyDocument = new Proxy(document, {
     set: (target, p, value) => {
       target[p as keyof Document] = value;
@@ -112,11 +97,11 @@ function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): Calla
         }
 
         case 'head': {
-          return getDocumentHeadElement();
+          return container.querySelector(qiankunHeadTagName) as HTMLHeadElement;
         }
 
         case 'body': {
-          return getDocumentBodyElement();
+          return container as HTMLBodyElement;
         }
 
         case 'querySelector': {
@@ -125,11 +110,11 @@ function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): Calla
             const selector = args[0];
             switch (selector) {
               case 'head': {
-                return getDocumentHeadElement();
+                return getContainerHeadElement(container);
               }
 
               case 'body': {
-                return getDocumentBodyElement();
+                return container;
               }
             }
 
@@ -146,45 +131,28 @@ function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): Calla
     },
   });
 
-  sandbox.addIntrinsics({
-    document: { value: proxyDocument, writable: false, enumerable: true, configurable: true },
+  /*
+   * patch container head element after it is mounted
+   */
+  const observer = new MutationObserver(() => {
+    const containerHeadElement = container.querySelector(qiankunHeadTagName);
+    if (containerHeadElement) {
+      containerHeadElement.appendChild = getOverwrittenAppendChildOrInsertBefore(
+        document.head.appendChild,
+        getSandboxConfig,
+        'head',
+      );
+      containerHeadElement.insertBefore = getOverwrittenAppendChildOrInsertBefore(
+        document.head.insertBefore,
+        getSandboxConfig,
+        'head',
+      );
+      containerHeadElement.removeChild = getNewRemoveChild(document.head.removeChild, getSandboxConfig);
+
+      observer.disconnect();
+    }
   });
-
-  patchCacheWeakMap.set(container, true);
-
-  return () => {
-    unpatch();
-  };
-}
-
-function patchDocumentHeadAndBodyMethods(container: HTMLElement): typeof noop {
-  const patchHeadElementMethod = (headElement: HTMLHeadElement) => {
-    headElement.appendChild = getOverwrittenAppendChildOrInsertBefore(
-      document.head.appendChild,
-      getSandboxConfig,
-      'head',
-    );
-    headElement.insertBefore = getOverwrittenAppendChildOrInsertBefore(
-      document.head.insertBefore,
-      getSandboxConfig,
-      'head',
-    );
-    headElement.removeChild = getNewRemoveChild(document.head.removeChild, getSandboxConfig);
-  };
-  let containerHeadElement = getContainerHeadElement(container);
-  if (!containerHeadElement) {
-    // patch container head element after it is mounted
-    const observer = new MutationObserver(() => {
-      containerHeadElement = getContainerHeadElement(container);
-      if (containerHeadElement) {
-        patchHeadElementMethod(containerHeadElement);
-        observer.disconnect();
-      }
-    });
-    observer.observe(container, { subtree: true, childList: true });
-  } else {
-    patchHeadElementMethod(containerHeadElement);
-  }
+  observer.observe(container, { subtree: true, childList: true });
 
   const containerBodyElement = container;
   containerBodyElement.appendChild = getOverwrittenAppendChildOrInsertBefore(
@@ -199,22 +167,27 @@ function patchDocumentHeadAndBodyMethods(container: HTMLElement): typeof noop {
   );
   containerBodyElement.removeChild = getNewRemoveChild(document.body.removeChild, getSandboxConfig);
 
-  return () => {
-    if (containerHeadElement) {
-      // @ts-ignore
-      delete containerHeadElement.appendChild;
-      // @ts-ignore
-      delete containerHeadElement.insertBefore;
-      // @ts-ignore
-      delete containerHeadElement.removeChild;
-    }
+  sandbox.addIntrinsics({
+    document: { value: proxyDocument, writable: false, enumerable: true, configurable: true },
+  });
 
+  patchCacheWeakMap.set(container, true);
+
+  return () => {
+    const container = getContainer();
+    const containerHeadElement = getContainerHeadElement(container);
     // @ts-ignore
-    delete containerBodyElement.appendChild;
+    delete containerHeadElement.appendChild;
     // @ts-ignore
-    delete containerBodyElement.insertBefore;
+    delete containerHeadElement.insertBefore;
     // @ts-ignore
-    delete containerBodyElement.removeChild;
+    delete containerHeadElement.removeChild;
+    // @ts-ignore
+    delete container.appendChild;
+    // @ts-ignore
+    delete container.insertBefore;
+    // @ts-ignore
+    delete container.removeChild;
   };
 }
 
@@ -330,23 +303,14 @@ export function patchStandardSandbox(
     recordStyledComponentsCSSRules(dynamicStyleSheetElements as HTMLStyleElement[]);
 
     // As now the sub app content all wrapped with a special id container,
-    // the dynamic style sheet could be removed automatically while unmounting
+    // the dynamic style sheet would be removed automatically while unmounting
+
     return function rebuild() {
       const container = getContainer();
       rebuildCSSRules(dynamicStyleSheetElements as HTMLStyleElement[], (stylesheetElement) => {
         if (!container.contains(stylesheetElement)) {
           const mountDom =
-            stylesheetElement[styleElementTargetSymbol] === 'head'
-              ? (() => {
-                  const containerHeadElement = getContainerHeadElement(container);
-                  if (!containerHeadElement) {
-                    throw new QiankunError(
-                      `${appName} container ${qiankunHeadTagName} element not ready while rebuilding!`,
-                    );
-                  }
-                  return containerHeadElement;
-                })()
-              : container;
+            stylesheetElement[styleElementTargetSymbol] === 'head' ? getContainerHeadElement(container) : container;
 
           const refNo = stylesheetElement[styleElementRefNodeNo];
           if (typeof refNo === 'number' && refNo !== -1) {

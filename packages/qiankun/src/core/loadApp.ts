@@ -26,7 +26,7 @@ export default async function loadApp<T extends ObjectType>(
   app: LoadableApp<T>,
   configuration?: AppConfiguration,
   lifeCycles?: LifeCycles<T>,
-): Promise<ParcelConfigObjectGetter> {
+) {
   const { name: appName, entry, container } = app;
   const { fetch = window.fetch, sandbox, globalContext = window, streamTransformer } = configuration || {};
 
@@ -40,11 +40,11 @@ export default async function loadApp<T extends ObjectType>(
   let unmountSandbox = () => Promise.resolve();
   let sandboxInstance: Sandbox | undefined;
 
-  let sandboxMicroAppContainer: HTMLElement = container;
-  initContainer(sandboxMicroAppContainer, appName, sandbox);
+  let microAppContainer: HTMLElement = container;
+  initContainer(microAppContainer, appName, sandbox);
 
   if (sandbox) {
-    const sandboxContainer = createSandboxContainer(appName, () => sandboxMicroAppContainer, {
+    const sandboxContainer = createSandboxContainer(appName, () => microAppContainer, {
       globalContext,
       extraGlobals: {},
     });
@@ -58,7 +58,7 @@ export default async function loadApp<T extends ObjectType>(
 
   const containerOpts: LoaderOpts = { fetch, sandbox: sandboxInstance, streamTransformer };
 
-  const lifecyclesPromise = loadEntry<MicroAppLifeCycles>(entry, sandboxMicroAppContainer, containerOpts);
+  const lifecyclesPromise = loadEntry<MicroAppLifeCycles>(entry, microAppContainer, containerOpts);
 
   const assetPublicPath = calcPublicPath(entry);
   const {
@@ -84,7 +84,7 @@ export default async function loadApp<T extends ObjectType>(
 
   let mountTimes = 1;
 
-  return (mountContainer) => {
+  const parcelConfigGetter: ParcelConfigObjectGetter = (remountContainer) => {
     const parcelConfig: ParcelConfigObject = {
       name: appName,
 
@@ -103,20 +103,20 @@ export default async function loadApp<T extends ObjectType>(
           }
         },
         async () => {
-          sandboxMicroAppContainer = mountContainer;
+          microAppContainer = remountContainer;
 
           // while the micro app is remounting, we need to load the entry manually
           if (mountTimes > 1) {
-            initContainer(mountContainer, appName, sandbox);
+            initContainer(microAppContainer, appName, sandbox);
             // html scripts should be removed to avoid repeatedly execute
             const htmlString = await getPureHTMLStringWithoutScripts(entry, fetch);
-            await loadEntry(htmlString, mountContainer, containerOpts);
+            await loadEntry(htmlString, microAppContainer, containerOpts);
           }
         },
         mountSandbox,
         // exec the chain after rendering to keep the behavior with beforeLoad
         async () => execHooksChain(toArray(beforeMount), app, global),
-        async (props) => mount({ ...props, container: mountContainer }),
+        async (props) => mount({ ...props, container: microAppContainer }),
         // finish loading after app mounted
         async () => execHooksChain(toArray(afterMount), app, global),
         async () => {
@@ -132,11 +132,11 @@ export default async function loadApp<T extends ObjectType>(
 
       unmount: [
         async () => execHooksChain(toArray(beforeUnmount), app, global),
-        async (props) => unmount({ ...props, container: mountContainer }),
+        async (props) => unmount({ ...props, container: microAppContainer }),
         unmountSandbox,
         async () => execHooksChain(toArray(afterUnmount), app, global),
         async () => {
-          clearContainer(mountContainer);
+          clearContainer(microAppContainer);
         },
       ],
     };
@@ -149,6 +149,8 @@ export default async function loadApp<T extends ObjectType>(
 
     return parcelConfig;
   };
+
+  return parcelConfigGetter;
 }
 
 function initContainer(container: HTMLElement, appName: string, sandboxCfg: AppConfiguration['sandbox']): void {

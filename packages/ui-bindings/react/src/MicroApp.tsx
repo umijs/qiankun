@@ -1,8 +1,8 @@
 import { concat, isEqual, mergeWith, noop } from 'lodash';
-import type { AppConfiguration, LifeCycleFn, LifeCycles, MicroApp as MicroAppTypeDefinition } from 'qiankun';
 import { loadMicroApp } from 'qiankun';
-import type { Ref } from 'react';
+import type { AppConfiguration, MicroApp as MicroAppTypeDefinition, LifeCycleFn, LifeCycles } from 'qiankun';
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import type { Ref } from 'react';
 import ErrorBoundary from './ErrorBoundary';
 import MicroAppLoader from './MicroAppLoader';
 
@@ -60,15 +60,15 @@ export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<Mic
     errorBoundary || (propsFromParams.autoCaptureError ? (e) => <ErrorBoundary error={e} /> : null);
 
   // 配置了 errorBoundary 才改 error 状态，否则直接往上抛异常
-  const setComponentError = (e: Error | undefined) => {
+  const setComponentError = (error: Error | undefined) => {
     if (microAppErrorBoundary) {
-      setError(e);
+      setError(error);
       // error log 出来，不要吞
-      if (e) {
-        console.error(e);
+      if (error) {
+        console.error(error);
       }
-    } else if (e) {
-      throw e;
+    } else if (error) {
+      throw error;
     }
   };
 
@@ -141,7 +141,8 @@ export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<Mic
       } else {
         // 确保 microApp.update 调用是跟组件状态变更顺序一致的，且后一个微应用更新必须等待前一个更新完成
         microApp._updatingPromise = microApp._updatingPromise.then(() => {
-          const canUpdate = (app: MicroAppType) => app.update && app.getStatus() === 'MOUNTED' && !app._unmounting;
+          const canUpdate = (microApp: MicroAppType) =>
+            microApp.update && microApp.getStatus() === 'MOUNTED' && !microApp._unmounting;
           if (canUpdate(microApp)) {
             const props = {
               ...propsFromParams,
@@ -174,7 +175,7 @@ export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<Mic
 
   // 未配置自定义 loader 且开启了 autoSetLoading 场景下，使用插件默认的 loader，否则使用自定义 loader
   const microAppLoader =
-    loader || (propsFromParams.autoSetLoading ? (loadingStatus) => <MicroAppLoader loading={loadingStatus} /> : null);
+    loader || (propsFromParams.autoSetLoading ? (loading) => <MicroAppLoader loading={loading} /> : null);
 
   const microAppWrapperClassName = wrapperClassName
     ? `${wrapperClassName} qiankun-micro-app-wrapper`
