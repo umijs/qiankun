@@ -21,8 +21,8 @@ const getCredentials = (crossOrigin: string | null): RequestInit['credentials'] 
 };
 
 type PreTranspileResult =
-  | { mode: Mode.REMOTE_ASSETS_IN_SANDBOX; result: { src: string } }
-  | { mode: Mode.REUSED_DEP_IN_SANDBOX; result: { src: string } & MatchResult }
+  | { mode: Mode.REMOTE_ASSETS_IN_SANDBOX | Mode.REMOTE_ASSETS; result: { src: string } }
+  | { mode: Mode.REUSED_DEP_IN_SANDBOX | Mode.REUSED_DEP; result: { src: string } & MatchResult }
   | { mode: Mode.INLINE_CODE_IN_SANDBOX; result: { code: string } }
   | { mode: Mode.NONE; result?: never };
 
@@ -35,36 +35,34 @@ export const preTranspile = (
 
   const { src, type } = script;
 
-  if (sandbox) {
-    if (src) {
-      const entireUrl = getEntireUrl(src, baseURI);
-      const matchedScript = moduleResolver?.(entireUrl);
-      if (matchedScript) {
-        return {
-          mode: Mode.REUSED_DEP_IN_SANDBOX,
-          result: { src: entireUrl, ...matchedScript },
-        };
-      }
-
+  if (src) {
+    const entireUrl = getEntireUrl(src, baseURI);
+    const matchedScript = moduleResolver?.(entireUrl);
+    if (matchedScript) {
       return {
-        mode: Mode.REMOTE_ASSETS_IN_SANDBOX,
-        result: { src: entireUrl },
+        mode: sandbox ? Mode.REUSED_DEP_IN_SANDBOX : Mode.REUSED_DEP,
+        result: { src: entireUrl, ...matchedScript },
       };
     }
 
-    if (isValidJavaScriptType(type)) {
-      const rawNode = opts.rawNode as HTMLScriptElement;
-      const scriptNode = script.textContent ? script : rawNode.childNodes[0];
+    return {
+      mode: sandbox ? Mode.REMOTE_ASSETS_IN_SANDBOX : Mode.REMOTE_ASSETS,
+      result: { src: entireUrl },
+    };
+  }
 
-      const code = scriptNode.textContent;
-      if (code) {
-        return {
-          mode: Mode.INLINE_CODE_IN_SANDBOX,
-          result: {
-            code,
-          },
-        };
-      }
+  if (isValidJavaScriptType(type) && sandbox) {
+    const rawNode = opts.rawNode as HTMLScriptElement;
+    const scriptNode = script.textContent ? script : rawNode.childNodes[0];
+
+    const code = scriptNode.textContent;
+    if (code) {
+      return {
+        mode: Mode.INLINE_CODE_IN_SANDBOX,
+        result: {
+          code,
+        },
+      };
     }
   }
 
@@ -151,7 +149,8 @@ export default function transpileScript(
         return script;
       }
 
-      case Mode.REUSED_DEP_IN_SANDBOX: {
+      case Mode.REUSED_DEP_IN_SANDBOX:
+      case Mode.REUSED_DEP: {
         const { url, version, src } = result;
 
         script.dataset.src = src;
@@ -171,10 +170,11 @@ export default function transpileScript(
         return script;
       }
 
+      case Mode.REMOTE_ASSETS:
       case Mode.NONE:
       default: {
-        if (srcAttribute) {
-          script.src = getEntireUrl(srcAttribute, baseURI);
+        if (result?.src) {
+          script.src = result.src;
         }
 
         scriptTranspiledDeferred?.resolve();

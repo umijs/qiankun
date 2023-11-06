@@ -23,7 +23,9 @@ export type ScriptTranspilerOpts = AssetsTranspilerOpts &
 
 export enum Mode {
   REMOTE_ASSETS_IN_SANDBOX = 'RAIS',
+  REMOTE_ASSETS = 'RA',
   REUSED_DEP_IN_SANDBOX = 'RDIS',
+  REUSED_DEP = 'RD',
   INLINE_CODE_IN_SANDBOX = 'ICIS',
   NONE = 'NONE',
 }
