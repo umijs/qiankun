@@ -12,7 +12,7 @@ import type { MainFrameworkTemplate, SubFrameworkTemplate } from './shared/templ
 import { mainFrameworkList, subFrameworkList, enumToArray } from './shared/template';
 import { type RenderOptions, createApplication } from './shared/render';
 import { composeGeneratePorts, generatePort, injectCheckPortScript } from './shared/utils/port';
-import { injectSubsConfigToMainApp } from './shared/utils/qiankun';
+import { injectSubsConfigToMainApp, installQiankunPkgs } from './shared/utils/qiankun';
 import { injectNormalScripts, injectWorkspaceScripts } from './shared/utils/scripts';
 
 const KindLabelMap: { [key in CreateKind]: string } = {
@@ -177,7 +177,7 @@ async function renderTemplate(opts: RenderOptions) {
   if ([CreateKind.CreateMainApp, CreateKind.CreateMainAndSubApp].includes(createKind)) {
     const mainAppInfo = await createApplication(
       mainAppName!,
-      { port: mainAppPort, mainRoute },
+      { port: mainAppPort, mainRoute, ...installQiankunPkgs },
       { ...opts, gitInit: true },
     );
     mainAppTargetPath = mainAppInfo.applicationTargetPath;
@@ -195,7 +195,7 @@ async function renderTemplate(opts: RenderOptions) {
       subAppNameList!.map((sub, i) =>
         createApplication(
           sub,
-          { port: subsPorts[i], appName: sub },
+          { port: subsPorts[i], appName: sub, ...installQiankunPkgs },
           {
             ...opts,
             gitInit: createKind === CreateKind.CreateSubApp || packageManager !== PackageManager.pnpmWorkspace,
