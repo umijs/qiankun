@@ -6,7 +6,7 @@ export class QiankunError extends Error {
         args.length ? `&arg=${args.join('&arg=')}` : ''
       }`;
     } else {
-      console.warn('args', ...args)
+      console.warn('args', ...args);
     }
     super(errorMessage);
   }
