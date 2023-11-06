@@ -32,8 +32,8 @@ export default defineConfig({
             title: 'Version Notice',
             children: [
               { title: 'Changelog', link: 'https://github.com/umijs/qiankun/releases' },
-              { title: 'Upgrade Guide', link: '/cookbook#upgrade-from-1x-version-to-2x-version' },
-              { title: '1.x Version', link: 'https://v1.qiankun.umijs.org/' },
+              { title: 'Upgrade Guide', link: '/cookbook#upgrade-from-2x-version-to-3x-version' },
+              { title: '2.x Version', link: 'https://v2.qiankun.umijs.org/' },
             ],
           },
         ],

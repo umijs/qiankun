@@ -37,6 +37,31 @@ start();
 
 After the sub-application information is registered, the matching logic of the qiankun will be automatically triggered once the browser url changes, and all the render methods corresponding to the subapplications whose activeRule methods returns `true` will be called, at the same time the subapplications' exposed lifecycle hooks will be called in turn.
 
+If the microapplication is not directly associated with the route, you can also choose to load the microapplication manually or as a component:
+
+Load microapplications manually
+```ts
+import { loadMicroApp } from 'qiankun';
+
+loadMicroApp({
+  name: 'app',
+  entry: '//localhost:7100',
+  container: '#yourContainer',
+});
+```
+
+Component to load microapplications
+```tsx
+import { MicroApp } from '@qiankunjs/react';
+
+export default function Page() {
+  return <MicroApp name="app1" entry="http://localhost:8000" />;
+}
+```
+
+
+
+
 ## Sub Application
 
 Sub applications do not need to install any additional dependencies to integrate to qiankun master application.
