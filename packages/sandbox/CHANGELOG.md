@@ -7,7 +7,7 @@
 - 43bf37a5: fix(sandbox): should get container from getter function in every accessing
 - a34a92a9: feat(sandbox): micro app mounting should wait unit rebuilding link element loaded to avoid unstyleed content flash
 - 7cf93b54: fix(sandbox): createElement hijack must be paired to avoid rewriting leak
-- 32106b11: fix(sandbox): fix async script order index calculate
+- 32106b11: fix(sandbox): dynamic async script order should calculate on the fly
 
 ## 0.0.1-rc.7
 
