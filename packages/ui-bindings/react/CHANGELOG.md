@@ -1,5 +1,13 @@
 # @qiankunjs/react
 
+## 0.0.1-rc.8
+
+### Patch Changes
+
+- 43bf37a5: fix(sandbox): should get container from getter function in every accessing
+- Updated dependencies [43bf37a5]
+  - qiankun@3.0.0-rc.11
+
 ## 0.0.1-rc.7
 
 ### Patch Changes

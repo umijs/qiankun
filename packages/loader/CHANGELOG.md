@@ -1,5 +1,16 @@
 # @qiankunjs/loader
 
+## 0.0.1-rc.11
+
+### Patch Changes
+
+- 43bf37a5: fix(sandbox): should get container from getter function in every accessing
+- Updated dependencies [43bf37a5]
+- Updated dependencies [a34a92a9]
+- Updated dependencies [7cf93b54]
+- Updated dependencies [32106b11]
+  - @qiankunjs/sandbox@0.0.1-rc.8
+
 ## 0.0.1-rc.10
 
 ### Patch Changes
