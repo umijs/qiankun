@@ -19,7 +19,7 @@ import {
   toArray,
 } from '../utils';
 import { version } from '../version';
-import { wrapFetchWithLruCache } from './fetchWithLruCache';
+import { wrapFetchWithLruCache } from './wrapFetch';
 
 export type ParcelConfigObjectGetter = (remountContainer: HTMLElement) => ParcelConfigObject;
 
