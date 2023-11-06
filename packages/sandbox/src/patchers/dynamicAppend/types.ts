@@ -2,6 +2,7 @@
  * @author Kuitos
  * @since 2023-05-04
  */
+import type { BaseLoaderOpts, transpileAssets } from '@qiankunjs/shared';
 import type { Sandbox } from '../../core/sandbox';
 
 export type SandboxConfig = {
@@ -9,4 +10,4 @@ export type SandboxConfig = {
   sandbox: Sandbox;
   dynamicStyleSheetElements: Array<HTMLStyleElement | HTMLLinkElement>;
   dynamicExternalSyncScriptElements: HTMLScriptElement[];
-};
+} & BaseLoaderOpts & { nodeTransformer?: typeof transpileAssets };

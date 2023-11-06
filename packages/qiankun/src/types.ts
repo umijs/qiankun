@@ -41,7 +41,7 @@ export type RegistrableApp<T extends ObjectType> = LoadableApp<T> & {
   activeRule: RegisterApplicationConfig['activeWhen'];
 };
 
-export type AppConfiguration = Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer'>> & {
+export type AppConfiguration = Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
   sandbox?: boolean;
   globalContext?: WindowProxy;
 };

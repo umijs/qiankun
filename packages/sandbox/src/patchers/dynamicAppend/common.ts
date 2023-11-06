@@ -4,7 +4,7 @@
  * @since 2019-10-21
  */
 import type { ScriptTranspilerOpts } from '@qiankunjs/shared';
-import { Deferred, transpileAssets, waitUntilSettled } from '@qiankunjs/shared';
+import { Deferred, waitUntilSettled } from '@qiankunjs/shared';
 import { qiankunHeadTagName } from '../../consts';
 import type { SandboxConfig } from './types';
 
@@ -134,9 +134,10 @@ export function getOverwrittenAppendChildOrInsertBefore(
     const appendChild = nativeFn;
 
     const element = newChild as unknown as HTMLElement;
-    const containerConfig = getSandboxConfig(element);
+    const sandboxConfig = getSandboxConfig(element);
 
-    if (!isHijackingTag(element.tagName) || !containerConfig) {
+    // no attached sandbox config means the element is not created from the sandbox environment
+    if (!isHijackingTag(element.tagName) || !sandboxConfig) {
       return appendChild.call(this, element, refChild) as T;
     }
 
@@ -157,22 +158,31 @@ export function getOverwrittenAppendChildOrInsertBefore(
             refNo = Array.from(this.childNodes).indexOf(referenceNode as ChildNode);
           }
 
-          const result = appendChild.call(this, stylesheetElement, referenceNode);
+          const { sandbox, nodeTransformer, fetch } = sandboxConfig;
+          const transpiledStyleSheetElement = nodeTransformer
+            ? nodeTransformer(stylesheetElement, location.href, {
+                fetch,
+                sandbox,
+                rawNode: stylesheetElement,
+              })
+            : stylesheetElement;
+
+          const result = appendChild.call(this, transpiledStyleSheetElement, referenceNode);
 
           // record refNo thus we can keep order while remounting
           if (typeof refNo === 'number' && refNo !== -1) {
-            defineNonEnumerableProperty(stylesheetElement, styleElementRefNodeNo, refNo);
+            defineNonEnumerableProperty(transpiledStyleSheetElement, styleElementRefNodeNo, refNo);
           }
-          const { dynamicStyleSheetElements } = containerConfig;
+          const { dynamicStyleSheetElements } = sandboxConfig;
           // record dynamic style elements after insert succeed
-          dynamicStyleSheetElements.push(stylesheetElement);
+          dynamicStyleSheetElements.push(transpiledStyleSheetElement);
 
           return result as T;
         }
 
         case SCRIPT_TAG_NAME: {
           const scriptElement = element as HTMLScriptElement;
-          const { sandbox, dynamicExternalSyncScriptElements } = containerConfig;
+          const { sandbox, dynamicExternalSyncScriptElements, nodeTransformer, fetch } = sandboxConfig;
 
           const externalSyncMode = scriptElement.hasAttribute('src') && !scriptElement.hasAttribute('async');
 
@@ -190,26 +200,28 @@ export function getOverwrittenAppendChildOrInsertBefore(
             scriptTranspiledDeferred = new Deferred<void>();
           }
 
-          const transpiledScriptElement = transpileAssets(scriptElement, location.href, {
-            fetch,
-            sandbox,
-            rawNode: scriptElement,
-            prevScriptTranspiledDeferred,
-            scriptTranspiledDeferred,
-          } as ScriptTranspilerOpts);
+          const transpiledScriptElement = nodeTransformer
+            ? nodeTransformer(scriptElement, location.href, {
+                fetch,
+                sandbox,
+                rawNode: scriptElement,
+                prevScriptTranspiledDeferred,
+                scriptTranspiledDeferred,
+              } as ScriptTranspilerOpts)
+            : scriptElement;
 
           const result = appendChild.call(this, transpiledScriptElement, refChild) as T;
 
           // Previously it was an external synchronous script, and after the transpile, there was no src attribute, indicating that the script needs to wait for the src to be filled
           if (externalSyncMode && !transpiledScriptElement.hasAttribute('src')) {
-            dynamicExternalSyncScriptElements.push(scriptElement);
-            scriptFetchedDeferredWeakMap.set(scriptElement, scriptTranspiledDeferred!);
+            dynamicExternalSyncScriptElements.push(transpiledScriptElement);
+            scriptFetchedDeferredWeakMap.set(transpiledScriptElement, scriptTranspiledDeferred!);
 
             // clear the memory regardless the script loaded or failed
             void waitUntilSettled(scriptTranspiledDeferred!.promise).then(() => {
-              const scriptIndex = dynamicExternalSyncScriptElements.indexOf(scriptElement);
+              const scriptIndex = dynamicExternalSyncScriptElements.indexOf(transpiledScriptElement);
               dynamicExternalSyncScriptElements.splice(scriptIndex, 1);
-              scriptFetchedDeferredWeakMap.delete(scriptElement);
+              scriptFetchedDeferredWeakMap.delete(transpiledScriptElement);
             });
           }
 

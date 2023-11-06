@@ -19,6 +19,7 @@ import {
   toArray,
 } from '../utils';
 import { version } from '../version';
+import { wrapFetchWithLruCache } from './fetchWithLruCache';
 
 export type ParcelConfigObjectGetter = (remountContainer: HTMLElement) => ParcelConfigObject;
 
@@ -28,7 +29,8 @@ export default async function loadApp<T extends ObjectType>(
   lifeCycles?: LifeCycles<T>,
 ): Promise<ParcelConfigObjectGetter> {
   const { name: appName, entry, container } = app;
-  const { fetch = window.fetch, sandbox, globalContext = window, streamTransformer } = configuration || {};
+  const { fetch = window.fetch, sandbox, globalContext = window, ...restConfiguration } = configuration || {};
+  const fetchWithLruCache = wrapFetchWithLruCache(fetch);
 
   const markName = `[qiankun] App ${appName} Loading`;
   if (process.env.NODE_ENV === 'development') {
@@ -47,6 +49,8 @@ export default async function loadApp<T extends ObjectType>(
     const sandboxContainer = createSandboxContainer(appName, () => sandboxMicroAppContainer, {
       globalContext,
       extraGlobals: {},
+      fetch: fetchWithLruCache,
+      nodeTransformer: restConfiguration.nodeTransformer,
     });
 
     sandboxInstance = sandboxContainer.instance;
@@ -56,7 +60,7 @@ export default async function loadApp<T extends ObjectType>(
     unmountSandbox = () => sandboxContainer.unmount();
   }
 
-  const containerOpts: LoaderOpts = { fetch, sandbox: sandboxInstance, streamTransformer };
+  const containerOpts: LoaderOpts = { fetch: fetchWithLruCache, sandbox: sandboxInstance, ...restConfiguration };
 
   const lifecyclesPromise = loadEntry<MicroAppLifeCycles>(entry, sandboxMicroAppContainer, containerOpts);
 
@@ -109,7 +113,7 @@ export default async function loadApp<T extends ObjectType>(
           if (mountTimes > 1) {
             initContainer(mountContainer, appName, sandbox);
             // html scripts should be removed to avoid repeatedly execute
-            const htmlString = await getPureHTMLStringWithoutScripts(entry, fetch);
+            const htmlString = await getPureHTMLStringWithoutScripts(entry, fetchWithLruCache);
             await loadEntry(htmlString, mountContainer, containerOpts);
           }
         },

@@ -314,14 +314,16 @@ export function patchStandardSandbox(
   opts: {
     sandbox: Sandbox;
     mounting?: boolean;
-  },
+  } & Pick<SandboxConfig, 'fetch' | 'nodeTransformer'>,
 ): Free {
-  const { sandbox, mounting = true } = opts;
+  const { sandbox, mounting = true, nodeTransformer, fetch } = opts;
   let sandboxConfig = sandboxConfigWeakMap.get(sandbox);
   if (!sandboxConfig) {
     sandboxConfig = {
       appName,
       sandbox,
+      fetch,
+      nodeTransformer,
       dynamicStyleSheetElements: [],
       dynamicExternalSyncScriptElements: [],
     };
