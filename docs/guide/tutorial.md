@@ -166,13 +166,14 @@ It's important, When mount a sub-application through ReactDOM.render, need to en
    ```
 
 ### React MicroApp component
-1. Usage
+1. Install
 
 ```bash
+npm i qiankun
 npm i @qiankunjs/react
 ```
 
-2. use microApp component
+2. Usage
 
 Load (or unload) child apps directly through the `<MicroApp/>` component, which provides loading and error catching-related capabilities:
 

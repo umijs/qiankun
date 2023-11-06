@@ -169,10 +169,11 @@ start();
 1. 安装
 
 ```bash
+npm i qiankun
 npm i @qiankunjs/react
 ```
 
-2. 使用 MicroApp 组件
+2. 使用
 
 直接通过 `<MicroApp />` 组件加载（或卸载）子应用，该组件提供了 loading 以及错误捕获相关的能力：
 
