@@ -176,14 +176,14 @@ export function getOverwrittenAppendChildOrInsertBefore(
 
           const externalSyncMode = scriptElement.hasAttribute('src') && !scriptElement.hasAttribute('async');
 
-          let scriptIndex = -1;
           let prevScriptTranspiledDeferred: Deferred<void> | undefined;
           let scriptTranspiledDeferred: Deferred<void> | undefined;
 
           if (externalSyncMode) {
-            scriptIndex = dynamicExternalSyncScriptElements.indexOf(scriptElement);
-            const prevSyncScriptElement =
-              scriptIndex > 0 ? dynamicExternalSyncScriptElements[scriptIndex - 1] : undefined;
+            const dynamicScriptsLength = dynamicExternalSyncScriptElements.length;
+            const prevSyncScriptElement = dynamicScriptsLength
+              ? dynamicExternalSyncScriptElements[dynamicScriptsLength - 1]
+              : undefined;
             prevScriptTranspiledDeferred = prevSyncScriptElement
               ? scriptFetchedDeferredWeakMap.get(prevSyncScriptElement)
               : undefined;
@@ -205,8 +205,9 @@ export function getOverwrittenAppendChildOrInsertBefore(
             dynamicExternalSyncScriptElements.push(scriptElement);
             scriptFetchedDeferredWeakMap.set(scriptElement, scriptTranspiledDeferred!);
 
+            // clear the memory regardless the script loaded or failed
             void waitUntilSettled(scriptTranspiledDeferred!.promise).then(() => {
-              // we should clear the memory regardless the script loaded or failed
+              const scriptIndex = dynamicExternalSyncScriptElements.indexOf(scriptElement);
               dynamicExternalSyncScriptElements.splice(scriptIndex, 1);
               scriptFetchedDeferredWeakMap.delete(scriptElement);
             });
