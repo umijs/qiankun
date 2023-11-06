@@ -202,11 +202,12 @@ export function getOverwrittenAppendChildOrInsertBefore(
 
           // Previously it was an external synchronous script, and after the transpile, there was no src attribute, indicating that the script needs to wait for the src to be filled
           if (externalSyncMode && !transpiledScriptElement.hasAttribute('src')) {
-            const scriptIndex = dynamicExternalSyncScriptElements.push(scriptElement) - 1;
+            dynamicExternalSyncScriptElements.push(scriptElement);
             scriptFetchedDeferredWeakMap.set(scriptElement, scriptTranspiledDeferred!);
 
+            // clear the memory regardless the script loaded or failed
             void waitUntilSettled(scriptTranspiledDeferred!.promise).then(() => {
-              // we should clear the memory regardless the script loaded or failed
+              const scriptIndex = dynamicExternalSyncScriptElements.indexOf(scriptElement);
               dynamicExternalSyncScriptElements.splice(scriptIndex, 1);
               scriptFetchedDeferredWeakMap.delete(scriptElement);
             });
