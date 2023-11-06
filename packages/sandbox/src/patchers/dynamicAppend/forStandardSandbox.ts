@@ -372,7 +372,7 @@ export function patchStandardSandbox(
 
             // micro app rendering should wait unit the rebuilding link element is loaded, otherwise it may cause style blink
             // As one link element will just trigger loaded event once, although we append it multiple times, we need to clone it before every appending
-            const cloneStyleElement = document.importNode(stylesheetElement) as HTMLLinkElement;
+            const cloneStyleElement = stylesheetElement.cloneNode(true) as HTMLLinkElement;
             const deferred = new Deferred<boolean>();
             if (cloneStyleElement.rel === 'stylesheet' && cloneStyleElement.href) {
               cloneStyleElement.onload = () => deferred.resolve(true);
