@@ -15,10 +15,10 @@
     "@qiankunjs/webpack-plugin":"<%= @qiankunjs/webpack-plugin %>"
   }
   "scripts": {
-    "dev": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "dev": "react-app-rewired start",
+    "build": "react-app-rewired build",
+    "test": "react-app-rewired test",
+    "eject": "react-app-rewired eject"
   },
   "eslintConfig": {
     "extends": ["react-app", "react-app/jest"]
@@ -26,5 +26,8 @@
   "browserslist": {
     "production": [">0.2%", "not dead", "not op_mini all"],
     "development": ["last 1 chrome version", "last 1 firefox version", "last 1 safari version"]
+  },
+  "devDependencies": {
+    "react-app-rewired": "^2.2.1"
   }
 }
