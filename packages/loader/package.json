@@ -8,7 +8,6 @@
   "sideEffects": false,
   "scripts": {
     "build": "father build",
-    "test": "cross-env NODE_ENV=test vitest",
     "bench": "npm run build && tachometer ./benchmarks/parser/tern/import-html-entry.html ./benchmarks/parser/tern/parser.html --timeout=1"
   },
   "author": "Kuitos",

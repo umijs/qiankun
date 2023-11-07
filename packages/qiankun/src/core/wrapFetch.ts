@@ -19,6 +19,10 @@ const getGlobalCache = once(() => {
   });
 });
 
+const isValidaResponse = (status: number): boolean => {
+  return status >= 200 && status < 400;
+};
+
 export const wrapFetchWithLruCache: (fetch: Fetch) => Fetch = (fetch) => {
   const lruCache = getGlobalCache();
 
@@ -28,6 +32,12 @@ export const wrapFetchWithLruCache: (fetch: Fetch) => Fetch = (fetch) => {
     const wrapFetchPromise = async (promise: Promise<Response>): Promise<Response> => {
       try {
         const res = await promise;
+
+        const { status } = res;
+        if (!isValidaResponse(status)) {
+          lruCache.delete(cacheKey);
+        }
+
         // must clone the response as one response body can only be read once as a stream
         return res.clone();
       } catch (e) {

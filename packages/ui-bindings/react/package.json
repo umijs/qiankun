@@ -8,8 +8,7 @@
   "sideEffects": false,
   "scripts": {
     "build": "father build",
-    "dev": "father dev",
-    "test": "cross-env NODE_ENV=test vitest"
+    "dev": "father dev"
   },
   "author": "Bravepg",
   "license": "MIT",

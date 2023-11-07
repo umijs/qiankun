@@ -9,7 +9,7 @@ on:
       - 1.x
 
 jobs:
-  check:
+  build-check-and-lint:
     runs-on: ubuntu-latest
 
     strategy:
@@ -29,6 +29,43 @@ jobs:
           cache: "pnpm"
 
       - run: corepack enable # https://nodejs.org/api/corepack.html
+
       - run: pnpm install
-      - run: pnpm run ci
-      # - run: pnpm run docs:build #执行报错，暂时关闭
+
+      - name: TS Build Check
+        run: pnpm run build
+
+      - name: Run eslint
+        run: pnpm run eslint
+
+      - name: Run prettier
+        run: pnpm run prettier:check
+
+      - name: Doc Build check
+        run: pnpm run docs:build
+
+  unit-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [ lts/*, latest ]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2.4.0
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "pnpm"
+
+      - run: corepack enable # https://nodejs.org/api/corepack.html
+
+      - run: pnpm install
+
+      - name: Run unit test
+        run: pnpm run test

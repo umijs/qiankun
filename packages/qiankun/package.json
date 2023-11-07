@@ -16,13 +16,7 @@
   "sideEffects": false,
   "scripts": {
     "build": "father build",
-    "lint": "yarn lint:js && yarn lint:prettier",
-    "lint:js": "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty ./src",
-    "lint:fix": "yarn lint:js -- --fix",
-    "lint:prettier": "prettier -c ./src/**/*",
-    "prettier": "prettier --write ./src/**/*",
-    "ci": "yarn lint && yarn build && yarn test",
-    "test": "cross-env NODE_ENV=test vitest"
+    "test": "vitest --run"
   },
   "repository": {
     "type": "git",
