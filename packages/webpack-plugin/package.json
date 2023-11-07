@@ -11,9 +11,7 @@
     "test:local": "npm run build && npm run build:webpack4 && npm run build:webpack5 && vitest",
     "build": "father build"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "peerDependencies": {
     "webpack": "^4.0.0 || ^5.0.0"
   },
