@@ -3,6 +3,7 @@
  * @since 2019-04-11
  */
 import { patchAtBootstrapping, patchAtMounting } from '../../patchers';
+import type { SandboxConfig } from '../../patchers/dynamicAppend/types';
 import type { Free, Rebuild } from '../../patchers/types';
 import type { Endowments } from '../membrane';
 import { StandardSandbox } from './StandardSandbox';
@@ -32,9 +33,9 @@ export function createSandboxContainer(
   opts: {
     globalContext?: WindowProxy;
     extraGlobals?: Endowments;
-  },
+  } & Pick<SandboxConfig, 'fetch' | 'nodeTransformer'>,
 ) {
-  const { globalContext, extraGlobals = {} } = opts;
+  const { globalContext, extraGlobals = {}, ...sandboxCfg } = opts;
   let sandbox: Sandbox;
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (window.Proxy) {
@@ -45,7 +46,7 @@ export function createSandboxContainer(
   }
 
   // some side effect could be invoked while bootstrapping, such as dynamic stylesheet injection with style-loader, especially during the development phase
-  const bootstrappingFrees = patchAtBootstrapping(appName, getContainer, sandbox);
+  const bootstrappingFrees = patchAtBootstrapping(appName, getContainer, { sandbox, ...sandboxCfg });
   // mounting frees are one-off and should be re-init at every mounting time
   let mountingFrees: Free[] = [];
 
@@ -77,7 +78,7 @@ export function createSandboxContainer(
 
       /* ------------------------------------------ 2. 开启全局变量补丁 ------------------------------------------*/
       // render 沙箱启动时开始劫持各类全局监听，尽量不要在应用初始化阶段有 事件监听/定时器 等副作用
-      mountingFrees = patchAtMounting(appName, getContainer, sandbox);
+      mountingFrees = patchAtMounting(appName, getContainer, { sandbox, ...sandboxCfg });
 
       /* ------------------------------------------ 3. 重置一些初始化时的副作用 ------------------------------------------*/
       // 存在 rebuilds 则表明有些副作用需要重建

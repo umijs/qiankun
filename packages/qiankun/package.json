@@ -16,21 +16,13 @@
   "sideEffects": false,
   "scripts": {
     "build": "father build",
-    "lint": "yarn lint:js && yarn lint:prettier",
-    "lint:js": "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty ./src",
-    "lint:fix": "yarn lint:js -- --fix",
-    "lint:prettier": "prettier -c ./src/**/*",
-    "prettier": "prettier --write ./src/**/*",
-    "ci": "yarn lint && yarn build && yarn test",
-    "test": "cross-env NODE_ENV=test vitest"
+    "test": "vitest --run"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kuitos/qiankun.git"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "author": "Kuitos",
   "license": "MIT",
   "bugs": {
@@ -43,6 +35,7 @@
     "@qiankunjs/sandbox": "workspace:^",
     "@qiankunjs/shared": "workspace:^",
     "lodash": "^4.17.11",
+    "lru-cache": "^10.0.1",
     "single-spa": "^6.0.0-beta.3"
   },
   "devDependencies": {

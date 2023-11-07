@@ -7,12 +7,9 @@
   "types": "./dist/esm/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "build": "father build",
-    "test": "cross-env NODE_ENV=test vitest --config ../../vitest.config.ts"
+    "build": "father build"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "author": "Kuitos",
   "license": "MIT",
   "dependencies": {

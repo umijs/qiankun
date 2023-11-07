@@ -8,7 +8,7 @@
   "sideEffects": false,
   "scripts": {
     "build": "father build",
-    "test": "vitest --environment jsdom --run",
+    "test": "vitest --run",
     "bench": "npm run build && tachometer ./benchmarks/parser/tern/import-html-entry.html ./benchmarks/parser/tern/parser.html --timeout=1"
   },
   "author": "Kuitos",
@@ -18,9 +18,7 @@
     "lodash": "^4.17.11",
     "semver": "^7.5.3"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   }
