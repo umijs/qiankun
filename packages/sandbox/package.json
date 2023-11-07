@@ -9,9 +9,7 @@
   "scripts": {
     "build": "father build"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "author": "Kuitos",
   "license": "MIT",
   "dependencies": {

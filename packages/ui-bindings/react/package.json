@@ -29,8 +29,6 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "repository": "git@github.com:umijs/qiankun.git"
 }
