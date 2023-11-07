@@ -2,6 +2,7 @@
  * @author Kuitos
  * @since 2023-11-06
  */
+import { once } from 'lodash';
 import { LRUCache } from 'lru-cache';
 
 type Fetch = typeof window.fetch;
@@ -10,28 +11,40 @@ const getCacheKey = (input: Parameters<Fetch>[0]): string => {
   return typeof input === 'string' ? input : 'url' in input ? input.url : input.href;
 };
 
-export const wrapFetchWithLruCache: (fetch: Fetch) => Fetch = (fetch) => {
-  const lruCache = new LRUCache<string, Promise<Response>>({
+const getGlobalCache = once(() => {
+  return new LRUCache<string, Promise<Response>>({
     max: 50,
-    ttl: 60 * 60,
+    // 10 minutes
+    ttl: 10 * 60 * 1000,
   });
+});
 
-  const cachedFetch: Fetch = async (input, init) => {
+export const wrapFetchWithLruCache: (fetch: Fetch) => Fetch = (fetch) => {
+  const lruCache = getGlobalCache();
+
+  const cachedFetch: Fetch = (input, init) => {
     const fetchInput = input as Parameters<Fetch>[0];
     const cacheKey = getCacheKey(fetchInput);
+    const wrapFetchPromise = async (promise: Promise<Response>): Promise<Response> => {
+      try {
+        const res = await promise;
+        // must clone the response as one response body can only be read once as a stream
+        return res.clone();
+      } catch (e) {
+        lruCache.delete(cacheKey);
+        throw e;
+      }
+    };
 
-    const cachedPromise = lruCache.get(cacheKey);
-    if (cachedPromise) {
-      const res = await cachedPromise;
-      return res.clone();
+    const cachedFetchPromise = lruCache.get(cacheKey);
+    if (cachedFetchPromise) {
+      return wrapFetchPromise(cachedFetchPromise);
     }
 
-    const promise = fetch(fetchInput, init).catch((e) => {
-      lruCache.delete(cacheKey);
-      throw e;
-    });
-    lruCache.set(cacheKey, promise);
-    return promise;
+    const fetchPromise = fetch(fetchInput, init);
+    lruCache.set(cacheKey, fetchPromise);
+
+    return wrapFetchPromise(fetchPromise);
   };
 
   return cachedFetch;
