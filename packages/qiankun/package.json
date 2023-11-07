@@ -15,8 +15,7 @@
   "types": "./dist/esm/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "build": "father build",
-    "test": "vitest --run"
+    "build": "father build"
   },
   "repository": {
     "type": "git",
@@ -35,7 +34,6 @@
     "@qiankunjs/sandbox": "workspace:^",
     "@qiankunjs/shared": "workspace:^",
     "lodash": "^4.17.11",
-    "lru-cache": "^10.0.1",
     "single-spa": "^6.0.0-beta.3"
   },
   "devDependencies": {

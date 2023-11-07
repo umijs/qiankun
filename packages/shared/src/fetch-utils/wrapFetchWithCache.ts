@@ -3,7 +3,7 @@
  * @since 2023-11-06
  */
 import { once } from 'lodash';
-import { LRUCache } from 'lru-cache';
+import { LRUCache } from './miniLruCache';
 
 type Fetch = typeof window.fetch;
 
@@ -12,18 +12,14 @@ const getCacheKey = (input: Parameters<Fetch>[0]): string => {
 };
 
 const getGlobalCache = once(() => {
-  return new LRUCache<string, Promise<Response>>({
-    max: 50,
-    // 10 minutes
-    ttl: 10 * 60 * 1000,
-  });
+  return new LRUCache<string, Promise<Response>>(50);
 });
 
 const isValidaResponse = (status: number): boolean => {
   return status >= 200 && status < 400;
 };
 
-export const wrapFetchWithLruCache: (fetch: Fetch) => Fetch = (fetch) => {
+export const wrapFetchWithCache: (fetch: Fetch) => Fetch = (fetch) => {
   const lruCache = getGlobalCache();
 
   const cachedFetch: Fetch = (input, init) => {

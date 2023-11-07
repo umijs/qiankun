@@ -6,6 +6,7 @@ import type { LoaderOpts } from '@qiankunjs/loader';
 import { loadEntry } from '@qiankunjs/loader';
 import type { Sandbox } from '@qiankunjs/sandbox';
 import { createSandboxContainer } from '@qiankunjs/sandbox';
+import { wrapFetchWithCache } from '@qiankunjs/shared';
 import { concat, isFunction, mergeWith } from 'lodash';
 import type { ParcelConfigObject } from 'single-spa';
 import getAddOns from '../addons';
@@ -19,7 +20,6 @@ import {
   toArray,
 } from '../utils';
 import { version } from '../version';
-import { wrapFetchWithLruCache } from './wrapFetch';
 
 export type ParcelConfigObjectGetter = (remountContainer: HTMLElement) => ParcelConfigObject;
 
@@ -30,7 +30,7 @@ export default async function loadApp<T extends ObjectType>(
 ): Promise<ParcelConfigObjectGetter> {
   const { name: appName, entry, container } = app;
   const { fetch = window.fetch, sandbox, globalContext = window, ...restConfiguration } = configuration || {};
-  const fetchWithLruCache = wrapFetchWithLruCache(fetch);
+  const fetchWithLruCache = wrapFetchWithCache(fetch);
 
   const markName = `[qiankun] App ${appName} Loading`;
   if (process.env.NODE_ENV === 'development') {
