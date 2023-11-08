@@ -82,7 +82,7 @@ class QiankunPlugin {
   }
 
   private addEntryAttributeToScripts(htmlString: string): string {
-    const scriptTags = htmlString.match(/<script[^>]*src="[^"]+"[^>]*><\/script>/g) || [];
+    const scriptTags = htmlString.match(this.scriptMatchPattern) || [];
 
     if (scriptTags.length) {
       const lastScriptTag = scriptTags[scriptTags.length - 1];

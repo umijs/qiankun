@@ -8,7 +8,7 @@
   "scripts": {
     "build:webpack4": "cd ./tests/webpack4 && npm run build",
     "build:webpack5": "cd ./tests/webpack5 && npm run build",
-    "test:local": "npm run build && npm run build:webpack4 && npm run build:webpack5 && vitest",
+    "test": "npm run build && npm run build:webpack4 && npm run build:webpack5 && vitest --run",
     "build": "father build"
   },
   "files": ["dist"],

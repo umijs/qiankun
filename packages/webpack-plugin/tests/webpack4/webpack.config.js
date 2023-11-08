@@ -13,6 +13,8 @@ module.exports = {
       template: './index.html', // 指定模板文件路径
       filename: 'index.html', // 输出的HTML文件名（默认为index.html）
     }),
-    new QiankunPlugin(),
+    new QiankunPlugin({
+      scriptMatchPattern: /<script[^>]*src="\/js\/app.*.js"[^>]*><\/script>/g,
+    }),
   ],
 };
