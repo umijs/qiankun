@@ -5,6 +5,8 @@ import { RawSource } from 'webpack-sources';
 
 interface QiankunPluginOptions {
   packageName?: string;
+  webpackVersion?: string;
+  scriptMatchPattern?: RegExp; // 新增可选参数，用于匹配script标签
 }
 
 interface PackageJson {
@@ -15,10 +17,15 @@ interface PackageJson {
 
 class QiankunPlugin {
   private packageName: string;
+  private webpackVersion: string; // 用户指定的webpack版本
+  private scriptMatchPattern: RegExp; // 用户提供的正则表达式
+
   private static packageJson: PackageJson = QiankunPlugin.readPackageJson();
 
   constructor(options: QiankunPluginOptions = {}) {
     this.packageName = options.packageName || QiankunPlugin.packageJson.name || '';
+    this.webpackVersion = options.webpackVersion || QiankunPlugin.getWebpackVersion(); // 使用用户指定的版本或者读取的版本
+    this.scriptMatchPattern = options.scriptMatchPattern || /<script[^>]*src="[^"]+"[^>]*><\/script>/g; // 使用用户提供的正则或默认值
   }
 
   private static readPackageJson(): PackageJson {
@@ -40,16 +47,15 @@ class QiankunPlugin {
   }
 
   private configureWebpackOutput(compiler: Compiler): void {
-    const webpackVersion = QiankunPlugin.getWebpackVersion();
     const webpackCompilerOptions = compiler.options as Configuration & { output: { jsonpFunction?: string } };
-    if (webpackVersion.startsWith('4')) {
+    if (this.webpackVersion.startsWith('4')) {
       // webpack 4
       webpackCompilerOptions.output.library = `${this.packageName}`;
       webpackCompilerOptions.output.libraryTarget = 'window';
       webpackCompilerOptions.output.jsonpFunction = `webpackJsonp_${this.packageName}`;
       webpackCompilerOptions.output.globalObject = 'window';
       webpackCompilerOptions.output.chunkLoadingGlobal = `webpackJsonp_${this.packageName}`;
-    } else if (webpackVersion.startsWith('5')) {
+    } else if (this.webpackVersion.startsWith('5')) {
       // webpack 5
       webpackCompilerOptions.output.library = {
         name: `${this.packageName}`,
@@ -77,10 +83,9 @@ class QiankunPlugin {
 
   private addEntryAttributeToScripts(htmlString: string): string {
     const scriptTags = htmlString.match(/<script[^>]*src="[^"]+"[^>]*><\/script>/g) || [];
-    const nonAsyncOrDeferScripts = scriptTags.filter((tag) => !/defer|async/.test(tag));
 
-    if (nonAsyncOrDeferScripts.length) {
-      const lastScriptTag = nonAsyncOrDeferScripts[nonAsyncOrDeferScripts.length - 1];
+    if (scriptTags.length) {
+      const lastScriptTag = scriptTags[scriptTags.length - 1];
       const modifiedScriptTag = lastScriptTag.replace('<script', '<script entry');
       return htmlString.replace(lastScriptTag, modifiedScriptTag);
     }

@@ -35,6 +35,8 @@ module.exports = {
   plugins: [
     new QiankunPlugin({
       packageName: 'optionalPackageName', // 可选，如果不提供，将使用 package.json 中的名称
+      webpackVersion: '5', // 可选，项目使用的webpack大版本，如果不提供，将默认读取项目package.json里webapck版本号
+      scriptMatchPattern: /<script[^>]*src="app.*\.js"[^>]*><\/script>/g, // 可选，用于匹配要添加entry属性的script标签的正则表达式。如果不提供，默认取html最后一个script标签
     }),
   ],
 };
