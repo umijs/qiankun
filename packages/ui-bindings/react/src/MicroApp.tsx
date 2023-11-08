@@ -1,6 +1,6 @@
 import { isEqual, noop } from 'lodash';
 import { type SharedProps, type MicroAppType, type SharedSlots, unmountMicroApp, mountMicroApp, updateMicroApp } from '@qiankunjs/ui-shared';
-import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import React, { Ref, forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import ErrorBoundary from './ErrorBoundary';
 import MicroAppLoader from './MicroAppLoader';
 
