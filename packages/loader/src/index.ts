@@ -129,7 +129,7 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
       )
       .then(() => {
         // while the entry html stream is finished but there is no entry script found
-        // we could use the latest set prop in sandbox to resolve the entry promise
+        // we could use the latest set prop in sandbox to resolve the entry promise as fallback
         if (!foundEntryScript) {
           onEntryLoaded();
         }
