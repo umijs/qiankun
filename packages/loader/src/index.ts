@@ -1,7 +1,13 @@
 import type { Sandbox } from '@qiankunjs/sandbox';
 import { qiankunHeadTagName } from '@qiankunjs/sandbox';
 import type { BaseTranspilerOpts } from '@qiankunjs/shared';
-import { Deferred, moduleResolver as defaultModuleResolver, QiankunError, transpileAssets } from '@qiankunjs/shared';
+import {
+  Deferred,
+  logger,
+  moduleResolver as defaultModuleResolver,
+  QiankunError,
+  transpileAssets,
+} from '@qiankunjs/shared';
 import { createTagTransformStream } from './TagTransformStream';
 import { isUrlHasOwnProtocol } from './utils';
 import WritableDOMStream from './writable-dom';
@@ -131,6 +137,9 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
         // while the entry html stream is finished but there is no entry script found
         // we could use the latest set prop in sandbox to resolve the entry promise
         if (!foundEntryScript) {
+          logger.warn(
+            `You may forget to set the entry attribute for the entry script in ${entry}, thus might cause unexpected behavior`,
+          );
           onEntryLoaded();
         }
       })
