@@ -44,6 +44,7 @@ class QiankunPlugin {
 
   private configureWebpackOutput(compiler: Compiler): void {
     const webpackCompilerOptions = compiler.options as Configuration & { output: { jsonpFunction?: string } };
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     const version = this.webpackVersion || compiler.webpack?.version || '4';
     if (version.startsWith('4')) {
       // webpack 4
