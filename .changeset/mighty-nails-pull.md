@@ -3,4 +3,4 @@
 "@qiankunjs/shared": patch
 ---
 
-fix(loader): compatible with defer entry script
+feat(loader): compatible with defer entry script
