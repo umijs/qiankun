@@ -36,7 +36,7 @@ module.exports = {
     new QiankunPlugin({
       packageName: 'optionalPackageName', // Optional, if not provided, the name from package.json will be used
       webpackVersion: '5', // Optional, specify the major version of webpack being used. If not provided, the version from package.json will be used by default.
-      scriptMatchPattern: /<script[^>]*src="app.*\.js"[^>]*><\/script>/g, // Optional, a regex pattern to match specific script tags for adding the 'entry' attribute.    Defaults to the last script tag if not specified.
+      entrySrcPattern: /<script[^>]*src="app.*\.js"[^>]*><\/script>/g, // Optional, a regex pattern to match specific script tags for adding the 'entry' attribute.    Defaults to the last script tag if not specified.
     }),
   ],
 };
