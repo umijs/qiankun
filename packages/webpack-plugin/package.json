@@ -6,8 +6,8 @@
   "module": "./dist/esm/index.js",
   "types": "./dist/esm/index.d.ts",
   "scripts": {
-    "build:webpack4": "cd ./tests/webpack4 && npm run build",
-    "build:webpack5": "cd ./tests/webpack5 && npm run build",
+    "build:webpack4": "cd ./tests/webpack4 && npm install && npm run build",
+    "build:webpack5": "cd ./tests/webpack5 && npm install && npm run build",
     "test": "npm run build && npm run build:webpack4 && npm run build:webpack5 && vitest --run",
     "build": "father build"
   },
