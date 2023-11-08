@@ -15,8 +15,6 @@ module.exports = {
       filename: 'index.html', // 输出的HTML文件名（默认为index.html）
       scriptLoading: 'blocking',
     }),
-    new QiankunPlugin({
-      webpackVersion: '5',
-    }),
+    new QiankunPlugin(),
   ],
 };

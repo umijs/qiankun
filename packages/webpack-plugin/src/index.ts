@@ -5,7 +5,6 @@ import { RawSource } from 'webpack-sources';
 
 interface QiankunPluginOptions {
   packageName?: string;
-  webpackVersion?: string;
   entrySrcPattern?: RegExp; // 新增可选参数，用于匹配script标签
 }
 
@@ -17,15 +16,15 @@ interface PackageJson {
 
 class QiankunPlugin {
   private packageName: string;
-  private webpackVersion: string; // 用户指定的webpack版本
   private entrySrcPattern: RegExp; // 用户提供的正则表达式
 
   private static packageJson: PackageJson = QiankunPlugin.readPackageJson();
 
   constructor(options: QiankunPluginOptions = {}) {
     this.packageName = options.packageName || QiankunPlugin.packageJson.name || '';
-    this.webpackVersion = options.webpackVersion || ''; // 使用用户指定的webapck版本
-    this.entrySrcPattern = options.entrySrcPattern || /<script[^>]*src="[^"]+"[^>]*><\/script>/g; // 使用用户提供的正则或默认值
+    this.entrySrcPattern = options.entrySrcPattern
+      ? new RegExp(`<script[^>]*src="[^"]*${options.entrySrcPattern.source}[^"]*"[^>]*></script>`, 'g')
+      : /<script[^>]*src="[^"]+"[^>]*><\/script>/g; // 默认值
   }
 
   private static readPackageJson(): PackageJson {
@@ -45,7 +44,7 @@ class QiankunPlugin {
   private configureWebpackOutput(compiler: Compiler): void {
     const webpackCompilerOptions = compiler.options as Configuration & { output: { jsonpFunction?: string } };
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    const version = this.webpackVersion || compiler.webpack?.version || '4';
+    const version = compiler.webpack?.version || '4';
     if (version.startsWith('4')) {
       // webpack 4
       webpackCompilerOptions.output.library = `${this.packageName}`;
@@ -81,8 +80,18 @@ class QiankunPlugin {
 
   private addEntryAttributeToScripts(htmlString: string): string {
     const scriptTags = htmlString.match(this.entrySrcPattern) || [];
+    let alreadyHasEntry = false;
 
-    if (scriptTags.length) {
+    // 检查是否已经有带有entry属性的script标签
+    scriptTags.forEach((tag) => {
+      if (tag.includes(' entry')) {
+        alreadyHasEntry = true;
+      }
+    });
+
+    // 如果没有带有entry属性的script标签，则添加到最后一个script标签
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (!alreadyHasEntry && scriptTags.length) {
       const lastScriptTag = scriptTags[scriptTags.length - 1];
       const modifiedScriptTag = lastScriptTag.replace('<script', '<script entry');
       return htmlString.replace(lastScriptTag, modifiedScriptTag);
