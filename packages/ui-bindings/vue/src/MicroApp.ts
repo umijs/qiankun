@@ -1,15 +1,47 @@
-import { computed, defineComponent, h, onMounted, reactive, ref, toRefs, watch } from 'vue';
-import type { MicroAppType, SharedProps } from '@qiankunjs/ui-shared';
-import { mountMicroApp, unmountMicroApp } from '@qiankunjs/ui-shared';
+import { PropType, computed, defineComponent, h, onMounted, reactive, ref, toRefs, watch } from 'vue';
+import type { AppConfiguration, LifeCycleFn } from 'qiankun';
+import type { MicroAppType } from '@qiankunjs/ui-shared';
+import { mountMicroApp, unmountMicroApp, updateMicroApp } from '@qiankunjs/ui-shared';
 
 import MicroAppLoader from './MicroAppLoader';
 import ErrorBoundary from './ErrorBoundary';
-import { updateMicroApp } from '../../shared/src';
 
 export const MicroApp = defineComponent({
-  props: {},
+  props: {
+    name: {
+      type: String,
+      required: true,
+    },
+    entry: {
+      type: String,
+      required: true,
+    },
+    settings: {
+      type: Object as PropType<AppConfiguration>,
+      default: () => ({
+        sandbox: true,
+      }),
+    },
+    lifeCycles: {
+      type: Object as PropType<Record<string, LifeCycleFn<unknown, unknown>>>,
+    },
+    autoSetLoading: {
+      type: Boolean,
+      default: false,
+    },
+    autoCaptureError: {
+      type: Boolean,
+      default: false,
+    },
+    wrapperClassName: {
+      type: String,
+    },
+    className: {
+      type: String,
+    },
+  },
   setup(props, { slots, expose }) {
-    const originProps = props as unknown as SharedProps;
+    const originProps = props;
     const { name, wrapperClassName, className, ...propsFromParams } = toRefs(originProps);
 
     const loading = ref(false);
