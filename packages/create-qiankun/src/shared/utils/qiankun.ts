@@ -7,7 +7,7 @@ export interface ISubConfig {
 
 export const installQiankunPkgs = {
   qiankun: '^3.0.0-rc.11',
-  '@qiankunjs/webpack-plugin': '^0.0.1-rc.2',
+  webpackPlugin: '^0.0.1-rc.2',
 };
 
 export async function injectSubsConfigToMainApp(mainAppPath: string, subsConfig: ISubConfig[] | ISubConfig) {

@@ -11,7 +11,7 @@ import { isDir } from './shared/utils';
 import type { MainFrameworkTemplate, SubFrameworkTemplate } from './shared/template';
 import { mainFrameworkList, subFrameworkList, enumToArray } from './shared/template';
 import { type RenderOptions, createApplication } from './shared/render';
-import { composeGeneratePorts, generatePort, injectCheckPortScript } from './shared/utils/port';
+import { composeGeneratePorts, generatePort, injectCheckPortScript, injectPreNpmScript } from './shared/utils/port';
 import { injectSubsConfigToMainApp, installQiankunPkgs } from './shared/utils/qiankun';
 import { injectNormalScripts, injectWorkspaceScripts } from './shared/utils/scripts';
 
@@ -202,8 +202,11 @@ async function renderTemplate(opts: RenderOptions) {
             gitInit: createKind === CreateKind.CreateSubApp || packageManager !== PackageManager.pnpmWorkspace,
             monorepoDirPath: monorepoRootPath,
             hooks: {
-              async beforeRender(context, data) {
-                await injectCheckPortScript(context.applicationTargetPath, data);
+              async beforeRender(context) {
+                await injectCheckPortScript(context.applicationTargetPath);
+              },
+              async afterRender(context) {
+                await injectPreNpmScript(context.applicationTargetPath);
               },
             },
           },

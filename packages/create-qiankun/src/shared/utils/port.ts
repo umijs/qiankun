@@ -17,11 +17,13 @@ export function generatePort(created: number[] = []) {
   return port;
 }
 
-export async function injectCheckPortScript(projectRoot: string, data: Record<string, unknown>) {
+export async function injectCheckPortScript(projectRoot: string) {
   const scriptDir = path.resolve(__dirname, '../../../template/scripts');
 
   await fse.copy(scriptDir, path.join(projectRoot, 'scripts'));
+}
 
+export async function injectPreNpmScript(projectRoot: string) {
   const pkg = fse.readJsonSync(path.resolve(projectRoot, 'package.json')) as Record<string, unknown>;
 
   pkg.scripts = {

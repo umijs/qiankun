@@ -12,7 +12,8 @@ export interface RenderOptions {
   gitInit?: boolean;
   monorepoDirPath?: string;
   hooks?: {
-    beforeRender: (context: IRenderContext, data: Record<string, unknown>) => Promise<void>;
+    beforeRender?: (context: IRenderContext, data: Record<string, unknown>) => Promise<void>;
+    afterRender?: (context: IRenderContext, data: Record<string, unknown>) => Promise<void>;
   };
 }
 
@@ -75,6 +76,10 @@ export async function createApplication(
   }
 
   renderEJSforTemplate(context.applicationTargetPath, data);
+
+  if (opts.hooks?.afterRender) {
+    await opts.hooks.afterRender(context, data);
+  }
 
   return {
     applicationTargetPath: context.applicationTargetPath,

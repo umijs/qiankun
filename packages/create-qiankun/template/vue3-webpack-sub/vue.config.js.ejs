@@ -16,7 +16,7 @@ module.exports = defineConfig({
   },
   configureWebpack: {
     output: {
-      library: `${packageName}-[name]`,
+      library: `${packageName}`,
       libraryTarget: "umd",
       chunkLoadingGlobal: `webpackJsonp_${packageName}`,
     },

@@ -1,14 +1,14 @@
-const packageName = require('./package.json').name
+const packageName = require('./package.json').name;
 
 module.exports = {
-  webpack: function(config, env) {
+  webpack: function (config, env) {
     config.output = {
       ...config.output,
       publicPath: `http://localhost:${process.env.PORT}/`,
-      library: `${packageName}-[name]`,
+      library: `${packageName}`,
       libraryTarget: 'umd',
       chunkLoadingGlobal: `webpackJsonp_${packageName}`,
-    }
+    };
     return config;
   },
-}
+};
