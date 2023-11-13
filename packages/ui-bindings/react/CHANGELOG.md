@@ -1,5 +1,12 @@
 # @qiankunjs/react
 
+## 0.0.1-rc.10
+
+### Patch Changes
+
+- Updated dependencies [f2af2e36]
+  - qiankun@3.0.0-rc.13
+
 ## 0.0.1-rc.9
 
 ### Patch Changes

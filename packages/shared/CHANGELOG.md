@@ -1,5 +1,11 @@
 # @qiankunjs/shared
 
+## 0.0.1-rc.7
+
+### Patch Changes
+
+- f2af2e36: feat: extract NodeTransformer type to shared package
+
 ## 0.0.1-rc.6
 
 ### Patch Changes
