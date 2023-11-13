@@ -1,5 +1,14 @@
 # @qiankunjs/shared
 
+## 0.0.1-rc.6
+
+### Patch Changes
+
+- 54b0878e: feat(loader): compatible with defer entry script
+- 7ba95cf2: feat: change script src before it execute thus we can be more consistent with the native browser logic
+- 312abbc7: feat: remove lru-cache and move wrapFetch to shared package
+- 6f074136: feat(transpiler): assets transpiler should work well while sandbox disabled
+
 ## 0.0.1-rc.5
 
 ### Patch Changes
