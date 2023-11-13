@@ -1,5 +1,20 @@
 # @qiankunjs/loader
 
+## 0.0.1-rc.12
+
+### Patch Changes
+
+- 54b0878e: feat(loader): compatible with defer entry script
+- 7ba95cf2: feat: change script src before it execute thus we can be more consistent with the native browser logic
+- Updated dependencies [d3e9872d]
+- Updated dependencies [7cc06bd4]
+- Updated dependencies [54b0878e]
+- Updated dependencies [7ba95cf2]
+- Updated dependencies [312abbc7]
+- Updated dependencies [6f074136]
+  - @qiankunjs/sandbox@0.0.1-rc.9
+  - @qiankunjs/shared@0.0.1-rc.6
+
 ## 0.0.1-rc.11
 
 ### Patch Changes

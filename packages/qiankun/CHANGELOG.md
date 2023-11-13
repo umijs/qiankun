@@ -1,5 +1,21 @@
 # qiankun
 
+## 3.0.0-rc.12
+
+### Patch Changes
+
+- 7cc06bd4: feat(loader): add lru cache for assets fetch by default
+- 312abbc7: feat: remove lru-cache and move wrapFetch to shared package
+- Updated dependencies [d3e9872d]
+- Updated dependencies [7cc06bd4]
+- Updated dependencies [54b0878e]
+- Updated dependencies [7ba95cf2]
+- Updated dependencies [312abbc7]
+- Updated dependencies [6f074136]
+  - @qiankunjs/sandbox@0.0.1-rc.9
+  - @qiankunjs/loader@0.0.1-rc.12
+  - @qiankunjs/shared@0.0.1-rc.6
+
 ## 3.0.0-rc.11
 
 ### Patch Changes

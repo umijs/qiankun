@@ -1,5 +1,17 @@
 # @qiankunjs/sandbox
 
+## 0.0.1-rc.9
+
+### Patch Changes
+
+- d3e9872d: feat(sandbox): use cloneNode api instead of importNode for compatible
+- 7cc06bd4: feat(loader): add lru cache for assets fetch by default
+- Updated dependencies [54b0878e]
+- Updated dependencies [7ba95cf2]
+- Updated dependencies [312abbc7]
+- Updated dependencies [6f074136]
+  - @qiankunjs/shared@0.0.1-rc.6
+
 ## 0.0.1-rc.8
 
 ### Patch Changes
