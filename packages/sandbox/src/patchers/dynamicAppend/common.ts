@@ -159,13 +159,11 @@ export function getOverwrittenAppendChildOrInsertBefore(
           }
 
           const { sandbox, nodeTransformer, fetch } = sandboxConfig;
-          const transpiledStyleSheetElement = nodeTransformer
-            ? nodeTransformer(stylesheetElement, location.href, {
-                fetch,
-                sandbox,
-                rawNode: stylesheetElement,
-              })
-            : stylesheetElement;
+          const transpiledStyleSheetElement = nodeTransformer(stylesheetElement, location.href, {
+            fetch,
+            sandbox,
+            rawNode: stylesheetElement,
+          });
 
           const result = appendChild.call(this, transpiledStyleSheetElement, referenceNode);
 
@@ -200,15 +198,13 @@ export function getOverwrittenAppendChildOrInsertBefore(
             scriptTranspiledDeferred = new Deferred<void>();
           }
 
-          const transpiledScriptElement = nodeTransformer
-            ? nodeTransformer(scriptElement, location.href, {
-                fetch,
-                sandbox,
-                rawNode: scriptElement,
-                prevScriptTranspiledDeferred,
-                scriptTranspiledDeferred,
-              } as ScriptTranspilerOpts)
-            : scriptElement;
+          const transpiledScriptElement = nodeTransformer(scriptElement, location.href, {
+            fetch,
+            sandbox,
+            rawNode: scriptElement,
+            prevScriptTranspiledDeferred,
+            scriptTranspiledDeferred,
+          } as ScriptTranspilerOpts);
 
           const result = appendChild.call(this, transpiledScriptElement, refChild) as T;
 

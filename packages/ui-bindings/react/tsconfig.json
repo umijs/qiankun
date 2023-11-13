@@ -1,6 +1,9 @@
 {
   "extends": "../../../tsconfig.json",
   "compilerOptions": {
-    "jsx": "react"
+    "jsx": "react",
+    "paths": {
+      "qiankun": ["packages/qiankun/src"]
+    }
   }
 }

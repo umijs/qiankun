@@ -1,7 +1,7 @@
 import type { Sandbox } from '@qiankunjs/sandbox';
 import { qiankunHeadTagName } from '@qiankunjs/sandbox';
-import type { BaseTranspilerOpts } from '@qiankunjs/shared';
-import { Deferred, moduleResolver as defaultModuleResolver, QiankunError, transpileAssets } from '@qiankunjs/shared';
+import type { BaseTranspilerOpts, NodeTransformer } from '@qiankunjs/shared';
+import { Deferred, QiankunError } from '@qiankunjs/shared';
 import { createTagTransformStream } from './TagTransformStream';
 import { isUrlHasOwnProtocol } from './utils';
 import WritableDOMStream from './writable-dom';
@@ -19,8 +19,8 @@ type Entry = HTMLEntry;
 //
 export type LoaderOpts = {
   streamTransformer?: () => TransformStream<string, string>;
-  nodeTransformer?: typeof transpileAssets;
-} & BaseTranspilerOpts & { sandbox?: Sandbox };
+  nodeTransformer?: NodeTransformer;
+} & Omit<BaseTranspilerOpts, 'moduleResolver'> & { sandbox?: Sandbox };
 
 /**
  * @param entry
@@ -28,15 +28,7 @@ export type LoaderOpts = {
  * @param opts
  */
 export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: LoaderOpts): Promise<T | void> {
-  const {
-    fetch,
-    nodeTransformer = transpileAssets,
-    streamTransformer,
-    sandbox,
-    moduleResolver = (url: string) => {
-      return defaultModuleResolver(url, container, document.head);
-    },
-  } = opts;
+  const { fetch, streamTransformer, sandbox, nodeTransformer } = opts;
 
   const res = isUrlHasOwnProtocol(entry) ? await fetch(entry) : new Response(entry, { status: 200, statusText: 'OK' });
   if (res.body) {
@@ -77,12 +69,13 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
       )
       .pipeTo(
         new WritableDOMStream(container, null, (clone, node) => {
-          const transformedNode = nodeTransformer(clone, entry, {
-            fetch,
-            sandbox,
-            moduleResolver,
-            rawNode: node as unknown as Node,
-          });
+          const transformedNode = nodeTransformer
+            ? nodeTransformer(clone, entry, {
+                fetch,
+                sandbox,
+                rawNode: node as unknown as Node,
+              })
+            : clone;
 
           const script = transformedNode as unknown as HTMLScriptElement;
 

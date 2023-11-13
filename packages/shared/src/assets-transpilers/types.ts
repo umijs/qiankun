@@ -15,6 +15,12 @@ export type BaseTranspilerOpts = BaseLoaderOpts & {
 
 export type AssetsTranspilerOpts = BaseTranspilerOpts & { rawNode: Node };
 
+export type NodeTransformer = <T extends Node>(
+  node: T,
+  baseURI: string,
+  opts: Omit<AssetsTranspilerOpts, 'moduleResolver'>,
+) => T;
+
 export type ScriptTranspilerOpts = AssetsTranspilerOpts &
   (
     | { prevScriptTranspiledDeferred: Deferred<void>; scriptTranspiledDeferred: Deferred<void> }
