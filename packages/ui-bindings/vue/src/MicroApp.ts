@@ -1,4 +1,4 @@
-import type { PropType} from 'vue';
+import type { PropType } from 'vue';
 import { computed, defineComponent, h, onMounted, reactive, ref, toRefs, watch } from 'vue';
 import type { AppConfiguration, LifeCycles } from 'qiankun';
 import type { MicroAppType } from '@qiankunjs/ui-shared';

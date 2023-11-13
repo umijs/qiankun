@@ -32,15 +32,8 @@ export async function unmountMicroApp(microApp: MicroAppType) {
 }
 
 export const omitSharedProps = (props: Partial<SharedProps>) => {
-  return omit(props, [
-    'wrapperClassName',
-    'className',
-    'lifeCycles',
-    'settings',
-    'entry',
-    'name',
-  ]);
-}
+  return omit(props, ['wrapperClassName', 'className', 'lifeCycles', 'settings', 'entry', 'name']);
+};
 
 export function mountMicroApp({
   setLoading,
