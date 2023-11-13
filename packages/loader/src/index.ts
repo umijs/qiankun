@@ -40,6 +40,7 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
 
   const res = isUrlHasOwnProtocol(entry) ? await fetch(entry) : new Response(entry, { status: 200, statusText: 'OK' });
   if (res.body) {
+    let foundEntryScript = false;
     const entryScriptLoadedDeferred = new Deferred<T | void>();
     const isEntryScript = (script: HTMLScriptElement): boolean => {
       return script.hasAttribute('entry');
@@ -91,6 +92,14 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
            * Notice that we only support external script as entry script thus we could do resolve the promise after the script is loaded.
            */
           if (script.tagName === 'SCRIPT' && (script.src || script.dataset.src) && isEntryScript(script)) {
+            if (foundEntryScript) {
+              throw new QiankunError(
+                `You should not set multiply entry script in one entry html, but ${entry} has at least 2 entry scripts`,
+              );
+            }
+
+            foundEntryScript = true;
+
             const onScriptComplete = (
               prevListener: typeof HTMLScriptElement.prototype.onload | typeof HTMLScriptElement.prototype.onerror,
               event: Event,
@@ -119,9 +128,9 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
         }),
       )
       .then(() => {
-        // while the entry html stream is finished but there is no entry script found(entryScriptLoadedDeferred is not be resolved)
-        // we could use the latest set prop in sandbox to resolve the entry promise
-        if (!entryScriptLoadedDeferred.isSettled()) {
+        // while the entry html stream is finished but there is no entry script found
+        // we could use the latest set prop in sandbox to resolve the entry promise as fallback
+        if (!foundEntryScript) {
           onEntryLoaded();
         }
       })
