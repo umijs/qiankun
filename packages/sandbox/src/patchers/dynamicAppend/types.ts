@@ -10,6 +10,5 @@ export type SandboxConfig = {
   sandbox: Sandbox;
   dynamicStyleSheetElements: Array<HTMLStyleElement | HTMLLinkElement>;
   dynamicExternalSyncScriptElements: HTMLScriptElement[];
-} & BaseLoaderOpts & {
-    nodeTransformer: NodeTransformer;
-  };
+  nodeTransformer: NodeTransformer;
+} & BaseLoaderOpts;

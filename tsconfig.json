@@ -26,7 +26,7 @@
     "paths": {
       "@@/*": ["./.dumi/tmp/*"],
       "@qiankunjs/*": ["packages/*/src"],
-      "qiankun": ["packages/qiankun/src"],
+      "qiankun": ["packages/qiankun/src"]
     }
   },
   "exclude": ["node_modules", "examples", "packages/**/dist"]
