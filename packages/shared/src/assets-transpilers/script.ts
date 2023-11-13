@@ -112,7 +112,12 @@ export default function transpileScript(
           .then((res) => res.text())
           .then(async (code) => {
             const { prevScriptTranspiledDeferred } = opts;
-            const codeFactory = sandbox!.makeEvaluateFactory(code, src);
+
+            // add preprocess code to dispatch a CustomEvent before the script is executed
+            const beforeScriptExecuteEvent = 'q:bse';
+            const beforeExecutedListenerScript = `;(function(){var s=document.currentScript;var e=new CustomEvent('${beforeScriptExecuteEvent}',{detail:{s:s}});window.dispatchEvent(e);})();`;
+
+            const codeFactory = beforeExecutedListenerScript + sandbox!.makeEvaluateFactory(code, src);
 
             if (syncMode) {
               // if it's a sync script and there is a previous sync script, we should wait it to finish fetching
@@ -124,7 +129,23 @@ export default function transpileScript(
               script.fetchPriority = 'high';
             }
 
+            // change the script src to a blob url to make it execute in the sandbox
             script.src = URL.createObjectURL(new Blob([codeFactory], { type: 'text/javascript' }));
+
+            window.addEventListener(beforeScriptExecuteEvent, function listener(evt: CustomEventInit) {
+              const { s } = evt.detail as { s: HTMLScriptElement };
+              if (s === script) {
+                URL.revokeObjectURL(s.src);
+                // change the script src to the original src while the script is executing
+                // thus the script behavior can be more consistent with the native browser logic
+                s.src = src;
+                s.dataset.consumed = 'true';
+                delete s.dataset.src;
+
+                window.removeEventListener(beforeScriptExecuteEvent, listener);
+              }
+            });
+
             scriptTranspiledDeferred?.resolve();
           })
           .catch((e) => {
@@ -164,6 +185,21 @@ export default function transpileScript(
 
         // When the script hits the dependency reuse logic, the current script is not executed, and an empty script is returned directly
         script.src = createReusingObjectUrl(src, url, 'text/javascript');
+
+        const onScriptComplete = (
+          prevListener: typeof HTMLScriptElement.prototype.onload | typeof HTMLScriptElement.prototype.onerror,
+          event: Event,
+        ) => {
+          script.onload = script.onerror = null;
+
+          script.src = src;
+          script.dataset.consumed = 'true';
+          script.dataset.src = url;
+
+          prevListener?.call(script, event);
+        };
+        script.onload = onScriptComplete.bind(null, script.onload);
+        script.onerror = onScriptComplete.bind(null, script.onerror) as typeof HTMLScriptElement.prototype.onerror;
 
         scriptTranspiledDeferred?.resolve();
 

@@ -103,7 +103,7 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
                   onEntryLoaded();
                 } else {
                   entryScriptLoadedDeferred.reject(
-                    new QiankunError(`entry ${entry} load failed as entry script ${script.dataset.src} load failed}`),
+                    new QiankunError(`entry ${entry} load failed as entry script ${script.src} load failed}`),
                   );
                 }
               }
