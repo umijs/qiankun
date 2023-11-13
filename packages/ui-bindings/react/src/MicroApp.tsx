@@ -1,6 +1,6 @@
 import { isEqual, noop } from 'lodash';
-import { type SharedProps, type MicroAppType, type SharedSlots, unmountMicroApp, mountMicroApp, updateMicroApp } from '@qiankunjs/ui-shared';
-import React, { Ref, forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { type SharedProps, type MicroAppType, type SharedSlots, unmountMicroApp, mountMicroApp, updateMicroApp, omitSharedProps } from '@qiankunjs/ui-shared';
+import React, { type Ref, forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import ErrorBoundary from './ErrorBoundary';
 import MicroAppLoader from './MicroAppLoader';
 
@@ -22,8 +22,10 @@ export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<Mic
     errorBoundary,
     wrapperClassName,
     className,
-    ...propsFromParams
+    ...restProps
   } = componentProps;
+
+  const propsFromParams = omitSharedProps(restProps)
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error>();
@@ -54,12 +56,11 @@ export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<Mic
     mountMicroApp({
       props: componentProps,
       container: containerRef.current!,
-      propsFromParams,
-      setApp(app) {
+      setMicroApp(app) {
         microAppRef.current = app;
       },
-      setLoading: (loading) => {
-        setLoading(loading);
+      setLoading: (l) => {
+        setLoading(l);
       },
       setError: setComponentError,
     });
@@ -79,15 +80,15 @@ export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<Mic
 
   useEffect(() => {
     updateMicroApp({
-      name: name,
+      name,
       propsFromParams,
-      getApp() {
+      getMicroApp() {
         return microAppRef.current;
       },
-      setLoading: (loading) => {
-        setLoading(loading);
+      setLoading: (l) => {
+        setLoading(l);
       },
-      source: 'react',
+      key: 'react',
     })
 
     return noop;

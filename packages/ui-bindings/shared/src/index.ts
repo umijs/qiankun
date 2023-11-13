@@ -1,6 +1,6 @@
 import type { AppConfiguration, MicroApp as MicroAppTypeDefinition, LifeCycles } from 'qiankun';
 import { loadMicroApp } from 'qiankun';
-import { mergeWith, concat } from 'lodash';
+import { mergeWith, concat, omit } from 'lodash';
 import type { LifeCycleFn } from 'qiankun';
 
 export type MicroAppType = {
@@ -31,21 +31,32 @@ export async function unmountMicroApp(microApp: MicroAppType) {
   await microApp.mountPromise.then(() => microApp.unmount());
 }
 
+export const omitSharedProps = (props: Partial<SharedProps>) => {
+  return omit(props, [
+    'wrapperClassName',
+    'className',
+    'lifeCycles',
+    'settings',
+    'entry',
+    'name',
+  ]);
+}
+
 export function mountMicroApp({
   setLoading,
   setError,
-  setApp,
-  propsFromParams,
+  setMicroApp,
   container,
   props,
 }: {
   setLoading?: (loading: boolean) => void;
   setError?: (error?: Error) => void;
-  setApp?: (app?: MicroAppType) => void;
-  propsFromParams?: Record<string, unknown>;
+  setMicroApp?: (app?: MicroAppType) => void;
   props: SharedProps;
-  container?: HTMLDivElement;
+  container: HTMLDivElement;
 }) {
+  const propsFromParams = omitSharedProps(props);
+
   setError?.(undefined);
   setLoading?.(true);
 
@@ -58,7 +69,7 @@ export function mountMicroApp({
     {
       name: props.name,
       entry: props.entry,
-      container: container!,
+      container,
       props: propsFromParams,
     },
     configuration,
@@ -69,7 +80,7 @@ export function mountMicroApp({
     ),
   );
 
-  setApp?.(microApp);
+  setMicroApp?.(microApp);
 
   microApp.mountPromise
     .then(() => {
@@ -94,18 +105,18 @@ export function mountMicroApp({
 
 export function updateMicroApp({
   name,
-  getApp,
+  getMicroApp,
   setLoading,
   propsFromParams,
-  source,
+  key,
 }: {
   name?: string;
-  getApp?: () => MicroAppType | undefined;
+  getMicroApp?: () => MicroAppType | undefined;
   setLoading?: (loading: boolean) => void;
   propsFromParams?: Record<string, unknown>;
-  source?: string;
+  key?: string;
 }) {
-  const microApp = getApp?.();
+  const microApp = getMicroApp?.();
 
   if (microApp) {
     if (!microApp._updatingPromise) {
@@ -128,11 +139,11 @@ export function updateMicroApp({
             const updatingTimestamp = microApp._updatingTimestamp!;
             if (Date.now() - updatingTimestamp < 200) {
               console.warn(
-                `[@qiankunjs/${source}] It seems like microApp ${name} is updating too many times in a short time(200ms), you may need to do some optimization to avoid the unnecessary re-rendering.`,
+                `[@qiankunjs/${key}] It seems like microApp ${name} is updating too many times in a short time(200ms), you may need to do some optimization to avoid the unnecessary re-rendering.`,
               );
             }
 
-            console.info(`[@qiankunjs/${source}] MicroApp ${name} is updating with props: `, props);
+            console.info(`[@qiankunjs/${key}] MicroApp ${name} is updating with props: `, props);
             microApp._updatingTimestamp = Date.now();
           }
 

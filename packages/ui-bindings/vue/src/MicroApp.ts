@@ -1,7 +1,8 @@
-import { PropType, computed, defineComponent, h, onMounted, reactive, ref, toRefs, watch } from 'vue';
-import type { AppConfiguration, LifeCycleFn } from 'qiankun';
+import type { PropType} from 'vue';
+import { computed, defineComponent, h, onMounted, reactive, ref, toRefs, watch } from 'vue';
+import type { AppConfiguration, LifeCycles } from 'qiankun';
 import type { MicroAppType } from '@qiankunjs/ui-shared';
-import { mountMicroApp, unmountMicroApp, updateMicroApp } from '@qiankunjs/ui-shared';
+import { mountMicroApp, omitSharedProps, unmountMicroApp, updateMicroApp } from '@qiankunjs/ui-shared';
 
 import MicroAppLoader from './MicroAppLoader';
 import ErrorBoundary from './ErrorBoundary';
@@ -23,7 +24,7 @@ export const MicroApp = defineComponent({
       }),
     },
     lifeCycles: {
-      type: Object as PropType<Record<string, LifeCycleFn<unknown, unknown>>>,
+      type: Object as PropType<LifeCycles<Record<string, unknown>>>,
     },
     autoSetLoading: {
       type: Boolean,
@@ -50,10 +51,12 @@ export const MicroApp = defineComponent({
     const containerRef = ref<HTMLDivElement | null>(null);
     const microAppRef = ref<MicroAppType>();
 
-    const reactivePropsFromParams = reactive(propsFromParams);
+    const reactivePropsFromParams = computed(() => {
+      return omitSharedProps(reactive(propsFromParams));
+    });
 
     const isNeedShowError = computed(() => {
-      return slots.errorBoundary || reactivePropsFromParams.autoCaptureError;
+      return slots.errorBoundary || reactivePropsFromParams.value.autoCaptureError;
     });
 
     // 配置了 errorBoundary 才改 error 状态，否则直接往上抛异常
@@ -92,9 +95,8 @@ export const MicroApp = defineComponent({
 
           mountMicroApp({
             props: originProps,
-            propsFromParams: reactivePropsFromParams,
             container: containerRef.value!,
-            setApp: (app?: MicroAppType) => {
+            setMicroApp: (app?: MicroAppType) => {
               microAppRef.value = app;
             },
             setLoading: (l) => {
@@ -114,32 +116,30 @@ export const MicroApp = defineComponent({
         reactivePropsFromParams,
         () => {
           updateMicroApp({
-            propsFromParams: reactivePropsFromParams,
-            getApp: () => microAppRef.value,
+            getMicroApp: () => microAppRef.value,
             setLoading: (l) => {
               loading.value = l;
             },
-            source: 'vue',
+            key: 'vue',
           });
         },
         {
           deep: true,
-          immediate: true,
         },
       );
     });
 
     const microAppWrapperClassName = computed(() =>
-      wrapperClassName?.value ? `${wrapperClassName.value} qiankun-micro-app-wrapper` : 'qiankun-micro-app-wrapper',
+      wrapperClassName.value ? `${wrapperClassName.value} qiankun-micro-app-wrapper` : 'qiankun-micro-app-wrapper',
     );
 
     const microAppClassName = computed(() => {
-      return className?.value ? `${className.value} qiankun-micro-app-container` : 'qiankun-micro-app-container';
+      return className.value ? `${className.value} qiankun-micro-app-container` : 'qiankun-micro-app-container';
     });
 
     return () =>
-      reactivePropsFromParams.autoSetLoading ||
-      reactivePropsFromParams.autoCaptureError ||
+      reactivePropsFromParams.value.autoSetLoading ||
+      reactivePropsFromParams.value.autoCaptureError ||
       slots.loader ||
       slots.errorBoundary
         ? h(
@@ -150,14 +150,14 @@ export const MicroApp = defineComponent({
             [
               slots.loader
                 ? slots.loader(loading.value)
-                : reactivePropsFromParams.autoSetLoading &&
+                : reactivePropsFromParams.value.autoSetLoading &&
                   h(MicroAppLoader, {
                     loading: loading.value,
                   }),
               error.value
                 ? slots.errorBoundary
                   ? slots.errorBoundary(error.value)
-                  : reactivePropsFromParams.autoCaptureError &&
+                  : reactivePropsFromParams.value.autoCaptureError &&
                     h(ErrorBoundary, {
                       error: error.value,
                     })

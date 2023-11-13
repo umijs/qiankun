@@ -11,7 +11,7 @@
     "dev": "father dev",
     "test": "cross-env NODE_ENV=test vitest"
   },
-  "author": "Bravepg",
+  "author": "linghaoSu",
   "license": "MIT",
   "dependencies": {
     "lodash": "^4.17.11"
