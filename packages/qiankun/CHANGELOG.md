@@ -1,5 +1,15 @@
 # qiankun
 
+## 3.0.0-rc.13
+
+### Patch Changes
+
+- f2af2e36: feat: extract NodeTransformer type to shared package
+- Updated dependencies [f2af2e36]
+  - @qiankunjs/loader@0.0.1-rc.13
+  - @qiankunjs/sandbox@0.0.1-rc.10
+  - @qiankunjs/shared@0.0.1-rc.7
+
 ## 3.0.0-rc.12
 
 ### Patch Changes

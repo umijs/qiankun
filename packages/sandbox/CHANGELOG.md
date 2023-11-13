@@ -1,5 +1,13 @@
 # @qiankunjs/sandbox
 
+## 0.0.1-rc.10
+
+### Patch Changes
+
+- f2af2e36: feat: extract NodeTransformer type to shared package
+- Updated dependencies [f2af2e36]
+  - @qiankunjs/shared@0.0.1-rc.7
+
 ## 0.0.1-rc.9
 
 ### Patch Changes
