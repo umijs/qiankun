@@ -1,7 +1,13 @@
 import type { Sandbox } from '@qiankunjs/sandbox';
 import { qiankunHeadTagName } from '@qiankunjs/sandbox';
-import type { BaseTranspilerOpts, NodeTransformer } from '@qiankunjs/shared';
+import type {
+  AssetsTranspilerOpts,
+  BaseTranspilerOpts,
+  NodeTransformer,
+  ScriptTranspilerOpts,
+} from '@qiankunjs/shared';
 import { Deferred, QiankunError } from '@qiankunjs/shared';
+import { prepareScriptForQueue } from '@qiankunjs/shared/src/script-queue';
 import { createTagTransformStream } from './TagTransformStream';
 import { isUrlHasOwnProtocol } from './utils';
 import WritableDOMStream from './writable-dom';
@@ -22,6 +28,16 @@ export type LoaderOpts = {
   nodeTransformer?: NodeTransformer;
 } & Omit<BaseTranspilerOpts, 'moduleResolver'> & { sandbox?: Sandbox };
 
+const isExternalScript = (script: HTMLScriptElement): boolean => {
+  return script.tagName === 'SCRIPT' && !!(script.src || script.dataset.src);
+};
+const isEntryScript = (script: HTMLScriptElement): boolean => {
+  return isExternalScript(script) && script.hasAttribute('entry');
+};
+const isDeferScript = (script: HTMLScriptElement): boolean => {
+  return isExternalScript(script) && script.hasAttribute('defer');
+};
+
 /**
  * @param entry
  * @param container
@@ -34,9 +50,6 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
   if (res.body) {
     let foundEntryScript = false;
     const entryScriptLoadedDeferred = new Deferred<T | void>();
-    const isEntryScript = (script: HTMLScriptElement): boolean => {
-      return script.hasAttribute('entry');
-    };
     const onEntryLoaded = () => {
       // the latest set prop is the entry script exposed global variable
       if (sandbox?.latestSetProp) {
@@ -47,6 +60,8 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
         entryScriptLoadedDeferred.resolve({} as T);
       }
     };
+    const deferScripts: HTMLScriptElement[] = [];
+    const deferScriptDeferredWeakMap = new WeakMap<HTMLScriptElement, Deferred<void>>();
 
     let readableStream = res.body.pipeThrough(new TextDecoderStream());
 
@@ -69,22 +84,41 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
       )
       .pipeTo(
         new WritableDOMStream(container, null, (clone, node) => {
-          const transformedNode = nodeTransformer
-            ? nodeTransformer(clone, entry, {
-                fetch,
-                sandbox,
-                rawNode: node as unknown as Node,
-              })
-            : clone;
+          let transformerOpts: AssetsTranspilerOpts = {
+            fetch,
+            sandbox,
+            rawNode: node as unknown as Node,
+          };
+
+          let queueScript: (script: HTMLScriptElement) => void;
+          const deferScriptMode = isDeferScript(node as unknown as HTMLScriptElement);
+          if (deferScriptMode) {
+            const { scriptDeferred, prevScriptDeferred, queue } = prepareScriptForQueue(
+              deferScripts,
+              deferScriptDeferredWeakMap,
+            );
+            transformerOpts = {
+              ...transformerOpts,
+              prevScriptTranspiledDeferred: prevScriptDeferred,
+              scriptTranspiledDeferred: scriptDeferred,
+            } as ScriptTranspilerOpts;
+            queueScript = queue;
+          }
+
+          const transformedNode = nodeTransformer ? nodeTransformer(clone, entry, transformerOpts) : clone;
 
           const script = transformedNode as unknown as HTMLScriptElement;
+
+          if (deferScriptMode) {
+            queueScript!(script);
+          }
 
           /*
            * If the entry script is executed, we can complete the entry process in advance
            * otherwise we need to wait until the last script is executed.
            * Notice that we only support external script as entry script thus we could do resolve the promise after the script is loaded.
            */
-          if (script.tagName === 'SCRIPT' && (script.src || script.dataset.src) && isEntryScript(script)) {
+          if (isEntryScript(script)) {
             if (foundEntryScript) {
               throw new QiankunError(
                 `You should not set multiply entry script in one entry html, but ${entry} has at least 2 entry scripts`,

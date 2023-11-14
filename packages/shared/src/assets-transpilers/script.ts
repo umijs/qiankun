@@ -120,7 +120,7 @@ export default function transpileScript(
             const codeFactory = beforeExecutedListenerScript + sandbox!.makeEvaluateFactory(code, src);
 
             if (syncMode) {
-              // if it's a sync script and there is a previous sync script, we should wait it to finish fetching
+              // if it's a sync script and there is a previous sync script, we should wait it until loaded to consistent with the browser behavior
               if (prevScriptTranspiledDeferred && !prevScriptTranspiledDeferred.isSettled()) {
                 await waitUntilSettled(prevScriptTranspiledDeferred.promise);
               }
@@ -129,7 +129,7 @@ export default function transpileScript(
               script.fetchPriority = 'high';
             }
 
-            // change the script src to a blob url to make it execute in the sandbox
+            // change the script src to the blob url to make it execute in the sandbox
             script.src = URL.createObjectURL(new Blob([codeFactory], { type: 'text/javascript' }));
 
             window.addEventListener(beforeScriptExecuteEvent, function listener(evt: CustomEventInit) {
