@@ -1,4 +1,4 @@
-import { Deferred, waitUntilSettled } from '@qiankunjs/shared';
+import { Deferred, waitUntilSettled } from '../utils';
 
 export function prepareScriptForQueue(
   scriptQueue: HTMLScriptElement[],
