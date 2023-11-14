@@ -8,3 +8,4 @@ export * from './module-resolver';
 export * from './common';
 export * from './reporter';
 export * from './fetch-utils/wrapFetchWithCache';
+export * from './script-queue';

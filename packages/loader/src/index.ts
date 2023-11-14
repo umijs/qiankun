@@ -6,8 +6,7 @@ import type {
   NodeTransformer,
   ScriptTranspilerOpts,
 } from '@qiankunjs/shared';
-import { Deferred, QiankunError } from '@qiankunjs/shared';
-import { prepareScriptForQueue } from '@qiankunjs/shared/src/script-queue';
+import { Deferred, prepareScriptForQueue, QiankunError } from '@qiankunjs/shared';
 import { createTagTransformStream } from './TagTransformStream';
 import { isUrlHasOwnProtocol } from './utils';
 import WritableDOMStream from './writable-dom';

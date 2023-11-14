@@ -3,8 +3,8 @@
  * @author Kuitos
  * @since 2019-10-21
  */
+import { prepareScriptForQueue } from '@qiankunjs/shared';
 import type { AssetsTranspilerOpts, Deferred, ScriptTranspilerOpts } from '@qiankunjs/shared';
-import { prepareScriptForQueue } from '@qiankunjs/shared/src/script-queue';
 import { qiankunHeadTagName } from '../../consts';
 import type { SandboxConfig } from './types';
 
