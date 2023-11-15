@@ -2,4 +2,4 @@
 "qiankun": patch
 ---
 
-fix: loadAPP is enabled sandbox by default
+feat: enable sandbox by default
