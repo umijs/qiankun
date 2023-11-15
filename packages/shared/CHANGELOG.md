@@ -1,5 +1,11 @@
 # @qiankunjs/shared
 
+## 0.0.1-rc.8
+
+### Patch Changes
+
+- 98b071bf: feat: support defer scripts and keep the executing order to consist with browser
+
 ## 0.0.1-rc.7
 
 ### Patch Changes

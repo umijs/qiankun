@@ -1,5 +1,13 @@
 # @qiankunjs/sandbox
 
+## 0.0.1-rc.11
+
+### Patch Changes
+
+- 98b071bf: feat: support defer scripts and keep the executing order to consist with browser
+- Updated dependencies [98b071bf]
+  - @qiankunjs/shared@0.0.1-rc.8
+
 ## 0.0.1-rc.10
 
 ### Patch Changes
