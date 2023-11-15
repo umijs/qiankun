@@ -70,10 +70,15 @@ export function rebindTarget2Fn(target: any, fn: any): any {
           'toString',
         );
 
-        Object.defineProperty(boundValue, 'toString', {
-          ...originToStringDescriptor,
-          ...(originToStringDescriptor?.get ? null : { value: () => fn.toString() }),
-        });
+        Object.defineProperty(
+          boundValue,
+          'toString',
+          Object.assign(
+            {},
+            originToStringDescriptor,
+            originToStringDescriptor?.get ? null : { value: () => fn.toString() },
+          ),
+        );
       }
     }
 
