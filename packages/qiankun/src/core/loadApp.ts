@@ -35,7 +35,7 @@ export default async function loadApp<T extends ObjectType>(
   };
   const {
     fetch = window.fetch,
-    sandbox,
+    sandbox = true,
     globalContext = window,
     nodeTransformer = defaultNodeTransformer,
     ...restConfiguration
