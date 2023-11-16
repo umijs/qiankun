@@ -31,4 +31,4 @@ document.querySelector('.mainapp-sidemenu').addEventListener('click', async (e) 
   }
 });
 
-document.querySelector('[data-value=react15]').click();
+// document.querySelector('[data-value=react15]').click();
