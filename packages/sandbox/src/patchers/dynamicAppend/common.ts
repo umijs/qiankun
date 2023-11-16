@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/unbound-method */
+import type { AssetsTranspilerOpts, ScriptTranspilerOpts } from '@qiankunjs/shared';
 /**
  * @author Kuitos
  * @since 2019-10-21
  */
-import { prepareScriptForQueue } from '@qiankunjs/shared';
-import type { AssetsTranspilerOpts, Deferred, ScriptTranspilerOpts } from '@qiankunjs/shared';
+import { prepareDeferredQueue } from '@qiankunjs/shared';
 import { qiankunHeadTagName } from '../../consts';
 import type { SandboxConfig } from './types';
 
@@ -15,8 +15,6 @@ const STYLE_TAG_NAME = 'STYLE';
 export const styleElementTargetSymbol = Symbol('target');
 export const styleElementRefNodeNo = Symbol('refNodeNo');
 const overwrittenSymbol = Symbol('qiankun-overwritten');
-
-const scriptFetchedDeferredWeakMap = new WeakMap<HTMLScriptElement, Deferred<void>>();
 
 type DynamicDomMutationTarget = 'head' | 'body';
 
@@ -180,7 +178,7 @@ export function getOverwrittenAppendChildOrInsertBefore(
 
         case SCRIPT_TAG_NAME: {
           const scriptElement = element as HTMLScriptElement;
-          const { sandbox, dynamicExternalSyncScriptElements, nodeTransformer, fetch } = sandboxConfig;
+          const { sandbox, dynamicExternalSyncScriptDeferredList, nodeTransformer, fetch } = sandboxConfig;
 
           const externalSyncMode = scriptElement.hasAttribute('src') && !scriptElement.hasAttribute('async');
 
@@ -190,26 +188,24 @@ export function getOverwrittenAppendChildOrInsertBefore(
             rawNode: scriptElement,
           };
 
-          let queueScript: (script: HTMLScriptElement) => void | undefined;
+          let queueSyncScript: () => void;
           if (externalSyncMode) {
-            const { scriptDeferred, prevScriptDeferred, queue } = prepareScriptForQueue(
-              dynamicExternalSyncScriptElements,
-              scriptFetchedDeferredWeakMap,
-            );
+            const { deferred, prevDeferred, queue } = prepareDeferredQueue(dynamicExternalSyncScriptDeferredList);
             transformerOpts = {
               ...transformerOpts,
-              scriptTranspiledDeferred: scriptDeferred,
-              prevScriptTranspiledDeferred: prevScriptDeferred,
+              scriptTranspiledDeferred: deferred,
+              prevScriptTranspiledDeferred: prevDeferred,
             } as ScriptTranspilerOpts;
-            queueScript = queue;
+            queueSyncScript = queue;
           }
 
           const transpiledScriptElement = nodeTransformer(scriptElement, location.href, transformerOpts);
 
           const result = appendChild.call(this, transpiledScriptElement, refChild) as T;
 
-          if (externalSyncMode) {
-            queueScript!(transpiledScriptElement);
+          // the script have no src attribute after transpile, indicating that the script needs to wait for the src to be filled
+          if (externalSyncMode && !transpiledScriptElement.hasAttribute('scr')) {
+            queueSyncScript!();
           }
 
           return result;

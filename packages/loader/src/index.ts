@@ -6,7 +6,7 @@ import type {
   NodeTransformer,
   ScriptTranspilerOpts,
 } from '@qiankunjs/shared';
-import { Deferred, prepareScriptForQueue, QiankunError } from '@qiankunjs/shared';
+import { Deferred, prepareDeferredQueue, QiankunError } from '@qiankunjs/shared';
 import { createTagTransformStream } from './TagTransformStream';
 import { isUrlHasOwnProtocol } from './utils';
 import WritableDOMStream from './writable-dom';
@@ -59,8 +59,11 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
         entryScriptLoadedDeferred.resolve({} as T);
       }
     };
-    const deferScripts: HTMLScriptElement[] = [];
-    const deferScriptDeferredWeakMap = new WeakMap<HTMLScriptElement, Deferred<void>>();
+
+    // defer scripts must wait until the entry html loaded
+    const deferQueue: Array<Deferred<void>> = [];
+    const { deferred: entryHTMLLoadedDeferred, queue: queueEntryHTMLDeferred } = prepareDeferredQueue(deferQueue);
+    queueEntryHTMLDeferred();
 
     let readableStream = res.body.pipeThrough(new TextDecoderStream());
 
@@ -89,27 +92,25 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
             rawNode: node as unknown as Node,
           };
 
-          let queueScript: (script: HTMLScriptElement) => void;
+          let queueDeferScript: () => void;
           const deferScriptMode = isDeferScript(node as unknown as HTMLScriptElement);
           if (deferScriptMode) {
-            const { scriptDeferred, prevScriptDeferred, queue } = prepareScriptForQueue(
-              deferScripts,
-              deferScriptDeferredWeakMap,
-            );
+            const { deferred, prevDeferred, queue } = prepareDeferredQueue(deferQueue);
             transformerOpts = {
               ...transformerOpts,
-              prevScriptTranspiledDeferred: prevScriptDeferred,
-              scriptTranspiledDeferred: scriptDeferred,
+              scriptTranspiledDeferred: deferred,
+              prevScriptTranspiledDeferred: prevDeferred,
             } as ScriptTranspilerOpts;
-            queueScript = queue;
+            queueDeferScript = queue;
           }
 
           const transformedNode = nodeTransformer ? nodeTransformer(clone, entry, transformerOpts) : clone;
 
           const script = transformedNode as unknown as HTMLScriptElement;
 
-          if (deferScriptMode) {
-            queueScript!(script);
+          // the script have no src attribute after transpile, indicating that the script needs to wait for the src to be filled
+          if (deferScriptMode && !script.hasAttribute('src')) {
+            queueDeferScript!();
           }
 
           /*
@@ -159,9 +160,12 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
         if (!foundEntryScript) {
           onEntryLoaded();
         }
+
+        entryHTMLLoadedDeferred.resolve();
       })
       .catch((e) => {
         entryScriptLoadedDeferred.reject(e);
+        entryHTMLLoadedDeferred.reject(e);
       });
 
     return entryScriptLoadedDeferred.promise;
