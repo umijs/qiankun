@@ -127,6 +127,11 @@ function writableDOM(
               if (clone.parentNode) walk();
             };
           }
+
+          // document.importNode will reset the `async` attribute to true, here we need to set it manually.
+          if (isSyncScript(clone)) {
+            clone.async = false;
+          }
         }
 
         const parentNode = targetNodes.get(node.parentNode!)!;
@@ -168,6 +173,12 @@ function isBlocking(node: any): node is HTMLElement {
       node.src &&
       !(node.noModule || node.type === 'module' || node.hasAttribute('async') || node.hasAttribute('defer'))) ||
       (node.tagName === 'LINK' && node.rel === 'stylesheet' && (!node.media || matchMedia(node.media).matches)))
+  );
+}
+
+function isSyncScript(node: any): node is HTMLScriptElement {
+  return (
+    node.tagName === 'SCRIPT' && node.src && !(node.noModule || node.type === 'module' || node.hasAttribute('async'))
   );
 }
 
