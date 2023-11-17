@@ -1,5 +1,14 @@
 # @qiankunjs/loader
 
+## 0.0.1-rc.15
+
+### Patch Changes
+
+- bd12dbad: fix: defer scripts should wait until html loaded
+- Updated dependencies [bd12dbad]
+  - @qiankunjs/sandbox@0.0.1-rc.12
+  - @qiankunjs/shared@0.0.1-rc.9
+
 ## 0.0.1-rc.14
 
 ### Patch Changes
