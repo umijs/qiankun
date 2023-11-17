@@ -129,6 +129,7 @@ function writableDOM(
           }
 
           // document.importNode will reset the `async` attribute to true, here we need to set it manually.
+          // see https://github.com/marko-js/writable-dom/issues/7
           if (isSyncScript(clone)) {
             clone.async = false;
           }
