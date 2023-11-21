@@ -1,5 +1,11 @@
 # @qiankunjs/shared
 
+## 0.0.1-rc.9
+
+### Patch Changes
+
+- bd12dbad: fix: defer scripts should wait until html loaded
+
 ## 0.0.1-rc.8
 
 ### Patch Changes

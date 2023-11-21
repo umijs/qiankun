@@ -1,5 +1,15 @@
 # qiankun
 
+## 3.0.0-rc.15
+
+### Patch Changes
+
+- a8809ecf: feat: enable sandbox by default
+- Updated dependencies [bd12dbad]
+  - @qiankunjs/loader@0.0.1-rc.15
+  - @qiankunjs/sandbox@0.0.1-rc.12
+  - @qiankunjs/shared@0.0.1-rc.9
+
 ## 3.0.0-rc.14
 
 ### Patch Changes

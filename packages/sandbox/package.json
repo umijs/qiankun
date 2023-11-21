@@ -1,6 +1,6 @@
 {
   "name": "@qiankunjs/sandbox",
-  "version": "0.0.1-rc.11",
+  "version": "0.0.1-rc.12",
   "description": "qiankun sandbox",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
