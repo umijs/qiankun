@@ -4,8 +4,8 @@
  */
 
 import type { MatchResult } from '../module-resolver';
-import { getEntireUrl } from '../utils';
-import type { AssetsTranspilerOpts } from './types';
+import { getEntireUrl, waitUntilSettled } from '../utils';
+import type { AssetsTranspilerOpts, ScriptTranspilerOpts } from './types';
 import { Mode } from './types';
 import { createReusingObjectUrl, isValidJavaScriptType } from './utils';
 
@@ -21,8 +21,8 @@ const getCredentials = (crossOrigin: string | null): RequestInit['credentials'] 
 };
 
 type PreTranspileResult =
-  | { mode: Mode.REMOTE_ASSETS_IN_SANDBOX; result: { src: string } }
-  | { mode: Mode.REUSED_DEP_IN_SANDBOX; result: { src: string } & MatchResult }
+  | { mode: Mode.REMOTE_ASSETS_IN_SANDBOX | Mode.REMOTE_ASSETS; result: { src: string } }
+  | { mode: Mode.REUSED_DEP_IN_SANDBOX | Mode.REUSED_DEP; result: { src: string } & MatchResult }
   | { mode: Mode.INLINE_CODE_IN_SANDBOX; result: { code: string } }
   | { mode: Mode.NONE; result?: never };
 
@@ -35,36 +35,34 @@ export const preTranspile = (
 
   const { src, type } = script;
 
-  if (sandbox) {
-    if (src) {
-      const entireUrl = getEntireUrl(src, baseURI);
-      const matchedScript = moduleResolver?.(entireUrl);
-      if (matchedScript) {
-        return {
-          mode: Mode.REUSED_DEP_IN_SANDBOX,
-          result: { src: entireUrl, ...matchedScript },
-        };
-      }
-
+  if (src) {
+    const entireUrl = getEntireUrl(src, baseURI);
+    const matchedScript = moduleResolver?.(entireUrl);
+    if (matchedScript) {
       return {
-        mode: Mode.REMOTE_ASSETS_IN_SANDBOX,
-        result: { src: entireUrl },
+        mode: sandbox ? Mode.REUSED_DEP_IN_SANDBOX : Mode.REUSED_DEP,
+        result: { src: entireUrl, ...matchedScript },
       };
     }
 
-    if (isValidJavaScriptType(type)) {
-      const rawNode = opts.rawNode as HTMLScriptElement;
-      const scriptNode = script.textContent ? script : rawNode.childNodes[0];
+    return {
+      mode: sandbox ? Mode.REMOTE_ASSETS_IN_SANDBOX : Mode.REMOTE_ASSETS,
+      result: { src: entireUrl },
+    };
+  }
 
-      const code = scriptNode.textContent;
-      if (code) {
-        return {
-          mode: Mode.INLINE_CODE_IN_SANDBOX,
-          result: {
-            code,
-          },
-        };
-      }
+  if (isValidJavaScriptType(type) && sandbox) {
+    const rawNode = opts.rawNode as HTMLScriptElement;
+    const scriptNode = script.textContent ? script : rawNode.childNodes[0];
+
+    const code = scriptNode.textContent;
+    if (code) {
+      return {
+        mode: Mode.INLINE_CODE_IN_SANDBOX,
+        result: {
+          code,
+        },
+      };
     }
   }
 
@@ -74,96 +72,154 @@ export const preTranspile = (
 export default function transpileScript(
   script: HTMLScriptElement,
   baseURI: string,
-  opts: AssetsTranspilerOpts,
+  opts: ScriptTranspilerOpts,
 ): HTMLScriptElement {
   // Can't use script.src directly, because it will be resolved to absolute path by browser with Node.baseURI
   // Such as <script src="./foo.js"></script> will be resolved to http://localhost:8000/foo.js while read script.src
   const srcAttribute = script.getAttribute('src');
-  const { sandbox, fetch } = opts;
+  const { sandbox, scriptTranspiledDeferred } = opts;
 
   // To prevent webpack from skipping reload logic and causing the js not to re-execute when a micro app is loaded multiple times, the data-webpack attribute of the script must be removed.
   // see https://github.com/webpack/webpack/blob/1f13ff9fe587e094df59d660b4611b1bd19aed4c/lib/runtime/LoadScriptRuntimeModule.js#L131-L136
   // FIXME We should determine whether the current micro application is being loaded for the second time. If not, this removal should not be performed.
   script.removeAttribute('data-webpack');
 
-  const { mode, result } = preTranspile(
-    {
-      src: srcAttribute || undefined,
-      type: script.type,
-      textContent: script.textContent,
-    },
-    baseURI,
-    opts,
-  );
+  try {
+    const { mode, result } = preTranspile(
+      {
+        src: srcAttribute || undefined,
+        type: script.type,
+        textContent: script.textContent,
+      },
+      baseURI,
+      opts,
+    );
 
-  switch (mode) {
-    case Mode.REMOTE_ASSETS_IN_SANDBOX: {
-      const { src } = result;
+    switch (mode) {
+      case Mode.REMOTE_ASSETS_IN_SANDBOX: {
+        const { fetch } = opts;
+        const { src } = result;
 
-      // We must remove script src to avoid self execution as we need to fetch the script content and transpile it
-      script.removeAttribute('src');
-      script.dataset.src = src;
+        // We must remove script src to avoid self execution as we need to fetch the script content and transpile it
+        script.removeAttribute('src');
+        script.dataset.src = src;
 
-      const syncMode = !script.hasAttribute('async');
-      const priority: Priority = syncMode ? 'high' : 'low';
-      const credentials = getCredentials(script.crossOrigin);
+        const syncMode = !script.hasAttribute('async');
+        const priority: Priority = syncMode ? 'high' : 'low';
+        const credentials = getCredentials(script.crossOrigin);
 
-      void fetch(src, { credentials, priority })
-        .then((res) => res.text())
-        .then((code) => {
-          const codeFactory = sandbox!.makeEvaluateFactory(code, src);
+        void fetch(src, { credentials, priority })
+          .then((res) => res.text())
+          .then(async (code) => {
+            const { prevScriptTranspiledDeferred } = opts;
 
-          // HTMLScriptElement default fetchPriority is 'auto', we should set it to 'high' to make it execute earlier while it's not async script
-          if (syncMode) {
-            script.fetchPriority = 'high';
-          }
+            // add preprocess code to dispatch a CustomEvent before the script is executed
+            const beforeScriptExecuteEvent = 'q:bse';
+            const beforeExecutedListenerScript = `;(function(){var s=document.currentScript;var e=new CustomEvent('${beforeScriptExecuteEvent}',{detail:{s:s}});window.dispatchEvent(e);})();`;
 
-          script.src = URL.createObjectURL(new Blob([codeFactory], { type: 'text/javascript' }));
-        });
+            const codeFactory = beforeExecutedListenerScript + sandbox!.makeEvaluateFactory(code, src);
 
-      return script;
-    }
+            if (syncMode) {
+              // if it's a sync script and there is a previous sync script, we should wait it until loaded to consistent with the browser behavior
+              if (prevScriptTranspiledDeferred && !prevScriptTranspiledDeferred.isSettled()) {
+                await waitUntilSettled(prevScriptTranspiledDeferred.promise);
+              }
 
-    case Mode.INLINE_CODE_IN_SANDBOX: {
-      const rawNode = opts.rawNode as HTMLScriptElement;
-      const scriptNode = script.textContent ? script : rawNode.childNodes[0];
-      const { code } = result;
+              // HTMLScriptElement default fetchPriority is 'auto', we should set it to 'high' to make it execute earlier while it's not async script
+              script.fetchPriority = 'high';
+            }
 
-      scriptNode.textContent = sandbox!.makeEvaluateFactory(code, baseURI);
-      // mark the script have consumed
-      script.dataset.consumed = 'true';
+            // change the script src to the blob url to make it execute in the sandbox
+            script.src = URL.createObjectURL(new Blob([codeFactory], { type: 'text/javascript' }));
 
-      return script;
-    }
+            window.addEventListener(beforeScriptExecuteEvent, function listener(evt: CustomEventInit) {
+              const { s } = evt.detail as { s: HTMLScriptElement };
+              if (s === script) {
+                URL.revokeObjectURL(s.src);
+                // change the script src to the original src while the script is executing
+                // thus the script behavior can be more consistent with the native browser logic
+                s.src = src;
+                s.dataset.consumed = 'true';
+                delete s.dataset.src;
 
-    case Mode.REUSED_DEP_IN_SANDBOX: {
-      const { url, version, src } = result;
+                window.removeEventListener(beforeScriptExecuteEvent, listener);
+              }
+            });
 
-      script.dataset.src = src;
-      script.dataset.version = version;
+            scriptTranspiledDeferred?.resolve();
+          })
+          .catch((e) => {
+            scriptTranspiledDeferred?.reject();
+            throw e;
+          });
 
-      const syncMode = !script.getAttribute('async');
-      // HTMLScriptElement default fetchPriority is 'auto', we should set it to 'high' to make it execute earlier while it's not async script
-      if (syncMode) {
-        script.fetchPriority = 'high';
-      }
-
-      // When the script hits the dependency reuse logic, the current script is not executed, and an empty script is returned directly
-      script.src = createReusingObjectUrl(src, url, 'text/javascript');
-
-      return script;
-    }
-
-    case Mode.NONE:
-    default: {
-      if (srcAttribute) {
-        script.src = getEntireUrl(srcAttribute, baseURI);
         return script;
       }
 
-      return script;
-    }
-  }
+      case Mode.INLINE_CODE_IN_SANDBOX: {
+        const rawNode = opts.rawNode as HTMLScriptElement;
+        const scriptNode = script.textContent ? script : rawNode.childNodes[0];
+        const { code } = result;
 
-  // TODO find entry exports
+        scriptNode.textContent = sandbox!.makeEvaluateFactory(code, baseURI);
+        // mark the script have consumed
+        script.dataset.consumed = 'true';
+
+        scriptTranspiledDeferred?.resolve();
+
+        return script;
+      }
+
+      case Mode.REUSED_DEP_IN_SANDBOX:
+      case Mode.REUSED_DEP: {
+        const { url, version, src } = result;
+
+        script.dataset.src = src;
+        script.dataset.version = version;
+
+        const syncMode = !script.getAttribute('async');
+        // HTMLScriptElement default fetchPriority is 'auto', we should set it to 'high' to make it execute earlier while it's not async script
+        if (syncMode) {
+          script.fetchPriority = 'high';
+        }
+
+        // When the script hits the dependency reuse logic, the current script is not executed, and an empty script is returned directly
+        script.src = createReusingObjectUrl(src, url, 'text/javascript');
+
+        const onScriptComplete = (
+          prevListener: typeof HTMLScriptElement.prototype.onload | typeof HTMLScriptElement.prototype.onerror,
+          event: Event,
+        ) => {
+          script.onload = script.onerror = null;
+
+          script.src = src;
+          script.dataset.consumed = 'true';
+          script.dataset.src = url;
+
+          prevListener?.call(script, event);
+        };
+        script.onload = onScriptComplete.bind(null, script.onload);
+        script.onerror = onScriptComplete.bind(null, script.onerror) as typeof HTMLScriptElement.prototype.onerror;
+
+        scriptTranspiledDeferred?.resolve();
+
+        return script;
+      }
+
+      case Mode.REMOTE_ASSETS:
+      case Mode.NONE:
+      default: {
+        if (result?.src) {
+          script.src = result.src;
+        }
+
+        scriptTranspiledDeferred?.resolve();
+
+        return script;
+      }
+    }
+  } catch (e) {
+    scriptTranspiledDeferred?.reject(e);
+    throw e;
+  }
 }

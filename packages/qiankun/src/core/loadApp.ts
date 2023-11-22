@@ -6,6 +6,7 @@ import type { LoaderOpts } from '@qiankunjs/loader';
 import { loadEntry } from '@qiankunjs/loader';
 import type { Sandbox } from '@qiankunjs/sandbox';
 import { createSandboxContainer } from '@qiankunjs/sandbox';
+import { moduleResolver as defaultModuleResolver, transpileAssets, wrapFetchWithCache } from '@qiankunjs/shared';
 import { concat, isFunction, mergeWith } from 'lodash';
 import type { ParcelConfigObject } from 'single-spa';
 import getAddOns from '../addons';
@@ -26,9 +27,21 @@ export default async function loadApp<T extends ObjectType>(
   app: LoadableApp<T>,
   configuration?: AppConfiguration,
   lifeCycles?: LifeCycles<T>,
-) {
+): Promise<ParcelConfigObjectGetter> {
   const { name: appName, entry, container } = app;
-  const { fetch = window.fetch, sandbox, globalContext = window, transformer } = configuration || {};
+  const defaultNodeTransformer: AppConfiguration['nodeTransformer'] = (node, opts) => {
+    const moduleResolver = (url: string) => defaultModuleResolver(url, sandboxMicroAppContainer, document.head);
+    return transpileAssets(node, entry, { ...opts, moduleResolver });
+  };
+  const {
+    fetch = window.fetch,
+    sandbox = true,
+    globalContext = window,
+    nodeTransformer = defaultNodeTransformer,
+    ...restConfiguration
+  } = configuration || {};
+
+  const fetchWithLruCache = wrapFetchWithCache(fetch);
 
   const markName = `[qiankun] App ${appName} Loading`;
   if (process.env.NODE_ENV === 'development') {
@@ -40,13 +53,15 @@ export default async function loadApp<T extends ObjectType>(
   let unmountSandbox = () => Promise.resolve();
   let sandboxInstance: Sandbox | undefined;
 
-  let microAppContainer: HTMLElement = container;
-  initContainer(microAppContainer, appName, sandbox);
+  let sandboxMicroAppContainer: HTMLElement = container;
+  initContainer(sandboxMicroAppContainer, appName, sandbox);
 
   if (sandbox) {
-    const sandboxContainer = createSandboxContainer(appName, () => microAppContainer, {
+    const sandboxContainer = createSandboxContainer(appName, () => sandboxMicroAppContainer, {
       globalContext,
       extraGlobals: {},
+      fetch: fetchWithLruCache,
+      nodeTransformer,
     });
 
     sandboxInstance = sandboxContainer.instance;
@@ -56,9 +71,14 @@ export default async function loadApp<T extends ObjectType>(
     unmountSandbox = () => sandboxContainer.unmount();
   }
 
-  const containerOpts: LoaderOpts = { fetch, sandbox: sandboxInstance, transformer };
+  const containerOpts: LoaderOpts = {
+    fetch: fetchWithLruCache,
+    sandbox: sandboxInstance,
+    nodeTransformer,
+    ...restConfiguration,
+  };
 
-  const lifecyclesPromise = loadEntry<MicroAppLifeCycles>(entry, microAppContainer, containerOpts);
+  const lifecyclesPromise = loadEntry<MicroAppLifeCycles>(entry, sandboxMicroAppContainer, containerOpts);
 
   const assetPublicPath = calcPublicPath(entry);
   const {
@@ -82,9 +102,9 @@ export default async function loadApp<T extends ObjectType>(
     sandboxInstance?.latestSetProp,
   );
 
-  const parcelConfigGetter: ParcelConfigObjectGetter = (remountContainer) => {
-    microAppContainer = remountContainer;
+  let mountTimes = 1;
 
+  return (mountContainer) => {
     const parcelConfig: ParcelConfigObject = {
       name: appName,
 
@@ -103,16 +123,20 @@ export default async function loadApp<T extends ObjectType>(
           }
         },
         async () => {
-          // if micro app container has no children that means now is remounting, we need to rerender the app manually
-          if (microAppContainer.firstChild === null) {
-            const htmlString = await getPureHTMLStringWithoutScripts(entry, fetch);
-            await loadEntry(htmlString, microAppContainer, containerOpts);
+          sandboxMicroAppContainer = mountContainer;
+
+          // while the micro app is remounting, we need to load the entry manually
+          if (mountTimes > 1) {
+            initContainer(mountContainer, appName, sandbox);
+            // html scripts should be removed to avoid repeatedly execute
+            const htmlString = await getPureHTMLStringWithoutScripts(entry, fetchWithLruCache);
+            await loadEntry(htmlString, mountContainer, containerOpts);
           }
         },
         mountSandbox,
         // exec the chain after rendering to keep the behavior with beforeLoad
         async () => execHooksChain(toArray(beforeMount), app, global),
-        async (props) => mount({ ...props, container: microAppContainer }),
+        async (props) => mount({ ...props, container: mountContainer }),
         // finish loading after app mounted
         async () => execHooksChain(toArray(afterMount), app, global),
         async () => {
@@ -121,19 +145,18 @@ export default async function loadApp<T extends ObjectType>(
             performanceMeasure(measureName, markName);
           }
         },
+        async () => {
+          mountTimes++;
+        },
       ],
 
       unmount: [
         async () => execHooksChain(toArray(beforeUnmount), app, global),
-        async (props) => unmount({ ...props, container: microAppContainer }),
+        async (props) => unmount({ ...props, container: mountContainer }),
         unmountSandbox,
         async () => execHooksChain(toArray(afterUnmount), app, global),
         async () => {
-          clearContainer(microAppContainer);
-          // for gc
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          microAppContainer = null;
+          clearContainer(mountContainer);
         },
       ],
     };
@@ -146,8 +169,6 @@ export default async function loadApp<T extends ObjectType>(
 
     return parcelConfig;
   };
-
-  return parcelConfigGetter;
 }
 
 function initContainer(container: HTMLElement, appName: string, sandboxCfg: AppConfiguration['sandbox']): void {

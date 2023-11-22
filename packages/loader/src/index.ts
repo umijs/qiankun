@@ -1,8 +1,13 @@
 import type { Sandbox } from '@qiankunjs/sandbox';
 import { qiankunHeadTagName } from '@qiankunjs/sandbox';
-import type { BaseTranspilerOpts } from '@qiankunjs/shared';
-import { Deferred, moduleResolver as defaultModuleResolver, QiankunError, transpileAssets } from '@qiankunjs/shared';
-import { TagTransformStream } from './TagTransformStream';
+import type {
+  AssetsTranspilerOpts,
+  BaseTranspilerOpts,
+  NodeTransformer,
+  ScriptTranspilerOpts,
+} from '@qiankunjs/shared';
+import { Deferred, prepareDeferredQueue, QiankunError } from '@qiankunjs/shared';
+import { createTagTransformStream } from './TagTransformStream';
 import { isUrlHasOwnProtocol } from './utils';
 import WritableDOMStream from './writable-dom';
 
@@ -18,9 +23,19 @@ type Entry = HTMLEntry;
 // };
 //
 export type LoaderOpts = {
-  transformer?: TransformStream<string, string>;
-  nodeTransformer?: typeof transpileAssets;
-} & BaseTranspilerOpts & { sandbox?: Sandbox };
+  streamTransformer?: () => TransformStream<string, string>;
+  nodeTransformer?: NodeTransformer;
+} & Omit<BaseTranspilerOpts, 'moduleResolver'> & { sandbox?: Sandbox };
+
+const isExternalScript = (script: HTMLScriptElement): boolean => {
+  return script.tagName === 'SCRIPT' && !!(script.src || script.dataset.src);
+};
+const isEntryScript = (script: HTMLScriptElement): boolean => {
+  return isExternalScript(script) && script.hasAttribute('entry');
+};
+const isDeferScript = (script: HTMLScriptElement): boolean => {
+  return isExternalScript(script) && script.hasAttribute('defer');
+};
 
 /**
  * @param entry
@@ -28,31 +43,37 @@ export type LoaderOpts = {
  * @param opts
  */
 export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: LoaderOpts): Promise<T | void> {
-  const {
-    fetch,
-    nodeTransformer = transpileAssets,
-    transformer,
-    sandbox,
-    moduleResolver = (url: string) => {
-      return defaultModuleResolver(url, container, document.head);
-    },
-  } = opts;
+  const { fetch, streamTransformer, sandbox, nodeTransformer } = opts;
 
-  const res = isUrlHasOwnProtocol(entry) ? await fetch(entry) : new Response(entry);
+  const res = isUrlHasOwnProtocol(entry) ? await fetch(entry) : new Response(entry, { status: 200, statusText: 'OK' });
   if (res.body) {
-    let noExternalScript = true;
+    let foundEntryScript = false;
     const entryScriptLoadedDeferred = new Deferred<T | void>();
-    const entryHTMLLoadedDeferred = new Deferred<void>();
+    const onEntryLoaded = () => {
+      // the latest set prop is the entry script exposed global variable
+      if (sandbox?.latestSetProp) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        entryScriptLoadedDeferred.resolve(sandbox.globalThis[sandbox.latestSetProp as number] as T);
+      } else {
+        // TODO support non sandbox mode?
+        entryScriptLoadedDeferred.resolve({} as T);
+      }
+    };
+
+    // defer scripts must wait until the entry html loaded
+    const deferQueue: Array<Deferred<void>> = [];
+    const { deferred: entryHTMLLoadedDeferred, queue: queueEntryHTMLDeferred } = prepareDeferredQueue(deferQueue);
+    queueEntryHTMLDeferred();
 
     let readableStream = res.body.pipeThrough(new TextDecoderStream());
 
-    if (transformer) {
-      readableStream = readableStream.pipeThrough(transformer);
+    if (streamTransformer) {
+      readableStream = readableStream.pipeThrough(streamTransformer());
     }
 
     void readableStream
       .pipeThrough(
-        new TagTransformStream(
+        createTagTransformStream(
           [
             { tag: '<head>', alt: `<${qiankunHeadTagName}>` },
             { tag: '</head>', alt: `</${qiankunHeadTagName}>` },
@@ -65,76 +86,86 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
       )
       .pipeTo(
         new WritableDOMStream(container, null, (clone, node) => {
-          const transformedNode = nodeTransformer(clone, entry, {
+          let transformerOpts: AssetsTranspilerOpts = {
             fetch,
             sandbox,
-            moduleResolver,
             rawNode: node as unknown as Node,
-          });
+          };
+
+          let queueDeferScript: () => void;
+          const deferScriptMode = isDeferScript(node as unknown as HTMLScriptElement);
+          if (deferScriptMode) {
+            const { deferred, prevDeferred, queue } = prepareDeferredQueue(deferQueue);
+            transformerOpts = {
+              ...transformerOpts,
+              scriptTranspiledDeferred: deferred,
+              prevScriptTranspiledDeferred: prevDeferred,
+            } as ScriptTranspilerOpts;
+            queueDeferScript = queue;
+          }
+
+          const transformedNode = nodeTransformer ? nodeTransformer(clone, transformerOpts) : clone;
 
           const script = transformedNode as unknown as HTMLScriptElement;
+
+          // the script have no src attribute after transpile, indicating that the script needs to wait for the src to be filled
+          if (deferScriptMode && !script.hasAttribute('src')) {
+            queueDeferScript!();
+          }
 
           /*
            * If the entry script is executed, we can complete the entry process in advance
            * otherwise we need to wait until the last script is executed.
            * Notice that we only support external script as entry script thus we could do resolve the promise after the script is loaded.
            */
-          if (script.tagName === 'SCRIPT' && (script.src || script.dataset.src)) {
-            noExternalScript = false;
+          if (isEntryScript(script)) {
+            if (foundEntryScript) {
+              throw new QiankunError(
+                `You should not set multiply entry script in one entry html, but ${entry} has at least 2 entry scripts`,
+              );
+            }
 
-            /**
-             * Script with entry attribute or the last script is the entry script
-             */
-            const isEntryScript = async () => {
-              if (script.hasAttribute('entry')) return true;
+            foundEntryScript = true;
 
-              await entryHTMLLoadedDeferred.promise;
+            const onScriptComplete = (
+              prevListener: typeof HTMLScriptElement.prototype.onload | typeof HTMLScriptElement.prototype.onerror,
+              event: Event,
+            ) => {
+              script.onload = script.onerror = null;
 
-              const scripts = container.querySelectorAll('script[src]');
-              const lastScript = scripts[scripts.length - 1];
-              return lastScript === script;
-            };
-
-            script.addEventListener(
-              'load',
-              // eslint-disable-next-line @typescript-eslint/no-misused-promises
-              async () => {
-                if (entryScriptLoadedDeferred.status === 'pending' && (await isEntryScript())) {
-                  // the latest set prop is the entry script exposed global variable
-                  if (sandbox?.latestSetProp) {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                    entryScriptLoadedDeferred.resolve(sandbox.globalThis[sandbox.latestSetProp as number] as T);
-                  } else {
-                    // TODO support non sandbox mode?
-                    entryScriptLoadedDeferred.resolve({} as T);
-                  }
-                }
-              },
-              { once: true },
-            );
-            script.addEventListener(
-              'error',
-              // eslint-disable-next-line @typescript-eslint/no-misused-promises
-              async (evt) => {
-                if (entryScriptLoadedDeferred.status === 'pending' && (await isEntryScript())) {
+              // In order to avoid the inline script to be executed immediately after the prev onload is executed, resulting in the failure of the sandbox to obtain the latestSetProp, here we must resolve the entryScriptLoadedDeferred firstly
+              if (!entryScriptLoadedDeferred.isSettled()) {
+                if (event.type === 'load') {
+                  onEntryLoaded();
+                } else {
                   entryScriptLoadedDeferred.reject(
-                    new QiankunError(`entry ${entry} loading failed as entry script trigger error -> ${evt.message}`),
+                    new QiankunError(`entry ${entry} load failed as entry script ${script.src} load failed}`),
                   );
                 }
-              },
-              { once: true },
-            );
+              }
+
+              prevListener?.call(script, event);
+            };
+
+            script.onload = onScriptComplete.bind(null, script.onload);
+            script.onerror = onScriptComplete.bind(null, script.onerror) as typeof HTMLScriptElement.prototype.onerror;
           }
 
           return transformedNode;
         }),
       )
       .then(() => {
-        entryHTMLLoadedDeferred.resolve();
-
-        if (noExternalScript) {
-          entryScriptLoadedDeferred.resolve();
+        // while the entry html stream is finished but there is no entry script found
+        // we could use the latest set prop in sandbox to resolve the entry promise as fallback
+        if (!foundEntryScript) {
+          onEntryLoaded();
         }
+
+        entryHTMLLoadedDeferred.resolve();
+      })
+      .catch((e) => {
+        entryScriptLoadedDeferred.reject(e);
+        entryHTMLLoadedDeferred.reject(e);
       });
 
     return entryScriptLoadedDeferred.promise;

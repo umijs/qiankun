@@ -6,6 +6,13 @@ import transpileLink from './link';
 import transpileScript from './script';
 import type { AssetsTranspilerOpts } from './types';
 
+/**
+ * transpile the assets to support micro frontend
+ * @param node the original node
+ * @param baseURI the baseURI of the node
+ * @param opts
+ * @returns original node after transpiled
+ */
 export function transpileAssets<T extends Node>(node: T, baseURI: string, opts: AssetsTranspilerOpts): T {
   const htmlElement = node as unknown as HTMLElement;
   const { tagName } = htmlElement;

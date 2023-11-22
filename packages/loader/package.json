@@ -1,14 +1,13 @@
 {
   "name": "@qiankunjs/loader",
-  "version": "0.0.1-rc.6",
+  "version": "0.0.1-rc.15",
   "description": "",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
-  "types": "./src/index.ts",
+  "types": "./dist/esm/index.d.ts",
   "sideEffects": false,
   "scripts": {
     "build": "father build",
-    "test": "cross-env NODE_ENV=test vitest",
     "bench": "npm run build && tachometer ./benchmarks/parser/tern/import-html-entry.html ./benchmarks/parser/tern/parser.html --timeout=1"
   },
   "author": "Kuitos",
@@ -27,7 +26,6 @@
     "registry": "https://registry.npmjs.org/"
   },
   "files": [
-    "dist",
-    "src"
+    "dist"
   ]
 }

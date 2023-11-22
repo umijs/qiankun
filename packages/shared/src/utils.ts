@@ -10,7 +10,7 @@ export const hasOwnProperty = (caller: unknown, p: PropertyKey) => Object.protot
 export class Deferred<T> {
   promise: Promise<T>;
 
-  status: 'pending' | 'fulfilled' | 'rejected' = 'pending';
+  #status: 'pending' | 'fulfilled' | 'rejected' = 'pending';
 
   resolve!: (value: T | PromiseLike<T>) => void;
 
@@ -19,14 +19,28 @@ export class Deferred<T> {
   constructor() {
     this.promise = new Promise((resolve, reject) => {
       this.resolve = (value: T | PromiseLike<T>) => {
-        this.status = 'fulfilled';
+        this.#status = 'fulfilled';
         resolve(value);
       };
       this.reject = (reason?: unknown) => {
-        this.status = 'rejected';
+        this.#status = 'rejected';
         reject(reason);
       };
     });
+  }
+
+  isSettled(): boolean {
+    return this.#status !== 'pending';
+  }
+}
+
+export async function waitUntilSettled(promise: Promise<void>): Promise<void> {
+  try {
+    await promise;
+  } catch (e) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('waitUntilSettled error', e);
+    }
   }
 }
 
@@ -34,4 +48,15 @@ export function getEntireUrl(uri: string, baseURI: string): string {
   const publicPath = new URL(baseURI, window.location.href);
   const entireUrl = new URL(uri, publicPath.toString());
   return entireUrl.toString();
+}
+
+/**
+ * Check if the running environment support qiankun 3.0
+ *
+ */
+export function isRuntimeCompatible(): boolean {
+  return (
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    typeof Proxy === 'function' && typeof TransformStream === 'function' && typeof URL?.createObjectURL === 'function'
+  );
 }

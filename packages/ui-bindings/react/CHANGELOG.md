@@ -1,5 +1,68 @@
 # @qiankunjs/react
 
+## 0.0.1-rc.12
+
+### Patch Changes
+
+- Updated dependencies [a8809ecf]
+  - qiankun@3.0.0-rc.15
+
+## 0.0.1-rc.11
+
+### Patch Changes
+
+- qiankun@3.0.0-rc.14
+
+## 0.0.1-rc.10
+
+### Patch Changes
+
+- Updated dependencies [f2af2e36]
+  - qiankun@3.0.0-rc.13
+
+## 0.0.1-rc.9
+
+### Patch Changes
+
+- Updated dependencies [7cc06bd4]
+- Updated dependencies [312abbc7]
+  - qiankun@3.0.0-rc.12
+
+## 0.0.1-rc.8
+
+### Patch Changes
+
+- 43bf37a5: fix(sandbox): should get container from getter function in every accessing
+- Updated dependencies [43bf37a5]
+  - qiankun@3.0.0-rc.11
+
+## 0.0.1-rc.7
+
+### Patch Changes
+
+- fix: use qiankun 2.x or 3.x as peerDependencies
+
+## 0.0.1-rc.6
+
+### Patch Changes
+
+- Updated dependencies [2aca545c]
+  - qiankun@3.0.0-rc.10
+
+## 0.0.1-rc.5
+
+### Patch Changes
+
+- Updated dependencies [fe68e878]
+  - qiankun@3.0.0-rc.9
+
+## 0.0.1-rc.4
+
+### Patch Changes
+
+- Updated dependencies [1d9adcaa]
+  - qiankun@3.0.0-rc.8
+
 ## 0.0.1-rc.3
 
 ### Patch Changes

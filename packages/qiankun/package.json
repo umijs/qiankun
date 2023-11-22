@@ -1,6 +1,6 @@
 {
   "name": "qiankun",
-  "version": "3.0.0-rc.7",
+  "version": "3.0.0-rc.15",
   "description": "A completed implementation of Micro Frontends",
   "keywords": [
     "micro frontend",
@@ -12,25 +12,17 @@
   ],
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
-  "types": "./src/index.ts",
+  "types": "./dist/esm/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "build": "father build",
-    "lint": "yarn lint:js && yarn lint:prettier",
-    "lint:js": "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty ./src",
-    "lint:fix": "yarn lint:js -- --fix",
-    "lint:prettier": "prettier -c ./src/**/*",
-    "prettier": "prettier --write ./src/**/*",
-    "ci": "yarn lint && yarn build && yarn test",
-    "test": "cross-env NODE_ENV=test vitest"
+    "build": "father build"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kuitos/qiankun.git"
   },
   "files": [
-    "dist",
-    "src"
+    "dist"
   ],
   "author": "Kuitos",
   "license": "MIT",

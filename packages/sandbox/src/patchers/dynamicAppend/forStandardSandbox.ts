@@ -4,6 +4,7 @@
  * @since 2020-10-13
  */
 
+import { Deferred, QiankunError } from '@qiankunjs/shared';
 import type { noop } from 'lodash';
 import { nativeDocument, nativeGlobal, qiankunHeadTagName } from '../../consts';
 import { rebindTarget2Fn } from '../../core/membrane/utils';
@@ -11,6 +12,7 @@ import type { Sandbox } from '../../core/sandbox';
 import type { Free } from '../types';
 import {
   calcAppCount,
+  getContainerBodyElement,
   getContainerHeadElement,
   getNewRemoveChild,
   getOverwrittenAppendChildOrInsertBefore,
@@ -56,10 +58,15 @@ const patchCacheWeakMap = new WeakMap<object, unknown>();
 
 const getSandboxConfig = (element: HTMLElement) => elementAttachSandboxConfigMap.get(element);
 
-function patchDocument(sandbox: Sandbox, container: HTMLElement): CallableFunction {
-  if (patchCacheWeakMap.has(container)) {
+function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): CallableFunction {
+  const container = getContainer();
+  // dom container might be reused by multiple apps,
+  // thus we check its attached sandbox is same with current to avoid duplicate patch
+  if (patchCacheWeakMap.get(container) === sandbox) {
     return () => {};
   }
+
+  const unpatch = patchDocumentHeadAndBodyMethods(container);
 
   const attachElementToSandbox = (element: HTMLElement) => {
     const sandboxConfig = sandboxConfigWeakMap.get(sandbox);
@@ -67,17 +74,48 @@ function patchDocument(sandbox: Sandbox, container: HTMLElement): CallableFuncti
       elementAttachSandboxConfigMap.set(element, sandboxConfig);
     }
   };
-
+  const getDocumentHeadElement = () => {
+    const container = getContainer();
+    const containerHeadElement = getContainerHeadElement(container);
+    if (!containerHeadElement) {
+      throw new QiankunError(`${sandbox.name} head element not existed while accessing document.head!`);
+    }
+    return containerHeadElement;
+  };
+  const getDocumentBodyElement = () => {
+    const container = getContainer();
+    return getContainerBodyElement(container);
+  };
+  const modificationFns: {
+    createElement?: typeof document.createElement;
+    querySelector?: typeof document.querySelector;
+  } = {};
   const proxyDocument = new Proxy(document, {
+    /**
+     * Read and write must be paired, otherwise the write operation will leak to the global
+     */
     set: (target, p, value) => {
-      target[p as keyof Document] = value;
+      switch (p) {
+        case 'createElement': {
+          modificationFns.createElement = value;
+          break;
+        }
+        case 'querySelector': {
+          modificationFns.querySelector = value;
+          break;
+        }
+        default:
+          target[p as keyof Document] = value;
+          break;
+      }
+
       return true;
     },
     get: (target, p, receiver) => {
       switch (p) {
         case 'createElement': {
           // Must store the original createElement function to avoid error in nested sandbox
-          const targetCreateElement = target.createElement;
+          const targetCreateElement = modificationFns.createElement || target.createElement;
           return function createElement(...args: Parameters<typeof document.createElement>) {
             if (!nativeGlobal.__currentLockingSandbox__) {
               nativeGlobal.__currentLockingSandbox__ = sandbox;
@@ -88,8 +126,6 @@ function patchDocument(sandbox: Sandbox, container: HTMLElement): CallableFuncti
             // only record the element which is created by the current sandbox, thus we can avoid the element created by nested sandboxes
             if (nativeGlobal.__currentLockingSandbox__ === sandbox) {
               attachElementToSandbox(element);
-              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-              // @ts-ignore
               delete nativeGlobal.__currentLockingSandbox__;
             }
 
@@ -97,63 +133,81 @@ function patchDocument(sandbox: Sandbox, container: HTMLElement): CallableFuncti
           };
         }
 
-        case 'head': {
-          return container.querySelector(qiankunHeadTagName) as HTMLHeadElement;
-        }
-
-        case 'body': {
-          return container as HTMLBodyElement;
-        }
-
         case 'querySelector': {
-          const targetQuerySelector = target.querySelector;
+          const targetQuerySelector = modificationFns.querySelector || target.querySelector;
           return function querySelector(...args: Parameters<typeof document.querySelector>) {
             const selector = args[0];
             switch (selector) {
               case 'head': {
-                return getContainerHeadElement(container);
+                return getDocumentHeadElement();
               }
 
               case 'body': {
-                return container;
+                return getDocumentBodyElement();
               }
             }
 
             return targetQuerySelector.call(target, ...args);
           };
         }
+
+        case 'head': {
+          return getDocumentHeadElement();
+        }
+
+        case 'body': {
+          return getDocumentBodyElement();
+        }
+
         default:
           break;
       }
 
-      const value = target[p as string];
+      const value = target[p as keyof Document];
       // must rebind the function to the target otherwise it will cause illegal invocation error
       return rebindTarget2Fn(target, value, receiver);
     },
   });
 
-  /*
-   * patch container head element after it is mounted
-   */
-  const observer = new MutationObserver(() => {
-    const containerHeadElement = container.querySelector(qiankunHeadTagName);
-    if (containerHeadElement) {
-      containerHeadElement.appendChild = getOverwrittenAppendChildOrInsertBefore(
-        document.head.appendChild,
-        getSandboxConfig,
-        'head',
-      );
-      containerHeadElement.insertBefore = getOverwrittenAppendChildOrInsertBefore(
-        document.head.insertBefore,
-        getSandboxConfig,
-        'head',
-      );
-      containerHeadElement.removeChild = getNewRemoveChild(document.head.removeChild, getSandboxConfig);
-
-      observer.disconnect();
-    }
+  sandbox.addIntrinsics({
+    document: { value: proxyDocument, writable: false, enumerable: true, configurable: true },
   });
-  observer.observe(container, { subtree: true, childList: true });
+
+  patchCacheWeakMap.set(container, sandbox);
+
+  return () => {
+    unpatch();
+  };
+}
+
+function patchDocumentHeadAndBodyMethods(container: HTMLElement): typeof noop {
+  const patchHeadElementMethod = (headElement: HTMLHeadElement) => {
+    headElement.appendChild = getOverwrittenAppendChildOrInsertBefore(
+      document.head.appendChild,
+      getSandboxConfig,
+      'head',
+    );
+    headElement.insertBefore = getOverwrittenAppendChildOrInsertBefore(
+      document.head.insertBefore,
+      getSandboxConfig,
+      'head',
+    );
+    headElement.removeChild = getNewRemoveChild(document.head.removeChild, getSandboxConfig);
+  };
+  let containerHeadElement = getContainerHeadElement(container);
+  if (!containerHeadElement) {
+    // patch container head element after it is mounted
+    const observer = new MutationObserver(() => {
+      containerHeadElement = getContainerHeadElement(container);
+      if (containerHeadElement) {
+        patchHeadElementMethod(containerHeadElement);
+        observer.disconnect();
+      }
+    });
+    observer.observe(container, { subtree: true, childList: true });
+  } else {
+    patchHeadElementMethod(containerHeadElement);
+  }
 
   const containerBodyElement = container;
   containerBodyElement.appendChild = getOverwrittenAppendChildOrInsertBefore(
@@ -168,26 +222,22 @@ function patchDocument(sandbox: Sandbox, container: HTMLElement): CallableFuncti
   );
   containerBodyElement.removeChild = getNewRemoveChild(document.body.removeChild, getSandboxConfig);
 
-  sandbox.addIntrinsics({
-    document: { value: proxyDocument, writable: false, enumerable: true, configurable: true },
-  });
-
-  patchCacheWeakMap.set(container, true);
-
   return () => {
-    const containerHeadElement = getContainerHeadElement(container);
+    if (containerHeadElement) {
+      // @ts-ignore
+      delete containerHeadElement.appendChild;
+      // @ts-ignore
+      delete containerHeadElement.insertBefore;
+      // @ts-ignore
+      delete containerHeadElement.removeChild;
+    }
+
     // @ts-ignore
-    delete containerHeadElement.appendChild;
+    delete containerBodyElement.appendChild;
     // @ts-ignore
-    delete containerHeadElement.insertBefore;
+    delete containerBodyElement.insertBefore;
     // @ts-ignore
-    delete containerHeadElement.removeChild;
-    // @ts-ignore
-    delete container.appendChild;
-    // @ts-ignore
-    delete container.insertBefore;
-    // @ts-ignore
-    delete container.removeChild;
+    delete containerBodyElement.removeChild;
   };
 }
 
@@ -266,22 +316,25 @@ export function patchStandardSandbox(
   opts: {
     sandbox: Sandbox;
     mounting?: boolean;
-  },
+  } & Pick<SandboxConfig, 'fetch' | 'nodeTransformer'>,
 ): Free {
-  const { sandbox, mounting = true } = opts;
+  const { sandbox, mounting = true, nodeTransformer, fetch } = opts;
   let sandboxConfig = sandboxConfigWeakMap.get(sandbox);
   if (!sandboxConfig) {
     sandboxConfig = {
       appName,
       sandbox,
+      fetch,
+      nodeTransformer,
       dynamicStyleSheetElements: [],
+      dynamicExternalSyncScriptDeferredList: [],
     };
     sandboxConfigWeakMap.set(sandbox, sandboxConfig);
   }
   // all dynamic style sheets are stored in proxy container
   const { dynamicStyleSheetElements } = sandboxConfig;
 
-  const unpatchDocument = patchDocument(sandbox, getContainer());
+  const unpatchDocument = patchDocument(sandbox, getContainer);
   const unpatchDOMPrototype = patchDOMPrototypeFns();
 
   if (!mounting) calcAppCount(appName, 'increase', 'bootstrapping');
@@ -302,30 +355,61 @@ export function patchStandardSandbox(
     recordStyledComponentsCSSRules(dynamicStyleSheetElements as HTMLStyleElement[]);
 
     // As now the sub app content all wrapped with a special id container,
-    // the dynamic style sheet would be removed automatically while unmounting
+    // the dynamic style sheet could be removed automatically while unmounting
+    return async function rebuild() {
+      const container = getContainer();
+      const isElementExisted = (element: HTMLStyleElement | HTMLLinkElement) => {
+        if (container.contains(element)) return true;
+        if ('rel' in element && element.rel === 'stylesheet' && element.href)
+          return !!container.querySelector(`link[rel=stylesheet][href=${element.href}]`);
+        return false;
+      };
 
-    return function rebuild() {
-      rebuildCSSRules(dynamicStyleSheetElements as HTMLStyleElement[], (stylesheetElement) => {
-        const container = getContainer();
-        if (!container.contains(stylesheetElement)) {
-          const mountDom =
-            stylesheetElement[styleElementTargetSymbol] === 'head' ? getContainerHeadElement(container) : container;
+      await Promise.all(
+        rebuildCSSRules(dynamicStyleSheetElements, async (stylesheetElement) => {
+          if (!isElementExisted(stylesheetElement)) {
+            const mountDom =
+              stylesheetElement[styleElementTargetSymbol] === 'head'
+                ? (() => {
+                    const containerHeadElement = getContainerHeadElement(container);
+                    if (!containerHeadElement) {
+                      throw new QiankunError(
+                        `${appName} container ${qiankunHeadTagName} element not ready while rebuilding!`,
+                      );
+                    }
+                    return containerHeadElement;
+                  })()
+                : container;
 
-          const refNo = stylesheetElement[styleElementRefNodeNo];
-          if (typeof refNo === 'number' && refNo !== -1) {
-            // the reference node may be dynamic script comment which is not rebuilt while remounting thus reference node no longer exists
-            // in this case, we should append the style element to the end of mountDom
-            const refNode = mountDom.childNodes[refNo];
-            rawHeadInsertBefore.call(mountDom, stylesheetElement, refNode);
-            return true;
+            let styleElement = stylesheetElement;
+
+            const deferred = new Deferred<boolean>();
+            if ('rel' in styleElement && styleElement.rel === 'stylesheet' && styleElement.href) {
+              // micro app rendering should wait unit the rebuilding link element is loaded, otherwise it may cause style blink
+              // As one external link element will just trigger loaded event once, although we append it multiple times, we need to clone it before every appending
+              styleElement = styleElement.cloneNode(true) as HTMLLinkElement;
+              styleElement.onload = () => deferred.resolve(true);
+              styleElement.onerror = () => deferred.resolve(false);
+            } else {
+              deferred.resolve(true);
+            }
+
+            const refNo = stylesheetElement[styleElementRefNodeNo];
+            if (typeof refNo === 'number' && refNo !== -1) {
+              // the reference node may be dynamic script comment which is not rebuilt while remounting thus reference node no longer exists
+              // in this case, we should append the style element to the end of mountDom
+              const refNode = mountDom.childNodes[refNo];
+              rawHeadInsertBefore.call(mountDom, styleElement, refNode);
+            } else {
+              rawHeadAppendChild.call(mountDom, styleElement);
+            }
+
+            return deferred.promise;
           }
 
-          rawHeadAppendChild.call(mountDom, stylesheetElement);
-          return true;
-        }
-
-        return false;
-      });
+          return false;
+        }),
+      );
     };
   };
 }

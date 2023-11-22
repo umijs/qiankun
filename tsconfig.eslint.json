@@ -7,7 +7,9 @@
   },
   "include": [
     // whatever paths you intend to lint
-    "src",
+    "packages/*/src",
+    "packages/webpack-plugin/tests",
+    "packages/ui-bindings/*/src",
     "vitest.workspace.ts",
     "vitest.config.ts",
     ".fatherrc.js"

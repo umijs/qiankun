@@ -1,4 +1,4 @@
-import { describe, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { moduleResolver } from '../index';
 
@@ -28,7 +28,7 @@ describe('default module resolver', () => {
     </script>
   `;
 
-  it('should works well', ({ expect }) => {
+  it('should works well', () => {
     const microAppContainer = document.createElement('div');
     microAppContainer.innerHTML = `
       <script type="dependencymap">
@@ -59,12 +59,14 @@ describe('default module resolver', () => {
 
     const result2 = moduleResolver('https://unpkg.com/4.0.1/lodash.js', microAppContainer, mainAppContainer);
     expect(result2).toStrictEqual({
+      name: 'lodash',
       version: '4.0.2',
       url: 'https://unpkg.com/4.0.2/lodash.js',
     });
 
     const result3 = moduleResolver('https://unpkg.com/2.0.1/moment.js', microAppContainer, mainAppContainer);
     expect(result3).toStrictEqual({
+      name: 'moment',
       version: '2.1.1',
       url: 'https://unpkg.com/2.1.1/moment.js',
     });

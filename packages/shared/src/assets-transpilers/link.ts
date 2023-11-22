@@ -10,7 +10,7 @@ import { Mode } from './types';
 import { createReusingObjectUrl } from './utils';
 
 type PreTranspileResult =
-  | { mode: Mode.REUSED_DEP_IN_SANDBOX; result: { src: string } & MatchResult }
+  | { mode: Mode.REUSED_DEP_IN_SANDBOX | Mode.REUSED_DEP; result: { src: string } & MatchResult }
   | { mode: Mode.NONE; result?: never };
 const preTranspileStyleSheetLink = (
   link: Partial<Pick<HTMLLinkElement, 'href' | 'rel'>>,
@@ -20,18 +20,16 @@ const preTranspileStyleSheetLink = (
   const { sandbox, moduleResolver } = opts;
   const { href, rel } = link;
 
-  if (sandbox) {
-    // filter preload links
-    if (href && rel === 'stylesheet') {
-      const linkHref = getEntireUrl(href, baseURI);
+  // filter preload links
+  if (href && rel === 'stylesheet') {
+    const linkHref = getEntireUrl(href, baseURI);
 
-      const matchedAssets = moduleResolver?.(linkHref);
-      if (matchedAssets) {
-        return {
-          mode: Mode.REUSED_DEP_IN_SANDBOX,
-          result: { src: linkHref, ...matchedAssets },
-        };
-      }
+    const matchedAssets = moduleResolver?.(linkHref);
+    if (matchedAssets) {
+      return {
+        mode: sandbox ? Mode.REUSED_DEP_IN_SANDBOX : Mode.REUSED_DEP,
+        result: { src: linkHref, ...matchedAssets },
+      };
     }
   }
 
@@ -57,7 +55,8 @@ const postProcessPreloadLink = (link: HTMLLinkElement, baseURI: string, opts: As
           break;
         }
 
-        case Mode.REUSED_DEP_IN_SANDBOX: {
+        case Mode.REUSED_DEP_IN_SANDBOX:
+        case Mode.REUSED_DEP: {
           const { url } = result;
           link.href = createReusingObjectUrl(href, url, 'text/javascript');
 
@@ -72,7 +71,8 @@ const postProcessPreloadLink = (link: HTMLLinkElement, baseURI: string, opts: As
       const { mode, result } = preTranspileStyleSheetLink({ href, rel: 'stylesheet' }, baseURI, opts);
 
       switch (mode) {
-        case Mode.REUSED_DEP_IN_SANDBOX: {
+        case Mode.REUSED_DEP_IN_SANDBOX:
+        case Mode.REUSED_DEP: {
           const { url } = result;
           link.href = createReusingObjectUrl(href, url, 'text/css');
           break;
@@ -103,7 +103,8 @@ export default function transpileLink(
   );
 
   switch (mode) {
-    case Mode.REUSED_DEP_IN_SANDBOX: {
+    case Mode.REUSED_DEP_IN_SANDBOX:
+    case Mode.REUSED_DEP: {
       const { src, version, url } = result;
       link.dataset.href = src;
       link.dataset.version = version;

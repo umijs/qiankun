@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/unbound-method */
+import type { AssetsTranspilerOpts, ScriptTranspilerOpts } from '@qiankunjs/shared';
 /**
  * @author Kuitos
  * @since 2019-10-21
  */
-import { transpileAssets } from '@qiankunjs/shared';
+import { prepareDeferredQueue } from '@qiankunjs/shared';
 import { qiankunHeadTagName } from '../../consts';
 import type { SandboxConfig } from './types';
 
@@ -33,8 +34,12 @@ declare global {
   }
 }
 
-export const getContainerHeadElement = (container: Element | ShadowRoot): Element => {
-  return container.querySelector(qiankunHeadTagName)!;
+export const getContainerHeadElement = (container: Element): HTMLHeadElement | null => {
+  return container.querySelector(qiankunHeadTagName);
+};
+
+export const getContainerBodyElement = (container: Element): HTMLBodyElement => {
+  return container as HTMLBodyElement;
 };
 
 export function isHijackingTag(tagName?: string) {
@@ -127,19 +132,18 @@ export function getOverwrittenAppendChildOrInsertBefore(
     const appendChild = nativeFn;
 
     const element = newChild as unknown as HTMLElement;
-    const containerConfig = getSandboxConfig(element);
+    const sandboxConfig = getSandboxConfig(element);
 
-    if (!isHijackingTag(element.tagName) || !containerConfig) {
+    // no attached sandbox config means the element is not created from the sandbox environment
+    if (!isHijackingTag(element.tagName) || !sandboxConfig) {
       return appendChild.call(this, element, refChild) as T;
     }
 
     if (element.tagName) {
-      const { dynamicStyleSheetElements, sandbox } = containerConfig;
-
       switch (element.tagName) {
         case LINK_TAG_NAME:
         case STYLE_TAG_NAME: {
-          const stylesheetElement = newChild as unknown as HTMLLinkElement | HTMLStyleElement;
+          const stylesheetElement = element as HTMLLinkElement | HTMLStyleElement;
           Object.defineProperty(stylesheetElement, styleElementTargetSymbol, {
             value: target,
             writable: true,
@@ -152,23 +156,59 @@ export function getOverwrittenAppendChildOrInsertBefore(
             refNo = Array.from(this.childNodes).indexOf(referenceNode as ChildNode);
           }
 
-          const result = appendChild.call(this, stylesheetElement, referenceNode);
+          const { sandbox, nodeTransformer, fetch } = sandboxConfig;
+          const transpiledStyleSheetElement = nodeTransformer(stylesheetElement, {
+            fetch,
+            sandbox,
+            rawNode: stylesheetElement,
+          });
+
+          const result = appendChild.call(this, transpiledStyleSheetElement, referenceNode);
 
           // record refNo thus we can keep order while remounting
           if (typeof refNo === 'number' && refNo !== -1) {
-            defineNonEnumerableProperty(stylesheetElement, styleElementRefNodeNo, refNo);
+            defineNonEnumerableProperty(transpiledStyleSheetElement, styleElementRefNodeNo, refNo);
           }
+          const { dynamicStyleSheetElements } = sandboxConfig;
           // record dynamic style elements after insert succeed
-          dynamicStyleSheetElements.push(stylesheetElement);
+          dynamicStyleSheetElements.push(transpiledStyleSheetElement);
 
           return result as T;
         }
 
         case SCRIPT_TAG_NAME: {
-          // TODO paas fetch configuration and current entry url as baseURI
-          const node = transpileAssets(element, location.href, { fetch, sandbox, rawNode: element });
+          const scriptElement = element as HTMLScriptElement;
+          const { sandbox, dynamicExternalSyncScriptDeferredList, nodeTransformer, fetch } = sandboxConfig;
 
-          return appendChild.call(this, node, refChild) as T;
+          const externalSyncMode = scriptElement.hasAttribute('src') && !scriptElement.hasAttribute('async');
+
+          let transformerOpts: AssetsTranspilerOpts = {
+            fetch,
+            sandbox,
+            rawNode: scriptElement,
+          };
+
+          let queueSyncScript: () => void;
+          if (externalSyncMode) {
+            const { deferred, prevDeferred, queue } = prepareDeferredQueue(dynamicExternalSyncScriptDeferredList);
+            transformerOpts = {
+              ...transformerOpts,
+              scriptTranspiledDeferred: deferred,
+              prevScriptTranspiledDeferred: prevDeferred,
+            } as ScriptTranspilerOpts;
+            queueSyncScript = queue;
+          }
+
+          const transpiledScriptElement = nodeTransformer(scriptElement, transformerOpts);
+
+          const result = appendChild.call(this, transpiledScriptElement, refChild) as T;
+
+          // the script have no src attribute after transpile, indicating that the script needs to wait for the src to be filled
+          if (externalSyncMode && !transpiledScriptElement.hasAttribute('scr')) {
+            queueSyncScript!();
+          }
+
+          return result;
         }
 
         default:
@@ -237,25 +277,25 @@ export function getNewRemoveChild(
 }
 
 export function rebuildCSSRules(
-  styleSheetElements: HTMLStyleElement[],
-  reAppendElement: (stylesheetElement: HTMLStyleElement) => boolean,
-) {
-  styleSheetElements.forEach((stylesheetElement) => {
+  styleSheetElements: Array<HTMLStyleElement | HTMLLinkElement>,
+  reAppendElement: (stylesheetElement: HTMLStyleElement | HTMLLinkElement) => Promise<boolean>,
+): Array<Promise<void>> {
+  return styleSheetElements.map(async (styleSheetElement) => {
     // re-append the dynamic stylesheet to sub-app container
-    const appendSuccess = reAppendElement(stylesheetElement);
+    const appendSuccess = await reAppendElement(styleSheetElement);
     if (appendSuccess) {
       /*
       get the stored css rules from styled-components generated element, and the re-insert rules for them.
       note that we must do this after style element had been added to document, which stylesheet would be associated to the document automatically.
       check the spec https://www.w3.org/TR/cssom-1/#associated-css-style-sheet
        */
-      if (stylesheetElement instanceof HTMLStyleElement && isStyledComponentsLike(stylesheetElement)) {
-        const cssRules = getStyledElementCSSRules(stylesheetElement);
+      if (styleSheetElement instanceof HTMLStyleElement && isStyledComponentsLike(styleSheetElement)) {
+        const cssRules = getStyledElementCSSRules(styleSheetElement);
         if (cssRules) {
           // eslint-disable-next-line no-plusplus
           for (let i = 0; i < cssRules.length; i++) {
             const cssRule = cssRules[i];
-            const cssStyleSheetElement = stylesheetElement.sheet as CSSStyleSheet;
+            const cssStyleSheetElement = styleSheetElement.sheet as CSSStyleSheet;
             cssStyleSheetElement.insertRule(cssRule.cssText, cssStyleSheetElement.cssRules.length);
           }
         }
