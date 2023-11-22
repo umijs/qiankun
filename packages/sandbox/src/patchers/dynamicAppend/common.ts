@@ -157,7 +157,7 @@ export function getOverwrittenAppendChildOrInsertBefore(
           }
 
           const { sandbox, nodeTransformer, fetch } = sandboxConfig;
-          const transpiledStyleSheetElement = nodeTransformer(stylesheetElement, location.href, {
+          const transpiledStyleSheetElement = nodeTransformer(stylesheetElement, {
             fetch,
             sandbox,
             rawNode: stylesheetElement,
@@ -199,7 +199,7 @@ export function getOverwrittenAppendChildOrInsertBefore(
             queueSyncScript = queue;
           }
 
-          const transpiledScriptElement = nodeTransformer(scriptElement, location.href, transformerOpts);
+          const transpiledScriptElement = nodeTransformer(scriptElement, transformerOpts);
 
           const result = appendChild.call(this, transpiledScriptElement, refChild) as T;
 
@@ -277,8 +277,8 @@ export function getNewRemoveChild(
 }
 
 export function rebuildCSSRules(
-  styleSheetElements: HTMLStyleElement[],
-  reAppendElement: (stylesheetElement: HTMLStyleElement) => Promise<boolean>,
+  styleSheetElements: Array<HTMLStyleElement | HTMLLinkElement>,
+  reAppendElement: (stylesheetElement: HTMLStyleElement | HTMLLinkElement) => Promise<boolean>,
 ): Array<Promise<void>> {
   return styleSheetElements.map(async (styleSheetElement) => {
     // re-append the dynamic stylesheet to sub-app container
