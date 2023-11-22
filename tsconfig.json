@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": "./",
     "target": "esnext",
     "module": "esnext",
     "lib": ["es2018", "dom"],
@@ -24,7 +25,8 @@
     "esModuleInterop": true,
     "types": ["vitest/globals", "node"],
     "paths": {
-      "@@/*": ["./.dumi/tmp/*"]
+      "@@/*": ["./.dumi/tmp/*"],
+      "@qiankunjs/*": ["packages/*/src"]
     }
   },
   "exclude": ["node_modules", "examples", "packages/**/dist"]

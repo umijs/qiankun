@@ -51,7 +51,7 @@ export function getEntireUrl(uri: string, baseURI: string): string {
 }
 
 /**
- * Check if the running environment support qiankun3.0
+ * Check if the running environment support qiankun 3.0
  *
  */
 export function isRuntimeCompatible(): boolean {

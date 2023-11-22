@@ -6,5 +6,6 @@ export * from './assets-transpilers';
 export * from './utils';
 export * from './module-resolver';
 export * from './common';
-export * from './error';
+export * from './reporter';
 export * from './fetch-utils/wrapFetchWithCache';
+export * from './deferred-queue';

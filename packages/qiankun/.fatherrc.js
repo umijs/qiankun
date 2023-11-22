@@ -8,6 +8,6 @@ const versionFilePath = join(__dirname, './src/version.ts');
 writeFileSync(versionFilePath, `export const version = '${version}';`);
 
 export default {
-  umd: {},
+  // umd: {},
   ...cfg,
 };

@@ -1,8 +1,6 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { name } = require('./package');
-const QiankunPlugin  = require('../../packages/webpack-plugin/dist/cjs');
-
-
+const QiankunPlugin = require('../../packages/webpack-plugin/dist/cjs');
 
 module.exports = {
   entry: './index.js',
@@ -53,6 +51,8 @@ module.exports = {
         removeComments: true,
         collapseWhitespace: true,
       },
+      inject: 'head',
+      scriptLoading: 'defer',
     }),
     new QiankunPlugin(),
   ],

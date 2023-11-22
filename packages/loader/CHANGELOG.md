@@ -1,5 +1,47 @@
 # @qiankunjs/loader
 
+## 0.0.1-rc.15
+
+### Patch Changes
+
+- bd12dbad: fix: defer scripts should wait until html loaded
+- Updated dependencies [bd12dbad]
+  - @qiankunjs/sandbox@0.0.1-rc.12
+  - @qiankunjs/shared@0.0.1-rc.9
+
+## 0.0.1-rc.14
+
+### Patch Changes
+
+- 98b071bf: feat: support defer scripts and keep the executing order to consist with browser
+- Updated dependencies [98b071bf]
+  - @qiankunjs/sandbox@0.0.1-rc.11
+  - @qiankunjs/shared@0.0.1-rc.8
+
+## 0.0.1-rc.13
+
+### Patch Changes
+
+- f2af2e36: feat: extract NodeTransformer type to shared package
+- Updated dependencies [f2af2e36]
+  - @qiankunjs/sandbox@0.0.1-rc.10
+  - @qiankunjs/shared@0.0.1-rc.7
+
+## 0.0.1-rc.12
+
+### Patch Changes
+
+- 54b0878e: feat(loader): compatible with defer entry script
+- 7ba95cf2: feat: change script src before it execute thus we can be more consistent with the native browser logic
+- Updated dependencies [d3e9872d]
+- Updated dependencies [7cc06bd4]
+- Updated dependencies [54b0878e]
+- Updated dependencies [7ba95cf2]
+- Updated dependencies [312abbc7]
+- Updated dependencies [6f074136]
+  - @qiankunjs/sandbox@0.0.1-rc.9
+  - @qiankunjs/shared@0.0.1-rc.6
+
 ## 0.0.1-rc.11
 
 ### Patch Changes

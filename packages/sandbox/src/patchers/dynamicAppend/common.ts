@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/unbound-method */
+import type { AssetsTranspilerOpts, ScriptTranspilerOpts } from '@qiankunjs/shared';
 /**
  * @author Kuitos
  * @since 2019-10-21
  */
-import type { ScriptTranspilerOpts } from '@qiankunjs/shared';
-import { Deferred, waitUntilSettled } from '@qiankunjs/shared';
+import { prepareDeferredQueue } from '@qiankunjs/shared';
 import { qiankunHeadTagName } from '../../consts';
 import type { SandboxConfig } from './types';
 
@@ -15,8 +15,6 @@ const STYLE_TAG_NAME = 'STYLE';
 export const styleElementTargetSymbol = Symbol('target');
 export const styleElementRefNodeNo = Symbol('refNodeNo');
 const overwrittenSymbol = Symbol('qiankun-overwritten');
-
-const scriptFetchedDeferredWeakMap = new WeakMap<HTMLScriptElement, Deferred<void>>();
 
 type DynamicDomMutationTarget = 'head' | 'body';
 
@@ -159,13 +157,11 @@ export function getOverwrittenAppendChildOrInsertBefore(
           }
 
           const { sandbox, nodeTransformer, fetch } = sandboxConfig;
-          const transpiledStyleSheetElement = nodeTransformer
-            ? nodeTransformer(stylesheetElement, location.href, {
-                fetch,
-                sandbox,
-                rawNode: stylesheetElement,
-              })
-            : stylesheetElement;
+          const transpiledStyleSheetElement = nodeTransformer(stylesheetElement, {
+            fetch,
+            sandbox,
+            rawNode: stylesheetElement,
+          });
 
           const result = appendChild.call(this, transpiledStyleSheetElement, referenceNode);
 
@@ -182,47 +178,34 @@ export function getOverwrittenAppendChildOrInsertBefore(
 
         case SCRIPT_TAG_NAME: {
           const scriptElement = element as HTMLScriptElement;
-          const { sandbox, dynamicExternalSyncScriptElements, nodeTransformer, fetch } = sandboxConfig;
+          const { sandbox, dynamicExternalSyncScriptDeferredList, nodeTransformer, fetch } = sandboxConfig;
 
           const externalSyncMode = scriptElement.hasAttribute('src') && !scriptElement.hasAttribute('async');
 
-          let prevScriptTranspiledDeferred: Deferred<void> | undefined;
-          let scriptTranspiledDeferred: Deferred<void> | undefined;
+          let transformerOpts: AssetsTranspilerOpts = {
+            fetch,
+            sandbox,
+            rawNode: scriptElement,
+          };
 
+          let queueSyncScript: () => void;
           if (externalSyncMode) {
-            const dynamicScriptsLength = dynamicExternalSyncScriptElements.length;
-            const prevSyncScriptElement = dynamicScriptsLength
-              ? dynamicExternalSyncScriptElements[dynamicScriptsLength - 1]
-              : undefined;
-            prevScriptTranspiledDeferred = prevSyncScriptElement
-              ? scriptFetchedDeferredWeakMap.get(prevSyncScriptElement)
-              : undefined;
-            scriptTranspiledDeferred = new Deferred<void>();
+            const { deferred, prevDeferred, queue } = prepareDeferredQueue(dynamicExternalSyncScriptDeferredList);
+            transformerOpts = {
+              ...transformerOpts,
+              scriptTranspiledDeferred: deferred,
+              prevScriptTranspiledDeferred: prevDeferred,
+            } as ScriptTranspilerOpts;
+            queueSyncScript = queue;
           }
 
-          const transpiledScriptElement = nodeTransformer
-            ? nodeTransformer(scriptElement, location.href, {
-                fetch,
-                sandbox,
-                rawNode: scriptElement,
-                prevScriptTranspiledDeferred,
-                scriptTranspiledDeferred,
-              } as ScriptTranspilerOpts)
-            : scriptElement;
+          const transpiledScriptElement = nodeTransformer(scriptElement, transformerOpts);
 
           const result = appendChild.call(this, transpiledScriptElement, refChild) as T;
 
-          // Previously it was an external synchronous script, and after the transpile, there was no src attribute, indicating that the script needs to wait for the src to be filled
-          if (externalSyncMode && !transpiledScriptElement.hasAttribute('src')) {
-            dynamicExternalSyncScriptElements.push(transpiledScriptElement);
-            scriptFetchedDeferredWeakMap.set(transpiledScriptElement, scriptTranspiledDeferred!);
-
-            // clear the memory regardless the script loaded or failed
-            void waitUntilSettled(scriptTranspiledDeferred!.promise).then(() => {
-              const scriptIndex = dynamicExternalSyncScriptElements.indexOf(transpiledScriptElement);
-              dynamicExternalSyncScriptElements.splice(scriptIndex, 1);
-              scriptFetchedDeferredWeakMap.delete(transpiledScriptElement);
-            });
+          // the script have no src attribute after transpile, indicating that the script needs to wait for the src to be filled
+          if (externalSyncMode && !transpiledScriptElement.hasAttribute('scr')) {
+            queueSyncScript!();
           }
 
           return result;
@@ -294,8 +277,8 @@ export function getNewRemoveChild(
 }
 
 export function rebuildCSSRules(
-  styleSheetElements: HTMLStyleElement[],
-  reAppendElement: (stylesheetElement: HTMLStyleElement) => Promise<boolean>,
+  styleSheetElements: Array<HTMLStyleElement | HTMLLinkElement>,
+  reAppendElement: (stylesheetElement: HTMLStyleElement | HTMLLinkElement) => Promise<boolean>,
 ): Array<Promise<void>> {
   return styleSheetElements.map(async (styleSheetElement) => {
     // re-append the dynamic stylesheet to sub-app container

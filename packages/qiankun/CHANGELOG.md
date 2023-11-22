@@ -1,5 +1,50 @@
 # qiankun
 
+## 3.0.0-rc.15
+
+### Patch Changes
+
+- a8809ecf: feat: enable sandbox by default
+- Updated dependencies [bd12dbad]
+  - @qiankunjs/loader@0.0.1-rc.15
+  - @qiankunjs/sandbox@0.0.1-rc.12
+  - @qiankunjs/shared@0.0.1-rc.9
+
+## 3.0.0-rc.14
+
+### Patch Changes
+
+- Updated dependencies [98b071bf]
+  - @qiankunjs/loader@0.0.1-rc.14
+  - @qiankunjs/sandbox@0.0.1-rc.11
+  - @qiankunjs/shared@0.0.1-rc.8
+
+## 3.0.0-rc.13
+
+### Patch Changes
+
+- f2af2e36: feat: extract NodeTransformer type to shared package
+- Updated dependencies [f2af2e36]
+  - @qiankunjs/loader@0.0.1-rc.13
+  - @qiankunjs/sandbox@0.0.1-rc.10
+  - @qiankunjs/shared@0.0.1-rc.7
+
+## 3.0.0-rc.12
+
+### Patch Changes
+
+- 7cc06bd4: feat(loader): add lru cache for assets fetch by default
+- 312abbc7: feat: remove lru-cache and move wrapFetch to shared package
+- Updated dependencies [d3e9872d]
+- Updated dependencies [7cc06bd4]
+- Updated dependencies [54b0878e]
+- Updated dependencies [7ba95cf2]
+- Updated dependencies [312abbc7]
+- Updated dependencies [6f074136]
+  - @qiankunjs/sandbox@0.0.1-rc.9
+  - @qiankunjs/loader@0.0.1-rc.12
+  - @qiankunjs/shared@0.0.1-rc.6
+
 ## 3.0.0-rc.11
 
 ### Patch Changes

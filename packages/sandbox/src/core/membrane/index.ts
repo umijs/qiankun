@@ -11,6 +11,7 @@ import {
 import { nativeGlobal } from '../../consts';
 import { isPropertyFrozen } from '../../utils';
 import { globalsInBrowser } from '../globals';
+import { array2TruthyObject } from '../utils';
 import { rebindTarget2Fn } from './utils';
 
 declare global {
@@ -59,9 +60,9 @@ const isPropertyDescriptor = (v: unknown): boolean => {
   );
 };
 
-const cachedGlobalsInBrowser = globalsInBrowser
-  .concat(process.env.NODE_ENV === 'test' ? ['mockNativeWindowFunction'] : [])
-  .reduce<Record<string, true>>((acc, key) => ({ ...acc, [key]: true }), Object.create(null) as Record<string, true>);
+const cachedGlobalsInBrowser = array2TruthyObject(
+  globalsInBrowser.concat(process.env.NODE_ENV === 'test' ? ['mockNativeWindowFunction'] : []),
+);
 const isNativeGlobalProp = (prop: string): boolean => {
   return prop in cachedGlobalsInBrowser;
 };
@@ -174,7 +175,6 @@ export class Membrane {
       // trap in operator
       // see https://github.com/styled-components/styled-components/blob/master/packages/styled-components/src/constants.js#L12
       has(membraneTarget: MembraneTarget, p: string | number | symbol): boolean {
-        // property in cachedGlobalObjects must return true to avoid escape from get trap
         return p in membraneTarget || p in incubatorContext;
       },
 

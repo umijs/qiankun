@@ -6,7 +6,7 @@ import type { LoaderOpts } from '@qiankunjs/loader';
 import { loadEntry } from '@qiankunjs/loader';
 import type { Sandbox } from '@qiankunjs/sandbox';
 import { createSandboxContainer } from '@qiankunjs/sandbox';
-import { wrapFetchWithCache } from '@qiankunjs/shared';
+import { moduleResolver as defaultModuleResolver, transpileAssets, wrapFetchWithCache } from '@qiankunjs/shared';
 import { concat, isFunction, mergeWith } from 'lodash';
 import type { ParcelConfigObject } from 'single-spa';
 import getAddOns from '../addons';
@@ -29,7 +29,18 @@ export default async function loadApp<T extends ObjectType>(
   lifeCycles?: LifeCycles<T>,
 ): Promise<ParcelConfigObjectGetter> {
   const { name: appName, entry, container } = app;
-  const { fetch = window.fetch, sandbox, globalContext = window, ...restConfiguration } = configuration || {};
+  const defaultNodeTransformer: AppConfiguration['nodeTransformer'] = (node, opts) => {
+    const moduleResolver = (url: string) => defaultModuleResolver(url, sandboxMicroAppContainer, document.head);
+    return transpileAssets(node, entry, { ...opts, moduleResolver });
+  };
+  const {
+    fetch = window.fetch,
+    sandbox = true,
+    globalContext = window,
+    nodeTransformer = defaultNodeTransformer,
+    ...restConfiguration
+  } = configuration || {};
+
   const fetchWithLruCache = wrapFetchWithCache(fetch);
 
   const markName = `[qiankun] App ${appName} Loading`;
@@ -50,7 +61,7 @@ export default async function loadApp<T extends ObjectType>(
       globalContext,
       extraGlobals: {},
       fetch: fetchWithLruCache,
-      nodeTransformer: restConfiguration.nodeTransformer,
+      nodeTransformer,
     });
 
     sandboxInstance = sandboxContainer.instance;
@@ -60,7 +71,12 @@ export default async function loadApp<T extends ObjectType>(
     unmountSandbox = () => sandboxContainer.unmount();
   }
 
-  const containerOpts: LoaderOpts = { fetch: fetchWithLruCache, sandbox: sandboxInstance, ...restConfiguration };
+  const containerOpts: LoaderOpts = {
+    fetch: fetchWithLruCache,
+    sandbox: sandboxInstance,
+    nodeTransformer,
+    ...restConfiguration,
+  };
 
   const lifecyclesPromise = loadEntry<MicroAppLifeCycles>(entry, sandboxMicroAppContainer, containerOpts);
 

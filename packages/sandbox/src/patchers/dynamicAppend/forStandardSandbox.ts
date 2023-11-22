@@ -60,7 +60,9 @@ const getSandboxConfig = (element: HTMLElement) => elementAttachSandboxConfigMap
 
 function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): CallableFunction {
   const container = getContainer();
-  if (patchCacheWeakMap.has(container)) {
+  // dom container might be reused by multiple apps,
+  // thus we check its attached sandbox is same with current to avoid duplicate patch
+  if (patchCacheWeakMap.get(container) === sandbox) {
     return () => {};
   }
 
@@ -171,7 +173,7 @@ function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): Calla
     document: { value: proxyDocument, writable: false, enumerable: true, configurable: true },
   });
 
-  patchCacheWeakMap.set(container, true);
+  patchCacheWeakMap.set(container, sandbox);
 
   return () => {
     unpatch();
@@ -325,7 +327,7 @@ export function patchStandardSandbox(
       fetch,
       nodeTransformer,
       dynamicStyleSheetElements: [],
-      dynamicExternalSyncScriptElements: [],
+      dynamicExternalSyncScriptDeferredList: [],
     };
     sandboxConfigWeakMap.set(sandbox, sandboxConfig);
   }
@@ -356,9 +358,16 @@ export function patchStandardSandbox(
     // the dynamic style sheet could be removed automatically while unmounting
     return async function rebuild() {
       const container = getContainer();
+      const isElementExisted = (element: HTMLStyleElement | HTMLLinkElement) => {
+        if (container.contains(element)) return true;
+        if ('rel' in element && element.rel === 'stylesheet' && element.href)
+          return !!container.querySelector(`link[rel=stylesheet][href=${element.href}]`);
+        return false;
+      };
+
       await Promise.all(
-        rebuildCSSRules(dynamicStyleSheetElements as HTMLStyleElement[], async (stylesheetElement) => {
-          if (!container.contains(stylesheetElement)) {
+        rebuildCSSRules(dynamicStyleSheetElements, async (stylesheetElement) => {
+          if (!isElementExisted(stylesheetElement)) {
             const mountDom =
               stylesheetElement[styleElementTargetSymbol] === 'head'
                 ? (() => {
@@ -372,13 +381,15 @@ export function patchStandardSandbox(
                   })()
                 : container;
 
-            // micro app rendering should wait unit the rebuilding link element is loaded, otherwise it may cause style blink
-            // As one link element will just trigger loaded event once, although we append it multiple times, we need to clone it before every appending
-            const cloneStyleElement = stylesheetElement.cloneNode(true) as HTMLLinkElement;
+            let styleElement = stylesheetElement;
+
             const deferred = new Deferred<boolean>();
-            if (cloneStyleElement.rel === 'stylesheet' && cloneStyleElement.href) {
-              cloneStyleElement.onload = () => deferred.resolve(true);
-              cloneStyleElement.onerror = () => deferred.resolve(false);
+            if ('rel' in styleElement && styleElement.rel === 'stylesheet' && styleElement.href) {
+              // micro app rendering should wait unit the rebuilding link element is loaded, otherwise it may cause style blink
+              // As one external link element will just trigger loaded event once, although we append it multiple times, we need to clone it before every appending
+              styleElement = styleElement.cloneNode(true) as HTMLLinkElement;
+              styleElement.onload = () => deferred.resolve(true);
+              styleElement.onerror = () => deferred.resolve(false);
             } else {
               deferred.resolve(true);
             }
@@ -388,9 +399,9 @@ export function patchStandardSandbox(
               // the reference node may be dynamic script comment which is not rebuilt while remounting thus reference node no longer exists
               // in this case, we should append the style element to the end of mountDom
               const refNode = mountDom.childNodes[refNo];
-              rawHeadInsertBefore.call(mountDom, cloneStyleElement, refNode);
+              rawHeadInsertBefore.call(mountDom, styleElement, refNode);
             } else {
-              rawHeadAppendChild.call(mountDom, cloneStyleElement);
+              rawHeadAppendChild.call(mountDom, styleElement);
             }
 
             return deferred.promise;

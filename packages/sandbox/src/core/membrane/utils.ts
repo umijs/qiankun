@@ -59,10 +59,15 @@ export function rebindTarget2Fn<T>(target: unknown, fn: T, receiver: unknown): T
           'toString',
         );
 
-        Object.defineProperty(boundValue, 'toString', {
-          ...originToStringDescriptor,
-          ...(originToStringDescriptor?.get ? null : { value: () => typedValue.toString() }),
-        });
+        Object.defineProperty(
+          boundValue,
+          'toString',
+          Object.assign(
+            {},
+            originToStringDescriptor,
+            originToStringDescriptor?.get ? null : { value: () => typedValue.toString() },
+          ),
+        );
       }
     }
 
