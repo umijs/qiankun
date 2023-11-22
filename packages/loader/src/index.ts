@@ -121,7 +121,9 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
           if (isEntryScript(script)) {
             if (foundEntryScript) {
               throw new QiankunError(
+                2,
                 `You should not set multiply entry script in one entry html, but ${entry} has at least 2 entry scripts`,
+                entry,
               );
             }
 
@@ -139,7 +141,12 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
                   onEntryLoaded();
                 } else {
                   entryScriptLoadedDeferred.reject(
-                    new QiankunError(`entry ${entry} load failed as entry script ${script.src} load failed}`),
+                    new QiankunError(
+                      3,
+                      `entry ${entry} load failed as entry script ${script.src} load failed`,
+                      entry,
+                      script.src,
+                    ),
                   );
                 }
               }
@@ -171,5 +178,5 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
     return entryScriptLoadedDeferred.promise;
   }
 
-  throw new QiankunError(`entry ${entry} response body is empty!`);
+  throw new QiankunError(4, `entry ${entry} response body is empty!`, entry);
 }

@@ -20,7 +20,7 @@ export default function CodeSnippet() {
                 getErrorCodeArg={getErrorCodeArg}
                 errorCode={code} />
         </div>
-    ) : (<div>请输入错误码code</div>)
+    ) : (<div>Please enter the error code</div>)
 
     function getErrorCodeArg(index, argName) {
         const missingArg = argName ? `(${argName})` : `(unknown)`;

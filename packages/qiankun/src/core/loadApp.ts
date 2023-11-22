@@ -10,7 +10,7 @@ import { moduleResolver as defaultModuleResolver, transpileAssets, wrapFetchWith
 import { concat, isFunction, mergeWith } from 'lodash';
 import type { ParcelConfigObject } from 'single-spa';
 import getAddOns from '../addons';
-import { QiankunError } from '../error';
+import { QiankunError } from '@qiankunjs/shared';
 import type { AppConfiguration, LifeCycleFn, LifeCycles, LoadableApp, MicroAppLifeCycles, ObjectType } from '../types';
 import {
   getPureHTMLStringWithoutScripts,
@@ -94,7 +94,8 @@ export default async function loadApp<T extends ObjectType>(
   await execHooksChain(toArray(beforeLoad), app, global);
 
   const lifecycles = await lifecyclesPromise;
-  if (!lifecycles) throw new QiankunError(`${appName} entry ${entry} load failed as it not export lifecycles`);
+  if (!lifecycles)
+    throw new QiankunError(5, `${appName} entry ${entry} load failed as it not export lifecycles`, appName, entry);
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
     lifecycles,
     appName,
@@ -235,7 +236,7 @@ function getLifecyclesFromExports(
     return globalVariableExports;
   }
 
-  throw new QiankunError(`You need to export lifecycle functions in ${appName} entry`);
+  throw new QiankunError(6, `You need to export lifecycle functions in ${appName} entry`, appName);
 }
 
 function calcPublicPath(entry: string): string {

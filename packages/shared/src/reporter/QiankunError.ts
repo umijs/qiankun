@@ -1,7 +1,7 @@
 export class QiankunError extends Error {
-  constructor(message: string, code?: number,  ...args: string[]) {
+  constructor(code: number, message: string, ...args: string[]) {
     let errorMessage = `[qiankun #${code}]: ${message ? message + ' ' : ''}`;
-    if (process.env.NODE_ENV === 'production' && typeof(code) !== 'undefined') {
+    if (process.env.NODE_ENV === 'production') {
       errorMessage += `See https://qiankun.umijs.org/error/?code=${code}${
         args.length ? `&arg=${args.join('&arg=')}` : ''
       }`;
