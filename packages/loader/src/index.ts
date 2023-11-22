@@ -104,7 +104,7 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
             queueDeferScript = queue;
           }
 
-          const transformedNode = nodeTransformer ? nodeTransformer(clone, entry, transformerOpts) : clone;
+          const transformedNode = nodeTransformer ? nodeTransformer(clone, transformerOpts) : clone;
 
           const script = transformedNode as unknown as HTMLScriptElement;
 

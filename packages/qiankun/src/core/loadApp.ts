@@ -29,9 +29,9 @@ export default async function loadApp<T extends ObjectType>(
   lifeCycles?: LifeCycles<T>,
 ): Promise<ParcelConfigObjectGetter> {
   const { name: appName, entry, container } = app;
-  const defaultNodeTransformer: AppConfiguration['nodeTransformer'] = (node, baseURI, opts) => {
+  const defaultNodeTransformer: AppConfiguration['nodeTransformer'] = (node, opts) => {
     const moduleResolver = (url: string) => defaultModuleResolver(url, sandboxMicroAppContainer, document.head);
-    return transpileAssets(node, baseURI, { ...opts, moduleResolver });
+    return transpileAssets(node, entry, { ...opts, moduleResolver });
   };
   const {
     fetch = window.fetch,

@@ -85,6 +85,7 @@ export async function getPureHTMLStringWithoutScripts(entry: string, fetch: type
   const htmlDOM = domParser.parseFromString(htmlString, 'text/html');
   // remove all script tags who are been loaded before
   htmlDOM.querySelectorAll('script').forEach((script) => script.remove());
+  htmlDOM.querySelectorAll('link[rel=prefetch],link[rel=preload]').forEach((link) => link.remove());
 
   return htmlDOM.documentElement.outerHTML;
 }
