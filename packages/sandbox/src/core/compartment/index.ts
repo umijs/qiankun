@@ -15,8 +15,6 @@ type CompartmentGlobalId = `${typeof compartmentGlobalIdPrefix}${string}${typeof
 
 declare global {
   interface Window {
-    __compartment_window__?: Window;
-
     [p: CompartmentGlobalId]: WindowProxy | undefined;
   }
 }
