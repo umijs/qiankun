@@ -75,7 +75,11 @@ function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): Calla
     const container = getContainer();
     const containerHeadElement = getContainerHeadElement(container);
     if (!containerHeadElement) {
-      throw new QiankunError(`${sandbox.name} head element not existed while accessing document.head!`);
+      throw new QiankunError(
+        7,
+        `${sandbox.name} head element not existed while accessing document.head!`,
+        sandbox.name,
+      );
     }
     return containerHeadElement;
   };
@@ -370,7 +374,10 @@ export function patchStandardSandbox(
                     const containerHeadElement = getContainerHeadElement(container);
                     if (!containerHeadElement) {
                       throw new QiankunError(
+                        8,
                         `${appName} container ${qiankunHeadTagName} element not ready while rebuilding!`,
+                        appName,
+                        qiankunHeadTagName,
                       );
                     }
                     return containerHeadElement;

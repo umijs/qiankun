@@ -58,4 +58,5 @@ export default defineConfig({
   theme: {
     '@c-primary': '#6451AB',
   },
+  styles: [`li a[href="/qiankun/error"],li a[href="/qiankun/error"] ~ * { display: none}]`],
 });
