@@ -30,7 +30,7 @@ export default async function loadApp<T extends ObjectType>(
 ): Promise<ParcelConfigObjectGetter> {
   const { name: appName, entry, container } = app;
   const defaultNodeTransformer: AppConfiguration['nodeTransformer'] = (node, opts) => {
-    const moduleResolver = (url: string) => defaultModuleResolver(url, sandboxMicroAppContainer, document.head);
+    const moduleResolver = (url: string) => defaultModuleResolver(url, microAppDOMContainer, document.head);
     return transpileAssets(node, entry, { ...opts, moduleResolver });
   };
   const {
@@ -49,15 +49,15 @@ export default async function loadApp<T extends ObjectType>(
   }
 
   let global = globalContext;
-  let mountSandbox = () => Promise.resolve();
+  let mountSandbox: (container: HTMLElement) => Promise<void> = () => Promise.resolve();
   let unmountSandbox = () => Promise.resolve();
   let sandboxInstance: Sandbox | undefined;
 
-  let sandboxMicroAppContainer: HTMLElement = container;
-  initContainer(sandboxMicroAppContainer, appName, sandbox);
+  let microAppDOMContainer: HTMLElement = container;
+  initContainer(microAppDOMContainer, appName, sandbox);
 
   if (sandbox) {
-    const sandboxContainer = createSandboxContainer(appName, () => sandboxMicroAppContainer, {
+    const sandboxContainer = createSandboxContainer(appName, () => microAppDOMContainer, {
       globalContext,
       extraGlobals: {},
       fetch: fetchWithLruCache,
@@ -67,7 +67,7 @@ export default async function loadApp<T extends ObjectType>(
     sandboxInstance = sandboxContainer.instance;
     global = sandboxInstance.globalThis;
 
-    mountSandbox = () => sandboxContainer.mount();
+    mountSandbox = (domContainer) => sandboxContainer.mount(domContainer);
     unmountSandbox = () => sandboxContainer.unmount();
   }
 
@@ -78,7 +78,7 @@ export default async function loadApp<T extends ObjectType>(
     ...restConfiguration,
   };
 
-  const lifecyclesPromise = loadEntry<MicroAppLifeCycles>(entry, sandboxMicroAppContainer, containerOpts);
+  const lifecyclesPromise = loadEntry<MicroAppLifeCycles>(entry, microAppDOMContainer, containerOpts);
 
   const assetPublicPath = calcPublicPath(entry);
   const {
@@ -123,7 +123,7 @@ export default async function loadApp<T extends ObjectType>(
           }
         },
         async () => {
-          sandboxMicroAppContainer = mountContainer;
+          microAppDOMContainer = mountContainer;
 
           // while the micro app is remounting, we need to load the entry manually
           if (mountTimes > 1) {
@@ -133,7 +133,9 @@ export default async function loadApp<T extends ObjectType>(
             await loadEntry(htmlString, mountContainer, containerOpts);
           }
         },
-        mountSandbox,
+        async () => {
+          await mountSandbox(mountContainer);
+        },
         // exec the chain after rendering to keep the behavior with beforeLoad
         async () => execHooksChain(toArray(beforeMount), app, global),
         async (props) => mount({ ...props, container: mountContainer }),

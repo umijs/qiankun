@@ -72,7 +72,7 @@ export function loadMicroApp<T extends ObjectType>(
     const parcelConfigObjectGetterPromise = loadApp(app, userConfiguration, lifeCycles);
 
     if (containerXPath) {
-      const appContainerXPathKey = `${name}-${containerXPath}`;
+      const appContainerXPathKey = getContainerXPathKey(containerXPath);
       appConfigPromiseGetterMap.set(appContainerXPathKey, parcelConfigObjectGetterPromise);
     }
 

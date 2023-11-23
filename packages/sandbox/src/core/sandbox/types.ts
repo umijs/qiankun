@@ -19,6 +19,8 @@ export interface Sandbox extends Compartment {
 
   inactive(): void;
 
+  destroy(): void;
+
   addIntrinsics: (intrinsics: Record<string, PropertyDescriptor>) => void;
 
   // TODO for gc
