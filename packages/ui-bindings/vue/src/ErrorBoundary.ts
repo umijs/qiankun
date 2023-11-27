@@ -1,4 +1,4 @@
-import { defineComponent, h } from 'vue';
+import { defineComponent, h } from 'vue-demi';
 
 export default defineComponent({
   props: {
@@ -7,7 +7,7 @@ export default defineComponent({
       default: undefined,
     },
   },
-  setup(props) {
-    return () => h('div', [props.error?.message]);
-  },
+  render() {
+    return h('div', this.error?.message);
+  }
 });

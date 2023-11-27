@@ -1,5 +1,5 @@
-import type { PropType } from 'vue';
-import { computed, defineComponent, h, onMounted, reactive, ref, toRefs, watch } from 'vue';
+import type { PropType } from 'vue-demi';
+import { computed, defineComponent, h, onMounted, reactive, ref, toRefs, watch, isVue2 } from 'vue-demi';
 import type { AppConfiguration, LifeCycles } from 'qiankun';
 import type { MicroAppType } from '@qiankunjs/ui-shared';
 import { mountMicroApp, omitSharedProps, unmountMicroApp, updateMicroApp } from '@qiankunjs/ui-shared';
@@ -8,6 +8,7 @@ import MicroAppLoader from './MicroAppLoader';
 import ErrorBoundary from './ErrorBoundary';
 
 export const MicroApp = defineComponent({
+  name: 'MicroApp',
   props: {
     name: {
       type: String,
@@ -36,12 +37,14 @@ export const MicroApp = defineComponent({
     },
     wrapperClassName: {
       type: String,
+      default: undefined,
     },
     className: {
       type: String,
+      default: undefined,
     },
   },
-  setup(props, { slots, expose }) {
+  setup(props, { slots }) {
     const originProps = props;
     const { name, wrapperClassName, className, ...propsFromParams } = toRefs(originProps);
 
@@ -72,15 +75,19 @@ export const MicroApp = defineComponent({
       }
     };
 
-    expose({
-      microApp: microAppRef,
-    });
+
+    const rootRef = ref<HTMLDivElement | null>(null);
 
     onMounted(() => {
+      console.log(rootRef.value);
+
+      console.log(containerRef.value);
+
       watch(
         name,
         () => {
           const microApp = microAppRef.value;
+
 
           if (microApp) {
             microApp._unmounting = true;
@@ -137,40 +144,65 @@ export const MicroApp = defineComponent({
       return className.value ? `${className.value} qiankun-micro-app-container` : 'qiankun-micro-app-container';
     });
 
-    return () =>
-      reactivePropsFromParams.value.autoSetLoading ||
-      reactivePropsFromParams.value.autoCaptureError ||
-      slots.loader ||
-      slots.errorBoundary
-        ? h(
-            'div',
-            {
-              class: microAppWrapperClassName.value,
-            },
-            [
-              slots.loader
-                ? slots.loader(loading.value)
-                : reactivePropsFromParams.value.autoSetLoading &&
-                  h(MicroAppLoader, {
-                    loading: loading.value,
-                  }),
-              error.value
-                ? slots.errorBoundary
-                  ? slots.errorBoundary(error.value)
-                  : reactivePropsFromParams.value.autoCaptureError &&
-                    h(ErrorBoundary, {
-                      error: error.value,
-                    })
-                : null,
-              h('div', {
-                class: microAppClassName.value,
-                ref: containerRef,
-              }),
-            ],
-          )
-        : h('div', {
-            class: microAppClassName.value,
-            ref: containerRef,
-          });
+    return {
+      loading,
+      error,
+      containerRef,
+      microAppRef,
+      microAppWrapperClassName,
+      microAppClassName,
+      rootRef,
+      reactivePropsFromParams,
+      microApp: microAppRef,
+    };
   },
+
+  render() {
+    return this.reactivePropsFromParams.autoSetLoading ||
+    this.reactivePropsFromParams.autoCaptureError ||
+    this.$slots.loader ||
+    this.$slots.errorBoundary
+      ? h(
+          'div',
+          {
+            class: this.microAppWrapperClassName,
+          },
+          [
+            this.$slots.loader
+              ? (typeof this.$slots.loader === 'function' ? this.$slots.loader(this.loading): this.$slots.loader)
+              : this.reactivePropsFromParams.autoSetLoading &&
+                h(MicroAppLoader, {
+                  ...(isVue2 ? {
+                    props: {
+                      loading: this.loading,
+                      },
+                    } : {
+                        loading: this.loading,
+                    })
+                }),
+            this.error
+              ? this.$slots.errorBoundary
+                ? (typeof this.$slots.errorBoundary === 'function' ? this.$slots.errorBoundary(this.error) : this.$slots.errorBoundary)
+                : this.reactivePropsFromParams.autoCaptureError &&
+                  h(ErrorBoundary, {
+                    ...(isVue2 ? {
+                      props: {
+                        error: this.error,
+                      }
+                    } : {
+                      error: this.error,
+                    })
+                  })
+              : null,
+            h('div', {
+              class: this.microAppClassName,
+              ref: 'containerRef',
+            }),
+          ],
+        )
+      : h('div', {
+          class: this.microAppClassName,
+          ref: 'containerRef',
+        });
+  }
 });

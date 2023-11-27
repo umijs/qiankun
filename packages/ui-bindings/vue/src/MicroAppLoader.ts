@@ -1,4 +1,4 @@
-import { defineComponent } from 'vue';
+import { defineComponent, h } from 'vue-demi';
 
 export default defineComponent({
   props: {
@@ -7,7 +7,8 @@ export default defineComponent({
       default: false,
     },
   },
-  setup(props) {
-    return () => (props.loading ? 'loading...' : null);
-  },
+
+  render() {
+    return h('div', this.loading ? 'loading...' : '');
+  }
 });
