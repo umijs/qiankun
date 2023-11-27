@@ -75,7 +75,6 @@ export const MicroApp = defineComponent({
       }
     };
 
-
     const rootRef = ref<HTMLDivElement | null>(null);
 
     onMounted(() => {
@@ -87,7 +86,6 @@ export const MicroApp = defineComponent({
         name,
         () => {
           const microApp = microAppRef.value;
-
 
           if (microApp) {
             microApp._unmounting = true;
@@ -159,9 +157,9 @@ export const MicroApp = defineComponent({
 
   render() {
     return this.reactivePropsFromParams.autoSetLoading ||
-    this.reactivePropsFromParams.autoCaptureError ||
-    this.$slots.loader ||
-    this.$slots.errorBoundary
+      this.reactivePropsFromParams.autoCaptureError ||
+      this.$slots.loader ||
+      this.$slots.errorBoundary
       ? h(
           'div',
           {
@@ -169,29 +167,37 @@ export const MicroApp = defineComponent({
           },
           [
             this.$slots.loader
-              ? (typeof this.$slots.loader === 'function' ? this.$slots.loader(this.loading): this.$slots.loader)
+              ? typeof this.$slots.loader === 'function'
+                ? this.$slots.loader(this.loading)
+                : this.$slots.loader
               : this.reactivePropsFromParams.autoSetLoading &&
                 h(MicroAppLoader, {
-                  ...(isVue2 ? {
-                    props: {
-                      loading: this.loading,
-                      },
-                    } : {
+                  ...(isVue2
+                    ? {
+                        props: {
+                          loading: this.loading,
+                        },
+                      }
+                    : {
                         loading: this.loading,
-                    })
+                      }),
                 }),
             this.error
               ? this.$slots.errorBoundary
-                ? (typeof this.$slots.errorBoundary === 'function' ? this.$slots.errorBoundary(this.error) : this.$slots.errorBoundary)
+                ? typeof this.$slots.errorBoundary === 'function'
+                  ? this.$slots.errorBoundary(this.error)
+                  : this.$slots.errorBoundary
                 : this.reactivePropsFromParams.autoCaptureError &&
                   h(ErrorBoundary, {
-                    ...(isVue2 ? {
-                      props: {
-                        error: this.error,
-                      }
-                    } : {
-                      error: this.error,
-                    })
+                    ...(isVue2
+                      ? {
+                          props: {
+                            error: this.error,
+                          },
+                        }
+                      : {
+                          error: this.error,
+                        }),
                   })
               : null,
             h('div', {
@@ -204,5 +210,5 @@ export const MicroApp = defineComponent({
           class: this.microAppClassName,
           ref: 'containerRef',
         });
-  }
+  },
 });

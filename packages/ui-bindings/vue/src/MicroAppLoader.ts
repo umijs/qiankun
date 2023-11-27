@@ -10,5 +10,5 @@ export default defineComponent({
 
   render() {
     return h('div', this.loading ? 'loading...' : '');
-  }
+  },
 });

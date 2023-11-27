@@ -9,5 +9,5 @@ export default defineComponent({
   },
   render() {
     return h('div', this.error?.message);
-  }
+  },
 });
