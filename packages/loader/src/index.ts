@@ -133,17 +133,23 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
             ) => {
               script.onload = script.onerror = null;
 
-              // In order to avoid the inline script to be executed immediately after the prev onload is executed, resulting in the failure of the sandbox to obtain the latestSetProp, here we must resolve the entryScriptLoadedDeferred firstly
+              // entryScriptLoadedDeferred not resolved or rejected yet
               if (!entryScriptLoadedDeferred.isSettled()) {
                 if (event.type === 'load') {
                   onEntryLoaded();
                 } else {
                   entryScriptLoadedDeferred.reject(
-                    new QiankunError(`entry ${entry} load failed as entry script ${script.src} load failed}`),
+                    new QiankunError(
+                      `entry ${entry} load failed as entry script ${script.dataset.src || script.src} load failed}`,
+                    ),
                   );
                 }
               }
 
+              /*
+               In order to avoid the inline script to be executed immediately after the prev onload is executed, resulting in the failure of the sandbox to obtain the latestSetProp
+               here we must resolve the entryScriptLoadedDeferred firstly and then execute the prevListener
+               */
               prevListener?.call(script, event);
             };
 
