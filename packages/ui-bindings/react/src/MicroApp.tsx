@@ -1,5 +1,13 @@
 import { isEqual, noop } from 'lodash';
-import { type SharedProps, type MicroAppType, type SharedSlots, unmountMicroApp, mountMicroApp, updateMicroApp, omitSharedProps } from '@qiankunjs/ui-shared';
+import {
+  type SharedProps,
+  type MicroAppType,
+  type SharedSlots,
+  unmountMicroApp,
+  mountMicroApp,
+  updateMicroApp,
+  omitSharedProps,
+} from '@qiankunjs/ui-shared';
 import React, { type Ref, forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import ErrorBoundary from './ErrorBoundary';
 import MicroAppLoader from './MicroAppLoader';
@@ -16,16 +24,9 @@ function useDeepCompare<T>(value: T): T {
 }
 
 export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<MicroAppType | undefined>) => {
-  const {
-    name,
-    loader,
-    errorBoundary,
-    wrapperClassName,
-    className,
-    ...restProps
-  } = componentProps;
+  const { name, loader, errorBoundary, wrapperClassName, className, ...restProps } = componentProps;
 
-  const propsFromParams = omitSharedProps(restProps)
+  const propsFromParams = omitSharedProps(restProps);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error>();
@@ -89,7 +90,7 @@ export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<Mic
         setLoading(l);
       },
       key: 'react',
-    })
+    });
 
     return noop;
   }, [useDeepCompare(propsFromParams)]);
