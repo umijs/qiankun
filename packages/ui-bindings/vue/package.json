@@ -8,26 +8,26 @@
   "sideEffects": false,
   "scripts": {
     "build": "father build",
-    "dev": "father dev",
-    "test": "cross-env NODE_ENV=test vitest"
+    "dev": "father dev"
   },
   "author": "linghaoSu",
   "license": "MIT",
   "dependencies": {
     "lodash": "^4.17.11",
-    "vue-demi": "^0.14.6"
+    "vue-demi": "^0.14.6",
+    "@qiankunjs/ui-shared": "workspace:^"
   },
   "devDependencies": {
     "eslint-plugin-vue": "^9.18.1",
     "qiankun": "workspace:^",
     "vue": "^3.3.9",
-    "vue2": "npm:vue@2.6.11",
-    "@qiankunjs/ui-shared": "workspace:^"
+    "vue2": "npm:vue@2.6.11"
   },
   "peerDependencies": {
-    "qiankun": "3.0.0-rc.9",
+    "qiankun": "^3.0.0-rc.15",
     "@vue/composition-api": "^1.7.2",
-    "vue": "^2.0.0 || >=3.0.0"
+    "vue": "^2.0.0 || >=3.0.0",
+    "@qiankunjs/ui-shared": "^0.0.0"
   },
   "peerDependenciesMeta": {
     "@vue/composition-api": {
@@ -38,8 +38,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "files": [
-    "dist",
-    "src"
+    "dist"
   ],
   "repository": "git@github.com:umijs/qiankun.git"
 }

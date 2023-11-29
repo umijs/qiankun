@@ -13,17 +13,18 @@
   "author": "Bravepg",
   "license": "MIT",
   "dependencies": {
-    "lodash": "^4.17.11"
+    "lodash": "^4.17.11",
+    "@qiankunjs/ui-shared": "workspace:^"
   },
   "devDependencies": {
     "@types/react": "^18.0.0",
     "eslint-plugin-react": "^7.33.2",
     "qiankun": "workspace:^",
-    "react": "^18.2.0",
-    "@qiankunjs/ui-shared": "workspace:^"
+    "react": "^18.2.0"
   },
   "peerDependencies": {
     "qiankun": "3.0.0-rc.15",
+    "@qiankunjs/ui-shared": "0.0.0",
     "react": ">=16.9.0",
     "react-dom": ">=16.9.0"
   },

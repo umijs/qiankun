@@ -1,4 +1,8 @@
 {
   "extends": "../../../tsconfig.json",
-  "compilerOptions": {}
+  "compilerOptions": {
+    "paths": {
+      "qiankun": [ "packages/qiankun/src" ]
+    }
+  }
 }

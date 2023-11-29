@@ -46,7 +46,7 @@ importers:
         version: 5.0.0
       father:
         specifier: ^4.3.6
-        version: 4.3.7(@types/node@18.18.9)(styled-components@6.0.7)(webpack@5.88.2)
+        version: 4.3.6(@types/node@18.18.9)(styled-components@6.0.7)(webpack@5.88.2)
       happy-dom:
         specifier: ^12.10.3
         version: 12.10.3
@@ -143,16 +143,16 @@ importers:
 
   packages/ui-bindings/react:
     dependencies:
+      '@qiankunjs/ui-shared':
+        specifier: workspace:^
+        version: link:../shared
       lodash:
         specifier: ^4.17.11
         version: 4.17.21
       react-dom:
         specifier: '>=16.9.0'
-        version: 16.14.0(react@18.2.0)
+        version: 18.2.0(react@18.2.0)
     devDependencies:
-      '@qiankunjs/ui-shared':
-        specifier: workspace:^
-        version: link:../shared
       '@types/react':
         specifier: ^18.0.0
         version: 18.2.20
@@ -178,6 +178,9 @@ importers:
 
   packages/ui-bindings/vue:
     dependencies:
+      '@qiankunjs/ui-shared':
+        specifier: workspace:^
+        version: link:../shared
       '@vue/composition-api':
         specifier: ^1.7.2
         version: 1.7.2(vue@3.3.9)
@@ -188,9 +191,6 @@ importers:
         specifier: ^0.14.6
         version: 0.14.6(@vue/composition-api@1.7.2)(vue@3.3.9)
     devDependencies:
-      '@qiankunjs/ui-shared':
-        specifier: workspace:^
-        version: link:../shared
       eslint-plugin-vue:
         specifier: ^9.18.1
         version: 9.18.1(eslint@8.53.0)
@@ -7665,8 +7665,8 @@ packages:
       reusify: 1.0.4
     dev: true
 
-  /father@4.3.7(@types/node@18.18.9)(styled-components@6.0.7)(webpack@5.88.2):
-    resolution: {integrity: sha512-Jr+mUYqvjrTfss9ZFxDB280FdUoj6IUVH12U5ocQKEISzPWewzpGrrassf7gi4ugmJNDP8I/Rzje8uZ90C4OpA==}
+  /father@4.3.6(@types/node@18.18.9)(styled-components@6.0.7)(webpack@5.88.2):
+    resolution: {integrity: sha512-7WyZnoQM4HzLvIghdX+s2bf91/EDrwdN+CFy/zbUosxWzNzfR4bkbtCKurJWNi082V7/zeglsB5+dIFho2x3fA==}
     hasBin: true
     dependencies:
       '@microsoft/api-extractor': 7.36.3(@types/node@18.18.9)
@@ -11348,6 +11348,7 @@ packages:
   /object-assign@4.1.1:
     resolution: {integrity: sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg==}
     engines: {node: '>=0.10.0'}
+    dev: true
 
   /object-inspect@1.12.3:
     resolution: {integrity: sha512-geUvdk7c+eizMNUDkRpW1wJwgfOiOeHbxBR/hLXK1aT6zmVSO0jsQcs7fj6MGw89jC/cjGfLcNOrtMYtGqm81g==}
@@ -11373,7 +11374,7 @@ packages:
     engines: {node: '>= 0.4'}
     dependencies:
       call-bind: 1.0.2
-      define-properties: 1.2.0
+      define-properties: 1.2.1
       es-abstract: 1.22.1
     dev: true
 
@@ -12555,6 +12556,7 @@ packages:
       loose-envify: 1.4.0
       object-assign: 4.1.1
       react-is: 16.13.1
+    dev: true
 
   /property-information@6.3.0:
     resolution: {integrity: sha512-gVNZ74nqhRMiIUYWGQdosYetaKc83x8oT41a0LlV3AAFCAZwCpg4vmGkq8t34+cUhp3cnM4XDiU/7xlgK7HGrg==}
@@ -12885,18 +12887,6 @@ packages:
       react: 18.2.0
     dev: true
 
-  /react-dom@16.14.0(react@18.2.0):
-    resolution: {integrity: sha512-1gCeQXDLoIqMgqD3IO2Ah9bnf0w9kzhwN5q4FGnHZ67hBm9yePzB5JJAIQCc8x3pFnNlwFq4RidZggNAAkzWWw==}
-    peerDependencies:
-      react: ^16.14.0
-    dependencies:
-      loose-envify: 1.4.0
-      object-assign: 4.1.1
-      prop-types: 15.8.1
-      react: 18.2.0
-      scheduler: 0.19.1
-    dev: false
-
   /react-dom@18.1.0(react@18.1.0):
     resolution: {integrity: sha512-fU1Txz7Budmvamp7bshe4Zi32d0ll7ect+ccxNu9FlObT605GOEB8BfO4tmRJ39R5Zj831VCpvQ05QPBW5yb+w==}
     peerDependencies:
@@ -12915,7 +12905,6 @@ packages:
       loose-envify: 1.4.0
       react: 18.2.0
       scheduler: 0.23.0
-    dev: true
 
   /react-error-boundary@4.0.11(react@18.2.0):
     resolution: {integrity: sha512-U13ul67aP5DOSPNSCWQ/eO0AQEYzEFkVljULQIjMV0KlffTAhxuDoBKdO0pb/JZ8mDhMKFZ9NZi0BmLGUiNphw==}
@@ -12989,6 +12978,7 @@ packages:
 
   /react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
+    dev: true
 
   /react-is@18.2.0:
     resolution: {integrity: sha512-xWGDIW6x921xtzPkhiULtthJHoJvBbF3q26fzloPCK0hsvxtPVelvftw3zjbHWSkR2km9Z+4uxbDDK/6Zw9B8w==}
@@ -13588,13 +13578,6 @@ packages:
     resolution: {integrity: sha512-NqVDv9TpANUjFm0N8uM5GxL36UgKi9/atZw+x7YFnQ8ckwFGKrl4xX4yWtrey3UJm5nP1kUbnYgLopqWNSRhWw==}
     dev: true
 
-  /scheduler@0.19.1:
-    resolution: {integrity: sha512-n/zwRWRYSUj0/3g/otKDRPMh6qv2SYMWNq85IEa8iZyAv8od9zDYpGSnpBEjNgcMNq6Scbu5KfIPxNF72R/2EA==}
-    dependencies:
-      loose-envify: 1.4.0
-      object-assign: 4.1.1
-    dev: false
-
   /scheduler@0.22.0:
     resolution: {integrity: sha512-6QAm1BgQI88NPYymgGQLCZgvep4FyePDWFpXVK+zNSUgHwlqpJy8VEh8Et0KxTACS4VWwMousBElAZOH9nkkoQ==}
     dependencies:
@@ -13605,7 +13588,6 @@ packages:
     resolution: {integrity: sha512-CtuThmgHNg7zIZWAXi3AsyIzA3n4xx7aNyjwC2VJldO2LMVDhFK+63xGqq6CsJH4rTAt6/M+N4GhZiDYPx9eUw==}
     dependencies:
       loose-envify: 1.4.0
-    dev: true
 
   /schema-utils@3.3.0:
     resolution: {integrity: sha512-pN/yOAvcC+5rQ5nERGuwrjLlYvLTbCibnZ1I7B1LaiAz9BRBlE9GMgE/eqV30P7aJQUf7Ddimy/RsbYO/GrVGg==}

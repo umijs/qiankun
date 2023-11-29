@@ -8,8 +8,7 @@
   "sideEffects": false,
   "scripts": {
     "build": "father build",
-    "dev": "father dev",
-    "test": "cross-env NODE_ENV=test vitest"
+    "dev": "father dev"
   },
   "author": "linghaoSu",
   "license": "MIT",
@@ -20,14 +19,13 @@
     "qiankun": "workspace:^"
   },
   "peerDependencies": {
-    "qiankun": "3.0.0-rc.9"
+    "qiankun": "^3.0.0-rc.15"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
   "files": [
-    "dist",
-    "src"
+    "dist"
   ],
   "repository": "git@github.com:umijs/qiankun.git"
 }
