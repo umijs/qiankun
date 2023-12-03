@@ -11,7 +11,9 @@
     "test": "pnpm run build && pnpm run build:webpack4 && pnpm run build:webpack5 && vitest --run",
     "build": "father build"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "peerDependencies": {
     "webpack": "^4.0.0 || ^5.0.0"
   },
@@ -22,6 +24,7 @@
   },
   "devDependencies": {
     "@types/webpack-sources": "^3.2.1",
+    "cheerio": "1.0.0-rc.12",
     "webpack": "^4.0.0 || ^5.0.0"
   }
 }

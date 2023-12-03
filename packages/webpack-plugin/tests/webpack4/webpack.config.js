@@ -15,7 +15,7 @@ module.exports = {
       filename: 'index.html', // 输出的HTML文件名（默认为index.html）
     }),
     new QiankunPlugin({
-      entrySrcPattern: /app.12.js/,
+      entrySrcPattern: /app\.12\.js/,
     }),
   ],
 };

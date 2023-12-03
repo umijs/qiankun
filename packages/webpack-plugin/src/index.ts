@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import type { Compiler, Configuration, Compilation } from 'webpack';
 import { RawSource } from 'webpack-sources';
+import cheerio from 'cheerio';
 
 interface QiankunPluginOptions {
   packageName?: string;
@@ -16,15 +17,13 @@ interface PackageJson {
 
 class QiankunPlugin {
   private packageName: string;
-  private entrySrcPattern: RegExp; // 用户提供的正则表达式
+  private entrySrcPattern: RegExp | null; // 用户提供的正则表达式
 
   private static packageJson: PackageJson = QiankunPlugin.readPackageJson();
 
   constructor(options: QiankunPluginOptions = {}) {
     this.packageName = options.packageName || QiankunPlugin.packageJson.name || '';
-    this.entrySrcPattern = options.entrySrcPattern
-      ? new RegExp(`<script[^>]*src="[^"]*${options.entrySrcPattern.source}[^"]*"[^>]*></script>`, 'g')
-      : /<script[^>]*src="[^"]+"[^>]*><\/script>/g; // 默认值
+    this.entrySrcPattern = options.entrySrcPattern ? new RegExp(options.entrySrcPattern.source, 'g') : null; // 默认值
   }
 
   private static readPackageJson(): PackageJson {
@@ -79,24 +78,32 @@ class QiankunPlugin {
   }
 
   private addEntryAttributeToScripts(htmlString: string): string {
-    const scriptTags = htmlString.match(this.entrySrcPattern) || [];
-    let alreadyHasEntry = false;
+    const $ = cheerio.load(htmlString);
 
-    // 检查是否已经有带有entry属性的script标签
-    scriptTags.forEach((tag) => {
-      if (tag.includes(' entry')) {
-        alreadyHasEntry = true;
+    const alreadyHasEntry = $('script[entry]').length > 0;
+    if (!alreadyHasEntry) {
+      if (!this.entrySrcPattern) {
+        // 如果没有提供正则表达式，则选择最后一个 script 标签
+        $('script').last().attr('entry', '');
+      } else {
+        // 使用提供的正则表达式过滤 script 标签
+        const matchingScriptTags = $('script').filter((_, el) => {
+          const src = $(el).attr('src');
+          // 确保 this.entrySrcPattern 不是 null 再调用 test 方法
+          return src && this.entrySrcPattern ? this.entrySrcPattern.test(src) : false;
+        });
+
+        if (matchingScriptTags.length > 1) {
+          throw new Error('The regular expression matched multiple script tags, please check your regex.');
+        } else if (matchingScriptTags.length === 1) {
+          matchingScriptTags.first().attr('entry', '');
+        } else {
+          throw new Error('The provided regular expression did not match any scripts.');
+        }
       }
-    });
-
-    // 如果没有带有entry属性的script标签，则添加到最后一个script标签
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (!alreadyHasEntry && scriptTags.length) {
-      const lastScriptTag = scriptTags[scriptTags.length - 1];
-      const modifiedScriptTag = lastScriptTag.replace('<script', '<script entry');
-      return htmlString.replace(lastScriptTag, modifiedScriptTag);
     }
-    return htmlString;
+
+    return $.html();
   }
 }
 

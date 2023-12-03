@@ -35,7 +35,7 @@ module.exports = {
   plugins: [
     new QiankunPlugin({
       packageName: 'optionalPackageName', // Optional, if not provided, the name from package.json will be used
-      entrySrcPattern: /<script[^>]*src="app.*\.js"[^>]*><\/script>/g, // Optional, a regex pattern to match specific script tags for adding the 'entry' attribute.    Defaults to the last script tag if not specified.
+      entrySrcPattern: /index\.js/g, // Optional, a regex pattern to match specific script tags for adding the 'entry' attribute.    Defaults to the last script tag if not specified.
     }),
   ],
 };
