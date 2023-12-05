@@ -1,32 +1,38 @@
 {
-  "name": "@qiankunjs/react",
-  "version": "0.0.1-rc.12",
-  "description": "react binding for qiankun",
+  "name": "@qiankunjs/vue",
+  "version": "0.0.0",
+  "description": "vue binding for qiankun",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
-  "types": "./dist/esm/index.d.ts",
+  "types": "./src/index.ts",
   "sideEffects": false,
   "scripts": {
     "build": "father build",
     "dev": "father dev"
   },
-  "author": "Bravepg",
+  "author": "linghaoSu",
   "license": "MIT",
   "dependencies": {
     "lodash": "^4.17.11",
+    "vue-demi": "^0.14.6",
     "@qiankunjs/ui-shared": "workspace:^"
   },
   "devDependencies": {
-    "@types/react": "^18.0.0",
-    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-vue": "^9.18.1",
     "qiankun": "workspace:^",
-    "react": "^18.2.0"
+    "vue": "^3.3.9",
+    "vue2": "npm:vue@2.6.11"
   },
   "peerDependencies": {
-    "qiankun": "3.0.0-rc.15",
-    "@qiankunjs/ui-shared": "0.0.0",
-    "react": ">=16.9.0",
-    "react-dom": ">=16.9.0"
+    "qiankun": "^3.0.0-rc.15",
+    "@vue/composition-api": "^1.7.2",
+    "vue": "^2.0.0 || >=3.0.0",
+    "@qiankunjs/ui-shared": "^0.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@vue/composition-api": {
+      "optional": true
+    }
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"

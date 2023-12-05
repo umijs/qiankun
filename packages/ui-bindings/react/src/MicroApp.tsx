@@ -1,34 +1,18 @@
-import { concat, isEqual, mergeWith, noop } from 'lodash';
-import type { AppConfiguration, LifeCycleFn, LifeCycles, MicroApp as MicroAppTypeDefinition } from 'qiankun';
-import { loadMicroApp } from 'qiankun';
-import type { Ref } from 'react';
-import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { isEqual, noop } from 'lodash';
+import {
+  type SharedProps,
+  type MicroAppType,
+  type SharedSlots,
+  unmountMicroApp,
+  mountMicroApp,
+  updateMicroApp,
+  omitSharedProps,
+} from '@qiankunjs/ui-shared';
+import React, { type Ref, forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import ErrorBoundary from './ErrorBoundary';
 import MicroAppLoader from './MicroAppLoader';
 
-type MicroAppType = {
-  _unmounting?: boolean;
-  _updatingPromise?: Promise<null>;
-  _updatingTimestamp?: number;
-} & MicroAppTypeDefinition;
-
-export type Props = {
-  name: string;
-  entry: string;
-  settings?: AppConfiguration;
-  lifeCycles?: LifeCycles<Record<string, unknown>>;
-  loader?: (loading: boolean) => React.ReactNode;
-  errorBoundary?: (error: Error) => React.ReactNode;
-  autoSetLoading?: boolean;
-  autoCaptureError?: boolean;
-  // 仅开启 loader 时需要
-  wrapperClassName?: string;
-  className?: string;
-} & Record<string, unknown>;
-
-async function unmountMicroApp(microApp: MicroAppType) {
-  await microApp.mountPromise.then(() => microApp.unmount());
-}
+export type Props = SharedProps & SharedSlots<React.ReactNode> & Record<string, unknown>;
 
 function useDeepCompare<T>(value: T): T {
   const ref = useRef<T>(value);
@@ -40,17 +24,9 @@ function useDeepCompare<T>(value: T): T {
 }
 
 export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<MicroAppType | undefined>) => {
-  const {
-    name,
-    entry,
-    settings = {},
-    loader,
-    errorBoundary,
-    lifeCycles,
-    wrapperClassName,
-    className,
-    ...propsFromParams
-  } = componentProps;
+  const { name, loader, errorBoundary, wrapperClassName, className, ...restProps } = componentProps;
+
+  const propsFromParams = omitSharedProps(restProps);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error>();
@@ -78,44 +54,16 @@ export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<Mic
   useImperativeHandle(componentRef, () => microAppRef.current);
 
   useEffect(() => {
-    setComponentError(undefined);
-    setLoading(true);
-
-    const configuration = {
-      globalContext: window,
-      ...settings,
-    };
-
-    microAppRef.current = loadMicroApp(
-      {
-        name,
-        entry,
-        container: containerRef.current!,
-        props: propsFromParams,
+    mountMicroApp({
+      props: componentProps,
+      container: containerRef.current!,
+      setMicroApp(app) {
+        microAppRef.current = app;
       },
-      configuration,
-      mergeWith({}, lifeCycles, (v1: LifeCycleFn<Record<string, unknown>>, v2: LifeCycleFn<Record<string, unknown>>) =>
-        concat(v1, v2),
-      ),
-    );
-
-    microAppRef.current.mountPromise
-      .then(() => {
-        if (propsFromParams.autoSetLoading) {
-          setLoading(false);
-        }
-      })
-      .catch((e: Error) => {
-        setComponentError(e);
-        setLoading(false);
-      });
-
-    (['loadPromise', 'bootstrapPromise'] as const).forEach((key) => {
-      const promise = microAppRef.current![key];
-      promise.catch((e: Error) => {
-        setComponentError(e);
-        setLoading(false);
-      });
+      setLoading: (l) => {
+        setLoading(l);
+      },
+      setError: setComponentError,
     });
 
     return () => {
@@ -132,42 +80,17 @@ export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<Mic
   }, [name]);
 
   useEffect(() => {
-    const microApp = microAppRef.current;
-    if (microApp) {
-      if (!microApp._updatingPromise) {
-        // 初始化 updatingPromise 为 microApp.mountPromise，从而确保后续更新是在应用 mount 完成之后
-        microApp._updatingPromise = microApp.mountPromise;
-        microApp._updatingTimestamp = Date.now();
-      } else {
-        // 确保 microApp.update 调用是跟组件状态变更顺序一致的，且后一个微应用更新必须等待前一个更新完成
-        microApp._updatingPromise = microApp._updatingPromise.then(() => {
-          const canUpdate = (app: MicroAppType) => app.update && app.getStatus() === 'MOUNTED' && !app._unmounting;
-          if (canUpdate(microApp)) {
-            const props = {
-              ...propsFromParams,
-              setLoading,
-            };
-
-            if (process.env.NODE_ENV === 'development') {
-              const updatingTimestamp = microApp._updatingTimestamp!;
-              if (Date.now() - updatingTimestamp < 200) {
-                console.warn(
-                  `[@qiankunjs/react] It seems like microApp ${name} is updating too many times in a short time(200ms), you may need to do some optimization to avoid the unnecessary re-rendering.`,
-                );
-              }
-
-              console.info(`[@qiankunjs/react] MicroApp ${name} is updating with props: `, props);
-              microApp._updatingTimestamp = Date.now();
-            }
-
-            // 返回 microApp.update 形成链式调用
-            return microApp.update?.(props);
-          }
-
-          return void 0;
-        });
-      }
-    }
+    updateMicroApp({
+      name,
+      propsFromParams,
+      getMicroApp() {
+        return microAppRef.current;
+      },
+      setLoading: (l) => {
+        setLoading(l);
+      },
+      key: 'react',
+    });
 
     return noop;
   }, [useDeepCompare(propsFromParams)]);
