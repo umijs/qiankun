@@ -1,11 +1,8 @@
 const { name } = require('./package');
-
+const qiankunPlugin = require('@qiankunjs/webpack-plugin');
 module.exports = {
   webpack: (config) => {
-    config.output.library = `${name}`;
-    config.output.libraryTarget = 'umd';
-    config.output.jsonpFunction = `webpackJsonp_${name}`;
-    config.output.globalObject = 'window';
+    config.plugins.push(new qiankunPlugin());
 
     return config;
   },

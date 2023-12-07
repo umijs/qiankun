@@ -1,6 +1,6 @@
 const path = require('path');
 const { name } = require('./package');
-
+const qiankunPlugin  = require('@qiankunjs/webpack-plugin');
 function resolve(dir) {
   return path.join(__dirname, dir);
 }
@@ -26,11 +26,8 @@ module.exports = {
         '@': resolve('src'),
       },
     },
-    output: {
-      // 把子应用打包成 umd 库格式
-      library: `${name}`,
-      libraryTarget: 'umd',
-      chunkLoadingGlobal: `webpackJsonp_${name}`,
-    },
+    plugins:[
+      new qiankunPlugin()
+    ]
   },
 };

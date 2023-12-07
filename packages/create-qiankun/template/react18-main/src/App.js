@@ -1,21 +1,27 @@
-import "./App.css";
-import subApplication from "./microApp/subs.json";
-import { loadMicroApp } from "qiankun";
-import { useRef } from "react";
+import './App.css';
+import subApplication from './microApp/subs.json';
+import { loadMicroApp } from 'qiankun';
+import { useRef } from 'react';
 
 function App() {
   const preLoad = useRef(null);
+  const preLoadAppName = useRef(null);
+  async function changeRouterAndLoadApp(app) {
+    if (preLoadAppName.current === app.name) return;
 
-  function changeRouterAndLoadApp(app) {
-    preLoad.current && preLoad.current.unmount();
+    if (preLoad.current) {
+      await preLoad.current.unmount();
+    }
 
     preLoad.current = loadMicroApp({
       name: app.name,
       entry: app.entry,
-      container: document.querySelector("#subapp-container"),
+      container: document.querySelector('#subapp-container'),
     });
 
-    window.history.pushState(null, "", app.activeRule);
+    preLoadAppName.current = app.name;
+
+    window.history.pushState(null, '', app.activeRule);
   }
 
   return (

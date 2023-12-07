@@ -8,12 +8,7 @@
       <div class="mainapp-main">
         <!-- 侧边栏 -->
         <ul class="mainapp-sidemenu">
-          <li
-            data-value="react18"
-            v-for="(app, index) in childApps"
-            :key="index"
-            @click="changeRouterAndLoadApp(app)"
-          >
+          <li data-value="react18" v-for="(app, index) in childApps" :key="index" @click="changeRouterAndLoadApp(app)">
             {{ app.name }}
           </li>
         </ul>
@@ -34,14 +29,16 @@ const router = useRouter();
 const childApps = shallowRef(subApplication);
 
 let preLoad = null;
-
-function changeRouterAndLoadApp(app) {
+let preLoadAppName = null;
+async function changeRouterAndLoadApp(app) {
   // 切换路由
   router.push(app.activeRule);
 
-  if (preLoad === app.name) return;
+  if (preLoadAppName === app.name) return;
 
-  preLoad && preLoad.unmount();
+  if (preLoad) {
+    await preLoad.unmount();
+  }
 
   // 加载子应用
   preLoad = loadMicroApp({
@@ -49,6 +46,8 @@ function changeRouterAndLoadApp(app) {
     entry: app.entry,
     container: document.querySelector('#subapp-container'),
   });
+
+  preLoadAppName = app.name;
 }
 </script>
 

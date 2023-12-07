@@ -1,14 +1,9 @@
 const packageName = require('./package.json').name;
-
+const qiankunPlugin = require('@qiankunjs/webpack-plugin');
 module.exports = {
   webpack: function (config, env) {
-    config.output = {
-      ...config.output,
-      publicPath: `http://localhost:${process.env.PORT}/`,
-      library: `${packageName}`,
-      libraryTarget: 'umd',
-      chunkLoadingGlobal: `webpackJsonp_${packageName}`,
-    };
+    config.plugins.push(new qiankunPlugin());
+
     return config;
   },
 };

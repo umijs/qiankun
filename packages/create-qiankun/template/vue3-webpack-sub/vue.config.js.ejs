@@ -1,7 +1,7 @@
 const { defineConfig } = require("@vue/cli-service");
 
 const packageName = require("./package.json").name;
-
+const qiankunPlugin  = require('@qiankunjs/webpack-plugin');
 module.exports = defineConfig({
   transpileDependencies: true,
   lintOnSave: "warning",
@@ -15,10 +15,8 @@ module.exports = defineConfig({
     }
   },
   configureWebpack: {
-    output: {
-      library: `${packageName}`,
-      libraryTarget: "umd",
-      chunkLoadingGlobal: `webpackJsonp_${packageName}`,
-    },
+    plugins:[
+       new qiankunPlugin()
+    ]
   },
 });
