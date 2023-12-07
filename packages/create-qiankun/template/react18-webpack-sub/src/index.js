@@ -1,9 +1,13 @@
+import './public-path';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
+import { RouterProvider } from 'react-router-dom';
+import router from './router';
+
+// import App from './App';
 import reportWebVitals from './reportWebVitals';
-import './public-path';
+
+import './index.css';
 
 let root = null;
 
@@ -13,7 +17,7 @@ function render(props) {
   root = ReactDOM.createRoot(container ? container.querySelector('#root') : document.querySelector('#root'));
   root.render(
     <React.StrictMode>
-      <App />
+      <RouterProvider router={router} />
     </React.StrictMode>,
   );
 }
