@@ -183,6 +183,7 @@ async function renderTemplate(opts: RenderOptions) {
     );
     mainAppTargetPath = mainAppInfo.applicationTargetPath;
     monorepoRootPath = mainAppInfo.monorepoDirPath;
+    await injectCheckPortScript(mainAppTargetPath);
   }
 
   // create sub applications
