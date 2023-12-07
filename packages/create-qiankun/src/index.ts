@@ -179,11 +179,21 @@ async function renderTemplate(opts: RenderOptions) {
     const mainAppInfo = await createApplication(
       mainAppName!,
       { port: mainAppPort, mainRoute, ...installQiankunPkgs },
-      { ...opts, gitInit: true },
+      {
+        ...opts,
+        gitInit: true,
+        hooks: {
+          async beforeRender(context) {
+            await injectCheckPortScript(context.applicationTargetPath);
+          },
+          async afterRender(context) {
+            await injectPreNpmScript(context.applicationTargetPath);
+          },
+        },
+      },
     );
     mainAppTargetPath = mainAppInfo.applicationTargetPath;
     monorepoRootPath = mainAppInfo.monorepoDirPath;
-    await injectCheckPortScript(mainAppTargetPath);
   }
 
   // create sub applications
