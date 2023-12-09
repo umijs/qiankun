@@ -11,20 +11,19 @@ const AsyncComponent = ({ load }) => {
   )
 }
 
-const router = createBrowserRouter({
-  routes: [
-    {
-      path: "/",
-      element: <Home />,
-    },
-    {
-      path: "about",
-      element: <AsyncComponent load={() => import('../About.js')} />,
-    },
-  ],
-  opts: {
-    basename: window.__POWERED_BY_QIANKUN__ ? '/react18-webpack-sub' : '/'
-  }
-})
+const routes = [
+  {
+    path: "/",
+    element: <Home />,
+  },
+  {
+    path: "about",
+    element: <AsyncComponent load={() => import('../About.js')} />,
+  },
+]
+const opts = {
+  basename: window.__POWERED_BY_QIANKUN__ ? '/react18-webpack-sub' : '/'
+}
+const router = createBrowserRouter(routes, opts)
 
 export default router
