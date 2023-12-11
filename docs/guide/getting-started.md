@@ -59,8 +59,15 @@ export default function Page() {
 }
 ```
 
+```vue
+<script setup>
+import { MicroApp } from '@qiankunjs/vue';
+</script>
 
-
+<template>
+  <micro-app name="app1" entry="http://localhost:8000" />
+</template>
+```
 
 ## Sub Application
 
