@@ -6,7 +6,13 @@ import type { LoaderOpts } from '@qiankunjs/loader';
 import { loadEntry } from '@qiankunjs/loader';
 import type { Sandbox } from '@qiankunjs/sandbox';
 import { createSandboxContainer } from '@qiankunjs/sandbox';
-import { moduleResolver as defaultModuleResolver, transpileAssets, wrapFetchWithCache } from '@qiankunjs/shared';
+import {
+  moduleResolver as defaultModuleResolver,
+  getValueType,
+  transpileAssets,
+  warn,
+  wrapFetchWithCache,
+} from '@qiankunjs/shared';
 import { concat, isFunction, mergeWith } from 'lodash';
 import type { ParcelConfigObject } from 'single-spa';
 import getAddOns from '../addons';
@@ -207,27 +213,36 @@ function getLifecyclesFromExports(
   globalContext: WindowProxy,
   globalLatestSetProp?: PropertyKey,
 ): MicroAppLifeCycles {
-  const validateExportLifecycle = (exports: ObjectType | undefined): boolean => {
-    const { bootstrap, mount, unmount } = exports ?? {};
-    return isFunction(bootstrap) && isFunction(mount) && isFunction(unmount);
+  const validateExportLifecycle = (exports: ObjectType | undefined, nextSourceName: string = ''): boolean => {
+    const validateLifecycleKeys = ['bootstrap', 'mount', 'unmount'];
+    const illegalKeys = validateLifecycleKeys.filter((key) => !isFunction(exports?.[key]));
+    const isIllegal = illegalKeys.length > 0;
+    if (process.env.NODE_ENV === 'development') {
+      if (isIllegal) {
+        const warnMsg = illegalKeys
+          .map((key) => `[${key} lifecycle] need Function but found ${getValueType(exports?.[key])}`)
+          .join('\n');
+        warn(
+          `search lifecycle error\n${warnMsg}\nplease check the exported lifecycle in ${appName}${
+            nextSourceName ? `,fallback to get from ${nextSourceName}` : ''
+          }`,
+          exports,
+        );
+      }
+    }
+    return !isIllegal;
   };
 
-  if (validateExportLifecycle(scriptExports)) {
+  if (validateExportLifecycle(scriptExports, globalLatestSetProp ? 'latestSetProp' : `window['${appName}']`)) {
     return scriptExports;
   }
 
   // fallback to sandbox latest set property if it had
   if (globalLatestSetProp) {
     const lifecycles = (globalContext as unknown as ObjectType)[globalLatestSetProp as never] as MicroAppLifeCycles;
-    if (validateExportLifecycle(lifecycles)) {
+    if (validateExportLifecycle(lifecycles, `window['${appName}']`)) {
       return lifecycles;
     }
-  }
-
-  if (process.env.NODE_ENV === 'development') {
-    console.warn(
-      `[qiankun] lifecycle not found from ${appName} entry exports, fallback to get from window['${appName}']`,
-    );
   }
 
   // fallback to globalContext variable who named with ${appName} while module exports not found
