@@ -165,7 +165,7 @@ start();
    -   "eject": "react-scripts eject"
    ```
 
-### react 微应用组件
+### React 微应用组件
 1. 安装
 
 ```bash
@@ -266,6 +266,28 @@ export default function Page() {
      },
    };
    ```
+
+### Vue 微应用组件
+1. 安装
+
+```bash
+npm i qiankun
+npm i @qiankunjs/vue
+```
+
+2. 使用
+
+直接通过 `<MicroApp />` 组件加载（或卸载）子应用，该组件提供了 loading 以及错误捕获相关的能力：
+
+```vue
+<script setup>
+import { MicroApp } from '@qiankunjs/vue';
+</script>
+
+<template>
+  <micro-app name="app1" entry="http://localhost:8000" />
+</template>
+```
 
 ### Angular 微应用
 
