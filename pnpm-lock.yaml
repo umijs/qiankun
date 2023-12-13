@@ -106,8 +106,8 @@ importers:
         specifier: ^4.17.11
         version: 4.17.11
       single-spa:
-        specifier: ^6.0.0-beta.3
-        version: 6.0.0-beta.3
+        specifier: ^6.0.0
+        version: 6.0.0
     devDependencies:
       '@types/vfile-message':
         specifier: 1.x
@@ -3187,6 +3187,7 @@ packages:
     engines: {node: '>=10'}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
     requiresBuild: true
     dev: true
     optional: true
@@ -3196,6 +3197,7 @@ packages:
     engines: {node: '>=10'}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
     requiresBuild: true
     dev: true
     optional: true
@@ -3205,6 +3207,7 @@ packages:
     engines: {node: '>=10'}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
     requiresBuild: true
     dev: true
     optional: true
@@ -3214,6 +3217,7 @@ packages:
     engines: {node: '>=10'}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
     requiresBuild: true
     dev: true
     optional: true
@@ -4126,6 +4130,7 @@ packages:
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
     requiresBuild: true
     dev: true
     optional: true
@@ -4135,6 +4140,7 @@ packages:
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
     requiresBuild: true
     dev: true
     optional: true
@@ -4144,6 +4150,7 @@ packages:
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
     requiresBuild: true
     dev: true
     optional: true
@@ -4153,6 +4160,7 @@ packages:
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
     requiresBuild: true
     dev: true
     optional: true
@@ -10012,6 +10020,7 @@ packages:
     engines: {node: '>= 12.0.0'}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
     requiresBuild: true
     dev: true
     optional: true
@@ -10021,6 +10030,7 @@ packages:
     engines: {node: '>= 12.0.0'}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
     requiresBuild: true
     dev: true
     optional: true
@@ -10030,6 +10040,7 @@ packages:
     engines: {node: '>= 12.0.0'}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
     requiresBuild: true
     dev: true
     optional: true
@@ -10039,6 +10050,7 @@ packages:
     engines: {node: '>= 12.0.0'}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
     requiresBuild: true
     dev: true
     optional: true
@@ -13753,8 +13765,8 @@ packages:
       is-arrayish: 0.3.2
     dev: true
 
-  /single-spa@6.0.0-beta.3:
-    resolution: {integrity: sha512-nyRyqq88hBF+X9y2JZrrOcypYhLV3ziRGyU9hiW+EQEU3FmkmWy9eU2DEC1Q1C3XEKv2Of/khHfanT/q2LNWSw==}
+  /single-spa@6.0.0:
+    resolution: {integrity: sha512-wFHWD0dNHb1oJF1yGWIkvIpovUUGyES2ljkqy80wMIC73AdCTcKCyJBP1DqoU8pUZrfu2ccLaFIKL2PVrAOpOg==}
     dev: false
 
   /sitemap@7.1.1:
