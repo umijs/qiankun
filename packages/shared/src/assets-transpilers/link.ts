@@ -3,6 +3,7 @@
  * @since 2023-04-26
  */
 import type { MatchResult } from '../module-resolver';
+import { warn } from '../reporter';
 import { getEntireUrl } from '../utils';
 import { preTranspile as preTranspileScript } from './script';
 import type { AssetsTranspilerOpts, BaseTranspilerOpts } from './types';
@@ -51,6 +52,11 @@ const postProcessPreloadLink = (link: HTMLLinkElement, baseURI: string, opts: As
          * see https://stackoverflow.com/questions/52635660/can-link-rel-preload-be-made-to-work-with-fetch/63814972#63814972
          */
         case Mode.REMOTE_ASSETS_IN_SANDBOX: {
+          if (process.env.NODE_ENV === 'development' && !link.hasAttribute('crossorigin')) {
+            warn(
+              `crossorigin attribute of script ${href} is not specified, that will make preload invalid, see https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/rel/preload#cors-enabled_fetches`,
+            );
+          }
           link.as = 'fetch';
           break;
         }
