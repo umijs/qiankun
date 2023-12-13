@@ -2,8 +2,8 @@
  * @author Kuitos
  * @since 2023-04-26
  */
-import { warn } from '@qiankunjs/shared';
 import type { MatchResult } from '../module-resolver';
+import { warn } from '../reporter';
 import { getEntireUrl } from '../utils';
 import { preTranspile as preTranspileScript } from './script';
 import type { AssetsTranspilerOpts, BaseTranspilerOpts } from './types';
