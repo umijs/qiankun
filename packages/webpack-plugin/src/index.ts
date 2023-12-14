@@ -15,7 +15,7 @@ export type PackageJson = {
   devDependencies?: Record<string, string>;
 };
 
-class QiankunPlugin {
+export class QiankunPlugin {
   private packageName: string;
   private entrySrcPattern: RegExp | null; // 用户提供的正则表达式
 
@@ -106,5 +106,3 @@ class QiankunPlugin {
     return $.html();
   }
 }
-// module.exports = QiankunPlugin;
-export { QiankunPlugin };
