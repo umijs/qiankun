@@ -4,16 +4,16 @@ import type { Compiler, Configuration, Compilation } from 'webpack';
 import { RawSource } from 'webpack-sources';
 import cheerio from 'cheerio';
 
-interface QiankunPluginOptions {
+export type QiankunPluginOptions = {
   packageName?: string;
   entrySrcPattern?: RegExp; // 新增可选参数，用于匹配script标签
-}
+};
 
-interface PackageJson {
+export type PackageJson = {
   name?: string;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
-}
+};
 
 class QiankunPlugin {
   private packageName: string;
@@ -106,5 +106,4 @@ class QiankunPlugin {
     return $.html();
   }
 }
-
 module.exports = QiankunPlugin;
