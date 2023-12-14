@@ -28,7 +28,7 @@ yarn add @qiankunjs/webpack-plugin --dev
 在您的 `webpack.config.js` 或其他配置文件中：
 
 ```javascript
-const QiankunPlugin = require('@qiankunjs/webpack-plugin');
+const { QiankunPlugin } = require('@qiankunjs/webpack-plugin');
 
 module.exports = {
   // ... 其他配置

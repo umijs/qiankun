@@ -106,4 +106,5 @@ class QiankunPlugin {
     return $.html();
   }
 }
-module.exports = QiankunPlugin;
+// module.exports = QiankunPlugin;
+export { QiankunPlugin };

@@ -1,5 +1,5 @@
 const path = require('path');
-const QiankunPlugin = require('../../dist/cjs');
+const { QiankunPlugin } = require('../../dist/cjs');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
