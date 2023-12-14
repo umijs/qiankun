@@ -20,7 +20,7 @@ const tsConfig = {
   extends: ['plugin:@typescript-eslint/recommended', 'plugin:@typescript-eslint/recommended-requiring-type-checking'],
   parserOptions: {
     tsconfigRootDir: __dirname,
-    project: ['./tsconfig.eslint.json', './packages/*/tsconfig.json'],
+    project: ['./tsconfig.eslint.json', './packages/**/tsconfig.json'],
   },
   rules: {
     '@typescript-eslint/no-unnecessary-condition': 'error',

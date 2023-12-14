@@ -17,12 +17,12 @@ export class Deferred<T> {
   reject!: (reason?: unknown) => void;
 
   constructor() {
-    this.promise = new Promise((resolve, reject) => {
-      this.resolve = (value: T | PromiseLike<T>) => {
+    this.promise = new Promise<T>((resolve, reject) => {
+      this.resolve = (value) => {
         this.#status = 'fulfilled';
         resolve(value);
       };
-      this.reject = (reason?: unknown) => {
+      this.reject = (reason) => {
         this.#status = 'rejected';
         reject(reason);
       };

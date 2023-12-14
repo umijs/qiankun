@@ -8,7 +8,7 @@ import { toArray } from '../utils';
 
 export let started = false;
 
-let microApps: Array<RegistrableApp<Record<string, unknown>>> = [];
+export const microApps: Array<RegistrableApp<Record<string, unknown>>> = [];
 const frameworkConfiguration: AppConfiguration = {};
 
 const frameworkStartedDefer = new Deferred<void>();
@@ -17,7 +17,7 @@ export function registerMicroApps<T extends ObjectType>(apps: Array<RegistrableA
   // Each app only needs to be registered once
   const unregisteredApps = apps.filter((app) => !microApps.some((registeredApp) => registeredApp.name === app.name));
 
-  microApps = [...microApps, ...unregisteredApps];
+  microApps.push(...unregisteredApps);
 
   unregisteredApps.forEach((app) => {
     const { name, activeRule, loader = noop, props, entry, container } = app;

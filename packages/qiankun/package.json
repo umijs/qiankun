@@ -36,7 +36,7 @@
     "@qiankunjs/sandbox": "workspace:^",
     "@qiankunjs/shared": "workspace:^",
     "lodash": "^4.17.11",
-    "single-spa": "^6.0.0-beta.3"
+    "single-spa": "^6.0.0"
   },
   "devDependencies": {
     "@types/vfile-message": "1.x"

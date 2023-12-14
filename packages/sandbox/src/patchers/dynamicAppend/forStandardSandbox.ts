@@ -31,7 +31,6 @@ declare global {
   }
 
   interface Window {
-    __sandboxConfigWeakMap__?: WeakMap<Sandbox, SandboxConfig>;
     __currentLockingSandbox__?: Sandbox;
   }
 
@@ -49,9 +48,7 @@ Object.defineProperty(nativeGlobal, '__currentLockingSandbox__', {
   configurable: true,
 });
 
-// Share sandboxConfigWeakMap between multiple qiankun instance, thus they could access the same record
-nativeGlobal.__sandboxConfigWeakMap__ = nativeGlobal.__sandboxConfigWeakMap__ || new WeakMap<Sandbox, SandboxConfig>();
-const sandboxConfigWeakMap = nativeGlobal.__sandboxConfigWeakMap__;
+const sandboxConfigWeakMap = new WeakMap<Sandbox, SandboxConfig>();
 
 const elementAttachSandboxConfigMap = new WeakMap<HTMLElement, SandboxConfig>();
 const patchCacheWeakMap = new WeakMap<object, unknown>();
@@ -356,8 +353,7 @@ export function patchStandardSandbox(
 
     // As now the sub app content all wrapped with a special id container,
     // the dynamic style sheet could be removed automatically while unmounting
-    return async function rebuild() {
-      const container = getContainer();
+    return async function rebuild(container: HTMLElement) {
       const isElementExisted = (element: HTMLStyleElement | HTMLLinkElement) => {
         if (container.contains(element)) return true;
         if ('rel' in element && element.rel === 'stylesheet' && element.href)
