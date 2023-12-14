@@ -28,13 +28,14 @@ yarn add @qiankunjs/webpack-plugin --dev
 In your `webpack.config.js` or other configuration files:
 
 ```javascript
-const QiankunPlugin = require('@qiankunjs/webpack-plugin');
+const { QiankunPlugin } = require('@qiankunjs/webpack-plugin');
 
 module.exports = {
   // ... other configurations
   plugins: [
     new QiankunPlugin({
       packageName: 'optionalPackageName', // Optional, if not provided, the name from package.json will be used
+      entrySrcPattern: /index\.js/g, // Optional, a regex pattern to match specific script tags for adding the 'entry' attribute.    Defaults to the last script tag if not specified.
     }),
   ],
 };

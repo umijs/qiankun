@@ -2,33 +2,34 @@ import fs from 'fs';
 import path from 'path';
 import type { Compiler, Configuration, Compilation } from 'webpack';
 import { RawSource } from 'webpack-sources';
+import cheerio from 'cheerio';
 
-interface QiankunPluginOptions {
+export type QiankunPluginOptions = {
   packageName?: string;
-}
+  entrySrcPattern?: RegExp; // 新增可选参数，用于匹配script标签
+};
 
-interface PackageJson {
+export type PackageJson = {
   name?: string;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
-}
+};
 
-class QiankunPlugin {
+export class QiankunPlugin {
   private packageName: string;
+  private entrySrcPattern: RegExp | null; // 用户提供的正则表达式
+
   private static packageJson: PackageJson = QiankunPlugin.readPackageJson();
 
   constructor(options: QiankunPluginOptions = {}) {
     this.packageName = options.packageName || QiankunPlugin.packageJson.name || '';
+    this.entrySrcPattern = options.entrySrcPattern ? new RegExp(options.entrySrcPattern.source, 'g') : null; // 默认值
   }
 
   private static readPackageJson(): PackageJson {
     const projectRoot: string = process.cwd();
     const packageJsonPath: string = path.join(projectRoot, 'package.json');
     return JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8')) as PackageJson;
-  }
-
-  private static getWebpackVersion(): string {
-    return QiankunPlugin.packageJson.dependencies?.webpack || QiankunPlugin.packageJson.devDependencies?.webpack || '';
   }
 
   apply(compiler: Compiler): void {
@@ -40,16 +41,17 @@ class QiankunPlugin {
   }
 
   private configureWebpackOutput(compiler: Compiler): void {
-    const webpackVersion = QiankunPlugin.getWebpackVersion();
     const webpackCompilerOptions = compiler.options as Configuration & { output: { jsonpFunction?: string } };
-    if (webpackVersion.startsWith('4')) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    const version = compiler.webpack?.version || '4';
+    if (version.startsWith('4')) {
       // webpack 4
       webpackCompilerOptions.output.library = `${this.packageName}`;
       webpackCompilerOptions.output.libraryTarget = 'window';
       webpackCompilerOptions.output.jsonpFunction = `webpackJsonp_${this.packageName}`;
       webpackCompilerOptions.output.globalObject = 'window';
       webpackCompilerOptions.output.chunkLoadingGlobal = `webpackJsonp_${this.packageName}`;
-    } else if (webpackVersion.startsWith('5')) {
+    } else if (version.startsWith('5')) {
       // webpack 5
       webpackCompilerOptions.output.library = {
         name: `${this.packageName}`,
@@ -76,16 +78,31 @@ class QiankunPlugin {
   }
 
   private addEntryAttributeToScripts(htmlString: string): string {
-    const scriptTags = htmlString.match(/<script[^>]*src="[^"]+"[^>]*><\/script>/g) || [];
-    const nonAsyncOrDeferScripts = scriptTags.filter((tag) => !/defer|async/.test(tag));
+    const $ = cheerio.load(htmlString);
 
-    if (nonAsyncOrDeferScripts.length) {
-      const lastScriptTag = nonAsyncOrDeferScripts[nonAsyncOrDeferScripts.length - 1];
-      const modifiedScriptTag = lastScriptTag.replace('<script', '<script entry');
-      return htmlString.replace(lastScriptTag, modifiedScriptTag);
+    const alreadyHasEntry = $('script[entry]').length > 0;
+    if (!alreadyHasEntry) {
+      if (!this.entrySrcPattern) {
+        // 如果没有提供正则表达式，则选择最后一个 script 标签
+        $('script').last().attr('entry', '');
+      } else {
+        // 使用提供的正则表达式过滤 script 标签
+        const matchingScriptTags = $('script').filter((_, el) => {
+          const src = $(el).attr('src');
+          // 确保 this.entrySrcPattern 不是 null 再调用 test 方法
+          return src && this.entrySrcPattern ? this.entrySrcPattern.test(src) : false;
+        });
+
+        if (matchingScriptTags.length > 1) {
+          throw new Error('The regular expression matched multiple script tags, please check your regex.');
+        } else if (matchingScriptTags.length === 1) {
+          matchingScriptTags.first().attr('entry', '');
+        } else {
+          throw new Error('The provided regular expression did not match any scripts.');
+        }
+      }
     }
-    return htmlString;
+
+    return $.html();
   }
 }
-
-module.exports = QiankunPlugin;

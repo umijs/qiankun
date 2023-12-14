@@ -13,6 +13,6 @@
   "devDependencies": {
     "html-webpack-plugin": "^4.5.2",
     "webpack": "4",
-    "webpack-cli": "3"
+    "webpack-cli": "4"
   }
 }
