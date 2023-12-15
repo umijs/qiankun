@@ -1,5 +1,66 @@
 # @qiankunjs/shared
 
+## 0.0.1-rc.9
+
+### Patch Changes
+
+- bd12dbad: fix: defer scripts should wait until html loaded
+
+## 0.0.1-rc.8
+
+### Patch Changes
+
+- 98b071bf: feat: support defer scripts and keep the executing order to consist with browser
+
+## 0.0.1-rc.7
+
+### Patch Changes
+
+- f2af2e36: feat: extract NodeTransformer type to shared package
+
+## 0.0.1-rc.6
+
+### Patch Changes
+
+- 54b0878e: feat(loader): compatible with defer entry script
+- 7ba95cf2: feat: change script src before it execute thus we can be more consistent with the native browser logic
+- 312abbc7: feat: remove lru-cache and move wrapFetch to shared package
+- 6f074136: feat(transpiler): assets transpiler should work well while sandbox disabled
+
+## 0.0.1-rc.5
+
+### Patch Changes
+
+- 5f77347b: feat(sandbox): support dynamic sync scripts executed by order in sandbox
+- 8e54e129: feat: add isRuntimeCompatible api to check qiankun3 compatibility
+
+## 0.0.1-rc.4
+
+### Patch Changes
+
+- 76b6bff7: 🐛 compatible with webpack chunk cache logic
+
+## 0.0.1-rc.3
+
+### Patch Changes
+
+- Updated dependencies [39301f19]
+  - @qiankunjs/sandbox@0.0.1-rc.3
+
+## 0.0.1-rc.2
+
+### Patch Changes
+
+- b23d3d7b: 🐛fix preload is invalid while reused dependency is working
+  - @qiankunjs/sandbox@0.0.1-rc.2
+
+## 0.0.1-rc.1
+
+### Patch Changes
+
+- ebb2bcaa: 🐛fix findDependency logic while peerDeps is undefined
+  - @qiankunjs/sandbox@0.0.1-rc.1
+
 ## 0.0.1-beta.6
 
 ### Patch Changes

@@ -1,28 +1,44 @@
-import Vue from 'vue/dist/vue.esm';
+import Vue from 'vue/dist/vue.esm.js';
+import compositionApi  from '@vue/composition-api';
+import { MicroApp } from '../../../packages/ui-bindings/vue/dist/esm/';
 
-function vueRender({ loading }) {
+Vue.use(compositionApi);
+// Vue.component('MicroApp', MicroApp)
+function vueRender() {
   return new Vue({
+    components: {
+      MicroApp,
+    },
+    data: {
+      message: 'abc',
+    },
+    name: 'vueRender',
     template: `
-      <div id="subapp-container">
-        <h4 v-if="loading" class="subapp-loading">Loading...</h4>
-        <div id="subapp-viewport"></div>
+      <div>
+        <MicroApp name="react15" entry="//localhost:7102" />
       </div>
     `,
+    // render(h) {
+    //   return h('div', [
+    //     h(MicroApp, {
+    //       props: {
+    //         name: 'react15',
+    //         entry: '//localhost:7102',
+    //       }
+    //     }),
+    //   ]);
+    // },
     el: '#subapp-container',
-    data() {
-      return {
-        loading,
-      };
-    },
   });
 }
 
 let app = null;
 
-export default function render({ loading }) {
+function render() {
   if (!app) {
-    app = vueRender({ loading });
-  } else {
-    app.loading = loading;
+    app = vueRender();
+    console.log(app)
   }
 }
+
+render();

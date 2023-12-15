@@ -53,7 +53,7 @@ function shouldSkipProperty(global: WindowProxy, p: string | number): boolean {
   if (isIE11()) {
     // https://github.com/kuitos/import-html-entry/pull/32，最小化 try 范围
     try {
-      return global[p as number] && typeof window !== 'undefined' && global[p as number].parent === window;
+      return !!global[p as keyof WindowProxy] && typeof window !== 'undefined' && global[p as number].parent === window;
     } catch (err) {
       return true;
     }

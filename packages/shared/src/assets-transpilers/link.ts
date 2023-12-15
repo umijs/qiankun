@@ -3,33 +3,34 @@
  * @since 2023-04-26
  */
 import type { MatchResult } from '../module-resolver';
+import { warn } from '../reporter';
 import { getEntireUrl } from '../utils';
 import { preTranspile as preTranspileScript } from './script';
 import type { AssetsTranspilerOpts, BaseTranspilerOpts } from './types';
 import { Mode } from './types';
+import { createReusingObjectUrl } from './utils';
 
 type PreTranspileResult =
-  | { mode: Mode.CACHE_FROM_SANDBOX; result: { src: string } & MatchResult }
+  | { mode: Mode.REUSED_DEP_IN_SANDBOX | Mode.REUSED_DEP; result: { src: string } & MatchResult }
   | { mode: Mode.NONE; result?: never };
-const preTranspile = (
-  link: Partial<Pick<HTMLLinkElement, 'href'>>,
+const preTranspileStyleSheetLink = (
+  link: Partial<Pick<HTMLLinkElement, 'href' | 'rel'>>,
   baseURI: string,
   opts: BaseTranspilerOpts,
 ): PreTranspileResult => {
   const { sandbox, moduleResolver } = opts;
-  const { href } = link;
+  const { href, rel } = link;
 
-  if (sandbox) {
-    if (href) {
-      const linkHref = getEntireUrl(href, baseURI);
+  // filter preload links
+  if (href && rel === 'stylesheet') {
+    const linkHref = getEntireUrl(href, baseURI);
 
-      const matchedAssets = moduleResolver?.(linkHref);
-      if (matchedAssets) {
-        return {
-          mode: Mode.CACHE_FROM_SANDBOX,
-          result: { src: linkHref, ...matchedAssets },
-        };
-      }
+    const matchedAssets = moduleResolver?.(linkHref);
+    if (matchedAssets) {
+      return {
+        mode: sandbox ? Mode.REUSED_DEP_IN_SANDBOX : Mode.REUSED_DEP,
+        result: { src: linkHref, ...matchedAssets },
+      };
     }
   }
 
@@ -38,39 +39,32 @@ const preTranspile = (
   };
 };
 
-/**
- * While the assets are transpiling in sandbox, it means they will be evaluated with manual fetching,
- * thus we need to set the attribute `as` to fetch instead of script or style to avoid preload cache missing.
- * see https://stackoverflow.com/questions/52635660/can-link-rel-preload-be-made-to-work-with-fetch/63814972#63814972
- */
 const postProcessPreloadLink = (link: HTMLLinkElement, baseURI: string, opts: AssetsTranspilerOpts): void => {
   const { as, href } = link;
-
-  const revokeAfterLoaded = (objectURL: string, link: HTMLLinkElement) => {
-    const revoke = () => URL.revokeObjectURL(objectURL);
-    link.addEventListener('load', revoke, { once: true });
-    link.addEventListener('error', revoke, { once: true });
-  };
-
   switch (as) {
     case 'script': {
       const { mode, result } = preTranspileScript({ src: href }, baseURI, opts);
 
       switch (mode) {
-        case Mode.REMOTE_FROM_SANDBOX: {
+        /**
+         * While the assets are transpiling in sandbox, it means they will be evaluated with manual fetching,
+         * thus we need to set the attribute `as` to fetch instead of script or style to avoid preload cache missing.
+         * see https://stackoverflow.com/questions/52635660/can-link-rel-preload-be-made-to-work-with-fetch/63814972#63814972
+         */
+        case Mode.REMOTE_ASSETS_IN_SANDBOX: {
+          if (process.env.NODE_ENV === 'development' && !link.hasAttribute('crossorigin')) {
+            warn(
+              `crossorigin attribute of script ${href} is not specified, that will make preload invalid, see https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/rel/preload#cors-enabled_fetches`,
+            );
+          }
           link.as = 'fetch';
           break;
         }
 
-        case Mode.CACHE_FROM_SANDBOX: {
+        case Mode.REUSED_DEP_IN_SANDBOX:
+        case Mode.REUSED_DEP: {
           const { url } = result;
-          const objectURL = URL.createObjectURL(
-            new Blob([`// ${href} is reusing the execution result of ${url}`], {
-              type: 'text/javascript',
-            }),
-          );
-          link.href = objectURL;
-          revokeAfterLoaded(objectURL, link);
+          link.href = createReusingObjectUrl(href, url, 'text/javascript');
 
           break;
         }
@@ -80,18 +74,13 @@ const postProcessPreloadLink = (link: HTMLLinkElement, baseURI: string, opts: As
     }
 
     case 'style': {
-      const { mode, result } = preTranspile({ href }, baseURI, opts);
+      const { mode, result } = preTranspileStyleSheetLink({ href, rel: 'stylesheet' }, baseURI, opts);
 
       switch (mode) {
-        case Mode.CACHE_FROM_SANDBOX: {
+        case Mode.REUSED_DEP_IN_SANDBOX:
+        case Mode.REUSED_DEP: {
           const { url } = result;
-          const objectURL = URL.createObjectURL(
-            new Blob([`// ${href} is reusing the execution result of ${url}`], {
-              type: 'text/css',
-            }),
-          );
-          link.href = objectURL;
-          revokeAfterLoaded(objectURL, link);
+          link.href = createReusingObjectUrl(href, url, 'text/css');
           break;
         }
       }
@@ -110,24 +99,22 @@ export default function transpileLink(
   opts: AssetsTranspilerOpts,
 ): HTMLLinkElement {
   const hrefAttribute = link.getAttribute('href');
-  const { mode, result } = preTranspile(
+  const { mode, result } = preTranspileStyleSheetLink(
     {
       href: hrefAttribute || undefined,
+      rel: link.rel,
     },
     baseURI,
     opts,
   );
 
   switch (mode) {
-    case Mode.CACHE_FROM_SANDBOX: {
+    case Mode.REUSED_DEP_IN_SANDBOX:
+    case Mode.REUSED_DEP: {
       const { src, version, url } = result;
       link.dataset.href = src;
       link.dataset.version = version;
-      link.href = URL.createObjectURL(
-        new Blob([`// ${src} is reusing the execution result of ${url}`], {
-          type: 'text/css',
-        }),
-      );
+      link.href = createReusingObjectUrl(src, url, 'text/css');
 
       return link;
     }

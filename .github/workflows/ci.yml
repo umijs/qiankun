@@ -9,32 +9,63 @@ on:
       - 1.x
 
 jobs:
-  check:
+  build-check-and-lint:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: [14.x, 16.x]
+        node-version: [lts/*, latest]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2.4.0
 
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
+          cache: "pnpm"
 
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
+      - run: corepack enable # https://nodejs.org/api/corepack.html
 
-      - uses: actions/cache@v2
-        id: yarn-cache
+      - run: pnpm install
+
+      - name: TS Build Check
+        run: pnpm run build
+
+      - name: Run eslint
+        run: pnpm run eslint
+
+      - name: Run prettier
+        run: pnpm run prettier:check
+
+      - name: Doc Build check
+        run: pnpm run docs:build
+
+  unit-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [lts/*, latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2.4.0
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
         with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-      - run: yarn
-      - run: yarn ci
-      - run: yarn docs:build
+          node-version: ${{ matrix.node-version }}
+          cache: "pnpm"
+
+      - run: corepack enable # https://nodejs.org/api/corepack.html
+
+      - run: pnpm install
+
+      - name: Run unit test
+        run: pnpm run test

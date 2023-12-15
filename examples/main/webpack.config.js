@@ -1,8 +1,23 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { name } = require('./package');
+const path = require('path');
+
+const modeEntryMap = {
+  multiple: './multiple.js',
+  vue: './render/VueRender.js',
+  vue3: './render/Vue3Render.js',
+  undefined: './render/VanillaRender.js',
+}
+
+const modeHTMLMap = {
+  multiple: './multiple.html',
+  vue: './index.html',
+  vue3: './index.html',
+  undefined: './index.html',
+}
 
 module.exports = {
-  entry: process.env.MODE === 'multiple' ? './multiple.js' : './index.js',
+  entry: modeEntryMap[process.env.MODE],
   devtool: 'source-map',
   devServer: {
     open: true,
@@ -22,6 +37,10 @@ module.exports = {
   mode: 'development',
   resolve: {
     extensions: ['.js', '.jsx', '.ts', '.tsx'],
+    alias: {
+      vue: path.join(__dirname, 'node_modules/vue')
+      // '@vue/composition-api': path.join(__dirname, 'node_modules/@vue/composition-api')
+    }
   },
   module: {
     rules: [
@@ -45,7 +64,7 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       filename: 'index.html',
-      template: process.env.MODE === 'multiple' ? './multiple.html' : './index.html',
+      template: modeHTMLMap[process.env.MODE],
       minify: {
         removeComments: true,
         collapseWhitespace: true,

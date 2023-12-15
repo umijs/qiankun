@@ -6,17 +6,24 @@ import transpileLink from './link';
 import transpileScript from './script';
 import type { AssetsTranspilerOpts } from './types';
 
+/**
+ * transpile the assets to support micro frontend
+ * @param node the original node
+ * @param baseURI the baseURI of the node
+ * @param opts
+ * @returns original node after transpiled
+ */
 export function transpileAssets<T extends Node>(node: T, baseURI: string, opts: AssetsTranspilerOpts): T {
-  const htmlElement = (node as unknown) as HTMLElement;
+  const htmlElement = node as unknown as HTMLElement;
   const { tagName } = htmlElement;
 
   switch (tagName) {
     case 'SCRIPT': {
-      return (transpileScript(htmlElement as HTMLScriptElement, baseURI, opts) as unknown) as T;
+      return transpileScript(htmlElement as HTMLScriptElement, baseURI, opts) as unknown as T;
     }
 
     case 'LINK': {
-      return (transpileLink(htmlElement as HTMLLinkElement, baseURI, opts) as unknown) as T;
+      return transpileLink(htmlElement as HTMLLinkElement, baseURI, opts) as unknown as T;
     }
 
     default:
@@ -38,3 +45,5 @@ export function transpileAssets<T extends Node>(node: T, baseURI: string, opts: 
 }
 
 export type * from './types';
+
+export { isValidJavaScriptType } from './utils';
