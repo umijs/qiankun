@@ -1,14 +1,15 @@
 {
-  "editorconfig": true,
   "singleQuote": true,
   "trailingComma": "all",
   "proseWrap": "never",
   "overrides": [
     {
       "files": ["*.json", ".prettierrc"],
-      "options": {
-        "parser": "json"
-      }
+      "options": { "parser": "json" }
+    },
+    {
+      "files": ["*.{yaml,yml}"],
+      "options": { "singleQuote": false }
     }
   ]
 }

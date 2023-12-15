@@ -1,6 +1,6 @@
 {
   "name": "qiankun",
-  "version": "3.0.0-rc.2",
+  "version": "3.0.0-rc.15",
   "description": "A completed implementation of Micro Frontends",
   "keywords": [
     "micro frontend",
@@ -12,23 +12,18 @@
   ],
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
-  "types": "./src/index.ts",
+  "types": "./dist/esm/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "build": "father build",
-    "lint": "yarn lint:js && yarn lint:prettier",
-    "lint:js": "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty ./src",
-    "lint:fix": "yarn lint:js -- --fix",
-    "lint:prettier": "prettier -c ./src/**/*",
-    "prettier": "prettier --write ./src/**/*",
-    "ci": "yarn lint && yarn build && yarn test",
-    "test": "cross-env NODE_ENV=test vitest"
+    "build": "father build"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kuitos/qiankun.git"
   },
-  "files": ["dist", "src"],
+  "files": [
+    "dist"
+  ],
   "author": "Kuitos",
   "license": "MIT",
   "bugs": {
@@ -41,7 +36,7 @@
     "@qiankunjs/sandbox": "workspace:^",
     "@qiankunjs/shared": "workspace:^",
     "lodash": "^4.17.11",
-    "single-spa": "^6.0.0-beta.3"
+    "single-spa": "^6.0.0"
   },
   "devDependencies": {
     "@types/vfile-message": "1.x"

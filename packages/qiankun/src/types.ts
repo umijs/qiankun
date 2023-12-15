@@ -2,7 +2,7 @@
  * @author Kuitos
  * @since 2023-04-25
  */
-import type { BaseLoaderOpts } from '@qiankunjs/shared';
+import type { LoaderOpts } from '@qiankunjs/loader';
 import type { LifeCycles as ParcelLifeCycles, Parcel, RegisterApplicationConfig } from 'single-spa';
 
 declare global {
@@ -41,7 +41,7 @@ export type RegistrableApp<T extends ObjectType> = LoadableApp<T> & {
   activeRule: RegisterApplicationConfig['activeWhen'];
 };
 
-export type AppConfiguration = Partial<BaseLoaderOpts> & {
+export type AppConfiguration = Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
   sandbox?: boolean;
   globalContext?: WindowProxy;
 };

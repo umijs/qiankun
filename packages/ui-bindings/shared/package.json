@@ -1,0 +1,31 @@
+{
+  "name": "@qiankunjs/ui-shared",
+  "version": "0.0.0",
+  "description": "ui binding shared for qiankun",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./src/index.ts",
+  "sideEffects": false,
+  "scripts": {
+    "build": "father build",
+    "dev": "father dev"
+  },
+  "author": "linghaoSu",
+  "license": "MIT",
+  "dependencies": {
+    "lodash": "^4.17.11"
+  },
+  "devDependencies": {
+    "qiankun": "workspace:^"
+  },
+  "peerDependencies": {
+    "qiankun": "^3.0.0-rc.15"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+  "files": [
+    "dist"
+  ],
+  "repository": "git@github.com:umijs/qiankun.git"
+}

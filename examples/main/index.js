@@ -30,3 +30,5 @@ document.querySelector('.mainapp-sidemenu').addEventListener('click', async (e) 
     console.log('not found any app');
   }
 });
+
+// document.querySelector('[data-value=react15]').click();
