@@ -63,7 +63,7 @@ export async function createQiankunDefaultProject() {
           name: 'mainAppName',
           type: mainAppName
             ? null
-            : (prev: string, values: PromptAnswer) => {
+            : (_prev: string, values: PromptAnswer) => {
                 return [CreateKind.CreateMainApp, CreateKind.CreateMainAndSubApp].includes(
                   inputCreateKind || values.createKind,
                 )
@@ -77,7 +77,7 @@ export async function createQiankunDefaultProject() {
           name: 'mainRoute',
           type: mainRoute
             ? null
-            : (prev: string, values: PromptAnswer) => {
+            : (_prev: string, values: PromptAnswer) => {
                 return [CreateKind.CreateMainApp, CreateKind.CreateMainAndSubApp].includes(
                   inputCreateKind || values.createKind,
                 )
@@ -92,12 +92,12 @@ export async function createQiankunDefaultProject() {
           min: 1,
           type: subAppNameList
             ? null
-            : (prev: string, values: PromptAnswer) => {
-                const createKind = inputCreateKind || values.createKind;
-                if (createKind === CreateKind.CreateMainAndSubApp) {
+            : (_prev: string, values: PromptAnswer) => {
+                const _createKind = inputCreateKind || values.createKind;
+                if (_createKind === CreateKind.CreateMainAndSubApp) {
                   return 'multiselect';
                 }
-                if (createKind === CreateKind.CreateSubApp) {
+                if (_createKind === CreateKind.CreateSubApp) {
                   return 'multiselect';
                 }
                 return null;
@@ -133,9 +133,12 @@ export async function createQiankunDefaultProject() {
   const userChoose: PromptAnswer = {
     projectName: projectName || result.projectName,
     createKind: createKind ? (String(createKind) as CreateKind) : result.createKind,
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     mainAppName: (mainAppName as MainFrameworkTemplate) || result.mainAppName,
     subAppNameList: subAppNameList ? ([subAppNameList] as SubFrameworkTemplate[]) : result.subAppNameList,
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     mainRoute: (mainRoute as IRoutePattern) || result.mainRoute,
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     packageManager: (packageManager as PackageManager) || result.packageManager,
   };
 

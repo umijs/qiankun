@@ -1,6 +1,6 @@
 const path = require('path');
 const { name } = require('./package');
-const qiankunPlugin  = require('@qiankunjs/webpack-plugin');
+const { QiankunPlugin }  = require('@qiankunjs/webpack-plugin');
 function resolve(dir) {
   return path.join(__dirname, dir);
 }
@@ -27,7 +27,7 @@ module.exports = {
       },
     },
     plugins:[
-      new qiankunPlugin()
+      new QiankunPlugin()
     ]
   },
 };
