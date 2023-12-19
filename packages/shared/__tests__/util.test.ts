@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { getValueType } from '../utils';
+import { getValueType } from '../src/utils';
 
 it('should return value type', () => {
   expect(getValueType(1)).toBe('Number');
