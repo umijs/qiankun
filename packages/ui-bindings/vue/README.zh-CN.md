@@ -107,6 +107,7 @@ import { MicroApp } from '@qiankunjs/vue';
 | `autoCaptureError` | 否 | 自动设置微应用的错误捕获 | `boolean` | `false` |
 | `className` | 否 | 微应用的样式类 | `string` | `undefined` |
 | `wrapperClassName` | 否 | 包裹微应用加载组件、错误捕获组件和微应用的样式类，仅在启用加载组件或错误捕获组件时有效 | `string` | `undefined` |
+| `appProps` | 否 | 传递给子应用的属性 | `Record<string, any>` | `undefined` |
 
 ### 组件插槽
 

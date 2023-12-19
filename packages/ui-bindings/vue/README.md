@@ -105,6 +105,7 @@ import { MicroApp } from '@qiankunjs/vue';
 | `autoCaptureError` | No | Automatically set error capturing for the micro-application | `boolean` | `false` |
 | `className` | No | The style class for the micro-application | `string` | `undefined` |
 | `wrapperClassName` | No | The style class wrapping the micro-application's loading and error components | `string` | `undefined` |
+| `appProps` | No | Properties passed to the sub-application | `Record<string, any>` | `undefined` |
 
 ### Component Slots
 

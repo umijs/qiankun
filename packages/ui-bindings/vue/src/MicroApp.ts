@@ -1,5 +1,5 @@
 import type { PropType } from 'vue-demi';
-import { computed, defineComponent, h, onMounted, reactive, ref, toRefs, watch, isVue2 } from 'vue-demi';
+import { computed, defineComponent, h, onMounted, reactive, ref, toRefs, watch, isVue2, onUnmounted } from 'vue-demi';
 import type { AppConfiguration, LifeCycles } from 'qiankun';
 import type { MicroAppType } from '@qiankunjs/ui-shared';
 import { mountMicroApp, omitSharedProps, unmountMicroApp, updateMicroApp } from '@qiankunjs/ui-shared';
@@ -43,10 +43,14 @@ export const MicroApp = defineComponent({
       type: String,
       default: undefined,
     },
+    appProps: {
+      type: Object,
+      default: undefined,
+    },
   },
   setup(props, { slots }) {
     const originProps = props;
-    const { name, wrapperClassName, className, ...propsFromParams } = toRefs(originProps);
+    const { name, wrapperClassName, className, appProps, ...propsFromParams } = toRefs(originProps);
 
     const loading = ref(false);
     const error = ref<Error>();
@@ -77,26 +81,26 @@ export const MicroApp = defineComponent({
 
     const rootRef = ref(null);
 
+    const unmount = () => {
+      const microApp = microAppRef.value;
+
+      if (microApp) {
+        microApp._unmounting = true;
+
+        unmountMicroApp(microApp).catch((err: Error) => {
+          setComponentError(err);
+          loading.value = false;
+        });
+
+        microAppRef.value = undefined;
+      }
+    };
+
     onMounted(() => {
-      console.log(rootRef.value);
-
-      console.log(containerRef.value);
-
       watch(
         name,
         () => {
-          const microApp = microAppRef.value;
-
-          if (microApp) {
-            microApp._unmounting = true;
-
-            unmountMicroApp(microApp).catch((err: Error) => {
-              setComponentError(err);
-              loading.value = false;
-            });
-
-            microAppRef.value = undefined;
-          }
+          unmount();
 
           void mountMicroApp({
             prevMicroApp: microAppRef.value,
@@ -118,7 +122,7 @@ export const MicroApp = defineComponent({
       );
 
       watch(
-        reactivePropsFromParams,
+        [reactivePropsFromParams, appProps],
         () => {
           updateMicroApp({
             microApp: microAppRef.value,
@@ -131,6 +135,10 @@ export const MicroApp = defineComponent({
           deep: true,
         },
       );
+    });
+
+    onUnmounted(() => {
+      unmount();
     });
 
     const microAppWrapperClassName = computed(() =>
