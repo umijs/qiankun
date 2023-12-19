@@ -1,6 +1,6 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { name } = require('./package');
-const QiankunPlugin = require('../../packages/webpack-plugin/dist/cjs');
+const { QiankunPlugin } = require('../../packages/webpack-plugin/dist/cjs');
 
 module.exports = {
   entry: './index.js',
