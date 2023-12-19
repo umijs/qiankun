@@ -213,46 +213,45 @@ function getLifecyclesFromExports(
   globalContext: WindowProxy,
   globalLatestSetProp?: PropertyKey,
 ): MicroAppLifeCycles {
-  const validateExportLifecycle = (exports: ObjectType | undefined, nextSourceName: string = ''): boolean => {
+  const exportsWarningMsg: string[] = [];
+  const validateExportLifecycle = (exports: ObjectType | undefined, exportsSource: string): boolean => {
     const validateLifecycleKeys = ['bootstrap', 'mount', 'unmount'];
     const illegalKeys = validateLifecycleKeys.filter((key) => !isFunction(exports?.[key]));
-    const isIllegal = illegalKeys.length > 0;
-    if (process.env.NODE_ENV === 'development') {
-      if (isIllegal) {
-        const warnMsg = illegalKeys
-          .map((key) => `[${key} lifecycle] need Function but found ${getValueType(exports?.[key])}`)
-          .join('\n');
-        warn(
-          `search lifecycle error\n${warnMsg}\nplease check the exported lifecycle in ${appName}${
-            nextSourceName ? `,fallback to get from ${nextSourceName}` : ''
-          }`,
-          exports,
-        );
-      }
+    const illegalExports = illegalKeys.length > 0;
+    if (illegalExports) {
+      exportsWarningMsg.push(
+        `${exportsSource} not provide legal lifecycle function found {${illegalKeys
+          .map((key) => `${key}: ${getValueType(exports?.[key])}`)
+          .join(',')}}`,
+      );
     }
-    return !isIllegal;
+    return !illegalExports;
   };
 
-  if (validateExportLifecycle(scriptExports, globalLatestSetProp ? 'latestSetProp' : `window['${appName}']`)) {
+  if (validateExportLifecycle(scriptExports, 'entry')) {
     return scriptExports;
   }
 
   // fallback to sandbox latest set property if it had
   if (globalLatestSetProp) {
     const lifecycles = (globalContext as unknown as ObjectType)[globalLatestSetProp as never] as MicroAppLifeCycles;
-    if (validateExportLifecycle(lifecycles, `window['${appName}']`)) {
+    if (validateExportLifecycle(lifecycles, 'globalLatestSetProp')) {
       return lifecycles;
     }
+  }
+
+  if (process.env.NODE_ENV === 'development') {
+    warn(`lifecycle not found from ${appName} entry exports, fallback to get from window['${appName}']`);
   }
 
   // fallback to globalContext variable who named with ${appName} while module exports not found
   const globalVariableExports = (globalContext as unknown as ObjectType)[appName as never] as MicroAppLifeCycles;
 
-  if (validateExportLifecycle(globalVariableExports)) {
+  if (validateExportLifecycle(globalVariableExports, `window['${appName}']`)) {
     return globalVariableExports;
   }
 
-  throw new QiankunError(`You need to export lifecycle functions in ${appName} entry`);
+  throw new QiankunError(`You need to export lifecycle functions at any of ${appName} entry, globalLatestSetProp or window['${appName}']\nmore information: ${exportsWarningMsg.join('\n')}`);
 }
 
 function calcPublicPath(entry: string): string {
