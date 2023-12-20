@@ -1,28 +1,23 @@
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import transpileScript from '../script';
 
 it('inline script not include sourceURL', () => {
   class MockSandbox {
-    id = 'testApp';
-    constantIntrinsicNames = [];
     makeEvaluateFactory(source: string, sourceURL?: string): string {
-      const sourceMapURL = sourceURL ? `//# sourceURL=${sourceURL}\n` : '';
-      const globalObjectOptimizer = this.constantIntrinsicNames.length
-        ? `const {${this.constantIntrinsicNames.join(',')}} = this;`
-        : '';
-      // eslint-disable-next-line max-len
-      return `;(function(){with(this){${globalObjectOptimizer}${source}\n${sourceMapURL}}}).bind(window.${this.id})();`;
+      return '';
     }
   }
 
-  const scriptElement = document.createElement('script');
-  scriptElement.innerHTML = 'console.log("hello world")';
-  const sandboxInstance = new MockSandbox();
+  const code = 'console.log("hello world")';
   const publicPath = 'http://localhost:8000';
-  const transpiledScriptElement = transpileScript(scriptElement, publicPath, {
+  const scriptElement = document.createElement('script');
+  scriptElement.innerHTML = code;
+  const sandboxInstance = new MockSandbox();
+  const makeEvaluateFactorySpy = vi.spyOn(sandboxInstance, 'makeEvaluateFactory');
+  transpileScript(scriptElement, publicPath, {
     fetch: window.fetch,
     rawNode: scriptElement,
     sandbox: sandboxInstance,
   });
-  expect(transpiledScriptElement.innerHTML).toEqual(expect.not.stringContaining(`//# sourceURL=${publicPath}`));
+  expect(makeEvaluateFactorySpy).toHaveBeenCalledWith(code);
 });
