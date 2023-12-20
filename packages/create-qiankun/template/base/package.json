@@ -4,7 +4,8 @@
   "scripts": {
     "preinstall": "node ./scripts/checkPnpm.js",
     "dev": "pnpm -r --parallel --filter=./packages/* run dev",
-    "clean": "rimraf node_modules **/*/node_modules"
+    "clean": "rimraf node_modules **/*/node_modules",
+    "prettier": "prettier --write ."
   },
   "license": "ISC",
   "devDependencies": {

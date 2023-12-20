@@ -43,18 +43,18 @@ pnpm dlx create-qiankun@latest
 | --------------- | --------- |
 | React18+Webpack |           |
 | Vue3+Webpack    |           |
-| React18+umi     | 建设中 🚧 |
+| React18+umi     | 🚧 建设中 |
 
 ### 子应用模板
 
-| 模板名称        |           |
-| --------------- | --------- |
-| React18+Webpack |           |
-| React16+Webpack |           |
-| Vue3+Webpack    |           |
-| Vue2+Webpack    |           |
-| Vite+Vue3       | 建设中 🚧 |
-| Vite+React18    | 建设中 🚧 |
+| 模板名称        |                             |
+| --------------- | --------------------------- |
+| React18+Webpack |                             |
+| React16+Webpack |                             |
+| Vue3+Webpack    |                             |
+| Vue2+Webpack    | ❗ 在 pnpm workspace 有问题 |
+| Vite+Vue3       | 🚧 建设中                   |
+| Vite+React18    | 🚧 建设中                   |
 
 ## 贡献
 

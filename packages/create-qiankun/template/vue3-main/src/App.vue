@@ -28,7 +28,7 @@
 </template>
 
 <script setup>
-import { shallowRef } from 'vue';
+import { shallowRef,reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import subApplication from './microApp/subs.json';
 import { MicroApp } from "@qiankunjs/vue";
