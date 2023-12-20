@@ -6,13 +6,7 @@ import type { LoaderOpts } from '@qiankunjs/loader';
 import { loadEntry } from '@qiankunjs/loader';
 import type { Sandbox } from '@qiankunjs/sandbox';
 import { createSandboxContainer } from '@qiankunjs/sandbox';
-import {
-  moduleResolver as defaultModuleResolver,
-  getValueType,
-  transpileAssets,
-  warn,
-  wrapFetchWithCache,
-} from '@qiankunjs/shared';
+import { moduleResolver as defaultModuleResolver, transpileAssets, warn, wrapFetchWithCache } from '@qiankunjs/shared';
 import { concat, isFunction, mergeWith } from 'lodash';
 import type { ParcelConfigObject } from 'single-spa';
 import getAddOns from '../addons';
@@ -213,29 +207,19 @@ function getLifecyclesFromExports(
   globalContext: WindowProxy,
   globalLatestSetProp?: PropertyKey,
 ): MicroAppLifeCycles {
-  const exportsWarningMsg: string[] = [];
-  const validateExportLifecycle = (exports: ObjectType | undefined, exportsSource: string): boolean => {
-    const validateLifecycleKeys = ['bootstrap', 'mount', 'unmount'];
-    const illegalKeys = validateLifecycleKeys.filter((key) => !isFunction(exports?.[key]));
-    const illegalExports = illegalKeys.length > 0;
-    if (illegalExports) {
-      exportsWarningMsg.push(
-        `${exportsSource} not provide legal lifecycle function found {${illegalKeys
-          .map((key) => `${key}: ${getValueType(exports?.[key])}`)
-          .join(',')}}`,
-      );
-    }
-    return !illegalExports;
+  const validateExportLifecycle = (exports: ObjectType | undefined): boolean => {
+    const { bootstrap, mount, unmount } = exports ?? {};
+    return isFunction(bootstrap) && isFunction(mount) && isFunction(unmount);
   };
 
-  if (validateExportLifecycle(scriptExports, 'entry')) {
+  if (validateExportLifecycle(scriptExports)) {
     return scriptExports;
   }
 
   // fallback to sandbox latest set property if it had
   if (globalLatestSetProp) {
     const lifecycles = (globalContext as unknown as ObjectType)[globalLatestSetProp as never] as MicroAppLifeCycles;
-    if (validateExportLifecycle(lifecycles, 'globalLatestSetProp')) {
+    if (validateExportLifecycle(lifecycles)) {
       return lifecycles;
     }
   }
@@ -247,11 +231,15 @@ function getLifecyclesFromExports(
   // fallback to globalContext variable who named with ${appName} while module exports not found
   const globalVariableExports = (globalContext as unknown as ObjectType)[appName as never] as MicroAppLifeCycles;
 
-  if (validateExportLifecycle(globalVariableExports, `window['${appName}']`)) {
+  if (validateExportLifecycle(globalVariableExports)) {
     return globalVariableExports;
   }
 
-  throw new QiankunError(`You need to export lifecycle functions at any of ${appName} entry, globalLatestSetProp or window['${appName}']\nmore information: ${exportsWarningMsg.join('\n')}`);
+  throw new QiankunError(
+    `You need to export lifecycle functions in ${appName} entry as neither globalLatestSetProp ${String(
+      globalLatestSetProp,
+    )} nor window['${appName}'] export correctly`,
+  );
 }
 
 function calcPublicPath(entry: string): string {
