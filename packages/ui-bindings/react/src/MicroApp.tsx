@@ -24,16 +24,15 @@ function useDeepCompare<T>(value: T): T {
 }
 
 export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<MicroAppType | undefined>) => {
-  const { name, loader, errorBoundary, wrapperClassName, className, ...restProps } = componentProps;
-
-  const propsFromParams = omitSharedProps(restProps);
+  const { name, autoSetLoading, autoCaptureError, wrapperClassName, className, loader, errorBoundary } = componentProps;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error>();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const microAppRef = useRef<MicroAppType>();
 
   // 未配置自定义 errorBoundary 且开启了 autoCaptureError 场景下，使用插件默认的 errorBoundary，否则使用自定义 errorBoundary
-  const microAppErrorBoundary =
-    errorBoundary || (propsFromParams.autoCaptureError ? (e) => <ErrorBoundary error={e} /> : null);
+  const microAppErrorBoundary = errorBoundary || (autoCaptureError ? (e) => <ErrorBoundary error={e} /> : null);
 
   // 配置了 errorBoundary 才改 error 状态，否则直接往上抛异常
   const setComponentError = (e: Error | undefined) => {
@@ -48,27 +47,21 @@ export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<Mic
     }
   };
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const microAppRef = useRef<MicroAppType>();
-
   useImperativeHandle(componentRef, () => microAppRef.current);
 
   useEffect(() => {
-    mountMicroApp({
-      props: componentProps,
+    void mountMicroApp({
       container: containerRef.current!,
-      setMicroApp(app) {
-        microAppRef.current = app;
-      },
-      setLoading: (l) => {
-        setLoading(l);
-      },
+      microApp: microAppRef.current,
+      componentProps,
+      setMicroApp: (app) => (microAppRef.current = app),
+      setLoading,
       setError: setComponentError,
     });
 
     return () => {
       const microApp = microAppRef.current;
-      if (microApp) {
+      if (microApp && microApp.getStatus() === 'MOUNTED') {
         // 微应用 unmount 是异步的，中间的流转状态不能确定，所有需要一个标志位来确保 unmount 开始之后不会再触发 update
         microApp._unmounting = true;
         unmountMicroApp(microApp).catch((e: Error) => {
@@ -82,22 +75,17 @@ export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<Mic
   useEffect(() => {
     updateMicroApp({
       name,
-      propsFromParams,
-      getMicroApp() {
-        return microAppRef.current;
-      },
-      setLoading: (l) => {
-        setLoading(l);
-      },
-      key: 'react',
+      microApp: microAppRef.current,
+      microAppProps: omitSharedProps(componentProps),
+      setLoading,
     });
 
     return noop;
-  }, [useDeepCompare(propsFromParams)]);
+  }, [useDeepCompare(omitSharedProps(componentProps))]);
 
   // 未配置自定义 loader 且开启了 autoSetLoading 场景下，使用插件默认的 loader，否则使用自定义 loader
   const microAppLoader =
-    loader || (propsFromParams.autoSetLoading ? (loadingStatus) => <MicroAppLoader loading={loadingStatus} /> : null);
+    loader || (autoSetLoading ? (loadingStatus) => <MicroAppLoader loading={loadingStatus} /> : null);
 
   const microAppWrapperClassName = wrapperClassName
     ? `${wrapperClassName} qiankun-micro-app-wrapper`

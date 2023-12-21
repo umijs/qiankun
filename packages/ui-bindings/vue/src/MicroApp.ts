@@ -98,9 +98,9 @@ export const MicroApp = defineComponent({
             microAppRef.value = undefined;
           }
 
-          mountMicroApp({
-            props: originProps,
-            container: containerRef.value!,
+          void mountMicroApp({
+            componentProps: originProps,
+            container: containerRef.value! as HTMLDivElement,
             setMicroApp: (app?: MicroAppType) => {
               microAppRef.value = app;
             },
@@ -121,11 +121,10 @@ export const MicroApp = defineComponent({
         reactivePropsFromParams,
         () => {
           updateMicroApp({
-            getMicroApp: () => microAppRef.value,
+            microApp: microAppRef.value,
             setLoading: (l) => {
               loading.value = l;
             },
-            key: 'vue',
           });
         },
         {

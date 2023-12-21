@@ -1,21 +1,49 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
+import React, { useEffect, useState } from 'react';
+import ReactDOM from 'react-dom/client';
+import { MicroApp } from '../../../packages/ui-bindings/react/dist/esm/';
+import '../index.less';
 
-/**
- * 渲染子应用
- */
-function Render(props) {
-  const { loading } = props;
+const root = ReactDOM.createRoot(
+  document.getElementById('subapp-container'),
+);
+const sidemenu = document.querySelector('.mainapp-sidemenu');
 
-  return (
-    <>
-      {loading && <h4 className="subapp-loading">Loading...</h4>}
-      <div id="subapp-viewport" />
-    </>
-  );
+const microApps = [
+  { name: 'react15', entry: '//localhost:7102' },
+  { name: 'react16', entry: '//localhost:7100' },
+];
+
+function App() {
+  const [appName, setAppName] = useState('');
+
+  const handleMenuClick = (e) => {
+    const app = microApps.find((app) => app.name === e.target.dataset.value);
+    if (app && app.name !== appName) {
+      setAppName(app.name);
+    } else {
+      console.log('not found any app');
+    }
+  }
+
+  useEffect(() => {
+    sidemenu.addEventListener('click', handleMenuClick);
+
+    return () => {
+      sidemenu.removeEventListener('click', handleMenuClick);
+    }
+  }, []);
+
+  if (appName) {
+    const appEntry = microApps.find((app) => app.name === appName)?.entry;
+    return <MicroApp name={appName} entry={appEntry} autoCaptureError />;
+  }
+
+  return null;
 }
 
-export default function render({ loading }) {
-  const container = document.getElementById('subapp-container');
-  ReactDOM.render(<Render loading={loading} />, container);
+function reactRender() {
+  // 将组件挂载到指定的节点上
+  root.render(<App />);
 }
+
+reactRender();

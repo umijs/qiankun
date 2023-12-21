@@ -4,6 +4,7 @@ const path = require('path');
 
 const modeEntryMap = {
   multiple: './multiple.js',
+  react: './render/ReactRender.jsx',
   vue: './render/VueRender.js',
   vue3: './render/Vue3Render.js',
   undefined: './render/VanillaRender.js',
@@ -11,6 +12,7 @@ const modeEntryMap = {
 
 const modeHTMLMap = {
   multiple: './multiple.html',
+  react: './index.html',
   vue: './index.html',
   vue3: './index.html',
   undefined: './index.html',
