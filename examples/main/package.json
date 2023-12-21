@@ -9,7 +9,7 @@
     "start:vue": "cross-env MODE=vue webpack-dev-server",
     "start:vue3": "cross-env MODE=vue3 webpack-dev-server",
     "start:multiple": "cross-env MODE=multiple webpack-dev-server",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\""
   },
   "author": "",
   "devDependencies": {

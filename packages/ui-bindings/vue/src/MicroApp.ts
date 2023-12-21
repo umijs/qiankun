@@ -51,7 +51,7 @@ export const MicroApp = defineComponent({
     const loading = ref(false);
     const error = ref<Error>();
 
-    const containerRef = ref<HTMLDivElement | null>(null);
+    const containerRef = ref(null);
     const microAppRef = ref<MicroAppType>();
 
     const reactivePropsFromParams = computed(() => {
@@ -75,7 +75,7 @@ export const MicroApp = defineComponent({
       }
     };
 
-    const rootRef = ref<HTMLDivElement | null>(null);
+    const rootRef = ref(null);
 
     onMounted(() => {
       console.log(rootRef.value);
@@ -100,7 +100,7 @@ export const MicroApp = defineComponent({
 
           void mountMicroApp({
             componentProps: originProps,
-            container: containerRef.value! as HTMLDivElement,
+            container: containerRef.value!,
             setMicroApp: (app?: MicroAppType) => {
               microAppRef.value = app;
             },
