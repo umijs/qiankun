@@ -161,7 +161,7 @@ export default function transpileScript(
         const scriptNode = script.textContent ? script : rawNode.childNodes[0];
         const { code } = result;
 
-        scriptNode.textContent = sandbox!.makeEvaluateFactory(code, baseURI);
+        scriptNode.textContent = sandbox!.makeEvaluateFactory(code);
         // mark the script have consumed
         script.dataset.consumed = 'true';
 
