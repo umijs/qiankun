@@ -1,9 +1,7 @@
-const packageName = require('./package.json').name;
-const {QiankunPlugin} = require('@qiankunjs/webpack-plugin');
+const { QiankunPlugin } = require('@qiankunjs/webpack-plugin');
 module.exports = {
-  webpack: function (config, env) {
+  webpack: function (config) {
     config.plugins.push(new QiankunPlugin());
-
     return config;
   },
 };
