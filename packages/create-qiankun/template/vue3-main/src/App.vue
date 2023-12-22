@@ -13,41 +13,41 @@
           </li>
         </ul>
         <!-- 子应用  -->
-        <main id="subapp-container"></main>
+        <main id="subapp-container">
+          <MicroApp
+            v-if="curRenderMicroApp.name"
+            :name="curRenderMicroApp.name"
+            :entry="curRenderMicroApp.entry"
+            auto-capture-error
+            auto-set-loading
+          ></MicroApp>
+        </main>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { loadMicroApp } from 'qiankun';
 import { shallowRef } from 'vue';
 import { useRouter } from 'vue-router';
 import subApplication from './microApp/subs.json';
+import { MicroApp } from "@qiankunjs/vue";
 const router = useRouter();
 
 const childApps = shallowRef(subApplication);
 
-let preLoad = null;
-let preLoadAppName = null;
+const curRenderMicroApp = reactive({
+  name: "",
+  entry: "",
+});
+
 async function changeRouterAndLoadApp(app) {
   // 切换路由
   router.push(app.activeRule);
+  if (curRenderMicroApp.name === app.name) return;
 
-  if (preLoadAppName === app.name) return;
-
-  if (preLoad) {
-    await preLoad.unmount();
-  }
-
-  // 加载子应用
-  preLoad = loadMicroApp({
-    name: app.name,
-    entry: app.entry,
-    container: document.querySelector('#subapp-container'),
-  });
-
-  preLoadAppName = app.name;
+  curRenderMicroApp.name = app.name;
+  curRenderMicroApp.entry = app.entry;
 }
 </script>
 

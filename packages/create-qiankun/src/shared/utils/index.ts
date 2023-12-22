@@ -57,8 +57,8 @@ export async function initGit(projectRoot: string) {
 }
 
 export const isWindows = os.platform() === 'win32';
-export function normalizePath(path: string) {
-  return posix.normalize(isWindows ? path.replace(/\\/g, '/') : path);
+export function normalizePath(p: string) {
+  return posix.normalize(isWindows ? p.replace(/\\/g, '/') : p);
 }
 
 export function directoryTraverse(
