@@ -177,11 +177,12 @@ async function renderTemplate(opts: RenderOptions) {
     monorepoRootPath: string | undefined;
   const mainAppPort = generatePort();
 
+  const _packageManager = packageManager?.includes('pnpm') ? 'pnpm' : packageManager;
   // create main application
   if ([CreateKind.CreateMainApp, CreateKind.CreateMainAndSubApp].includes(createKind)) {
     const mainAppInfo = await createApplication(
       mainAppName!,
-      { port: mainAppPort, mainRoute, ...installQiankunPkgs },
+      { port: mainAppPort, mainRoute, ...installQiankunPkgs, packageManager: _packageManager },
       {
         ...opts,
         gitInit: true,
@@ -210,7 +211,7 @@ async function renderTemplate(opts: RenderOptions) {
       subAppNameList!.map((sub, i) =>
         createApplication(
           sub,
-          { port: subsPorts[i], appName: sub, ...installQiankunPkgs },
+          { port: subsPorts[i], appName: sub, ...installQiankunPkgs, packageManager: _packageManager },
           {
             ...opts,
             gitInit: createKind === CreateKind.CreateSubApp || packageManager !== PackageManager.pnpmWorkspace,

@@ -1,7 +1,7 @@
 examples
 dist
 writable-dom
-packages/create-qiankun/template
+template
 
 # TODO not linting test files temporary
 __tests__/

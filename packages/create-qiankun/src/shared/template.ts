@@ -1,13 +1,14 @@
 // todo
 export enum MainFrameworkTemplate {
   'React18+Webpack' = 'react18-main',
-  'React18+umi(待开发勿选)' = '2',
+  'React18+umi4' = 'umi-main',
   'Vue3+Webpack' = 'vue3-main',
 }
 
 export enum SubFrameworkTemplate {
   'React18+Webpack' = 'react18-webpack-sub',
   'React16+Webpack' = 'react16-webpack-sub',
+  'React18+umi4' = 'umi-sub',
   'Vue3+Webpack' = 'vue3-webpack-sub',
   'Vue2+Webpack' = 'vue2-webpack-sub',
 }
