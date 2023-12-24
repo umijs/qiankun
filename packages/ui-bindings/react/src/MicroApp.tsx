@@ -47,17 +47,27 @@ export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<Mic
     }
   };
 
+  const onError = (e: Error) => {
+    setComponentError(e);
+    setLoading(false);
+  };
+
   useImperativeHandle(componentRef, () => microAppRef.current);
 
   useEffect(() => {
-    void mountMicroApp({
+    mountMicroApp({
+      prevMicroApp: microAppRef.current,
       container: containerRef.current!,
-      microApp: microAppRef.current,
       componentProps,
-      setMicroApp: (app) => (microAppRef.current = app),
       setLoading,
       setError: setComponentError,
-    });
+    })
+      .then((app) => {
+        microAppRef.current = app;
+      })
+      .catch((e: Error) => {
+        onError(e);
+      });
 
     return () => {
       const microApp = microAppRef.current;
@@ -65,8 +75,7 @@ export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<Mic
         // 微应用 unmount 是异步的，中间的流转状态不能确定，所有需要一个标志位来确保 unmount 开始之后不会再触发 update
         microApp._unmounting = true;
         unmountMicroApp(microApp).catch((e: Error) => {
-          setComponentError(e);
-          setLoading(false);
+          onError(e);
         });
       }
     };

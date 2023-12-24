@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import { MicroApp } from '../../../packages/ui-bindings/react/dist/esm/';
+import { MicroApp } from '@qiankunjs/react';
+// 调试使用，注意 React 多实例问题
+// import { MicroApp } from '../../../packages/ui-bindings/react/dist/esm/';
 import '../index.less';
 
 const root = ReactDOM.createRoot(

@@ -99,17 +99,17 @@ export const MicroApp = defineComponent({
           }
 
           void mountMicroApp({
-            componentProps: originProps,
+            prevMicroApp: microAppRef.value,
             container: containerRef.value!,
-            setMicroApp: (app?: MicroAppType) => {
-              microAppRef.value = app;
-            },
+            componentProps: originProps,
             setLoading: (l) => {
               loading.value = l;
             },
             setError: (err?: Error) => {
               setComponentError(err);
             },
+          }).then((app) => {
+            microAppRef.value = app;
           });
         },
         {

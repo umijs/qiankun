@@ -31,22 +31,16 @@ export const omitSharedProps = (props: Partial<SharedProps>) => {
   return omit(props, ['wrapperClassName', 'className', 'lifeCycles', 'settings', 'entry', 'name']);
 };
 
-export async function unmountMicroApp(microApp: MicroAppType) {
-  await microApp.mountPromise.then(() => microApp.unmount());
-}
-
 export async function mountMicroApp({
+  prevMicroApp,
   container,
   componentProps,
-  microApp: prevMicroApp,
-  setMicroApp,
   setLoading,
   setError,
 }: {
+  prevMicroApp?: MicroAppType;
   container: HTMLDivElement;
-  microApp?: MicroAppType;
   componentProps: SharedProps;
-  setMicroApp?: (app: MicroAppType) => void;
   setLoading?: (loading: boolean) => void;
   setError?: (error?: Error) => void;
 }) {
@@ -84,8 +78,6 @@ export async function mountMicroApp({
     ),
   );
 
-  setMicroApp?.(microApp);
-
   microApp.mountPromise
     .then(() => {
       if (componentProps.autoSetLoading) {
@@ -105,6 +97,8 @@ export async function mountMicroApp({
       setLoading?.(false);
     });
   });
+
+  return microApp;
 }
 
 export function updateMicroApp({
@@ -155,4 +149,8 @@ export function updateMicroApp({
       });
     }
   }
+}
+
+export async function unmountMicroApp(microApp: MicroAppType) {
+  await microApp.mountPromise.then(() => microApp.unmount());
 }
