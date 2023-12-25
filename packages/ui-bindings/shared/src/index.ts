@@ -27,57 +27,60 @@ export type SharedSlots<T> = {
   errorBoundary?: (error: Error) => T;
 };
 
-export async function unmountMicroApp(microApp: MicroAppType) {
-  await microApp.mountPromise.then(() => microApp.unmount());
-}
-
 export const omitSharedProps = (props: Partial<SharedProps>) => {
   return omit(props, ['wrapperClassName', 'className', 'lifeCycles', 'settings', 'entry', 'name']);
 };
 
-export function mountMicroApp({
+export async function mountMicroApp({
+  prevMicroApp,
+  container,
+  componentProps,
   setLoading,
   setError,
-  setMicroApp,
-  container,
-  props,
 }: {
+  prevMicroApp?: MicroAppType;
+  container: HTMLDivElement;
+  componentProps: SharedProps;
   setLoading?: (loading: boolean) => void;
   setError?: (error?: Error) => void;
-  setMicroApp?: (app?: MicroAppType) => void;
-  props: SharedProps;
-  container: HTMLDivElement;
 }) {
-  const propsFromParams = omitSharedProps(props);
+  if (!componentProps.name || !componentProps.entry) {
+    console.error('the name and entry of MicroApp is needed');
+    return;
+  }
+
+  // 等待 prevMicroApp 卸载完成
+  if (prevMicroApp?._unmounting) {
+    await prevMicroApp.unmountPromise;
+  }
 
   setError?.(undefined);
   setLoading?.(true);
 
+  const microAppProps = omitSharedProps(componentProps);
   const configuration = {
     globalContext: window,
-    ...(props.settings || {}),
+    ...(componentProps.settings || {}),
   };
 
   const microApp = loadMicroApp(
     {
-      name: props.name,
-      entry: props.entry,
+      name: componentProps.name,
+      entry: componentProps.entry,
       container,
-      props: propsFromParams,
+      props: microAppProps,
     },
     configuration,
     mergeWith(
       {},
-      props.lifeCycles,
+      componentProps.lifeCycles,
       (v1: LifeCycleFn<Record<string, unknown>>, v2: LifeCycleFn<Record<string, unknown>>) => concat(v1, v2),
     ),
   );
 
-  setMicroApp?.(microApp);
-
   microApp.mountPromise
     .then(() => {
-      if (props.autoSetLoading) {
+      if (componentProps.autoSetLoading) {
         setLoading?.(false);
       }
     })
@@ -94,23 +97,21 @@ export function mountMicroApp({
       setLoading?.(false);
     });
   });
+
+  return microApp;
 }
 
 export function updateMicroApp({
   name,
-  getMicroApp,
+  microApp,
+  microAppProps,
   setLoading,
-  propsFromParams,
-  key,
 }: {
   name?: string;
-  getMicroApp?: () => MicroAppType | undefined;
+  microApp?: MicroAppType;
+  microAppProps?: Record<string, unknown>;
   setLoading?: (loading: boolean) => void;
-  propsFromParams?: Record<string, unknown>;
-  key?: string;
 }) {
-  const microApp = getMicroApp?.();
-
   if (microApp) {
     if (!microApp._updatingPromise) {
       // 初始化 updatingPromise 为 microApp.mountPromise，从而确保后续更新是在应用 mount 完成之后
@@ -122,7 +123,7 @@ export function updateMicroApp({
         const canUpdate = (app: MicroAppType) => app.update && app.getStatus() === 'MOUNTED' && !app._unmounting;
         if (canUpdate(microApp)) {
           const props = {
-            ...propsFromParams,
+            ...microAppProps,
             setLoading(l: boolean) {
               setLoading?.(l);
             },
@@ -132,11 +133,11 @@ export function updateMicroApp({
             const updatingTimestamp = microApp._updatingTimestamp!;
             if (Date.now() - updatingTimestamp < 200) {
               console.warn(
-                `[@qiankunjs/${key}] It seems like microApp ${name} is updating too many times in a short time(200ms), you may need to do some optimization to avoid the unnecessary re-rendering.`,
+                `[@qiankunjs/ui-shared] It seems like microApp ${name} is updating too many times in a short time(200ms), you may need to do some optimization to avoid the unnecessary re-rendering.`,
               );
             }
 
-            console.info(`[@qiankunjs/${key}] MicroApp ${name} is updating with props: `, props);
+            console.info(`[@qiankunjs/ui-shared}] MicroApp ${name} is updating with props: `, props);
             microApp._updatingTimestamp = Date.now();
           }
 
@@ -148,4 +149,8 @@ export function updateMicroApp({
       });
     }
   }
+}
+
+export async function unmountMicroApp(microApp: MicroAppType) {
+  await microApp.mountPromise.then(() => microApp.unmount());
 }

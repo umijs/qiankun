@@ -51,7 +51,7 @@ export const MicroApp = defineComponent({
     const loading = ref(false);
     const error = ref<Error>();
 
-    const containerRef = ref<HTMLDivElement | null>(null);
+    const containerRef = ref(null);
     const microAppRef = ref<MicroAppType>();
 
     const reactivePropsFromParams = computed(() => {
@@ -75,7 +75,7 @@ export const MicroApp = defineComponent({
       }
     };
 
-    const rootRef = ref<HTMLDivElement | null>(null);
+    const rootRef = ref(null);
 
     onMounted(() => {
       console.log(rootRef.value);
@@ -98,18 +98,18 @@ export const MicroApp = defineComponent({
             microAppRef.value = undefined;
           }
 
-          mountMicroApp({
-            props: originProps,
+          void mountMicroApp({
+            prevMicroApp: microAppRef.value,
             container: containerRef.value!,
-            setMicroApp: (app?: MicroAppType) => {
-              microAppRef.value = app;
-            },
+            componentProps: originProps,
             setLoading: (l) => {
               loading.value = l;
             },
             setError: (err?: Error) => {
               setComponentError(err);
             },
+          }).then((app) => {
+            microAppRef.value = app;
           });
         },
         {
@@ -121,11 +121,10 @@ export const MicroApp = defineComponent({
         reactivePropsFromParams,
         () => {
           updateMicroApp({
-            getMicroApp: () => microAppRef.value,
+            microApp: microAppRef.value,
             setLoading: (l) => {
               loading.value = l;
             },
-            key: 'vue',
           });
         },
         {
