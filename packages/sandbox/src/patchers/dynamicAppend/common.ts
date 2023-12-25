@@ -203,7 +203,7 @@ export function getOverwrittenAppendChildOrInsertBefore(
 
           /*
             The target container of script element might be removed from current document.
-            For example, the main application clears the DOM first in the route switching, and then trigger unmount,
+            For example, the main application clears the DOM first during route switching, and then trigger unmount,
             at this time, the micro app may still be processing the logic of the route switching, and try to add nodes to the detached container,
             in this scenario, we have to append the script to global document head to trigger script evaluation
            */
