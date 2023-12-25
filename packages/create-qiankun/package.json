@@ -1,5 +1,5 @@
 {
-  "name": "@qiankunjs/create-qiankun",
+  "name": "create-qiankun",
   "version": "1.0.0",
   "description": "An easy way to start a qiankun project",
   "bin": {
