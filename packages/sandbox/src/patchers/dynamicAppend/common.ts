@@ -204,7 +204,7 @@ export function getOverwrittenAppendChildOrInsertBefore(
           const result = appendChild.call(this, transpiledScriptElement, refChild) as T;
 
           // the script have no src attribute after transpile, indicating that the script needs to wait for the src to be filled
-          if (externalSyncMode && !transpiledScriptElement.hasAttribute('scr')) {
+          if (externalSyncMode && !transpiledScriptElement.hasAttribute('src')) {
             queueSyncScript!();
           }
 
