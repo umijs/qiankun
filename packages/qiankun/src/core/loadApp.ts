@@ -6,7 +6,7 @@ import type { LoaderOpts } from '@qiankunjs/loader';
 import { loadEntry } from '@qiankunjs/loader';
 import type { Sandbox } from '@qiankunjs/sandbox';
 import { createSandboxContainer } from '@qiankunjs/sandbox';
-import { moduleResolver as defaultModuleResolver, transpileAssets, wrapFetchWithCache } from '@qiankunjs/shared';
+import { moduleResolver as defaultModuleResolver, transpileAssets, warn, wrapFetchWithCache } from '@qiankunjs/shared';
 import { concat, isFunction, mergeWith } from 'lodash';
 import type { ParcelConfigObject } from 'single-spa';
 import getAddOns from '../addons';
@@ -225,9 +225,7 @@ function getLifecyclesFromExports(
   }
 
   if (process.env.NODE_ENV === 'development') {
-    console.warn(
-      `[qiankun] lifecycle not found from ${appName} entry exports, fallback to get from window['${appName}']`,
-    );
+    warn(`lifecycle not found from ${appName} entry exports, fallback to get from window['${appName}']`);
   }
 
   // fallback to globalContext variable who named with ${appName} while module exports not found
@@ -237,7 +235,11 @@ function getLifecyclesFromExports(
     return globalVariableExports;
   }
 
-  throw new QiankunError(`You need to export lifecycle functions in ${appName} entry`);
+  throw new QiankunError(
+    `You need to export lifecycle functions in ${appName} entry as neither globalLatestSetProp ${String(
+      globalLatestSetProp,
+    )} nor window['${appName}'] export correctly`,
+  );
 }
 
 function calcPublicPath(entry: string): string {
