@@ -27,5 +27,6 @@
   },
   "browserslist": [
     "last 2 Chrome versions"
-  ]
+  ],
+  "repository": "git@github.com:umijs/qiankun.git"
 }

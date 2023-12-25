@@ -5,10 +5,11 @@
   "main": "index.js",
   "scripts": {
     "start": "webpack-dev-server",
+    "start:react": "cross-env MODE=react webpack-dev-server",
     "start:vue": "cross-env MODE=vue webpack-dev-server",
     "start:vue3": "cross-env MODE=vue3 webpack-dev-server",
     "start:multiple": "cross-env MODE=multiple webpack-dev-server",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\""
   },
   "author": "",
   "devDependencies": {
@@ -26,9 +27,10 @@
     "webpack-dev-server": "^3.9.0"
   },
   "dependencies": {
-    "qiankun": "^2.10.10",
-    "react": "^16.13.1",
-    "react-dom": "^16.13.1",
+    "@qiankunjs/react": "^0.0.1-rc.12",
+    "qiankun": "^3.0.0-rc.15",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "vue": "^3.3.9",
     "zone.js": "^0.10.2",
     "@vue/composition-api": "1.7.2"
