@@ -4,7 +4,7 @@ import type { AssetsTranspilerOpts, ScriptTranspilerOpts } from '@qiankunjs/shar
  * @author Kuitos
  * @since 2019-10-21
  */
-import { prepareDeferredQueue } from '@qiankunjs/shared';
+import { prepareDeferredQueue, warn } from '@qiankunjs/shared';
 import { qiankunHeadTagName } from '../../consts';
 import type { SandboxConfig } from './types';
 
@@ -163,7 +163,18 @@ export function getOverwrittenAppendChildOrInsertBefore(
             rawNode: stylesheetElement,
           });
 
-          const result = appendChild.call(this, transpiledStyleSheetElement, referenceNode);
+          const stylesheetTargetDetached = !document.contains(this);
+          if (stylesheetTargetDetached) {
+            warn(
+              `Trying to append stylesheet element ${
+                ('href' in transpiledStyleSheetElement && transpiledStyleSheetElement.href) ||
+                transpiledStyleSheetElement.dataset.href
+              } to a detached container which may cause unexpected behaviors!`,
+            );
+          }
+          // FIXME we have to set the target container to global document to trigger style rendering while the real container was detached
+          const targetContainerDOM = stylesheetTargetDetached ? document[target] : this;
+          const result = appendChild.call(targetContainerDOM, transpiledStyleSheetElement, referenceNode);
 
           // record refNo thus we can keep order while remounting
           if (typeof refNo === 'number' && refNo !== -1) {
@@ -201,7 +212,26 @@ export function getOverwrittenAppendChildOrInsertBefore(
 
           const transpiledScriptElement = nodeTransformer(scriptElement, transformerOpts);
 
-          const result = appendChild.call(this, transpiledScriptElement, refChild) as T;
+          /*
+            The target container of script element might be removed from current document.
+            For example, the main application clears the DOM first during route switching, and then trigger unmount,
+            at this time, the micro app may still be processing the logic of the route switching, and try to add nodes to the detached container,
+            in this scenario, we have to append the script to global document head to trigger script evaluation
+           */
+          const scriptTargetDetached = !document.contains(this);
+          if (scriptTargetDetached) {
+            warn(
+              `Trying to append script element ${
+                transpiledScriptElement.src || transpiledScriptElement.dataset.src
+              } to a detached container which may cause unexpected behaviors!`,
+            );
+          }
+          /*
+           FIXME we have to set the target container to global document to trigger script evaluation while the real container was detached,
+           as dynamic append script element to detached element will not trigger script evaluation automatically
+           */
+          const targetContainerDOM = scriptTargetDetached ? document[target] : this;
+          const result = appendChild.call(targetContainerDOM, transpiledScriptElement, refChild) as T;
 
           // the script have no src attribute after transpile, indicating that the script needs to wait for the src to be filled
           if (externalSyncMode && !transpiledScriptElement.hasAttribute('src')) {
