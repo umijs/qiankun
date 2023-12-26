@@ -13,6 +13,7 @@
   },
   "changesets": [
     "big-cougars-draw",
+    "clever-carpets-vanish",
     "clever-dragons-ring",
     "empty-lions-rescue",
     "five-papayas-buy",
@@ -58,7 +59,6 @@
     "twelve-donkeys-help",
     "warm-chefs-chew",
     "wicked-icons-type",
-    "wise-eagles-tease",
-    "yellow-frogs-marry"
+    "wise-eagles-tease"
   ]
 }

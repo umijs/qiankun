@@ -1,5 +1,11 @@
 # @qiankunjs/sandbox
 
+## 0.0.1-rc.14
+
+### Patch Changes
+
+- 8c526255: Revert "fix(sandbox): non-hijacking elements should be appended to global document (#2861)"
+
 ## 0.0.1-rc.13
 
 ### Patch Changes
