@@ -94,9 +94,9 @@ $ cd qiankun
 Now install and run the example:
 
 ```shell
-$ yarn install
-$ yarn examples:install
-$ yarn examples:start
+$ pnpm install
+$ pnpm run examples:install
+$ pnpm run examples:start
 ```
 
 Visit `http://localhost:7099`.
