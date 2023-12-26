@@ -134,11 +134,9 @@ export function getOverwrittenAppendChildOrInsertBefore(
     const element = newChild as unknown as HTMLElement;
     const sandboxConfig = getSandboxConfig(element);
 
-    // without attached sandbox config means the element is not created from the sandbox environment
-    // these elements and non-hijacking elements should be appended to global document rather than micro app container
-    // TODO We can provide a configuration for situations where you expect all of the dom to be inserted into a micro aoo container, especially if the component library does not have the ability to set a popup container
+    // no attached sandbox config means the element is not created from the sandbox environment
     if (!isHijackingTag(element.tagName) || !sandboxConfig) {
-      return appendChild.call(document[target], element, refChild) as T;
+      return appendChild.call(this, element, refChild) as T;
     }
 
     if (element.tagName) {
@@ -259,7 +257,6 @@ export function getOverwrittenAppendChildOrInsertBefore(
 export function getNewRemoveChild(
   nativeFn: typeof HTMLElement.prototype.removeChild,
   containerConfigGetter: (element: HTMLElement) => SandboxConfig | undefined,
-  target: DynamicDomMutationTarget = 'body',
 ) {
   function removeChildInSandbox<T extends Node>(this: HTMLHeadElement | HTMLBodyElement, child: T): T {
     const removeChild = nativeFn;
@@ -269,7 +266,7 @@ export function getNewRemoveChild(
     const containerConfig = containerConfigGetter(childElement);
 
     if (!isHijackingTag(tagName) || !containerConfig) {
-      return removeChild.call(document[target], childElement) as T;
+      return removeChild.call(this, childElement) as T;
     }
 
     try {
