@@ -1,5 +1,12 @@
 # @qiankunjs/loader
 
+## 0.0.1-rc.18
+
+### Patch Changes
+
+- Updated dependencies [c3416647]
+  - @qiankunjs/sandbox@0.0.1-rc.15
+
 ## 0.0.1-rc.17
 
 ### Patch Changes
