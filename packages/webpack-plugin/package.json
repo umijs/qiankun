@@ -1,6 +1,6 @@
 {
   "name": "@qiankunjs/webpack-plugin",
-  "version": "0.0.1-rc.2",
+  "version": "0.0.1-rc.3",
   "description": "",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
