@@ -189,7 +189,7 @@ function patchDocumentHeadAndBodyMethods(container: HTMLElement): typeof noop {
       getSandboxConfig,
       'head',
     );
-    headElement.removeChild = getNewRemoveChild(document.head.removeChild, getSandboxConfig);
+    headElement.removeChild = getNewRemoveChild(document.head.removeChild, getSandboxConfig, 'head');
   };
   let containerHeadElement = getContainerHeadElement(container);
   if (!containerHeadElement) {
@@ -217,7 +217,7 @@ function patchDocumentHeadAndBodyMethods(container: HTMLElement): typeof noop {
     getSandboxConfig,
     'body',
   );
-  containerBodyElement.removeChild = getNewRemoveChild(document.body.removeChild, getSandboxConfig);
+  containerBodyElement.removeChild = getNewRemoveChild(document.body.removeChild, getSandboxConfig, 'body');
 
   return () => {
     if (containerHeadElement) {
