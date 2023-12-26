@@ -1,6 +1,6 @@
 {
   "name": "@qiankunjs/loader",
-  "version": "0.0.1-rc.15",
+  "version": "0.0.1-rc.16",
   "description": "",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
