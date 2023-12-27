@@ -5,7 +5,7 @@
 import type { SandBox } from '../interfaces';
 import { SandBoxType } from '../interfaces';
 
-function iter(obj: typeof window, callbackFn: (prop: any) => void) {
+function iter(obj: typeof window | Record<any, any>, callbackFn: (prop: any) => void) {
   // eslint-disable-next-line guard-for-in, no-restricted-syntax
   for (const prop in obj) {
     // patch for clearInterval for compatible reason, see #1490
@@ -31,6 +31,8 @@ export default class SnapshotSandbox implements SandBox {
 
   private modifyPropsMap: Record<any, any> = {};
 
+  private deletePropsSet: Set<string> = new Set();
+
   constructor(name: string) {
     this.name = name;
     this.proxy = window;
@@ -49,11 +51,18 @@ export default class SnapshotSandbox implements SandBox {
       window[p] = this.modifyPropsMap[p];
     });
 
+    // 删除之前删除的属性
+    this.deletePropsSet.forEach((p: string) => {
+      delete window[p];
+    });
+
     this.sandboxRunning = true;
   }
 
   inactive() {
     this.modifyPropsMap = {};
+
+    this.deletePropsSet.clear();
 
     iter(window, (prop) => {
       if (window[prop] !== this.windowSnapshot[prop]) {
@@ -63,8 +72,20 @@ export default class SnapshotSandbox implements SandBox {
       }
     });
 
+    iter(this.windowSnapshot, (prop) => {
+      if (!window.hasOwnProperty(prop)) {
+        // 记录被删除的属性，恢复环境
+        this.deletePropsSet.add(prop);
+        window[prop] = this.windowSnapshot[prop];
+      }
+    });
+
     if (process.env.NODE_ENV === 'development') {
-      console.info(`[qiankun:sandbox] ${this.name} origin window restore...`, Object.keys(this.modifyPropsMap));
+      console.info(
+        `[qiankun:sandbox] ${this.name} origin window restore...`,
+        Object.keys(this.modifyPropsMap),
+        this.deletePropsSet.keys(),
+      );
     }
 
     this.sandboxRunning = false;
