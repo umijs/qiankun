@@ -31,7 +31,7 @@ export default class SnapshotSandbox implements SandBox {
 
   private modifyPropsMap: Record<any, any> = {};
 
-  private deletePropsSet: Set<string> = new Set();
+  private deletePropsSet: Set<any> = new Set();
 
   constructor(name: string) {
     this.name = name;
@@ -52,7 +52,7 @@ export default class SnapshotSandbox implements SandBox {
     });
 
     // 删除之前删除的属性
-    this.deletePropsSet.forEach((p: string) => {
+    this.deletePropsSet.forEach((p: any) => {
       delete window[p];
     });
 
