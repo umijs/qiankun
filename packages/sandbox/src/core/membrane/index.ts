@@ -148,8 +148,8 @@ export class Membrane {
         const actualTarget = propertiesWithGetter.has(p)
           ? incubatorContext
           : p in membraneTarget
-          ? membraneTarget
-          : incubatorContext;
+            ? membraneTarget
+            : incubatorContext;
         const value = actualTarget[p as never];
 
         // frozen value should return directly, see https://github.com/umijs/qiankun/issues/2015
