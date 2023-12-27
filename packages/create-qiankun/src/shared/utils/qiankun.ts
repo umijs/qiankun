@@ -6,10 +6,10 @@ export interface ISubConfig {
 }
 
 export const installQiankunPkgs = {
-  qiankun: '^3.0.0-rc.11',
-  webpackPlugin: '^0.0.1-rc.2',
-  reactComponent: '^0.0.0',
-  vueComponent: '^0.0.0',
+  qiankun: '^3.0.0-rc.18',
+  webpackPlugin: '^0.0.1-rc.3',
+  reactComponent: '^0.0.1-rc.13',
+  vueComponent: '^0.0.1-rc.0',
 };
 
 export async function injectSubsConfigToMainApp(mainAppPath: string, subsConfig: ISubConfig[] | ISubConfig) {
