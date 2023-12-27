@@ -1,5 +1,11 @@
 # @qiankunjs/webpack-plugin
 
+## 0.0.1-rc.4
+
+### Patch Changes
+
+- 35f7863: fix: move cheerio to dependencies
+
 ## 0.0.1-rc.3
 
 ### Patch Changes

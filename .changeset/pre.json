@@ -13,6 +13,7 @@
   },
   "changesets": [
     "big-cougars-draw",
+    "clean-walls-hang",
     "clever-carpets-vanish",
     "clever-dragons-ring",
     "empty-lions-rescue",
