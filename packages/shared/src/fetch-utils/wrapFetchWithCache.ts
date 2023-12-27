@@ -23,7 +23,7 @@ export const wrapFetchWithCache: (fetch: Fetch) => Fetch = (fetch) => {
   const lruCache = getGlobalCache();
 
   const cachedFetch: Fetch = (input, init) => {
-    const fetchInput = input as Parameters<Fetch>[0];
+    const fetchInput = input ;
     const cacheKey = getCacheKey(fetchInput);
     const wrapFetchPromise = async (promise: Promise<Response>): Promise<Response> => {
       try {
