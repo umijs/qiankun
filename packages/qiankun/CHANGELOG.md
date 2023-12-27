@@ -1,5 +1,42 @@
 # qiankun
 
+## 3.0.0-rc.18
+
+### Patch Changes
+
+- Updated dependencies [c3416647]
+  - @qiankunjs/sandbox@0.0.1-rc.15
+  - @qiankunjs/loader@0.0.1-rc.18
+
+## 3.0.0-rc.17
+
+### Patch Changes
+
+- Updated dependencies [8c526255]
+  - @qiankunjs/sandbox@0.0.1-rc.14
+  - @qiankunjs/loader@0.0.1-rc.17
+
+## 3.0.0-rc.16
+
+### Patch Changes
+
+- 3e43a111: fix: optimize types and add a warning for preload
+- f09c1538: feat: pass container with parameters rather than getter function
+- b2d2c11a: feat: optimize lifecycle validate log
+- feb544f0: fix: dynamic append element should support for the same container between micro apps
+- Updated dependencies [a826cf5e]
+- Updated dependencies [3e43a111]
+- Updated dependencies [f09c1538]
+- Updated dependencies [d904f5d8]
+- Updated dependencies [b2d2c11a]
+- Updated dependencies [feb544f0]
+- Updated dependencies [2e528c9d]
+- Updated dependencies [9082546e]
+- Updated dependencies [62048537]
+  - @qiankunjs/shared@0.0.1-rc.10
+  - @qiankunjs/sandbox@0.0.1-rc.13
+  - @qiankunjs/loader@0.0.1-rc.16
+
 ## 3.0.0-rc.15
 
 ### Patch Changes

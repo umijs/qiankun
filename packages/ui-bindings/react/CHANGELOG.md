@@ -1,5 +1,13 @@
 # @qiankunjs/react
 
+## 0.0.1-rc.13
+
+### Patch Changes
+
+- 9ec15954: feat: refactor the code of microapp
+- Updated dependencies [9ec15954]
+  - @qiankunjs/ui-shared@0.0.1-rc.0
+
 ## 0.0.1-rc.12
 
 ### Patch Changes

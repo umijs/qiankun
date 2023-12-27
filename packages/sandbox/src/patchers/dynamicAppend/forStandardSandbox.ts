@@ -357,7 +357,7 @@ export function patchStandardSandbox(
       const isElementExisted = (element: HTMLStyleElement | HTMLLinkElement) => {
         if (container.contains(element)) return true;
         if ('rel' in element && element.rel === 'stylesheet' && element.href)
-          return !!container.querySelector(`link[rel=stylesheet][href=${element.href}]`);
+          return !!container.querySelector(`link[rel=stylesheet][href="${element.href}"]`);
         return false;
       };
 

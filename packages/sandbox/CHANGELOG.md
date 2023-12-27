@@ -1,5 +1,32 @@
 # @qiankunjs/sandbox
 
+## 0.0.1-rc.15
+
+### Patch Changes
+
+- c3416647: fix: double quote link element href as selector
+
+## 0.0.1-rc.14
+
+### Patch Changes
+
+- 8c526255: Revert "fix(sandbox): non-hijacking elements should be appended to global document (#2861)"
+
+## 0.0.1-rc.13
+
+### Patch Changes
+
+- f09c1538: feat: pass container with parameters rather than getter function
+- d904f5d8: fix(sandbox): compatible with dynamically appending stylesheets to detached containers
+- b2d2c11a: feat: optimize lifecycle validate log
+- feb544f0: fix: dynamic append element should support for the same container between micro apps
+- 9082546e: fix(sandbox): compatible with dynamically appending scripts to detached containers
+- 62048537: fix(sandbox): non-hijacking elements should be appended to global document
+- Updated dependencies [a826cf5e]
+- Updated dependencies [3e43a111]
+- Updated dependencies [feb544f0]
+  - @qiankunjs/shared@0.0.1-rc.10
+
 ## 0.0.1-rc.12
 
 ### Patch Changes
