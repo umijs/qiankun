@@ -1,6 +1,6 @@
 {
   "name": "@qiankunjs/webpack-plugin",
-  "version": "0.0.1-rc.3",
+  "version": "0.0.1-rc.4",
   "description": "",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -20,11 +20,11 @@
   "author": "Hermanna",
   "license": "MIT",
   "dependencies": {
-    "webpack-sources": "^3.2.3"
+    "webpack-sources": "^3.2.3",
+    "cheerio": "1.0.0-rc.12"
   },
   "devDependencies": {
     "@types/webpack-sources": "^3.2.1",
-    "cheerio": "1.0.0-rc.12",
     "webpack": "^4.0.0 || ^5.0.0"
   }
 }
