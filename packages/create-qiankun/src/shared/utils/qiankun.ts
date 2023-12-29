@@ -7,7 +7,7 @@ export interface ISubConfig {
 
 export const installQiankunPkgs = {
   qiankun: '^3.0.0-rc.18',
-  webpackPlugin: '^0.0.1-rc.3',
+  webpackPlugin: '^0.0.1-rc.4',
   reactComponent: '^0.0.1-rc.13',
   vueComponent: '^0.0.1-rc.0',
 };

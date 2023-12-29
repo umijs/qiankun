@@ -1,49 +1,44 @@
 import './App.css';
 import subApplication from './microApp/subs.json';
 import { loadMicroApp } from 'qiankun';
-import { useRef } from 'react';
+import { useState } from 'react';
+import { Menu } from 'antd';
+
+const menuItems = subApplication.map(({ name }) => ({ key: name, label: name }))
 
 function App() {
-  const preLoad = useRef(null);
-  const preLoadAppName = useRef(null);
-  async function changeRouterAndLoadApp(app) {
-    if (preLoadAppName.current === app.name) return;
+  const [preLoadApp, setPreLoadApp] = useState(null);
 
-    if (preLoad.current) {
-      await preLoad.current.unmount();
+  async function changeRouterAndLoadApp({ key }) {
+    const app = subApplication.find(item => item.name === key)
+    if (!app || preLoadApp?.name === app.name) return;
+
+    if (preLoadApp) {
+      await preLoadApp.unmount();
     }
 
-    preLoad.current = loadMicroApp({
+    const microApp = loadMicroApp({
       name: app.name,
       entry: app.entry,
       container: document.querySelector('#subapp-container'),
     });
-
-    preLoadAppName.current = app.name;
+    setPreLoadApp(microApp)
 
     window.history.pushState(null, '', app.activeRule);
   }
 
   return (
-    <div className="App">
-      <div className="mainapp">
-        <header className="mainapp-head">
-          <h1>QianKun</h1>
-        </header>
-        <div className="mainapp-main">
-          <ul className="mainapp-sidemenu">
-            {subApplication.map((app, i) => {
-              return (
-                <li key={i} onClick={() => changeRouterAndLoadApp(app)}>
-                  {app.name}
-                </li>
-              );
-            })}
-          </ul>
-          {/* <!-- 子应用  --> */}
-          <main id="subapp-container"></main>
-        </div>
+    <div className="app">
+      <div className="main-app-title">QianKun</div>
+      <div className="main-app-menu">
+        <Menu
+          mode="inline"
+          onSelect={changeRouterAndLoadApp}
+          style={{ width: '100%', height: '100%' }}
+          items={menuItems}
+        />
       </div>
+      <div id="subapp-container"></div>
     </div>
   );
 }
