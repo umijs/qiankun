@@ -1,31 +1,30 @@
-import './App.css';
-import subApplication from './microApp/subs.json';
-import { loadMicroApp } from 'qiankun';
-import { useState } from 'react';
-import { Menu } from 'antd';
+import "./App.css";
+import subApplication from "./microApp/subs.json";
+import { useState, useCallback } from "react";
+import { Menu } from "antd";
+import { MicroApp } from "@qiankunjs/react";
+import { useNavigate } from "react-router-dom";
 
-const menuItems = subApplication.map(({ name }) => ({ key: name, label: name }))
+const menuItems = subApplication.map(({ name }) => ({
+  key: name,
+  label: name,
+}));
 
 function App() {
-  const [preLoadApp, setPreLoadApp] = useState(null);
+  const [curRenderMicroApp, setApp] = useState(null);
+  const navigate = useNavigate();
 
-  async function changeRouterAndLoadApp({ key }) {
-    const app = subApplication.find(item => item.name === key)
-    if (!app || preLoadApp?.name === app.name) return;
+  const changeRouterAndLoadApp = useCallback(({ key }) => {
+    const app = subApplication.find((item) => item.name === key);
+    if (!app || curRenderMicroApp?.name === app.name) return;
 
-    if (preLoadApp) {
-      await preLoadApp.unmount();
-    }
-
-    const microApp = loadMicroApp({
+    setApp({
       name: app.name,
       entry: app.entry,
-      container: document.querySelector('#subapp-container'),
     });
-    setPreLoadApp(microApp)
 
-    window.history.pushState(null, '', app.activeRule);
-  }
+    navigate(app.activeRule);
+  }, []);
 
   return (
     <div className="app">
@@ -34,11 +33,18 @@ function App() {
         <Menu
           mode="inline"
           onSelect={changeRouterAndLoadApp}
-          style={{ width: '100%', height: '100%' }}
+          style={{ width: "100%", height: "100%" }}
           items={menuItems}
         />
       </div>
-      <div id="subapp-container"></div>
+      <div id="subapp-container">
+        {curRenderMicroApp && (
+          <MicroApp
+            name={curRenderMicroApp.name}
+            entry={curRenderMicroApp.entry}
+          ></MicroApp>
+        )}
+      </div>
     </div>
   );
 }

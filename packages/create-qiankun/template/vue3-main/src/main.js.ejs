@@ -9,14 +9,20 @@ import { createRouter, createWebHashHistory } from "vue-router";
 import { createRouter, createWebHistory } from "vue-router";
 <% } -%>
 
+<% if (mainRoute === 'hash') { -%>
 const router = createRouter({
-  history:<% if (mainRoute === 'hash') { -%>
-createWebHashHistory(process.env.BASE_URL),
-      <% } -%>
-      <% if (mainRoute === 'history') { -%>
-createWebHistory(process.env.BASE_URL),
-      <% } -%>
-  routes,
-});
+  history:createWebHashHistory(process.env.BASE_URL),
+  routes
+})
+<% } -%>
+
+<% if (mainRoute === 'history') { -%>
+const router = createRouter({
+  history:createWebHistory(process.env.BASE_URL),
+  routes
+})
+<% } -%>
+
+
 
 createApp(App).use(store).use(router).mount("#app");

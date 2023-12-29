@@ -2,7 +2,7 @@
   <el-container class="layout-container">
     <el-aside width="250px">
       <el-scrollbar>
-        <el-menu background-color="#f5f5f5">
+        <el-menu background-color="#fff">
           <el-menu-item
             :index="app.name"
             v-for="(app, index) in childApps"
@@ -15,7 +15,9 @@
     </el-aside>
 
     <el-container>
-      <el-header> </el-header>
+      <el-header style="background-color: #fff; text-align: center">
+        <h2>{{ curRenderMicroApp.name }}</h2>
+      </el-header>
 
       <el-main>
         <el-scrollbar>
