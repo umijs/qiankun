@@ -1,5 +1,5 @@
 ---
-'create-qiankun': major
+'create-qiankun': minor
 ---
 
 feat: introduce qiankun scaffold
