@@ -1,5 +1,11 @@
 # @qiankunjs/shared
 
+## 0.0.1-rc.11
+
+### Patch Changes
+
+- 56fef69: feat: remove webpack chunk cache attributes just while there are multi instances loaded on document
+
 ## 0.0.1-rc.10
 
 ### Patch Changes

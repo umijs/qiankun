@@ -1,5 +1,12 @@
 # @qiankunjs/sandbox
 
+## 0.0.1-rc.16
+
+### Patch Changes
+
+- Updated dependencies [56fef69]
+  - @qiankunjs/shared@0.0.1-rc.11
+
 ## 0.0.1-rc.15
 
 ### Patch Changes
