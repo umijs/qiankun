@@ -11,7 +11,7 @@
 
 ## 环境要求
 
-1. 建议使用 Node.js v14.20.0 及以上版本,推荐使用 [fnm](https://github.com/Schniz/fnm) 管理 node 版本
+1. 建议使用 Node.js 版本 v18 或更高版本。,推荐使用 [fnm](https://github.com/Schniz/fnm) 管理 node 版本
 
 ## 安装
 
@@ -39,11 +39,11 @@ pnpm dlx create-qiankun@latest
 
 ### 主应用模板
 
-| 模板名称        |           |
-| --------------- | --------- |
-| React18+Webpack |           |
-| Vue3+Webpack    |           |
-| React18+umi     | 🚧 建设中 |
+| 模板名称        |     |
+| --------------- | --- |
+| React18+Webpack |     |
+| Vue3+Webpack    |     |
+| React18+umi     |     |
 
 ### 子应用模板
 
