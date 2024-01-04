@@ -5,8 +5,15 @@
 import type { LoaderOpts } from '@qiankunjs/loader';
 import { loadEntry } from '@qiankunjs/loader';
 import type { Sandbox } from '@qiankunjs/sandbox';
-import { createSandboxContainer } from '@qiankunjs/sandbox';
-import { moduleResolver as defaultModuleResolver, transpileAssets, warn, wrapFetchWithCache } from '@qiankunjs/shared';
+import { createSandboxContainer, nativeGlobal } from '@qiankunjs/sandbox';
+import {
+  defineProperty,
+  hasOwnProperty,
+  moduleResolver as defaultModuleResolver,
+  transpileAssets,
+  warn,
+  wrapFetchWithCache,
+} from '@qiankunjs/shared';
 import { concat, isFunction, mergeWith } from 'lodash';
 import type { ParcelConfigObject } from 'single-spa';
 import getAddOns from '../addons';
@@ -52,9 +59,11 @@ export default async function loadApp<T extends ObjectType>(
   let mountSandbox: (container: HTMLElement) => Promise<void> = () => Promise.resolve();
   let unmountSandbox = () => Promise.resolve();
   let sandboxInstance: Sandbox | undefined;
+  const instanceId = genInstanceId(appName);
+  let mountTimes = 1;
 
   let microAppDOMContainer: HTMLElement = container;
-  initContainer(microAppDOMContainer, appName, sandbox);
+  initContainer(microAppDOMContainer, appName, { sandboxCfg: sandbox, mountTimes, instanceId });
 
   if (sandbox) {
     const sandboxContainer = createSandboxContainer(appName, () => microAppDOMContainer, {
@@ -71,13 +80,16 @@ export default async function loadApp<T extends ObjectType>(
     unmountSandbox = () => sandboxContainer.unmount();
   }
 
+  if (instanceId > 1) {
+    removeWebpackChunkCacheWhenAppHaveMultiInstance(appName);
+  }
+
   const containerOpts: LoaderOpts = {
     fetch: fetchWithLruCache,
     sandbox: sandboxInstance,
     nodeTransformer,
     ...restConfiguration,
   };
-
   const lifecyclesPromise = loadEntry<MicroAppLifeCycles>(entry, microAppDOMContainer, containerOpts);
 
   const assetPublicPath = calcPublicPath(entry);
@@ -102,8 +114,6 @@ export default async function loadApp<T extends ObjectType>(
     sandboxInstance?.latestSetProp,
   );
 
-  let mountTimes = 1;
-
   return (mountContainer) => {
     const parcelConfig: ParcelConfigObject = {
       name: appName,
@@ -127,7 +137,7 @@ export default async function loadApp<T extends ObjectType>(
 
           // while the micro app is remounting, we need to load the entry manually
           if (mountTimes > 1) {
-            initContainer(mountContainer, appName, sandbox);
+            initContainer(mountContainer, appName, { sandboxCfg: sandbox, mountTimes, instanceId });
             // html scripts should be removed to avoid repeatedly execute
             const htmlString = await getPureHTMLStringWithoutScripts(entry, fetchWithLruCache);
             await loadEntry(htmlString, mountContainer, containerOpts);
@@ -173,7 +183,12 @@ export default async function loadApp<T extends ObjectType>(
   };
 }
 
-function initContainer(container: HTMLElement, appName: string, sandboxCfg: AppConfiguration['sandbox']): void {
+function initContainer(
+  container: HTMLElement,
+  appName: string,
+  opts: { sandboxCfg: AppConfiguration['sandbox']; mountTimes: number; instanceId: number },
+): void {
+  const { sandboxCfg, mountTimes, instanceId } = opts;
   while (container.firstChild) {
     container.removeChild(container.firstChild);
   }
@@ -181,6 +196,13 @@ function initContainer(container: HTMLElement, appName: string, sandboxCfg: AppC
   container.dataset.name = appName;
   container.dataset.version = version;
   container.dataset.sandboxCfg = JSON.stringify(sandboxCfg);
+
+  if (mountTimes > 1) {
+    container.dataset.mountTimes = String(mountTimes);
+  }
+  if (instanceId > 1) {
+    container.dataset.instanceId = String(instanceId);
+  }
 }
 
 function clearContainer(container: HTMLElement): void {
@@ -252,4 +274,43 @@ function calcPublicPath(entry: string): string {
     console.warn(e);
     return '';
   }
+}
+
+/**
+ * To prevent webpack from skipping reload logic and causing the js not to re-execute when a micro app is loaded multiple times on the same viewport,
+ * the data-webpack attribute of the script must be removed.
+ * see https://github.com/webpack/webpack/blob/1f13ff9fe587e094df59d660b4611b1bd19aed4c/lib/runtime/LoadScriptRuntimeModule.js#L131-L136
+ */
+function removeWebpackChunkCacheWhenAppHaveMultiInstance(appName: string): void {
+  const mountedSameNameApps = document.querySelectorAll(`[data-name^="${appName}"]`);
+  if (mountedSameNameApps.length > 1) {
+    mountedSameNameApps.forEach((appContainerElement) => {
+      appContainerElement.querySelectorAll('script[src]').forEach((script) => {
+        script.removeAttribute('data-webpack');
+      });
+    });
+  }
+}
+
+const globalAppInstanceStoreKey = '__agii__';
+declare global {
+  interface Window {
+    // app global instance id
+    [globalAppInstanceStoreKey]?: Record<string, number>;
+  }
+}
+
+function genInstanceId(appName: string): number {
+  if (!hasOwnProperty(nativeGlobal, globalAppInstanceStoreKey)) {
+    defineProperty(nativeGlobal, globalAppInstanceStoreKey, {
+      enumerable: false,
+      configurable: false,
+      writable: true,
+      value: {},
+    });
+  }
+  nativeGlobal[globalAppInstanceStoreKey]![appName] = nativeGlobal[globalAppInstanceStoreKey]![appName]
+    ? nativeGlobal[globalAppInstanceStoreKey]![appName] + 1
+    : 1;
+  return nativeGlobal[globalAppInstanceStoreKey]![appName];
 }
