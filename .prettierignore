@@ -14,6 +14,7 @@ examples
 .changeset/*
 pnpm-lock.yaml
 packages/sandbox/src/core/globals.ts
+packages/create-qiankun/template
 
 # changeset 会修改这个文件，导致 prettier:check 失败
 packages/**/*/package.json

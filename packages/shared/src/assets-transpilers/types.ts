@@ -13,7 +13,7 @@ export type BaseTranspilerOpts = BaseLoaderOpts & {
   };
 };
 
-export type AssetsTranspilerOpts = BaseTranspilerOpts & { rawNode: Node };
+export type AssetsTranspilerOpts = BaseTranspilerOpts;
 
 export type NodeTransformer = <T extends Node>(node: T, opts: Omit<AssetsTranspilerOpts, 'moduleResolver'>) => T;
 

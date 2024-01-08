@@ -52,10 +52,7 @@ export const preTranspile = (
   }
 
   if (isValidJavaScriptType(type) && sandbox) {
-    const rawNode = opts.rawNode as HTMLScriptElement;
-    const scriptNode = script.textContent ? script : rawNode.childNodes[0];
-
-    const code = scriptNode.textContent;
+    const code = script.textContent;
     if (code) {
       return {
         mode: Mode.INLINE_CODE_IN_SANDBOX,
@@ -152,11 +149,8 @@ export default function transpileScript(
       }
 
       case Mode.INLINE_CODE_IN_SANDBOX: {
-        const rawNode = opts.rawNode as HTMLScriptElement;
-        const scriptNode = script.textContent ? script : rawNode.childNodes[0];
         const { code } = result;
-
-        scriptNode.textContent = sandbox!.makeEvaluateFactory(code);
+        script.textContent = sandbox!.makeEvaluateFactory(code);
         // mark the script have consumed
         script.dataset.consumed = 'true';
 

@@ -1,6 +1,7 @@
 examples
 dist
 writable-dom
+template
 
 # TODO not linting test files temporary
 __tests__/

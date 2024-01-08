@@ -19,7 +19,8 @@
     "ci": "pnpm run build && pnpm run eslint && pnpm run prettier:check",
     "ci:publish": "changeset publish",
     "test": "pnpm -r run test",
-    "prepare": "husky install && dumi setup"
+    "prepare": "husky install && dumi setup",
+    "clean": "rimraf node_modules **/*/node_modules"
   },
   "devDependencies": {
     "@changesets/cli": "^2.26.2",
@@ -39,6 +40,7 @@
     "husky": "^8.0.3",
     "lint-staged": "^9.5.0",
     "prettier": "^3.0.3",
+    "rimraf": "^3.0.2",
     "typescript": "^5.2.2",
     "vitest": "^0.34.6"
   },

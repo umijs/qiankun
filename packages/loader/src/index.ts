@@ -85,15 +85,14 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
         ),
       )
       .pipeTo(
-        new WritableDOMStream(container, null, (clone, node) => {
+        new WritableDOMStream(container, null, (clone) => {
           let transformerOpts: AssetsTranspilerOpts = {
             fetch,
             sandbox,
-            rawNode: node as unknown as Node,
           };
 
           let queueDeferScript: () => void;
-          const deferScriptMode = isDeferScript(node as unknown as HTMLScriptElement);
+          const deferScriptMode = isDeferScript(clone as unknown as HTMLScriptElement);
           if (deferScriptMode) {
             const { deferred, prevDeferred, queue } = prepareDeferredQueue(deferQueue);
             transformerOpts = {

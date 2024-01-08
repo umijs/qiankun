@@ -4,7 +4,9 @@
 
 ### Patch Changes
 
+- 99bf65f: feat: support huge inline-script who might be split into multiple chunks during transfer
 - Updated dependencies [56fef69]
+- Updated dependencies [99bf65f]
   - @qiankunjs/shared@0.0.1-rc.11
 
 ## 0.0.1-rc.15
