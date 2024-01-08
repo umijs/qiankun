@@ -10,7 +10,7 @@
     "@qiankunjs/webpack-plugin": "0.0.1",
     "@qiankunjs/ui-shared": "0.0.0",
     "@qiankunjs/vue": "0.0.0",
-    "create-qiankun": "0.0.1-rc.1"
+    "create-qiankun": "0.0.0"
   },
   "changesets": [
     "big-cougars-draw",
