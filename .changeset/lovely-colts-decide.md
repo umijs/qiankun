@@ -1,5 +1,5 @@
 ---
-"@qiankunjs/create-qiankun": patch
+"create-qiankun": patch
 ---
 
 feat: introduce qiankun scaffold
