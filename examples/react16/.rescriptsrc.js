@@ -1,19 +1,14 @@
-const QiankunPlugin = require('../../packages/webpack-plugin/dist/cjs');
+const { QiankunPlugin }  = require('../../packages/webpack-plugin/dist/cjs');
+
 
 module.exports = {
-  webpack: (config) => {
-    const name = 'react16';
-    // config.plugins.push(new QiankunPlugin());
-
-    config.output.library = `${name}-[name]`;
-    config.output.libraryTarget = 'window';
-    config.output.jsonpFunction = `webpackJsonp_${name}`;
-    config.output.globalObject = 'window';
+  webpack: config => {
+    config.plugins.push(new QiankunPlugin());
 
     return config;
   },
 
-  devServer: (_) => {
+  devServer: _ => {
     const config = _;
 
     config.headers = {
