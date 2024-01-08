@@ -1,5 +1,18 @@
 # qiankun
 
+## 3.0.0-rc.19
+
+### Patch Changes
+
+- ac068ae: fix: remove unused umd bundle configuration
+- 56fef69: feat: remove webpack chunk cache attributes just while there are multi instances loaded on document
+- 99bf65f: feat: support huge inline-script who might be split into multiple chunks during transfer
+- Updated dependencies [56fef69]
+- Updated dependencies [99bf65f]
+  - @qiankunjs/shared@0.0.1-rc.11
+  - @qiankunjs/loader@0.0.1-rc.19
+  - @qiankunjs/sandbox@0.0.1-rc.16
+
 ## 3.0.0-rc.18
 
 ### Patch Changes
