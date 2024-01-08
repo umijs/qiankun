@@ -160,7 +160,6 @@ export function getOverwrittenAppendChildOrInsertBefore(
           const transpiledStyleSheetElement = nodeTransformer(stylesheetElement, {
             fetch,
             sandbox,
-            rawNode: stylesheetElement,
           });
 
           const stylesheetTargetDetached = !document.contains(this);
@@ -196,7 +195,6 @@ export function getOverwrittenAppendChildOrInsertBefore(
           let transformerOpts: AssetsTranspilerOpts = {
             fetch,
             sandbox,
-            rawNode: scriptElement,
           };
 
           let queueSyncScript: () => void;

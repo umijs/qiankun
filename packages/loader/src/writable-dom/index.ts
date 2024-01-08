@@ -37,19 +37,19 @@ type WritableDOM = {
   new (
     target: ParentNode,
     previousSibling?: ChildNode | null,
-    assetTransformer?: (clone: Node, node: Node) => Node,
+    assetTransformer?: (clone: Node) => Node,
   ): WritableStream<string>;
   (
     target: ParentNode,
     previousSibling?: ChildNode | null,
-    assetTransformer?: (clone: Node, node: Node) => Node,
+    assetTransformer?: <T extends Node>(clone: T) => T,
   ): Writable;
 };
 function writableDOM(
   this: unknown,
   target: ParentNode,
   previousSibling?: ChildNode | null,
-  assetTransformer?: <T extends Node>(clone: T, node: T) => T,
+  assetTransformer?: <T extends Node>(clone: T) => T,
 ): Writable | WritableStream<string> {
   if (this instanceof writableDOM) {
     return new WritableStream(writableDOM(target, previousSibling, assetTransformer));
@@ -85,7 +85,7 @@ function writableDOM(
       }
     },
     close() {
-      appendInlineTextIfNeeded(pendingText, inlineHostNode);
+      appendInlineTextIfNeeded(pendingText, inlineHostNode, assetTransformer);
 
       return isBlocked ? new Promise<void>((_) => (resolve = _)) : Promise.resolve();
     },
@@ -102,7 +102,7 @@ function writableDOM(
       while ((node = walker.nextNode())) {
         const link = getPreloadLink((scanNode = node));
         if (link) {
-          const transformedLink = typeof assetTransformer === 'function' ? assetTransformer(link, link) : link;
+          const transformedLink = typeof assetTransformer === 'function' ? assetTransformer(link) : link;
           transformedLink.onload = transformedLink.onerror = () => target.removeChild(transformedLink);
           target.insertBefore(transformedLink, nextSibling);
         }
@@ -141,11 +141,11 @@ function writableDOM(
         if (isInlineHost(parentNode!)) {
           inlineHostNode = parentNode;
         } else {
-          appendInlineTextIfNeeded(previousPendingText, inlineHostNode);
+          appendInlineTextIfNeeded(previousPendingText, inlineHostNode, assetTransformer);
           inlineHostNode = null;
 
           if (typeof assetTransformer === 'function') {
-            clone = assetTransformer(clone, node);
+            clone = assetTransformer(clone);
           }
 
           if (parentNode === target) {
@@ -234,9 +234,24 @@ function getPreloadLink(node: any) {
   return link;
 }
 
-function appendInlineTextIfNeeded(pendingText: Text | null, inlineTextHostNode: Node | null) {
+function appendInlineTextIfNeeded(
+  pendingText: Text | null,
+  inlineTextHostNode: Node | null,
+  assetTransformer?: <T extends Node>(clone: T) => T,
+) {
   if (pendingText && inlineTextHostNode) {
-    inlineTextHostNode.appendChild(pendingText);
+    let textNode = pendingText;
+
+    if (typeof assetTransformer === 'function') {
+      // copy the text node and host node and then get the transformed text node, thus we can append the transformed text node to live host
+      const graftedHost = document.importNode(inlineTextHostNode, false);
+      const graftedText = document.importNode(textNode, false);
+      graftedHost.appendChild(graftedText);
+      const transformedHost = assetTransformer(graftedHost);
+      textNode = transformedHost.firstChild as Text;
+    }
+
+    inlineTextHostNode.appendChild(textNode);
   }
 }
 
