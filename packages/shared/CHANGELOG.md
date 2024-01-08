@@ -1,5 +1,12 @@
 # @qiankunjs/shared
 
+## 0.0.1-rc.11
+
+### Patch Changes
+
+- 56fef69: feat: remove webpack chunk cache attributes just while there are multi instances loaded on document
+- 99bf65f: feat: support huge inline-script who might be split into multiple chunks during transfer
+
 ## 0.0.1-rc.10
 
 ### Patch Changes

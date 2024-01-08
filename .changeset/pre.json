@@ -9,17 +9,20 @@
     "@qiankunjs/react": "0.0.1",
     "@qiankunjs/webpack-plugin": "0.0.1",
     "@qiankunjs/ui-shared": "0.0.0",
-    "@qiankunjs/vue": "0.0.0"
+    "@qiankunjs/vue": "0.0.0",
+    "create-qiankun": "0.0.0"
   },
   "changesets": [
     "big-cougars-draw",
     "clean-walls-hang",
     "clever-carpets-vanish",
     "clever-dragons-ring",
+    "empty-jars-vanish",
     "empty-lions-rescue",
     "five-papayas-buy",
     "forty-teachers-taste",
     "four-worms-think",
+    "friendly-apples-design",
     "giant-geckos-love",
     "green-pants-remember",
     "green-tools-wonder",
@@ -30,11 +33,13 @@
     "long-flies-repair",
     "loud-penguins-crash",
     "loud-teachers-develop",
+    "lovely-colts-decide",
     "lucky-bikes-scream",
     "metal-cougars-help",
     "mighty-nails-pull",
     "modern-kiwis-tap",
     "ninety-rivers-check",
+    "orange-boats-allow",
     "rare-lobsters-marry",
     "real-trees-unite",
     "red-students-run",
@@ -61,6 +66,7 @@
     "twelve-donkeys-help",
     "warm-chefs-chew",
     "wicked-icons-type",
-    "wise-eagles-tease"
+    "wise-eagles-tease",
+    "wise-ravens-prove"
   ]
 }
