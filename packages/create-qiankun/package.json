@@ -11,7 +11,8 @@
     "build": "father build"
   },
   "files": [
-    "dist"
+    "dist",
+    "template"
   ],
   "keywords": [],
   "author": "",
