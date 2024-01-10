@@ -106,6 +106,8 @@ export default function patch(global: WindowProxy) {
       [...listeners].forEach(({ rawListener, options }) => 
         global.removeEventListener(type, rawListener, options)
     ));
+    // 清空listenerMap，避免listenerMap中还存有listener导致内存泄漏
+    listenerMap.clear();
     global.addEventListener = rawAddEventListener;
     global.removeEventListener = rawRemoveEventListener;
 
