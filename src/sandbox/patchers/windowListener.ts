@@ -22,7 +22,7 @@ const removeCacheListener = (
   listenerMap: Map<string, ListenerMapObject[]>,
   type: string,
   rawListener: EventListenerOrEventListenerObject,
-  rawOptions?: boolean | AddEventListenerOptions
+  rawOptions?: boolean | AddEventListenerOptions,
 ): ListenerMapObject => {
   // 处理 options，确保它是一个对象
   let options = typeof rawOptions === 'object' ? rawOptions : { capture: !!rawOptions };
@@ -33,7 +33,7 @@ const removeCacheListener = (
   // listener和capture/useCapture都相同，认为是同一个监听
   // https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/removeEventListener
   const findIndex = cachedTypeListeners.findIndex(
-    item => item.rawListener === rawListener && item.options.capture == options.capture
+    (item) => item.rawListener === rawListener && item.options.capture == options.capture,
   );
   if (findIndex > -1) {
     const cacheListener = cachedTypeListeners[findIndex];
@@ -50,7 +50,7 @@ const addCacheListener = (
   listenerMap: Map<string, ListenerMapObject[]>,
   type: string,
   rawListener: EventListenerOrEventListenerObject,
-  rawOptions?: boolean | AddEventListenerOptions
+  rawOptions?: boolean | AddEventListenerOptions,
 ): ListenerMapObject => {
   // 处理 options，确保它是一个对象
   let options = typeof rawOptions === 'object' ? rawOptions : { capture: !!rawOptions };
@@ -61,7 +61,7 @@ const addCacheListener = (
   // listener和capture/useCapture都相同，认为是同一个监听
   // https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/removeEventListener
   const findIndex = cachedTypeListeners.findIndex(
-    item => item.rawListener === rawListener && item.options.capture == options.capture
+    (item) => item.rawListener === rawListener && item.options.capture == options.capture,
   );
   if (findIndex > -1) {
     const { listener: findListener, options: findOptions } = cachedTypeListeners[findIndex];
@@ -71,10 +71,11 @@ const addCacheListener = (
   }
   let listener: EventListenerOrEventListenerObject = rawListener;
 
-  if (options.once) listener = (event: Event) => {
-    (rawListener as EventListener)(event);
-    removeCacheListener(listenerMap, type, rawListener, options);
-  };
+  if (options.once)
+    listener = (event: Event) => {
+      (rawListener as EventListener)(event);
+      removeCacheListener(listenerMap, type, rawListener, options);
+    };
   const cacheListener = { listener, options, rawListener };
   listenerMap.set(type, [...cachedTypeListeners, cacheListener]);
   return cacheListener;
@@ -103,9 +104,8 @@ export default function patch(global: WindowProxy) {
 
   return function free() {
     listenerMap.forEach((listeners, type) =>
-      [...listeners].forEach(({ rawListener, options }) => 
-        global.removeEventListener(type, rawListener, options)
-    ));
+      [...listeners].forEach(({ rawListener, options }) => global.removeEventListener(type, rawListener, options)),
+    );
     // 清空listenerMap，避免listenerMap中还存有listener导致内存泄漏
     listenerMap.clear();
     global.addEventListener = rawAddEventListener;
