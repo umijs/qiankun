@@ -1,1 +1,1 @@
-export { version } from '../package.json';
+export const version = '3.0.0-rc.19';
