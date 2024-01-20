@@ -51,7 +51,7 @@ const addCacheListener = (
   type: string,
   rawListener: EventListenerOrEventListenerObject,
   rawOptions?: boolean | AddEventListenerOptions,
-): ListenerMapObject => {
+): ListenerMapObject | undefined => {
   // 处理 options，确保它是一个对象
   let options = typeof rawOptions === 'object' ? rawOptions : { capture: !!rawOptions };
   // 如果 options 为 null，使用默认值
@@ -59,18 +59,14 @@ const addCacheListener = (
 
   const cachedTypeListeners = listenerMap.get(type) || [];
   // listener和capture/useCapture都相同，认为是同一个监听
-  // https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/removeEventListener
+  // https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
   const findIndex = cachedTypeListeners.findIndex(
     (item) => item.rawListener === rawListener && item.options.capture == options.capture,
   );
-  if (findIndex > -1) {
-    const { listener: findListener, options: findOptions } = cachedTypeListeners[findIndex];
-    // 如果存在相同的监听，先移除之前的监听，在添加新的监听
-    rawRemoveEventListener.call(window, type, findListener, findOptions);
-    cachedTypeListeners.splice(findIndex, 1);
-  }
-  let listener: EventListenerOrEventListenerObject = rawListener;
+  // 如果事件已经添加到了target的event listeners 列表中，直接返回不需要添加第二次
+  if (findIndex > -1) return;
 
+  let listener: EventListenerOrEventListenerObject = rawListener;
   if (options.once)
     listener = (event: Event) => {
       (rawListener as EventListener)(event);
@@ -89,7 +85,10 @@ export default function patch(global: WindowProxy) {
     rawListener: EventListenerOrEventListenerObject,
     rawOptions?: boolean | AddEventListenerOptions,
   ) => {
-    const { listener, options } = addCacheListener(listenerMap, type, rawListener, rawOptions);
+    const addLstener = addCacheListener(listenerMap, type, rawListener, rawOptions);
+    // 如果返回空，则代表事件已经添加过了，不需要重复添加
+    if (!addLstener) return;
+    const { listener, options } = addLstener;
     return rawAddEventListener.call(window, type, listener, options);
   };
 
