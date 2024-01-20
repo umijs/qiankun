@@ -85,10 +85,10 @@ export default function patch(global: WindowProxy) {
     rawListener: EventListenerOrEventListenerObject,
     rawOptions?: boolean | AddEventListenerOptions,
   ) => {
-    const addLstener = addCacheListener(listenerMap, type, rawListener, rawOptions);
+    const addListener = addCacheListener(listenerMap, type, rawListener, rawOptions);
     // 如果返回空，则代表事件已经添加过了，不需要重复添加
-    if (!addLstener) return;
-    const { listener, options } = addLstener;
+    if (!addListener) return;
+    const { listener, options } = addListener;
     return rawAddEventListener.call(window, type, listener, options);
   };
 
