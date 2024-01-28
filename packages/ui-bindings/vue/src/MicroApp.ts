@@ -1,5 +1,16 @@
 import type { PropType } from 'vue-demi';
-import { computed, defineComponent, h, onMounted, reactive, ref, toRefs, watch, isVue2 } from 'vue-demi';
+import {
+  computed,
+  defineComponent,
+  h,
+  onMounted,
+  ref,
+  onBeforeUnmount,
+  shallowRef,
+  toRefs,
+  watch,
+  isVue2,
+} from 'vue-demi';
 import type { AppConfiguration, LifeCycles } from 'qiankun';
 import type { MicroAppType } from '@qiankunjs/ui-shared';
 import { mountMicroApp, omitSharedProps, unmountMicroApp, updateMicroApp } from '@qiankunjs/ui-shared';
@@ -43,23 +54,23 @@ export const MicroApp = defineComponent({
       type: String,
       default: undefined,
     },
+    appProps: {
+      type: Object,
+      default: undefined,
+    },
   },
   setup(props, { slots }) {
     const originProps = props;
-    const { name, wrapperClassName, className, ...propsFromParams } = toRefs(originProps);
+    const { name, wrapperClassName, className, appProps, autoCaptureError } = toRefs(originProps);
 
     const loading = ref(false);
     const error = ref<Error>();
 
     const containerRef = ref(null);
-    const microAppRef = ref<MicroAppType>();
-
-    const reactivePropsFromParams = computed(() => {
-      return omitSharedProps(reactive(propsFromParams));
-    });
+    const microAppRef = shallowRef<MicroAppType>();
 
     const isNeedShowError = computed(() => {
-      return slots.errorBoundary || reactivePropsFromParams.value.autoCaptureError;
+      return slots.errorBoundary || autoCaptureError.value;
     });
 
     // 配置了 errorBoundary 才改 error 状态，否则直接往上抛异常
@@ -77,31 +88,38 @@ export const MicroApp = defineComponent({
 
     const rootRef = ref(null);
 
+    const unmount = () => {
+      const microApp = microAppRef.value;
+
+      if (microApp) {
+        microApp._unmounting = true;
+
+        unmountMicroApp(microApp).catch((err: Error) => {
+          setComponentError(err);
+          loading.value = false;
+        });
+
+        microAppRef.value = undefined;
+      }
+    };
+
     onMounted(() => {
-      console.log(rootRef.value);
-
-      console.log(containerRef.value);
-
+      // watch name 变更切换子应用
       watch(
         name,
         () => {
-          const microApp = microAppRef.value;
+          const prevApp = microAppRef.value;
+          // 销毁上一个子应用
+          unmount();
 
-          if (microApp) {
-            microApp._unmounting = true;
-
-            unmountMicroApp(microApp).catch((err: Error) => {
-              setComponentError(err);
-              loading.value = false;
-            });
-
-            microAppRef.value = undefined;
-          }
-
+          // 初始化下一个子应用
           void mountMicroApp({
-            prevMicroApp: microAppRef.value,
+            prevMicroApp: prevApp,
             container: containerRef.value!,
-            componentProps: originProps,
+            componentProps: {
+              ...originProps,
+              ...appProps.value,
+            },
             setLoading: (l) => {
               loading.value = l;
             },
@@ -118,12 +136,16 @@ export const MicroApp = defineComponent({
       );
 
       watch(
-        reactivePropsFromParams,
+        appProps,
         () => {
           updateMicroApp({
             microApp: microAppRef.value,
             setLoading: (l) => {
               loading.value = l;
+            },
+            microAppProps: {
+              ...omitSharedProps(originProps),
+              ...appProps.value,
             },
           });
         },
@@ -131,6 +153,10 @@ export const MicroApp = defineComponent({
           deep: true,
         },
       );
+    });
+
+    onBeforeUnmount(() => {
+      unmount();
     });
 
     const microAppWrapperClassName = computed(() =>
@@ -149,16 +175,12 @@ export const MicroApp = defineComponent({
       microAppWrapperClassName,
       microAppClassName,
       rootRef,
-      reactivePropsFromParams,
       microApp: microAppRef,
     };
   },
 
   render() {
-    return this.reactivePropsFromParams.autoSetLoading ||
-      this.reactivePropsFromParams.autoCaptureError ||
-      this.$slots.loader ||
-      this.$slots.errorBoundary
+    return this.autoSetLoading || this.autoCaptureError || this.$slots.loader || this.$slots.errorBoundary
       ? h(
           'div',
           {
@@ -169,7 +191,7 @@ export const MicroApp = defineComponent({
               ? typeof this.$slots.loader === 'function'
                 ? this.$slots.loader(this.loading)
                 : this.$slots.loader
-              : this.reactivePropsFromParams.autoSetLoading &&
+              : this.autoSetLoading &&
                 h(MicroAppLoader, {
                   ...(isVue2
                     ? {
@@ -186,7 +208,7 @@ export const MicroApp = defineComponent({
                 ? typeof this.$slots.errorBoundary === 'function'
                   ? this.$slots.errorBoundary(this.error)
                   : this.$slots.errorBoundary
-                : this.reactivePropsFromParams.autoCaptureError &&
+                : this.autoCaptureError &&
                   h(ErrorBoundary, {
                     ...(isVue2
                       ? {
