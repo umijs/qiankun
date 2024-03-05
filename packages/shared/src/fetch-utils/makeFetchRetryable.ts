@@ -8,7 +8,7 @@ import { type Fetch } from './utils';
 export const makeFetchRetryable: (fetch: Fetch, retryTimes?: number) => Fetch = (fetch, retryTimes = 1) => {
   let retryCount = 0;
 
-  return async function fetchWithRetryable(input, init) {
+  const fetchWithRetryable: Fetch = async (input, init) => {
     try {
       return await fetch(input, init);
     } catch (e) {
@@ -29,4 +29,6 @@ export const makeFetchRetryable: (fetch: Fetch, retryTimes?: number) => Fetch = 
       throw e;
     }
   };
+
+  return fetchWithRetryable;
 };
