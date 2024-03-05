@@ -9,10 +9,12 @@ import { createSandboxContainer, nativeGlobal } from '@qiankunjs/sandbox';
 import {
   defineProperty,
   hasOwnProperty,
+  makeFetchCacheable,
+  makeFetchRetryable,
+  makeFetchThrowable,
   moduleResolver as defaultModuleResolver,
   transpileAssets,
   warn,
-  wrapFetchWithCache,
 } from '@qiankunjs/shared';
 import { concat, isFunction, mergeWith } from 'lodash';
 import type { ParcelConfigObject } from 'single-spa';
@@ -48,7 +50,7 @@ export default async function loadApp<T extends ObjectType>(
     ...restConfiguration
   } = configuration || {};
 
-  const fetchWithLruCache = wrapFetchWithCache(fetch);
+  const enhancedFetch = makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)));
 
   const markName = `[qiankun] App ${appName} Loading`;
   if (process.env.NODE_ENV === 'development') {
@@ -69,7 +71,7 @@ export default async function loadApp<T extends ObjectType>(
     const sandboxContainer = createSandboxContainer(appName, () => microAppDOMContainer, {
       globalContext,
       extraGlobals: {},
-      fetch: fetchWithLruCache,
+      fetch: enhancedFetch,
       nodeTransformer,
     });
 
@@ -85,7 +87,7 @@ export default async function loadApp<T extends ObjectType>(
   }
 
   const containerOpts: LoaderOpts = {
-    fetch: fetchWithLruCache,
+    fetch: enhancedFetch,
     sandbox: sandboxInstance,
     nodeTransformer,
     ...restConfiguration,
@@ -139,7 +141,7 @@ export default async function loadApp<T extends ObjectType>(
           if (mountTimes > 1) {
             initContainer(mountContainer, appName, { sandboxCfg: sandbox, mountTimes, instanceId });
             // html scripts should be removed to avoid repeatedly execute
-            const htmlString = await getPureHTMLStringWithoutScripts(entry, fetchWithLruCache);
+            const htmlString = await getPureHTMLStringWithoutScripts(entry, enhancedFetch);
             await loadEntry(htmlString, mountContainer, containerOpts);
           }
         },

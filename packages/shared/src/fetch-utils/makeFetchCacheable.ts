@@ -1,11 +1,11 @@
 /**
  * @author Kuitos
  * @since 2023-11-06
+ * wrap fetch with lru cache
  */
 import { once } from 'lodash';
 import { LRUCache } from './miniLruCache';
-
-type Fetch = typeof window.fetch;
+import { type Fetch, isValidaResponse } from './utils';
 
 const getCacheKey = (input: Parameters<Fetch>[0]): string => {
   return typeof input === 'string' ? input : 'url' in input ? input.url : input.href;
@@ -15,11 +15,7 @@ const getGlobalCache = once(() => {
   return new LRUCache<string, Promise<Response>>(50);
 });
 
-const isValidaResponse = (status: number): boolean => {
-  return status >= 200 && status < 400;
-};
-
-export const wrapFetchWithCache: (fetch: Fetch) => Fetch = (fetch) => {
+export const makeFetchCacheable: (fetch: Fetch) => Fetch = (fetch) => {
   const lruCache = getGlobalCache();
 
   const cachedFetch: Fetch = (input, init) => {
