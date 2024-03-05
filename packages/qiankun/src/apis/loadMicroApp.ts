@@ -71,12 +71,21 @@ export function loadMicroApp<T extends ObjectType>(
 
     const parcelConfigObjectGetterPromise = loadApp(app, userConfiguration, lifeCycles);
 
+    let parcelConfigObjectGetter: ParcelConfigObjectGetter | undefined;
+
     if (containerXPath) {
       const appContainerXPathKey = getContainerXPathKey(containerXPath);
       appConfigPromiseGetterMap.set(appContainerXPathKey, parcelConfigObjectGetterPromise);
+      try {
+        parcelConfigObjectGetter = await parcelConfigObjectGetterPromise;
+      } catch (e) {
+        appConfigPromiseGetterMap.delete(appContainerXPathKey);
+        throw e;
+      }
     }
 
-    return (await parcelConfigObjectGetterPromise)(container);
+    parcelConfigObjectGetter = parcelConfigObjectGetter || (await parcelConfigObjectGetterPromise);
+    return parcelConfigObjectGetter(container);
   };
 
   if (!started) {
