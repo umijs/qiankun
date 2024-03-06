@@ -142,7 +142,11 @@ export default async function loadApp<T extends ObjectType>(
             initContainer(mountContainer, appName, { sandboxCfg: sandbox, mountTimes, instanceId });
             // html scripts should be removed to avoid repeatedly execute
             const htmlString = await getPureHTMLStringWithoutScripts(entry, enhancedFetch);
-            await loadEntry(htmlString, mountContainer, containerOpts);
+            await loadEntry(
+              { url: entry, res: new Response(htmlString, { status: 200, statusText: 'OK' }) },
+              mountContainer,
+              containerOpts,
+            );
           }
         },
         async () => {
