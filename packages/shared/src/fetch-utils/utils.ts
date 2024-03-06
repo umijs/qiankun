@@ -1,5 +1,5 @@
 export type Fetch = typeof window.fetch;
 
-export const isValidaResponse = (status: number): boolean => {
+export const isValidResponse = (status: number): boolean => {
   return status >= 200 && status < 400;
 };

@@ -5,7 +5,7 @@
  */
 import { once } from 'lodash';
 import { LRUCache } from './miniLruCache';
-import { type Fetch, isValidaResponse } from './utils';
+import { type Fetch, isValidResponse } from './utils';
 
 const getCacheKey = (input: Parameters<Fetch>[0]): string => {
   return typeof input === 'string' ? input : 'url' in input ? input.url : input.href;
@@ -26,7 +26,7 @@ export const makeFetchCacheable: (fetch: Fetch) => Fetch = (fetch) => {
         const res = await promise;
 
         const { status } = res;
-        if (!isValidaResponse(status)) {
+        if (!isValidResponse(status)) {
           lruCache.delete(cacheKey);
         }
 
