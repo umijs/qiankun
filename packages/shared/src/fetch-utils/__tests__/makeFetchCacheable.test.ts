@@ -1,7 +1,7 @@
 // @vitest-environment edge-runtime
 
 import { expect, it, vi } from 'vitest';
-import { wrapFetchWithCache } from '../wrapFetchWithCache';
+import { makeFetchCacheable } from '../makeFetchCacheable';
 
 const slogan = 'Hello Qiankun 3.0';
 
@@ -9,7 +9,7 @@ it('should just call fetch once while multiple request invoked parallel', () => 
   const fetch = vi.fn(() => {
     return Promise.resolve(new Response(slogan, { status: 200, statusText: 'OK' }));
   });
-  const wrappedFetch = wrapFetchWithCache(fetch);
+  const wrappedFetch = makeFetchCacheable(fetch);
   const url = 'https://success.qiankun.org';
   wrappedFetch(url);
   wrappedFetch(url);
@@ -22,7 +22,7 @@ it('should support read response body as a stream multi times', async () => {
   const fetch = vi.fn(() => {
     return Promise.resolve(new Response(slogan, { status: 200, statusText: 'OK' }));
   });
-  const wrappedFetch = wrapFetchWithCache(fetch);
+  const wrappedFetch = makeFetchCacheable(fetch);
 
   const url = 'https://stream.qiankun.org';
   const response1 = await wrappedFetch(url);
@@ -43,7 +43,7 @@ it('should clear cache while respond error with invalid status code', async () =
   const fetch = vi.fn(() => {
     return Promise.resolve(new Response(slogan, { status: 400 }));
   });
-  const wrappedFetch = wrapFetchWithCache(fetch);
+  const wrappedFetch = makeFetchCacheable(fetch);
   const url = 'https://errorStatusCode.qiankun.org';
 
   const response1 = await wrappedFetch(url);
@@ -61,7 +61,7 @@ it('should clear cache while respond error', async () => {
   const fetch = vi.fn(() => {
     return Promise.reject(new Error('error'));
   });
-  const wrappedFetch = wrapFetchWithCache(fetch);
+  const wrappedFetch = makeFetchCacheable(fetch);
 
   const url = 'https://error.qiankun.org';
   await expect(wrappedFetch(url)).rejects.toThrow('error');
