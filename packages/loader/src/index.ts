@@ -8,7 +8,6 @@ import type {
 } from '@qiankunjs/shared';
 import { Deferred, prepareDeferredQueue, QiankunError } from '@qiankunjs/shared';
 import { createTagTransformStream } from './TagTransformStream';
-import { isUrlHasOwnProtocol } from './utils';
 import WritableDOMStream from './writable-dom';
 
 type HTMLEntry = string;
@@ -42,10 +41,15 @@ const isDeferScript = (script: HTMLScriptElement): boolean => {
  * @param container
  * @param opts
  */
-export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: LoaderOpts): Promise<T | void> {
+export async function loadEntry<T>(
+  entry: Entry | { url: string; res: Response },
+  container: HTMLElement,
+  opts: LoaderOpts,
+): Promise<T | void> {
   const { fetch, streamTransformer, sandbox, nodeTransformer } = opts;
 
-  const res = isUrlHasOwnProtocol(entry) ? await fetch(entry) : new Response(entry, { status: 200, statusText: 'OK' });
+  const entryUrl = typeof entry === 'string' ? entry : entry.url;
+  const res = typeof entry === 'string' ? await fetch(entry) : entry.res;
   if (res.body) {
     let foundEntryScript = false;
     const entryScriptLoadedDeferred = new Deferred<T | void>();
@@ -120,7 +124,7 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
           if (isEntryScript(script)) {
             if (foundEntryScript) {
               throw new QiankunError(
-                `You should not set multiply entry script in one entry html, but ${entry} has at least 2 entry scripts`,
+                `You should not include more than 1 entry scripts in a single HTML entry ${entryUrl} !`,
               );
             }
 
@@ -139,7 +143,7 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
                 } else {
                   entryScriptLoadedDeferred.reject(
                     new QiankunError(
-                      `entry ${entry} load failed as entry script ${script.dataset.src || script.src} load failed}`,
+                      `Entry ${entryUrl} load failed as entry script ${script.dataset.src || script.src} load failed}`,
                     ),
                   );
                 }
@@ -176,5 +180,5 @@ export async function loadEntry<T>(entry: Entry, container: HTMLElement, opts: L
     return entryScriptLoadedDeferred.promise;
   }
 
-  throw new QiankunError(`entry ${entry} response body is empty!`);
+  throw new QiankunError(`The response body of entry ${entryUrl} is empty!`);
 }
