@@ -69,8 +69,7 @@ const addCacheListener = (
   }
 
   const cacheListener = { listener, options, rawListener };
-  cachedTypeListeners.push(cacheListener);
-  listenerMap.set(type, cachedTypeListeners);
+  listenerMap.set(type, [...cachedTypeListeners, cacheListener]);
   return cacheListener;
 };
 
