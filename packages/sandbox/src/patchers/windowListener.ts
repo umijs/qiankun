@@ -2,8 +2,7 @@
  * @author Kuitos
  * @since 2019-04-11
  */
-
-import { noop } from 'lodash';
+import { type Free } from './types';
 
 const rawAddEventListener = window.addEventListener;
 const rawRemoveEventListener = window.removeEventListener;
@@ -73,7 +72,7 @@ const addCacheListener = (
   return cacheListener;
 };
 
-export default function patch(global: WindowProxy) {
+export default function patch(global: WindowProxy): Free {
   const listenerMap = new Map<string, ListenerMapObject[]>();
 
   global.addEventListener = (
@@ -105,6 +104,6 @@ export default function patch(global: WindowProxy) {
     listenerMap.clear();
     global.addEventListener = rawAddEventListener;
     global.removeEventListener = rawRemoveEventListener;
-    return noop;
+    return () => Promise.resolve();
   };
 }
