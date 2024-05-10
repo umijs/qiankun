@@ -149,7 +149,16 @@ function createFakeWindow(globalContext: Window, speedy: boolean) {
           }
         }
 
-        if (hasGetter) propertiesWithGetter.set(p, true);
+        if (hasGetter) {
+          propertiesWithGetter.set(p, true);
+          const packArr = 'ac,biCenter,administratorTools,budget,business,calendar,cockpit,cockpit_digital,cockpit_project_manager_zone,customer' +
+            ',dataprocess,datemplate,digital,em,enterprisedb,estimate,financial,gbqdb,gdap,gldjc,gsh,home,indexdb,job,material' +
+            ',message,migration,oa,operate,oss,pc,pm,qc,qdk,report' +
+            ',selfServiceBi,singlestagedataprocess,sys,target_library,tianjinbxs,tianjinxml,weboffice,wpec,zhdjk'.split(',');
+          if (packArr.includes(p)) {
+            descriptor.get = () => null;
+          }
+        }
 
         // freeze the descriptor to avoid being modified by zone.js
         // see https://github.com/angular/zone.js/blob/a5fe09b0fac27ac5df1fa746042f96f05ccb6a00/lib/browser/define-property.ts#L71

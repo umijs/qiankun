@@ -4,7 +4,7 @@ node_modules
 npm-debug.log
 coverage/
 run
-dist
+#dist
 .DS_Store
 .nyc_output
 config.local.js
@@ -13,8 +13,8 @@ config.local.js
 .idea/
 .cache
 yarn.lock
-es
-lib
+#es
+#lib
 package-lock.json
 .eslintcache
 .history
