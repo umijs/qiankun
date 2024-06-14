@@ -98,7 +98,8 @@ export function loadMicroApp<T extends ObjectType>(
   lifeCycles?: FrameworkLifeCycles<T>,
 ): MicroApp {
   const { props, name } = app;
-
+  const { autoStart, ...restConfiguration } = configuration ?? {};
+  frameworkConfiguration = { prefetch: true, singular: true, sandbox: true, ...restConfiguration };
   const container = 'container' in app ? app.container : undefined;
   // Must compute the container xpath at beginning to keep it consist around app running
   // If we compute it every time, the container dom structure most probably been changed and result in a different xpath value
