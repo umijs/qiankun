@@ -1,7 +1,6 @@
-import type { AppConfiguration, MicroApp as MicroAppTypeDefinition, LifeCycles } from 'qiankun';
-import { loadMicroApp } from 'qiankun';
+import type { AppConfiguration, MicroApp as MicroAppTypeDefinition, LifeCycles, LifeCycleFn } from 'qiankun';
+import { loadMicroApp as originLoadMicroApp } from 'qiankun';
 import { mergeWith, concat, omit } from 'lodash';
-import type { LifeCycleFn } from 'qiankun';
 
 export type MicroAppType = {
   _unmounting?: boolean;
@@ -20,6 +19,8 @@ export type SharedProps = {
   // 仅开启 loader 时需要
   wrapperClassName?: string;
   className?: string;
+
+  externalQiankun?: boolean;
 };
 
 export type SharedSlots<T> = {
@@ -28,7 +29,7 @@ export type SharedSlots<T> = {
 };
 
 export const omitSharedProps = (props: Partial<SharedProps>) => {
-  return omit(props, ['wrapperClassName', 'className', 'lifeCycles', 'settings', 'entry', 'name']);
+  return omit(props, ['wrapperClassName', 'className', 'lifeCycles', 'settings', 'entry', 'name', 'externalQiankun']);
 };
 
 export async function mountMicroApp({
@@ -62,6 +63,14 @@ export async function mountMicroApp({
     globalContext: window,
     ...(componentProps.settings || {}),
   };
+
+  let loadMicroApp = originLoadMicroApp;
+  if (componentProps.externalQiankun) {
+    console.warn('the qiankun is external');
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    loadMicroApp = (window.qiankun as unknown)?.loadMicroApp as typeof originLoadMicroApp;
+  }
 
   const microApp = loadMicroApp(
     {
