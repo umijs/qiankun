@@ -303,7 +303,7 @@ export default class ProxySandbox implements SandBox {
           return eval;
         }
 
-        if (p === 'string' && globalVariableWhiteList.indexOf(p) !== -1) {
+        if (typeof p === 'string' && globalVariableWhiteList.indexOf(p) !== -1) {
           // @ts-ignore
           return globalContext[p];
         }
