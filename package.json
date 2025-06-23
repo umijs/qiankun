@@ -23,25 +23,25 @@
     "clean": "rimraf node_modules **/*/node_modules"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.26.2",
-    "@edge-runtime/vm": "^3.1.7",
-    "@types/lodash": "^4.14.200",
-    "@types/node": "^18.18.8",
-    "@typescript-eslint/eslint-plugin": "^6.9.1",
-    "@typescript-eslint/parser": "^6.9.1",
+    "@changesets/cli": "^2.29.5",
+    "@edge-runtime/vm": "^3.2.0",
+    "@types/lodash": "^4.17.18",
+    "@types/node": "^18.19.112",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
     "babel-plugin-import": "^1.13.8",
     "cross-env": "^7.0.3",
-    "dumi": "^2.2.14",
-    "eslint": "^8.52.0",
-    "eslint-config-prettier": "^9.0.0",
+    "dumi": "^2.4.21",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
     "eslint-formatter-pretty": "^5.0.0",
-    "father": "^4.3.6",
+    "father": "^4.5.6",
     "happy-dom": "^12.10.3",
     "husky": "^8.0.3",
     "lint-staged": "^9.5.0",
-    "prettier": "^3.0.3",
+    "prettier": "^3.6.0",
     "rimraf": "^3.0.2",
-    "typescript": "^5.2.2",
+    "typescript": "^5.8.3",
     "vitest": "^0.34.6"
   },
   "repository": {
@@ -54,9 +54,15 @@
   },
   "homepage": "https://github.com/kuitos/qiankun#readme",
   "lint-staged": {
-    "**/*.{js,ts,json,css,md}": ["prettier --write --ignore-unknown"],
-    "packages/*/{src,types}/**/*.ts": ["eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty --fix"],
-    "packages/**/*.d.ts": ["eslint --ext .ts"]
+    "**/*.{js,ts,json,css,md}": [
+      "prettier --write --ignore-unknown"
+    ],
+    "packages/*/{src,types}/**/*.ts": [
+      "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty --fix"
+    ],
+    "packages/**/*.d.ts": [
+      "eslint --ext .ts"
+    ]
   },
   "packageManager": "pnpm@8.4.0",
   "publishConfig": {
