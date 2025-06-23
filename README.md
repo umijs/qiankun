@@ -1,6 +1,3 @@
-> [!WARNING]
-> 🚧 qiankun 3.0 is currently under active development. Check out the [Roadmap](https://github.com/umijs/qiankun/discussions/1378) for more details.
-
 <p align="center">
   <a href="https://qiankun.umijs.org" target="_blank" rel="noopener noreferrer">
     <img width="180" src="./docs/logo.png" alt="qiankun logo">
@@ -16,6 +13,9 @@
 </p>
 
 # qiankun（乾坤）
+
+> [!WARNING]
+> 🚧 qiankun 3.0 is currently under active development. Check out the [Roadmap](https://github.com/umijs/qiankun/discussions/1378) for more details.
 
 > In Chinese, `qian(乾)` means heaven and `kun(坤)` earth. `qiankun` is the universe.
 
