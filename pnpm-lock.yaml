@@ -102,8 +102,8 @@ importers:
   packages/loader:
     dependencies:
       '@babel/runtime':
-        specifier: ^7.10.5
-        version: 7.23.6
+        specifier: ^7.26.10
+        version: 7.26.10
       '@qiankunjs/sandbox':
         specifier: workspace:^
         version: link:../sandbox
@@ -124,8 +124,8 @@ importers:
   packages/qiankun:
     dependencies:
       '@babel/runtime':
-        specifier: ^7.10.5
-        version: 7.23.6
+        specifier: ^7.26.10
+        version: 7.26.10
       '@qiankunjs/loader':
         specifier: workspace:^
         version: link:../loader
@@ -149,8 +149,8 @@ importers:
   packages/sandbox:
     dependencies:
       '@babel/runtime':
-        specifier: ^7.10.5
-        version: 7.23.6
+        specifier: ^7.26.10
+        version: 7.26.10
       '@qiankunjs/shared':
         specifier: workspace:^
         version: link:../shared
@@ -165,8 +165,8 @@ importers:
   packages/shared:
     dependencies:
       '@babel/runtime':
-        specifier: ^7.10.5
-        version: 7.23.6
+        specifier: ^7.26.10
+        version: 7.26.10
       lodash:
         specifier: ^4.17.11
         version: 4.17.21
@@ -726,6 +726,14 @@ packages:
     engines: {node: '>=6.9.0'}
     dependencies:
       regenerator-runtime: 0.14.1
+    dev: true
+
+  /@babel/runtime@7.26.10:
+    resolution: {integrity: sha512-2WJMeRQPHKSPemqk/awGrAiuFfzBmOIPXKizAsVhWH9YJqLZ0H+HS4c8loHGgW6utJ3E/ejXQUsiGaQy2NZ9Fw==}
+    engines: {node: '>=6.9.0'}
+    dependencies:
+      regenerator-runtime: 0.14.1
+    dev: false
 
   /@babel/runtime@7.27.6:
     resolution: {integrity: sha512-vbavdySgbTTrmFE+EsiqUTzlOr5bzlnJtUv9PynGCAKvfQqjIXbvFdumPM/GxMDfyuGMJaJAU6TO4zc1Jf1i8Q==}
@@ -2299,7 +2307,7 @@ packages:
     peerDependencies:
       react: '>=16.3.0'
     dependencies:
-      '@babel/runtime': 7.23.6
+      '@babel/runtime': 7.27.6
       hoist-non-react-statics: 3.3.2
       react: 18.3.1
       react-is: 16.13.1
@@ -4308,7 +4316,7 @@ packages:
   /@umijs/history@5.3.1:
     resolution: {integrity: sha512-/e0cEGrR2bIWQD7pRl3dl9dcyRGeC9hoW0OCvUTT/hjY0EfUrkd6G8ZanVghPMpDuY5usxq9GVcvrT8KNXLWvA==}
     dependencies:
-      '@babel/runtime': 7.23.6
+      '@babel/runtime': 7.27.6
       query-string: 6.14.1
     dev: true
 
@@ -9195,7 +9203,7 @@ packages:
   /history@5.3.0:
     resolution: {integrity: sha512-ZqaKwjjrAYUYfLG+htGaIIZ4nioX2L70ZUMIFysS3xvBsSG4x/n1V6TXV3N8ZYNuFGlDirFg32T7B6WOUPDYcQ==}
     dependencies:
-      '@babel/runtime': 7.23.6
+      '@babel/runtime': 7.27.6
     dev: true
 
   /hmac-drbg@1.0.1:
@@ -9480,7 +9488,7 @@ packages:
   /import-html-entry@1.15.2:
     resolution: {integrity: sha512-XXtXpGAq811qBgFVdOU6LoOC67rirwv7qwz/zuz1KxbpAM7QYX6kMvELOdSfhjZ9ntQnsdEOXT2zV7xMYaky6w==}
     dependencies:
-      '@babel/runtime': 7.23.6
+      '@babel/runtime': 7.27.6
     dev: true
 
   /import-lazy@4.0.0:
@@ -13570,7 +13578,7 @@ packages:
       react: ^16.6.0 || ^17.0.0 || ^18.0.0
       react-dom: ^16.6.0 || ^17.0.0 || ^18.0.0
     dependencies:
-      '@babel/runtime': 7.23.6
+      '@babel/runtime': 7.27.6
       invariant: 2.2.4
       prop-types: 15.8.1
       react: 18.3.1

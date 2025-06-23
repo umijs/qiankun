@@ -14,7 +14,7 @@
   "author": "Kuitos",
   "license": "MIT",
   "dependencies": {
-    "@babel/runtime": "^7.10.5",
+    "@babel/runtime": "^7.26.10",
     "lodash": "^4.17.11",
     "semver": "^7.5.3"
   },
