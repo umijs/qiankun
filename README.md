@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://qiankun.umijs.org" target="_blank" rel="noopener noreferrer">
-    <img width="180" src="https://user-images.githubusercontent.com/5206843/156369489-cf708a6a-1937-4dd9-895b-c6d17156c493.png" alt="qiankun logo">
+    <img width="180" src="./docs/logo.png" alt="qiankun logo">
   </a>
 </p>
 
@@ -13,6 +13,9 @@
 </p>
 
 # qiankun（乾坤）
+
+> [!WARNING]
+> 🚧 qiankun 3.0 is currently under active development. Check out the [Roadmap](https://github.com/umijs/qiankun/discussions/1378) for more details.
 
 > In Chinese, `qian(乾)` means heaven and `kun(坤)` earth. `qiankun` is the universe.
 
@@ -60,8 +63,14 @@ And on top of these, it offers:
 | Package | Version (click for changelogs) |
 | --- | :-- |
 | [qiankun](packages/qiankun) | [![qiankun version](https://img.shields.io/npm/v/qiankun/next.svg?label=%20)](packages/qiankun/CHANGELOG.md) |
-| [@qiankunjs/loader](packages/loader) | [![qiankun version](https://img.shields.io/npm/v/@qiankunjs/loader/alpha.svg?label=%20)](packages/qiankun/CHANGELOG.md) |
-| [@qiankunjs/sandbox](packages/sandbox) | [![qiankun version](https://img.shields.io/npm/v/@qiankunjs/sandbox/alpha.svg?label=%20)](packages/qiankun/CHANGELOG.md) |
+| [@qiankunjs/loader](packages/loader) | [![loader version](https://img.shields.io/npm/v/@qiankunjs/loader/alpha.svg?label=%20)](packages/loader/CHANGELOG.md) |
+| [@qiankunjs/sandbox](packages/sandbox) | [![sandbox version](https://img.shields.io/npm/v/@qiankunjs/sandbox/alpha.svg?label=%20)](packages/sandbox/CHANGELOG.md) |
+| [@qiankunjs/shared](packages/shared) | [![shared version](https://img.shields.io/npm/v/@qiankunjs/shared/alpha.svg?label=%20)](packages/shared/CHANGELOG.md) |
+| [@qiankunjs/react](packages/ui-bindings/react) | [![react version](https://img.shields.io/npm/v/@qiankunjs/react/alpha.svg?label=%20)](packages/ui-bindings/react/CHANGELOG.md) |
+| [@qiankunjs/vue](packages/ui-bindings/vue) | [![vue version](https://img.shields.io/npm/v/@qiankunjs/vue/alpha.svg?label=%20)](packages/ui-bindings/vue/CHANGELOG.md) |
+| [@qiankunjs/ui-shared](packages/ui-bindings/shared) | [![ui-shared version](https://img.shields.io/npm/v/@qiankunjs/ui-shared/alpha.svg?label=%20)](packages/ui-bindings/shared/CHANGELOG.md) |
+| [@qiankunjs/webpack-plugin](packages/webpack-plugin) | [![webpack-plugin version](https://img.shields.io/npm/v/@qiankunjs/webpack-plugin/alpha.svg?label=%20)](packages/webpack-plugin/CHANGELOG.md) |
+| [create-qiankun](packages/create-qiankun) | [![create-qiankun version](https://img.shields.io/npm/v/create-qiankun/alpha.svg?label=%20)](packages/create-qiankun/CHANGELOG.md) |
 
 ## 📦 Installation
 
