@@ -4,8 +4,8 @@
  */
 import { type Free } from './types';
 
-const rawAddEventListener = window.addEventListener;
-const rawRemoveEventListener = window.removeEventListener;
+const rawAddEventListener = window.addEventListener.bind(window);
+const rawRemoveEventListener = window.removeEventListener.bind(window);
 
 type ListenerMapObject = {
   listener: EventListenerOrEventListenerObject;
@@ -83,7 +83,7 @@ export default function patch(global: WindowProxy): Free {
     const addListener = addCacheListener(listenerMap, type, rawListener, rawOptions);
 
     if (!addListener) return;
-    return rawAddEventListener.call(global, type, addListener.listener, addListener.options);
+    return rawAddEventListener(type, addListener.listener, addListener.options);
   };
 
   global.removeEventListener = (
@@ -92,7 +92,7 @@ export default function patch(global: WindowProxy): Free {
     rawOptions?: boolean | AddEventListenerOptions,
   ) => {
     const { listener, options } = removeCacheListener(listenerMap, type, rawListener, rawOptions);
-    return rawRemoveEventListener.call(global, type, listener, options);
+    return rawRemoveEventListener(type, listener, options);
   };
 
   return function free() {
