@@ -31,7 +31,7 @@
   },
   "homepage": "https://github.com/kuitos/qiankun#readme",
   "dependencies": {
-    "@babel/runtime": "^7.10.5",
+    "@babel/runtime": "^7.26.10",
     "@qiankunjs/loader": "workspace:^",
     "@qiankunjs/sandbox": "workspace:^",
     "@qiankunjs/shared": "workspace:^",
