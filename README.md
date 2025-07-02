@@ -117,11 +117,11 @@ Visit `http://localhost:7099`.
 See [Qiankun 3.0 Roadmap](https://github.com/umijs/qiankun/discussions/1378)
 
 ## 🤝 Contributing
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/umijs/qiankun)
 
 See [contributing guide](./CONTRIBUTING.md).
 
 ## 👥 Contributors
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/umijs/qiankun)
 Thanks to all the contributors!
 
 <a href="https://github.com/umijs/qiankun/graphs/contributors">
