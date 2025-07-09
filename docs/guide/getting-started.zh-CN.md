@@ -120,6 +120,20 @@ qiankun 基于 single-spa，所以你可以在[这里](https://single-spa.js.org
 
 #### webpack:
 
+如果使用 Webpack v5:
+```js
+const packageName = require('./package.json').name;
+
+module.exports = {
+  output: {
+    library: `${packageName}-[name]`,
+    libraryTarget: 'umd',
+    chunkLoadingGlobal: `webpackJsonp_${packageName}`,
+  },
+};
+```
+
+如果使用 Webpack v4:
 ```js
 const packageName = require('./package.json').name;
 
