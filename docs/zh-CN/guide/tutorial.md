@@ -1,14 +1,10 @@
----
-toc: menu
----
+# 教程
 
-# 项目实践
-
-本教程适合新接触 `qiankun` 的人群，从 0 介绍如何构建一个 `qiankun` 项目。
+本教程适合新接触 `qiankun` 的人群，从零开始介绍如何构建一个 `qiankun` 项目。
 
 ## 主应用
 
-主应用不限技术栈，只需要提供一个容器 DOM，然后注册微应用并 `start` 即可。
+主应用不限技术栈，只需要提供一个容器 DOM，然后注册微应用并启动 qiankun 即可。
 
 首先安装 `qiankun`：
 
@@ -51,7 +47,7 @@ start();
 
 1. 新增 `public-path.js` 文件，用于修改运行时的 `publicPath`。[什么是运行时的 publicPath？](https://webpack.js.org/guides/public-path/#on-the-fly)
 
-:::warning
+::: warning
 注意：运行时的 `publicPath` 和构建时的 `publicPath` 是不同的，两者不能等价替代。
 :::
 
@@ -113,7 +109,9 @@ start();
    }
    ```
 
-重要的是，在通过 ReactDOM.render 挂载子应用时，需要确保每个子应用都使用新的路由实例加载。
+::: tip
+重要提示：在通过 ReactDOM.render 挂载子应用时，需要确保每个子应用都使用新的路由实例加载。
+:::
 
 4. 修改 `webpack` 配置
 

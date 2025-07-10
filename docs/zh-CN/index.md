@@ -2,12 +2,12 @@
 layout: home
 
 hero:
-  name: qiankun
+  name: Qiankun
   text: 微前端解决方案
   tagline: 可能是你见过的最完善的微前端解决方案🧐
   image:
     src: /logo.png
-    alt: qiankun
+    alt: Qiankun
   actions:
     - theme: brand
       text: 快速开始

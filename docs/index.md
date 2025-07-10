@@ -2,12 +2,12 @@
 layout: home
 
 hero:
-  name: qiankun
+  name: Qiankun
   text: Micro-Frontend Solution
   tagline: Probably the most complete micro-frontends solution you ever met🧐
   image:
     src: /logo.png
-    alt: qiankun
+    alt: Qiankun
   actions:
     - theme: brand
       text: Get Started

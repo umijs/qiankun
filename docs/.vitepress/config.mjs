@@ -44,6 +44,7 @@ export default defineConfig({
               items: [
                 { text: 'What is qiankun?', link: '/guide/' },
                 { text: 'Quick Start', link: '/guide/quick-start' },
+                { text: 'Tutorial', link: '/guide/tutorial' },
               ]
             }
           ],
@@ -125,7 +126,7 @@ export default defineConfig({
               text: '介绍',
               items: [
                 { text: '什么是 qiankun?', link: '/zh-CN/guide/' },
-                { text: '快速开始', link: '/zh-CN/guide/getting-started' },
+                { text: '快速开始', link: '/zh-CN/guide/quick-start' },
                 { text: '详细教程', link: '/zh-CN/guide/tutorial' },
               ]
             }
