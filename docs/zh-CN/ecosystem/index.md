@@ -314,7 +314,7 @@ function Dashboard() {
 ## 📚 文档链接
 
 - [React 绑定](/zh-CN/ecosystem/react) - 完整 React 集成指南
-- [Vue 绑定](/zh-CN/ecosystem/vue) - 完整 Vue 集成指南  
+- [Vue 绑定](/zh-CN/ecosystem/vue) - 完整 Vue 集成指南
 - [Webpack 插件](/zh-CN/ecosystem/webpack-plugin) - 构建工具配置
 - [Create Qiankun](/zh-CN/ecosystem/create-qiankun) - 项目脚手架
 - [API 参考](/zh-CN/api/) - 核心 qiankun API
