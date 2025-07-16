@@ -1,4 +1,5 @@
 import { type Compiler, type Compilation, type WebpackPluginInstance } from 'webpack';
+import { RawSource } from 'webpack-sources';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -165,12 +166,10 @@ export class QiankunPlugin implements WebpackPluginInstance {
       if (filename.endsWith('.html')) {
         const htmlAsset = assets[filename];
         const source = htmlAsset.source();
-        const modifiedSource = this.modifyHtmlContent(source);
+        const sourceString = typeof source === 'string' ? source : source.toString();
+        const modifiedSource = this.modifyHtmlContent(sourceString);
 
-        assets[filename] = {
-          source: () => modifiedSource,
-          size: () => modifiedSource.length,
-        };
+        assets[filename] = new RawSource(modifiedSource);
       }
     });
   }
@@ -182,20 +181,18 @@ export class QiankunPlugin implements WebpackPluginInstance {
       if (filename.endsWith('.html')) {
         const htmlAsset = compilation.getAsset?.(filename) as
           | {
-              source: () => string;
+              source: () => string | Buffer;
               size: () => number;
             }
           | undefined;
 
         if (htmlAsset) {
           const source = htmlAsset.source();
-          const modifiedSource = this.modifyHtmlContent(source);
+          const sourceString = typeof source === 'string' ? source : source.toString();
+          const modifiedSource = this.modifyHtmlContent(sourceString);
 
           if (compilation.updateAsset) {
-            compilation.updateAsset(filename, {
-              source: () => modifiedSource,
-              size: () => modifiedSource.length,
-            });
+            compilation.updateAsset(filename, new RawSource(modifiedSource));
           }
         }
       }
