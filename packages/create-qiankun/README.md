@@ -1,6 +1,6 @@
 # @qiankunjs/create-qiankun
 
-**English** | [中文](./README-zh.md)
+[中文文档](./README-zh.md) | English
 
 `@qiankunjs/create-qiankun` is a scaffolding tool designed for the [qiankun](https://github.com/umijs/qiankun) micro-frontend framework. It helps developers quickly start example projects and get up to speed with qiankun.
 
@@ -57,7 +57,6 @@ npx create-qiankun@latest my-project 3 react18-main react18-webpack-sub history 
 ```
 
 Arguments order:
-
 1. Project name
 2. Creation mode (1: main app only, 2: sub apps only, 3: main + sub apps)
 3. Main app framework (when applicable)
@@ -77,33 +76,31 @@ The tool now includes comprehensive input validation:
 
 ### Main Application Templates
 
-| Template Name   | Description           | Status   |
-| --------------- | --------------------- | -------- |
-| React18+Webpack | React 18 with Webpack | ✅ Ready |
-| Vue3+Webpack    | Vue 3 with Webpack    | ✅ Ready |
-| React18+umi     | React 18 with UmiJS   | ✅ Ready |
+| Template Name    | Description                  | Status |
+| ---------------- | --------------------------- | ------ |
+| React18+Webpack  | React 18 with Webpack      | ✅ Ready |
+| Vue3+Webpack     | Vue 3 with Webpack         | ✅ Ready |
+| React18+umi      | React 18 with UmiJS         | ✅ Ready |
 
 ### Sub Application Templates
 
-| Template Name   | Description           | Status                        |
-| --------------- | --------------------- | ----------------------------- |
-| React18+Webpack | React 18 with Webpack | ✅ Ready                      |
-| React16+Webpack | React 16 with Webpack | ✅ Ready                      |
-| Vue3+Webpack    | Vue 3 with Webpack    | ✅ Ready                      |
-| Vue2+Webpack    | Vue 2 with Webpack    | ⚠️ Issues with pnpm workspace |
-| Vite+Vue3       | Vue 3 with Vite       | 🚧 Under development          |
-| Vite+React18    | React 18 with Vite    | 🚧 Under development          |
+| Template Name    | Description                  | Status |
+| ---------------- | --------------------------- | ------ |
+| React18+Webpack  | React 18 with Webpack      | ✅ Ready |
+| React16+Webpack  | React 16 with Webpack      | ✅ Ready |
+| Vue3+Webpack     | Vue 3 with Webpack         | ✅ Ready |
+| Vue2+Webpack     | Vue 2 with Webpack         | ⚠️ Issues with pnpm workspace |
+| Vite+Vue3        | Vue 3 with Vite            | 🚧 Under development |
+| Vite+React18     | React 18 with Vite         | 🚧 Under development |
 
 ## Package Manager Support
 
 ### Standard Mode
-
 - **npm**: Full support with automatic dependency installation
-- **yarn**: Full support with automatic dependency installation
+- **yarn**: Full support with automatic dependency installation  
 - **pnpm**: Full support with automatic dependency installation
 
 ### Monorepo Mode
-
 - **pnpm workspace**: Full support with automatic workspace configuration
 
 ## Recent Improvements
@@ -123,7 +120,6 @@ The tool now includes comprehensive input validation:
 After creation, your project will have the following structure:
 
 ### Standard Mode
-
 ```
 my-project/
 ├── main-app/          # Main application
@@ -140,7 +136,6 @@ my-project/
 ```
 
 ### Monorepo Mode (pnpm workspace)
-
 ```
 my-project/
 ├── packages/
@@ -156,7 +151,6 @@ my-project/
 Start the applications in development mode:
 
 ### Standard Mode
-
 ```bash
 # Start main application
 cd main-app && npm run dev
@@ -167,7 +161,6 @@ cd sub-app-2 && npm run dev
 ```
 
 ### Monorepo Mode
-
 ```bash
 # Start all applications
 pnpm run dev:app1  # Main application
@@ -178,7 +171,6 @@ pnpm run dev:app3  # Sub application 2
 ## Port Management
 
 The tool automatically:
-
 - Generates safe port numbers (avoiding system ports and common service ports)
 - Checks for port conflicts before starting applications
 - Provides helpful error messages if ports are occupied

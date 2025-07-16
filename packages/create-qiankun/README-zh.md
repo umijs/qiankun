@@ -1,6 +1,6 @@
 # @qiankunjs/create-qiankun
 
-[English](./README.md) | **中文**
+中文 | [English](./README.md)
 
 `@qiankunjs/create-qiankun` 是一个为 [qiankun](https://github.com/umijs/qiankun) 微前端框架设计的脚手架工具。旨在快速启动示例项目，方便开发者快速上手。
 
@@ -57,7 +57,6 @@ npx create-qiankun@latest my-project 3 react18-main react18-webpack-sub history 
 ```
 
 参数顺序：
-
 1. 项目名称
 2. 创建模式 (1: 仅主应用, 2: 仅子应用, 3: 主应用+子应用)
 3. 主应用框架 (适用时)
@@ -77,33 +76,31 @@ npx create-qiankun@latest my-project 3 react18-main react18-webpack-sub history 
 
 ### 主应用模板
 
-| 模板名称        | 描述                  | 状态    |
-| --------------- | --------------------- | ------- |
-| React18+Webpack | React 18 配合 Webpack | ✅ 可用 |
-| Vue3+Webpack    | Vue 3 配合 Webpack    | ✅ 可用 |
-| React18+umi     | React 18 配合 UmiJS   | ✅ 可用 |
+| 模板名称         | 描述                        | 状态     |
+| --------------- | --------------------------- | -------- |
+| React18+Webpack | React 18 配合 Webpack      | ✅ 可用   |
+| Vue3+Webpack    | Vue 3 配合 Webpack         | ✅ 可用   |
+| React18+umi     | React 18 配合 UmiJS        | ✅ 可用   |
 
 ### 子应用模板
 
-| 模板名称        | 描述                  | 状态                        |
-| --------------- | --------------------- | --------------------------- |
-| React18+Webpack | React 18 配合 Webpack | ✅ 可用                     |
-| React16+Webpack | React 16 配合 Webpack | ✅ 可用                     |
-| Vue3+Webpack    | Vue 3 配合 Webpack    | ✅ 可用                     |
-| Vue2+Webpack    | Vue 2 配合 Webpack    | ⚠️ 在 pnpm workspace 有问题 |
-| Vite+Vue3       | Vue 3 配合 Vite       | 🚧 开发中                   |
-| Vite+React18    | React 18 配合 Vite    | 🚧 开发中                   |
+| 模板名称         | 描述                        | 状态                      |
+| --------------- | --------------------------- | ------------------------- |
+| React18+Webpack | React 18 配合 Webpack      | ✅ 可用                    |
+| React16+Webpack | React 16 配合 Webpack      | ✅ 可用                    |
+| Vue3+Webpack    | Vue 3 配合 Webpack         | ✅ 可用                    |
+| Vue2+Webpack    | Vue 2 配合 Webpack         | ⚠️ 在 pnpm workspace 有问题 |
+| Vite+Vue3       | Vue 3 配合 Vite            | 🚧 开发中                  |
+| Vite+React18    | React 18 配合 Vite         | 🚧 开发中                  |
 
 ## 包管理器支持
 
 ### 标准模式
-
 - **npm**：完全支持，自动安装依赖
 - **yarn**：完全支持，自动安装依赖
 - **pnpm**：完全支持，自动安装依赖
 
 ### Monorepo 模式
-
 - **pnpm workspace**：完全支持，自动配置工作空间
 
 ## 最新改进
@@ -123,7 +120,6 @@ npx create-qiankun@latest my-project 3 react18-main react18-webpack-sub history 
 创建后，您的项目将具有以下结构：
 
 ### 标准模式
-
 ```
 my-project/
 ├── main-app/          # 主应用
@@ -140,7 +136,6 @@ my-project/
 ```
 
 ### Monorepo 模式 (pnpm workspace)
-
 ```
 my-project/
 ├── packages/
@@ -156,7 +151,6 @@ my-project/
 在开发模式下启动应用：
 
 ### 标准模式
-
 ```bash
 # 启动主应用
 cd main-app && npm run dev
@@ -167,7 +161,6 @@ cd sub-app-2 && npm run dev
 ```
 
 ### Monorepo 模式
-
 ```bash
 # 启动所有应用
 pnpm run dev:app1  # 主应用
@@ -178,7 +171,6 @@ pnpm run dev:app3  # 子应用 2
 ## 端口管理
 
 工具会自动：
-
 - 生成安全的端口号（避免系统端口和常见服务端口）
 - 在启动应用前检查端口冲突
 - 如果端口被占用，提供有用的错误消息
