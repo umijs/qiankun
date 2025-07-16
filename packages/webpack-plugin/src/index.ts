@@ -3,9 +3,9 @@ import { RawSource } from 'webpack-sources';
 import * as path from 'path';
 import * as fs from 'fs';
 
-// 扩展 webpack 的 output 类型以包含 webpack 4 的 library 属性
+// 扩展 webpack 的 output 类型以包含 webpack 4 和 5 的 library 属性
 interface WebpackOutputWithLegacy {
-  library?: string;
+  library?: string | { name?: string; type?: string };
   libraryTarget?: string;
   publicPath?: string;
   filename?: string;
@@ -13,6 +13,9 @@ interface WebpackOutputWithLegacy {
   path?: string;
   libraryExport?: string;
   umdNamedDefine?: boolean;
+  jsonpFunction?: string;
+  chunkLoadingGlobal?: string;
+  globalObject?: string;
   [key: string]: unknown;
 }
 
@@ -98,20 +101,36 @@ export class QiankunPlugin implements WebpackPluginInstance {
   private configureWebpackOutput(compiler: Compiler): void {
     const output = compiler.options.output as WebpackOutputWithLegacy;
     const packageJson = QiankunPlugin.getPackageJson();
+    const libraryName = packageJson.name ?? 'qiankun-app';
 
-    // 设置 library 名称
-    if (!output.library) {
-      output.library = packageJson.name ?? 'qiankun-app';
-    }
-
-    // 设置 libraryTarget 为 umd
-    if (!output.libraryTarget) {
-      output.libraryTarget = 'umd';
-    }
-
-    // 设置 chunkLoadingGlobal 前缀
-    if (!output.chunkLoadingGlobal) {
-      output.chunkLoadingGlobal = `${this.chunkLoadingGlobalPrefix}${packageJson.name ?? 'app'}`;
+    // 检测 webpack 版本来设置正确的 library 配置
+    if (compiler.webpack?.version && compiler.webpack.version.startsWith('5')) {
+      // Webpack 5 配置
+      if (!output.library) {
+        output.library = {
+          name: libraryName,
+          type: 'umd',
+        };
+      }
+      
+      // 设置 chunkLoadingGlobal 前缀
+      if (!output.chunkLoadingGlobal) {
+        output.chunkLoadingGlobal = `${this.chunkLoadingGlobalPrefix}${libraryName}`;
+      }
+    } else {
+      // Webpack 4 配置
+      if (!output.library) {
+        output.library = libraryName;
+      }
+      
+      if (!output.libraryTarget) {
+        output.libraryTarget = 'umd';
+      }
+      
+      // 设置 jsonpFunction (webpack 4)
+      if (!output.jsonpFunction) {
+        output.jsonpFunction = `${this.chunkLoadingGlobalPrefix}${libraryName}`;
+      }
     }
 
     // 设置 globalObject
@@ -169,7 +188,7 @@ export class QiankunPlugin implements WebpackPluginInstance {
         const sourceString = typeof source === 'string' ? source : source.toString();
         const modifiedSource = this.modifyHtmlContent(sourceString);
 
-        assets[filename] = new RawSource(modifiedSource);
+        assets[filename] = new RawSource(modifiedSource) as unknown as (typeof assets)[string];
       }
     });
   }
@@ -192,7 +211,7 @@ export class QiankunPlugin implements WebpackPluginInstance {
           const modifiedSource = this.modifyHtmlContent(sourceString);
 
           if (compilation.updateAsset) {
-            compilation.updateAsset(filename, new RawSource(modifiedSource));
+            compilation.updateAsset(filename, new RawSource(modifiedSource) as unknown);
           }
         }
       }
