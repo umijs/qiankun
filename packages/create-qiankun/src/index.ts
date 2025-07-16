@@ -30,21 +30,21 @@ const packageManagerMap: { [key in PackageManager]: string } = {
 
 createQiankunDefaultProject().catch((e) => {
   console.error(e);
+  process.exit(1);
 });
 
 export async function createQiankunDefaultProject() {
   console.log();
   console.log(green('Welcome to use create-qiankun-starter!'));
-
   console.log();
 
-  const [projectName, createKind, mainAppName, subAppNameList, mainRoute, packageManager] = minimist(
-    process.argv.slice(2),
-  )._;
+  const argv = minimist(process.argv.slice(2));
+  const [projectName, createKind, mainAppName, subAppNameList, mainRoute, packageManager] = argv._;
 
   let result: PromptAnswer;
 
-  const inputCreateKind = createKind && (String(createKind) as CreateKind);
+  const inputCreateKind = createKind ? (String(createKind) as CreateKind) : undefined;
+
   try {
     result = (await prompts(
       [
@@ -52,6 +52,15 @@ export async function createQiankunDefaultProject() {
           name: 'projectName',
           type: projectName ? null : 'text',
           message: 'Project name:',
+          validate: (value: string) => {
+            if (!value || value.trim().length === 0) {
+              return 'Project name is required';
+            }
+            if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+              return 'Project name should only contain letters, numbers, underscores and hyphens';
+            }
+            return true;
+          },
         },
         {
           name: 'createKind',
@@ -64,9 +73,8 @@ export async function createQiankunDefaultProject() {
           type: mainAppName
             ? null
             : (_prev: string, values: PromptAnswer) => {
-                return [CreateKind.CreateMainApp, CreateKind.CreateMainAndSubApp].includes(
-                  inputCreateKind || values.createKind,
-                )
+                const currentCreateKind = inputCreateKind || values.createKind;
+                return [CreateKind.CreateMainApp, CreateKind.CreateMainAndSubApp].includes(currentCreateKind)
                   ? 'select'
                   : null;
               },
@@ -78,9 +86,8 @@ export async function createQiankunDefaultProject() {
           type: mainRoute
             ? null
             : (_prev: string, values: PromptAnswer) => {
-                return [CreateKind.CreateMainApp, CreateKind.CreateMainAndSubApp].includes(
-                  inputCreateKind || values.createKind,
-                )
+                const currentCreateKind = inputCreateKind || values.createKind;
+                return [CreateKind.CreateMainApp, CreateKind.CreateMainAndSubApp].includes(currentCreateKind)
                   ? 'select'
                   : null;
               },
@@ -93,14 +100,10 @@ export async function createQiankunDefaultProject() {
           type: subAppNameList
             ? null
             : (_prev: string, values: PromptAnswer) => {
-                const _createKind = inputCreateKind || values.createKind;
-                if (_createKind === CreateKind.CreateMainAndSubApp) {
-                  return 'multiselect';
-                }
-                if (_createKind === CreateKind.CreateSubApp) {
-                  return 'multiselect';
-                }
-                return null;
+                const currentCreateKind = inputCreateKind || values.createKind;
+                return [CreateKind.CreateSubApp, CreateKind.CreateMainAndSubApp].includes(currentCreateKind)
+                  ? 'multiselect'
+                  : null;
               },
           message: 'Choose a framework for your sub application',
           choices: subFrameworkList,
@@ -130,15 +133,13 @@ export async function createQiankunDefaultProject() {
 
   const root = process.cwd();
 
+  // 构建用户选择，优先使用命令行参数，其次使用交互式输入的结果
   const userChoose: PromptAnswer = {
     projectName: projectName || result.projectName,
-    createKind: createKind ? (String(createKind) as CreateKind) : result.createKind,
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    createKind: inputCreateKind || result.createKind,
     mainAppName: (mainAppName as MainFrameworkTemplate) || result.mainAppName,
-    subAppNameList: subAppNameList ? ([subAppNameList] as SubFrameworkTemplate[]) : result.subAppNameList,
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    subAppNameList: subAppNameList ? [subAppNameList as SubFrameworkTemplate] : result.subAppNameList,
     mainRoute: (mainRoute as IRoutePattern) || result.mainRoute,
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     packageManager: (packageManager as PackageManager) || result.packageManager,
   };
 
@@ -149,99 +150,107 @@ export async function createQiankunDefaultProject() {
     process.exit(1);
   }
 
-  // detach Monorepo
-  // const monorepoRoot = simpleDetectMonorepoRoot(targetDir);
-  // const inMonorepo = !!monorepoRoot;
-  // const projectRoot = inMonorepo ? monorepoRoot : targetDir;
   const projectRoot = targetDir;
   console.log(green(`\n Project will be created at: ${projectRoot}`));
   console.log();
   console.log(green(`\n Creating project...`));
 
-  // render
-  await renderTemplate({
-    projectRoot,
-    userChoose,
-  });
+  try {
+    // render
+    await renderTemplate({
+      projectRoot,
+      userChoose,
+    });
 
-  // console.log();
-  // console.log(green(`\n Created ${userChoose.projectName}  success!`));
-  console.log();
-  console.log(bold(green(`\n Done.`)));
+    console.log();
+    console.log(bold(green(`\n Done.`)));
+  } catch (error) {
+    console.error(red('Error creating project:'), error);
+    process.exit(1);
+  }
 }
 
 async function renderTemplate(opts: RenderOptions) {
   const { createKind, mainAppName, mainRoute, subAppNameList, packageManager } = opts.userChoose;
 
-  let mainAppTargetPath = '',
-    monorepoRootPath: string | undefined;
+  let mainAppTargetPath = '';
+  let monorepoRootPath: string | undefined;
   const mainAppPort = generatePort();
 
   const _packageManager = packageManager?.includes('pnpm') ? 'pnpm' : packageManager;
+
   // create main application
-  if ([CreateKind.CreateMainApp, CreateKind.CreateMainAndSubApp].includes(createKind)) {
-    const mainAppInfo = await createApplication(
-      mainAppName!,
-      { port: mainAppPort, mainRoute, ...installQiankunPkgs, packageManager: _packageManager },
-      {
-        ...opts,
-        gitInit: true,
-        hooks: {
-          async beforeRender(context) {
-            await injectCheckPortScript(context.applicationTargetPath);
-          },
-          async afterRender(context) {
-            await injectPreNpmScript(context.applicationTargetPath);
+  if ([CreateKind.CreateMainApp, CreateKind.CreateMainAndSubApp].includes(createKind) && mainAppName) {
+    try {
+      const mainAppInfo = await createApplication(
+        mainAppName,
+        { port: mainAppPort, mainRoute, ...installQiankunPkgs, packageManager: _packageManager },
+        {
+          ...opts,
+          gitInit: true,
+          hooks: {
+            async beforeRender(context) {
+              await injectCheckPortScript(context.applicationTargetPath);
+            },
+            async afterRender(context) {
+              await injectPreNpmScript(context.applicationTargetPath);
+            },
           },
         },
-      },
-    );
-    mainAppTargetPath = mainAppInfo.applicationTargetPath;
-    monorepoRootPath = mainAppInfo.monorepoDirPath;
+      );
+      mainAppTargetPath = mainAppInfo.applicationTargetPath;
+      monorepoRootPath = mainAppInfo.monorepoDirPath;
+    } catch (error) {
+      throw new Error(`Failed to create main application: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   // create sub applications
-  if ([CreateKind.CreateSubApp, CreateKind.CreateMainAndSubApp].includes(createKind)) {
+  if ([CreateKind.CreateSubApp, CreateKind.CreateMainAndSubApp].includes(createKind) && subAppNameList?.length) {
     const subsPorts = composeGeneratePorts(
-      subAppNameList!.map(() => generatePort),
+      subAppNameList.map(() => generatePort),
       mainAppPort ? [mainAppPort] : [],
     );
 
-    await Promise.all(
-      subAppNameList!.map((sub, i) =>
-        createApplication(
-          sub,
-          { port: subsPorts[i], appName: sub, ...installQiankunPkgs, packageManager: _packageManager },
-          {
-            ...opts,
-            gitInit: createKind === CreateKind.CreateSubApp || packageManager !== PackageManager.pnpmWorkspace,
-            monorepoDirPath: monorepoRootPath,
-            hooks: {
-              async beforeRender(context) {
-                await injectCheckPortScript(context.applicationTargetPath);
-              },
-              async afterRender(context) {
-                await injectPreNpmScript(context.applicationTargetPath);
+    try {
+      await Promise.all(
+        subAppNameList.map((sub, i) =>
+          createApplication(
+            sub,
+            { port: subsPorts[i], appName: sub, ...installQiankunPkgs, packageManager: _packageManager },
+            {
+              ...opts,
+              gitInit: createKind === CreateKind.CreateSubApp || packageManager !== PackageManager.pnpmWorkspace,
+              monorepoDirPath: monorepoRootPath,
+              hooks: {
+                async beforeRender(context) {
+                  await injectCheckPortScript(context.applicationTargetPath);
+                },
+                async afterRender(context) {
+                  await injectPreNpmScript(context.applicationTargetPath);
+                },
               },
             },
-          },
+          ),
         ),
-      ),
-    );
+      );
 
-    if (packageManager === PackageManager.pnpmWorkspace && monorepoRootPath) {
-      await injectWorkspaceScripts(monorepoRootPath);
-    }
-
-    if (createKind === CreateKind.CreateMainAndSubApp) {
-      if (packageManager !== PackageManager.pnpmWorkspace) {
-        await injectNormalScripts(opts);
+      if (packageManager === PackageManager.pnpmWorkspace && monorepoRootPath) {
+        await injectWorkspaceScripts(monorepoRootPath);
       }
 
-      await injectSubsConfigToMainApp(
-        mainAppTargetPath,
-        subAppNameList!.map((sub, i) => ({ subName: sub, port: subsPorts[i] })),
-      );
+      if (createKind === CreateKind.CreateMainAndSubApp) {
+        if (packageManager !== PackageManager.pnpmWorkspace) {
+          await injectNormalScripts(opts);
+        }
+
+        await injectSubsConfigToMainApp(
+          mainAppTargetPath,
+          subAppNameList.map((sub, i) => ({ subName: sub, port: subsPorts[i] })),
+        );
+      }
+    } catch (error) {
+      throw new Error(`Failed to create sub applications: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 }

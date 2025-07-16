@@ -1,37 +1,58 @@
-// fork get-port
+// Fork from get-port with modifications for qiankun
 const os = require('os');
 const net = require('net');
-const { name: pkgName } = require('../package.json')
+
+let pkgName;
+try {
+  const pkg = require('../package.json');
+  pkgName = pkg.name || 'Unknown Application';
+} catch (error) {
+  pkgName = 'Unknown Application';
+}
+
 const port = <%= port %>;
 
 async function checkPortIsOccupied() {
+  if (!port || isNaN(port) || port <= 0 || port > 65535) {
+    throw new Error(`Invalid port number: ${port}`);
+  }
+
   const hosts = getLocalHosts();
+  const errors = [];
 
   for (const host of hosts) {
     try {
-      await checkAvailablePort({ port, host }); // eslint-disable-line no-await-in-loop
+      await checkAvailablePort({ port, host });
     } catch (error) {
       if (!['EADDRNOTAVAIL', 'EINVAL'].includes(error.code)) {
-        throw error;
+        errors.push({ host, error: error.message });
       }
     }
   }
+
+  if (errors.length === hosts.size) {
+    throw new Error(`Port ${port} is occupied on all network interfaces`);
+  }
 }
 
-(async function(){
-  try{
-    await checkPortIsOccupied()
-  }catch(e){
-    console.warn(`\u001b[33m In [ ${pkgName} ] application, port [ ${port} ]  is occupied. Check whether other services are started! \u001b[39m\n`);
-
-    console.log(
-      `\u001b[33m If you want to replace the item port, manually update the sub-application information registered in the main application. Otherwise, [qiankun] fails to obtain resources. \u001b[39m\n`,
-    );
+async function main() {
+  try {
+    console.log(`\u001b[36mChecking port ${port} availability for application: ${pkgName}\u001b[39m`);
+    
+    await checkPortIsOccupied();
+    
+    console.log(`\u001b[32m✓ Port ${port} is available for ${pkgName}\u001b[39m\n`);
+  } catch (error) {
+    console.error(`\u001b[31m✗ Port check failed for ${pkgName}:\u001b[39m`);
+    console.error(`\u001b[33m  Port ${port} is occupied. Please ensure no other services are using this port.\u001b[39m`);
+    console.error(`\u001b[33m  If you want to change the port, please update the sub-application information registered in the main application.\u001b[39m`);
+    console.error(`\u001b[33m  Otherwise, qiankun may fail to load the sub-application resources.\u001b[39m\n`);
+    
+    console.error(`\u001b[90mError details: ${error.message}\u001b[39m`);
+    
     process.exit(1);
   }
-})()
-
-
+}
 
 function checkAvailablePort(options) {
   return new Promise((resolve, reject) => {
@@ -40,9 +61,9 @@ function checkAvailablePort(options) {
     server.on('error', reject);
 
     server.listen(options, () => {
-      const { port } = server.address();
+      const { port: serverPort } = server.address();
       server.close(() => {
-        resolve(port);
+        resolve(serverPort);
       });
     });
   });
@@ -50,16 +71,20 @@ function checkAvailablePort(options) {
 
 function getLocalHosts() {
   const interfaces = os.networkInterfaces();
-
-  // Add undefined value for createServer function to use default host,
-  // and default IPv4 host in case createServer defaults to IPv6.
   const results = new Set([undefined, '0.0.0.0']);
 
-  for (const _interface of Object.values(interfaces)) {
-    for (const config of _interface) {
-      results.add(config.address);
+  for (const interfaceList of Object.values(interfaces)) {
+    if (!interfaceList) continue;
+    
+    for (const config of interfaceList) {
+      if (config && config.address) {
+        results.add(config.address);
+      }
     }
   }
 
   return results;
 }
+
+// Run the main function
+main();
