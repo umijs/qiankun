@@ -1,7 +1,5 @@
 import { type Compiler, type Compilation, type WebpackPluginInstance } from 'webpack';
 import { RawSource } from 'webpack-sources';
-import * as path from 'path';
-import * as fs from 'fs';
 
 // 扩展 webpack 的 output 类型以包含 webpack 4 和 5 的 library 属性
 interface WebpackOutputWithLegacy {
@@ -19,13 +17,7 @@ interface WebpackOutputWithLegacy {
   [key: string]: unknown;
 }
 
-interface PackageJson {
-  name?: string;
-  version?: string;
-  dependencies?: Record<string, string>;
-  devDependencies?: Record<string, string>;
-  [key: string]: unknown;
-}
+
 
 // 定义 webpack 5 编译钩子类型
 interface WebpackCompilation {
@@ -45,17 +37,13 @@ interface WebpackCompilation {
 
 export interface QiankunPluginOptions {
   activeRule?: string | RegExp;
-  chunkLoadingGlobalPrefix?: string;
 }
 
 export class QiankunPlugin implements WebpackPluginInstance {
   private activeRule: RegExp | null = null;
-  private chunkLoadingGlobalPrefix: string;
-  private static packageJsonCache: PackageJson | null = null;
 
   constructor(options: QiankunPluginOptions = {}) {
     this.activeRule = this.validateRegexPattern(options.activeRule);
-    this.chunkLoadingGlobalPrefix = options.chunkLoadingGlobalPrefix || 'webpackChunkqiankun_';
   }
 
   private validateRegexPattern(pattern?: string | RegExp): RegExp | null {
@@ -73,66 +61,12 @@ export class QiankunPlugin implements WebpackPluginInstance {
     }
   }
 
-  private static getPackageJson(): PackageJson {
-    if (QiankunPlugin.packageJsonCache !== null) {
-      return QiankunPlugin.packageJsonCache;
-    }
 
-    try {
-      const projectRoot = process.cwd();
-      const packageJsonPath = path.join(projectRoot, 'package.json');
-
-      if (!fs.existsSync(packageJsonPath)) {
-        throw new Error(`package.json not found at ${packageJsonPath}`);
-      }
-
-      const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf-8');
-      const packageJson = JSON.parse(packageJsonContent) as PackageJson;
-
-      // 缓存结果
-      QiankunPlugin.packageJsonCache = packageJson;
-
-      return packageJson;
-    } catch (error) {
-      throw new Error(`Failed to read package.json: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
 
   private configureWebpackOutput(compiler: Compiler): void {
+    // 暂时简化配置，只设置 globalObject 以避免 webpack 5 配置冲突
     const output = compiler.options.output as WebpackOutputWithLegacy;
-    const packageJson = QiankunPlugin.getPackageJson();
-    const libraryName = packageJson.name ?? 'qiankun-app';
-
-    // 检测 webpack 版本来设置正确的 library 配置
-    if (compiler.webpack?.version && compiler.webpack.version.startsWith('5')) {
-      // Webpack 5 配置
-      if (!output.library) {
-        output.library = {
-          name: libraryName,
-          type: 'umd',
-        };
-      }
-      
-      // 设置 chunkLoadingGlobal 前缀
-      if (!output.chunkLoadingGlobal) {
-        output.chunkLoadingGlobal = `${this.chunkLoadingGlobalPrefix}${libraryName}`;
-      }
-    } else {
-      // Webpack 4 配置
-      if (!output.library) {
-        output.library = libraryName;
-      }
-      
-      if (!output.libraryTarget) {
-        output.libraryTarget = 'umd';
-      }
-      
-      // 设置 jsonpFunction (webpack 4)
-      if (!output.jsonpFunction) {
-        output.jsonpFunction = `${this.chunkLoadingGlobalPrefix}${libraryName}`;
-      }
-    }
-
+    
     // 设置 globalObject
     if (!output.globalObject) {
       output.globalObject = 'window';
