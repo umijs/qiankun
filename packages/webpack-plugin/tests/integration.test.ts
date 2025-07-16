@@ -327,7 +327,6 @@ describe('QiankunPlugin Integration Tests', () => {
         new QiankunPlugin({
           packageName: 'complex-test',
           entrySrcPattern: /main\.js$/,
-          entryAttributeName: 'data-entry',
           chunkLoadingGlobalPrefix: 'myPrefix_',
         });
       }).not.toThrow();

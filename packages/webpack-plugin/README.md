@@ -37,21 +37,21 @@ module.exports = {
   // ... other configurations
   plugins: [
     new QiankunPlugin({
-      packageName: 'optionalPackageName', // Optional, if not provided, the name from package.json will be used
-      entrySrcPattern: /main\.js$/g, // Optional, a regex pattern to match specific script tags for adding the 'entry' attribute
-      entryAttributeName: 'entry', // Optional, custom attribute name for entry scripts (default: 'entry')
-      chunkLoadingGlobalPrefix: 'webpackJsonp_', // Optional, custom prefix for chunk loading global (default: 'webpackJsonp_')
+      packageName: 'optional-package-name', // Optional, will use package.json name if not provided
+      entrySrcPattern: /main\.js$/g, // Optional, regex to match specific script tags
+      chunkLoadingGlobalPrefix: 'myPrefix_', // Optional, prefix for chunk loading global variable
     }),
   ],
 };
 ```
 
-## Options
+### Configuration Options
 
-- `packageName` (string, optional): Specifies the name of the output library. If not provided, the name from `package.json` will be used.
-- `entrySrcPattern` (RegExp, optional): A regex pattern to match specific script tags for adding the entry attribute. If not specified, the last script tag will be marked as entry.
-- `entryAttributeName` (string, optional): Custom attribute name for marking entry scripts. Defaults to `'entry'`.
-- `chunkLoadingGlobalPrefix` (string, optional): Custom prefix for the chunk loading global variable. Defaults to `'webpackJsonp_'`.
+- `packageName` (string, optional): The name of the package. If not provided, it will use the `name` field from `package.json`.
+- `entrySrcPattern` (RegExp, optional): A regular expression to match specific script tags that should be marked as entry points. If not provided, the plugin will mark the last script tag as the entry.
+- `chunkLoadingGlobalPrefix` (string, optional): The prefix for the chunk loading global variable. Default is `'webpackJsonp_'`.
+
+**Note**: The plugin will automatically add an `entry` attribute to the matched script tag to mark it as the entry point for qiankun.
 
 ## Webpack Version Compatibility
 

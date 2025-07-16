@@ -63,7 +63,6 @@ describe('QiankunPlugin', () => {
     it('should respect custom configuration options', () => {
       const plugin1 = new QiankunPlugin({
         packageName: 'test-app',
-        entryAttributeName: 'main-entry',
       });
       expect(plugin1).toBeDefined();
 
@@ -79,7 +78,6 @@ describe('QiankunPlugin', () => {
       const fullConfig = new QiankunPlugin({
         packageName: 'full-config-app',
         entrySrcPattern: /main\.js$/,
-        entryAttributeName: 'custom-entry',
         chunkLoadingGlobalPrefix: 'customPrefix_',
       });
       expect(fullConfig).toBeDefined();
@@ -242,19 +240,6 @@ describe('QiankunPlugin', () => {
       expect(result).toContain('entry');
       // 检查是否包含entry属性，不要求完全相等
       expect(result).toMatch(/script[^>]*entry/);
-    });
-
-    it('should handle custom entry attribute names', () => {
-      const plugin = new QiankunPlugin({
-        packageName: 'custom-attr-test',
-        entryAttributeName: 'main-entry',
-      });
-
-      const html = '<html><body><script src="app.js"></script></body></html>';
-      const result = (plugin as any).addEntryAttributeToScripts(html, 'test.html');
-
-      expect(result).toContain('main-entry');
-      // 不检查不包含 entry=""，因为 cheerio 可能会规范化属性
     });
 
     it('should handle inline scripts with regex pattern', () => {

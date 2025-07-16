@@ -39,19 +39,19 @@ module.exports = {
     new QiankunPlugin({
       packageName: '可选的包名', // 可选，如果未提供，将使用 package.json 中的 name
       entrySrcPattern: /main\.js$/g, // 可选，用于匹配特定脚本标签的正则表达式
-      entryAttributeName: 'entry', // 可选，入口脚本的自定义属性名（默认：'entry'）
-      chunkLoadingGlobalPrefix: 'webpackJsonp_', // 可选，块加载全局变量的自定义前缀（默认：'webpackJsonp_'）
+      chunkLoadingGlobalPrefix: 'myPrefix_', // 可选，块加载全局变量的前缀
     }),
   ],
 };
 ```
 
-## 配置选项
+### 配置选项
 
-- `packageName` (string, 可选): 指定输出库的名称。如果未提供，将使用 `package.json` 中的 name。
-- `entrySrcPattern` (RegExp, 可选): 用于匹配特定脚本标签以添加入口属性的正则表达式。如果未指定，将标记最后一个脚本标签为入口。
-- `entryAttributeName` (string, 可选): 标记入口脚本的自定义属性名。默认为 `'entry'`。
-- `chunkLoadingGlobalPrefix` (string, 可选): 块加载全局变量的自定义前缀。默认为 `'webpackJsonp_'`。
+- `packageName` (string, 可选): 包的名称。如果未提供，将使用 `package.json` 中的 `name` 字段。
+- `entrySrcPattern` (RegExp, 可选): 用于匹配应该标记为入口点的特定脚本标签的正则表达式。如果未提供，插件将标记最后一个脚本标签为入口。
+- `chunkLoadingGlobalPrefix` (string, 可选): 块加载全局变量的前缀。默认为 `'webpackJsonp_'`。
+
+**注意**: 插件会自动为匹配的脚本标签添加 `entry` 属性，以将其标记为 qiankun 的入口点。
 
 ## Webpack 版本兼容性
 
