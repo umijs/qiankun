@@ -19,7 +19,7 @@
 
 > In Chinese, `qian(乾)` means heaven and `kun(坤)` earth. `qiankun` is the universe.
 
-Qiankun enables you and your teams to build next-generation and enterprise-ready web applications leveraging [Micro Frontends](https://micro-frontends.org/). It is inspired by and based on [single-spa](https://github.com/CanopyTax/single-spa).
+Qiankun enables you and your teams to build next-generation and enterprise-ready web applications leveraging [Micro Frontends](https://micro-frontends.org/). It is inspired by and based on [single-spa](https://github.com/single-spa/single-spa).
 
 ## 🤔 Motivation
 
@@ -43,7 +43,7 @@ After solving these common problems of micro frontends and lots of polishing and
 
 ## :sparkles: Features
 
-Qiankun inherits many benefits from [single-spa](https://github.com/CanopyTax/single-spa):
+Qiankun inherits many benefits from [single-spa](https://github.com/single-spa/single-spa):
 
 - 📦 **Micro-apps Independent Deployment**
 - 🛴 **Lazy Load**
@@ -130,7 +130,7 @@ Thanks to all the contributors!
 
 ## 🎁 Acknowledgements
 
-- [single-spa](https://github.com/CanopyTax/single-spa) What an awesome meta-framework for micro-frontends!
+- [single-spa](https://github.com/single-spa/single-spa) What an awesome meta-framework for micro-frontends!
 - [writable-dom](https://github.com/marko-js/writable-dom/) Utility to stream HTML content into a live document.
 
 ## 📄 License
