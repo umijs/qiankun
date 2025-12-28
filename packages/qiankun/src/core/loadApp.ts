@@ -108,7 +108,6 @@ export default async function loadApp<T extends ObjectType>(
   await execHooksChain(toArray(beforeLoad), app, global);
 
   const lifecycles = await lifecyclesPromise;
-  if (!lifecycles) throw new QiankunError(`${appName} entry ${entry} load failed as it not export lifecycles`);
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
     lifecycles,
     appName,
@@ -230,12 +229,12 @@ function execHooksChain<T extends ObjectType>(
 }
 
 function getLifecyclesFromExports(
-  scriptExports: MicroAppLifeCycles,
+  scriptExports: MicroAppLifeCycles | undefined,
   appName: string,
   globalContext: WindowProxy,
   globalLatestSetProp?: PropertyKey,
 ): MicroAppLifeCycles {
-  const validateExportLifecycle = (exports: ObjectType | undefined): boolean => {
+  const validateExportLifecycle = (exports: ObjectType | undefined): exports is MicroAppLifeCycles => {
     const { bootstrap, mount, unmount } = exports ?? {};
     return isFunction(bootstrap) && isFunction(mount) && isFunction(unmount);
   };
