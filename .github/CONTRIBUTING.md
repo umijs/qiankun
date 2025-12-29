@@ -28,17 +28,20 @@ Before you begin contributing, please:
 
 1. Fork this repository
 2. Clone to local:
+
    ```bash
    git clone https://github.com/YOUR_USERNAME/qiankun.git
    cd qiankun
    ```
 
 3. Install dependencies:
+
    ```bash
    pnpm install
    ```
 
 4. Run tests:
+
    ```bash
    pnpm test
    ```
@@ -90,7 +93,7 @@ Note: The project uses `next` as the main development branch (as configured in c
 
 #### TypeScript Code Standards
 
-- **Strict Type Checking**: 
+- **Strict Type Checking**:
   - Enable TypeScript strict mode (already configured in tsconfig.json)
   - Avoid using `any` type (ESLint rule enforces `fixToUnknown: true`)
   - Use `unknown` instead of `any` when type is uncertain
@@ -141,11 +144,13 @@ All commits **MUST** be signed off with the Developer Certificate of Origin (DCO
 **How to sign off commits:**
 
 1. **Manual sign-off for each commit:**
+
    ```bash
    git commit -s -m "feat: add new feature"
    ```
 
 2. **Configure automatic sign-off:**
+
    ```bash
    git config user.name "Your Name"
    git config user.email "your.email@example.com"
@@ -153,10 +158,11 @@ All commits **MUST** be signed off with the Developer Certificate of Origin (DCO
    ```
 
 3. **Sign off existing commits retroactively:**
+
    ```bash
    # For the last commit
    git commit --amend --signoff
-   
+
    # For multiple commits (rebase and sign off)
    git rebase --signoff HEAD~n # where n is the number of commits
    ```
@@ -188,6 +194,7 @@ Signed-off-by: Your Name <your.email@example.com>
 We follow [Conventional Commits](https://www.conventionalcommits.org/) specification for commit messages.
 
 **Format:**
+
 ```
 <type>[optional scope]: <description>
 
@@ -200,19 +207,19 @@ Signed-off-by: Your Name <your.email@example.com>
 
 **Commit Types:**
 
-| Type | Description | Example |
-|------|-------------|---------|
-| `feat` | New feature | `feat(sandbox): add new isolation mode` |
-| `fix` | Bug fix | `fix(loader): resolve script loading issue` |
-| `perf` | Performance improvement | `perf(core): optimize app loading speed` |
-| `docs` | Documentation only | `docs: update API reference` |
-| `style` | Code formatting | `style: fix ESLint warnings` |
-| `refactor` | Code refactoring | `refactor(utils): simplify helper functions` |
-| `test` | Adding tests | `test(core): add unit tests for loadMicroApp` |
-| `chore` | Build/tooling changes | `chore: update dependencies` |
-| `ci` | CI configuration | `ci: add workflow for releases` |
-| `build` | Build system changes | `build: configure webpack` |
-| `revert` | Revert previous commit | `revert: feat(api): add user auth` |
+| Type       | Description             | Example                                       |
+| ---------- | ----------------------- | --------------------------------------------- |
+| `feat`     | New feature             | `feat(sandbox): add new isolation mode`       |
+| `fix`      | Bug fix                 | `fix(loader): resolve script loading issue`   |
+| `perf`     | Performance improvement | `perf(core): optimize app loading speed`      |
+| `docs`     | Documentation only      | `docs: update API reference`                  |
+| `style`    | Code formatting         | `style: fix ESLint warnings`                  |
+| `refactor` | Code refactoring        | `refactor(utils): simplify helper functions`  |
+| `test`     | Adding tests            | `test(core): add unit tests for loadMicroApp` |
+| `chore`    | Build/tooling changes   | `chore: update dependencies`                  |
+| `ci`       | CI configuration        | `ci: add workflow for releases`               |
+| `build`    | Build system changes    | `build: configure webpack`                    |
+| `revert`   | Revert previous commit  | `revert: feat(api): add user auth`            |
 
 **Breaking Changes:**
 
@@ -220,9 +227,10 @@ For breaking changes, use one of these approaches:
 
 1. Add `!` after type: `feat!: redesign loadMicroApp API`
 2. Add `BREAKING CHANGE:` in footer:
+
    ```
    feat(api): add new authentication method
-   
+
    BREAKING CHANGE: The old auth method is no longer supported.
    Migration guide: replace loadMicroApp() with registerMicroApps()
    ```
@@ -242,6 +250,7 @@ For breaking changes, use one of these approaches:
 ### 6. Create Pull Request
 
 1. Push your branch to your fork:
+
    ```bash
    git push origin feature/your-feature-name
    ```
@@ -312,16 +321,18 @@ This project uses [Changesets](https://github.com/changesets/changesets) for ver
 ### For Maintainers
 
 1. **Creating a changeset**: After merging PR, create a changeset:
+
    ```bash
    npx changeset
    ```
 
 2. **Release process**:
+
    ```bash
    # Alpha release (for testing)
    pnpm run prerelease:alpha  # Enter pre-release mode and create changeset
    pnpm run release:alpha     # Build and publish alpha version
-   
+
    # Production release
    npx changeset version      # Update package versions
    pnpm run build            # Build all packages
@@ -350,4 +361,4 @@ Thanks to all developers who contribute to the qiankun project! Your contributio
 
 ---
 
-Thank you again for your contribution! 🎉 
+Thank you again for your contribution! 🎉

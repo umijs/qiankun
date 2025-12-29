@@ -14,8 +14,7 @@
 
 # qiankun（乾坤）
 
-> [!WARNING]
-> 🚧 qiankun 3.0 is currently under active development. Check out the [Roadmap](https://github.com/umijs/qiankun/discussions/1378) for more details.
+> [!WARNING] 🚧 qiankun 3.0 is currently under active development. Check out the [Roadmap](https://github.com/umijs/qiankun/discussions/1378) for more details.
 
 > In Chinese, `qian(乾)` means heaven and `kun(坤)` earth. `qiankun` is the universe.
 
@@ -117,11 +116,13 @@ Visit `http://localhost:7099`.
 See [Qiankun 3.0 Roadmap](https://github.com/umijs/qiankun/discussions/1378)
 
 ## 🤝 Contributing
+
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/umijs/qiankun)
 
 See [contributing guide](./CONTRIBUTING.md).
 
 ## 👥 Contributors
+
 Thanks to all the contributors!
 
 <a href="https://github.com/umijs/qiankun/graphs/contributors">
