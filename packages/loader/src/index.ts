@@ -45,14 +45,14 @@ export async function loadEntry<T>(
   entry: Entry | { url: string; res: Response },
   container: HTMLElement,
   opts: LoaderOpts,
-): Promise<T | void> {
+): Promise<T | undefined> {
   const { fetch, streamTransformer, sandbox, nodeTransformer } = opts;
 
   const entryUrl = typeof entry === 'string' ? entry : entry.url;
   const res = typeof entry === 'string' ? await fetch(entry) : entry.res;
   if (res.body) {
     let foundEntryScript = false;
-    const entryScriptLoadedDeferred = new Deferred<T | void>();
+    const entryScriptLoadedDeferred = new Deferred<T | undefined>();
     const onEntryLoaded = () => {
       // the latest set prop is the entry script exposed global variable
       if (sandbox?.latestSetProp) {
@@ -64,7 +64,7 @@ export async function loadEntry<T>(
       }
     };
 
-    // defer scripts must wait until the entry html loaded
+    // defer scripts must wait until the entry HTML loaded
     const deferQueue: Array<Deferred<void>> = [];
     const { deferred: entryHTMLLoadedDeferred, queue: queueEntryHTMLDeferred } = prepareDeferredQueue(deferQueue);
     queueEntryHTMLDeferred();
