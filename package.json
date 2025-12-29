@@ -25,6 +25,8 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.5",
+    "@commitlint/cli": "^20.2.0",
+    "@commitlint/config-conventional": "^20.2.0",
     "@edge-runtime/vm": "^3.2.0",
     "@types/lodash": "^4.17.18",
     "@types/node": "^18.19.112",
