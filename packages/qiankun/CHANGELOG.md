@@ -8,10 +8,7 @@
 - e28c729: fix(qiankun): should remove internal cache of loadMicroApp while loading failed
 - 7d77699: feat(loader): supports passing Response as entry parameter for loadEntry function
 - 88895ff: fix(qiankun): remove premature lifecycle check to allow fallback detection
-- Updated dependencies [ea18ce6]
-- Updated dependencies [7d77699]
-- Updated dependencies [9c56910]
-- Updated dependencies [6d252c6]
+- Updated dependencies [ea18ce6] [7d77699] [9c56910] [6d252c6]
   - @qiankunjs/shared@0.0.1-rc.12
   - @qiankunjs/loader@0.0.1-rc.20
   - @qiankunjs/sandbox@0.0.1-rc.17
