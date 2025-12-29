@@ -1,5 +1,11 @@
 # @qiankunjs/vue
 
+## 0.0.1-rc.2
+
+### Patch Changes
+
+- f6926d3: fix(vue): add unmount hook to unmount application
+
 ## 0.0.1-rc.1
 
 ### Patch Changes
