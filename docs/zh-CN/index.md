@@ -133,7 +133,7 @@ export async function unmount(props) {
 
 | GitHub 讨论 | 钉钉群 | 微信群 |
 | --- | --- | --- |
-| [qiankun 讨论](https://github.com/umijs/qiankun/discussions) | <img src="https://mdn.alipayobjects.com/huamei_zvchwx/afts/img/A*GG8zTJaUnTAAAAAAAAAAAAAADuWEAQ/original" width="150" /> | [查看群二维码](https://github.com/umijs/qiankun/discussions/2343) |
+| [qiankun 讨论](https://github.com/umijs/qiankun/discussions) | <img src="https://mdn.alipayobjects.com/huamei_zvchwx/afts/img/A*GG8zTJaUnTAAAAAAAAAAAAAADuWEAQ/original" width="150" alt="钉钉群二维码" /> | [查看群二维码](https://github.com/umijs/qiankun/discussions/2343) |
 
 <style>
 .features-grid {

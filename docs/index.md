@@ -133,7 +133,7 @@ export async function unmount(props) {
 
 | GitHub Discussions | DingTalk Group | WeChat Group |
 | --- | --- | --- |
-| [qiankun discussions](https://github.com/umijs/qiankun/discussions) | <img src="https://mdn.alipayobjects.com/huamei_zvchwx/afts/img/A*GG8zTJaUnTAAAAAAAAAAAAAADuWEAQ/original" width="150" /> | [view group QR code](https://github.com/umijs/qiankun/discussions/2343) |
+| [qiankun discussions](https://github.com/umijs/qiankun/discussions) | <img src="https://mdn.alipayobjects.com/huamei_zvchwx/afts/img/A*GG8zTJaUnTAAAAAAAAAAAAAADuWEAQ/original" width="150" alt="DingTalk Group QR Code" /> | [view group QR code](https://github.com/umijs/qiankun/discussions/2343) |
 
 <style>
 .features-grid {
