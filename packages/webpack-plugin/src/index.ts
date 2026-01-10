@@ -44,15 +44,19 @@ export class QiankunPlugin {
   apply(compiler: Compiler): void {
     this.configureWebpackOutput(compiler);
 
+    // Feature detection: processAssets hook only exists in webpack 5+
+    // Using 'in' operator to check if compilation has processAssets hook
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    const isWebpack5 = compiler.webpack?.version?.startsWith('5');
+    const Compilation = compiler.webpack?.Compilation;
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    const hasProcessAssets = Compilation && 'PROCESS_ASSETS_STAGE_OPTIMIZE_INLINE' in Compilation;
 
-    if (isWebpack5) {
+    if (hasProcessAssets) {
       compiler.hooks.thisCompilation.tap('QiankunPlugin', (compilation: Compilation) => {
         compilation.hooks.processAssets.tap(
           {
             name: 'QiankunPlugin',
-            stage: compiler.webpack.Compilation.PROCESS_ASSETS_STAGE_OPTIMIZE_INLINE,
+            stage: Compilation.PROCESS_ASSETS_STAGE_OPTIMIZE_INLINE,
           },
           () => {
             this.modifyHtmlAssets(compilation);
@@ -68,11 +72,16 @@ export class QiankunPlugin {
   }
 
   private configureWebpackOutput(compiler: Compiler): void {
+    // Feature detection: check if output.jsonpFunction exists (webpack 4)
+    // and output.chunkLoadingGlobal exists (webpack 5)
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    const version = compiler.webpack?.version || '4';
-    const isWebpack4 = version.startsWith('4');
+    const output = compiler.options.output || {};
+    const hasJsonpFunction = 'jsonpFunction' in output;
+    // chunkLoadingGlobal only exists when explicitly set in webpack options
+    const hasChunkLoadingGlobal = Object.prototype.hasOwnProperty.call(output, 'chunkLoadingGlobal');
 
-    if (isWebpack4) {
+    if (hasJsonpFunction) {
+      // webpack 4
       const webpackCompilerOptions = compiler.options as Configuration & {
         output: Configuration['output'] & Webpack4OutputOptions;
       };
@@ -80,8 +89,8 @@ export class QiankunPlugin {
       webpackCompilerOptions.output.libraryTarget = 'window';
       webpackCompilerOptions.output.jsonpFunction = `webpackJsonp_${this.packageName}`;
       webpackCompilerOptions.output.globalObject = 'window';
-      // chunkLoadingGlobal only exists in webpack 5+
     } else {
+      // webpack 5 (or future versions)
       const webpackCompilerOptions = compiler.options as Configuration;
       webpackCompilerOptions.output = webpackCompilerOptions.output || {};
       webpackCompilerOptions.output.library = {
@@ -89,8 +98,9 @@ export class QiankunPlugin {
         type: 'window',
       };
       webpackCompilerOptions.output.globalObject = 'window';
-      webpackCompilerOptions.output.chunkLoadingGlobal = `webpackJsonp_${this.packageName}`;
-      // jsonpFunction is deprecated in webpack 5
+      if (hasChunkLoadingGlobal) {
+        webpackCompilerOptions.output.chunkLoadingGlobal = `webpackJsonp_${this.packageName}`;
+      }
     }
   }
 
