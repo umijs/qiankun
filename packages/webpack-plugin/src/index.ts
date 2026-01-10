@@ -1,29 +1,38 @@
 import fs from 'fs';
 import path from 'path';
-import type { Compiler, Configuration, Compilation } from 'webpack';
+import type { Compiler, Configuration, Compilation, sources, WebpackError } from 'webpack';
 import { RawSource } from 'webpack-sources';
 import cheerio from 'cheerio';
 
 export type QiankunPluginOptions = {
   packageName?: string;
-  entrySrcPattern?: RegExp; // 新增可选参数，用于匹配script标签
+  entrySrcPattern?: RegExp;
 };
 
 export type PackageJson = {
   name?: string;
-  dependencies?: Record<string, string>;
-  devDependencies?: Record<string, string>;
+};
+
+type Webpack4OutputOptions = {
+  jsonpFunction?: string;
 };
 
 export class QiankunPlugin {
   private packageName: string;
-  private entrySrcPattern: RegExp | null; // 用户提供的正则表达式
+  private entrySrcPattern: RegExp | null;
 
   private static packageJson: PackageJson = QiankunPlugin.readPackageJson();
 
   constructor(options: QiankunPluginOptions = {}) {
     this.packageName = options.packageName || QiankunPlugin.packageJson.name || '';
-    this.entrySrcPattern = options.entrySrcPattern ? new RegExp(options.entrySrcPattern.source, 'g') : null; // 默认值
+    if (options.entrySrcPattern) {
+      const flags = options.entrySrcPattern.flags.includes('g')
+        ? options.entrySrcPattern.flags
+        : options.entrySrcPattern.flags + 'g';
+      this.entrySrcPattern = new RegExp(options.entrySrcPattern.source, flags);
+    } else {
+      this.entrySrcPattern = null;
+    }
   }
 
   private static readPackageJson(): PackageJson {
@@ -34,33 +43,54 @@ export class QiankunPlugin {
 
   apply(compiler: Compiler): void {
     this.configureWebpackOutput(compiler);
-    compiler.hooks.emit.tapAsync('QiankunPlugin', (compilation: Compilation, callback: () => void) => {
-      this.modifyHtmlAssets(compilation);
-      callback();
-    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    const isWebpack5 = compiler.webpack?.version?.startsWith('5');
+
+    if (isWebpack5) {
+      compiler.hooks.thisCompilation.tap('QiankunPlugin', (compilation: Compilation) => {
+        compilation.hooks.processAssets.tap(
+          {
+            name: 'QiankunPlugin',
+            stage: compiler.webpack.Compilation.PROCESS_ASSETS_STAGE_OPTIMIZE_INLINE,
+          },
+          () => {
+            this.modifyHtmlAssets(compilation);
+          },
+        );
+      });
+    } else {
+      compiler.hooks.emit.tapAsync('QiankunPlugin', (compilation: Compilation, callback: () => void) => {
+        this.modifyHtmlAssets(compilation);
+        callback();
+      });
+    }
   }
 
   private configureWebpackOutput(compiler: Compiler): void {
-    const webpackCompilerOptions = compiler.options as Configuration & { output: { jsonpFunction?: string } };
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     const version = compiler.webpack?.version || '4';
-    if (version.startsWith('4')) {
-      // webpack 4
+    const isWebpack4 = version.startsWith('4');
+
+    if (isWebpack4) {
+      const webpackCompilerOptions = compiler.options as Configuration & {
+        output: Configuration['output'] & Webpack4OutputOptions;
+      };
       webpackCompilerOptions.output.library = `${this.packageName}`;
       webpackCompilerOptions.output.libraryTarget = 'window';
       webpackCompilerOptions.output.jsonpFunction = `webpackJsonp_${this.packageName}`;
       webpackCompilerOptions.output.globalObject = 'window';
-      webpackCompilerOptions.output.chunkLoadingGlobal = `webpackJsonp_${this.packageName}`;
-    } else if (version.startsWith('5')) {
-      // webpack 5
+      // chunkLoadingGlobal only exists in webpack 5+
+    } else {
+      const webpackCompilerOptions = compiler.options as Configuration;
+      webpackCompilerOptions.output = webpackCompilerOptions.output || {};
       webpackCompilerOptions.output.library = {
         name: `${this.packageName}`,
         type: 'window',
       };
-      webpackCompilerOptions.output.libraryTarget = 'window';
-      webpackCompilerOptions.output.jsonpFunction = `webpackJsonp_${this.packageName}`;
       webpackCompilerOptions.output.globalObject = 'window';
       webpackCompilerOptions.output.chunkLoadingGlobal = `webpackJsonp_${this.packageName}`;
+      // jsonpFunction is deprecated in webpack 5
     }
   }
 
@@ -70,39 +100,61 @@ export class QiankunPlugin {
         const htmlSource = compilation.assets[filename].source();
         const htmlString = typeof htmlSource === 'string' ? htmlSource : htmlSource.toString('utf-8');
 
-        const modifiedHtml = this.addEntryAttributeToScripts(htmlString);
-        // eslint-disable-next-line
-        compilation.assets[filename] = new RawSource(modifiedHtml) as any;
+        const result = this.addEntryAttributeToScripts(htmlString, filename);
+        if (result.error) {
+          const webpackError = new Error(result.error) as WebpackError;
+          compilation.errors.push(webpackError);
+          return;
+        }
+
+        if (result.html) {
+          const newSource = new RawSource(result.html) as sources.Source;
+          // updateAsset only exists in Webpack 5+
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          if ('updateAsset' in compilation) {
+            compilation.updateAsset(filename, newSource);
+          } else {
+            (compilation as { assets: Record<string, sources.Source> }).assets[filename] = newSource;
+          }
+        }
       }
     });
   }
 
-  private addEntryAttributeToScripts(htmlString: string): string {
+  addEntryAttributeToScripts(htmlString: string, filename: string): { html?: string; error?: string } {
     const $ = cheerio.load(htmlString);
 
     const alreadyHasEntry = $('script[entry]').length > 0;
-    if (!alreadyHasEntry) {
-      if (!this.entrySrcPattern) {
-        // 如果没有提供正则表达式，则选择最后一个 script 标签
-        $('script').last().attr('entry', '');
-      } else {
-        // 使用提供的正则表达式过滤 script 标签
-        const matchingScriptTags = $('script').filter((_, el) => {
-          const src = $(el).attr('src');
-          // 确保 this.entrySrcPattern 不是 null 再调用 test 方法
-          return src && this.entrySrcPattern ? this.entrySrcPattern.test(src) : false;
-        });
+    if (alreadyHasEntry) {
+      return { html: $.html() };
+    }
 
-        if (matchingScriptTags.length > 1) {
-          throw new Error('The regular expression matched multiple script tags, please check your regex.');
-        } else if (matchingScriptTags.length === 1) {
-          matchingScriptTags.first().attr('entry', '');
-        } else {
-          throw new Error('The provided regular expression did not match any scripts.');
-        }
+    if (!this.entrySrcPattern) {
+      $('script').last().attr('entry', '');
+    } else {
+      // Reset lastIndex to avoid global regex stateful matching issues
+      this.entrySrcPattern.lastIndex = 0;
+      const matchingScriptTags = $('script').filter((_, el) => {
+        const src = $(el).attr('src');
+        if (!src || !this.entrySrcPattern) return false;
+        this.entrySrcPattern.lastIndex = 0;
+        return this.entrySrcPattern.test(src);
+      });
+
+      if (matchingScriptTags.length > 1) {
+        return {
+          error: `[QiankunPlugin] The regular expression matched multiple script tags in "${filename}", please check your regex.`,
+        };
+      }
+      if (matchingScriptTags.length === 1) {
+        matchingScriptTags.first().attr('entry', '');
+      } else {
+        return {
+          error: `[QiankunPlugin] The provided regular expression did not match any scripts in "${filename}".`,
+        };
       }
     }
 
-    return $.html();
+    return { html: $.html() };
   }
 }
