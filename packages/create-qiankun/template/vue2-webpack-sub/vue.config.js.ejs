@@ -1,11 +1,11 @@
 const path = require('path');
 const { name } = require('./package');
-const { QiankunPlugin }  = require('@qiankunjs/webpack-plugin');
+const { QiankunWebpackPlugin } = require('@qiankunjs/bundler-plugin');
 function resolve(dir) {
   return path.join(__dirname, dir);
 }
 
-const port = "<%= port %>"; // dev port
+const port = "<%= port %>";
 
 module.exports = {
   lintOnSave: "warning",
@@ -19,7 +19,6 @@ module.exports = {
       overlay: false
     }
   },
-  // 自定义webpack配置
   configureWebpack: {
     resolve: {
       alias: {
@@ -27,7 +26,7 @@ module.exports = {
       },
     },
     plugins:[
-      new QiankunPlugin()
+      new QiankunWebpackPlugin()
     ]
   },
 };

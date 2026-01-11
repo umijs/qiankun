@@ -1,7 +1,7 @@
 {
-  "name": "@qiankunjs/webpack-plugin",
-  "version": "0.0.1-rc.4",
-  "description": "",
+  "name": "@qiankunjs/bundler-plugin",
+  "version": "0.0.1-rc.0",
+  "description": "Bundler plugins for qiankun micro-frontend framework",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/umijs/qiankun.git"
@@ -9,6 +9,18 @@
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "types": "./dist/esm/index.d.ts"
+    },
+    "./webpack": {
+      "import": "./dist/esm/webpack/index.js",
+      "require": "./dist/cjs/webpack/index.js",
+      "types": "./dist/esm/webpack/index.d.ts"
+    }
+  },
   "scripts": {
     "build:webpack4": "cd ./tests/webpack4 && npm install && pnpm run build",
     "build:webpack5": "cd ./tests/webpack5 && npm install && pnpm run build",
@@ -21,6 +33,11 @@
   "peerDependencies": {
     "webpack": "^4.0.0 || ^5.0.0"
   },
+  "peerDependenciesMeta": {
+    "webpack": {
+      "optional": true
+    }
+  },
   "author": "Hermanna",
   "license": "MIT",
   "dependencies": {
@@ -29,6 +46,6 @@
   },
   "devDependencies": {
     "@types/webpack-sources": "^3.2.1",
-    "webpack": "^4.0.0 || ^5.0.0"
+    "webpack": "^5.0.0"
   }
 }

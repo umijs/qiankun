@@ -1,6 +1,6 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { name } = require('./package');
-const { QiankunPlugin } = require('../../packages/webpack-plugin/dist/cjs');
+const { QiankunWebpackPlugin } = require('../../packages/bundler-plugin/dist/cjs');
 
 module.exports = {
   entry: './index.js',
@@ -54,7 +54,7 @@ module.exports = {
       inject: 'head',
       scriptLoading: 'defer',
     }),
-    new QiankunPlugin(),
+    new QiankunWebpackPlugin(),
   ],
   externals: {
     react: 'React',

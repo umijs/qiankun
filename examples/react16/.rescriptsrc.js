@@ -1,9 +1,9 @@
-const { QiankunPlugin }  = require('../../packages/webpack-plugin/dist/cjs');
+const { QiankunWebpackPlugin } = require('../../packages/bundler-plugin/dist/cjs');
 
 
 module.exports = {
   webpack: config => {
-    config.plugins.push(new QiankunPlugin());
+    config.plugins.push(new QiankunWebpackPlugin());
 
     return config;
   },

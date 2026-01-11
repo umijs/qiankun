@@ -8,7 +8,7 @@
   "include": [
     // whatever paths you intend to lint
     "packages/*/src",
-    "packages/webpack-plugin/tests",
+    "packages/bundler-plugin/tests",
     "packages/ui-bindings/*/src",
     "vitest.workspace.ts",
     "vitest.config.ts",

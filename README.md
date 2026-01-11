@@ -68,7 +68,7 @@ And on top of these, it offers:
 | [@qiankunjs/react](packages/ui-bindings/react) | [![react version](https://img.shields.io/npm/v/@qiankunjs/react/rc.svg?style=flat-square)](packages/ui-bindings/react/CHANGELOG.md) |
 | [@qiankunjs/vue](packages/ui-bindings/vue) | [![vue version](https://img.shields.io/npm/v/@qiankunjs/vue/rc.svg?style=flat-square)](packages/ui-bindings/vue/CHANGELOG.md) |
 | [@qiankunjs/ui-shared](packages/ui-bindings/shared) | [![ui-shared version](https://img.shields.io/npm/v/@qiankunjs/ui-shared/rc.svg?style=flat-square)](packages/ui-bindings/shared/CHANGELOG.md) |
-| [@qiankunjs/webpack-plugin](packages/webpack-plugin) | [![webpack-plugin version](https://img.shields.io/npm/v/@qiankunjs/webpack-plugin/rc.svg?style=flat-square)](packages/webpack-plugin/CHANGELOG.md) |
+| [@qiankunjs/bundler-plugin](packages/bundler-plugin) | [![bundler-plugin version](https://img.shields.io/npm/v/@qiankunjs/bundler-plugin/rc.svg?style=flat-square)](packages/bundler-plugin/CHANGELOG.md) |
 | [create-qiankun](packages/create-qiankun) | [![create-qiankun version](https://img.shields.io/npm/v/create-qiankun/rc.svg?style=flat-square)](packages/create-qiankun/CHANGELOG.md) |
 
 ## 📦 Installation
