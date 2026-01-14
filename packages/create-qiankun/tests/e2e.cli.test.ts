@@ -8,6 +8,7 @@ import os from 'node:os';
 
 const CLI_PATH = path.resolve(__dirname, '../dist/index.js');
 const PARENT_URL_PATTERN = 'window.__POWERED_BY_QIANKUN__';
+const E2E_TIMEOUT = process.env.E2E_TIMEOUT ? parseInt(process.env.E2E_TIMEOUT, 10) : 180000;
 
 async function runCli(cwd: string, appName: string, template: string): Promise<void> {
   await execa('node', [CLI_PATH, appName, '--template', template], {
@@ -62,19 +63,23 @@ describe('create-qiankun CLI e2e', () => {
     const appName = 'react-ts-sub';
     const appPath = path.join(testDir, appName);
 
-    it('should scaffold, patch, and build successfully', async () => {
-      await runCli(testDir, appName, 'react-ts');
+    it(
+      'should scaffold, patch, and build successfully',
+      async () => {
+        await runCli(testDir, appName, 'react-ts');
 
-      expect(await fse.pathExists(appPath)).toBe(true);
-      expect(await fse.pathExists(path.join(appPath, 'package.json'))).toBe(true);
-      expect(await fse.pathExists(path.join(appPath, 'vite.config.ts'))).toBe(true);
-      expect(await fse.pathExists(path.join(appPath, 'config/qiankunHtml.ts'))).toBe(true);
-      expect(await fse.pathExists(path.join(appPath, 'src/main.tsx'))).toBe(true);
+        expect(await fse.pathExists(appPath)).toBe(true);
+        expect(await fse.pathExists(path.join(appPath, 'package.json'))).toBe(true);
+        expect(await fse.pathExists(path.join(appPath, 'vite.config.ts'))).toBe(true);
+        expect(await fse.pathExists(path.join(appPath, 'config/qiankunHtml.ts'))).toBe(true);
+        expect(await fse.pathExists(path.join(appPath, 'src/main.tsx'))).toBe(true);
 
-      await installAndBuild(appPath);
+        await installAndBuild(appPath);
 
-      expect(await fse.pathExists(path.join(appPath, 'dist/index.html'))).toBe(true);
-    }, 180000);
+        expect(await fse.pathExists(path.join(appPath, 'dist/index.html'))).toBe(true);
+      },
+      E2E_TIMEOUT,
+    );
 
     it('should produce valid qiankun HTML output', async () => {
       const html = await fse.readFile(path.join(appPath, 'dist/index.html'), 'utf-8');
@@ -112,19 +117,23 @@ describe('create-qiankun CLI e2e', () => {
     const appName = 'vue-ts-sub';
     const appPath = path.join(testDir, appName);
 
-    it('should scaffold, patch, and build successfully', async () => {
-      await runCli(testDir, appName, 'vue-ts');
+    it(
+      'should scaffold, patch, and build successfully',
+      async () => {
+        await runCli(testDir, appName, 'vue-ts');
 
-      expect(await fse.pathExists(appPath)).toBe(true);
-      expect(await fse.pathExists(path.join(appPath, 'package.json'))).toBe(true);
-      expect(await fse.pathExists(path.join(appPath, 'vite.config.ts'))).toBe(true);
-      expect(await fse.pathExists(path.join(appPath, 'config/qiankunHtml.ts'))).toBe(true);
-      expect(await fse.pathExists(path.join(appPath, 'src/main.ts'))).toBe(true);
+        expect(await fse.pathExists(appPath)).toBe(true);
+        expect(await fse.pathExists(path.join(appPath, 'package.json'))).toBe(true);
+        expect(await fse.pathExists(path.join(appPath, 'vite.config.ts'))).toBe(true);
+        expect(await fse.pathExists(path.join(appPath, 'config/qiankunHtml.ts'))).toBe(true);
+        expect(await fse.pathExists(path.join(appPath, 'src/main.ts'))).toBe(true);
 
-      await installAndBuild(appPath);
+        await installAndBuild(appPath);
 
-      expect(await fse.pathExists(path.join(appPath, 'dist/index.html'))).toBe(true);
-    }, 180000);
+        expect(await fse.pathExists(path.join(appPath, 'dist/index.html'))).toBe(true);
+      },
+      E2E_TIMEOUT,
+    );
 
     it('should produce valid qiankun HTML output', async () => {
       const html = await fse.readFile(path.join(appPath, 'dist/index.html'), 'utf-8');

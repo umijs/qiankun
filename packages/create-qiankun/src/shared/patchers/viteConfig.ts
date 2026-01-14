@@ -14,12 +14,12 @@ export async function writeViteConfig(appRoot: string, template: ViteTemplate): 
 
 function getTypeScriptConfig(template: ViteTemplate): string {
   const frameworkImport = isReactTemplate(template)
-    ? "import react from '@vitejs/plugin-react'"
-    : "import vue from '@vitejs/plugin-vue'";
+    ? "import react from '@vitejs/plugin-react';"
+    : "import vue from '@vitejs/plugin-vue';";
   const pluginCall = isReactTemplate(template) ? 'react()' : 'vue()';
 
   return `import { defineConfig } from 'vite';
-${frameworkImport};
+${frameworkImport}
 import legacy from '@vitejs/plugin-legacy';
 import qiankunHtmlPlugin from './config/qiankunHtml';
 
@@ -46,12 +46,12 @@ export default defineConfig(({ mode }) => {
 
 function getJavaScriptConfig(template: ViteTemplate): string {
   const frameworkImport = isReactTemplate(template)
-    ? "import react from '@vitejs/plugin-react'"
-    : "import vue from '@vitejs/plugin-vue'";
+    ? "import react from '@vitejs/plugin-react';"
+    : "import vue from '@vitejs/plugin-vue';";
   const pluginCall = isReactTemplate(template) ? 'react()' : 'vue()';
 
   return `import { defineConfig } from 'vite';
-${frameworkImport};
+${frameworkImport}
 import legacy from '@vitejs/plugin-legacy';
 import qiankunHtmlPlugin from './config/qiankunHtml';
 

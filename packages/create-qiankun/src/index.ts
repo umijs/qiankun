@@ -5,7 +5,7 @@ import { green, red, bold } from 'kolorist';
 import path from 'node:path';
 import minimist from 'minimist';
 import { isDirectory, detectWorkspaceRoot } from './shared/utils';
-import { templateOptions, type ViteTemplate } from './shared/types';
+import { templateOptions, ViteTemplate } from './shared/types';
 import type { PromptAnswers } from './shared/types';
 import { generateViteApp } from './shared/generators/createVite';
 import { patchViteSubApp } from './shared/patchers';
@@ -60,7 +60,13 @@ async function main() {
   }
 
   const appName = argAppName || answers.appName;
-  const template = argTemplate as ViteTemplate;
+  const template = (argTemplate || answers.template) as ViteTemplate;
+
+  const validTemplates = Object.values(ViteTemplate);
+  if (!validTemplates.includes(template)) {
+    console.log(red(`Invalid template: ${String(template)}. Valid options: ${validTemplates.join(', ')}`));
+    process.exit(1);
+  }
 
   const cwd = process.cwd();
   const workspaceRoot = detectWorkspaceRoot(cwd);

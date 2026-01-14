@@ -24,7 +24,7 @@ async function writeReactEntry(appRoot: string, appName: string, isTs: boolean):
 
   const content = `import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App.${ext.replace('x', '')}x';
+import App from './App';
 import './index.css';
 
 const appName = '${appName}';
