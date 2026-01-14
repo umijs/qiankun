@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Compiler, Compilation } from 'webpack';
@@ -8,12 +7,12 @@ export interface QiankunWebpackPluginOptions {
 }
 
 interface Chunk {
-  files: Iterable<string>;
+  files: Iterable<string> | undefined;
   hasRuntime?: () => boolean;
 }
 
 interface Entrypoint {
-  chunks: Chunk[];
+  chunks: Chunk[] | undefined;
   getEntrypointChunk?: () => Chunk;
   getFiles?: () => string[];
 }
@@ -25,7 +24,7 @@ interface PackageJson {
 interface HtmlTagObject {
   tagName: string;
   voidTag: boolean;
-  attributes: Record<string, string | boolean>;
+  attributes: Record<string, string | boolean | undefined>;
   innerHTML?: string;
   meta?: Record<string, unknown>;
 }
@@ -83,9 +82,16 @@ export class QiankunWebpackPlugin {
 
   private configureOutput(compiler: Compiler): void {
     const output = compiler.options.output;
-    const isWebpack4 = !compiler.webpack;
+    // webpack 4 doesn't have compiler.webpack, use it for version detection
+    const webpack = (compiler as unknown as { webpack?: { version?: string } }).webpack;
+    const isWebpack5 = webpack?.version?.startsWith('5');
 
-    if (isWebpack4) {
+    if (isWebpack5) {
+      output.library = {
+        name: this.packageName,
+        type: 'window',
+      };
+    } else {
       // @ts-expect-error webpack 4 specific options
       output.library = this.packageName;
       // @ts-expect-error webpack 4 specific options
@@ -93,11 +99,6 @@ export class QiankunWebpackPlugin {
       // @ts-expect-error webpack 4 specific options
       output.jsonpFunction = `webpackJsonp_${this.packageName}`;
       output.globalObject = 'window';
-    } else {
-      output.library = {
-        name: this.packageName,
-        type: 'window',
-      };
     }
   }
 
@@ -112,10 +113,10 @@ export class QiankunWebpackPlugin {
   }
 
   private findHtmlWebpackPlugin(compiler: Compiler): HtmlWebpackPluginStatic | null {
-    const plugins = compiler.options.plugins || [];
+    const plugins = (compiler.options as unknown as { plugins?: unknown[] }).plugins ?? [];
 
     for (const plugin of plugins) {
-      const ctor = plugin?.constructor as HtmlWebpackPluginStatic | undefined;
+      const ctor = (plugin as { constructor?: HtmlWebpackPluginStatic } | null)?.constructor;
       if (ctor && typeof ctor.getHooks === 'function') {
         return ctor;
       }
@@ -135,7 +136,7 @@ export class QiankunWebpackPlugin {
         return;
       }
 
-      const hasEntry = scripts.some((script) => script.attributes.entry !== undefined);
+      const hasEntry = scripts.some((script) => 'entry' in script.attributes);
       if (hasEntry) {
         callback(null, data);
         return;
@@ -165,7 +166,7 @@ export class QiankunWebpackPlugin {
   }
 
   private findEntryScriptSrc(compilation: Compilation, htmlOutputName: string): string | null {
-    const entrypoints = compilation.entrypoints;
+    const entrypoints = compilation.entrypoints as Map<string, Entrypoint> | undefined;
     if (!entrypoints || entrypoints.size === 0) {
       return null;
     }
@@ -193,23 +194,27 @@ export class QiankunWebpackPlugin {
     if (typeof entrypoint.getEntrypointChunk === 'function') {
       const chunk = entrypoint.getEntrypointChunk();
       const files = chunk.files;
-      for (const file of files) {
-        if (file.endsWith('.js')) {
-          return file;
+      if (files) {
+        for (const file of files) {
+          if (file.endsWith('.js')) {
+            return file;
+          }
         }
       }
     }
 
     // Webpack 4/5 fallback: iterate chunks to find the one with runtime or entry modules
     const chunks = entrypoint.chunks;
-    for (let i = chunks.length - 1; i >= 0; i--) {
-      const chunk = chunks[i];
-      // In code-split scenarios, the entry chunk usually has runtime
-      if (chunk.hasRuntime?.() || i === chunks.length - 1) {
-        const files = Array.from(chunk.files || []);
-        for (const file of files) {
-          if (file.endsWith('.js')) {
-            return file;
+    if (chunks) {
+      for (let i = chunks.length - 1; i >= 0; i--) {
+        const chunk = chunks[i];
+        // In code-split scenarios, the entry chunk usually has runtime
+        if (chunk.hasRuntime?.() || i === chunks.length - 1) {
+          const files = Array.from(chunk.files ?? []);
+          for (const file of files) {
+            if (file.endsWith('.js')) {
+              return file;
+            }
           }
         }
       }

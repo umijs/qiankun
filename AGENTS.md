@@ -16,7 +16,7 @@ qiankun/
 │   ├── loader/          # Streaming HTML entry loader (SEE packages/loader/AGENTS.md)
 │   ├── shared/          # fetch-utils, asset transpilers, module-resolver (SEE packages/shared/AGENTS.md)
 │   ├── ui-bindings/     # React/Vue <MicroApp> components
-│   ├── webpack-plugin/  # Entry point configuration plugin
+│   ├── bundler-plugin/  # Entry point configuration plugin
 │   └── create-qiankun/  # CLI scaffolding tool
 ├── examples/            # Integration examples (NOT in workspace currently)
 └── docs/                # VitePress documentation
