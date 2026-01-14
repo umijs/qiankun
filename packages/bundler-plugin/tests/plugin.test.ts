@@ -7,7 +7,8 @@ function normalizeHtml(html: string): string {
   const $ = cheerioLoad(html);
   $('body')
     .contents()
-    .filter((_, el) => el.type === 'text' && !el.data?.trim())
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison -- cheerio's AnyNode has ElementType enum
+    .filter((_, el) => el.type === 'text' && !(el as unknown as { data: string }).data.trim())
     .remove();
   return $.html();
 }
