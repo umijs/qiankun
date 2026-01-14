@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-member-access */
+
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import execa from 'execa';
 import fse from 'fs-extra';
