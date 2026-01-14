@@ -94,15 +94,20 @@ describe('create-qiankun CLI e2e', () => {
     });
 
     it('should generate correct entry file', async () => {
-      await assertFileMatchesFixture(path.join(appPath, 'src/main.tsx'), template, 'main.tsx', appName);
+      await assertFileMatchesFixture(path.join(appPath, 'src/main.tsx'), template, 'main.tsx.txt', appName);
     });
 
     it('should generate correct vite.config.ts', async () => {
-      await assertFileMatchesFixture(path.join(appPath, 'vite.config.ts'), template, 'vite.config.ts', appName);
+      await assertFileMatchesFixture(path.join(appPath, 'vite.config.ts'), template, 'vite.config.ts.txt', appName);
     });
 
     it('should generate correct qiankunHtml plugin', async () => {
-      await assertFileMatchesFixture(path.join(appPath, 'config/qiankunHtml.ts'), template, 'qiankunHtml.ts', appName);
+      await assertFileMatchesFixture(
+        path.join(appPath, 'config/qiankunHtml.ts'),
+        template,
+        'qiankunHtml.ts.txt',
+        appName,
+      );
     });
 
     it('should have correct package.json scripts and dependencies', async () => {
@@ -146,15 +151,20 @@ describe('create-qiankun CLI e2e', () => {
     });
 
     it('should generate correct entry file', async () => {
-      await assertFileMatchesFixture(path.join(appPath, 'src/main.ts'), template, 'main.ts', appName);
+      await assertFileMatchesFixture(path.join(appPath, 'src/main.ts'), template, 'main.ts.txt', appName);
     });
 
     it('should generate correct vite.config.ts', async () => {
-      await assertFileMatchesFixture(path.join(appPath, 'vite.config.ts'), template, 'vite.config.ts', appName);
+      await assertFileMatchesFixture(path.join(appPath, 'vite.config.ts'), template, 'vite.config.ts.txt', appName);
     });
 
     it('should generate correct qiankunHtml plugin', async () => {
-      await assertFileMatchesFixture(path.join(appPath, 'config/qiankunHtml.ts'), template, 'qiankunHtml.ts', appName);
+      await assertFileMatchesFixture(
+        path.join(appPath, 'config/qiankunHtml.ts'),
+        template,
+        'qiankunHtml.ts.txt',
+        appName,
+      );
     });
 
     it('should have correct package.json with Vue dependencies', async () => {
