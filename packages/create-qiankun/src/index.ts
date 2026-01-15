@@ -4,115 +4,48 @@ import prompts from 'prompts';
 import { green, red, bold } from 'kolorist';
 import path from 'node:path';
 import minimist from 'minimist';
-import type { PromptAnswer } from './shared/types';
-import { CreateKind, IRoutePattern, PackageManager } from './shared/types';
-import { isDir } from './shared/utils';
+import { isDirectory, detectWorkspaceRoot } from './shared/utils';
+import { templateOptions, ViteTemplate } from './shared/types';
+import type { PromptAnswers } from './shared/types';
+import { generateViteApp } from './shared/generators/createVite';
+import { patchViteSubApp } from './shared/patchers';
 
-import type { MainFrameworkTemplate, SubFrameworkTemplate } from './shared/template';
-import { mainFrameworkList, subFrameworkList, enumToArray } from './shared/template';
-import { type RenderOptions, createApplication } from './shared/render';
-import { composeGeneratePorts, generatePort, injectCheckPortScript, injectPreNpmScript } from './shared/utils/port';
-import { injectSubsConfigToMainApp, installQiankunPkgs } from './shared/utils/qiankun';
-import { injectNormalScripts, injectWorkspaceScripts } from './shared/utils/scripts';
-
-const KindLabelMap: { [key in CreateKind]: string } = {
-  [CreateKind.CreateMainApp]: 'Just create main application',
-  [CreateKind.CreateSubApp]: 'Just create sub applications',
-  [CreateKind.CreateMainAndSubApp]: 'Create main application and sub applications',
-};
-
-const packageManagerMap: { [key in PackageManager]: string } = {
-  [PackageManager.npm]: 'npm',
-  [PackageManager.yarn]: 'yarn',
-  [PackageManager.pnpm]: 'pnpm',
-  [PackageManager.pnpmWorkspace]: 'pnpm with workspace',
-};
-
-createQiankunDefaultProject().catch((e) => {
+main().catch((e) => {
   console.error(e);
+  process.exit(1);
 });
 
-export async function createQiankunDefaultProject() {
+async function main() {
   console.log();
-  console.log(green('Welcome to use create-qiankun-starter!'));
-
+  console.log(green('Welcome to create-qiankun!'));
   console.log();
 
-  const [projectName, createKind, mainAppName, subAppNameList, mainRoute, packageManager] = minimist(
-    process.argv.slice(2),
-  )._;
+  const argv = minimist(process.argv.slice(2));
+  const argAppName = argv._[0];
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const argTemplate = argv.template || argv.t;
 
-  let result: PromptAnswer;
+  let answers: PromptAnswers;
 
-  const inputCreateKind = createKind && (String(createKind) as CreateKind);
   try {
-    result = (await prompts(
+    answers = (await prompts(
       [
         {
-          name: 'projectName',
-          type: projectName ? null : 'text',
-          message: 'Project name:',
+          name: 'appName',
+          type: argAppName ? null : 'text',
+          message: 'Sub-app name:',
+          initial: 'qiankun-sub-app',
+          validate: (value: string) => {
+            if (!value.trim()) return 'App name is required';
+            if (!/^[a-z0-9-]+$/.test(value)) return 'App name can only contain lowercase letters, numbers, and hyphens';
+            return true;
+          },
         },
         {
-          name: 'createKind',
-          type: createKind ? null : 'select',
-          message: 'Choose a way to create',
-          choices: Object.keys(KindLabelMap).map((key) => ({ title: KindLabelMap[key as CreateKind], value: key })),
-        },
-        {
-          name: 'mainAppName',
-          type: mainAppName
-            ? null
-            : (_prev: string, values: PromptAnswer) => {
-                return [CreateKind.CreateMainApp, CreateKind.CreateMainAndSubApp].includes(
-                  inputCreateKind || values.createKind,
-                )
-                  ? 'select'
-                  : null;
-              },
-          message: 'Choose a framework for your main application',
-          choices: mainFrameworkList,
-        },
-        {
-          name: 'mainRoute',
-          type: mainRoute
-            ? null
-            : (_prev: string, values: PromptAnswer) => {
-                return [CreateKind.CreateMainApp, CreateKind.CreateMainAndSubApp].includes(
-                  inputCreateKind || values.createKind,
-                )
-                  ? 'select'
-                  : null;
-              },
-          message: 'Choose a route pattern for your main application',
-          choices: enumToArray(IRoutePattern),
-        },
-        {
-          name: 'subAppNameList',
-          min: 1,
-          type: subAppNameList
-            ? null
-            : (_prev: string, values: PromptAnswer) => {
-                const _createKind = inputCreateKind || values.createKind;
-                if (_createKind === CreateKind.CreateMainAndSubApp) {
-                  return 'multiselect';
-                }
-                if (_createKind === CreateKind.CreateSubApp) {
-                  return 'multiselect';
-                }
-                return null;
-              },
-          message: 'Choose a framework for your sub application',
-          choices: subFrameworkList,
-        },
-        {
-          name: 'packageManager',
-          message: 'Which package manager do you want to use?',
-          type: packageManager ? null : 'select',
-          choices: Object.keys(packageManagerMap).map((key) => ({
-            title: packageManagerMap[key as PackageManager],
-            value: key,
-          })),
+          name: 'template',
+          type: argTemplate ? null : 'select',
+          message: 'Select a framework:',
+          choices: templateOptions,
         },
       ],
       {
@@ -120,128 +53,58 @@ export async function createQiankunDefaultProject() {
           throw new Error('Operation cancelled');
         },
       },
-    )) as PromptAnswer;
-  } catch (e) {
-    console.log(red(`Operation cancelled`));
+    )) as PromptAnswers;
+  } catch {
+    console.log(red('Operation cancelled'));
+    process.exit(1);
+  }
+
+  const appName = argAppName || answers.appName;
+  const template = (argTemplate || answers.template) as ViteTemplate;
+
+  const validTemplates = Object.values(ViteTemplate);
+  if (!validTemplates.includes(template)) {
+    console.log(red(`Invalid template: ${String(template)}. Valid options: ${validTemplates.join(', ')}`));
+    process.exit(1);
+  }
+
+  const cwd = process.cwd();
+  const workspaceRoot = detectWorkspaceRoot(cwd);
+  const isInWorkspace = !!workspaceRoot;
+
+  let targetDir: string;
+  if (isInWorkspace) {
+    const packagesDir = path.join(workspaceRoot, 'packages');
+    targetDir = packagesDir;
+  } else {
+    targetDir = cwd;
+  }
+
+  const appPath = path.join(targetDir, appName);
+
+  if (isDirectory(appPath)) {
+    console.log(red(`Directory ${appPath} already exists`));
     process.exit(1);
   }
 
   console.log();
-
-  const root = process.cwd();
-
-  const userChoose: PromptAnswer = {
-    projectName: projectName || result.projectName,
-    createKind: createKind ? (String(createKind) as CreateKind) : result.createKind,
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    mainAppName: (mainAppName as MainFrameworkTemplate) || result.mainAppName,
-    subAppNameList: subAppNameList ? ([subAppNameList] as SubFrameworkTemplate[]) : result.subAppNameList,
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    mainRoute: (mainRoute as IRoutePattern) || result.mainRoute,
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    packageManager: (packageManager as PackageManager) || result.packageManager,
-  };
-
-  const targetDir = path.join(root, userChoose.projectName);
-
-  if (isDir(targetDir)) {
-    console.log(red(`${targetDir} already exists`));
-    process.exit(1);
-  }
-
-  // detach Monorepo
-  // const monorepoRoot = simpleDetectMonorepoRoot(targetDir);
-  // const inMonorepo = !!monorepoRoot;
-  // const projectRoot = inMonorepo ? monorepoRoot : targetDir;
-  const projectRoot = targetDir;
-  console.log(green(`\n Project will be created at: ${projectRoot}`));
+  console.log(green(`Creating ${appName} at ${appPath}...`));
   console.log();
-  console.log(green(`\n Creating project...`));
 
-  // render
-  await renderTemplate({
-    projectRoot,
-    userChoose,
-  });
+  await generateViteApp(targetDir, appName, template);
 
-  // console.log();
-  // console.log(green(`\n Created ${userChoose.projectName}  success!`));
   console.log();
-  console.log(bold(green(`\n Done.`)));
-}
+  console.log(green('Patching for qiankun...'));
 
-async function renderTemplate(opts: RenderOptions) {
-  const { createKind, mainAppName, mainRoute, subAppNameList, packageManager } = opts.userChoose;
+  await patchViteSubApp(appPath, appName, template);
 
-  let mainAppTargetPath = '',
-    monorepoRootPath: string | undefined;
-  const mainAppPort = generatePort();
-
-  const _packageManager = packageManager?.includes('pnpm') ? 'pnpm' : packageManager;
-  // create main application
-  if ([CreateKind.CreateMainApp, CreateKind.CreateMainAndSubApp].includes(createKind)) {
-    const mainAppInfo = await createApplication(
-      mainAppName!,
-      { port: mainAppPort, mainRoute, ...installQiankunPkgs, packageManager: _packageManager },
-      {
-        ...opts,
-        gitInit: true,
-        hooks: {
-          async beforeRender(context) {
-            await injectCheckPortScript(context.applicationTargetPath);
-          },
-          async afterRender(context) {
-            await injectPreNpmScript(context.applicationTargetPath);
-          },
-        },
-      },
-    );
-    mainAppTargetPath = mainAppInfo.applicationTargetPath;
-    monorepoRootPath = mainAppInfo.monorepoDirPath;
-  }
-
-  // create sub applications
-  if ([CreateKind.CreateSubApp, CreateKind.CreateMainAndSubApp].includes(createKind)) {
-    const subsPorts = composeGeneratePorts(
-      subAppNameList!.map(() => generatePort),
-      mainAppPort ? [mainAppPort] : [],
-    );
-
-    await Promise.all(
-      subAppNameList!.map((sub, i) =>
-        createApplication(
-          sub,
-          { port: subsPorts[i], appName: sub, ...installQiankunPkgs, packageManager: _packageManager },
-          {
-            ...opts,
-            gitInit: createKind === CreateKind.CreateSubApp || packageManager !== PackageManager.pnpmWorkspace,
-            monorepoDirPath: monorepoRootPath,
-            hooks: {
-              async beforeRender(context) {
-                await injectCheckPortScript(context.applicationTargetPath);
-              },
-              async afterRender(context) {
-                await injectPreNpmScript(context.applicationTargetPath);
-              },
-            },
-          },
-        ),
-      ),
-    );
-
-    if (packageManager === PackageManager.pnpmWorkspace && monorepoRootPath) {
-      await injectWorkspaceScripts(monorepoRootPath);
-    }
-
-    if (createKind === CreateKind.CreateMainAndSubApp) {
-      if (packageManager !== PackageManager.pnpmWorkspace) {
-        await injectNormalScripts(opts);
-      }
-
-      await injectSubsConfigToMainApp(
-        mainAppTargetPath,
-        subAppNameList!.map((sub, i) => ({ subName: sub, port: subsPorts[i] })),
-      );
-    }
-  }
+  console.log();
+  console.log(bold(green('Done!')));
+  console.log();
+  console.log('Next steps:');
+  console.log(`  cd ${isInWorkspace ? `packages/${appName}` : appName}`);
+  console.log('  pnpm install');
+  console.log('  pnpm dev              # Run standalone');
+  console.log('  pnpm build:qiankun    # Build for qiankun');
+  console.log();
 }

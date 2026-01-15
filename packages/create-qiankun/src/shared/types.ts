@@ -1,28 +1,31 @@
-import type { MainFrameworkTemplate, SubFrameworkTemplate } from './template';
-
-export enum IRoutePattern {
-  hash = 'hash',
-  history = 'history',
+export enum ViteTemplate {
+  ReactTs = 'react-ts',
+  React = 'react',
+  VueTs = 'vue-ts',
+  Vue = 'vue',
 }
 
-export enum PackageManager {
-  npm = 'npm',
-  yarn = 'yarn',
-  pnpm = 'pnpm',
-  pnpmWorkspace = 'pnpm workspace',
+export interface TemplateOption {
+  title: string;
+  value: ViteTemplate;
 }
 
-export interface PromptAnswer {
-  projectName: string;
-  createKind: CreateKind;
-  mainAppName?: MainFrameworkTemplate;
-  subAppNameList?: SubFrameworkTemplate[];
-  mainRoute?: IRoutePattern;
-  packageManager?: PackageManager;
+export const templateOptions: TemplateOption[] = [
+  { title: 'React + TypeScript', value: ViteTemplate.ReactTs },
+  { title: 'React', value: ViteTemplate.React },
+  { title: 'Vue + TypeScript', value: ViteTemplate.VueTs },
+  { title: 'Vue', value: ViteTemplate.Vue },
+];
+
+export interface PromptAnswers {
+  appName: string;
+  template: ViteTemplate;
 }
 
-export enum CreateKind {
-  CreateMainApp = '1',
-  CreateSubApp = '2',
-  CreateMainAndSubApp = '3',
+export function isReactTemplate(template: ViteTemplate): boolean {
+  return template === ViteTemplate.React || template === ViteTemplate.ReactTs;
+}
+
+export function isTypeScriptTemplate(template: ViteTemplate): boolean {
+  return template === ViteTemplate.ReactTs || template === ViteTemplate.VueTs;
 }

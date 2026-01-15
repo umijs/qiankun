@@ -1,84 +1,26 @@
 import fse from 'fs-extra';
-import path, { join, posix } from 'node:path';
-import os from 'node:os';
-import execa from 'execa';
+import path from 'node:path';
 
-/**
- * 判断目标路径是否为文件夹
- * @param targetPath
- * @returns
- */
-export function isDir(targetPath: string) {
+export function isDirectory(targetPath: string): boolean {
   try {
     return fse.lstatSync(targetPath).isDirectory();
-  } catch (e: unknown) {
+  } catch {
     return false;
   }
 }
 
-/**
- * 判断目标路径是否为文件
- * @param targetPath
- * @returns
- */
-export function isFile(targetPath: string) {
+export function isFile(targetPath: string): boolean {
   try {
     return fse.lstatSync(targetPath).isFile();
-  } catch (e) {
+  } catch {
     return false;
   }
 }
 
-export function simpleDetectMonorepoRoot(target: string) {
-  const upperPath = path.join(target, '../');
-  if (isFile(join(upperPath, 'pnpm-workspace.yaml'))) {
-    return upperPath;
+export function detectWorkspaceRoot(targetDir: string): string | null {
+  const parentDir = path.dirname(targetDir);
+  if (isFile(path.join(parentDir, 'pnpm-workspace.yaml'))) {
+    return parentDir;
   }
   return null;
-}
-
-export async function getPnpmMajorVersion() {
-  try {
-    const { stdout } = await execa('pnpm', ['--version']);
-    return parseInt(stdout.trim().split('.')[0], 10);
-  } catch (e) {
-    throw new Error('Please install pnpm first');
-  }
-}
-
-export async function initGit(projectRoot: string) {
-  const isGit = fse.existsSync(join(projectRoot, '.git'));
-  if (isGit) return;
-  try {
-    await execa('git', ['init'], { cwd: projectRoot });
-  } catch (e) {
-    console.log(`Initial the git repo failed`, e);
-  }
-}
-
-export const isWindows = os.platform() === 'win32';
-export function normalizePath(p: string) {
-  return posix.normalize(isWindows ? p.replace(/\\/g, '/') : p);
-}
-
-export function directoryTraverse(
-  dir: string,
-  opts: {
-    dirCallback?: (dirPath: string) => void;
-    fileCallback?: (filePath: string) => void;
-  },
-) {
-  const { dirCallback, fileCallback } = opts;
-  for (const filename of fse.readdirSync(dir)) {
-    if (filename === '.git' || filename === 'node_modules') {
-      continue;
-    }
-    const fullPath = normalizePath(path.resolve(dir, filename));
-    if (isDir(fullPath)) {
-      dirCallback?.(fullPath);
-      directoryTraverse(fullPath, opts);
-      continue;
-    }
-    fileCallback?.(fullPath);
-  }
 }
