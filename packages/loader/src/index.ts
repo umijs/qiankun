@@ -143,7 +143,7 @@ export async function loadEntry<T>(
                 } else {
                   entryScriptLoadedDeferred.reject(
                     new QiankunError(
-                      `Entry ${entryUrl} load failed as entry script ${script.dataset.src || script.src} load failed}`,
+                      `Entry ${entryUrl} load failed as entry script ${script.dataset.src || script.src} execution failed`,
                     ),
                   );
                 }
