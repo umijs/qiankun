@@ -1,4 +1,4 @@
-import satisfies from 'semver/functions/satisfies';
+import { satisfies } from './satisfies';
 import type { MatchResult } from './types';
 
 declare global {

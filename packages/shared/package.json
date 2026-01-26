@@ -19,8 +19,8 @@
   "license": "MIT",
   "dependencies": {
     "@babel/runtime": "^7.26.10",
-    "lodash": "^4.17.11",
-    "semver": "^7.5.3"
+    "compare-versions": "^6.1.0",
+    "lodash": "^4.17.11"
   },
   "files": [
     "dist"
