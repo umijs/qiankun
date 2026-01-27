@@ -12,6 +12,11 @@ describe('satisfies wrapper', () => {
       expect(satisfies('1.2.3', 'x')).toBe(true);
       expect(satisfies('1.2.3', 'X')).toBe(true);
     });
+
+    it('should not match prerelease by default', () => {
+      expect(satisfies('1.0.0-alpha', '*')).toBe(false);
+      expect(satisfies('1.0.0-alpha', 'x')).toBe(false);
+    });
   });
 
   describe('short wildcards (N.x format)', () => {
@@ -30,6 +35,11 @@ describe('satisfies wrapper', () => {
       expect(satisfies('1.2.3', '1.*')).toBe(true);
       expect(satisfies('1.2.3', '1.X')).toBe(true);
       expect(satisfies('2.0.0', '1.*')).toBe(false);
+    });
+
+    it('should not match prerelease by default', () => {
+      expect(satisfies('1.0.0-alpha', '1.x')).toBe(false);
+      expect(satisfies('1.0.0-alpha', '1.*')).toBe(false);
     });
   });
 
@@ -61,6 +71,11 @@ describe('satisfies wrapper', () => {
     it('should match prerelease when range includes prerelease', () => {
       expect(satisfies('1.0.0-alpha', '1.0.0-alpha')).toBe(true);
       expect(satisfies('1.0.0-alpha', '>=1.0.0-alpha')).toBe(true);
+    });
+
+    it('should handle numeric prerelease identifiers', () => {
+      expect(satisfies('1.0.0-1', '>=1.0.0-1')).toBe(true);
+      expect(satisfies('1.0.0-1', '^1.0.0')).toBe(false);
     });
 
     it('should handle normal versions correctly', () => {
