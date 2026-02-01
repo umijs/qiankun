@@ -20,7 +20,7 @@ export type ObjectType = Record<string, unknown>;
 
 export type HTMLEntry = string;
 
-type AppMetadata = {
+export type AppMetadata = {
   // app name
   name: string;
   // app entry
