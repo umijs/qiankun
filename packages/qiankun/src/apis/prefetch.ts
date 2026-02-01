@@ -108,11 +108,14 @@ export type PrefetchStrategy =
 
 /**
  * Prefetch micro apps immediately
+ * @deprecated This API is deprecated in qiankun 3.0. Micro apps are streamed with automatic preload now.
  * @param apps - Apps to prefetch
  * @param fetch - Custom fetch function
  */
 export function prefetchApps(apps: AppMetadata[], fetch: typeof window.fetch = window.fetch): void {
   if (process.env.NODE_ENV === 'development') {
+    // eslint-disable-next-line no-console
+    console.warn('[qiankun] prefetchApps is deprecated in 3.0; streaming loader performs automatic preload.');
     // eslint-disable-next-line no-console
     console.log('[qiankun] prefetch starting for apps...', apps);
   }
