@@ -44,9 +44,16 @@ export async function waitUntilSettled(promise: Promise<void>): Promise<void> {
   }
 }
 
-export function getEntireUrl(uri: string, baseURI: string): string {
+export function resolveUrl(uri: string, baseURI: string): string {
+  // should not handle an entire url especially protocol-relative url, e.g. //example.com/foo.js
+  // otherwise it may occur that the user previously stored the script src as //example.com/foo.js,
+  // resulting in a conversion to http://example.com/foo.js which does not match the original stored key.
+  if (uri.startsWith('//') || uri.startsWith('http://') || uri.startsWith('https://')) {
+    return uri;
+  }
+
   const publicPath = new URL(baseURI, window.location.href);
-  const entireUrl = new URL(uri, publicPath.toString());
+  const entireUrl = new URL(uri, publicPath);
   return entireUrl.toString();
 }
 

@@ -4,7 +4,7 @@
  */
 import type { MatchResult } from '../module-resolver';
 import { warn } from '../reporter';
-import { getEntireUrl } from '../utils';
+import { resolveUrl } from '../utils';
 import { preTranspile as preTranspileScript } from './script';
 import type { AssetsTranspilerOpts, BaseTranspilerOpts } from './types';
 import { Mode } from './types';
@@ -23,7 +23,7 @@ const preTranspileStyleSheetLink = (
 
   // filter preload links
   if (href && rel === 'stylesheet') {
-    const linkHref = getEntireUrl(href, baseURI);
+    const linkHref = resolveUrl(href, baseURI);
 
     const matchedAssets = moduleResolver?.(linkHref);
     if (matchedAssets) {
@@ -122,7 +122,7 @@ export default function transpileLink(
     case Mode.NONE:
     default: {
       if (hrefAttribute) {
-        link.href = getEntireUrl(hrefAttribute, baseURI);
+        link.href = resolveUrl(hrefAttribute, baseURI);
 
         if (link.rel === 'preload') {
           postProcessPreloadLink(link, baseURI, opts);

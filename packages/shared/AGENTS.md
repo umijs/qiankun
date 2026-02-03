@@ -16,7 +16,7 @@ shared/
 ├── module-resolver/      # Shared dependency resolution
 ├── reporter/             # QiankunError, logger
 ├── deferred-queue/       # Async task sequencing
-└── utils.ts              # Deferred, getEntireUrl, etc.
+└── utils.ts              # Deferred, resolveUrl, etc.
 ```
 
 ## WHERE TO LOOK
