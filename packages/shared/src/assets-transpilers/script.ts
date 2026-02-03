@@ -4,7 +4,7 @@
  */
 
 import type { MatchResult } from '../module-resolver';
-import { getEntireUrl, waitUntilSettled } from '../utils';
+import { resolveUrl, waitUntilSettled } from '../utils';
 import type { AssetsTranspilerOpts, ScriptTranspilerOpts } from './types';
 import { Mode } from './types';
 import { createReusingObjectUrl, isValidJavaScriptType } from './utils';
@@ -36,7 +36,7 @@ export const preTranspile = (
   const { src, type } = script;
 
   if (src) {
-    const entireUrl = getEntireUrl(src, baseURI);
+    const entireUrl = resolveUrl(src, baseURI);
     const matchedScript = moduleResolver?.(entireUrl);
     if (matchedScript) {
       return {
