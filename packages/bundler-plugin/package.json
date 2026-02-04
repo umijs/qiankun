@@ -42,7 +42,7 @@
   "license": "MIT",
   "dependencies": {
     "webpack-sources": "^3.2.3",
-    "cheerio": "1.0.0-rc.12"
+    "cheerio": "^1.0.0-rc.12"
   },
   "devDependencies": {
     "@types/webpack-sources": "^3.2.1",

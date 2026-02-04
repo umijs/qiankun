@@ -1,5 +1,5 @@
 ---
-"@qiankunjs/webpack-plugin": patch
+"@qiankunjs/bundler-plugin": patch
 ---
 
 feat: introduce qiankun webpack plugin
