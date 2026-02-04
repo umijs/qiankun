@@ -66,8 +66,8 @@ export function isPropertyFrozen(target: object, p?: PropertyKey): boolean {
   const propertyDescriptor = getOwnPropertyDescriptor(target, p);
   const frozen = Boolean(
     propertyDescriptor &&
-      propertyDescriptor.configurable === false &&
-      (propertyDescriptor.writable === false || (propertyDescriptor.get && !propertyDescriptor.set)),
+    propertyDescriptor.configurable === false &&
+    (propertyDescriptor.writable === false || (propertyDescriptor.get && !propertyDescriptor.set)),
   );
 
   targetPropertiesFromCache[p] = frozen;
