@@ -24,28 +24,28 @@
     "clean": "rimraf node_modules **/*/node_modules"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.29.5",
-    "@commitlint/cli": "^20.2.0",
-    "@commitlint/config-conventional": "^20.2.0",
+    "@changesets/cli": "^2.29.8",
+    "@commitlint/cli": "^20.4.1",
+    "@commitlint/config-conventional": "^20.4.1",
     "@edge-runtime/vm": "^3.2.0",
-    "@types/lodash": "^4.17.18",
-    "@types/node": "^18.19.112",
+    "@types/lodash": "^4.17.23",
+    "@types/node": "^18.19.130",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "babel-plugin-import": "^1.13.8",
     "cross-env": "^7.0.3",
     "eslint": "^8.57.1",
-    "eslint-config-prettier": "^9.1.0",
+    "eslint-config-prettier": "^9.1.2",
     "eslint-formatter-pretty": "^5.0.0",
-    "father": "^4.5.6",
+    "father": "^4.6.13",
     "happy-dom": "^12.10.3",
     "husky": "^8.0.3",
     "lint-staged": "^9.5.0",
-    "mermaid": "^11.8.1",
-    "prettier": "^3.6.0",
+    "mermaid": "^11.12.2",
+    "prettier": "^3.8.1",
     "rimraf": "^3.0.2",
-    "typescript": "^5.8.3",
-    "vitepress": "^1.3.4",
+    "typescript": "^5.9.3",
+    "vitepress": "^1.6.4",
     "vitest": "^0.34.6"
   },
   "repository": {
@@ -58,9 +58,15 @@
   },
   "homepage": "https://github.com/umijs/qiankun#readme",
   "lint-staged": {
-    "**/*.{js,ts,json,css,md}": ["prettier --write --ignore-unknown"],
-    "packages/*/{src,types}/**/*.ts": ["eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty --fix"],
-    "packages/**/*.d.ts": ["eslint --ext .ts"]
+    "**/*.{js,ts,json,css,md}": [
+      "prettier --write --ignore-unknown"
+    ],
+    "packages/*/{src,types}/**/*.ts": [
+      "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty --fix"
+    ],
+    "packages/**/*.d.ts": [
+      "eslint --ext .ts"
+    ]
   },
   "packageManager": "pnpm@9.15.0",
   "publishConfig": {
