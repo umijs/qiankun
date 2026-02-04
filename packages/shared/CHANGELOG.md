@@ -1,5 +1,13 @@
 # @qiankunjs/shared
 
+## 0.0.1-rc.13
+
+### Patch Changes
+
+- 7d8591e: refactor(shared): replace semver with compare-versions
+- 57a6129: feat: improve fetch error message by prepending url
+- 34069e1: fix: should not transform URLs that already include a protocol
+
 ## 0.0.1-rc.12
 
 ### Patch Changes

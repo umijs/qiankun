@@ -1,5 +1,16 @@
 # qiankun
 
+## 3.0.0-rc.21
+
+### Patch Changes
+
+- 693cdde: [#2823] Add legacy APIs for qiankun 3.0
+- Updated dependencies [7d8591e]
+- Updated dependencies [57a6129]
+- Updated dependencies [34069e1]
+  - @qiankunjs/shared@0.0.1-rc.13
+  - @qiankunjs/loader@0.0.1-rc.21
+
 ## 3.0.0-rc.20
 
 ### Patch Changes

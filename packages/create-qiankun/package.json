@@ -1,6 +1,6 @@
 {
   "name": "create-qiankun",
-  "version": "0.0.1-rc.1",
+  "version": "0.0.1-rc.2",
   "description": "An easy way to start a qiankun sub-app with Vite",
   "repository": {
     "type": "git",
@@ -43,4 +43,3 @@
     "vitest": "^0.34.6"
   }
 }
-

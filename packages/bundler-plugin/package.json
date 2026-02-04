@@ -1,6 +1,6 @@
 {
   "name": "@qiankunjs/bundler-plugin",
-  "version": "0.0.1-rc.0",
+  "version": "0.0.1-rc.1",
   "description": "Bundler plugins for qiankun micro-frontend framework",
   "repository": {
     "type": "git",
