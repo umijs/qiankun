@@ -1,5 +1,11 @@
 # @qiankunjs/webpack-plugin
 
+## 0.0.1-rc.1
+
+### Patch Changes
+
+- fa128ee: fix: improve QiankunPlugin webpack compatibility and error handling
+
 ## 0.0.1-rc.4
 
 ### Patch Changes

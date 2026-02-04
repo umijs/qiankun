@@ -1,5 +1,15 @@
 # @qiankunjs/loader
 
+## 0.0.1-rc.21
+
+### Patch Changes
+
+- 57a6129: feat: improve fetch error message by prepending url
+- Updated dependencies [7d8591e]
+- Updated dependencies [57a6129]
+- Updated dependencies [34069e1]
+  - @qiankunjs/shared@0.0.1-rc.13
+
 ## 0.0.1-rc.20
 
 ### Patch Changes
