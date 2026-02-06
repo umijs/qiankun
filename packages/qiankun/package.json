@@ -35,7 +35,7 @@
     "@qiankunjs/loader": "workspace:^",
     "@qiankunjs/sandbox": "workspace:^",
     "@qiankunjs/shared": "workspace:^",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.23",
     "single-spa": "^6.0.0"
   },
   "devDependencies": {

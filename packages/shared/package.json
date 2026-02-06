@@ -20,7 +20,7 @@
   "dependencies": {
     "@babel/runtime": "^7.26.10",
     "compare-versions": "^6.1.0",
-    "lodash": "^4.17.11"
+    "lodash": "^4.17.23"
   },
   "files": [
     "dist"
