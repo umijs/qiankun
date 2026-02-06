@@ -19,6 +19,7 @@ lib
 package-lock.json
 .eslintcache
 .history
+.worktrees
 .now
 .pnpm-store
 *.log
