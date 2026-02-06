@@ -7,16 +7,19 @@ jobs:
   deploy-gh-pages:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: "14"
+          node-version: "lts/*"
           check-latest: true
           registry-url: "https://registry.npmjs.org"
-      - name: build
+          cache: "pnpm"
+      - name: Install dependencies
         run: |
-          yarn
-          yarn docs:build
+          corepack enable
+          pnpm install --frozen-lockfile
+      - name: Build docs
+        run: pnpm run docs:build
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3

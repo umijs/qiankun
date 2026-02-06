@@ -62,7 +62,7 @@
     "packages/*/{src,types}/**/*.ts": ["eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty --fix"],
     "packages/**/*.d.ts": ["eslint --ext .ts"]
   },
-  "packageManager": "pnpm@9.15.0",
+  "packageManager": "pnpm@10.28.2",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   }
