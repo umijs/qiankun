@@ -13,11 +13,13 @@ jobs:
           node-version: "lts/*"
           check-latest: true
           registry-url: "https://registry.npmjs.org"
-      - name: build
+          cache: "pnpm"
+      - name: Install dependencies
         run: |
           corepack enable
-          pnpm install
-          pnpm run docs:build
+          pnpm install --frozen-lockfile
+      - name: Build docs
+        run: pnpm run docs:build
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3

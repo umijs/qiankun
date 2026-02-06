@@ -17,9 +17,10 @@ jobs:
           node-version: "lts/*"
           check-latest: true
           registry-url: "https://registry.npmjs.org"
+          cache: "pnpm"
 
       - run: corepack enable
-      - run: pnpm install
+      - run: pnpm install --frozen-lockfile
       - run: pnpm publish --tag qiankun1
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
