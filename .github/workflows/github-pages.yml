@@ -7,14 +7,12 @@ jobs:
   deploy-gh-pages:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "lts/*"
           check-latest: true
           registry-url: "https://registry.npmjs.org"
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
       - name: build
         run: |
           corepack enable
