@@ -5,9 +5,14 @@
     "node": ">=16"
   },
   "scripts": {
-    "start:example": "pnpm run build && npm run start:main && npm run start:react15",
-    "start:main": "cd ./examples/main && npm start",
-    "start:react15": "cd ./examples/react15 && npm start",
+    "start:examples": "concurrently \"pnpm:start:*\"",
+    "start:main": "cd ./examples/main && npx serve -p 7099",
+    "start:react18": "cd ./examples/react18 && pnpm dev",
+    "start:modern-react": "cd ./examples/modern-react && pnpm dev",
+    "start:vue": "cd ./examples/vue && pnpm dev",
+    "start:angular": "cd ./examples/angular && pnpm dev",
+    "start:vite": "cd ./examples/vite && pnpm dev",
+    "install:examples": "cd examples/react18 && pnpm install && cd ../modern-react && pnpm install && cd ../vue && pnpm install && cd ../angular && pnpm install && cd ../vite && pnpm install",
     "build": "pnpm -r run build",
     "prerelease:alpha": "changeset pre enter alpha && changeset && changeset version",
     "release:alpha": "pnpm run build && changeset publish && changeset pre exit",

@@ -1,5 +1,5 @@
 {
-  "name": "main",
+  "name": "@qiankun-example/main",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -27,8 +27,8 @@
     "webpack-dev-server": "^3.9.0"
   },
   "dependencies": {
-    "@qiankunjs/react": "^0.0.1-rc.12",
-    "qiankun": "^3.0.0-rc.15",
+    "@qiankunjs/react": "^0.0.1-rc.14",
+    "qiankun": "^3.0.0-rc.21",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "vue": "^3.3.9",

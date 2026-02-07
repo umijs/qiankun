@@ -3,8 +3,9 @@ import { loadMicroApp } from '../../packages/qiankun/dist/esm';
 import './index.less';
 
 const microApps = [
-  { name: 'react15', entry: '//localhost:7102' },
-  { name: 'react16', entry: '//localhost:7100' },
+  { name: 'react18', entry: '//localhost:3000' },
+  { name: 'vue', entry: '//localhost:3002' },
+  { name: 'angular', entry: '//localhost:3003' },
 ];
 
 let prevApp;

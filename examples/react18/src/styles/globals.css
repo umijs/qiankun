@@ -1,0 +1,213 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap');
+
+/* Base styles */
+@layer base {
+  :root {
+    /* Primary color scale */
+    --primary-50: #e6f4ff;
+    --primary-100: #bae0ff;
+    --primary-200: #7fc3ff;
+    --primary-300: #4096ff;
+    --primary-400: #1677ff;
+    --primary-500: #0958d9;
+    --primary-600: #003eb3;
+    --primary-700: #002c8c;
+    --primary-800: #001d66;
+    --primary-900: #001141;
+
+    /* Neutral scale */
+    --neutral-0: #ffffff;
+    --neutral-50: #fafafa;
+    --neutral-100: #f5f5f5;
+    --neutral-200: #e5e5e5;
+    --neutral-300: #d4d4d4;
+    --neutral-400: #a3a3a3;
+    --neutral-500: #737373;
+    --neutral-600: #525252;
+    --neutral-700: #404040;
+    --neutral-800: #262626;
+    --neutral-900: #171717;
+    --neutral-950: #0a0a0a;
+
+    /* Functional colors */
+    --success: #22c55e;
+    --success-light: #dcfce7;
+    --success-dark: #15803d;
+    --warning: #f59e0b;
+    --warning-light: #fef3c7;
+    --warning-dark: #b45309;
+    --error: #ef4444;
+    --error-light: #fee2e2;
+    --error-dark: #b91c1c;
+    --info: #3b82f6;
+    --info-light: #dbeafe;
+    --info-dark: #1d4ed8;
+
+    /* Framework colors */
+    --react: #61dafb;
+    --vue: #42b883;
+    --angular: #dd0031;
+    --svelte: #ff3e00;
+    --solid: #446b9e;
+
+    /* Shadows */
+    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+    --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+  }
+
+  /* Dark mode variables */
+  .dark {
+    --neutral-0: #0a0a0a;
+    --neutral-50: #171717;
+    --neutral-100: #262626;
+    --neutral-200: #404040;
+    --neutral-300: #525252;
+    --neutral-400: #737373;
+    --neutral-500: #a3a3a3;
+    --neutral-600: #d4d4d4;
+    --neutral-700: #e5e5e5;
+    --neutral-800: #f5f5f5;
+    --neutral-900: #fafafa;
+    --neutral-950: #ffffff;
+  }
+
+  /* Base HTML styles */
+  html {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--neutral-50);
+    color: var(--neutral-900);
+    min-height: 100vh;
+  }
+
+  /* Selection styles */
+  ::selection {
+    background-color: var(--primary-200);
+    color: var(--primary-900);
+  }
+
+  /* Focus styles */
+  :focus-visible {
+    outline: 2px solid var(--primary-400);
+    outline-offset: 2px;
+  }
+
+  /* Scrollbar styles */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--neutral-100);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--neutral-400);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--neutral-500);
+  }
+
+  /* Code styles */
+  code, kbd, samp, pre {
+    font-family: 'Fira Code', 'JetBrains Mono', Consolas, Monaco, 'Courier New', monospace;
+    font-size: 0.875em;
+  }
+
+  code {
+    background-color: var(--neutral-100);
+    padding: 0.2em 0.4em;
+    border-radius: 0.25rem;
+  }
+
+  pre {
+    background-color: var(--neutral-900);
+    color: var(--neutral-100);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+  }
+
+  pre code {
+    background-color: transparent;
+    padding: 0;
+    color: inherit;
+  }
+}
+
+/* Utility classes */
+@layer utilities {
+  /* Text gradient */
+  .text-gradient {
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-image: linear-gradient(to right, var(--primary-400), var(--primary-600));
+  }
+
+  /* Glassmorphism */
+  .glass {
+    background-color: rgb(255 255 255 / 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .dark .glass {
+    background-color: rgb(0 0 0 / 0.5);
+  }
+
+  /* Hide scrollbar */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Line clamp */
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}

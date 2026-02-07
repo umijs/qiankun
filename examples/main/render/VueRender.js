@@ -15,7 +15,7 @@ function vueRender() {
     name: 'vueRender',
     template: `
       <div>
-        <MicroApp name="react15" entry="//localhost:7102" />
+        <MicroApp name="vue" entry="//localhost:3002" />
       </div>
     `,
     // render(h) {

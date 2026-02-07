@@ -1,57 +1,795 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
-  <title>QianKun Example</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Qiankun - Micro-Frontend Architecture</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-500: #1677ff;
+      --primary-600: #0958d9;
+      --primary-700: #003eb3;
+      --neutral-0: #ffffff;
+      --neutral-50: #fafafa;
+      --neutral-100: #f5f5f5;
+      --neutral-200: #e5e5e5;
+      --neutral-300: #d4d4d4;
+      --neutral-400: #a3a3a3;
+      --neutral-500: #737373;
+      --neutral-600: #525252;
+      --neutral-700: #404040;
+      --neutral-800: #262626;
+      --neutral-900: #171717;
+      --sidebar-width: 280px;
+      --header-height: 64px;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+      --radius-md: 0.375rem;
+      --radius-lg: 0.5rem;
+      --radius-xl: 0.75rem;
+      --radius-2xl: 1rem;
+    }
 
-  <script type="dependencymap">
-    {
-      "dependencies": {
-        "antd": {
-          "url": "https://gw.alipayobjects.com/os/lib/antd/2.13.14/dist/antd.js",
-          "version": "2.13.14",
-          "range": "^2.13.14"
-        },
-        "react": {
-          "url": "https://gw.alipayobjects.com/os/lib/react/15.7.0/dist/react.js",
-          "version": "15.7.0",
-          "range": "^15.6.2"
-        },
-        "react-dom": {
-          "url": "https://gw.alipayobjects.com/os/lib/react-dom/15.7.0/dist/react-dom.js",
-          "version": "15.7.0",
-          "range": "^15.6.2"
-        }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--neutral-50);
+      color: var(--neutral-900);
+      line-height: 1.5;
+    }
+
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--neutral-0);
+      border-right: 1px solid var(--neutral-200);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      z-index: 50;
+    }
+
+    .sidebar-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--neutral-200);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
+      border-radius: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 1.25rem;
+    }
+
+    .logo-text {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--neutral-900);
+    }
+
+    .logo-subtitle {
+      font-size: 0.75rem;
+      color: var(--neutral-500);
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+
+    .nav-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .nav-section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--neutral-500);
+      padding: 0.5rem 0.75rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .nav-menu {
+      list-style: none;
+    }
+
+    .nav-item {
+      margin-bottom: 0.25rem;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      color: var(--neutral-600);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border-radius: 0.375rem;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+
+    .nav-link:hover {
+      background-color: var(--neutral-100);
+      color: var(--neutral-900);
+    }
+
+    .nav-link.active {
+      background-color: var(--primary-50);
+      color: var(--primary-600);
+    }
+
+    .nav-icon {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      color: currentColor;
+    }
+
+    .nav-status {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-left: auto;
+    }
+
+    .nav-status.online {
+      background-color: #22c55e;
+    }
+
+    .nav-status.offline {
+      background-color: var(--neutral-300);
+    }
+
+    .sidebar-footer {
+      padding: 1rem;
+      border-top: 1px solid var(--neutral-200);
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      background-color: var(--neutral-50);
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--neutral-600);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #22c55e;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .main-content {
+      flex: 1;
+      margin-left: var(--sidebar-width);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .main-header {
+      height: var(--header-height);
+      background: var(--neutral-0);
+      border-bottom: 1px solid var(--neutral-200);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .menu-toggle {
+      display: none;
+      width: 40px;
+      height: 40px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      border-radius: 0.375rem;
+      transition: background 0.15s ease;
+    }
+
+    .menu-toggle:hover {
+      background: var(--neutral-100);
+    }
+
+    .menu-toggle svg {
+      width: 24px;
+      height: 24px;
+      color: var(--neutral-600);
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--neutral-500);
+    }
+
+    .breadcrumb a {
+      color: var(--neutral-600);
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+
+    .breadcrumb a:hover {
+      color: var(--primary-600);
+    }
+
+    .breadcrumb-separator {
+      color: var(--neutral-400);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .header-btn {
+      width: 40px;
+      height: 40px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      border-radius: 0.375rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .header-btn:hover {
+      background: var(--neutral-100);
+    }
+
+    .header-btn svg {
+      width: 20px;
+      height: 20px;
+      color: var(--neutral-600);
+    }
+
+    .header-btn:hover svg {
+      color: var(--neutral-900);
+    }
+
+    .btn-badge {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 8px;
+      height: 8px;
+      background: #ef4444;
+      border-radius: 50%;
+      border: 2px solid var(--neutral-0);
+    }
+
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+
+    .user-avatar:hover {
+      transform: scale(1.05);
+    }
+
+    .main-container {
+      flex: 1;
+      padding: 1.5rem;
+      overflow-y: auto;
+    }
+
+    .welcome-section {
+      background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%);
+      border-radius: 1rem;
+      padding: 2rem;
+      color: white;
+      margin-bottom: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .welcome-section::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 400px;
+      height: 400px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+    }
+
+    .welcome-title {
+      font-size: 1.875rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      position: relative;
+    }
+
+    .welcome-subtitle {
+      font-size: 1rem;
+      opacity: 0.9;
+      max-width: 600px;
+      position: relative;
+    }
+
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--neutral-900);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .section-title svg {
+      width: 20px;
+      height: 20px;
+      color: var(--primary-600);
+    }
+
+    .micro-apps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .app-card {
+      background: var(--neutral-0);
+      border: 1px solid var(--neutral-200);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .app-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary-500), var(--primary-600));
+      transform: scaleX(0);
+      transition: transform 0.2s ease;
+    }
+
+    .app-card:hover {
+      border-color: var(--primary-200);
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+
+    .app-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .app-card.active {
+      border-color: var(--primary-500);
+      background: var(--primary-50);
+    }
+
+    .app-card.active::before {
+      transform: scaleX(1);
+    }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .app-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 0.625rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .app-info h3 {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--neutral-900);
+      margin-bottom: 0.125rem;
+    }
+
+    .app-info p {
+      font-size: 0.75rem;
+      color: var(--neutral-500);
+    }
+
+    .app-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--neutral-100);
+    }
+
+    .app-status {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--neutral-500);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--neutral-300);
+    }
+
+    .status-dot.online {
+      background: #22c55e;
+      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+    }
+
+    .subapp-container {
+      background: var(--neutral-0);
+      border-radius: 0.75rem;
+      min-height: 400px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .subapp-container:empty::before {
+      content: 'Select a micro-app from above to load it here';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: var(--neutral-400);
+      font-size: 0.9375rem;
+      text-align: center;
+    }
+
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: var(--neutral-0);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .loading-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--neutral-200);
+      border-top-color: var(--primary-600);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      margin-top: 1rem;
+      font-size: 0.875rem;
+      color: var(--neutral-500);
+    }
+
+    @media (max-width: 1024px) {
+      .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .main-content {
+        margin-left: 0;
+      }
+
+      .micro-apps-grid {
+        grid-template-columns: 1fr;
       }
     }
-</script>
+  </style>
 </head>
-
 <body>
-  <div class="mainapp">
-    <!-- 标题栏 -->
-    <header class="mainapp-header">
-      <h1>QianKun</h1>
-    </header>
-    <div class="mainapp-main">
-      <!-- 侧边栏 -->
-      <ul class="mainapp-sidemenu">
-        <li data-value='react16'>React16</li>
-        <li data-value='react15'>React15</li>
-      </ul>
-      <!-- 子应用  -->
-      <main id="subapp-container"></main>
-    </div>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">Q</div>
+          <div>
+            <div class="logo-text">Qiankun</div>
+            <div class="logo-subtitle">Micro-Frontend</div>
+          </div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Micro-Apps</div>
+          <ul class="nav-menu" id="nav-menu">
+            <!-- Nav items will be generated by JS -->
+          </ul>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="status-indicator">
+          <span class="status-dot"></span>
+          <span id="connection-status">Connected</span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="main-header">
+        <div class="header-left">
+          <button class="menu-toggle" onclick="toggleSidebar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+          <nav class="breadcrumb">
+            <a href="#">Home</a>
+            <span class="breadcrumb-separator">/</span>
+            <span id="current-app">Select an app</span>
+          </nav>
+        </div>
+
+        <div class="header-right">
+          <button class="header-btn" title="Notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span class="btn-badge"></span>
+          </button>
+          <div class="user-avatar">A</div>
+        </div>
+      </header>
+
+      <section class="welcome-section">
+        <h1 class="welcome-title">Welcome to Qiankun!</h1>
+        <p class="welcome-subtitle">Experience the power of micro-frontend architecture. Select an app from the sidebar to get started.</p>
+      </section>
+
+      <section>
+        <h2 class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+          Available Micro-Apps
+        </h2>
+        <div class="micro-apps-grid" id="app-grid">
+          <!-- App cards will be generated by JS -->
+        </div>
+      </section>
+
+      <div class="subapp-container" id="subapp-container">
+        <div class="loading-overlay" id="loading-overlay">
+          <div class="loading-spinner"></div>
+          <p class="loading-text">Loading micro-app...</p>
+        </div>
+      </div>
+    </main>
   </div>
 
+  <script type="module">
+    // Micro-apps configuration
+    const microApps = [
+      { name: 'react18', entry: '//localhost:3000', icon: '⚛️', label: 'React 18', desc: 'Modern React 18 + Vite micro-app' },
+      { name: 'modern-react', entry: '//localhost:3001', icon: '⚛️', label: 'Modern React', desc: 'React 18 TypeScript template' },
+      { name: 'vue', entry: '//localhost:3002', icon: '💚', label: 'Vue 3', desc: 'Vue 3 + Vite micro-app' },
+      { name: 'angular', entry: '//localhost:3003', icon: '🅰️', label: 'Angular', desc: 'Angular 17 micro-app' },
+      { name: 'vite', entry: '//localhost:3004', icon: '🚀', label: 'Vite', desc: 'Pure Vite micro-app' },
+    ];
 
-  <script>
-    function push(subapp) { history.pushState(null, subapp, subapp) }
+    // Render nav items
+    const navMenu = document.getElementById('nav-menu');
+    microApps.forEach(app => {
+      const li = document.createElement('li');
+      li.className = 'nav-item';
+      li.innerHTML = `
+        <a class="nav-link" data-app="${app.name}" onclick="loadApp('${app.name}', '${app.entry}')">
+          <span style="font-size: 1.1rem;">${app.icon}</span>
+          <span>${app.label}</span>
+          <span class="nav-status offline" id="nav-status-${app.name}"></span>
+        </a>
+      `;
+      navMenu.appendChild(li);
+    });
+
+    // Render app cards
+    const appGrid = document.getElementById('app-grid');
+    microApps.forEach(app => {
+      const card = document.createElement('div');
+      card.className = 'app-card';
+      card.dataset.app = app.name;
+      card.onclick = () => loadApp(app.name, app.entry);
+      card.innerHTML = `
+        <div class="app-header">
+          <div class="app-icon" style="font-size: 2rem;">${app.icon}</div>
+          <div class="app-info">
+            <h3>${app.label}</h3>
+            <p>${app.desc}</p>
+          </div>
+        </div>
+        <div class="app-meta">
+          <div class="app-status">
+            <span class="status-dot" id="status-dot-${app.name}"></span>
+            <span id="status-text-${app.name}">Offline</span>
+          </div>
+        </div>
+      `;
+      appGrid.appendChild(card);
+    });
+
+    // Load micro-app
+    let prevApp = null;
+    let prevAppName = null;
+
+    window.loadApp = async function(name, entry) {
+      if (name === prevAppName) return;
+
+      // Update UI
+      document.querySelectorAll('.app-card').forEach(card => card.classList.remove('active'));
+      document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+      
+      const activeCard = document.querySelector(`[data-app="${name}"]`);
+      const activeNav = document.querySelector(`[data-app="${name}"]`);
+      if (activeCard) activeCard.classList.add('active');
+      if (activeNav) activeNav.classList.add('active');
+
+      // Update breadcrumb
+      const app = microApps.find(a => a.name === name);
+      document.getElementById('current-app').textContent = app?.label || name;
+
+      // Show loading
+      document.getElementById('loading-overlay').classList.add('active');
+
+      // Unmount previous app
+      if (prevApp) {
+        try {
+          await prevApp.unmount();
+        } catch (e) {
+          console.warn('Unmount error:', e);
+        }
+      }
+
+      // Load new app
+      try {
+        // Use global qiankun if available
+        const loadMicroApp = window.qiankun?.loadMicroApp || 
+                             (await import('/qiankun.js')).loadMicroApp;
+        
+        prevApp = loadMicroApp({
+          name,
+          entry,
+          container: document.getElementById('subapp-container'),
+        }, { sandbox: true });
+
+        prevAppName = name;
+
+        // Update status indicators
+        const statusDot = document.getElementById(`status-dot-${name}`);
+        const statusText = document.getElementById(`status-text-${name}`);
+        const navStatus = document.getElementById(`nav-status-${name}`);
+        
+        if (statusDot) statusDot.classList.add('online');
+        if (statusText) statusText.textContent = 'Online';
+        if (navStatus) {
+          navStatus.classList.remove('offline');
+          navStatus.classList.add('online');
+        }
+
+      } catch (error) {
+        console.error('Failed to load app:', error);
+        alert(`Failed to load ${name}. Make sure the micro-app is running at ${entry}`);
+      } finally {
+        document.getElementById('loading-overlay').classList.remove('active');
+      }
+    };
+
+    // Toggle sidebar on mobile
+    window.toggleSidebar = function() {
+      document.getElementById('sidebar').classList.toggle('open');
+    };
+
+    // Make qiankun available globally
+    import('/qiankun.js').then(qiankun => {
+      window.qiankun = qiankun;
+    });
   </script>
-  <script src="https://gw.alipayobjects.com/os/lib/react/15.7.0/dist/react.js"></script>
-  <script src="https://gw.alipayobjects.com/os/lib/react-dom/15.7.0/dist/react-dom.js"></script>
-  <script src="https://gw.alipayobjects.com/os/lib/antd/2.13.14/dist/antd.js"></script>
 </body>
-
 </html>

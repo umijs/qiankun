@@ -1,7 +1,7 @@
 {
-  "name": "vite",
-  "private": true,
-  "version": "0.0.0",
+  "name": "@qiankun-example/vite",
+  "version": "1.0.0",
+  "description": "Vite React micro-frontend example for qiankun",
   "type": "module",
   "scripts": {
     "dev": "vite",

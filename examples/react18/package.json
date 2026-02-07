@@ -1,7 +1,7 @@
 {
-  "name": "@qiankun-example/react16",
+  "name": "@qiankun-example/react18",
   "version": "1.0.0",
-  "description": "React 16 micro-frontend example upgraded to React 18 + Vite (formerly legacy React 16 example)",
+  "description": "Modern React 18 micro-frontend example with TypeScript and Vite",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -16,14 +16,34 @@
     "qiankun": "^3.0.0-rc.21",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.20.0"
+    "react-router-dom": "^6.20.0",
+    "zustand": "^4.4.7",
+    "@tanstack/react-query": "^5.8.0",
+    "axios": "^1.6.0",
+    "clsx": "^2.0.0",
+    "tailwind-merge": "^2.0.0"
   },
   "devDependencies": {
+    "@types/node": "^20.9.0",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
+    "@typescript-eslint/eslint-plugin": "^6.11.0",
+    "@typescript-eslint/parser": "^6.11.0",
     "@vitejs/plugin-react": "^4.2.0",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.54.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-import": "^2.29.0",
+    "eslint-plugin-jsx-a11y": "^6.8.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "postcss": "^8.4.31",
+    "prettier": "^3.1.0",
+    "prettier-plugin-tailwindcss": "^0.5.7",
+    "tailwindcss": "^3.3.5",
     "typescript": "^5.2.2",
-    "vite": "^5.0.0"
+    "vite": "^5.0.0",
+    "vite-plugin-svgr": "^4.2.0"
   },
   "browserslist": {
     "production": [

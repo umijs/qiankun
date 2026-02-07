@@ -1,0 +1,62 @@
+{
+  "name": "@qiankun-example/design-system",
+  "version": "1.0.0",
+  "description": "Shared design system for qiankun examples with React and Vue components",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./tokens": {
+      "import": "./dist/tokens/index.js",
+      "types": "./dist/tokens/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0",
+    "vue": ">=3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "typescript": "^5.2.0",
+    "vue": "^3.3.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:umijs/qiankun.git",
+    "directory": "examples/design-system"
+  },
+  "license": "MIT",
+  "keywords": [
+    "qiankun",
+    "micro-frontend",
+    "design-system",
+    "ui-components",
+    "react",
+    "vue"
+  ]
+}
