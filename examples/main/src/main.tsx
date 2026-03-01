@@ -1,7 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { ConfigProvider } from 'antd';
-import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './styles/index.css';
 
@@ -22,9 +21,7 @@ const antdConfig = {
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ConfigProvider {...antdConfig}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <App />
     </ConfigProvider>
   </React.StrictMode>
 );

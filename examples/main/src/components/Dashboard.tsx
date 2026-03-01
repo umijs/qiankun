@@ -95,7 +95,7 @@ export default function Dashboard() {
               <Card hoverable className="text-center transition-all duration-300 hover:shadow-md" bodyStyle={{ padding: '20px' }} onClick={() => setActiveApp(app.name.toLowerCase().replace(' ', ''))}>
                 <div className="text-3xl mb-2">{app.icon}</div>
                 <div className="font-medium text-gray-900 mb-1">{app.name}</div>
-                <Tag size="small" color={app.status === 'active' ? 'success' : 'default'}>{app.status === 'active' ? '运行中' : '即将上线'}</Tag>
+                <Tag color={app.status === 'active' ? 'success' : 'default'}>{app.status === 'active' ? '运行中' : '即将上线'}</Tag>
               </Card>
             </Col>
           ))}

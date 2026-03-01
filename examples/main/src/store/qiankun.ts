@@ -14,6 +14,7 @@ interface QiankunStore {
   activeApp: string | null;
   loading: boolean;
   error: string | null;
+  retryCount: number;
 
   // Actions
   initGlobalState: (state: GlobalState) => void;
@@ -21,6 +22,7 @@ interface QiankunStore {
   setActiveApp: (app: string | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  retry: () => void;
 }
 
 export const useQiankunStore = create<QiankunStore>((set, get) => ({
@@ -28,6 +30,7 @@ export const useQiankunStore = create<QiankunStore>((set, get) => ({
   activeApp: null,
   loading: false,
   error: null,
+  retryCount: 0,
 
   initGlobalState: (state: GlobalState) => {
     set({
@@ -50,5 +53,9 @@ export const useQiankunStore = create<QiankunStore>((set, get) => ({
 
   setError: (error: string | null) => {
     set({ error });
+  },
+
+  retry: () => {
+    set((state) => ({ error: null, retryCount: state.retryCount + 1 }));
   },
 }));

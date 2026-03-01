@@ -1,22 +1,22 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { loadMicroApp, MicroApp } from 'qiankun';
 import { useQiankunStore } from '../store/qiankun';
 import Dashboard from './Dashboard';
 import { Spin, Result, Button } from 'antd';
 import { ReloadOutlined, HomeOutlined } from '@ant-design/icons';
 
-const microAppsConfig: Record<string, { entry: string; container: string }> = {
-  react16: { entry: '//localhost:7100', container: '#micro-app-container' },
-  react15: { entry: '//localhost:7102', container: '#micro-app-container' },
-  vue: { entry: '//localhost:7101', container: '#micro-app-container' },
-  vue3: { entry: '//localhost:7105', container: '#micro-app-container' },
-  angular9: { entry: '//localhost:7104', container: '#micro-app-container' },
-  purehtml: { entry: '//localhost:7106', container: '#micro-app-container' },
-  vite: { entry: '//localhost:7107', container: '#micro-app-container' },
+const microAppsConfig: Record<string, { entry: string }> = {
+  react16: { entry: '//localhost:7100' },
+  react15: { entry: '//localhost:7102' },
+  vue: { entry: '//localhost:7101' },
+  vue3: { entry: '//localhost:7105' },
+  angular9: { entry: '//localhost:7103' },
+  purehtml: { entry: '//localhost:7104' },
+  vite: { entry: '//localhost:5173' },
 };
 
 export default function MicroAppContainer() {
-  const { activeApp, setLoading, setError, loading, error, setActiveApp } = useQiankunStore();
+  const { activeApp, setLoading, setError, loading, error, setActiveApp, retryCount, retry } = useQiankunStore();
   const microAppRef = useRef<MicroApp | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -49,18 +49,10 @@ export default function MicroAppContainer() {
           throw new Error('容器元素不存在');
         }
 
-        containerRef.current.innerHTML = '';
-        const subAppContainer = document.createElement('div');
-        subAppContainer.id = 'micro-app-container';
-        subAppContainer.style.width = '100%';
-        subAppContainer.style.height = '100%';
-        subAppContainer.style.minHeight = 'calc(100vh - 64px)';
-        containerRef.current.appendChild(subAppContainer);
-
         microAppRef.current = loadMicroApp({
           name: activeApp,
           entry: config.entry,
-          container: config.container,
+          container: containerRef.current,
           props: { globalState: useQiankunStore.getState().globalState },
         });
 
@@ -81,7 +73,7 @@ export default function MicroAppContainer() {
         microAppRef.current = null;
       }
     };
-  }, [activeApp, setLoading, setError]);
+  }, [activeApp, retryCount, setLoading, setError]);
 
   if (!activeApp || activeApp === 'home') {
     return <Dashboard />;
@@ -95,7 +87,7 @@ export default function MicroAppContainer() {
           title="加载失败"
           subTitle={error}
           extra={[
-            <Button key="retry" type="primary" icon={<ReloadOutlined />} onClick={() => { setError(null); const currentApp = activeApp; setActiveApp(null); setTimeout(() => setActiveApp(currentApp), 0); }}>
+            <Button key="retry" type="primary" icon={<ReloadOutlined />} onClick={retry}>
               重试
             </Button>,
             <Button key="home" icon={<HomeOutlined />} onClick={() => setActiveApp(null)}>
@@ -117,7 +109,7 @@ export default function MicroAppContainer() {
           </div>
         </div>
       )}
-      <div ref={containerRef} className="w-full" style={{ minHeight: 'calc(100vh - 64px)' }} />
+      <div key={`${activeApp}-${retryCount}`} ref={containerRef} className="w-full" style={{ minHeight: 'calc(100vh - 64px)' }} />
     </div>
   );
 }
