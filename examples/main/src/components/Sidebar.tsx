@@ -5,7 +5,6 @@ import {
   HomeOutlined,
   CodeOutlined,
   NodeIndexOutlined,
-  ApiOutlined,
   ThunderboltOutlined,
   Html5Outlined,
   MenuFoldOutlined,
@@ -20,11 +19,8 @@ const { Title, Text } = Typography;
 
 const microApps = [
   { key: 'home', name: '首页', icon: <HomeOutlined />, description: 'Dashboard 概览' },
-  { key: 'react16', name: 'React 16', icon: <CodeOutlined />, description: 'React 16 + Ant Design', color: '#61DAFB' },
-  { key: 'react15', name: 'React 15', icon: <CodeOutlined />, description: 'React 15 Legacy', color: '#61DAFB' },
-  { key: 'vue', name: 'Vue 2', icon: <NodeIndexOutlined />, description: 'Vue 2 + Element UI', color: '#4FC08D' },
-  { key: 'vue3', name: 'Vue 3', icon: <NodeIndexOutlined />, description: 'Vue 3 + Vite', color: '#4FC08D' },
-  { key: 'angular9', name: 'Angular 9', icon: <ApiOutlined />, description: 'Angular 9 + RxJS', color: '#DD0031' },
+  { key: 'react', name: 'React', icon: <CodeOutlined />, description: 'React 18 + Vite', color: '#61DAFB' },
+  { key: 'vue', name: 'Vue', icon: <NodeIndexOutlined />, description: 'Vue 3 + Vite', color: '#4FC08D' },
   { key: 'purehtml', name: 'Pure HTML', icon: <Html5Outlined />, description: 'Vanilla JS', color: '#E34F26' },
   { key: 'vite', name: 'Vite App', icon: <ThunderboltOutlined />, description: 'Vite + React', color: '#646CFF' },
 ];

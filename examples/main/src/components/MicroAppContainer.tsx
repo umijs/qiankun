@@ -6,13 +6,10 @@ import { Spin, Result, Button } from 'antd';
 import { ReloadOutlined, HomeOutlined } from '@ant-design/icons';
 
 const microAppsConfig: Record<string, { entry: string }> = {
-  react16: { entry: '//localhost:7100' },
-  react15: { entry: '//localhost:7102' },
-  vue: { entry: '//localhost:7101' },
-  vue3: { entry: '//localhost:7105' },
-  angular9: { entry: '//localhost:7103' },
-  purehtml: { entry: '//localhost:7104' },
-  vite: { entry: '//localhost:5173' },
+  react: { entry: '//localhost:7100' },
+  vue: { entry: '//localhost:7104' },
+  purehtml: { entry: '//localhost:7105' },
+  vite: { entry: '//localhost:5175' },
 };
 
 export default function MicroAppContainer() {
