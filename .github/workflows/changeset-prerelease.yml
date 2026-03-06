@@ -45,3 +45,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
+
+      - name: Create Unified GitHub Release
+        if: steps.changesets.outputs.published == 'true'
+        run: |
+          VERSION=$(jq -r '.version' packages/qiankun/package.json)
+          TAG="v${VERSION}"
+
+          node scripts/generate-release-notes.mjs '${{ steps.changesets.outputs.publishedPackages }}' > /tmp/release-notes.md
+
+          gh release create "${TAG}" \
+            --title "${TAG}" \
+            --notes-file /tmp/release-notes.md \
+            --prerelease
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
