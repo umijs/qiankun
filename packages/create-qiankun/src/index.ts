@@ -123,6 +123,7 @@ async function main() {
     console.log(`  cd ${isInWorkspace ? `packages/${appName}` : appName}`);
     console.log('  pnpm install');
     console.log('  pnpm dev');
+    console.log('  pnpm build');
     console.log();
   } else {
     const validTemplates = Object.values(ViteTemplate);
