@@ -6,11 +6,17 @@ import type { BaseLoaderOpts } from '../common';
 import type { MatchResult } from '../module-resolver';
 import type { Deferred } from '../utils';
 
+export type StyleIsolationOpts = {
+  appName: string;
+  scopeRoot: string;
+};
+
 export type BaseTranspilerOpts = BaseLoaderOpts & {
   moduleResolver?: (url: string) => MatchResult | undefined;
   sandbox?: {
     makeEvaluateFactory(source: string, sourceURL?: string): string;
   };
+  styleIsolation?: StyleIsolationOpts;
 };
 
 export type AssetsTranspilerOpts = BaseTranspilerOpts;

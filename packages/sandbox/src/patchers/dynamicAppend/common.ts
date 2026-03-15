@@ -156,10 +156,11 @@ export function getOverwrittenAppendChildOrInsertBefore(
             refNo = Array.from(this.childNodes).indexOf(referenceNode as ChildNode);
           }
 
-          const { sandbox, nodeTransformer, fetch } = sandboxConfig;
+          const { sandbox, nodeTransformer, fetch, styleIsolation } = sandboxConfig;
           const transpiledStyleSheetElement = nodeTransformer(stylesheetElement, {
             fetch,
             sandbox,
+            styleIsolation,
           });
 
           const stylesheetTargetDetached = !document.contains(this);

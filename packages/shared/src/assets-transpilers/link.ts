@@ -6,6 +6,7 @@ import type { MatchResult } from '../module-resolver';
 import { warn } from '../reporter';
 import { resolveUrl } from '../utils';
 import { preTranspile as preTranspileScript } from './script';
+import { transpileStyleText } from './style';
 import type { AssetsTranspilerOpts, BaseTranspilerOpts } from './types';
 import { Mode } from './types';
 import { createReusingObjectUrl } from './utils';
@@ -97,8 +98,30 @@ export default function transpileLink(
   link: HTMLLinkElement,
   baseURI: string,
   opts: AssetsTranspilerOpts,
-): HTMLLinkElement {
+): HTMLLinkElement | HTMLStyleElement {
   const hrefAttribute = link.getAttribute('href');
+
+  if (opts.styleIsolation && hrefAttribute && link.rel === 'stylesheet') {
+    const resolvedHref = resolveUrl(hrefAttribute, baseURI);
+    const styleElement = document.createElement('style');
+    styleElement.dataset.href = resolvedHref;
+
+    const { appName, scopeRoot } = opts.styleIsolation;
+    void opts
+      .fetch(resolvedHref)
+      .then((res) => res.text())
+      .then(async (cssText) => {
+        const result = transpileStyleText(cssText, { appName, scopeRoot, fetch: opts.fetch });
+        styleElement.textContent = typeof result === 'string' ? result : await result;
+      })
+      .catch(() => {
+        warn(`[qiankun] Failed to fetch stylesheet "${resolvedHref}" for style isolation, falling back to <link>.`);
+        styleElement.textContent = `@import url("${resolvedHref}");`;
+      });
+
+    return styleElement;
+  }
+
   const { mode, result } = preTranspileStyleSheetLink(
     {
       href: hrefAttribute || undefined,

@@ -22,7 +22,7 @@ export function createSandboxContainer(
   opts: {
     globalContext?: WindowProxy;
     extraGlobals?: Endowments;
-  } & Pick<SandboxConfig, 'fetch' | 'nodeTransformer'>,
+  } & Pick<SandboxConfig, 'fetch' | 'nodeTransformer' | 'styleIsolation'>,
 ) {
   const { globalContext, extraGlobals = {}, ...sandboxCfg } = opts;
   let sandbox: Sandbox;
