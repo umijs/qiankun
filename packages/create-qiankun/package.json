@@ -1,7 +1,7 @@
 {
   "name": "create-qiankun",
   "version": "0.0.1-rc.2",
-  "description": "An easy way to start a qiankun sub-app with Vite",
+  "description": "Scaffold a qiankun main app or sub app with a single command",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/umijs/qiankun.git"

@@ -43,7 +43,7 @@ async function main() {
       [
         {
           name: 'appType',
-          type: (argType || argTemplate) ? null : 'select',
+          type: argType || argTemplate ? null : 'select',
           message: 'Select app type:',
           choices: appTypeOptions,
         },

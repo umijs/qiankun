@@ -1,65 +1,143 @@
-# @qiankunjs/create-qiankun
+# create-qiankun
 
-`@qiankunjs/create-qiankun` 是一个为 [qiankun](https://github.com/umijs/qiankun) 微前端框架设计的脚手架功能。旨在快速启动示例项目，方便开发者快速上手。
+Scaffold a qiankun main app or sub app with a single command. Supports React and Vue with TypeScript or JavaScript, powered by Vite.
 
-## 功能
+## Requirements
 
-- 支持选择一个或多个子应用来创建一个新的项目
-- 支持主,子应用路由模式 `(hash, history)` 选择
-- 支持一键生成 `npm/yarn/pnpm/pnpm workspace` 工程
-- 注入启动应用脚本以及端口冲突检测
+- Node.js v18 or higher
 
-## 环境要求
+## Installation
 
-1. 建议使用 Node.js 版本 v18 或更高版本。,推荐使用 [fnm](https://github.com/Schniz/fnm) 管理 node 版本
-
-## 安装
-
-使用 npm:
+Using npm:
 
 ```bash
 npx create-qiankun@latest
 ```
 
-或使用 yarn:
+Using yarn:
 
 ```bash
 yarn create qiankun@latest
 ```
 
-或使用 pnpm:
+Using pnpm:
 
 ```bash
 pnpm dlx create-qiankun@latest
 ```
 
-## 使用
+## Usage
 
-## 模板列表
+### Interactive Mode
 
-### 主应用模板
+Run the command without arguments to enter interactive mode:
 
-| 模板名称        |     |
-| --------------- | --- |
-| React18+Webpack |     |
-| Vue3+Webpack    |     |
-| React18+umi     |     |
+```bash
+npx create-qiankun@latest
+```
 
-### 子应用模板
+You will be prompted to:
 
-| 模板名称        |                             |
-| --------------- | --------------------------- |
-| React18+Webpack |                             |
-| React16+Webpack |                             |
-| Vue3+Webpack    |                             |
-| Vue2+Webpack    | ❗ 在 pnpm workspace 有问题 |
-| Vite+Vue3       | 🚧 建设中                   |
-| Vite+React18    | 🚧 建设中                   |
+1. Select app type: **Main App** or **Sub App**
+2. Enter a name for your app
+3. (Sub apps only) Select a framework template
 
-## 贡献
+### Non-Interactive Mode
 
-欢迎任何形式的贡献！请提交 PR 或开启 issue 讨论。
+You can also pass arguments directly:
 
-## 许可证
+```bash
+# Create a main app
+npx create-qiankun@latest my-main-app --type main
+
+# Create a sub app with React + TypeScript
+npx create-qiankun@latest my-sub-app --template react-ts
+
+# Alias: use -T for --type and -t for --template
+npx create-qiankun@latest my-app -T sub -t react
+```
+
+## CLI Options
+
+| Option | Alias | Values | Description |
+|--------|-------|--------|-------------|
+| `--type` | `-T` | `main`, `sub` | App type (default: `sub`) |
+| `--template` | `-t` | `react-ts`, `react`, `vue-ts`, `vue` | Framework template for sub apps |
+
+## Templates
+
+### Main App
+
+Main apps use **React + TypeScript** with Vite.
+
+Creates a minimal main application with qiankun integration. The generated app includes:
+
+- App component with `loadMicroApp()` integration
+- Vite configuration for main app development
+- qiankun dependency added to package.json
+
+### Sub Apps
+
+Sub apps support 4 framework templates, all powered by Vite:
+
+| Template | Description |
+|----------|-------------|
+| `react-ts` | React with TypeScript |
+| `react` | React with JavaScript |
+| `vue-ts` | Vue 3 with TypeScript |
+| `vue` | Vue 3 with JavaScript |
+
+Each sub app includes:
+
+- Proper qiankun entry point configuration
+- `build:qiankun` script for qiankun-compatible builds
+- qiankun sandbox isolation configuration
+
+## Generated Project Structure
+
+### Main App
+
+```
+my-main-app/
+├── src/
+│   ├── App.tsx           # Main component with loadMicroApp
+│   ├── App.css
+│   ├── main.tsx
+│   └── ...
+├── vite.config.ts
+├── package.json          # Includes qiankun dependency
+└── ...
+```
+
+### Sub App
+
+```
+my-sub-app/
+├── src/
+│   ├── App.{ts,tsx}      # Qiankun entry export
+│   ├── main.{ts,tsx}     # Qiankun lifecycle hooks
+│   └── ...
+├── vite.config.ts        # Configured for qiankun
+├── package.json          # Includes build:qiankun script
+└── ...
+```
+
+## Getting Started
+
+After creating your app:
+
+```bash
+cd my-app
+pnpm install
+pnpm dev
+```
+
+For sub apps, build for qiankun:
+
+```bash
+pnpm build:qiankun
+```
+
+## License
 
 MIT
