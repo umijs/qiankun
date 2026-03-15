@@ -9,6 +9,7 @@ import { templateOptions, ViteTemplate, AppType, appTypeOptions } from './shared
 import type { PromptAnswers } from './shared/types';
 import { generateViteApp } from './shared/generators/createVite';
 import { patchViteSubApp } from './shared/patchers';
+import { patchViteMainApp } from './shared/patchers/mainApp';
 
 interface CliArgs {
   _: string[];
@@ -105,13 +106,15 @@ async function main() {
   console.log(green(`Creating ${appName} at ${appPath}...`));
   console.log();
 
-  if (appType === AppType.Main) {
+   if (appType === AppType.Main) {
     const mainTemplate = ViteTemplate.ReactTs;
 
     await generateViteApp(targetDir, appName, mainTemplate);
 
     console.log();
     console.log(green('Patching for qiankun main app...'));
+
+    await patchViteMainApp(appPath, appName);
 
     console.log();
     console.log(bold(green('Done!')));
