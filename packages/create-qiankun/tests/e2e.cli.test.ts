@@ -19,9 +19,21 @@ async function runCli(cwd: string, appName: string, template: string): Promise<v
   });
 }
 
+async function runCliMain(cwd: string, appName: string): Promise<void> {
+  await execa('node', [CLI_PATH, appName, '--type', 'main'], {
+    cwd,
+    stdio: 'inherit',
+  });
+}
+
 async function installAndBuild(appPath: string): Promise<void> {
   await execa('pnpm', ['install'], { cwd: appPath, stdio: 'inherit' });
   await execa('pnpm', ['build:qiankun'], { cwd: appPath, stdio: 'inherit' });
+}
+
+async function installAndBuildMain(appPath: string): Promise<void> {
+  await execa('pnpm', ['install'], { cwd: appPath, stdio: 'inherit' });
+  await execa('pnpm', ['build'], { cwd: appPath, stdio: 'inherit' });
 }
 
 function normalizeContent(content: string, appName: string): string {
@@ -121,6 +133,57 @@ describe('create-qiankun CLI e2e', () => {
       expect(pkg.devDependencies['cheerio']).toBeDefined();
       expect(pkg.dependencies['qiankun']).toBeDefined();
       expect(pkg.dependencies['@qiankunjs/react']).toBeDefined();
+    });
+  });
+
+  describe('Main app - React + TypeScript template', () => {
+    const appName = 'react-ts-main';
+    const appPath = path.join(testDir, appName);
+    const template = 'main-react-ts';
+
+    it(
+      'should scaffold, patch, and build successfully',
+      async () => {
+        await runCliMain(testDir, appName);
+
+        expect(await fse.pathExists(appPath)).toBe(true);
+        expect(await fse.pathExists(path.join(appPath, 'package.json'))).toBe(true);
+        expect(await fse.pathExists(path.join(appPath, 'vite.config.ts'))).toBe(true);
+        expect(await fse.pathExists(path.join(appPath, 'src/main.tsx'))).toBe(true);
+        expect(await fse.pathExists(path.join(appPath, 'src/App.tsx'))).toBe(true);
+        expect(await fse.pathExists(path.join(appPath, 'src/App.css'))).toBe(true);
+
+        await installAndBuildMain(appPath);
+
+        expect(await fse.pathExists(path.join(appPath, 'dist/index.html'))).toBe(true);
+      },
+      E2E_TIMEOUT,
+    );
+
+    it('should generate correct entry file', async () => {
+      await assertFileMatchesFixture(path.join(appPath, 'src/main.tsx'), template, 'main.tsx.txt', appName);
+    });
+
+    it('should generate correct app component', async () => {
+      await assertFileMatchesFixture(path.join(appPath, 'src/App.tsx'), template, 'App.tsx.txt', appName);
+    });
+
+    it('should generate correct app styles', async () => {
+      await assertFileMatchesFixture(path.join(appPath, 'src/App.css'), template, 'App.css.txt', appName);
+    });
+
+    it('should generate correct vite.config.ts', async () => {
+      await assertFileMatchesFixture(path.join(appPath, 'vite.config.ts'), template, 'vite.config.ts.txt', appName);
+    });
+
+    it('should have correct package.json for main app', async () => {
+      const pkg = await fse.readJson(path.join(appPath, 'package.json'));
+
+      expect(pkg.name).toBe(appName);
+      expect(pkg.dependencies['qiankun']).toBeDefined();
+      expect(pkg.dependencies['@qiankunjs/react']).toBeUndefined();
+      expect(pkg.devDependencies?.['@vitejs/plugin-legacy']).toBeUndefined();
+      expect(pkg.scripts?.['build:qiankun']).toBeUndefined();
     });
   });
 

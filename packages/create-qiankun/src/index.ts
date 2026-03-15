@@ -43,7 +43,7 @@ async function main() {
       [
         {
           name: 'appType',
-          type: argType ? null : 'select',
+          type: (argType || argTemplate) ? null : 'select',
           message: 'Select app type:',
           choices: appTypeOptions,
         },
@@ -106,7 +106,7 @@ async function main() {
   console.log(green(`Creating ${appName} at ${appPath}...`));
   console.log();
 
-   if (appType === AppType.Main) {
+  if (appType === AppType.Main) {
     const mainTemplate = ViteTemplate.ReactTs;
 
     await generateViteApp(targetDir, appName, mainTemplate);
