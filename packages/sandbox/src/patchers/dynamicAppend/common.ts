@@ -123,6 +123,7 @@ export function getOverwrittenAppendChildOrInsertBefore(
   nativeFn: typeof HTMLElement.prototype.appendChild | typeof HTMLElement.prototype.insertBefore,
   getSandboxConfig: (element: HTMLElement) => SandboxConfig | undefined,
   target: DynamicDomMutationTarget = 'body',
+  setSandboxConfig?: (element: HTMLElement, config: SandboxConfig) => void,
 ) {
   function appendChildInSandbox<T extends Node>(
     this: HTMLHeadElement | HTMLBodyElement,
@@ -162,6 +163,10 @@ export function getOverwrittenAppendChildOrInsertBefore(
             sandbox,
             styleIsolation,
           });
+
+          if (transpiledStyleSheetElement !== stylesheetElement && setSandboxConfig) {
+            setSandboxConfig(transpiledStyleSheetElement as HTMLElement, sandboxConfig);
+          }
 
           const stylesheetTargetDetached = !document.contains(this);
           if (stylesheetTargetDetached) {

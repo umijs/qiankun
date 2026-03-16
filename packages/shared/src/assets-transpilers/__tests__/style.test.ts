@@ -202,6 +202,92 @@ describe('transpileStyleText', () => {
       expect(result).toContain('.root { color: black; }');
       expect(result).not.toContain('@import');
     });
+
+    it('detects circular @import and skips them', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const cssA = `@import url("https://example.com/b.css");\n.a { color: red; }`;
+      const cssB = `@import url("https://example.com/a.css");\n.b { color: blue; }`;
+
+      const mockFetch = vi.fn().mockImplementation((url: string) => {
+        if (url === 'https://example.com/a.css') return Promise.resolve(new Response(cssA));
+        if (url === 'https://example.com/b.css') return Promise.resolve(new Response(cssB));
+        return Promise.reject(new Error('Not found'));
+      });
+
+      const input = `@import url("https://example.com/a.css");\n.root { margin: 0; }`;
+      const result = await transpileStyleText(input, { ...defaultOpts, fetch: mockFetch });
+
+      expect(result).toContain('.a { color: red; }');
+      expect(result).toContain('.b { color: blue; }');
+      expect(result).toContain('.root { margin: 0; }');
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Duplicate @import'));
+      consoleSpy.mockRestore();
+    });
+
+    it('resolves relative @import URLs against baseURL', async () => {
+      const importedCSS = '.sub { display: block; }';
+      const mockFetch = vi.fn().mockResolvedValue(new Response(importedCSS));
+
+      const input = `@import url("./sub/reset.css");\n.main { padding: 0; }`;
+      const result = await transpileStyleText(input, {
+        ...defaultOpts,
+        fetch: mockFetch,
+        baseURL: 'https://cdn.example.com/styles/main.css',
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith('https://cdn.example.com/styles/sub/reset.css');
+      expect(result).toContain('.sub { display: block; }');
+      expect(result).not.toContain('@import');
+    });
+  });
+
+  describe('relative url() resolution', () => {
+    it('rewrites relative url() paths when baseURL is provided', async () => {
+      const input = `.bg { background: url("../images/hero.png"); }`;
+      const result = await transpileStyleText(input, {
+        ...defaultOpts,
+        baseURL: 'https://cdn.example.com/styles/main.css',
+      });
+
+      expect(result).toContain('url("https://cdn.example.com/images/hero.png")');
+    });
+
+    it('does not rewrite absolute url() paths', async () => {
+      const input = `.bg { background: url("https://cdn.example.com/images/hero.png"); }`;
+      const result = await transpileStyleText(input, {
+        ...defaultOpts,
+        baseURL: 'https://other.example.com/styles/main.css',
+      });
+
+      expect(result).toContain('url("https://cdn.example.com/images/hero.png")');
+    });
+
+    it('does not rewrite data: or blob: URLs', async () => {
+      const input = `.icon { background: url("data:image/svg+xml,..."); }`;
+      const result = await transpileStyleText(input, {
+        ...defaultOpts,
+        baseURL: 'https://cdn.example.com/styles/main.css',
+      });
+
+      expect(result).toContain('data:image/svg+xml,...');
+    });
+
+    it('does not rewrite url() when baseURL is not provided', async () => {
+      const input = `.bg { background: url("../images/hero.png"); }`;
+      const result = await transpileStyleText(input, defaultOpts);
+
+      expect(result).toContain('url("../images/hero.png")');
+    });
+
+    it('resolves relative url() inside imported CSS against the import source URL', async () => {
+      const importedCSS = `.icon { background: url("./icons/check.svg"); }`;
+      const mockFetch = vi.fn().mockResolvedValue(new Response(importedCSS));
+
+      const input = `@import url("https://cdn.example.com/lib/components.css");\n.local { color: red; }`;
+      const result = await transpileStyleText(input, { ...defaultOpts, fetch: mockFetch });
+
+      expect(result).toContain('url("https://cdn.example.com/lib/icons/check.svg")');
+    });
   });
 
   describe('@namespace handling', () => {

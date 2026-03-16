@@ -3,10 +3,14 @@
  * @since 2026-03-15
  */
 
+import { warn } from '../reporter';
+
 export type StyleTranspilerOpts = {
   appName: string;
   scopeRoot: string;
   fetch: typeof globalThis.fetch;
+  /** Base URL of the stylesheet, used to resolve relative url() and @import paths */
+  baseURL?: string;
 };
 
 const KEYFRAMES_RE = /@keyframes\s+([\w-]+)/g;
@@ -54,7 +58,36 @@ function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-async function inlineImports(cssText: string, fetchFn: typeof globalThis.fetch): Promise<string> {
+const CSS_URL_RE = /url\(\s*["']?(?!(?:data|blob|https?):)([^"')]+)["']?\s*\)/g;
+
+function resolveRelativeCSSUrls(cssText: string, baseURL: string): string {
+  return cssText.replace(CSS_URL_RE, (match, relativePath: string) => {
+    try {
+      const absoluteUrl = new URL(relativePath, baseURL).toString();
+      return `url("${absoluteUrl}")`;
+    } catch {
+      return match;
+    }
+  });
+}
+
+function resolveImportUrl(url: string, baseURL?: string): string {
+  if (!baseURL || url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//')) {
+    return url;
+  }
+  try {
+    return new URL(url, baseURL).toString();
+  } catch {
+    return url;
+  }
+}
+
+async function inlineImports(
+  cssText: string,
+  fetchFn: typeof globalThis.fetch,
+  baseURL?: string,
+  visited: Set<string> = new Set(),
+): Promise<string> {
   const imports: Array<{ fullMatch: string; url: string }> = [];
 
   const urlRe = new RegExp(IMPORT_URL_RE.source, 'g');
@@ -71,13 +104,23 @@ async function inlineImports(cssText: string, fetchFn: typeof globalThis.fetch):
 
   let result = cssText;
   for (const { fullMatch, url } of imports) {
+    const resolvedUrl = resolveImportUrl(url, baseURL);
+
+    if (visited.has(resolvedUrl)) {
+      warn(`Duplicate @import detected for "${resolvedUrl}", skipping.`);
+      result = result.replace(fullMatch, '');
+      continue;
+    }
+
     try {
-      const res = await fetchFn(url);
+      visited.add(resolvedUrl);
+      const res = await fetchFn(resolvedUrl);
       let importedCSS = await res.text();
-      importedCSS = await inlineImports(importedCSS, fetchFn);
+      importedCSS = resolveRelativeCSSUrls(importedCSS, resolvedUrl);
+      importedCSS = await inlineImports(importedCSS, fetchFn, resolvedUrl, visited);
       result = result.replace(fullMatch, importedCSS);
     } catch {
-      console.warn(`[qiankun] Failed to fetch @import "${url}", leaving as-is. This may be due to CORS restrictions.`);
+      warn(`Failed to fetch @import "${resolvedUrl}", leaving as-is. This may be due to CORS restrictions.`);
     }
   }
 
@@ -96,12 +139,14 @@ export function transpileStyleText(cssText: string, opts: StyleTranspilerOpts): 
     return transpileStyleTextAsync(trimmed, opts);
   }
 
-  return transpileStyleTextSync(trimmed, opts);
+  const resolved = opts.baseURL ? resolveRelativeCSSUrls(trimmed, opts.baseURL) : trimmed;
+  return transpileStyleTextSync(resolved, opts);
 }
 
 async function transpileStyleTextAsync(cssText: string, opts: StyleTranspilerOpts): Promise<string> {
-  const inlined = await inlineImports(cssText, opts.fetch);
-  return transpileStyleTextSync(inlined, opts);
+  const inlined = await inlineImports(cssText, opts.fetch, opts.baseURL);
+  const resolved = opts.baseURL ? resolveRelativeCSSUrls(inlined, opts.baseURL) : inlined;
+  return transpileStyleTextSync(resolved, opts);
 }
 
 function transpileStyleTextSync(cssText: string, opts: StyleTranspilerOpts): string {

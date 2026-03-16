@@ -83,6 +83,74 @@ describe('transpileLink', () => {
       expect((result as HTMLStyleElement).textContent).toBe('@import url("http://localhost:8000/styles/broken.css");');
     });
 
+    it('copies media attribute from <link> to generated <style>', () => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.setAttribute('href', '/styles/print.css');
+      link.setAttribute('media', 'print');
+
+      const mockFetch = vi.fn().mockResolvedValue(new Response('.print { color: black; }'));
+      const result = transpileLink(link, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
+
+      expect(result.tagName).toBe('STYLE');
+      expect(result.getAttribute('media')).toBe('print');
+    });
+
+    it('copies disabled state from <link> to generated <style>', () => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.setAttribute('href', '/styles/optional.css');
+      link.disabled = true;
+
+      const mockFetch = vi.fn().mockResolvedValue(new Response('.opt { color: gray; }'));
+      const result = transpileLink(link, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
+
+      expect(result.tagName).toBe('STYLE');
+      expect((result as HTMLStyleElement).disabled).toBe(true);
+    });
+
+    it('copies nonce attribute from <link> to generated <style>', () => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.setAttribute('href', '/styles/secure.css');
+      link.setAttribute('nonce', 'abc123');
+
+      const mockFetch = vi.fn().mockResolvedValue(new Response('.sec { color: green; }'));
+      const result = transpileLink(link, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
+
+      expect(result.tagName).toBe('STYLE');
+      expect(result.getAttribute('nonce')).toBe('abc123');
+    });
+
+    it('copies title attribute from <link> to generated <style>', () => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.setAttribute('href', '/styles/alt.css');
+      link.setAttribute('title', 'Alternative Theme');
+
+      const mockFetch = vi.fn().mockResolvedValue(new Response('.alt { color: navy; }'));
+      const result = transpileLink(link, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
+
+      expect(result.tagName).toBe('STYLE');
+      expect(result.getAttribute('title')).toBe('Alternative Theme');
+    });
+
+    it('passes baseURL so relative CSS assets get resolved', async () => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.setAttribute('href', '/styles/main.css');
+
+      const cssContent = `.bg { background: url("../images/hero.png"); }`;
+      const mockFetch = vi.fn().mockResolvedValue(new Response(cssContent));
+      const result = transpileLink(link, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
+
+      await vi.waitFor(() => {
+        expect((result as HTMLStyleElement).textContent).toBeTruthy();
+      });
+
+      expect((result as HTMLStyleElement).textContent).toContain('url("http://localhost:8000/images/hero.png")');
+    });
+
     it('does not affect non-stylesheet links', () => {
       const link = document.createElement('link');
       link.rel = 'preload';

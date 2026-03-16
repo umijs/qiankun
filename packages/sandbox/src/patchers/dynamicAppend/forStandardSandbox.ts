@@ -54,6 +54,8 @@ const elementAttachSandboxConfigMap = new WeakMap<HTMLElement, SandboxConfig>();
 const patchCacheWeakMap = new WeakMap<object, unknown>();
 
 const getSandboxConfig = (element: HTMLElement) => elementAttachSandboxConfigMap.get(element);
+const setSandboxConfig = (element: HTMLElement, config: SandboxConfig) =>
+  elementAttachSandboxConfigMap.set(element, config);
 
 function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): CallableFunction {
   const container = getContainer();
@@ -183,11 +185,13 @@ function patchDocumentHeadAndBodyMethods(container: HTMLElement): typeof noop {
       document.head.appendChild,
       getSandboxConfig,
       'head',
+      setSandboxConfig,
     );
     headElement.insertBefore = getOverwrittenAppendChildOrInsertBefore(
       document.head.insertBefore,
       getSandboxConfig,
       'head',
+      setSandboxConfig,
     );
     headElement.removeChild = getNewRemoveChild(document.head.removeChild, getSandboxConfig);
   };
@@ -211,11 +215,13 @@ function patchDocumentHeadAndBodyMethods(container: HTMLElement): typeof noop {
     document.body.appendChild,
     getSandboxConfig,
     'body',
+    setSandboxConfig,
   );
   containerBodyElement.insertBefore = getOverwrittenAppendChildOrInsertBefore(
     document.head.insertBefore,
     getSandboxConfig,
     'body',
+    setSandboxConfig,
   );
   containerBodyElement.removeChild = getNewRemoveChild(document.body.removeChild, getSandboxConfig);
 
@@ -381,10 +387,13 @@ export function patchStandardSandbox(
     // release the overwritten document
     unpatchDocument();
 
+    // Always decrement CSSOM patch ref count — patchCSSOM() handles actual restoration
+    // when the count reaches zero
+    unpatchCSSOM?.();
+
     // release the overwritten prototype after all the micro apps unmounted
     if (isAllAppsUnmounted()) {
       unpatchDOMPrototype();
-      unpatchCSSOM?.();
     }
 
     recordStyledComponentsCSSRules(dynamicStyleSheetElements as HTMLStyleElement[]);

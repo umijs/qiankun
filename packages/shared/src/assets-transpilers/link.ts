@@ -106,16 +106,25 @@ export default function transpileLink(
     const styleElement = document.createElement('style');
     styleElement.dataset.href = resolvedHref;
 
+    // Preserve meaningful attributes from the original <link>
+    const media = link.getAttribute('media');
+    if (media) styleElement.setAttribute('media', media);
+    if (link.disabled) styleElement.disabled = true;
+    const nonce = link.getAttribute('nonce');
+    if (nonce) styleElement.setAttribute('nonce', nonce);
+    const title = link.getAttribute('title');
+    if (title) styleElement.setAttribute('title', title);
+
     const { appName, scopeRoot } = opts.styleIsolation;
     void opts
       .fetch(resolvedHref)
       .then((res) => res.text())
       .then(async (cssText) => {
-        const result = transpileStyleText(cssText, { appName, scopeRoot, fetch: opts.fetch });
+        const result = transpileStyleText(cssText, { appName, scopeRoot, fetch: opts.fetch, baseURL: resolvedHref });
         styleElement.textContent = typeof result === 'string' ? result : await result;
       })
       .catch(() => {
-        warn(`[qiankun] Failed to fetch stylesheet "${resolvedHref}" for style isolation, falling back to <link>.`);
+        warn(`Failed to fetch stylesheet "${resolvedHref}" for style isolation, falling back to @import (un-scoped).`);
         styleElement.textContent = `@import url("${resolvedHref}");`;
       });
 
