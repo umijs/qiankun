@@ -10,6 +10,8 @@ function App() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isUnmounted = false;
+
     if (!containerRef.current) return;
 
     setLoading(true);
@@ -22,13 +24,20 @@ function App() {
     });
 
     microAppRef.current.mountPromise
-      .then(() => setLoading(false))
+      .then(() => {
+        if (!isUnmounted) {
+          setLoading(false);
+        }
+      })
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : 'Failed to load micro app');
-        setLoading(false);
+        if (!isUnmounted) {
+          setError(err instanceof Error ? err.message : 'Failed to load micro app');
+          setLoading(false);
+        }
       });
 
     return () => {
+      isUnmounted = true;
       microAppRef.current?.unmount();
       microAppRef.current = null;
     };
