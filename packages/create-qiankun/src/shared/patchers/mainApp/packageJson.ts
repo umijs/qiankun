@@ -1,7 +1,6 @@
 import path from 'node:path';
 import fse from 'fs-extra';
-
-const QIANKUN_VERSION = '^3.0.0-rc.0';
+import { QIANKUN_VERSION } from '../../versions';
 
 export async function patchMainPackageJson(appRoot: string, appName: string): Promise<void> {
   const pkgPath = path.join(appRoot, 'package.json');

@@ -2,12 +2,13 @@ import path from 'node:path';
 import fse from 'fs-extra';
 import type { ViteTemplate } from '../types';
 import { isReactTemplate } from '../types';
-
-const LEGACY_PLUGIN_VERSION = '^5.4.2';
-const CHEERIO_VERSION = '^1.0.0';
-const QIANKUN_VERSION = '^3.0.0-rc.0';
-const QIANKUN_REACT_VERSION = '^0.0.1-rc.0';
-const QIANKUN_VUE_VERSION = '^0.0.1-rc.0';
+import {
+  LEGACY_PLUGIN_VERSION,
+  CHEERIO_VERSION,
+  QIANKUN_VERSION,
+  QIANKUN_REACT_VERSION,
+  QIANKUN_VUE_VERSION,
+} from '../versions';
 
 export async function patchPackageJson(appRoot: string, appName: string, template: ViteTemplate): Promise<void> {
   const pkgPath = path.join(appRoot, 'package.json');

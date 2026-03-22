@@ -34,6 +34,13 @@ async function main() {
   const argTemplate = argv.template || argv.t;
   const argType = argv.type || argv.T;
   const parsedArgType = argType === AppType.Main || argType === AppType.Sub ? argType : undefined;
+
+  if (argType && !parsedArgType) {
+    const validTypes = Object.values(AppType);
+    console.log(red(`Invalid type: ${String(argType)}. Valid options: ${validTypes.join(', ')}`));
+    process.exit(1);
+  }
+
   const resolvedArgAppType = parsedArgType === AppType.Main ? AppType.Main : AppType.Sub;
 
   let answers: Partial<PromptAnswers>;
@@ -82,6 +89,13 @@ async function main() {
   const appType = parsedArgType || answers.appType || AppType.Sub;
   const appName = argAppName || answers.appName || (appType === AppType.Main ? 'qiankun-main-app' : 'qiankun-sub-app');
   const template = (argTemplate || answers.template) as ViteTemplate;
+
+  if (appType === AppType.Main && argTemplate) {
+    console.log(
+      red('The --template option is only supported for sub apps. Please remove --template when using --type main.'),
+    );
+    process.exit(1);
+  }
 
   const cwd = process.cwd();
   const workspaceRoot = detectWorkspaceRoot(cwd);

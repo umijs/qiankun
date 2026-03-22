@@ -9,6 +9,7 @@ import os from 'node:os';
 const CLI_PATH = path.resolve(__dirname, '../dist/index.js');
 const FIXTURES_PATH = path.resolve(__dirname, 'fixtures');
 const E2E_TIMEOUT = process.env.E2E_TIMEOUT ? parseInt(process.env.E2E_TIMEOUT, 10) : 180000;
+const EXPECTED_QIANKUN_VERSION = '^3.0.0-rc.0';
 
 const APP_NAME_PLACEHOLDER = '{{APP_NAME}}';
 
@@ -24,6 +25,19 @@ async function runCliMain(cwd: string, appName: string): Promise<void> {
     cwd,
     stdio: 'inherit',
   });
+}
+
+async function runCliRaw(cwd: string, args: string[]): Promise<{ exitCode: number; output: string }> {
+  const result = await execa('node', [CLI_PATH, ...args], {
+    cwd,
+    stdio: 'pipe',
+    reject: false,
+  });
+
+  return {
+    exitCode: result.exitCode,
+    output: `${result.stdout}\n${result.stderr}`,
+  };
 }
 
 async function installAndBuild(appPath: string): Promise<void> {
@@ -79,6 +93,26 @@ describe('create-qiankun CLI e2e', () => {
     await fse.remove(testDir);
   });
 
+  describe('CLI argument validation', () => {
+    it('should reject invalid --type values', async () => {
+      const appName = 'invalid-type-sub-app';
+      const result = await runCliRaw(testDir, [appName, '--type', 'mian']);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.output).toContain('Invalid type: mian');
+      expect(await fse.pathExists(path.join(testDir, appName))).toBe(false);
+    });
+
+    it('should reject --template when --type main is provided', async () => {
+      const appName = 'main-app-with-template';
+      const result = await runCliRaw(testDir, [appName, '--type', 'main', '--template', 'vue-ts']);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.output).toContain('The --template option is only supported for sub apps');
+      expect(await fse.pathExists(path.join(testDir, appName))).toBe(false);
+    });
+  });
+
   describe('React + TypeScript template', () => {
     const appName = 'react-ts-sub';
     const appPath = path.join(testDir, appName);
@@ -131,7 +165,7 @@ describe('create-qiankun CLI e2e', () => {
       expect(pkg.scripts['build:qiankun']).toBe('vite build --mode qiankun');
       expect(pkg.devDependencies['@vitejs/plugin-legacy']).toBeDefined();
       expect(pkg.devDependencies['cheerio']).toBeDefined();
-      expect(pkg.dependencies['qiankun']).toBeDefined();
+      expect(pkg.dependencies['qiankun']).toBe(EXPECTED_QIANKUN_VERSION);
       expect(pkg.dependencies['@qiankunjs/react']).toBeDefined();
     });
   });
@@ -180,7 +214,7 @@ describe('create-qiankun CLI e2e', () => {
       const pkg = await fse.readJson(path.join(appPath, 'package.json'));
 
       expect(pkg.name).toBe(appName);
-      expect(pkg.dependencies['qiankun']).toBeDefined();
+      expect(pkg.dependencies['qiankun']).toBe(EXPECTED_QIANKUN_VERSION);
       expect(pkg.dependencies['@qiankunjs/react']).toBeUndefined();
       expect(pkg.devDependencies?.['@vitejs/plugin-legacy']).toBeUndefined();
       expect(pkg.scripts?.['build:qiankun']).toBeUndefined();
