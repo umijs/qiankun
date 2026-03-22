@@ -59,10 +59,10 @@ npx create-qiankun@latest my-app -T sub -t react
 
 ## CLI Options
 
-| Option | Alias | Values | Description |
-|--------|-------|--------|-------------|
-| `--type` | `-T` | `main`, `sub` | App type (default: `sub`) |
-| `--template` | `-t` | `react-ts`, `react`, `vue-ts`, `vue` | Framework template for sub apps |
+| Option       | Alias | Values                               | Description                     |
+| ------------ | ----- | ------------------------------------ | ------------------------------- |
+| `--type`     | `-T`  | `main`, `sub`                        | App type (default: `sub`)       |
+| `--template` | `-t`  | `react-ts`, `react`, `vue-ts`, `vue` | Framework template for sub apps |
 
 ## Templates
 
@@ -80,12 +80,12 @@ Creates a minimal main application with qiankun integration. The generated app i
 
 Sub apps support 4 framework templates, all powered by Vite:
 
-| Template | Description |
-|----------|-------------|
+| Template   | Description           |
+| ---------- | --------------------- |
 | `react-ts` | React with TypeScript |
-| `react` | React with JavaScript |
-| `vue-ts` | Vue 3 with TypeScript |
-| `vue` | Vue 3 with JavaScript |
+| `react`    | React with JavaScript |
+| `vue-ts`   | Vue 3 with TypeScript |
+| `vue`      | Vue 3 with JavaScript |
 
 Each sub app includes:
 
