@@ -9,7 +9,7 @@ import os from 'node:os';
 const CLI_PATH = path.resolve(__dirname, '../dist/index.js');
 const FIXTURES_PATH = path.resolve(__dirname, 'fixtures');
 const E2E_TIMEOUT = process.env.E2E_TIMEOUT ? parseInt(process.env.E2E_TIMEOUT, 10) : 180000;
-const EXPECTED_QIANKUN_VERSION = '^3.0.0-rc.0';
+const EXPECTED_QIANKUN_VERSION = 'rc';
 
 const APP_NAME_PLACEHOLDER = '{{APP_NAME}}';
 
