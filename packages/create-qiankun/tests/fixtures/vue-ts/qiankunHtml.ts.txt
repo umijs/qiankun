@@ -19,16 +19,19 @@ function isQiankunBuild(ctx: IndexHtmlTransformContext): boolean {
 
 function rewriteSystemImport(script: string): string {
   const parentUrl = 'window.__POWERED_BY_QIANKUN__ ? window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__ : document.baseURI';
-
+  
   if (script.includes(parentUrl)) {
     return script;
   }
-
+  
   const legacyEntryPattern = "document.getElementById('vite-legacy-entry').getAttribute('data-src')";
   if (script.includes(legacyEntryPattern)) {
-    return script.replace(`System.import(${legacyEntryPattern})`, `System.import(${legacyEntryPattern}, ${parentUrl})`);
+    return script.replace(
+      `System.import(${legacyEntryPattern})`,
+      `System.import(${legacyEntryPattern}, ${parentUrl})`
+    );
   }
-
+  
   return script;
 }
 

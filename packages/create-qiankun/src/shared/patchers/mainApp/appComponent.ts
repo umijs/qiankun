@@ -1,0 +1,70 @@
+import path from 'node:path';
+import fse from 'fs-extra';
+
+export async function writeMainAppComponent(appRoot: string): Promise<void> {
+  const appPath = path.join(appRoot, 'src/App.tsx');
+
+  const content = `import { useEffect, useRef, useState } from 'react';
+import { loadMicroApp } from 'qiankun';
+import type { MicroApp } from 'qiankun';
+import './App.css';
+
+function App() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const microAppRef = useRef<MicroApp | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isUnmounted = false;
+
+    if (!containerRef.current) return;
+
+    setLoading(true);
+    setError(null);
+
+    microAppRef.current = loadMicroApp({
+      name: 'sub-app',
+      entry: '//localhost:7101',
+      container: containerRef.current,
+    });
+
+    microAppRef.current.mountPromise
+      .then(() => {
+        if (!isUnmounted) {
+          setLoading(false);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!isUnmounted) {
+          setError(err instanceof Error ? err.message : 'Failed to load micro app');
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isUnmounted = true;
+      microAppRef.current?.unmount();
+      microAppRef.current = null;
+    };
+  }, []);
+
+  return (
+    <div className="main-app">
+      <header className="main-app-header">
+        <h1>Qiankun Main App</h1>
+      </header>
+      <main className="main-app-content">
+        {loading && <div className="loading">Loading micro app...</div>}
+        {error && <div className="error">Error: {error}</div>}
+        <div ref={containerRef} id="micro-app-container" />
+      </main>
+    </div>
+  );
+}
+
+export default App;
+`;
+
+  await fse.writeFile(appPath, content, 'utf-8');
+}

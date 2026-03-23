@@ -8,9 +8,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: isQiankun ? './' : '/',
-    plugins: [vue(), isQiankun && legacy({ renderLegacyChunks: true }), isQiankun && qiankunHtmlPlugin()].filter(
-      Boolean,
-    ),
+    plugins: [
+      vue(),
+      isQiankun && legacy({ renderLegacyChunks: true }),
+      isQiankun && qiankunHtmlPlugin(),
+    ].filter(Boolean),
     server: {
       cors: true,
       headers: {

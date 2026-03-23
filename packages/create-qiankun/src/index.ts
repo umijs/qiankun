@@ -5,10 +5,19 @@ import { green, red, bold } from 'kolorist';
 import path from 'node:path';
 import minimist from 'minimist';
 import { isDirectory, detectWorkspaceRoot } from './shared/utils';
-import { templateOptions, ViteTemplate } from './shared/types';
+import { templateOptions, ViteTemplate, AppType, appTypeOptions } from './shared/types';
 import type { PromptAnswers } from './shared/types';
 import { generateViteApp } from './shared/generators/createVite';
 import { patchViteSubApp } from './shared/patchers';
+import { patchViteMainApp } from './shared/patchers/mainApp';
+
+interface CliArgs {
+  _: string[];
+  template?: string;
+  t?: string;
+  type?: string;
+  T?: string;
+}
 
 main().catch((e) => {
   console.error(e);
@@ -20,21 +29,38 @@ async function main() {
   console.log(green('Welcome to create-qiankun!'));
   console.log();
 
-  const argv = minimist(process.argv.slice(2));
+  const argv = minimist(process.argv.slice(2)) as CliArgs;
   const argAppName = argv._[0];
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const argTemplate = argv.template || argv.t;
+  const argType = argv.type || argv.T;
+  const parsedArgType = argType === AppType.Main || argType === AppType.Sub ? argType : undefined;
 
-  let answers: PromptAnswers;
+  if (argType && !parsedArgType) {
+    const validTypes = Object.values(AppType);
+    console.log(red(`Invalid type: ${String(argType)}. Valid options: ${validTypes.join(', ')}`));
+    process.exit(1);
+  }
+
+  const resolvedArgAppType = parsedArgType === AppType.Main ? AppType.Main : AppType.Sub;
+
+  let answers: Partial<PromptAnswers>;
 
   try {
     answers = (await prompts(
       [
         {
+          name: 'appType',
+          type: argType || argTemplate ? null : 'select',
+          message: 'Select app type:',
+          choices: appTypeOptions,
+        },
+        {
           name: 'appName',
           type: argAppName ? null : 'text',
-          message: 'Sub-app name:',
-          initial: 'qiankun-sub-app',
+          message: (_prev: unknown, values: Partial<PromptAnswers>) =>
+            (values.appType || resolvedArgAppType) === AppType.Main ? 'Main app name:' : 'Sub-app name:',
+          initial: (_prev: unknown, values: Partial<PromptAnswers>) =>
+            (values.appType || resolvedArgAppType) === AppType.Main ? 'qiankun-main-app' : 'qiankun-sub-app',
           validate: (value: string) => {
             if (!value.trim()) return 'App name is required';
             if (!/^[a-z0-9-]+$/.test(value)) return 'App name can only contain lowercase letters, numbers, and hyphens';
@@ -43,7 +69,8 @@ async function main() {
         },
         {
           name: 'template',
-          type: argTemplate ? null : 'select',
+          type: (_prev: unknown, values: Partial<PromptAnswers>) =>
+            argTemplate || (values.appType || resolvedArgAppType) === AppType.Main ? null : 'select',
           message: 'Select a framework:',
           choices: templateOptions,
         },
@@ -53,18 +80,20 @@ async function main() {
           throw new Error('Operation cancelled');
         },
       },
-    )) as PromptAnswers;
+    )) as Partial<PromptAnswers>;
   } catch {
     console.log(red('Operation cancelled'));
     process.exit(1);
   }
 
-  const appName = argAppName || answers.appName;
+  const appType = parsedArgType || answers.appType || AppType.Sub;
+  const appName = argAppName || answers.appName || (appType === AppType.Main ? 'qiankun-main-app' : 'qiankun-sub-app');
   const template = (argTemplate || answers.template) as ViteTemplate;
 
-  const validTemplates = Object.values(ViteTemplate);
-  if (!validTemplates.includes(template)) {
-    console.log(red(`Invalid template: ${String(template)}. Valid options: ${validTemplates.join(', ')}`));
+  if (appType === AppType.Main && argTemplate) {
+    console.log(
+      red('The --template option is only supported for sub apps. Please remove --template when using --type main.'),
+    );
     process.exit(1);
   }
 
@@ -91,20 +120,47 @@ async function main() {
   console.log(green(`Creating ${appName} at ${appPath}...`));
   console.log();
 
-  await generateViteApp(targetDir, appName, template);
+  if (appType === AppType.Main) {
+    const mainTemplate = ViteTemplate.ReactTs;
 
-  console.log();
-  console.log(green('Patching for qiankun...'));
+    await generateViteApp(targetDir, appName, mainTemplate);
 
-  await patchViteSubApp(appPath, appName, template);
+    console.log();
+    console.log(green('Patching for qiankun main app...'));
 
-  console.log();
-  console.log(bold(green('Done!')));
-  console.log();
-  console.log('Next steps:');
-  console.log(`  cd ${isInWorkspace ? `packages/${appName}` : appName}`);
-  console.log('  pnpm install');
-  console.log('  pnpm dev              # Run standalone');
-  console.log('  pnpm build:qiankun    # Build for qiankun');
-  console.log();
+    await patchViteMainApp(appPath, appName);
+
+    console.log();
+    console.log(bold(green('Done!')));
+    console.log();
+    console.log('Next steps:');
+    console.log(`  cd ${isInWorkspace ? `packages/${appName}` : appName}`);
+    console.log('  pnpm install');
+    console.log('  pnpm dev');
+    console.log('  pnpm build');
+    console.log();
+  } else {
+    const validTemplates = Object.values(ViteTemplate);
+    if (!validTemplates.includes(template)) {
+      console.log(red(`Invalid template: ${String(template)}. Valid options: ${validTemplates.join(', ')}`));
+      process.exit(1);
+    }
+
+    await generateViteApp(targetDir, appName, template);
+
+    console.log();
+    console.log(green('Patching for qiankun...'));
+
+    await patchViteSubApp(appPath, appName, template);
+
+    console.log();
+    console.log(bold(green('Done!')));
+    console.log();
+    console.log('Next steps:');
+    console.log(`  cd ${isInWorkspace ? `packages/${appName}` : appName}`);
+    console.log('  pnpm install');
+    console.log('  pnpm dev              # Run standalone');
+    console.log('  pnpm build:qiankun    # Build for qiankun');
+    console.log();
+  }
 }

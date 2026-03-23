@@ -126,7 +126,7 @@ function extractLatestEntry(changelogContent) {
 
 const publishedPackagesJSON = process.argv[2];
 if (!publishedPackagesJSON) {
-  console.error('Usage: node scripts/generate-release-notes.mjs \'<publishedPackagesJSON>\'');
+  console.error("Usage: node scripts/generate-release-notes.mjs '<publishedPackagesJSON>'");
   process.exit(1);
 }
 
