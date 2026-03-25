@@ -69,7 +69,12 @@ export default function Sidebar() {
               <Text className="text-xs text-gray-400">Micro-Frontend</Text>
             </div>
           </Space>
-          <button onClick={() => setCollapsed(!collapsed)} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-expanded={!collapsed}
+          >
             {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
           </button>
         </div>

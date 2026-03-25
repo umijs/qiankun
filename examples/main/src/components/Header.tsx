@@ -47,7 +47,8 @@ export default function Header() {
           type="text"
           icon={<GithubOutlined />}
           className="text-gray-500 hover:text-blue-500"
-          onClick={() => window.open('https://github.com/umijs/qiankun', '_blank')}
+          onClick={() => window.open('https://github.com/umijs/qiankun', '_blank', 'noopener,noreferrer')}
+          aria-label="Open qiankun GitHub repository"
         />
 
         <Button
@@ -55,6 +56,8 @@ export default function Header() {
           icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
           className="text-gray-500 hover:text-blue-500"
           onClick={toggleFullscreen}
+          aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+          aria-pressed={isFullscreen}
         />
 
         <Space className="px-2 py-1 rounded-lg bg-slate-50">

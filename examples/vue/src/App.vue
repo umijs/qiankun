@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, version } from 'vue';
+import viteLogo from './assets/vite.svg';
 
 const count = ref(0);
 const runtime = computed(() => (window.__POWERED_BY_QIANKUN__ ? 'qiankun' : 'standalone'));
@@ -14,7 +15,7 @@ const increment = () => {
     <header class="micro-header">
       <div class="logo-group">
         <a href="https://vite.dev" target="_blank" rel="noreferrer">
-          <img src="/vite.svg" class="logo" alt="Vite logo" />
+          <img :src="viteLogo" class="logo" alt="Vite logo" />
         </a>
         <a href="https://vuejs.org/" target="_blank" rel="noreferrer">
           <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />

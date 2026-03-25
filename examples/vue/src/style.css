@@ -7,3 +7,8 @@
   -moz-osx-font-smoothing: grayscale;
   color: #0f172a;
 }
+
+html,
+body {
+  margin: 0;
+}
