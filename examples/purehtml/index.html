@@ -5,36 +5,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pure HTML Micro App</title>
   <style>
-    :root {
+    .purehtml-root {
       font-family: Inter, 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
     }
-    body {
+    .purehtml-root {
       margin: 0;
       min-height: 100vh;
       background: linear-gradient(180deg, #f8fafc 0%, #fef3c7 100%);
       color: #0f172a;
     }
-    .shell {
+    .purehtml-root .shell {
       padding: 28px;
       display: grid;
       gap: 20px;
     }
-    .card {
+    .purehtml-root .card {
       background: rgba(255, 255, 255, 0.9);
       border: 1px solid #e2e8f0;
       border-radius: 16px;
       padding: 20px;
       box-shadow: 0 16px 40px -32px #1e293b;
     }
-    h1 {
+    .purehtml-root h1 {
       margin: 0;
       font-size: 28px;
     }
-    p {
+    .purehtml-root p {
       margin: 8px 0 0;
       color: #475569;
     }
-    button {
+    .purehtml-root button {
       border: 0;
       background: #d97706;
       color: #fff;
@@ -46,12 +46,14 @@
   </style>
 </head>
 <body>
-  <div class="shell">
+  <div class="purehtml-root">
+    <div class="shell">
     <header>
       <h1>Pure HTML Micro App</h1>
       <p>统一现代化子应用界面 · Vanilla JavaScript</p>
     </header>
     <section id="purehtml-container" class="card"></section>
+    </div>
   </div>
   <script src="//localhost:7102/entry.js" entry></script>
 </body>

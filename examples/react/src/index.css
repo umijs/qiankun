@@ -1,12 +1,9 @@
-:root {
+#root {
+  margin: 0;
+  min-width: 320px;
   font-family: Inter, 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-body {
-  margin: 0;
-  min-width: 320px;
   color: #0f172a;
 }

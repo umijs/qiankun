@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { loadMicroApp, MicroApp } from 'qiankun';
 import { useQiankunStore } from '../store/qiankun';
 import Dashboard from './Dashboard';
@@ -51,6 +51,8 @@ export default function MicroAppContainer() {
           entry: config.entry,
           container: containerRef.current,
           props: { globalState: useQiankunStore.getState().globalState },
+        }, {
+          sandbox: true,
         });
 
         await microAppRef.current.mountPromise;
