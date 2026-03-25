@@ -10,6 +10,7 @@ function render(props: { container?: Element } = {}) {
   if (!container) return;
 
   app = createApp(App);
+  app.config.idPrefix = appName + '-';
   app.mount(container);
 }
 
@@ -40,7 +41,11 @@ declare global {
 }
 
 if (window.__POWERED_BY_QIANKUN__) {
-  window[appName] = { bootstrap, mount, unmount };
+  const lifecycle = { bootstrap, mount, unmount };
+  window[appName] = lifecycle;
+  if (appName !== 'sub-app') {
+    window['sub-app'] = lifecycle;
+  }
 } else {
   render();
 }

@@ -34,7 +34,7 @@ function render(props${defaultPropsType}) {
   const container = props.container?.querySelector('#root') ?? document.getElementById('root');
   if (!container) return;
 
-  root = ReactDOM.createRoot(container);
+  root = ReactDOM.createRoot(container, { identifierPrefix: appName + '-' });
   root.render(
     <React.StrictMode>
       <App />
@@ -69,7 +69,11 @@ declare global {
 }
 
 if (window.__POWERED_BY_QIANKUN__) {
-  window[appName] = { bootstrap, mount, unmount };
+  const lifecycle = { bootstrap, mount, unmount };
+  window[appName] = lifecycle;
+  if (appName !== 'sub-app') {
+    window['sub-app'] = lifecycle;
+  }
 } else {
   render();
 }
@@ -108,6 +112,7 @@ function render(props${defaultPropsType}) {
   if (!container) return;
 
   app = createApp(App);
+  app.config.idPrefix = appName + '-';
   app.mount(container);
 }
 
@@ -131,7 +136,11 @@ export async function unmount(props${propsType}) {
 }
 ${declareGlobal}
 if (window.__POWERED_BY_QIANKUN__) {
-  window[appName] = { bootstrap, mount, unmount };
+  const lifecycle = { bootstrap, mount, unmount };
+  window[appName] = lifecycle;
+  if (appName !== 'sub-app') {
+    window['sub-app'] = lifecycle;
+  }
 } else {
   render();
 }

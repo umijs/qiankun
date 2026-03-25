@@ -16,6 +16,7 @@ function render(props: { container?: Element } = {}) {
   if (!container) return;
 
   app = createApp(App);
+  app.config.idPrefix = 'vue-';
   app.mount(container);
 }
 
@@ -24,7 +25,7 @@ function bootstrap() {
   return Promise.resolve();
 }
 
-function mount(props: { container?: Element }) {
+function mount(props: { container?: Element } = {}) {
   console.log('[vue] mount', props);
   render(props);
   return Promise.resolve();
@@ -43,16 +44,15 @@ function unmount(props: { container?: Element }) {
   return Promise.resolve();
 }
 
-// Export lifecycle functions to window immediately
-(function(global) {
-  global['vue'] = {
-    bootstrap,
-    mount,
-    unmount,
-  };
-})(window);
+const lifecycle = {
+  bootstrap,
+  mount,
+  unmount,
+};
 
-// Standalone mode
+window['vue-app'] = lifecycle;
+window['sub-app'] = lifecycle;
+
 if (!window.__POWERED_BY_QIANKUN__) {
   render();
 }

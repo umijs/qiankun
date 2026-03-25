@@ -5,11 +5,11 @@ import Dashboard from './Dashboard';
 import { Spin, Result, Button } from 'antd';
 import { ReloadOutlined, HomeOutlined } from '@ant-design/icons';
 
-const microAppsConfig: Record<string, { entry: string }> = {
-  react: { entry: '//localhost:7100' },
-  vue: { entry: '//localhost:7104' },
-  purehtml: { entry: '//localhost:7105' },
-  vite: { entry: '//localhost:5175' },
+const microAppsConfig: Record<string, { name: string; entry: string }> = {
+  react: { name: 'react-app', entry: '//localhost:7100' },
+  vue: { name: 'vue-app', entry: '//localhost:7101' },
+  purehtml: { name: 'purehtml', entry: '//localhost:7102' },
+  vite: { name: 'vite-app', entry: '//localhost:7103' },
 };
 
 export default function MicroAppContainer() {
@@ -47,7 +47,7 @@ export default function MicroAppContainer() {
         }
 
         microAppRef.current = loadMicroApp({
-          name: activeApp,
+          name: config.name,
           entry: config.entry,
           container: containerRef.current,
           props: { globalState: useQiankunStore.getState().globalState },

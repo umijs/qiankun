@@ -20,7 +20,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 // registerMicroApps([
 //   {
 //     name: 'sub-app',
-//     entry: '//localhost:7101',
+//     entry: '//localhost:7100',
 //     container: '#micro-app-container',
 //     activeRule: '/sub-app',
 //   },

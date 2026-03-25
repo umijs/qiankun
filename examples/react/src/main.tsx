@@ -16,7 +16,7 @@ function render(props: { container?: Element } = {}) {
   const container = props.container?.querySelector('#root') ?? document.getElementById('root');
   if (!container) return;
 
-  root = ReactDOM.createRoot(container);
+  root = ReactDOM.createRoot(container, { identifierPrefix: 'react-' });
   root.render(
     <React.StrictMode>
       <App />
@@ -29,7 +29,7 @@ function bootstrap() {
   return Promise.resolve();
 }
 
-function mount(props: { container?: Element }) {
+function mount(props: { container?: Element } = {}) {
   console.log('[react] mount', props);
   render(props);
   return Promise.resolve();
@@ -48,16 +48,15 @@ function unmount(props: { container?: Element }) {
   return Promise.resolve();
 }
 
-// Standalone mode
+const lifecycle = {
+  bootstrap,
+  mount,
+  unmount,
+};
+
+window['react-app'] = lifecycle;
+window['sub-app'] = lifecycle;
+
 if (!window.__POWERED_BY_QIANKUN__) {
   render();
 }
-
-// Export lifecycle functions to window - MUST be last global assignment
-(function(global) {
-  global['react'] = {
-    bootstrap,
-    mount,
-    unmount,
-  };
-})(window);

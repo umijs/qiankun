@@ -3,15 +3,56 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Purehtml Example</title>
-  <script src="//cdn.bootcss.com/jquery/3.4.1/jquery.min.js">
-  </script>
+  <title>Pure HTML Micro App</title>
+  <style>
+    :root {
+      font-family: Inter, 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #f8fafc 0%, #fef3c7 100%);
+      color: #0f172a;
+    }
+    .shell {
+      padding: 28px;
+      display: grid;
+      gap: 20px;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 16px 40px -32px #1e293b;
+    }
+    h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+    p {
+      margin: 8px 0 0;
+      color: #475569;
+    }
+    button {
+      border: 0;
+      background: #d97706;
+      color: #fff;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-  <div style="display: flex; justify-content: center; align-items: center; height: 200px;">
-    Purehtml Example
+  <div class="shell">
+    <header>
+      <h1>Pure HTML Micro App</h1>
+      <p>统一现代化子应用界面 · Vanilla JavaScript</p>
+    </header>
+    <section id="purehtml-container" class="card"></section>
   </div>
-  <div id="purehtml-container" style="text-align:center"></div>
-  <script src="//localhost:7104/entry.js" entry></script>
+  <script src="//localhost:7102/entry.js" entry></script>
 </body>
 </html>

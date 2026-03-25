@@ -25,7 +25,7 @@ function App() {
 
     microAppRef.current = loadMicroApp({
       name: 'sub-app',
-      entry: '//localhost:7101',
+      entry: '//localhost:7100',
       container: containerRef.current,
     });
 
@@ -53,6 +53,7 @@ function App() {
     <div className="main-app">
       <header className="main-app-header">
         <h1>Qiankun Main App</h1>
+        <p>统一现代化主应用 · 默认加载示例子应用</p>
       </header>
       <main className="main-app-content">
         {loading && <div className="loading">Loading micro app...</div>}

@@ -3,16 +3,30 @@ import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-async function bootstrap() {
-  console.log('[react15] react app bootstraped');
+declare global {
+  interface Window {
+    __POWERED_BY_QIANKUN__?: boolean;
+    [key: string]: unknown;
+  }
 }
 
-const containerMap = new WeakMap();
+async function bootstrap() {
+  console.log('[vite] bootstrap');
+}
 
-async function mount(props: any) {
-  console.log('[react18] props from main framework', props);
+const containerMap = new WeakMap<Element, ReactDOM.Root>();
 
-  const container = props?.container ? props.container.querySelector('#root') : document.getElementById('root');
+interface MicroAppProps {
+  container?: Element;
+}
+
+async function mount(props: MicroAppProps = {}) {
+  console.log('[vite] mount', props);
+
+  const container = props.container?.querySelector('#root') ?? document.getElementById('root');
+  if (!container) {
+    return;
+  }
   const root = ReactDOM.createRoot(container);
   root.render(
     <React.StrictMode>
@@ -23,19 +37,25 @@ async function mount(props: any) {
   containerMap.set(container, root);
 }
 
-async function unmount(props: any) {
-  const container = props.container ? props.container.querySelector('#root') : document.getElementById('root');
+async function unmount(props: MicroAppProps = {}) {
+  const container = props.container?.querySelector('#root') ?? document.getElementById('root');
+  if (!container) {
+    return;
+  }
   const root = containerMap.get(container);
-  root.unmount();
+  root?.unmount();
+  containerMap.delete(container);
 }
 
-// @ts-ignore
-if (!window.__POWERED_BY_QIANKUN__) {
-  bootstrap().then(mount);
-}
-
-window.vite = {
+const lifecycle = {
   bootstrap,
   mount,
   unmount,
 };
+
+window['vite-app'] = lifecycle;
+window['sub-app'] = lifecycle;
+
+if (!window.__POWERED_BY_QIANKUN__) {
+  mount();
+}

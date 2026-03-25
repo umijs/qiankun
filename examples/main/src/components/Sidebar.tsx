@@ -9,8 +9,6 @@ import {
   Html5Outlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  SettingOutlined,
-  QuestionCircleOutlined,
   ExperimentOutlined,
 } from '@ant-design/icons';
 
@@ -19,10 +17,10 @@ const { Title, Text } = Typography;
 
 const microApps = [
   { key: 'home', name: '首页', icon: <HomeOutlined />, description: 'Dashboard 概览' },
-  { key: 'react', name: 'React', icon: <CodeOutlined />, description: 'React 18 + Vite', color: '#61DAFB' },
-  { key: 'vue', name: 'Vue', icon: <NodeIndexOutlined />, description: 'Vue 3 + Vite', color: '#4FC08D' },
-  { key: 'purehtml', name: 'Pure HTML', icon: <Html5Outlined />, description: 'Vanilla JS', color: '#E34F26' },
-  { key: 'vite', name: 'Vite App', icon: <ThunderboltOutlined />, description: 'Vite + React', color: '#646CFF' },
+  { key: 'react', name: 'React', icon: <CodeOutlined />, description: 'React 19 + Vite 8', color: '#61DAFB' },
+  { key: 'vue', name: 'Vue', icon: <NodeIndexOutlined />, description: 'Vue 3.5 + Vite 8', color: '#4FC08D' },
+  { key: 'purehtml', name: 'Pure HTML', icon: <Html5Outlined />, description: 'Vanilla JS + Modern UI', color: '#E34F26' },
+  { key: 'vite', name: 'Vite App', icon: <ThunderboltOutlined />, description: 'React 19 + Vite 8', color: '#646CFF' },
 ];
 
 export default function Sidebar() {
@@ -81,12 +79,9 @@ export default function Sidebar() {
 
       {!collapsed && (
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100 bg-white">
-          <div className="flex items-center justify-between">
-            <Space>
-              <SettingOutlined className="text-gray-400 hover:text-gray-600 cursor-pointer" />
-              <QuestionCircleOutlined className="text-gray-400 hover:text-gray-600 cursor-pointer" />
-            </Space>
-            <Text className="text-xs text-gray-400">v2.0.0</Text>
+          <div className="flex items-center justify-between text-xs text-gray-400">
+            <Text className="text-xs text-gray-400">统一设计系统</Text>
+            <Text className="text-xs text-gray-400">v3 examples</Text>
           </div>
         </div>
       )}
