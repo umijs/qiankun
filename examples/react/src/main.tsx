@@ -6,20 +6,32 @@ import './index.css';
 declare global {
   interface Window {
     __POWERED_BY_QIANKUN__?: boolean;
+    __QIANKUN_VERSION__?: string;
     [key: string]: unknown;
   }
 }
 
 let root: ReactDOM.Root | undefined;
 
-function render(props: { container?: Element } = {}) {
+interface MicroAppProps {
+  container?: Element;
+  qiankunVersion?: string;
+}
+
+function render(props: MicroAppProps = {}) {
   const container = props.container?.querySelector('#root') ?? document.getElementById('root');
   if (!container) return;
+
+  if (props.qiankunVersion) {
+    window.__QIANKUN_VERSION__ = props.qiankunVersion;
+  }
+
+  const resolvedQiankunVersion = props.qiankunVersion ?? window.__QIANKUN_VERSION__;
 
   root = ReactDOM.createRoot(container, { identifierPrefix: 'react-' });
   root.render(
     <React.StrictMode>
-      <App />
+      <App qiankunVersion={resolvedQiankunVersion} />
     </React.StrictMode>,
   );
 }
@@ -29,13 +41,13 @@ function bootstrap() {
   return Promise.resolve();
 }
 
-function mount(props: { container?: Element } = {}) {
+function mount(props: MicroAppProps = {}) {
   console.log('[react] mount', props);
   render(props);
   return Promise.resolve();
 }
 
-function unmount(props: { container?: Element }) {
+function unmount(props: MicroAppProps) {
   console.log('[react] unmount', props);
   if (root) {
     root.unmount();

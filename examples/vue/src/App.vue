@@ -2,6 +2,10 @@
 import { computed, ref, version } from 'vue';
 import viteLogo from './assets/vite.svg';
 
+const props = withDefaults(defineProps<{ qiankunVersion?: string }>(), {
+  qiankunVersion: 'N/A',
+});
+
 const count = ref(0);
 const runtime = computed(() => (window.__POWERED_BY_QIANKUN__ ? 'qiankun' : 'standalone'));
 
@@ -12,7 +16,12 @@ const increment = () => {
 
 <template>
   <main class="micro-shell">
-    <header class="micro-header">
+    <header class="micro-header card micro-hero">
+      <div class="badge-row">
+        <span class="badge">Vue</span>
+        <span class="badge badge-soft">qiankun {{ props.qiankunVersion }}</span>
+        <span class="badge badge-soft">{{ runtime }}</span>
+      </div>
       <div class="logo-group">
         <a href="https://vite.dev" target="_blank" rel="noreferrer">
           <img :src="viteLogo" class="logo" alt="Vite logo" />
@@ -22,22 +31,26 @@ const increment = () => {
         </a>
       </div>
       <h1>Vue Micro App</h1>
-      <p>统一现代化子应用界面 · Vue {{ version }}</p>
+      <p>一致化视觉风格、信息卡分组与更清晰层级 · Vue {{ version }}</p>
     </header>
 
     <section class="card">
-      <dl>
-        <div>
+      <dl class="stats-grid">
+        <div class="stat-item">
           <dt>Framework</dt>
           <dd>Vue {{ version }}</dd>
         </div>
-        <div>
+        <div class="stat-item">
           <dt>Bundler</dt>
           <dd>Vite 8</dd>
         </div>
-        <div>
+        <div class="stat-item">
           <dt>Runtime</dt>
           <dd>{{ runtime }}</dd>
+        </div>
+        <div class="stat-item">
+          <dt>qiankun</dt>
+          <dd>{{ props.qiankunVersion }}</dd>
         </div>
       </dl>
 
@@ -53,9 +66,15 @@ const increment = () => {
   padding: 28px;
   box-sizing: border-box;
   display: grid;
+  align-content: start;
   gap: 20px;
-  background: linear-gradient(180deg, #f8fafc 0%, #ecfeff 100%);
+  background: radial-gradient(circle at top right, #ccfbf1 0%, #f8fafc 38%, #ecfeff 100%);
   color: #0f172a;
+}
+
+.micro-hero {
+  display: grid;
+  gap: 14px;
 }
 
 .micro-header h1 {
@@ -71,7 +90,26 @@ const increment = () => {
 .logo-group {
   display: flex;
   gap: 10px;
-  margin-bottom: 14px;
+}
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #0d9488, #0f766e);
+}
+
+.badge-soft {
+  color: #1e293b;
+  background: #e2e8f0;
 }
 
 .logo {
@@ -94,8 +132,19 @@ const increment = () => {
 
 .card dl {
   margin: 0 0 16px;
+}
+
+.stats-grid {
   display: grid;
-  gap: 10px;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.stat-item {
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 12px;
 }
 
 .card dt {

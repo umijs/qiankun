@@ -3,9 +3,19 @@
   padding: 28px;
   box-sizing: border-box;
   display: grid;
+  align-content: start;
   gap: 20px;
   background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
   color: #0f172a;
+}
+
+.micro-shell--react {
+  background: radial-gradient(circle at top right, #dbeafe 0%, #f8fafc 42%, #eef2ff 100%);
+}
+
+.micro-hero {
+  display: grid;
+  gap: 14px;
 }
 
 .micro-header h1 {
@@ -21,7 +31,26 @@
 .logo-group {
   display: flex;
   gap: 10px;
-  margin-bottom: 14px;
+}
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+}
+
+.badge-soft {
+  color: #1e293b;
+  background: #e2e8f0;
 }
 
 .logo {
@@ -44,8 +73,19 @@
 
 .card dl {
   margin: 0 0 16px;
+}
+
+.stats-grid {
   display: grid;
-  gap: 10px;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.stat-item {
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 12px;
 }
 
 .card dt {

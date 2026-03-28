@@ -3,13 +3,23 @@ import reactLogo from './assets/react.svg';
 import viteLogo from './assets/vite.svg';
 import './App.css';
 
-function App() {
+interface AppProps {
+  qiankunVersion?: string;
+}
+
+function App({ qiankunVersion }: AppProps) {
   const [count, setCount] = useState(0);
   const runtime = window.__POWERED_BY_QIANKUN__ ? 'qiankun' : 'standalone';
+  const resolvedQiankunVersion = qiankunVersion ?? 'N/A';
 
   return (
-    <main className="micro-shell">
-      <header className="micro-header">
+    <main className="micro-shell micro-shell--react">
+      <header className="micro-header card micro-hero">
+        <div className="badge-row">
+          <span className="badge">React</span>
+          <span className="badge badge-soft">qiankun {resolvedQiankunVersion}</span>
+          <span className="badge badge-soft">{runtime}</span>
+        </div>
         <div className="logo-group">
           <a href="https://vite.dev" target="_blank" rel="noreferrer">
             <img src={viteLogo} className="logo" alt="Vite logo" />
@@ -19,22 +29,26 @@ function App() {
           </a>
         </div>
         <h1>React Micro App</h1>
-        <p>统一现代化子应用界面 · React {version}</p>
+        <p>清晰的信息层级、现代化卡片布局与更强可读性 · React {version}</p>
       </header>
 
       <section className="card">
-        <dl>
-          <div>
+        <dl className="stats-grid">
+          <div className="stat-item">
             <dt>Framework</dt>
             <dd>React {version}</dd>
           </div>
-          <div>
+          <div className="stat-item">
             <dt>Bundler</dt>
             <dd>Vite 8</dd>
           </div>
-          <div>
+          <div className="stat-item">
             <dt>Runtime</dt>
             <dd>{runtime}</dd>
+          </div>
+          <div className="stat-item">
+            <dt>qiankun</dt>
+            <dd>{resolvedQiankunVersion}</dd>
           </div>
         </dl>
 
