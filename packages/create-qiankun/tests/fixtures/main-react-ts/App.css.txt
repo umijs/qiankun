@@ -2,7 +2,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  background: radial-gradient(circle at top right, #dbeafe 0%, #f8fafc 45%, #eef2ff 100%);
 }
 
 .main-app-header {
@@ -11,6 +11,10 @@
   border-bottom: 1px solid #e2e8f0;
   box-shadow: 0 16px 40px -40px #1e293b;
   backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .main-app-header h1 {
@@ -24,10 +28,72 @@
   color: #475569;
 }
 
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.tab-button {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-button.active {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #fff;
+}
+
 .main-app-content {
   flex: 1;
   position: relative;
   padding: 16px;
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.home-card {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 16px 40px -32px #1e293b;
+}
+
+.home-card h2 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.home-card p {
+  margin: 10px 0 0;
+  color: #475569;
+}
+
+.home-card code {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.primary-button {
+  margin-top: 14px;
+  border: 0;
+  background: #2563eb;
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .loading {
@@ -43,7 +109,7 @@
 }
 
 #micro-app-container {
-  min-height: calc(100vh - 140px);
+  min-height: calc(100vh - 190px);
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid #e2e8f0;
   border-radius: 16px;

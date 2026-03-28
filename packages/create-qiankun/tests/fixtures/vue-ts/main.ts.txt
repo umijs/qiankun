@@ -5,11 +5,17 @@ import './style.css';
 const appName = '{{APP_NAME}}';
 let app: ReturnType<typeof createApp> | undefined;
 
-function render(props: { container?: Element } = {}) {
+function render(props: { container?: Element; qiankunVersion?: string } = {}) {
   const container = props.container?.querySelector('#app') ?? document.getElementById('app');
   if (!container) return;
 
-  app = createApp(App);
+  if (props.qiankunVersion) {
+    window.__QIANKUN_VERSION__ = props.qiankunVersion;
+  }
+
+  const resolvedQiankunVersion = props.qiankunVersion ?? window.__QIANKUN_VERSION__;
+
+  app = createApp(App, { qiankunVersion: resolvedQiankunVersion });
   app.config.idPrefix = appName + '-';
   app.mount(container);
 }
@@ -18,11 +24,11 @@ export async function bootstrap() {
   return Promise.resolve();
 }
 
-export async function mount(props: { container?: Element }) {
+export async function mount(props: { container?: Element; qiankunVersion?: string }) {
   render(props);
 }
 
-export async function unmount(props: { container?: Element }) {
+export async function unmount(props: { container?: Element; qiankunVersion?: string }) {
   if (app) {
     app.unmount();
     app = undefined;
@@ -36,6 +42,7 @@ export async function unmount(props: { container?: Element }) {
 declare global {
   interface Window {
     __POWERED_BY_QIANKUN__?: boolean;
+    __QIANKUN_VERSION__?: string;
     [key: string]: unknown;
   }
 }
