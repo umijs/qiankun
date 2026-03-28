@@ -19,8 +19,8 @@ async function writeReactEntry(appRoot: string, appName: string, isTs: boolean):
   const entryPath = path.join(appRoot, `src/main.${ext}`);
 
   const typeAnnotation = isTs ? ': ReactDOM.Root | undefined' : '';
-  const propsType = isTs ? ': { container?: Element }' : '';
-  const defaultPropsType = isTs ? ': { container?: Element } = {}' : ' = {}';
+  const propsType = isTs ? ': { container?: Element; qiankunVersion?: string }' : '';
+  const defaultPropsType = isTs ? ': { container?: Element; qiankunVersion?: string } = {}' : ' = {}';
 
   const content = `import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -34,10 +34,16 @@ function render(props${defaultPropsType}) {
   const container = props.container?.querySelector('#root') ?? document.getElementById('root');
   if (!container) return;
 
+  if (props.qiankunVersion) {
+    window.__QIANKUN_VERSION__ = props.qiankunVersion;
+  }
+
+  const resolvedQiankunVersion = props.qiankunVersion ?? window.__QIANKUN_VERSION__;
+
   root = ReactDOM.createRoot(container, { identifierPrefix: appName + '-' });
   root.render(
     <React.StrictMode>
-      <App />
+      <App qiankunVersion={resolvedQiankunVersion} />
     </React.StrictMode>,
   );
 }
@@ -64,6 +70,7 @@ export async function unmount(props${propsType}) {
 declare global {
   interface Window {
     __POWERED_BY_QIANKUN__?: boolean;
+    __QIANKUN_VERSION__?: string;
     [key: string]: unknown;
   }
 }
@@ -87,13 +94,14 @@ async function writeVueEntry(appRoot: string, appName: string, isTs: boolean): P
   const entryPath = path.join(appRoot, `src/main.${ext}`);
 
   const typeAnnotation = isTs ? ': ReturnType<typeof createApp> | undefined' : '';
-  const propsType = isTs ? ': { container?: Element }' : '';
-  const defaultPropsType = isTs ? ': { container?: Element } = {}' : ' = {}';
+  const propsType = isTs ? ': { container?: Element; qiankunVersion?: string }' : '';
+  const defaultPropsType = isTs ? ': { container?: Element; qiankunVersion?: string } = {}' : ' = {}';
   const declareGlobal = isTs
     ? `
 declare global {
   interface Window {
     __POWERED_BY_QIANKUN__?: boolean;
+    __QIANKUN_VERSION__?: string;
     [key: string]: unknown;
   }
 }
@@ -111,7 +119,13 @@ function render(props${defaultPropsType}) {
   const container = props.container?.querySelector('#app') ?? document.getElementById('app');
   if (!container) return;
 
-  app = createApp(App);
+  if (props.qiankunVersion) {
+    window.__QIANKUN_VERSION__ = props.qiankunVersion;
+  }
+
+  const resolvedQiankunVersion = props.qiankunVersion ?? window.__QIANKUN_VERSION__;
+
+  app = createApp(App, { qiankunVersion: resolvedQiankunVersion });
   app.config.idPrefix = appName + '-';
   app.mount(container);
 }
