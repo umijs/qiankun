@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { loadMicroApp, MicroApp } from 'qiankun';
+import qiankunPackage from 'qiankun/package.json';
 import { useQiankunStore } from '../store/qiankun';
 import Dashboard from './Dashboard';
 import { Spin, Result, Button } from 'antd';
@@ -18,6 +19,8 @@ export default function MicroAppContainer() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const currentRetry = retryCount;
+
     if (!activeApp || activeApp === 'home') {
       if (microAppRef.current) {
         microAppRef.current.unmount();
@@ -34,6 +37,7 @@ export default function MicroAppContainer() {
 
     const loadApp = async () => {
       try {
+        console.log(`[main] load micro app (retry: ${currentRetry})`);
         setLoading(true);
         setError(null);
 
@@ -50,7 +54,10 @@ export default function MicroAppContainer() {
           name: config.name,
           entry: config.entry,
           container: containerRef.current,
-          props: { globalState: useQiankunStore.getState().globalState },
+          props: {
+            globalState: useQiankunStore.getState().globalState,
+            qiankunVersion: qiankunPackage.version,
+          },
         }, {
           sandbox: true,
         });

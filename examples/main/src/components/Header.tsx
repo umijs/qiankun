@@ -26,6 +26,9 @@ export default function Header() {
       style={{
         background: token.colorBgContainer,
         padding: '0 24px',
+        minHeight: 64,
+        height: 'auto',
+        lineHeight: 1.4,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
