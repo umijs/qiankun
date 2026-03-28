@@ -6,7 +6,7 @@ export interface GlobalState {
     avatar?: string;
   };
   theme?: 'light' | 'dark';
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface QiankunStore {

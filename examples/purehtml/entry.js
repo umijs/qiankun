@@ -45,7 +45,7 @@ const render = () => {
     },
     mount: (props = {}) => {
       console.log('purehtml mount', props);
-      qiankunVersion = props?.qiankunVersion || qiankunVersion;
+      qiankunVersion = props?.qiankunVersion ?? qiankunVersion;
       return render();
     },
     unmount: () => {

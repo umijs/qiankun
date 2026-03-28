@@ -63,10 +63,10 @@ export default function MicroAppContainer() {
         });
 
         await microAppRef.current.mountPromise;
-        setLoading(false);
       } catch (err) {
         console.error('加载子应用失败:', err);
         setError(err instanceof Error ? err.message : '加载子应用失败');
+      } finally {
         setLoading(false);
       }
     };

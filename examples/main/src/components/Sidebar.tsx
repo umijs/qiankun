@@ -40,7 +40,7 @@ export default function Sidebar() {
           <span className="sidebar-item-title">{app.name}</span>
           {app.color && !collapsed && (
             <Tag className="sidebar-item-tag" style={{ backgroundColor: `${app.color}15`, color: app.color }}>
-              {app.key === 'react' ? 'React' : app.key === 'vue' ? 'Vue' : app.key === 'vite' ? 'React' : 'Vanilla'}
+              {{ react: 'React', vue: 'Vue', vite: 'React', purehtml: 'Vanilla' }[app.key] ?? app.key}
             </Tag>
           )}
         </div>
@@ -70,6 +70,7 @@ export default function Sidebar() {
             </div>
           </Space>
           <button
+            type="button"
             onClick={() => setCollapsed(!collapsed)}
             className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}

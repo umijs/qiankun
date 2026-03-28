@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Layout } from 'antd';
 import { useQiankunStore } from './store/qiankun';
 import Sidebar from './components/Sidebar';
@@ -24,12 +24,19 @@ function resolveAppByPath(pathname: string): string | null {
     return null;
   }
 
-  const appKey = normalizedPath.startsWith('/') ? normalizedPath.slice(1) : normalizedPath;
+  const pathWithoutLeadingSlash = normalizedPath.startsWith('/') ? normalizedPath.slice(1) : normalizedPath;
+  const appKey = pathWithoutLeadingSlash.split('/')[0] || '';
+
+  if (appKey === 'home') {
+    return null;
+  }
+
   return APP_KEY_SET.has(appKey) ? appKey : null;
 }
 
 function App() {
   const { initGlobalState, activeApp, setActiveApp } = useQiankunStore();
+  const [isPathInitialized, setIsPathInitialized] = useState(false);
 
   useEffect(() => {
     // Initialize qiankun global state
@@ -46,6 +53,7 @@ function App() {
     const syncAppFromPath = () => {
       const appFromPath = resolveAppByPath(window.location.pathname);
       setActiveApp(appFromPath);
+      setIsPathInitialized(true);
     };
 
     syncAppFromPath();
@@ -57,20 +65,25 @@ function App() {
   }, [setActiveApp]);
 
   useEffect(() => {
-    const targetPath = activeApp ? `/${activeApp}` : '/';
+    if (!isPathInitialized) {
+      return;
+    }
+
     const currentPath = normalizePath(window.location.pathname);
     const appFromCurrentPath = resolveAppByPath(currentPath);
 
-    if (activeApp === null && appFromCurrentPath !== null) {
+    if (activeApp && activeApp === appFromCurrentPath && currentPath !== `/${activeApp}`) {
       return;
     }
+
+    const targetPath = activeApp ? `/${activeApp}` : '/';
 
     if (targetPath === currentPath) {
       return;
     }
 
     window.history.pushState({ activeApp }, '', targetPath);
-  }, [activeApp]);
+  }, [activeApp, isPathInitialized]);
 
   return (
     <Layout className="min-h-screen bg-gray-50">
