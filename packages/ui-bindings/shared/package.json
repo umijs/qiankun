@@ -13,7 +13,7 @@
   "author": "linghaoSu",
   "license": "MIT",
   "dependencies": {
-    "lodash": "^4.17.11"
+    "lodash": "^4.18.1"
   },
   "devDependencies": {
     "qiankun": "workspace:^"
