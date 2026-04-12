@@ -60,11 +60,12 @@ export default defineConfig(({ mode }) => {
           lib: {
             entry: path.resolve(__dirname, 'src/main.tsx'),
             formats: ['iife'],
-            name: 'SubAppBundle',
+            name: 'reactApp',
             fileName: () => 'sub-app',
           },
           rollupOptions: {
             output: {
+              extend: true,
               inlineDynamicImports: true,
               entryFileNames: 'assets/[name]-[hash].js',
               assetFileNames: 'assets/[name]-[hash][extname]',

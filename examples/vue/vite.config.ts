@@ -60,11 +60,12 @@ export default defineConfig(({ mode }) => {
           lib: {
             entry: path.resolve(__dirname, 'src/main.ts'),
             formats: ['iife'],
-            name: 'SubAppBundle',
+            name: 'vueApp',
             fileName: () => 'sub-app',
           },
           rollupOptions: {
             output: {
+              extend: true,
               inlineDynamicImports: true,
               entryFileNames: 'assets/[name]-[hash].js',
               assetFileNames: 'assets/[name]-[hash][extname]',
