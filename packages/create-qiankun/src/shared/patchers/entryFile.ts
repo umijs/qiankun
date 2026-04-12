@@ -87,14 +87,7 @@ function unmount(props${propsType}) {
   return Promise.resolve();
 }
 
-const lifecycle = {
-  bootstrap,
-  mount,
-  unmount,
-};
-
-window['${appName}'] = lifecycle;
-window['sub-app'] = lifecycle;
+export { bootstrap, mount, unmount };
 
 if (!window.__POWERED_BY_QIANKUN__) {
   render();
@@ -176,14 +169,7 @@ function unmount(props${propsType}) {
   return Promise.resolve();
 }
 
-const lifecycle = {
-  bootstrap,
-  mount,
-  unmount,
-};
-
-window['${appName}'] = lifecycle;
-window['sub-app'] = lifecycle;
+export { bootstrap, mount, unmount };
 
 if (!window.__POWERED_BY_QIANKUN__) {
   render();
