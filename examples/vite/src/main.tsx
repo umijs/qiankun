@@ -55,14 +55,7 @@ async function unmount(props: MicroAppProps = {}) {
   containerMap.delete(container);
 }
 
-const lifecycle = {
-  bootstrap,
-  mount,
-  unmount,
-};
-
-window['vite-app'] = lifecycle;
-window['sub-app'] = lifecycle;
+export { bootstrap, mount, unmount };
 
 if (!window.__POWERED_BY_QIANKUN__) {
   mount();

@@ -56,14 +56,7 @@ function unmount(props: MicroAppProps) {
   return Promise.resolve();
 }
 
-const lifecycle = {
-  bootstrap,
-  mount,
-  unmount,
-};
-
-window['vue-app'] = lifecycle;
-window['sub-app'] = lifecycle;
+export { bootstrap, mount, unmount };
 
 if (!window.__POWERED_BY_QIANKUN__) {
   render();
