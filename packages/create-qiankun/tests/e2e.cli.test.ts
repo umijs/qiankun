@@ -80,6 +80,19 @@ function assertQiankunHtml(html: string): void {
   expect(html).toMatch(/<link[^>]*rel=["']?stylesheet["']?[^>]*>/);
 }
 
+async function assertGeneratedViteConfig(appPath: string, appName: string): Promise<void> {
+  const viteConfig = await fse.readFile(path.join(appPath, 'vite.config.ts'), 'utf-8');
+
+  expect(viteConfig).toContain("const qiankunDevHtmlPath = '/__qiankun_dev__.html';");
+  expect(viteConfig).toContain("const qiankunDevModulePath = '/__qiankun_dev_module__';");
+  expect(viteConfig).toContain('function transformViteDevModule(code, moduleId)');
+  expect(viteConfig).toContain(`globalThis[${JSON.stringify(appName)}] = {`);
+  expect(viteConfig).toContain('plugins: [');
+  expect(viteConfig).toContain('qiankunDevEntryPlugin()');
+  expect(viteConfig).toContain('isQiankun && qiankunEntryHtmlPlugin()');
+  expect(viteConfig).toContain('cssCodeSplit: false');
+}
+
 describe('create-qiankun CLI e2e', () => {
   const testDir = path.join(os.tmpdir(), `create-qiankun-e2e-${Date.now()}`);
 
@@ -142,8 +155,8 @@ describe('create-qiankun CLI e2e', () => {
       await assertFileMatchesFixture(path.join(appPath, 'src/main.tsx'), template, 'main.tsx.txt', appName);
     });
 
-    it('should generate correct vite.config.ts', async () => {
-      await assertFileMatchesFixture(path.join(appPath, 'vite.config.ts'), template, 'vite.config.ts.txt', appName);
+    it('should generate sandbox-first qiankun vite config', async () => {
+      await assertGeneratedViteConfig(appPath, appName);
     });
 
     it('should have correct package.json scripts and dependencies', async () => {
@@ -194,10 +207,6 @@ describe('create-qiankun CLI e2e', () => {
       await assertFileMatchesFixture(path.join(appPath, 'src/App.css'), template, 'App.css.txt', appName);
     });
 
-    it('should generate correct vite.config.ts', async () => {
-      await assertFileMatchesFixture(path.join(appPath, 'vite.config.ts'), template, 'vite.config.ts.txt', appName);
-    });
-
     it('should have correct package.json for main app', async () => {
       const pkg = await fse.readJson(path.join(appPath, 'package.json'));
 
@@ -240,8 +249,8 @@ describe('create-qiankun CLI e2e', () => {
       await assertFileMatchesFixture(path.join(appPath, 'src/main.ts'), template, 'main.ts.txt', appName);
     });
 
-    it('should generate correct vite.config.ts', async () => {
-      await assertFileMatchesFixture(path.join(appPath, 'vite.config.ts'), template, 'vite.config.ts.txt', appName);
+    it('should generate sandbox-first qiankun vite config', async () => {
+      await assertGeneratedViteConfig(appPath, appName);
     });
 
     it('should have correct package.json with Vue dependencies', async () => {

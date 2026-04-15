@@ -6,7 +6,7 @@ import { writeSubAppView } from './subAppView';
 
 export async function patchViteSubApp(appRoot: string, appName: string, template: ViteTemplate): Promise<void> {
   await patchPackageJson(appRoot, appName, template);
-  await writeViteConfig(appRoot, template);
+  await writeViteConfig(appRoot, appName, template);
   await writeEntryFile(appRoot, appName, template);
   await writeSubAppView(appRoot, template);
 }
