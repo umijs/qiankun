@@ -7,10 +7,10 @@ import { Spin, Result, Button } from 'antd';
 import { ReloadOutlined, HomeOutlined } from '@ant-design/icons';
 
 const microAppsConfig: Record<string, { name: string; entry: string }> = {
-  react: { name: 'reactApp', entry: '//localhost:7100' },
-  vue: { name: 'vueApp', entry: '//localhost:7101' },
+  react: { name: 'reactApp', entry: import.meta.env.DEV ? '//localhost:7100/__qiankun_dev__.html' : '//localhost:7100' },
+  vue: { name: 'vueApp', entry: import.meta.env.DEV ? '//localhost:7101/__qiankun_dev__.html' : '//localhost:7101' },
   purehtml: { name: 'purehtml', entry: '//localhost:7102' },
-  vite: { name: 'viteApp', entry: '//localhost:7103' },
+  vite: { name: 'viteApp', entry: import.meta.env.DEV ? '//localhost:7103/__qiankun_dev__.html' : '//localhost:7103' },
 };
 
 export default function MicroAppContainer() {

@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { defineConfig, type PluginOption } from 'vite';
 import vue from '@vitejs/plugin-vue';
+import { qiankunDevEntryPlugin } from '../shared/vite/qiankunDevPlugin';
 
 function qiankunEntryHtmlPlugin(): PluginOption {
   return {
@@ -48,7 +49,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: isQiankun ? './' : '/',
-    plugins: [vue(), isQiankun && qiankunEntryHtmlPlugin()].filter(Boolean),
+    plugins: [
+      vue(),
+      qiankunDevEntryPlugin({ appName: 'vueApp', rootId: 'app', moduleEntry: '/src/main.ts' }),
+      isQiankun && qiankunEntryHtmlPlugin(),
+    ].filter(Boolean),
     define: isQiankun
       ? {
           'process.env.NODE_ENV': JSON.stringify('production'),

@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { defineConfig, type PluginOption } from 'vite';
 import react from '@vitejs/plugin-react';
+import { qiankunDevEntryPlugin } from '../shared/vite/qiankunDevPlugin';
 
 function qiankunEntryHtmlPlugin(): PluginOption {
   return {
@@ -48,7 +49,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: isQiankun ? './' : '/',
-    plugins: [react(), isQiankun && qiankunEntryHtmlPlugin()].filter(Boolean),
+    plugins: [
+      react(),
+      qiankunDevEntryPlugin({ appName: 'viteApp', rootId: 'root', moduleEntry: '/src/main.tsx' }),
+      isQiankun && qiankunEntryHtmlPlugin(),
+    ].filter(Boolean),
     define: isQiankun
       ? {
           'process.env.NODE_ENV': JSON.stringify('production'),
