@@ -68,7 +68,8 @@ describe('transpileLink', () => {
       expect((result as HTMLStyleElement).textContent).toContain('.container { margin: 0; }');
     });
 
-    it('falls back to @import on fetch failure', async () => {
+    it('drops the stylesheet (empty <style>) on fetch failure to preserve isolation', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const link = document.createElement('link');
       link.rel = 'stylesheet';
       link.setAttribute('href', '/styles/broken.css');
@@ -77,10 +78,16 @@ describe('transpileLink', () => {
       const result = transpileLink(link, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
 
       await vi.waitFor(() => {
-        expect((result as HTMLStyleElement).textContent).toBeTruthy();
+        expect(consoleSpy).toHaveBeenCalled();
       });
 
-      expect((result as HTMLStyleElement).textContent).toBe('@import url("http://localhost:8000/styles/broken.css");');
+      // Must NOT contain an un-scoped @import that would leak globally.
+      expect((result as HTMLStyleElement).textContent).not.toContain('@import');
+      expect((result as HTMLStyleElement).textContent ?? '').toBe('');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('dropped to preserve isolation'),
+      );
+      consoleSpy.mockRestore();
     });
 
     it('copies media attribute from <link> to generated <style>', () => {

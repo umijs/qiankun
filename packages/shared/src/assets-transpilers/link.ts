@@ -124,8 +124,11 @@ export default function transpileLink(
         styleElement.textContent = typeof result === 'string' ? result : await result;
       })
       .catch(() => {
-        warn(`Failed to fetch stylesheet "${resolvedHref}" for style isolation, falling back to @import (un-scoped).`);
-        styleElement.textContent = `@import url("${resolvedHref}");`;
+        // Intentionally leave the <style> empty on failure: inlining an un-scoped @import here would
+        // defeat styleIsolation (the browser would fetch and apply the sheet globally).
+        warn(
+          `Failed to fetch stylesheet "${resolvedHref}" for style isolation. The stylesheet is dropped to preserve isolation.`,
+        );
       });
 
     return styleElement;
