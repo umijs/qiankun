@@ -84,9 +84,7 @@ describe('transpileLink', () => {
       // Must NOT contain an un-scoped @import that would leak globally.
       expect((result as HTMLStyleElement).textContent).not.toContain('@import');
       expect((result as HTMLStyleElement).textContent ?? '').toBe('');
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('dropped to preserve isolation'),
-      );
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dropped to preserve isolation'));
       consoleSpy.mockRestore();
     });
 
