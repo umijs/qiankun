@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { transpileStyleText, transpileStyleRule } from '../style';
+import transpileStyle, { transpileStyleText, transpileStyleRule } from '../style';
 import type { StyleTranspilerOpts } from '../style';
 
 const defaultOpts: StyleTranspilerOpts = {
@@ -98,6 +98,25 @@ describe('transpileStyleText', () => {
 .multi { animation: fadeIn 1s, slideUp 2s; }`;
       const result = await transpileStyleText(input, defaultOpts);
       expect(result).toContain('animation: __qk_test-app_fadeIn 1s, __qk_test-app_slideUp 2s');
+    });
+
+    it('rewrites every token in a multi-value animation-name list', async () => {
+      const input = `
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { top: 100px; } to { top: 0; } }
+.multi { animation-name: fadeIn, slideUp; }`;
+      const result = await transpileStyleText(input, defaultOpts);
+      expect(result).toContain('animation-name: __qk_test-app_fadeIn, __qk_test-app_slideUp');
+      expect(result).not.toMatch(/animation-name:\s*__qk_test-app_fadeIn,\s*slideUp/);
+    });
+
+    it('does not rewrite animation-duration longhand values that look like identifiers', async () => {
+      const input = `
+@keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+.x { animation-duration: 2s; animation-name: spin; }`;
+      const result = await transpileStyleText(input, defaultOpts);
+      expect(result).toContain('animation-duration: 2s');
+      expect(result).toContain('animation-name: __qk_test-app_spin');
     });
 
     it('places prefixed @keyframes inside @scope', async () => {
@@ -220,6 +239,27 @@ describe('transpileStyleText', () => {
       expect(result).toContain('.a { color: red; }');
       expect(result).toContain('.b { color: blue; }');
       expect(result).toContain('.root { margin: 0; }');
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Duplicate @import'));
+      consoleSpy.mockRestore();
+    });
+
+    it('detects a top-level self-import without fetching the same URL twice', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const selfUrl = 'https://example.com/self.css';
+      const cssSelf = `@import url("${selfUrl}");\n.self { color: red; }`;
+
+      const mockFetch = vi.fn().mockImplementation((url: string) => {
+        if (url === selfUrl) return Promise.resolve(new Response(cssSelf));
+        return Promise.reject(new Error('Not found'));
+      });
+
+      await transpileStyleText(cssSelf, {
+        ...defaultOpts,
+        fetch: mockFetch,
+        baseURL: selfUrl,
+      });
+
+      expect(mockFetch).not.toHaveBeenCalled();
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Duplicate @import'));
       consoleSpy.mockRestore();
     });
@@ -382,5 +422,45 @@ describe('transpileStyleRule', () => {
     const result = transpileStyleRule(input, ruleOpts);
     expect(result).toContain('@scope ([data-name="test-app"])');
     expect(result).toContain('@supports (display: grid)');
+  });
+});
+
+describe('transpileStyle (default export)', () => {
+  it('synchronously clears inline <style> textContent before async @import inlining completes', async () => {
+    const importedCSS = '.imported { color: green; }';
+    let resolveFetch: (response: Response) => void = () => {};
+    const fetchPromise = new Promise<Response>((resolve) => {
+      resolveFetch = resolve;
+    });
+    const mockFetch = vi.fn().mockReturnValue(fetchPromise);
+
+    const style = document.createElement('style');
+    style.textContent = `@import url("https://example.com/imported.css");\n.local { color: red; }`;
+
+    transpileStyle(style, 'http://localhost/', { ...defaultOpts, fetch: mockFetch });
+
+    // Synchronously after the call, the original un-scoped CSS MUST already be gone,
+    // otherwise the browser would briefly apply `.local { color: red; }` globally.
+    expect(style.textContent).toBe('');
+
+    resolveFetch(new Response(importedCSS));
+
+    await vi.waitFor(() => {
+      expect(style.textContent).toBeTruthy();
+    });
+
+    expect(style.textContent).toContain('@scope ([data-name="test-app"])');
+    expect(style.textContent).toContain('.local { color: red; }');
+    expect(style.textContent).not.toContain('@import');
+  });
+
+  it('synchronously writes scoped textContent when no @import is present', () => {
+    const style = document.createElement('style');
+    style.textContent = '.foo { color: red; }';
+
+    transpileStyle(style, 'http://localhost/', defaultOpts);
+
+    expect(style.textContent).toContain('@scope ([data-name="test-app"])');
+    expect(style.textContent).toContain('.foo { color: red; }');
   });
 });

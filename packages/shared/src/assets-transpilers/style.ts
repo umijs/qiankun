@@ -30,32 +30,45 @@ function extractAtRules(cssText: string, regex: RegExp): { extracted: string[]; 
   return { extracted, remaining };
 }
 
+const ANIMATION_NAME_DECL_RE = /(animation-name\s*:\s*)([^;}]+)/g;
+// Matches `animation:` shorthand only, not `animation-*` longhand properties.
+const ANIMATION_SHORTHAND_DECL_RE = /(animation\s*:\s*)([^;}]+)/g;
+const IDENT_TOKEN_RE = /([\w-]+)/g;
+
+function rewriteAnimationValueTokens(value: string, nameMap: Map<string, string>): string {
+  return value
+    .split(',')
+    .map((entry) => entry.replace(IDENT_TOKEN_RE, (token) => nameMap.get(token) ?? token))
+    .join(',');
+}
+
 function prefixKeyframes(cssText: string, appName: string): string {
-  const keyframeNames: string[] = [];
   const prefix = `${QIANKUN_KEYFRAMES_PREFIX}${appName}_`;
+  const nameMap = new Map<string, string>();
 
   let result = cssText.replace(KEYFRAMES_RE, (_match, name: string) => {
     if (name.startsWith(prefix)) {
       return _match;
     }
-    keyframeNames.push(name);
+    nameMap.set(name, `${prefix}${name}`);
     return `@keyframes ${prefix}${name}`;
   });
 
-  for (const name of keyframeNames) {
-    const prefixed = `${prefix}${name}`;
-    const animNameRe = new RegExp(`(animation-name\\s*:\\s*)${escapeRegExp(name)}`, 'g');
-    result = result.replace(animNameRe, `$1${prefixed}`);
-
-    const animShorthandRe = new RegExp(`(animation\\s*:[^;]*?)\\b${escapeRegExp(name)}\\b`, 'g');
-    result = result.replace(animShorthandRe, `$1${prefixed}`);
+  if (nameMap.size === 0) {
+    return result;
   }
 
-  return result;
-}
+  result = result.replace(ANIMATION_NAME_DECL_RE, (_match, head: string, value: string) => {
+    return `${head}${rewriteAnimationValueTokens(value, nameMap)}`;
+  });
 
-function escapeRegExp(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  result = result.replace(ANIMATION_SHORTHAND_DECL_RE, (match, head: string, value: string) => {
+    // Guard: the RE also matches `animation-name:`, `animation-duration:` etc.; only rewrite the shorthand form.
+    if (/^animation-[a-z]/i.test(match)) return match;
+    return `${head}${rewriteAnimationValueTokens(value, nameMap)}`;
+  });
+
+  return result;
 }
 
 const CSS_URL_RE = /url\(\s*["']?(?!(?:data|blob|https?):)([^"')]+)["']?\s*\)/g;
@@ -144,7 +157,9 @@ export function transpileStyleText(cssText: string, opts: StyleTranspilerOpts): 
 }
 
 async function transpileStyleTextAsync(cssText: string, opts: StyleTranspilerOpts): Promise<string> {
-  const inlined = await inlineImports(cssText, opts.fetch, opts.baseURL);
+  const visited = new Set<string>();
+  if (opts.baseURL) visited.add(opts.baseURL);
+  const inlined = await inlineImports(cssText, opts.fetch, opts.baseURL, visited);
   const resolved = opts.baseURL ? resolveRelativeCSSUrls(inlined, opts.baseURL) : inlined;
   return transpileStyleTextSync(resolved, opts);
 }
@@ -212,6 +227,8 @@ export default function transpileStyle(
   if (typeof result === 'string') {
     style.textContent = result;
   } else {
+    // Clear synchronously so the unscoped source cannot apply globally during the fetch window.
+    style.textContent = '';
     void result.then((transformed) => {
       style.textContent = transformed;
     });
