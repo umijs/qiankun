@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
-import transpileLink from '../link';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import transpileLink, { clearStylesheetCache } from '../link';
 import type { AssetsTranspilerOpts } from '../types';
 
 const baseURI = 'http://localhost:8000/';
@@ -10,6 +10,9 @@ const makeOpts = (overrides?: Partial<AssetsTranspilerOpts>): AssetsTranspilerOp
 });
 
 describe('transpileLink', () => {
+  beforeEach(() => {
+    clearStylesheetCache();
+  });
   describe('without styleIsolation', () => {
     it('returns the original link element with resolved href', () => {
       const link = document.createElement('link');
