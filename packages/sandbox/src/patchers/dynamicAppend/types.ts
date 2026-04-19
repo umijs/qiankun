@@ -2,7 +2,7 @@
  * @author Kuitos
  * @since 2023-05-04
  */
-import type { BaseLoaderOpts, NodeTransformer } from '@qiankunjs/shared';
+import type { BaseLoaderOpts, NodeTransformer, StyleIsolationOpts } from '@qiankunjs/shared';
 import type { Deferred } from '@qiankunjs/shared';
 import type { Sandbox } from '../../core/sandbox';
 
@@ -12,4 +12,5 @@ export type SandboxConfig = {
   dynamicStyleSheetElements: Array<HTMLStyleElement | HTMLLinkElement>;
   dynamicExternalSyncScriptDeferredList: Array<Deferred<void>>;
   nodeTransformer: NodeTransformer;
+  styleIsolation?: StyleIsolationOpts;
 } & BaseLoaderOpts;

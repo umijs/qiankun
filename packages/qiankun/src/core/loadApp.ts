@@ -16,6 +16,7 @@ import {
   transpileAssets,
   warn,
 } from '@qiankunjs/shared';
+import type { StyleIsolationOpts } from '@qiankunjs/shared';
 import { concat, isFunction, mergeWith } from 'lodash';
 import type { ParcelConfigObject } from 'single-spa';
 import getAddOns from '../addons';
@@ -40,17 +41,22 @@ export default async function loadApp<T extends ObjectType>(
   const { name: appName, entry, container } = app;
   const defaultNodeTransformer: AppConfiguration['nodeTransformer'] = (node, opts) => {
     const moduleResolver = (url: string) => defaultModuleResolver(url, microAppDOMContainer, document.head);
-    return transpileAssets(node, entry, { ...opts, moduleResolver });
+    return transpileAssets(node, entry, { ...opts, moduleResolver, styleIsolation: styleIsolationOpts });
   };
   const {
     fetch = window.fetch,
     sandbox = true,
     globalContext = window,
     nodeTransformer = defaultNodeTransformer,
+    styleIsolation: styleIsolationEnabled,
     ...restConfiguration
   } = configuration || {};
 
   const enhancedFetch = makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)));
+
+  const styleIsolationOpts: StyleIsolationOpts | undefined = styleIsolationEnabled
+    ? { appName, scopeRoot: `[data-name="${appName}"]` }
+    : undefined;
 
   const markName = `[qiankun] App ${appName} Loading`;
   if (process.env.NODE_ENV === 'development') {
@@ -73,6 +79,7 @@ export default async function loadApp<T extends ObjectType>(
       extraGlobals: {},
       fetch: enhancedFetch,
       nodeTransformer,
+      styleIsolation: styleIsolationOpts,
     });
 
     sandboxInstance = sandboxContainer.instance;

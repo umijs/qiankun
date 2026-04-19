@@ -4,7 +4,7 @@
  * @since 2020-10-13
  */
 
-import { Deferred, QiankunError } from '@qiankunjs/shared';
+import { Deferred, QiankunError, transpileStyleRule } from '@qiankunjs/shared';
 import type { noop } from 'lodash';
 import { nativeDocument, nativeGlobal, qiankunHeadTagName } from '../../consts';
 import { rebindTarget2Fn } from '../../core/membrane/utils';
@@ -54,6 +54,8 @@ const elementAttachSandboxConfigMap = new WeakMap<HTMLElement, SandboxConfig>();
 const patchCacheWeakMap = new WeakMap<object, unknown>();
 
 const getSandboxConfig = (element: HTMLElement) => elementAttachSandboxConfigMap.get(element);
+const setSandboxConfig = (element: HTMLElement, config: SandboxConfig) =>
+  elementAttachSandboxConfigMap.set(element, config);
 
 function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): CallableFunction {
   const container = getContainer();
@@ -183,11 +185,13 @@ function patchDocumentHeadAndBodyMethods(container: HTMLElement): typeof noop {
       document.head.appendChild,
       getSandboxConfig,
       'head',
+      setSandboxConfig,
     );
     headElement.insertBefore = getOverwrittenAppendChildOrInsertBefore(
       document.head.insertBefore,
       getSandboxConfig,
       'head',
+      setSandboxConfig,
     );
     headElement.removeChild = getNewRemoveChild(document.head.removeChild, getSandboxConfig);
   };
@@ -211,11 +215,13 @@ function patchDocumentHeadAndBodyMethods(container: HTMLElement): typeof noop {
     document.body.appendChild,
     getSandboxConfig,
     'body',
+    setSandboxConfig,
   );
   containerBodyElement.insertBefore = getOverwrittenAppendChildOrInsertBefore(
     document.head.insertBefore,
     getSandboxConfig,
     'body',
+    setSandboxConfig,
   );
   containerBodyElement.removeChild = getNewRemoveChild(document.body.removeChild, getSandboxConfig);
 
@@ -307,15 +313,50 @@ function patchDOMPrototypeFns(): typeof noop {
 const rawHeadInsertBefore = HTMLHeadElement.prototype.insertBefore;
 const rawHeadAppendChild = HTMLHeadElement.prototype.appendChild;
 
+const nativeInsertRule = CSSStyleSheet.prototype.insertRule;
+let cssomPatchRefCount = 0;
+
+function patchCSSOM(): typeof noop {
+  cssomPatchRefCount++;
+  if (cssomPatchRefCount > 1) {
+    return () => {
+      cssomPatchRefCount--;
+    };
+  }
+
+  CSSStyleSheet.prototype.insertRule = function patchedInsertRule(
+    this: CSSStyleSheet,
+    rule: string,
+    index?: number,
+  ): number {
+    const ownerNode = this.ownerNode as HTMLElement | null;
+    if (ownerNode) {
+      const config = elementAttachSandboxConfigMap.get(ownerNode);
+      if (config?.styleIsolation) {
+        const scopedRule = transpileStyleRule(rule, config.styleIsolation);
+        return nativeInsertRule.call(this, scopedRule, index);
+      }
+    }
+    return nativeInsertRule.call(this, rule, index);
+  };
+
+  return () => {
+    cssomPatchRefCount--;
+    if (cssomPatchRefCount === 0) {
+      CSSStyleSheet.prototype.insertRule = nativeInsertRule;
+    }
+  };
+}
+
 export function patchStandardSandbox(
   appName: string,
   getContainer: () => HTMLElement,
   opts: {
     sandbox: Sandbox;
     mounting?: boolean;
-  } & Pick<SandboxConfig, 'fetch' | 'nodeTransformer'>,
+  } & Pick<SandboxConfig, 'fetch' | 'nodeTransformer' | 'styleIsolation'>,
 ): Free {
-  const { sandbox, mounting = true, nodeTransformer, fetch } = opts;
+  const { sandbox, mounting = true, nodeTransformer, fetch, styleIsolation } = opts;
   let sandboxConfig = sandboxConfigWeakMap.get(sandbox);
   if (!sandboxConfig) {
     sandboxConfig = {
@@ -323,6 +364,7 @@ export function patchStandardSandbox(
       sandbox,
       fetch,
       nodeTransformer,
+      styleIsolation,
       dynamicStyleSheetElements: [],
       dynamicExternalSyncScriptDeferredList: [],
     };
@@ -333,6 +375,7 @@ export function patchStandardSandbox(
 
   const unpatchDocument = patchDocument(sandbox, getContainer);
   const unpatchDOMPrototype = patchDOMPrototypeFns();
+  const unpatchCSSOM = styleIsolation ? patchCSSOM() : undefined;
 
   if (!mounting) calcAppCount(appName, 'increase', 'bootstrapping');
   if (mounting) calcAppCount(appName, 'increase', 'mounting');
@@ -343,6 +386,10 @@ export function patchStandardSandbox(
 
     // release the overwritten document
     unpatchDocument();
+
+    // Always decrement CSSOM patch ref count — patchCSSOM() handles actual restoration
+    // when the count reaches zero
+    unpatchCSSOM?.();
 
     // release the overwritten prototype after all the micro apps unmounted
     if (isAllAppsUnmounted()) {
