@@ -1,15 +1,16 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { loadMicroApp, MicroApp } from 'qiankun';
+import qiankunPackage from 'qiankun/package.json';
 import { useQiankunStore } from '../store/qiankun';
 import Dashboard from './Dashboard';
 import { Spin, Result, Button } from 'antd';
 import { ReloadOutlined, HomeOutlined } from '@ant-design/icons';
 
-const microAppsConfig: Record<string, { entry: string }> = {
-  react: { entry: '//localhost:7100' },
-  vue: { entry: '//localhost:7104' },
-  purehtml: { entry: '//localhost:7105' },
-  vite: { entry: '//localhost:5175' },
+const microAppsConfig: Record<string, { name: string; entry: string }> = {
+  react: { name: 'reactApp', entry: import.meta.env.DEV ? '//localhost:7100/__qiankun_dev__.html' : '//localhost:7100' },
+  vue: { name: 'vueApp', entry: import.meta.env.DEV ? '//localhost:7101/__qiankun_dev__.html' : '//localhost:7101' },
+  purehtml: { name: 'purehtml', entry: '//localhost:7102' },
+  vite: { name: 'viteApp', entry: import.meta.env.DEV ? '//localhost:7103/__qiankun_dev__.html' : '//localhost:7103' },
 };
 
 export default function MicroAppContainer() {
@@ -18,6 +19,8 @@ export default function MicroAppContainer() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const currentRetry = retryCount;
+
     if (!activeApp || activeApp === 'home') {
       if (microAppRef.current) {
         microAppRef.current.unmount();
@@ -34,6 +37,7 @@ export default function MicroAppContainer() {
 
     const loadApp = async () => {
       try {
+        console.log(`[main] load micro app (retry: ${currentRetry})`);
         setLoading(true);
         setError(null);
 
@@ -47,17 +51,22 @@ export default function MicroAppContainer() {
         }
 
         microAppRef.current = loadMicroApp({
-          name: activeApp,
+          name: config.name,
           entry: config.entry,
           container: containerRef.current,
-          props: { globalState: useQiankunStore.getState().globalState },
+          props: {
+            globalState: useQiankunStore.getState().globalState,
+            qiankunVersion: qiankunPackage.version,
+          },
+        }, {
+          sandbox: true,
         });
 
         await microAppRef.current.mountPromise;
-        setLoading(false);
       } catch (err) {
         console.error('加载子应用失败:', err);
         setError(err instanceof Error ? err.message : '加载子应用失败');
+      } finally {
         setLoading(false);
       }
     };

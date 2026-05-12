@@ -74,12 +74,23 @@ async function assertFileMatchesFixture(
 
 function assertQiankunHtml(html: string): void {
   expect(html).not.toMatch(/<script[^>]*type=["']?module["']?[^>]*>/);
-  expect(html).not.toMatch(/<link[^>]*rel=["']?modulepreload["']?[^>]*>/);
-  expect(html).toMatch(/id=["']?vite-legacy-entry["']?/);
-  expect(html).toContain('window.__POWERED_BY_QIANKUN__');
-  expect(html).toContain('__INJECTED_PUBLIC_PATH_BY_QIANKUN__');
-  expect(html).toMatch(/nomodule/);
+  expect(html).not.toMatch(/System\.import/);
+  expect(html).toMatch(/<script[^>]*src=["'][^"']+["'][^>]*><\/script>/);
+  expect(html).toMatch(/<script[^>]*\sentry(?:\s|>)/);
   expect(html).toMatch(/<link[^>]*rel=["']?stylesheet["']?[^>]*>/);
+}
+
+async function assertGeneratedViteConfig(appPath: string, appName: string): Promise<void> {
+  const viteConfig = await fse.readFile(path.join(appPath, 'vite.config.ts'), 'utf-8');
+
+  expect(viteConfig).toContain("const qiankunDevHtmlPath = '/__qiankun_dev__.html';");
+  expect(viteConfig).toContain("const qiankunDevModulePath = '/__qiankun_dev_module__';");
+  expect(viteConfig).toContain('function transformViteDevModule(code, moduleId)');
+  expect(viteConfig).toContain(`globalThis[${JSON.stringify(appName)}] = {`);
+  expect(viteConfig).toContain('plugins: [');
+  expect(viteConfig).toContain('qiankunDevEntryPlugin()');
+  expect(viteConfig).toContain('isQiankun && qiankunEntryHtmlPlugin()');
+  expect(viteConfig).toContain('cssCodeSplit: false');
 }
 
 describe('create-qiankun CLI e2e', () => {
@@ -126,7 +137,6 @@ describe('create-qiankun CLI e2e', () => {
         expect(await fse.pathExists(appPath)).toBe(true);
         expect(await fse.pathExists(path.join(appPath, 'package.json'))).toBe(true);
         expect(await fse.pathExists(path.join(appPath, 'vite.config.ts'))).toBe(true);
-        expect(await fse.pathExists(path.join(appPath, 'config/qiankunHtml.ts'))).toBe(true);
         expect(await fse.pathExists(path.join(appPath, 'src/main.tsx'))).toBe(true);
 
         await installAndBuild(appPath);
@@ -145,17 +155,8 @@ describe('create-qiankun CLI e2e', () => {
       await assertFileMatchesFixture(path.join(appPath, 'src/main.tsx'), template, 'main.tsx.txt', appName);
     });
 
-    it('should generate correct vite.config.ts', async () => {
-      await assertFileMatchesFixture(path.join(appPath, 'vite.config.ts'), template, 'vite.config.ts.txt', appName);
-    });
-
-    it('should generate correct qiankunHtml plugin', async () => {
-      await assertFileMatchesFixture(
-        path.join(appPath, 'config/qiankunHtml.ts'),
-        template,
-        'qiankunHtml.ts.txt',
-        appName,
-      );
+    it('should generate sandbox-first qiankun vite config', async () => {
+      await assertGeneratedViteConfig(appPath, appName);
     });
 
     it('should have correct package.json scripts and dependencies', async () => {
@@ -163,8 +164,8 @@ describe('create-qiankun CLI e2e', () => {
 
       expect(pkg.name).toBe(appName);
       expect(pkg.scripts['build:qiankun']).toBe('vite build --mode qiankun');
-      expect(pkg.devDependencies['@vitejs/plugin-legacy']).toBeDefined();
-      expect(pkg.devDependencies['cheerio']).toBeDefined();
+      expect(pkg.devDependencies['@vitejs/plugin-legacy']).toBeUndefined();
+      expect(pkg.devDependencies['cheerio']).toBeUndefined();
       expect(pkg.dependencies['qiankun']).toBe(EXPECTED_QIANKUN_VERSION);
       expect(pkg.dependencies['@qiankunjs/react']).toBeDefined();
     });
@@ -206,10 +207,6 @@ describe('create-qiankun CLI e2e', () => {
       await assertFileMatchesFixture(path.join(appPath, 'src/App.css'), template, 'App.css.txt', appName);
     });
 
-    it('should generate correct vite.config.ts', async () => {
-      await assertFileMatchesFixture(path.join(appPath, 'vite.config.ts'), template, 'vite.config.ts.txt', appName);
-    });
-
     it('should have correct package.json for main app', async () => {
       const pkg = await fse.readJson(path.join(appPath, 'package.json'));
 
@@ -234,7 +231,6 @@ describe('create-qiankun CLI e2e', () => {
         expect(await fse.pathExists(appPath)).toBe(true);
         expect(await fse.pathExists(path.join(appPath, 'package.json'))).toBe(true);
         expect(await fse.pathExists(path.join(appPath, 'vite.config.ts'))).toBe(true);
-        expect(await fse.pathExists(path.join(appPath, 'config/qiankunHtml.ts'))).toBe(true);
         expect(await fse.pathExists(path.join(appPath, 'src/main.ts'))).toBe(true);
 
         await installAndBuild(appPath);
@@ -253,17 +249,8 @@ describe('create-qiankun CLI e2e', () => {
       await assertFileMatchesFixture(path.join(appPath, 'src/main.ts'), template, 'main.ts.txt', appName);
     });
 
-    it('should generate correct vite.config.ts', async () => {
-      await assertFileMatchesFixture(path.join(appPath, 'vite.config.ts'), template, 'vite.config.ts.txt', appName);
-    });
-
-    it('should generate correct qiankunHtml plugin', async () => {
-      await assertFileMatchesFixture(
-        path.join(appPath, 'config/qiankunHtml.ts'),
-        template,
-        'qiankunHtml.ts.txt',
-        appName,
-      );
+    it('should generate sandbox-first qiankun vite config', async () => {
+      await assertGeneratedViteConfig(appPath, appName);
     });
 
     it('should have correct package.json with Vue dependencies', async () => {

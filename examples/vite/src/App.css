@@ -1,42 +1,114 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+.micro-shell {
+  min-height: 100vh;
+  padding: 28px;
+  box-sizing: border-box;
+  display: grid;
+  align-content: start;
+  gap: 20px;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  color: #0f172a;
+}
+
+.micro-shell--vite {
+  background: radial-gradient(circle at top right, #ede9fe 0%, #f8fafc 40%, #eef2ff 100%);
+}
+
+.micro-hero {
+  display: grid;
+  gap: 14px;
+}
+
+.micro-header h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.micro-header p {
+  margin: 8px 0 0;
+  color: #475569;
+}
+
+.logo-group {
+  display: flex;
+  gap: 10px;
+}
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #4338ca, #7c3aed);
+}
+
+.badge-soft {
+  color: #1e293b;
+  background: #e2e8f0;
 }
 
 .logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+  width: 42px;
+  height: 42px;
+  transition: transform 0.2s ease;
 }
+
 .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+  transform: translateY(-1px) scale(1.03);
 }
 
 .card {
-  padding: 2em;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 16px 40px -32px #1e293b;
 }
 
-.read-the-docs {
-  color: #888;
+.card dl {
+  margin: 0 0 16px;
+}
+
+.stats-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.stat-item {
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 12px;
+}
+
+.card dt {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.card dd {
+  margin: 2px 0 0;
+  font-weight: 600;
+}
+
+.card button {
+  border: 0;
+  background: #4338ca;
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hint {
+  color: #64748b;
+  margin-bottom: 0;
 }

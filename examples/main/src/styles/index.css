@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -73,4 +80,48 @@ html {
 .card-hover:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-menu .ant-menu-item {
+  margin: 0 12px 6px;
+  height: auto;
+  min-height: 50px;
+  line-height: 1.4;
+  border-radius: 10px;
+  display: flex;
+  align-items: flex-start;
+  padding-block: 10px;
+}
+
+.sidebar-menu .ant-menu-item .ant-menu-title-content {
+  width: 100%;
+}
+
+.sidebar-item {
+  display: grid;
+  gap: 4px;
+}
+
+.sidebar-item-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sidebar-item-title {
+  font-weight: 600;
+}
+
+.sidebar-item-tag {
+  border: 0;
+  margin-inline-end: 0;
+  font-size: 10px;
+  line-height: 16px;
+  padding-inline: 6px;
+}
+
+.sidebar-item-desc {
+  font-size: 12px;
+  color: #94a3b8;
 }

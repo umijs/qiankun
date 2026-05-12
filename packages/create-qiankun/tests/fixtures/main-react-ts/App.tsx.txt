@@ -3,14 +3,70 @@ import { loadMicroApp } from 'qiankun';
 import type { MicroApp } from 'qiankun';
 import './App.css';
 
+function normalizePath(pathname: string): string {
+  if (pathname.length > 1 && pathname.endsWith('/')) {
+    return pathname.slice(0, -1);
+  }
+
+  return pathname || '/';
+}
+
+function resolveActiveAppByPath(pathname: string): 'sub-app' | null {
+  const normalizedPath = normalizePath(pathname);
+
+  if (normalizedPath === '/sub-app') {
+    return 'sub-app';
+  }
+
+  return null;
+}
+
 function App() {
   const containerRef = useRef<HTMLDivElement>(null);
   const microAppRef = useRef<MicroApp | null>(null);
+  const [activeApp, setActiveApp] = useState<'sub-app' | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const syncAppFromPath = () => {
+      setActiveApp(resolveActiveAppByPath(window.location.pathname));
+    };
+
+    syncAppFromPath();
+    window.addEventListener('popstate', syncAppFromPath);
+
+    return () => {
+      window.removeEventListener('popstate', syncAppFromPath);
+    };
+  }, []);
+
+  useEffect(() => {
+    const targetPath = activeApp ? '/sub-app' : '/';
+    const currentPath = normalizePath(window.location.pathname);
+    const appFromCurrentPath = resolveActiveAppByPath(currentPath);
+
+    if (activeApp === null && appFromCurrentPath !== null) {
+      return;
+    }
+
+    if (targetPath === currentPath) {
+      return;
+    }
+
+    window.history.pushState({ activeApp }, '', targetPath);
+  }, [activeApp]);
+
+  useEffect(() => {
     let isUnmounted = false;
+
+    if (activeApp !== 'sub-app') {
+      setLoading(false);
+      setError(null);
+      microAppRef.current?.unmount();
+      microAppRef.current = null;
+      return;
+    }
 
     if (!containerRef.current) return;
 
@@ -19,8 +75,11 @@ function App() {
 
     microAppRef.current = loadMicroApp({
       name: 'sub-app',
-      entry: '//localhost:7101',
+      entry: '//localhost:7100',
       container: containerRef.current,
+      props: {
+        qiankunVersion: 'rc',
+      },
     });
 
     microAppRef.current.mountPromise
@@ -41,14 +100,43 @@ function App() {
       microAppRef.current?.unmount();
       microAppRef.current = null;
     };
-  }, []);
+  }, [activeApp]);
 
   return (
     <div className="main-app">
       <header className="main-app-header">
-        <h1>Qiankun Main App</h1>
+        <div>
+          <h1>Qiankun Main App</h1>
+          <p>统一现代化主应用 · URL 可直达子应用</p>
+        </div>
+        <div className="header-actions">
+          <button
+            type="button"
+            className={activeApp === null ? 'tab-button active' : 'tab-button'}
+            onClick={() => setActiveApp(null)}
+          >
+            首页
+          </button>
+          <button
+            type="button"
+            className={activeApp === 'sub-app' ? 'tab-button active' : 'tab-button'}
+            onClick={() => setActiveApp('sub-app')}
+          >
+            子应用
+          </button>
+        </div>
       </header>
       <main className="main-app-content">
+        {activeApp === null ? (
+          <section className="home-card">
+            <h2>欢迎使用 create-qiankun</h2>
+            <p>点击“子应用”进入挂载页，或者直接访问 <code>/sub-app</code> 进行深链直达。</p>
+            <button type="button" className="primary-button" onClick={() => setActiveApp('sub-app')}>
+              进入子应用
+            </button>
+          </section>
+        ) : null}
+
         {loading && <div className="loading">Loading micro app...</div>}
         {error && <div className="error">Error: {error}</div>}
         <div ref={containerRef} id="micro-app-container" />

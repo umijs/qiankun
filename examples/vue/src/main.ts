@@ -5,17 +5,30 @@ import './style.css';
 declare global {
   interface Window {
     __POWERED_BY_QIANKUN__?: boolean;
+    __QIANKUN_VERSION__?: string;
     [key: string]: unknown;
   }
 }
 
 let app: ReturnType<typeof createApp> | undefined;
 
-function render(props: { container?: Element } = {}) {
+interface MicroAppProps {
+  container?: Element;
+  qiankunVersion?: string;
+}
+
+function render(props: MicroAppProps = {}) {
   const container = props.container?.querySelector('#app') ?? document.getElementById('app');
   if (!container) return;
 
-  app = createApp(App);
+  if (props.qiankunVersion) {
+    window.__QIANKUN_VERSION__ = props.qiankunVersion;
+  }
+
+  const resolvedQiankunVersion = props.qiankunVersion ?? window.__QIANKUN_VERSION__ ?? 'N/A';
+
+  app = createApp(App, { qiankunVersion: resolvedQiankunVersion });
+  app.config.idPrefix = 'vue-';
   app.mount(container);
 }
 
@@ -24,13 +37,13 @@ function bootstrap() {
   return Promise.resolve();
 }
 
-function mount(props: { container?: Element }) {
+function mount(props: MicroAppProps = {}) {
   console.log('[vue] mount', props);
   render(props);
   return Promise.resolve();
 }
 
-function unmount(props: { container?: Element }) {
+function unmount(props: MicroAppProps) {
   console.log('[vue] unmount', props);
   if (app) {
     app.unmount();
@@ -43,16 +56,8 @@ function unmount(props: { container?: Element }) {
   return Promise.resolve();
 }
 
-// Export lifecycle functions to window immediately
-(function(global) {
-  global['vue'] = {
-    bootstrap,
-    mount,
-    unmount,
-  };
-})(window);
+export { bootstrap, mount, unmount };
 
-// Standalone mode
 if (!window.__POWERED_BY_QIANKUN__) {
   render();
 }

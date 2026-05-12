@@ -19,38 +19,63 @@ async function writeReactEntry(appRoot: string, appName: string, isTs: boolean):
   const entryPath = path.join(appRoot, `src/main.${ext}`);
 
   const typeAnnotation = isTs ? ': ReactDOM.Root | undefined' : '';
-  const propsType = isTs ? ': { container?: Element }' : '';
-  const defaultPropsType = isTs ? ': { container?: Element } = {}' : ' = {}';
+  const propsInterface = isTs
+    ? `
+interface MicroAppProps {
+  container?: Element;
+  qiankunVersion?: string;
+}
+`
+    : '';
+  const propsType = isTs ? ': MicroAppProps' : '';
+  const defaultPropsType = isTs ? ': MicroAppProps = {}' : ' = {}';
 
   const content = `import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 
-const appName = '${appName}';
+declare global {
+  interface Window {
+    __POWERED_BY_QIANKUN__?: boolean;
+    __QIANKUN_VERSION__?: string;
+    [key: string]: unknown;
+  }
+}
+${propsInterface}
 let root${typeAnnotation};
 
 function render(props${defaultPropsType}) {
   const container = props.container?.querySelector('#root') ?? document.getElementById('root');
   if (!container) return;
 
-  root = ReactDOM.createRoot(container);
+  if (props.qiankunVersion) {
+    window.__QIANKUN_VERSION__ = props.qiankunVersion;
+  }
+
+  const resolvedQiankunVersion = props.qiankunVersion ?? window.__QIANKUN_VERSION__;
+
+  root = ReactDOM.createRoot(container, { identifierPrefix: '${appName}-' });
   root.render(
     <React.StrictMode>
-      <App />
+      <App qiankunVersion={resolvedQiankunVersion} />
     </React.StrictMode>,
   );
 }
 
-export async function bootstrap() {
+function bootstrap() {
+  console.log('[${appName}] bootstrap');
   return Promise.resolve();
 }
 
-export async function mount(props${propsType}) {
+function mount(props${defaultPropsType}) {
+  console.log('[${appName}] mount', props);
   render(props);
+  return Promise.resolve();
 }
 
-export async function unmount(props${propsType}) {
+function unmount(props${propsType}) {
+  console.log('[${appName}] unmount', props);
   if (root) {
     root.unmount();
     root = undefined;
@@ -59,18 +84,12 @@ export async function unmount(props${propsType}) {
   if (container) {
     container.innerHTML = '';
   }
+  return Promise.resolve();
 }
 
-declare global {
-  interface Window {
-    __POWERED_BY_QIANKUN__?: boolean;
-    [key: string]: unknown;
-  }
-}
+export { bootstrap, mount, unmount };
 
-if (window.__POWERED_BY_QIANKUN__) {
-  window[appName] = { bootstrap, mount, unmount };
-} else {
+if (!window.__POWERED_BY_QIANKUN__) {
   render();
 }
 `;
@@ -83,13 +102,22 @@ async function writeVueEntry(appRoot: string, appName: string, isTs: boolean): P
   const entryPath = path.join(appRoot, `src/main.${ext}`);
 
   const typeAnnotation = isTs ? ': ReturnType<typeof createApp> | undefined' : '';
-  const propsType = isTs ? ': { container?: Element }' : '';
-  const defaultPropsType = isTs ? ': { container?: Element } = {}' : ' = {}';
+  const propsInterface = isTs
+    ? `
+interface MicroAppProps {
+  container?: Element;
+  qiankunVersion?: string;
+}
+`
+    : '';
+  const propsType = isTs ? ': MicroAppProps' : '';
+  const defaultPropsType = isTs ? ': MicroAppProps = {}' : ' = {}';
   const declareGlobal = isTs
     ? `
 declare global {
   interface Window {
     __POWERED_BY_QIANKUN__?: boolean;
+    __QIANKUN_VERSION__?: string;
     [key: string]: unknown;
   }
 }
@@ -99,27 +127,37 @@ declare global {
   const content = `import { createApp } from 'vue';
 import App from './App.vue';
 import './style.css';
-
-const appName = '${appName}';
+${declareGlobal}${propsInterface}
 let app${typeAnnotation};
 
 function render(props${defaultPropsType}) {
   const container = props.container?.querySelector('#app') ?? document.getElementById('app');
   if (!container) return;
 
-  app = createApp(App);
+  if (props.qiankunVersion) {
+    window.__QIANKUN_VERSION__ = props.qiankunVersion;
+  }
+
+  const resolvedQiankunVersion = props.qiankunVersion ?? window.__QIANKUN_VERSION__ ?? 'N/A';
+
+  app = createApp(App, { qiankunVersion: resolvedQiankunVersion });
+  app.config.idPrefix = '${appName}-';
   app.mount(container);
 }
 
-export async function bootstrap() {
+function bootstrap() {
+  console.log('[${appName}] bootstrap');
   return Promise.resolve();
 }
 
-export async function mount(props${propsType}) {
+function mount(props${defaultPropsType}) {
+  console.log('[${appName}] mount', props);
   render(props);
+  return Promise.resolve();
 }
 
-export async function unmount(props${propsType}) {
+function unmount(props${propsType}) {
+  console.log('[${appName}] unmount', props);
   if (app) {
     app.unmount();
     app = undefined;
@@ -128,11 +166,12 @@ export async function unmount(props${propsType}) {
   if (container) {
     container.innerHTML = '';
   }
+  return Promise.resolve();
 }
-${declareGlobal}
-if (window.__POWERED_BY_QIANKUN__) {
-  window[appName] = { bootstrap, mount, unmount };
-} else {
+
+export { bootstrap, mount, unmount };
+
+if (!window.__POWERED_BY_QIANKUN__) {
   render();
 }
 `;

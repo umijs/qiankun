@@ -13,10 +13,10 @@ import { useQiankunStore } from '../store/qiankun';
 const { Title, Text, Paragraph } = Typography;
 
 const microApps = [
-  { name: 'React', icon: '⚛️', color: '#61DAFB', status: 'active' },
-  { name: 'Vue', icon: '💚', color: '#4FC08D', status: 'active' },
-  { name: 'Pure HTML', icon: '🌐', color: '#E34F26', status: 'active' },
-  { name: 'Vite App', icon: '⚡', color: '#646CFF', status: 'active' },
+  { key: 'react', name: 'React', icon: '⚛️', color: '#61DAFB', status: 'active' },
+  { key: 'vue', name: 'Vue', icon: '💚', color: '#4FC08D', status: 'active' },
+  { key: 'purehtml', name: 'Pure HTML', icon: '🌐', color: '#E34F26', status: 'active' },
+  { key: 'vite', name: 'Vite App', icon: '⚡', color: '#646CFF', status: 'active' },
 ];
 
 const features = [
@@ -46,7 +46,7 @@ export default function Dashboard() {
           <Row gutter={[24, 24]} align="middle">
             <Col xs={24} md={16}>
               <Paragraph className="!mb-4 text-gray-600">
-                Qiankun 是一个基于 single-spa 的微前端实现库，旨在帮助大家能更简单、无痛的构建一个生产可用微前端架构系统。
+                本示例基于 qiankun v3 与最新前端工具链，展示 React/Vue/Vanilla 子应用在统一主应用中的一致体验与稳定挂载。
               </Paragraph>
               <Space>
                 <Button type="primary" size="large" icon={<CodeOutlined />} onClick={() => setActiveApp('react')}>
@@ -62,7 +62,7 @@ export default function Dashboard() {
                 <div className="text-5xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
                   4
                 </div>
-                <div className="text-gray-500 mt-2">示例应用</div>
+                <div className="text-gray-500 mt-2">可切换子应用</div>
               </div>
             </Col>
           </Row>
@@ -78,7 +78,12 @@ export default function Dashboard() {
         ].map((stat, index) => (
           <Col xs={12} md={6} key={index}>
             <Card hoverable className="text-center">
-              <Statistic title={stat.title} value={stat.value} suffix={stat.suffix} valueStyle={{ color: stat.color }} />
+              <Statistic
+                title={stat.title}
+                value={stat.value}
+                suffix={stat.suffix}
+                styles={{ content: { color: stat.color } }}
+              />
             </Card>
           </Col>
         ))}
@@ -86,12 +91,19 @@ export default function Dashboard() {
 
       <Card title={<div className="flex items-center justify-between"><span>子应用列表</span><Button type="link">查看全部</Button></div>} className="mb-8">
         <Row gutter={[16, 16]}>
-          {microApps.slice(0, 8).map((app) => (
+          {microApps.map((app) => (
             <Col xs={12} sm={8} md={6} key={app.name}>
-              <Card hoverable className="text-center transition-all duration-300 hover:shadow-md" bodyStyle={{ padding: '20px' }} onClick={() => setActiveApp(app.name.toLowerCase().replace(' ', ''))}>
+              <Card
+                hoverable
+                className="text-center transition-all duration-300 hover:shadow-md"
+                styles={{ body: { padding: '20px' } }}
+                onClick={() => setActiveApp(app.key)}
+              >
                 <div className="text-3xl mb-2">{app.icon}</div>
                 <div className="font-medium text-gray-900 mb-1">{app.name}</div>
-                <Tag color={app.status === 'active' ? 'success' : 'default'}>{app.status === 'active' ? '运行中' : '即将上线'}</Tag>
+                <Tag color={app.status === 'active' ? 'success' : 'default'}>
+                  {app.status === 'active' ? '运行中' : '即将上线'}
+                </Tag>
               </Card>
             </Col>
           ))}
