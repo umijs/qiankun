@@ -20,7 +20,7 @@
     "@babel/runtime": "^7.26.10",
     "@qiankunjs/sandbox": "workspace:^",
     "@qiankunjs/shared": "workspace:^",
-    "lodash": "^4.17.11"
+    "lodash": "^4.18.1"
   },
   "devDependencies": {
     "import-html-entry": "^1.12.0",
