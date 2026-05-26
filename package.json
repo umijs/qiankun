@@ -37,7 +37,7 @@
     "eslint-config-prettier": "^9.1.2",
     "eslint-formatter-pretty": "^5.0.0",
     "father": "^4.6.13",
-    "happy-dom": "^12.10.3",
+    "happy-dom": "^20.8.9",
     "husky": "^8.0.3",
     "lint-staged": "^9.5.0",
     "mermaid": "^11.12.2",
