@@ -21,11 +21,13 @@ import { createSandboxContainer, css } from './sandbox';
 import { cachedGlobals } from './sandbox/proxySandbox';
 import {
   Deferred,
+  createFakeCurrentScript,
   genAppInstanceIdByName,
   getContainer,
   getDefaultTplWrapper,
   getWrapperId,
   isEnableScopedCSS,
+  patchCurrentScript,
   performanceGetEntriesByName,
   performanceMark,
   performanceMeasure,
@@ -241,6 +243,12 @@ let prevAppUnmountedDeferred: Deferred<void>;
 
 export type ParcelConfigObjectGetter = (remountContainer?: string | HTMLElement) => ParcelConfigObject;
 
+type ExecScriptHooks = {
+  beforeExec?: (code: string, script: string) => string | void;
+  afterExec?: (code: string, script: string) => void;
+  error?: CallableFunction;
+};
+
 export async function loadApp<T extends ObjectType>(
   app: LoadableApp<T>,
   configuration: FrameworkConfiguration = {},
@@ -343,10 +351,30 @@ export async function loadApp<T extends ObjectType>(
 
   await execHooksChain(toArray(beforeLoad), app, global);
 
+  const { beforeExec, afterExec, error } = importEntryOpts as ExecScriptHooks;
+  let resetCurrentScript = () => {};
+
   // get the lifecycle hooks from module exports
-  const scriptExports: any = await execScripts(global, sandbox && !useLooseSandbox, {
+  const execScriptOpts = {
     scopedGlobalVariables: speedySandbox ? cachedGlobals : [],
-  });
+    beforeExec: (code: string, script: string) => {
+      resetCurrentScript();
+      resetCurrentScript = patchCurrentScript(createFakeCurrentScript(script));
+      return beforeExec?.(code, script);
+    },
+    afterExec: (code: string, script: string) => {
+      resetCurrentScript();
+      resetCurrentScript = () => {};
+      afterExec?.(code, script);
+    },
+    error: () => {
+      resetCurrentScript();
+      resetCurrentScript = () => {};
+      error?.();
+    },
+  } as any;
+
+  const scriptExports: any = await execScripts(global, sandbox && !useLooseSandbox, execScriptOpts);
   const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
     scriptExports,
     appName,
