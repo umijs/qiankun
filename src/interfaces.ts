@@ -61,6 +61,11 @@ export type PrefetchStrategy =
   | string[]
   | ((apps: AppMetadata[]) => { criticalAppNames: string[]; minorAppsName: string[] });
 
+export type WaitForLifecycleReadyOptions = {
+  timeout?: number;
+  interval?: number;
+};
+
 type QiankunSpecialOpts = {
   /**
    * @deprecated internal api, don't used it as normal, might be removed after next version
@@ -93,6 +98,8 @@ type QiankunSpecialOpts = {
   excludeAssetFilter?: (url: string) => boolean;
 
   globalContext?: typeof window;
+
+  waitForLifecycleReady?: boolean | WaitForLifecycleReadyOptions;
 };
 export type FrameworkConfiguration = QiankunSpecialOpts & ImportEntryOpts & StartOpts;
 

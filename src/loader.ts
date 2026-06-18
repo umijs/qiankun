@@ -210,6 +210,7 @@ function getLifecyclesFromExports(
   appName: string,
   global: WindowProxy,
   globalLatestSetProp?: PropertyKey | null,
+  silent = false,
 ) {
   if (validateExportLifecycle(scriptExports)) {
     return scriptExports;
@@ -223,7 +224,7 @@ function getLifecyclesFromExports(
     }
   }
 
-  if (process.env.NODE_ENV === 'development') {
+  if (!silent && process.env.NODE_ENV === 'development') {
     console.warn(
       `[qiankun] lifecycle not found from ${appName} entry exports, fallback to get from window['${appName}']`,
     );
@@ -237,6 +238,60 @@ function getLifecyclesFromExports(
   }
 
   throw new QiankunError(`You need to export lifecycle functions in ${appName} entry`);
+}
+
+const DEFAULT_LIFECYCLE_READY_TIMEOUT = 3000;
+const DEFAULT_LIFECYCLE_READY_INTERVAL = 16;
+
+type LifecycleReadyOptions = Exclude<FrameworkConfiguration['waitForLifecycleReady'], undefined | false>;
+
+function normalizeLifecycleReadyOptions(options: LifecycleReadyOptions): { timeout: number; interval: number } {
+  if (options === true) {
+    return {
+      timeout: DEFAULT_LIFECYCLE_READY_TIMEOUT,
+      interval: DEFAULT_LIFECYCLE_READY_INTERVAL,
+    };
+  }
+
+  return {
+    timeout: Math.max(0, options.timeout ?? DEFAULT_LIFECYCLE_READY_TIMEOUT),
+    interval: Math.max(1, options.interval ?? DEFAULT_LIFECYCLE_READY_INTERVAL),
+  };
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function getLifecyclesFromExportsWhenReady(
+  getLifecycles: (silent: boolean) => any,
+  waitForLifecycleReady: FrameworkConfiguration['waitForLifecycleReady'],
+): Promise<any> {
+  if (!waitForLifecycleReady) {
+    return getLifecycles(false);
+  }
+
+  const { timeout, interval } = normalizeLifecycleReadyOptions(waitForLifecycleReady);
+  const startedAt = Date.now();
+
+  do {
+    try {
+      return getLifecycles(true);
+    } catch {
+      // retry until timeout, then surface the original qiankun lifecycle error below
+    }
+
+    const remaining = timeout - (Date.now() - startedAt);
+    if (remaining <= 0) {
+      break;
+    }
+
+    await sleep(Math.min(interval, remaining));
+  } while (Date.now() - startedAt <= timeout);
+
+  return getLifecycles(false);
 }
 
 let prevAppUnmountedDeferred: Deferred<void>;
@@ -267,6 +322,7 @@ export async function loadApp<T extends ObjectType>(
     sandbox = true,
     excludeAssetFilter,
     globalContext = window,
+    waitForLifecycleReady,
     ...importEntryOpts
   } = configuration;
 
@@ -323,7 +379,7 @@ export async function loadApp<T extends ObjectType>(
   const useLooseSandbox = typeof sandbox === 'object' && !!sandbox.loose;
   // enable speedy mode by default
   const speedySandbox = typeof sandbox === 'object' ? sandbox.speedy !== false : true;
-  let sandboxContainer;
+  let sandboxContainer: ReturnType<typeof createSandboxContainer> | undefined;
   if (sandbox) {
     sandboxContainer = createSandboxContainer(
       appInstanceId,
@@ -375,11 +431,10 @@ export async function loadApp<T extends ObjectType>(
   } as any;
 
   const scriptExports: any = await execScripts(global, sandbox && !useLooseSandbox, execScriptOpts);
-  const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
-    scriptExports,
-    appName,
-    global,
-    sandboxContainer?.instance?.latestSetProp,
+  const { bootstrap, mount, unmount, update } = await getLifecyclesFromExportsWhenReady(
+    (silent) =>
+      getLifecyclesFromExports(scriptExports, appName, global, sandboxContainer?.instance?.latestSetProp, silent),
+    waitForLifecycleReady,
   );
 
   const { onGlobalStateChange, setGlobalState, offGlobalStateChange }: Record<string, CallableFunction> =

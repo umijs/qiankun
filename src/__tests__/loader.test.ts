@@ -15,6 +15,8 @@ const mockImportEntry = importEntry as jest.MockedFunction<typeof importEntry>;
 
 beforeEach(() => {
   document.body.innerHTML = '<div id="container"></div>';
+  delete (window as any).app;
+  delete (window as any).asyncApp;
   jest.clearAllMocks();
 });
 
@@ -86,4 +88,37 @@ test('should cleanup document.currentScript when initial entry execution fails',
       sandbox: false,
     },
   );
+});
+
+test('should wait for lifecycle globals exposed after entry execution', async () => {
+  mockImportEntry.mockResolvedValue({
+    template: '<div></div>',
+    assetPublicPath: 'http://localhost:7100/',
+    getExternalScripts: () => Promise.resolve([]),
+    getExternalStyleSheets: () => Promise.resolve([]),
+    execScripts: () => {
+      setTimeout(() => {
+        (window as any).asyncApp = lifecycles;
+      }, 5);
+
+      return Promise.resolve({});
+    },
+  } as any);
+
+  await expect(
+    loadApp(
+      {
+        name: 'asyncApp',
+        entry: 'http://localhost:7100/',
+        container: '#container',
+      },
+      {
+        sandbox: false,
+        waitForLifecycleReady: {
+          timeout: 100,
+          interval: 1,
+        },
+      } as any,
+    ),
+  ).resolves.toBeInstanceOf(Function);
 });
