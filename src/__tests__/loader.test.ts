@@ -21,8 +21,6 @@ beforeEach(() => {
 });
 
 test('should expose document.currentScript while executing initial entry scripts', async () => {
-  const beforeExec = jest.fn();
-  const afterExec = jest.fn();
   const scriptUrl = 'http://localhost:7100/umi.js';
 
   mockImportEntry.mockResolvedValue({
@@ -35,11 +33,9 @@ test('should expose document.currentScript while executing initial entry scripts
 
       expect(document.currentScript).toBeInstanceOf(HTMLScriptElement);
       expect((document.currentScript as HTMLScriptElement).src).toBe(scriptUrl);
-      expect(beforeExec).toHaveBeenCalledWith('window.__entry_loaded__ = true;', scriptUrl);
 
       opts.afterExec('window.__entry_loaded__ = true;', scriptUrl);
       expect(document.currentScript).toBeNull();
-      expect(afterExec).toHaveBeenCalledWith('window.__entry_loaded__ = true;', scriptUrl);
 
       return Promise.resolve(lifecycles);
     },
@@ -53,8 +49,6 @@ test('should expose document.currentScript while executing initial entry scripts
     },
     {
       sandbox: false,
-      beforeExec,
-      afterExec,
     } as any,
   );
 });

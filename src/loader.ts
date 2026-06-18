@@ -298,12 +298,6 @@ let prevAppUnmountedDeferred: Deferred<void>;
 
 export type ParcelConfigObjectGetter = (remountContainer?: string | HTMLElement) => ParcelConfigObject;
 
-type ExecScriptHooks = {
-  beforeExec?: (code: string, script: string) => string | void;
-  afterExec?: (code: string, script: string) => void;
-  error?: CallableFunction;
-};
-
 export async function loadApp<T extends ObjectType>(
   app: LoadableApp<T>,
   configuration: FrameworkConfiguration = {},
@@ -407,35 +401,33 @@ export async function loadApp<T extends ObjectType>(
 
   await execHooksChain(toArray(beforeLoad), app, global);
 
-  const { beforeExec, afterExec, error } = importEntryOpts as ExecScriptHooks;
   let resetCurrentScript = () => {};
 
   // get the lifecycle hooks from module exports
   const execScriptOpts = {
     scopedGlobalVariables: speedySandbox ? cachedGlobals : [],
-    beforeExec: (code: string, script: string) => {
+    beforeExec: (_code: string, script: string) => {
       resetCurrentScript();
       resetCurrentScript = patchCurrentScript(createFakeCurrentScript(script));
-      return beforeExec?.(code, script);
     },
-    afterExec: (code: string, script: string) => {
+    afterExec: () => {
       resetCurrentScript();
       resetCurrentScript = () => {};
-      afterExec?.(code, script);
     },
     error: () => {
       resetCurrentScript();
       resetCurrentScript = () => {};
-      error?.();
     },
   } as any;
 
   const scriptExports: any = await execScripts(global, sandbox && !useLooseSandbox, execScriptOpts);
-  const { bootstrap, mount, unmount, update } = await getLifecyclesFromExportsWhenReady(
-    (silent) =>
-      getLifecyclesFromExports(scriptExports, appName, global, sandboxContainer?.instance?.latestSetProp, silent),
-    waitForLifecycleReady,
-  );
+  const { bootstrap, mount, unmount, update } = waitForLifecycleReady
+    ? await getLifecyclesFromExportsWhenReady(
+        (silent) =>
+          getLifecyclesFromExports(scriptExports, appName, global, sandboxContainer?.instance?.latestSetProp, silent),
+        waitForLifecycleReady,
+      )
+    : getLifecyclesFromExports(scriptExports, appName, global, sandboxContainer?.instance?.latestSetProp);
 
   const { onGlobalStateChange, setGlobalState, offGlobalStateChange }: Record<string, CallableFunction> =
     getMicroAppStateActions(appInstanceId);
