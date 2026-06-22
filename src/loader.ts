@@ -21,11 +21,13 @@ import { createSandboxContainer, css } from './sandbox';
 import { cachedGlobals } from './sandbox/proxySandbox';
 import {
   Deferred,
+  createFakeCurrentScript,
   genAppInstanceIdByName,
   getContainer,
   getDefaultTplWrapper,
   getWrapperId,
   isEnableScopedCSS,
+  patchCurrentScript,
   performanceGetEntriesByName,
   performanceMark,
   performanceMeasure,
@@ -208,6 +210,7 @@ function getLifecyclesFromExports(
   appName: string,
   global: WindowProxy,
   globalLatestSetProp?: PropertyKey | null,
+  silent = false,
 ) {
   if (validateExportLifecycle(scriptExports)) {
     return scriptExports;
@@ -221,7 +224,7 @@ function getLifecyclesFromExports(
     }
   }
 
-  if (process.env.NODE_ENV === 'development') {
+  if (!silent && process.env.NODE_ENV === 'development') {
     console.warn(
       `[qiankun] lifecycle not found from ${appName} entry exports, fallback to get from window['${appName}']`,
     );
@@ -315,7 +318,7 @@ export async function loadApp<T extends ObjectType>(
   const useLooseSandbox = typeof sandbox === 'object' && !!sandbox.loose;
   // enable speedy mode by default
   const speedySandbox = typeof sandbox === 'object' ? sandbox.speedy !== false : true;
-  let sandboxContainer;
+  let sandboxContainer: ReturnType<typeof createSandboxContainer> | undefined;
   if (sandbox) {
     sandboxContainer = createSandboxContainer(
       appInstanceId,
@@ -343,16 +346,34 @@ export async function loadApp<T extends ObjectType>(
 
   await execHooksChain(toArray(beforeLoad), app, global);
 
+  let resetCurrentScript = () => {};
+
   // get the lifecycle hooks from module exports
-  const scriptExports: any = await execScripts(global, sandbox && !useLooseSandbox, {
+  const execScriptOpts = {
     scopedGlobalVariables: speedySandbox ? cachedGlobals : [],
-  });
-  const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
-    scriptExports,
-    appName,
-    global,
-    sandboxContainer?.instance?.latestSetProp,
-  );
+    beforeExec: (_code: string, script: string) => {
+      resetCurrentScript();
+      resetCurrentScript = patchCurrentScript(createFakeCurrentScript(script));
+    },
+    afterExec: () => {
+      resetCurrentScript();
+      resetCurrentScript = () => {};
+    },
+    error: () => {
+      resetCurrentScript();
+      resetCurrentScript = () => {};
+    },
+  } as any;
+
+  let lifecycles: any;
+  try {
+    const scriptExports: any = await execScripts(global, sandbox && !useLooseSandbox, execScriptOpts);
+    lifecycles = getLifecyclesFromExports(scriptExports, appName, global, sandboxContainer?.instance?.latestSetProp);
+  } finally {
+    resetCurrentScript();
+  }
+
+  const { bootstrap, mount, unmount, update } = lifecycles;
 
   const { onGlobalStateChange, setGlobalState, offGlobalStateChange }: Record<string, CallableFunction> =
     getMicroAppStateActions(appInstanceId);
