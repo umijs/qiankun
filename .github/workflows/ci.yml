@@ -14,7 +14,12 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [14.x, 16.x]
+        node-version: [18.x, 20.x]
+
+    env:
+      # father-build (1.x) and dumi (1.x) run on webpack 4, whose hashing breaks
+      # under OpenSSL 3 (Node 17+); fall back to the legacy provider.
+      NODE_OPTIONS: --openssl-legacy-provider
 
     steps:
       - uses: actions/checkout@v4
