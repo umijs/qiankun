@@ -98,6 +98,7 @@
   },
   "resolutions": {
     "@types/history": "^4.x",
+    "@types/minimatch": "3.0.5",
     "@types/react": "^17.x"
   },
   "dependencies": {
