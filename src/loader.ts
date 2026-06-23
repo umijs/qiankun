@@ -3,8 +3,8 @@
  * @since 2020-04-01
  */
 
-import { importEntry } from 'import-html-entry';
-import { concat, forEach, mergeWith } from 'lodash';
+import { importEntry, type ExecScriptOpts } from 'import-html-entry';
+import { concat, forEach, mergeWith, noop } from 'lodash';
 import type { LifeCycles, ParcelConfigObject } from 'single-spa';
 import getAddOns from './addons';
 import { QiankunError } from './error';
@@ -210,7 +210,6 @@ function getLifecyclesFromExports(
   appName: string,
   global: WindowProxy,
   globalLatestSetProp?: PropertyKey | null,
-  silent = false,
 ) {
   if (validateExportLifecycle(scriptExports)) {
     return scriptExports;
@@ -224,7 +223,7 @@ function getLifecyclesFromExports(
     }
   }
 
-  if (!silent && process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === 'development') {
     console.warn(
       `[qiankun] lifecycle not found from ${appName} entry exports, fallback to get from window['${appName}']`,
     );
@@ -346,34 +345,33 @@ export async function loadApp<T extends ObjectType>(
 
   await execHooksChain(toArray(beforeLoad), app, global);
 
-  let resetCurrentScript = () => {};
-
-  // get the lifecycle hooks from module exports
-  const execScriptOpts = {
+  // Expose a browser-like `document.currentScript` while import-html-entry executes the entry scripts.
+  // Bundlers such as Turbopack/utoopack may resolve chunk URLs from `document.currentScript`, which is
+  // otherwise null during qiankun's fetch + eval execution. `afterExec` clears it after each script, and
+  // the `.finally` below guarantees cleanup when a script throws (where `afterExec` is not invoked).
+  let resetCurrentScript = noop;
+  const execScriptOpts: ExecScriptOpts = {
     scopedGlobalVariables: speedySandbox ? cachedGlobals : [],
-    beforeExec: (_code: string, script: string) => {
+    beforeExec: (_code, script) => {
       resetCurrentScript();
       resetCurrentScript = patchCurrentScript(createFakeCurrentScript(script));
     },
     afterExec: () => {
       resetCurrentScript();
-      resetCurrentScript = () => {};
+      resetCurrentScript = noop;
     },
-    error: () => {
-      resetCurrentScript();
-      resetCurrentScript = () => {};
-    },
-  } as any;
+  };
 
-  let lifecycles: any;
-  try {
-    const scriptExports: any = await execScripts(global, sandbox && !useLooseSandbox, execScriptOpts);
-    lifecycles = getLifecyclesFromExports(scriptExports, appName, global, sandboxContainer?.instance?.latestSetProp);
-  } finally {
-    resetCurrentScript();
-  }
-
-  const { bootstrap, mount, unmount, update } = lifecycles;
+  // get the lifecycle hooks from module exports
+  const scriptExports = await execScripts<LifeCycles<any>>(global, sandbox && !useLooseSandbox, execScriptOpts).finally(
+    () => resetCurrentScript(),
+  );
+  const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
+    scriptExports,
+    appName,
+    global,
+    sandboxContainer?.instance?.latestSetProp,
+  );
 
   const { onGlobalStateChange, setGlobalState, offGlobalStateChange }: Record<string, CallableFunction> =
     getMicroAppStateActions(appInstanceId);

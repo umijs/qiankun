@@ -16,9 +16,7 @@ const mockImportEntry = importEntry as jest.MockedFunction<typeof importEntry>;
 beforeEach(() => {
   document.body.innerHTML = '<div id="container"></div>';
   delete (window as any).app;
-  delete (window as any).asyncApp;
   delete (window as any).microtaskApp;
-  delete (window as any).sandboxAsyncApp;
   jest.clearAllMocks();
 });
 
@@ -71,23 +69,26 @@ test('should cleanup document.currentScript when initial entry execution fails',
       opts.beforeExec('throw new Error("boom");', scriptUrl);
       expect((document.currentScript as HTMLScriptElement).src).toBe(scriptUrl);
 
-      opts.error();
-      expect(document.currentScript).toBeNull();
-
-      return Promise.resolve(lifecycles);
+      // simulate the entry script throwing: afterExec is not invoked and the promise rejects,
+      // so cleanup must happen through the `.finally` in loadApp
+      return Promise.reject(new Error('boom'));
     },
   } as any);
 
-  await loadApp(
-    {
-      name: 'app',
-      entry: 'http://localhost:7100/',
-      container: '#container',
-    },
-    {
-      sandbox: false,
-    },
-  );
+  await expect(
+    loadApp(
+      {
+        name: 'app',
+        entry: 'http://localhost:7100/',
+        container: '#container',
+      },
+      {
+        sandbox: false,
+      },
+    ),
+  ).rejects.toThrow('boom');
+
+  expect(document.currentScript).toBeNull();
 });
 
 test('should read lifecycle globals exposed in entry microtask', async () => {
