@@ -427,12 +427,15 @@ describe('should work well while the property existed in global context before',
 
     Object.defineProperty(window, 'readonlyPropertyInGlobalContext', {
       get() {
-        return '123';
+        // keep the same value/type as the descriptor above, so the assertion does not depend on whether
+        // the sandbox reads the cached descriptor or the live getter (which differs across jsdom versions)
+        return 123;
       },
       configurable: true,
     });
     const { proxy: proxy2 } = new ProxySandbox('readonly-sandbox');
     proxy2.readonlyPropertyInGlobalContext = 456;
+    // the readonly getter has no setter, so the sandbox write is ignored and the original value is read back
     expect(proxy2.readonlyPropertyInGlobalContext).toBe(123);
   });
 
