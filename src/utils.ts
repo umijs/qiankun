@@ -139,6 +139,41 @@ export const isConstDestructAssignmentSupported = memoize(() => {
 
 export const qiankunHeadTagName = 'qiankun-head';
 
+const noop = () => {};
+
+function isCurrentScriptConfigurable() {
+  const descriptor = Object.getOwnPropertyDescriptor(document, 'currentScript');
+  return !descriptor || descriptor.configurable;
+}
+
+export function patchCurrentScript(currentScript: HTMLScriptElement | null) {
+  if (!currentScript || !isCurrentScriptConfigurable()) {
+    return noop;
+  }
+
+  Object.defineProperty(document, 'currentScript', {
+    get(): HTMLScriptElement {
+      return currentScript;
+    },
+    configurable: true,
+  });
+
+  return () => {
+    // @ts-ignore
+    delete document.currentScript;
+  };
+}
+
+export function createFakeCurrentScript(scriptUrl: string) {
+  if (!scriptUrl || scriptUrl.indexOf('<') === 0) {
+    return null;
+  }
+
+  const script = document.createElement('script');
+  script.src = scriptUrl;
+  return script;
+}
+
 export function getDefaultTplWrapper(name: string, sandboxOpts: FrameworkConfiguration['sandbox']) {
   return (tpl: string) => {
     let tplWithSimulatedHead: string;

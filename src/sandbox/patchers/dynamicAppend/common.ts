@@ -5,7 +5,7 @@
 import { execScripts } from 'import-html-entry';
 import { isFunction } from 'lodash';
 import { frameworkConfiguration } from '../../../apis';
-import { qiankunHeadTagName } from '../../../utils';
+import { patchCurrentScript, qiankunHeadTagName } from '../../../utils';
 import { cachedGlobals } from '../../proxySandbox';
 import * as css from '../css';
 
@@ -305,40 +305,22 @@ function getOverwrittenAppendChildOrInsertBefore(opts: {
           const scopedGlobalVariables = speedySandbox ? cachedGlobals : [];
 
           if (src) {
-            let isRedfinedCurrentScript = false;
+            let resetCurrentScript = () => {};
             execScripts(null, [src], proxy, {
               fetch,
               strictGlobal,
               scopedGlobalVariables,
               beforeExec: () => {
-                const isCurrentScriptConfigurable = () => {
-                  const descriptor = Object.getOwnPropertyDescriptor(document, 'currentScript');
-                  return !descriptor || descriptor.configurable;
-                };
-                if (isCurrentScriptConfigurable()) {
-                  Object.defineProperty(document, 'currentScript', {
-                    get(): any {
-                      return element;
-                    },
-                    configurable: true,
-                  });
-                  isRedfinedCurrentScript = true;
-                }
+                resetCurrentScript = patchCurrentScript(element as HTMLScriptElement);
               },
               success: () => {
                 manualInvokeElementOnLoad(element);
-                if (isRedfinedCurrentScript) {
-                  // @ts-ignore
-                  delete document.currentScript;
-                }
+                resetCurrentScript();
                 element = null;
               },
               error: () => {
                 manualInvokeElementOnError(element);
-                if (isRedfinedCurrentScript) {
-                  // @ts-ignore
-                  delete document.currentScript;
-                }
+                resetCurrentScript();
                 element = null;
               },
             });

@@ -22,6 +22,7 @@
     "noFallthroughCasesInSwitch": true,
     "moduleResolution": "node",
     "typeRoots": ["typings", "node_modules/@types"],
+    "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "experimentalDecorators": true,
