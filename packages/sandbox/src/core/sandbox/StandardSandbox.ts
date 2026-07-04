@@ -1,6 +1,7 @@
-import { hasOwnProperty } from '@qiankunjs/shared';
+import { defineProperty, hasOwnProperty } from '@qiankunjs/shared';
 import { without } from 'lodash';
 import { Compartment } from '../compartment';
+import { esmDestructurableGlobals } from '../esm-globals';
 import { globalsInES2015 } from '../globals';
 import type { Endowments } from '../membrane';
 import { Membrane } from '../membrane';
@@ -12,6 +13,8 @@ const whitelistBOMAPIs = ['requestAnimationFrame', 'cancelAnimationFrame'];
 
 export class StandardSandbox extends Compartment implements Sandbox {
   private readonly membrane: Membrane;
+
+  private esmGlobalsView: Record<string, unknown> | undefined;
 
   readonly type = SandboxType.Standard;
 
@@ -96,6 +99,27 @@ export class StandardSandbox extends Compartment implements Sandbox {
 
   get latestSetProp() {
     return this.membrane.latestSetProp;
+  }
+
+  /**
+   * Globals view for the ESM top-of-module destructuring injection (ESM sandbox RFC §1).
+   * Built once per instance with lazy per-key getters, so destructuring only touches the requested
+   * keys and always observes the latest membrane state (e.g. the document proxy patched at mounting).
+   */
+  getEsmGlobalsView(): Record<string, unknown> {
+    if (!this.esmGlobalsView) {
+      const view: Record<string, unknown> = {};
+      const realmGlobal = this.membrane.realmGlobal as unknown as Record<string, unknown>;
+      esmDestructurableGlobals.forEach((name) => {
+        defineProperty(view, name, {
+          get: () => realmGlobal[name],
+          enumerable: true,
+          configurable: false,
+        });
+      });
+      this.esmGlobalsView = view;
+    }
+    return this.esmGlobalsView;
   }
 
   addIntrinsics(intrinsics: Record<string, PropertyDescriptor>) {

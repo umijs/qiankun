@@ -1,4 +1,4 @@
-import { Deferred } from '@qiankunjs/shared';
+import { Deferred, prepareEsmLexer } from '@qiankunjs/shared';
 import { noop } from 'lodash';
 import type { StartOpts } from 'single-spa';
 import { registerApplication, start as startSingleSpa } from 'single-spa';
@@ -45,6 +45,10 @@ export function registerMicroApps<T extends ObjectType>(apps: Array<RegistrableA
 
 export function start(opts: StartOpts = {}) {
   if (!started) {
+    // preload the wasm lexer of the ESM sandbox so the first micro app loading does not pay the
+    // instantiation cost, the transpiler pipeline awaits it again as the safety net (ESM sandbox RFC §10)
+    void prepareEsmLexer();
+
     // frameworkConfiguration = { prefetch: true, singular: true, sandbox: true, ...opts };
     // const { prefetch, urlRerouteOnly = defaultUrlRerouteOnly, ...importEntryOpts } = frameworkConfiguration;
 

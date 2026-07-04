@@ -5,9 +5,10 @@
 import type { LoaderOpts } from '@qiankunjs/loader';
 import { loadEntry } from '@qiankunjs/loader';
 import type { Sandbox } from '@qiankunjs/sandbox';
-import { createSandboxContainer, nativeGlobal } from '@qiankunjs/sandbox';
+import { createSandboxContainer, esmDestructurableGlobals, nativeGlobal } from '@qiankunjs/sandbox';
 import {
   defineProperty,
+  EsmSandboxEngine,
   hasOwnProperty,
   makeFetchCacheable,
   makeFetchRetryable,
@@ -67,6 +68,7 @@ export default async function loadApp<T extends ObjectType>(
   let microAppDOMContainer: HTMLElement = container;
   initContainer(microAppDOMContainer, appName, { sandboxCfg: sandbox, mountTimes, instanceId });
 
+  let esmEngine: EsmSandboxEngine | undefined;
   if (sandbox) {
     const sandboxContainer = createSandboxContainer(appName, () => microAppDOMContainer, {
       globalContext,
@@ -80,6 +82,21 @@ export default async function loadApp<T extends ObjectType>(
 
     mountSandbox = (domContainer) => sandboxContainer.mount(domContainer);
     unmountSandbox = () => sandboxContainer.unmount();
+
+    // ESM sandbox engine: takes over <script type="module"> of the sub app (ESM sandbox RFC)
+    esmEngine = new EsmSandboxEngine({
+      appName,
+      instanceId,
+      entryUrl: entry,
+      fetch: enhancedFetch,
+      getGlobalsView: () => sandboxInstance!.getEsmGlobalsView(),
+      globalsBaseSet: esmDestructurableGlobals,
+      moduleResolver: (url) => defaultModuleResolver(url, microAppDOMContainer, document.head),
+      // pick the entry module by its lifecycle exports when no `entry` attribute is present (Vite drops
+      // it during transformIndexHtml); a classic app's stray module script thus never hijacks the entry
+      isLifecycleNamespace: (ns) =>
+        isLifecycleObject(ns) || isLifecycleObject((ns as ObjectType).default as ObjectType),
+    });
   }
 
   if (instanceId > 1) {
@@ -89,6 +106,7 @@ export default async function loadApp<T extends ObjectType>(
   const containerOpts: LoaderOpts = {
     fetch: enhancedFetch,
     sandbox: sandboxInstance,
+    esmEngine,
     nodeTransformer,
     ...restConfiguration,
   };
@@ -176,6 +194,15 @@ export default async function loadApp<T extends ObjectType>(
           clearContainer(mountContainer);
         },
       ],
+
+      // single-spa unload = the app is fully torn down (not just deactivated), the right time to release
+      // the ESM engine's realm + blob URLs. Remount only unmounts/mounts, so it keeps reusing the engine
+      // and its module namespaces; unload → next activation re-runs loadApp with a fresh engine (RFC §8).
+      unload: [
+        async () => {
+          esmEngine?.dispose();
+        },
+      ],
     };
 
     if (typeof update === 'function') {
@@ -228,19 +255,28 @@ function execHooksChain<T extends ObjectType>(
   return Promise.resolve();
 }
 
+function isLifecycleObject(exports: ObjectType | undefined): exports is MicroAppLifeCycles {
+  const { bootstrap, mount, unmount } = exports ?? {};
+  return isFunction(bootstrap) && isFunction(mount) && isFunction(unmount);
+}
+
 function getLifecyclesFromExports(
   scriptExports: MicroAppLifeCycles | undefined,
   appName: string,
   globalContext: WindowProxy,
   globalLatestSetProp?: PropertyKey,
 ): MicroAppLifeCycles {
-  const validateExportLifecycle = (exports: ObjectType | undefined): exports is MicroAppLifeCycles => {
-    const { bootstrap, mount, unmount } = exports ?? {};
-    return isFunction(bootstrap) && isFunction(mount) && isFunction(unmount);
-  };
+  const validateExportLifecycle = isLifecycleObject;
 
   if (validateExportLifecycle(scriptExports)) {
     return scriptExports;
+  }
+
+  // ESM entry that exports its lifecycles as a default object: `export default { bootstrap, mount, unmount }`
+  // (a supported single-spa convention the classic latestSetProp path never had to handle)
+  const defaultExport = (scriptExports as ObjectType | undefined)?.default as MicroAppLifeCycles | undefined;
+  if (validateExportLifecycle(defaultExport)) {
+    return defaultExport;
   }
 
   // fallback to sandbox latest set property if it had

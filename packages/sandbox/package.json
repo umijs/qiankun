@@ -11,7 +11,8 @@
   "types": "./dist/esm/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "build": "father build"
+    "build": "father build",
+    "test": "vitest --run"
   },
   "files": [
     "dist"

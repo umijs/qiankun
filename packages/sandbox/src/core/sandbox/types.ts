@@ -21,6 +21,9 @@ export interface Sandbox extends Compartment {
 
   addIntrinsics: (intrinsics: Record<string, PropertyDescriptor>) => void;
 
+  /** membrane-backed globals view for the ESM top-of-module destructuring injection */
+  getEsmGlobalsView(): Record<string, unknown>;
+
   // TODO for gc
   // destroy(): void;
 }

@@ -5,6 +5,7 @@
 
 import type { MatchResult } from '../module-resolver';
 import { resolveUrl, waitUntilSettled } from '../utils';
+import { consumeImportMapScript, isImportMapScriptType, transpileModuleScript } from './module';
 import type { AssetsTranspilerOpts, ScriptTranspilerOpts } from './types';
 import { Mode } from './types';
 import { createReusingObjectUrl, isValidJavaScriptType } from './utils';
@@ -74,9 +75,21 @@ export default function transpileScript(
   // Can't use script.src directly, because it will be resolved to absolute path by browser with Node.baseURI
   // Such as <script src="./foo.js"></script> will be resolved to http://localhost:8000/foo.js while read script.src
   const srcAttribute = script.getAttribute('src');
-  const { sandbox, scriptTranspiledDeferred } = opts;
+  const { sandbox, scriptTranspiledDeferred, esmEngine } = opts;
 
   try {
+    // ESM sandbox branch: module scripts and sub app import maps are taken over by the engine
+    if (esmEngine && sandbox) {
+      if (script.type === 'module') {
+        return transpileModuleScript(script, baseURI, esmEngine, opts);
+      }
+      if (isImportMapScriptType(script.type)) {
+        const transformed = consumeImportMapScript(script, baseURI, esmEngine);
+        scriptTranspiledDeferred?.resolve();
+        return transformed;
+      }
+    }
+
     const { mode, result } = preTranspile(
       {
         src: srcAttribute || undefined,

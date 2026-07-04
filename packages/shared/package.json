@@ -20,6 +20,7 @@
   "dependencies": {
     "@babel/runtime": "^7.26.10",
     "compare-versions": "^6.1.0",
+    "es-module-lexer": "^2.3.0",
     "lodash": "^4.17.11"
   },
   "files": [

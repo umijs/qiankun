@@ -2,6 +2,7 @@
 import {
   create,
   defineProperty,
+  esmInternalPrefix,
   freeze,
   getOwnPropertyDescriptor,
   getOwnPropertyNames,
@@ -33,6 +34,13 @@ const variableWhiteListInDev =
         '__REACT_ERROR_OVERLAY_GLOBAL_HOOK__',
         // for react development event issue, see https://github.com/umijs/qiankun/issues/2375
         'event',
+        /*
+         * for vite react-refresh dev runtime: its per-module shim assigns window.$RefreshReg$/$RefreshSig$
+         * and then reads them back as bare identifiers, which resolve against the real global scope in
+         * ESM modules (the destructuring injection cannot express such live bindings, see ESM sandbox RFC §1)
+         */
+        '$RefreshReg$',
+        '$RefreshSig$',
       ]
     : [];
 // who could escape the sandbox
@@ -51,6 +59,18 @@ const useNativeWindowForBindingsProps = new Map<PropertyKey, boolean>([
   ['fetch', true],
   ['mockDomAPIInBlackList', process.env.NODE_ENV === 'test'],
 ]);
+
+/*
+ * qiankun internal globals (like the ESM realm accessor __qk_realm) live on the real globalThis and
+ * must be unreachable through the membrane proxy, otherwise a sub app could grab another app's realm
+ * and escape its own sandbox (ESM sandbox RFC §1). Reads through the proxy uniformly return undefined,
+ * while the per-instance runtime modules access the real globalThis directly and stay unaffected.
+ * Own properties of the membrane target (a sub app writing window.__qk_foo itself) are not shielded.
+ */
+// reuse the single source of truth for the prefix so a rename can never silently unshield the realm
+// accessor (the shielded keys are generated from esmInternalPrefix in @qiankunjs/shared)
+const isShieldedInternalGlobal = (target: MembraneTarget, p: PropertyKey): boolean =>
+  typeof p === 'string' && p.startsWith(esmInternalPrefix) && !hasOwnProperty(target, p);
 
 const isPropertyDescriptor = (v: unknown): boolean => {
   return (
@@ -136,6 +156,8 @@ export class Membrane {
       get: (membraneTarget, p, receiver) => {
         if (p === Symbol.unscopables) return unscopables;
 
+        if (isShieldedInternalGlobal(membraneTarget, p)) return undefined;
+
         // properties in endowments returns directly
         if (hasOwnProperty(endowments, p)) {
           return membraneTarget[p];
@@ -175,6 +197,8 @@ export class Membrane {
       // trap in operator
       // see https://github.com/styled-components/styled-components/blob/master/packages/styled-components/src/constants.js#L12
       has(membraneTarget: MembraneTarget, p: string | number | symbol): boolean {
+        if (isShieldedInternalGlobal(membraneTarget, p)) return false;
+
         return p in membraneTarget || p in incubatorContext;
       },
 
@@ -193,6 +217,8 @@ export class Membrane {
           return descriptor;
         }
 
+        if (isShieldedInternalGlobal(membraneTarget, p)) return undefined;
+
         if (hasOwnProperty(incubatorContext, p)) {
           const descriptor = getOwnPropertyDescriptor(incubatorContext, p);
           descriptorTargetMap.set(p, 'globalContext');
@@ -208,7 +234,11 @@ export class Membrane {
 
       // trap to support iterator with sandbox
       ownKeys(membraneTarget: MembraneTarget): ArrayLike<string | symbol> {
-        return uniq(Reflect.ownKeys(incubatorContext).concat(Reflect.ownKeys(membraneTarget)));
+        return uniq(
+          Reflect.ownKeys(incubatorContext)
+            .filter((p) => !isShieldedInternalGlobal(membraneTarget, p))
+            .concat(Reflect.ownKeys(membraneTarget)),
+        );
       },
 
       defineProperty: (membraneTarget, p, attributes) => {
@@ -291,7 +321,10 @@ function createMembraneTarget(
   getOwnPropertyNames(incubatorContext)
     .filter((p) => {
       const descriptor = getOwnPropertyDescriptor(incubatorContext, p);
-      return !hasOwnProperty(endowments, p) && !descriptor?.configurable;
+      // never copy qiankun-internal keys (e.g. the ESM realm accessor) into the target: once copied
+      // they become own props and isShieldedInternalGlobal would stop shielding them for this app,
+      // re-exposing the realm accessor to the 2nd+ instance through the proxy (defence in depth)
+      return !hasOwnProperty(endowments, p) && !descriptor?.configurable && !p.startsWith(esmInternalPrefix);
     })
     .forEach((p) => {
       const descriptor = getOwnPropertyDescriptor(incubatorContext, p);

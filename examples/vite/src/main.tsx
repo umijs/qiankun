@@ -3,6 +3,13 @@ import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
+declare global {
+  interface Window {
+    __POWERED_BY_QIANKUN__?: boolean;
+    vite?: { bootstrap: () => Promise<void>; mount: (props?: unknown) => Promise<void>; unmount: (props?: unknown) => Promise<void> };
+  }
+}
+
 async function bootstrap() {
   console.log('[react15] react app bootstraped');
 }
@@ -29,11 +36,14 @@ async function unmount(props: any) {
   root.unmount();
 }
 
-// @ts-ignore
 if (!window.__POWERED_BY_QIANKUN__) {
   bootstrap().then(mount);
 }
 
+// native ESM lifecycle exports, picked up by the qiankun ESM sandbox from the entry module namespace
+export { bootstrap, mount, unmount };
+
+// keep the global for the classic (non-ESM) loading fallback
 window.vite = {
   bootstrap,
   mount,

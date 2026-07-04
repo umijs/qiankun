@@ -3,6 +3,7 @@
  * @since 2023-08-26
  */
 import type { BaseLoaderOpts } from '../common';
+import type { EsmSandboxEngine } from '../esm-sandbox';
 import type { MatchResult } from '../module-resolver';
 import type { Deferred } from '../utils';
 
@@ -11,6 +12,8 @@ export type BaseTranspilerOpts = BaseLoaderOpts & {
   sandbox?: {
     makeEvaluateFactory(source: string, sourceURL?: string): string;
   };
+  /** present when the ESM sandbox is enabled, routes module scripts through the ESM transpiler pipeline */
+  esmEngine?: EsmSandboxEngine;
 };
 
 export type AssetsTranspilerOpts = BaseTranspilerOpts;

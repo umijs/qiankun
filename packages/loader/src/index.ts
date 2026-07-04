@@ -3,6 +3,7 @@ import { qiankunHeadTagName } from '@qiankunjs/sandbox';
 import type {
   AssetsTranspilerOpts,
   BaseTranspilerOpts,
+  EsmSandboxEngine,
   NodeTransformer,
   ScriptTranspilerOpts,
 } from '@qiankunjs/shared';
@@ -24,7 +25,7 @@ type Entry = HTMLEntry;
 export type LoaderOpts = {
   streamTransformer?: () => TransformStream<string, string>;
   nodeTransformer?: NodeTransformer;
-} & Omit<BaseTranspilerOpts, 'moduleResolver'> & { sandbox?: Sandbox };
+} & Omit<BaseTranspilerOpts, 'moduleResolver'> & { sandbox?: Sandbox; esmEngine?: EsmSandboxEngine };
 
 const isExternalScript = (script: HTMLScriptElement): boolean => {
   return script.tagName === 'SCRIPT' && !!(script.src || script.dataset.src);
@@ -46,7 +47,7 @@ export async function loadEntry<T>(
   container: HTMLElement,
   opts: LoaderOpts,
 ): Promise<T | undefined> {
-  const { fetch, streamTransformer, sandbox, nodeTransformer } = opts;
+  const { fetch, streamTransformer, sandbox, nodeTransformer, esmEngine } = opts;
 
   const entryUrl = typeof entry === 'string' ? entry : entry.url;
   const res = typeof entry === 'string' ? await fetch(entry) : entry.res;
@@ -62,6 +63,26 @@ export async function loadEntry<T>(
         // TODO support non sandbox mode?
         entryScriptLoadedDeferred.resolve({} as T);
       }
+    };
+    /*
+     * ESM entry branch (ESM sandbox RFC §7): module scripts never write to window, so instead of the
+     * latestSetProp mechanism the lifecycles are taken from the entry module namespace resolved by the
+     * engine, and any module graph error (sync throw or TLA rejection) is plumbed back to the deferred
+     * so it reaches loadApp / single-spa addErrorHandler instead of vanishing as an unhandledrejection.
+     */
+    const onEsmEntry = () => {
+      esmEngine!.entryNamespacePromise.then(
+        (ns) => {
+          if (!entryScriptLoadedDeferred.isSettled()) {
+            entryScriptLoadedDeferred.resolve(ns as T);
+          }
+        },
+        (e) => {
+          if (!entryScriptLoadedDeferred.isSettled()) {
+            entryScriptLoadedDeferred.reject(e);
+          }
+        },
+      );
     };
 
     // defer scripts must wait until the entry HTML loaded
@@ -93,6 +114,7 @@ export async function loadEntry<T>(
           let transformerOpts: AssetsTranspilerOpts = {
             fetch,
             sandbox,
+            esmEngine,
           };
 
           let queueDeferScript: () => void;
@@ -130,6 +152,13 @@ export async function loadEntry<T>(
 
             foundEntryScript = true;
 
+            // ESM entry scripts stay inert (no src is ever set), their completion signal is the
+            // engine entry namespace promise rather than the script element onload
+            if (esmEngine && script.dataset.esm === 'true') {
+              onEsmEntry();
+              return transformedNode;
+            }
+
             const onScriptComplete = (
               prevListener: typeof HTMLScriptElement.prototype.onload | typeof HTMLScriptElement.prototype.onerror,
               event: Event,
@@ -164,10 +193,20 @@ export async function loadEntry<T>(
         }),
       )
       .then(() => {
+        // module scripts execute after the entry HTML finishes streaming (mirroring their native
+        // deferred semantics), in document order, driven by the engine
+        const hasEsmModuleScripts = esmEngine ? esmEngine.sealAndExecute() : false;
+
         // while the entry html stream is finished but there is no entry script found
         // we could use the latest set prop in sandbox to resolve the entry promise as fallback
         if (!foundEntryScript) {
-          onEntryLoaded();
+          if (hasEsmModuleScripts) {
+            // no explicit entry marked: the engine treats the last module script as the entry,
+            // which matches the typical Vite HTML with a single <script type="module">
+            onEsmEntry();
+          } else {
+            onEntryLoaded();
+          }
         }
 
         entryHTMLLoadedDeferred.resolve();
