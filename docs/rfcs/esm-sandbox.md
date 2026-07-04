@@ -5,7 +5,8 @@
 - **Created**: 2026-04-18
 - **Target Release**: qiankun v3.x
 - **Tracking Issue**: TBD
-- **Last Revision**: 2026-06-09（依据深度 review 修订：修复注入模板 TDZ blocker、白名单复用现有 `globalsInBrowser`、`__qk_realm` 安全模型、Vite dev 真实性、改写 offset 管理、错误可观测性、生产 ESM 构建产物、Trusted Types、prefetch 等）
+- **Last Revision**: 2026-07-04（第二轮修订：注入引导改为 runtime 模块 import（消除 CSP `unsafe-eval` 依赖与 TDZ）、解构白名单按需过滤（标识符扫描 ∩ 基集）、顶层重名 SyntaxError 防护、共享依赖收缩为 source 级、既有 sourceMappingURL 偏移合并）
+- **Previous Revision**: 2026-06-09（依据深度 review 修订：修复注入模板 TDZ blocker、白名单复用现有 `globalsInBrowser`、`__qk_realm` 安全模型、Vite dev 真实性、改写 offset 管理、错误可观测性、生产 ESM 构建产物、Trusted Types、prefetch 等）
 
 ## Summary
 
@@ -75,10 +76,11 @@ qiankun.start()  (packages/qiankun/src/apis/registerMicroApps.ts)
     ├─ ESM transpiler (packages/shared/src/assets-transpilers/module.ts, 新增) 流水线（per module）
     │   ├─ fetch 源码（走全局 LRU cache，引用计数 +1）
     │   ├─ es-module-lexer 扫描 imports / exports / import.meta / dynamic import()
-    │   ├─ 顶部注入 globals 与 import.meta（引导行用别名 __qk_root 取 realm，避免 TDZ，见 §1）：
-    │   │     const __qk_root = (0, eval)('globalThis')
-    │   │     const { window, document, location, ... } = __qk_root.__qk_realm('app-a')
-    │   │     const __qk_import_meta = { url: '<原始URL>', resolve: (s) => __qk_root.__qk_resolve('app-a', s) }
+    │   ├─ 标识符扫描过滤：单遍 token 扫描 ∩ globalsInBrowser，再剔除模块自声明/导入重名（见 §1）
+    │   ├─ 顶部注入 globals 与 import.meta（经 per-instance runtime 模块 import 引导，零 eval、无 TDZ，见 §1）：
+    │   │     import { __qk_view, __qk_resolve, __qk_dynamic_import } from '__qk_appA_inst1__/__runtime__'
+    │   │     const { window, document, /* 仅本模块实际引用的名字 */ } = __qk_view
+    │   │     const __qk_import_meta = { url: '<原始URL>', resolve: __qk_resolve }
     │   ├─ 改写 specifier：bare specifier / 相对路径 → 实例级唯一标识（不改为 blob URL）
     │   ├─ 改写 import.meta → __qk_import_meta
     │   ├─ 改写 import(x) → __qk_dynamic_import(x, __qk_import_meta.url)
@@ -87,7 +89,8 @@ qiankun.start()  (packages/qiankun/src/apis/registerMicroApps.ts)
     │
     ├─ Import Map 注入（新增，见 §11）
     │   所有模块 blob URL 就绪后，构建全局 import map：
-    │   将实例级唯一 specifier 映射到最终 blob URL。
+    │   将实例级唯一 specifier 映射到最终 blob URL
+    │   （含每实例一条 __qk_<appId>_<inst>__/__runtime__ → runtime 模块 blob，见 §1）。
     │   动态注入 <script type="importmap"> 到主文档。
     │   blob 内部 import 唯一 specifier → 浏览器查全局 import map → 重定向到 blob URL。
     │   由于 specifier 包含 instanceId，各实例不会命中同一条全局映射。
@@ -134,19 +137,16 @@ export async function unmount() {}
 
 ```js
 // 顶部注入 —— WASM lexer 定位首个非注释位置后插入
-// ⚠️ 引导行用别名 __qk_root 取 realm，绝不能用 globalThis/window/self，否则会命中下方 const 解构同名绑定的 TDZ（见 §1 Blocker）
-const __qk_root = (0, eval)('globalThis');
-const { window, document, location, history, navigator,
-        fetch, XMLHttpRequest, WebSocket,
-        setTimeout, setInterval, clearTimeout, clearInterval,
-        requestAnimationFrame, cancelAnimationFrame,
-        localStorage, sessionStorage, console,
-        /* ...基集复用 packages/sandbox/src/core/globals.ts 的 globalsInBrowser（725 项），见 §1 */
-      } = __qk_root.__qk_realm('app-a');
+// 引导经 per-instance runtime 模块 import：零 eval（无 CSP 'unsafe-eval' 依赖）、
+// import 绑定先于模块体求值完成初始化（构造上无 TDZ），见 §1
+import { __qk_view, __qk_resolve, __qk_dynamic_import } from '__qk_appA_inst1__/__runtime__';
+// 解构集按模块生成：源码标识符扫描 ∩ globalsInBrowser（725 项基集），再剔除本模块自声明/导入的重名。
+// 本例模块实际只引用了 window / console 两个全局（见 §1「按需过滤」）
+const { window, console } = __qk_view;
 
 const __qk_import_meta = {
   url: 'https://app-a.host/main.js',
-  resolve: (s) => __qk_root.__qk_resolve('app-a', s),
+  resolve: __qk_resolve, // runtime 模块导出的 resolve 已绑定 appId
 };
 
 // specifier 重写：bare specifier / 相对路径 → 实例级唯一标识（不改为 blob URL）
@@ -173,51 +173,77 @@ export async function unmount() {}
 
 ESM 模块代码强制 strict mode，strict mode 下 `with` 是 SyntaxError。这是规范级硬约束，浏览器在解析阶段就会拒绝。
 
-**采用方案：顶部 destructuring 注入 globals**
+**采用方案：runtime 模块 import 引导 + 顶部 destructuring 注入 globals**
 
-每个被改写的 ES module，在源码顶部插入（**注意引导行的 TDZ 陷阱，见下**）：
+qiankun 为每个实例生成一个**不经改写管线**的 runtime 模块 blob（其源码中的 `globalThis` 没有任何遮蔽，就是真实全局），并在 import map 中注册 `__qk_<appId>_<inst>__/__runtime__` → 该 blob：
 
 ```js
-// 引导行：用不在解构集内的别名取 realm
-const __qk_root = (0, eval)('globalThis');
-const { window, document, location, globalThis, self, /* ... */ } = __qk_root.__qk_realm(appId);
+// __qk_runtime（per instance，qiankun 生成，不走改写管线）
+// 这里的 globalThis 未被遮蔽，即真实全局；__qk_realm 是唯一的内部全局入口
+//（经 proxy 读取会被 get-trap 屏蔽，见下方「安全」）
+const rt = globalThis.__qk_realm('app-a');
+export const __qk_view = rt.view;                    // globals 解构视图
+export const __qk_resolve = rt.resolve;              // import.meta.resolve，已绑定 appId
+export const __qk_dynamic_import = rt.dynamicImport; // 动态 import 管线入口，已绑定 appId
 ```
 
-借助 ES 的 lexical scoping，这些标识符在该 module 内会**遮蔽**全局同名标识符。模块内任何裸 `window`、`document` 引用都会指向 Membrane 包装的 proxy。
+每个被改写的 ES module 顶部插入：
 
-**⚠️ Blocker：引导行绝不能用 `globalThis`/`window`/`self` 作为取 realm 的对象**
+```js
+import { __qk_view, __qk_resolve, __qk_dynamic_import } from '__qk_appA_inst1__/__runtime__';
+const { window, document, location, globalThis, self, /* ...按需过滤，见下 */ } = __qk_view;
+```
 
-如果写成 `const { window, globalThis, ... } = globalThis.__qk_realm(appId)`，右侧的 `globalThis` 会解析到正被 `const` 声明的**同名词法绑定**。该绑定在整条 `LexicalBinding` 求值期间处于 TDZ（[ECMA-262 §13.3.1](https://tc39.es/ecma262/#sec-let-and-const-declarations)，Initializer 先于 BindingInitialization 求值），于是**每个被改写模块的第一行就抛 `ReferenceError: Cannot access 'globalThis' before initialization`**——整个 ESM 沙箱特性不可用。`window`/`self` 同理（一旦它们被用作右侧取用对象）。
+借助 ES 的 lexical scoping，这些标识符在该 module 内会**遮蔽**全局同名标识符。模块内任何裸 `window`、`document` 引用都会指向 Membrane 包装的 proxy。runtime 模块是每个模块的依赖，先于所有业务模块求值一次（浏览器保证），所有模块共享同一份 namespace。
 
-因此引导行必须：
-- 先声明一个**不在解构集内**的别名 `const __qk_root = (0, eval)('globalThis')`（间接 eval 取真实 global，且 `__qk_root` 不会被任何子应用标识符遮蔽）；
-- 再 `const { ... } = __qk_root.__qk_realm(appId)`。
+**为什么引导必须走 import，而不是直接读 `globalThis` 或间接 eval**
 
-`__qk_root` 同时用于 `__qk_import_meta.resolve`、`__qk_dynamic_import` 的取用，避免它们经被屏蔽的 proxy globalThis（见下方「安全」）。
+- **TDZ（原 Blocker）**：若写成 `const { window, globalThis, ... } = globalThis.__qk_realm(appId)`，右侧的 `globalThis` 会解析到正被 `const` 声明的**同名词法绑定**。该绑定在整条 `LexicalBinding` 求值期间处于 TDZ（[ECMA-262 §13.3.1](https://tc39.es/ecma262/#sec-let-and-const-declarations)，Initializer 先于 BindingInitialization 求值），**每个被改写模块的第一行就抛 `ReferenceError`**；`window`/`self` 同理。而 import 绑定来自另一个模块作用域：依赖模块先于本模块体求值，绑定在使用前**必然已初始化**——构造上无 TDZ。
+- **CSP（本轮修订新发现）**：上一轮曾修订为 `const __qk_root = (0, eval)('globalThis')` 规避 TDZ，但间接 eval / `Function('return this')()` 都要求 CSP **`'unsafe-eval'`**——与 Migration CSP 表（仅要求 `script-src blob:`）直接矛盾。生产 shell 常见「无 `unsafe-eval`」的 CSP，会让**每个被改写模块第一行抛 EvalError**，波及面比 TDZ 更大。runtime 模块方案零 eval，qiankun 注入代码对 CSP 的额外要求仅剩 `blob:`。
 
 **白名单：复用现有 `globalsInBrowser`，而非新建手维护列表**
 
 仓库已存在 `packages/sandbox/src/core/globals.ts`，其中 `globalsInBrowser` 是由 [sindresorhus/globals](https://github.com/sindresorhus/globals) 生成的 **725 项**完整浏览器全局列表（含 `addEventListener`/`removeEventListener`/`getComputedStyle`/`matchMedia`/`dispatchEvent`/`queueMicrotask`/`structuredClone`/`Event`/`CustomEvent`/`URL`/`atob`/`btoa`/`open` 等），classic 沙箱的 Membrane 已在用它。ESM 顶部解构应**直接复用这份列表作为基集**，而不是新建一份仅 ~30 项的 `membrane/globals.ts`（那等于在更优资产上倒退）。
 
 实现要点：
-- 从 `globalsInBrowser` 中**剔除不可作为标识符安全解构的项**（如 `innerWidth`、`length`、`name`、`top` 这类 getter-only / 与本地常用名易冲突的属性），保留可注入解构的标识符集合；
-- 通过 `createRealmView(appId)` 返回 `{ [k]: membrane.realmGlobal[k] }`，解构即拿到对应 proxy 视图；
+- 从基集**静态剔除值类型 / getter 语义的属性项**（如 `innerWidth`、`devicePixelRatio`、`length`：解构是求值期快照，无法表达 live 值语义），这类裸引用回落真实全局（多为只读布局值，风险可接受并文档化）；
+- 通过 `rt.view` 返回 `{ [k]: membrane.realmGlobal[k] }` 视图对象（每实例构建一次），解构即拿到对应 proxy；
 - v1.1 提供 `extraGlobals: string[]` 兜底极少数新增 / 属性型全局。
+
+**按需过滤：解构集按模块生成（必需，非优化）**
+
+全量注入 725 项解构，单模块 ≈ 11KB、270 模块的 Vite dev 应用累计 ≈ 3MB 改写产物膨胀，且解构集越大、与模块自身顶层声明重名（见下）的碰撞面越大。因此解构集必须按模块过滤：对**原始源码文本**做单遍标识符 token 扫描（`/[A-Za-z_$][\w$]*/g`），每个 token 查 `globalsInBrowser` 的 `Set`，命中集合即该模块的解构集。
+
+- **超集安全论证**：任何真实的裸标识符引用必然以完整 token 出现在源文本中——**不会漏**（漏 = 沙箱逃逸）；字符串/注释里的误命中只是多解构一个没用到的名字——**无害**（最坏退化为全量注入，即不做过滤的现状）。因此**不需要**正确的词法分析，无须处理字符串/注释/模板字面量边界。
+- **实测**（本仓库真实源码 79 文件、平均 10KB/模块、725 项白名单，Node/M 系列本机）：约 **34µs/模块**（≈293MB/s），270 模块应用合计 ~7ms 纯 CPU，与并行 fetch 完全重叠，墙钟不可见；与管线中本就存在的 es-module-lexer parse（官方 benchmark ≈10MB/25ms）同量级。命中分布 **p50=3、p90=11** → 注入体积 ≈ 300B/模块（Risks 表「200~400 字节」在此前提下成立；270 模块合计从 ~3MB 降到 ~76KB）。扫描结果只依赖源码内容，与 fetch LRU 同 key（URL）缓存，remount / 多实例零成本。
+- **已知绕过**：unicode 转义标识符（如 `d\u006Fcument`，即 `document` 的转义写法）不会被 ASCII 扫描命中，该引用将逃逸——属**蓄意逃逸**，与 `(0,eval)` 逃逸同类，不在防御范围（扫描的目标是正常代码的正确性，不是对抗恶意代码）。
+
+**⚠️ 重名碰撞：注入解构与模块顶层声明/导入同名 → SyntaxError（必须处理）**
+
+模块自身顶层的 `const history = createBrowserHistory()`、`import { location } from './router'` 等，与注入的同名 `const` 构成**同一模块作用域内的重复词法声明**——解析期 `SyntaxError: Identifier 'x' has already been declared`，整个模块图加载失败。白名单里 `history`/`name`/`status`/`origin`/`event`/`screen`/`top`/`parent` 都是常见业务变量名，真实命中概率不低。防护机制（组合使用）：
+
+1. **按需过滤**（上文）先把解构集缩到 p50=3 项，碰撞面缩小两个数量级；
+2. **剔除 import 绑定名**（可靠）：从 lexer 的 `[ss,se)` span 切出 import 语句文本解析绑定名（import clause 语法简单），从解构集剔除；
+3. **SyntaxError 捕获重试**（正确性兜底，必需）：`import(blobUrl)` 抛「already been declared」时，从错误信息提取标识符 → 从解构集剔除 → 重新生成 blob 重试；O(碰撞数) 次、冷路径、结果按 URL 缓存；
+4. （可选优化）顶层 `const/let/var/function/class` 声明的启发式扫描可提前消掉大部分重试，但**必须保守**：误把块级声明当顶层剔除，会让该名字在模块内逃逸沙箱（漏剔除只多付一次重试，误剔除是逃逸）——启发式不确定时一律不剔除，靠 3 兜底。
+
+被剔除的名字在该模块内不经沙箱，但这恰是正确语义：模块自己的顶层声明/导入本来就遮蔽全局，该标识符根本不引用全局。
 
 **与 classic `with(proxy)` 的能力差异（真实但已大幅收敛）**
 
 - `with(proxy)` 能拦截**所有**裸标识符；顶部解构只能拦截**解构集内**的标识符。复用 725 项后差距很小，但仍非完全等价：白名单外的新 Web API 裸调用会逃逸、无法在 unmount 时清理。缓解：扩充白名单 + `extraGlobals` + 可选 lint 规则。（原 RFC 把 `addEventListener` 等列为「逃逸」是基于「只解构 30 项」的假设；复用 725 项后这些**默认已覆盖**。）
 - **strict-mode 隐式全局「写」差异（重要，必须文档化）**：classic `with(proxy)` 下 `foo = 1`（无 `var`/`window.` 前缀）会写到 proxy；但 ESM 模块强制 strict mode，无声明的 `foo = 1` **直接抛 `ReferenceError`**，而非写入 proxy。依赖隐式全局的老代码在 ESM 子应用里会**报错而非被沙箱捕获**。注意这与下文「写入走 set trap 可清理」**并不矛盾**：set trap 只覆盖 `window.foo = 1` 这类**经 proxy 的属性写**；裸 `foo = 1` 在 strict mode 下根本到不了 set trap。迁移指南需明确这一点。
-- 通过 `(0, eval)('globalThis')`、`Function('return this')()` 等间接渠道仍能拿到真 globalThis。这是 JS 沙箱固有问题，与 classic 同病，不在本 RFC 解决范围。
+- 通过 `(0, eval)('globalThis')`、`Function('return this')()` 等间接渠道仍能拿到真 globalThis。这是 JS 沙箱固有问题，与 classic 同病，不在本 RFC 解决范围。（注：qiankun 自身的注入引导已不依赖 eval——见上文 runtime 模块方案——子应用的 eval 逃逸与框架自身的 CSP 依赖是两回事。）
 - **`const` 解构是快照，非 live binding**：对 `window`、`document` 等引用稳定的对象，解构拿到 proxy 本身，后续属性访问仍是 live 的（`document.title` 始终走 proxy getter）。但无法对某个标识符做「整体替换」式虚拟化（如让不同子应用看到不同的 `location` 对象）。当前 classic sandbox 也不虚拟化 `location`，故这是**一致的限制**，但需在此显式声明以避免未来扩展踩坑。
 - 缓解：属性写操作走 Membrane 的 set trap，副作用仍可记录与清理（与现有 classic 沙箱一致）。
 
-**安全：`__qk_realm` 等内部函数必须对子应用不可达**
+**安全：`__qk_realm` 必须对子应用不可达**
 
-`__qk_realm`/`__qk_resolve`/`__qk_dynamic_import` 挂在真实 globalThis 上。业务代码读到的 `globalThis` 是 membrane proxy，其 get trap 对未定义属性会**回落到真实 window** → 子应用可 `globalThis.__qk_realm('other-app')` 拿到他人 sandbox proxy，构成跨应用越权。
+runtime 模块方案把内部全局入口收敛到**唯一一个** `__qk_realm`（`__qk_resolve`/`__qk_dynamic_import` 不再挂真实 globalThis，改由 runtime 模块闭包导出，暴露面缩小）。但 `__qk_realm` 仍在真实 globalThis 上：业务代码读到的 `globalThis` 是 membrane proxy，其 get trap 对未定义属性会**回落到真实 window** → 子应用可 `globalThis.__qk_realm('other-app')` 拿到他人 sandbox proxy，构成跨应用越权。
 
 - `Symbol.for(...)` / 可枚举 token 类缓解**无效**（`Symbol.for` 全局可派生；token 可被枚举）。
-- **正确方案**：membrane get trap 对 `__qk_*` 前缀（或一组已知内部 key）做**黑名单屏蔽**，使经 proxy 的读取一律返回 `undefined`。引导行用的是 `__qk_root`（真实 globalThis），不经 proxy，因此 bootstrap 不受影响；`__qk_import_meta.resolve` 等也统一经 `__qk_root` 取用，避免命中屏蔽。详见 Open Q7。
+- **正确方案**：membrane get trap 对 `__qk_*` 前缀（或一组已知内部 key）做**黑名单屏蔽**，使经 proxy 的读取一律返回 `undefined`。runtime 模块源码中的 `globalThis` 是真实全局、不经 proxy，因此引导不受屏蔽影响。详见 Open Q7。
+- **合成 specifier 不得透传**：runtime 模块的 `__qk_..._/__runtime__` 条目在全局 import map 中对所有代码可见。改写器对源码中出现的 `__qk_*` 前缀 specifier 必须拒绝或改写（不按用户输入原样保留）；`__qk_dynamic_import` 同样拒绝解析 `__qk_*` 合成 specifier——防止子应用经 import map 直接 import 他人（或自己）的 runtime 模块绕过屏蔽。
 
 ### 2. 模块加载：保留原生 `import`，仅改写 specifier
 
@@ -280,7 +306,7 @@ Import Map 间接层彻底解决了这个问题：
 1. 查询当前 app 的 import map（**新增功能**：当前仓库 `packages/` 下没有 importmap 实现）→ 命中则使用映射后的 URL
 2. 查询 qiankun `module-resolver`（`packages/shared/src/module-resolver/index.ts`）：
    - 当前实现是 **URL + dependencymap 驱动** 的，依赖匹配通过子应用 HTML 的 `<script type="dependencymap">` 与 semver 范围进行；它**不直接解析 bare specifier**。
-   - 因此本方案需要做的衔接是：在 (1) 把 bare specifier 解析为绝对 URL 之后，再由 module-resolver 判断是否能复用已有共享模块（按现有 URL/版本语义）。
+   - 因此本方案需要做的衔接是：在 (1) 把 bare specifier 解析为绝对 URL 之后，再由 module-resolver 判断是否能复用已有共享模块的**网络响应**（按现有 URL/版本语义；v1 只做 source 级共享，不跨实例共享改写产物 blob，见 §11）。
 3. 否则按 `new URL(specifier, parentUrl)` 解析为绝对 URL，递归走 transpiler
 
 **`es-module-lexer` 实现注意事项**
@@ -308,7 +334,7 @@ Import Map 间接层彻底解决了这个问题：
 ```js
 const __qk_import_meta = {
   url: '<原始 URL>',
-  resolve: (s) => __qk_root.__qk_resolve('app-a', s),
+  resolve: __qk_resolve, // runtime 模块导出，已绑定 appId（见 §1）
 };
 ```
 
@@ -438,9 +464,9 @@ blob URL 缓存 key 必须包含 instanceId；fetch LRU 可以继续按原始 UR
 
 > **不变量（需显式声明）**：remount = **同 instanceId、复用同一 blob、不注入新 import map 条目**；unload→reload = **分配新 instanceId、新 blob、新条目**。Acceptance 的「100 次循环」必须明确是 remount（不含 unload），否则会被误读为 reload 级膨胀（见 Acceptance / §11）。
 
-**共享模块的跨实例引用计数（全新基础设施，注意误 revoke）**
+**共享模块引用计数（v1 简化：blob 均为实例私有）**
 
-§11「共享依赖例外」允许多个实例指向同一份 shared blob。但 §8 的引用计数表是按「instanceId + 原始 URL」记的；shared blob 被多个实例共享时，引用计数必须按 **shared key** 单独维护，否则会出现：实例 A unload 时把仍被实例 B 引用的 shared blob `revokeObjectURL` 掉 → B 后续 `import()` 命中已 revoke 的 blob URL 报错。这是一套**全新的跨实例引用计数基础设施**（现有 `module-resolver` 仅做 URL/版本匹配，无此计数），需明确：shared blob 的 revoke 必须等其所有引用实例都 unload。
+v1 已把共享依赖收缩为 source 级（见 §11）：blob 全部按 `instanceId + 原始 URL` 私有，本表的引用计数按实例记即可，不存在跨实例误 revoke。**若 v2 引入 namespace 级共享（多个实例指向同一份 shared blob）**，引用计数必须按 shared key 单独维护，否则实例 A unload 时会把仍被实例 B 引用的 shared blob `revokeObjectURL` 掉 → B 后续 `import()` 报错；那是一套全新的跨实例引用计数基础设施（现有 `module-resolver` 仅做 URL/版本匹配，无此计数），shared blob 的 revoke 必须等其所有引用实例都 unload——连同 realm 绑定问题一并作为 v2 前置条件（见 §11、Open Q9）。
 
 **快速 unmount / 切路由的取消语义（abort）**
 
@@ -518,7 +544,7 @@ qiankun 用全局单变量 `nativeGlobal.__currentLockingSandbox__` 把 `documen
 1.  **全局单例与合并语义**：根据 [HTML 规范](https://html.spec.whatwg.org/multipage/webappapis.html#import-maps)，每个 document 逻辑上只维护一张 import map。多个 `<script type="importmap">` 注入时，浏览器会将其合并。**如果新注入的条目与现有条目冲突（specifier 相同），新条目将被丢弃，以先注册者为准。**
 2.  **`blob:` 作用域限制**：`scopes` 是基于 referrer URL 匹配的。由于所有子应用模块都被转换为 `blob:` URL，使用 `"scopes": { "blob:": { ... } }` 会匹配**所有**子应用发起的请求，只能避免主应用的非 blob 模块受到影响，无法实现子应用间的相互隔离。
 3.  **强制唯一化前缀**：为了实现多实例/多应用隔离，所有 app-private 模块在改写 specifier 时，必须增加 **实例级唯一前缀**（如 `__qk_<appId>_<instanceId>__/...`），并在全局 import map 中注册该唯一 specifier 的映射。
-4.  **共享依赖例外**：只有 `module-resolver` 明确判定为可共享、且其执行结果不携带子应用实例状态的依赖，才允许多个应用指向同一份 blob。共享映射也必须使用 qiankun 管理的稳定 key（如 `__qk_shared__/vue@3.4/entry.js`），避免与主应用或其他原生 import map 的裸 specifier 冲突。
+4.  **共享依赖（v1 收缩为 source 级，修正原「共享 blob」设计）**：改写产物 blob 的顶部注入**烘焙了特定实例的 realm 绑定**（解构自 `__qk_realm('app-a')` 的视图）。若跨应用复用同一份 blob，共享模块在模块作用域捕获的 `document`/`window`（如 Vue runtime-dom 的 nodeOps）在应用 B 里仍走 **A 的 proxy**：dynamicAppend 元素归属错到 A 的容器；A unload 后 B 继续持有 A 已清理的 realm。原「共享 vue@3.4 blob」的例子恰与本条「执行结果不携带实例状态才可共享」的前提自相矛盾。此外，classic 沙箱下 module-resolver 的共享本来就只是**网络响应级**——各应用仍在各自沙箱里独立执行一遍脚本，namespace 级单例是超出 classic 的新能力。因此 **v1 与 classic 对齐：module-resolver 只复用 fetch 响应（source 级），每实例独立改写、独立 blob、独立 module namespace**。`__qk_shared__/...` 稳定 key 的 namespace 级共享推迟到 v2，前置条件是解决共享 blob 的 realm 绑定语义与跨实例引用计数（§8、Open Q9）。
 5.  **隔离正确性的隐含前提（必须显式规约）**：上述「first-wins 合并 + instanceId 前缀不冲突」的全部正确性，**依赖一个未显式声明的前提——instanceId 必须全局单调唯一、退休后永不复用**。一旦 instanceId 回卷或复用，新实例的合成 specifier 会与某条尚存旧条目相同，被浏览器**静默丢弃（first-wins）→ 解析到旧实例的退休 blob URL**，且**没有任何运行时信号**（不报错、不告警）。因此：instanceId 必须由 qiankun registry 单调分配（全局自增计数，避免随机/时间戳碰撞）；建议 dev 模式对「注入条目与现存 key 冲突」显式探测并 `console.error`，把这条静默失败显性化。
 
 **Import Map 示例：**
@@ -526,12 +552,17 @@ qiankun 用全局单变量 `nativeGlobal.__currentLockingSandbox__` 把 `documen
 ```json
 {
   "imports": {
+    "__qk_appA_inst1__/__runtime__": "blob:uuid-rt-a1",
     "__qk_appA_inst1__/https://app-a.host/main.js": "blob:uuid-a1",
+    "__qk_appA_inst1__/https://cdn.jsdelivr.net/vue@3.4/dist/vue.esm-browser.js": "blob:uuid-vue-a1",
+    "__qk_appB_inst2__/__runtime__": "blob:uuid-rt-b2",
     "__qk_appB_inst2__/https://app-b.host/main.js": "blob:uuid-b2",
-    "__qk_shared__/vue@3.4/entry.js": "blob:uuid-shared-vue"
+    "__qk_appB_inst2__/https://cdn.jsdelivr.net/vue@3.4/dist/vue.esm-browser.js": "blob:uuid-vue-b2"
   }
 }
 ```
+
+> 注意两实例的 vue 条目指向**各自的** blob——v1 是 source 级共享：fetch 响应经 LRU 只取一次，但改写产物与 module namespace 不共享（见上方第 4 点）。`__qk_shared__/...` 形式的稳定 key 条目仅在 v2 引入 namespace 级共享后才会出现。
 
 **浏览器兼容性**
 
@@ -627,7 +658,7 @@ v1 采用**主动禁用 / 拦截 HMR** 策略（而非「静默降级」——�
    ```js
    const __qk_import_meta = {
      url: '<原始URL>',
-     resolve: (s) => globalThis.__qk_resolve('app-a', s),
+     resolve: __qk_resolve, // runtime 模块导出（见 §1）
      hot: {
        accept: () => {},
        dispose: () => {},
@@ -682,6 +713,18 @@ v1 采用**主动禁用 / 拦截 HMR** 策略（而非「静默降级」——�
 
 **结论修订**：完整 source map 不再是「未来增强」，而是**生产可观测性的必需项**（至少需把 blob 帧映射回原始 URL + 行号）。v1 若不实现完整 source map，必须文档化「ESM 子应用生产错误栈不可直接定位」这一已知局限，并在 Acceptance 增列对应项。
 
+**既有 `sourceMappingURL` 的处理（本轮修订新增，必须）**
+
+Vite dev 对 TS/JSX 等转换产物普遍附带 `//# sourceMappingURL=`（inline `data:` 或相对路径）。改写后它在两处失效：
+
+1. **行偏移**：顶部插入 N 行后，原 map 的行映射整体错位，DevTools 映射到错误行——比没有 map 更误导；
+2. **相对 URL 失效**：相对路径的 map URL 会相对 **blob: URL** 解析 → 直接 404。
+
+处理（推荐 a+b）：
+- (a) 相对 map URL **绝对化**（相对原始模块 URL 解析后回写）；
+- (b) **行偏移合并**：顶部纯插入场景只需在 map 的 `mappings` 前补 N 个 `;`（source map 规范中每个 `;` 代表一行）。inline `data:` map 解码 → 补 `;` → 重编码即可，成本极低；
+- (c) v1 最低限度也要 **strip** 掉既有 sourceMappingURL（避免错位映射误导调试），并文档化。
+
 ### 16. 生产 ESM 构建产物（不止 Vite dev）
 
 本 RFC 的目标、示例、验收主要锚定 Vite **dev**（每模块一文件、`/@vite/client`、HMR）。但真实部署是**生产构建**：Vite build 产出经 Rollup 打包的少量 hashed chunk（`index-a1b2c3.js` + 若干 vendor chunk），可能自带 `modulepreload` 链与 `<script type="importmap">`。需明确：
@@ -708,17 +751,18 @@ qiankun 现有 prefetch（`apis/prefetch.ts`）用 `DOMParser` 解析静态 entr
 |---|---|
 | `packages/shared/src/assets-transpilers/script.ts` | 增加 ESM 分支检测：`type="module"` → 调用新 `transpileModule()`（`isValidJavaScriptType()` 已识别 `'module'`） |
 | `packages/shared/src/assets-transpilers/utils.ts` | `isValidJavaScriptType()` 增加 `'importmap'` 支持，使 `<script type="importmap">` 能进入 transpiler 管线被拦截和解析 |
-| `packages/shared/src/assets-transpilers/module.ts` | **新增**：lexer 调用 + 顶部注入 + specifier 改写为实例级唯一 specifier（不改为 blob URL）+ import.meta rewrite + Blob URL 生成（`type: 'text/javascript'`） |
+| `packages/shared/src/assets-transpilers/module.ts` | **新增**：lexer 调用 + 标识符扫描过滤（∩ `globalsInBrowser`、剔除 import 绑定重名、SyntaxError 重试兜底，见 §1）+ 顶部注入（runtime 模块 import 引导）+ specifier 改写为实例级唯一 specifier（不改为 blob URL）+ import.meta rewrite + 既有 sourceMappingURL 绝对化与行偏移合并（§15）+ Blob URL 生成（`type: 'text/javascript'`） |
 | `packages/shared/src/assets-transpilers/import-map.ts` | **新增**：per-app import map 解析与查询（仓库现无 importmap 实现） |
 | `packages/loader/src/index.ts` | (1) 通过 `nodeTransformer` 把 `<script type="module">` / `<script type="importmap">` 路由到对应 transpiler；(2) 新增 ESM 入口解析分支：`onEntryLoaded` 内当 entry 为 module 时走 `await import(entryBlobUrl)`，绕过 `latestSetProp` |
 | `packages/loader/src/writable-dom/index.ts` | **不修改内部**；接入点改为 loader 的 `nodeTransformer`。仅需协同：抑制/改写为 module script 自动生成的 `modulepreload`，避免与 blob URL 二次取（见 §10.1） |
 | `packages/qiankun/src/core/loadApp.ts` | ESM 入口生命周期接入：从 ESM 入口分支拿到 `{bootstrap, mount, unmount}` 接入 single-spa（classic 路径不动） |
 | `packages/qiankun/src/apis/registerMicroApps.ts` | `start()` 中增加 `await esModuleLexer.init()`（公共启动入口） |
-| `packages/sandbox/src/core/globals.ts` | **复用**现有 `globalsInBrowser`（725 项）作为 ESM 顶部解构白名单基集；剔除不可解构的纯属性项。**不新建** `membrane/globals.ts`（原 RFC 的 30 项手维护列表是倒退） |
-| `packages/sandbox/src/core/membrane/index.ts` | 导出 `createRealmView(appId): Record<string, unknown>`；get trap 增加对 `__qk_*` 内部 key 的黑名单屏蔽（防跨应用越权，见 §1 / Open Q7） |
-| `packages/sandbox/src/core/sandbox/StandardSandbox.ts` | `start()` 时挂载 `globalThis.__qk_realm`、`__qk_dynamic_import`、`__qk_resolve` |
-| `packages/shared/src/module-resolver/index.ts` | 复用现有 URL/dependencymap 匹配；扩展引用计数管理；按 §2 的”先解析为绝对 URL 再询问 module-resolver”进行衔接 |
-| `packages/shared/src/esm-sandbox/import-map-registry.ts` | **新增**：运行时 import map 管理——构建全局唯一前缀映射、注入 `<script type=”importmap”>` 到主文档、追加动态 import 条目（§11） |
+| `packages/sandbox/src/core/globals.ts` | **复用**现有 `globalsInBrowser`（725 项）作为 ESM 顶部解构白名单**基集**（实际解构集按模块扫描过滤，见 §1）；静态剔除值类型/getter 语义属性项。**不新建** `membrane/globals.ts`（原 RFC 的 30 项手维护列表是倒退） |
+| `packages/sandbox/src/core/membrane/index.ts` | 导出 realm 视图构建（`rt.view`：`Record<string, unknown>`，每实例构建一次）；get trap 增加对 `__qk_*` 内部 key 的黑名单屏蔽（防跨应用越权，见 §1 / Open Q7） |
+| `packages/sandbox/src/core/sandbox/StandardSandbox.ts` | `start()` 时挂载**唯一**内部全局 `globalThis.__qk_realm(appId)`（返回 `{ view, resolve, dynamicImport }`；`resolve`/`dynamicImport` 不再单独挂全局，经 runtime 模块闭包导出，见 §1） |
+| `packages/shared/src/module-resolver/index.ts` | 复用现有 URL/dependencymap 匹配（v1 仅复用**网络响应**，不跨实例共享 blob，见 §11）；引用计数按实例管理；按 §2 的”先解析为绝对 URL 再询问 module-resolver”进行衔接 |
+| `packages/shared/src/esm-sandbox/import-map-registry.ts` | **新增**：运行时 import map 管理——构建全局唯一前缀映射、注入 `<script type=”importmap”>` 到主文档、追加动态 import 条目（§11）；拒绝透传 `__qk_*` 前缀的用户 specifier（§1 安全） |
+| `packages/shared/src/esm-sandbox/runtime-module.ts` | **新增**：生成 per-instance runtime 模块 blob（导出 `__qk_view`/`__qk_resolve`/`__qk_dynamic_import`），注册 `__qk_<appId>_<inst>__/__runtime__` import map 条目（§1） |
 | `packages/shared/src/fetch-utils/makeFetchCacheable.ts` | 不修改实现；ESM 流水线复用其全局 LRU 响应缓存 |
 
 `packages/sandbox/src/core/compartment/index.ts` **不动** —— classic script 继续 `with(this)`，ESM 分支不经过 Compartment。
@@ -739,7 +783,7 @@ qiankun 现有 prefetch（`apis/prefetch.ts`）用 `DOMParser` 解析静态 entr
 - [ ] 子应用循环依赖正常解析
 - [ ] 验证在多个 ESM 子应用并发加载场景下，通过 **实例级唯一 specifier 前缀** 确保模块解析不冲突
 - [ ] 同一 app `mount → unmount → mount` 循环 100 次无 blob URL / 内存泄漏（除业务自身保留的引用）
-- [ ] 两个子应用同时使用 `vue@3.4.x`，通过 `module-resolver` 与 qiankun 管理的 shared key 共享同一份 Vue 模块（namespace 隔离正确）
+- [ ] 两个子应用同时使用 `vue@3.4.x`，`module-resolver` 复用同一份**网络响应**（fetch LRU 命中一次），但各自持有独立 blob 与 module namespace，互不串实例（namespace 级共享为 v2，见 §11）
 - [ ] 两个子应用私有依赖解析到同一个外部 URL 时，实例级唯一 specifier 仍会解析到各自的 blob URL，不会串到对方实例
 - [ ] classic script 与 module script 混合的子应用同样工作
 - [ ] HTML 中的 `<script type="importmap">` 被 qiankun 解析并应用，不注入主文档，也不会与其他子应用的 import map 合并产生冲突
@@ -755,17 +799,20 @@ qiankun 现有 prefetch（`apis/prefetch.ts`）用 `DOMParser` 解析静态 entr
 - [ ] **生产 ESM 构建产物**（hashed chunks + 自带 importmap）子应用可正常 mount/unmount/remount
 - [ ] **Firefox（或目标旧浏览器）经 es-module-shims 路径**可正常加载 ESM 子应用
 - [ ] JS 错误的 `error.stack` 可经 source map 映射回子应用原始文件（若 v1 不实现完整 source map，则文档化该局限并标注此项为已知不满足）
+- [ ] **顶层声明/导入与白名单重名**（如 `const history = ...`、`import { location } from ...`）的模块可正常加载（重名剔除 / SyntaxError 重试生效），且该标识符语义正确（引用本地绑定）
+- [ ] **主应用 CSP 不含 `'unsafe-eval'`**（仅 `script-src blob:` 等）时，ESM 子应用可正常加载（注入引导零 eval，见 §1）
+- [ ] 携带 inline / 相对路径 `sourceMappingURL` 的 Vite dev 模块，改写后 DevTools 行映射正确（偏移合并生效）或已 strip（不出现错位映射，见 §15）
 
 ### 性能
 
 - [ ] qiankun 启动开销（含 lexer init）增加 ≤ 50ms
-- [ ] 单个 module 改写开销 ≤ 5ms（典型业务模块体量）
+- [ ] 单个 module 改写开销 ≤ 5ms（典型业务模块体量；含标识符扫描过滤——实测基线 ~34µs/模块，见 §1）
 - [ ] remount 第二次起，在未 unload 的同一实例内复用 blob URL，mount 耗时 ≤ 首次 50%
 
 ### 可观测
 
 - [ ] 改写后代码在 DevTools Sources 面板显示为原始 URL（通过 `sourceURL`）
-- [ ] 行号偏移按实际白名单大小重算并文档化（复用 725 项 `globalsInBrowser` 时，注入压成单行解构 + 引导行 + `__qk_import_meta` 声明，约 3~5 行；不再承诺固定「≤10 行 / 3-8 行」）
+- [ ] 行号偏移按实际注入行数文档化（按需过滤后为 runtime import 行 + 解构行（p50=3 项）+ `__qk_import_meta` 声明，约 3~5 行；不承诺固定值）
 - [ ] 明确 `//# sourceURL` 只改 DevTools 显示名、不改 `error.stack` URL 与行号；生产可定位依赖完整 source map（见 §15）
 
 ## Risks and Mitigations
@@ -783,13 +830,16 @@ qiankun 现有 prefetch（`apis/prefetch.ts`）用 `DOMParser` 解析静态 entr
 | CSP 需要 `script-src blob:` | 文档化要求 |
 | ESM module 顶层只执行一次（remount 复用） | 文档化语义差异；提供迁移指南 |
 | `import.meta.resolve` 识别需额外 lexer 规则 | 采用 runtime 方案：`__qk_import_meta.resolve = (s) => __qk_resolve(appId, s)`，避免编译期识别 |
-| 改写后字节体积增加 | 顶部注入 ≈ 200~400 字节；可接受 |
+| 改写后字节体积增加 | 以 §1 按需过滤为前提，顶部注入 ≈ 200~400 字节/模块（p50=3 项解构）；若全量注入 725 项则 ~11KB/模块、270 模块 ≈ 3MB，不可接受 → 过滤为必需 |
 | Blob 创建时 MIME type 缺失 | 必须指定 `new Blob([code], { type: 'text/javascript' })`，否则浏览器拒绝执行 module script |
-| Import map 冲突导致模块解析失败 | **核心风险**：由于 import map 无法删除且冲突条目会被丢弃，长期运行或热更新可能导致 specifier 冲突。**对策**：app-private specifier 必须包含 instanceId；shared specifier 必须由 qiankun registry 统一分配。 |
+| Import map 冲突导致模块解析失败 | **核心风险**：由于 import map 无法删除且冲突条目会被丢弃，长期运行或热更新可能导致 specifier 冲突。**对策**：app-private specifier 必须包含 instanceId；shared specifier（v2 引入 namespace 级共享后）必须由 qiankun registry 统一分配。 |
 | Import map 条目无法清理 | 子应用 unload 后死条目积累，但仅为纯字符串，内存影响极小；blob URL 可正常 revoke；重新加载时分配新的 instanceId，避免命中旧条目 |
 | Vite dev URL 查询参数影响缓存 | Vite `?t=` 参数（HMR 时间戳）和 `?v=` 参数（预构建 hash）需保留在缓存 key 中，确保版本正确性 |
 | 运行时 import map 需要多 import map 浏览器支持 | Chrome/Edge 133+、Safari/iOS Safari 18.4+；Firefox 150 branch 已实现但默认关闭。Firefox 与旧浏览器必须 fallback 到 es-module-shims |
-| **注入模板 TDZ（已修复）** | 引导行曾用 `globalThis.__qk_realm(...)` 命中同名 const TDZ，每模块首行 ReferenceError。改用不在解构集内的 `__qk_root = (0,eval)('globalThis')`（§1） |
+| **注入模板 TDZ / CSP `unsafe-eval`（已修复）** | 引导曾先后采用 `globalThis.__qk_realm(...)`（同名 const TDZ，每模块首行 ReferenceError）与 `(0,eval)('globalThis')`（要求 CSP `unsafe-eval`，生产 shell 常不满足）。现改为 runtime 模块 import 引导：import 绑定先于模块体初始化（构造上无 TDZ）、零 eval（§1） |
+| **注入解构与顶层声明/导入重名 → SyntaxError** | `const history = ...` 等常见写法会砖掉整个模块图。按需过滤缩小碰撞面（p50=3 项）+ import 绑定名剔除 + SyntaxError 捕获重试兜底（§1） |
+| **共享 blob 烘焙 realm 绑定** | 跨实例复用改写产物会让 B 应用经 A 的 proxy 操作 DOM、并持有 A 已清理的 realm。v1 收缩为 source 级共享（与 classic 语义对齐）；namespace 级共享为 v2 前置课题（§11、Open Q9） |
+| **既有 sourceMappingURL 错位 / 404** | 顶部插行使原 map 行映射错位；相对 map URL 相对 blob 解析 404。绝对化 + `mappings` 前补 `;` 偏移合并，或至少 strip（§15） |
 | **strict-mode 隐式全局「写」差异** | ESM 下裸 `foo = 1` 抛 ReferenceError（classic 写入 proxy）。文档化差异；迁移指南要求显式 `window.` 前缀或声明（§1、Migration） |
 | **`__qk_realm` 跨应用越权** | 经 proxy get-trap 透传可达。Symbol/token 无效；改为 get-trap 黑名单屏蔽 `__qk_*`（§1、Open Q7） |
 | **CSS-as-JS / 顶层副作用 remount 后丢失** | remount 顶层不重跑 + 卸载清空虚拟 head → 样式永久消失。POC 选定 rebuildCSSRules 恢复 / remount 重求值例外（§6、§8） |
@@ -843,6 +893,7 @@ Blob URL 继承**创建者**（主应用）的 origin，而非子应用原始 or
 | CSP 指令 | 要求 | 原因 |
 |---|---|---|
 | `script-src` | 包含 `blob:` | 执行改写后的 blob URL 模块 |
+| `script-src` | **无需** `'unsafe-eval'` | 注入引导经 runtime 模块 import 而非间接 eval（§1）；子应用代码自身使用 eval 则另当别论 |
 | `connect-src` | 包含子应用 origin（如 `https://sub-app.example.com`） | 主应用 origin 的代码 fetch 子应用资源 |
 | `style-src` | 包含 `'unsafe-inline'`（如果子应用动态创建 style） | Vite CSS-as-JS 模块通过 `style.textContent` 注入样式 |
 | `worker-src` | 包含 `blob:`（如果子应用创建 Worker） | v1 scope 外，但提前配置可避免未来问题 |
@@ -874,8 +925,9 @@ start({
 4. **全局 fetch LRU 缓存容量是否足够？** —— `makeFetchCacheable` 当前全局 LRU 容量为 50。**单个**中等规模 Vite dev 子应用即有 ~270 模块，**已远超 50**——不必等「多应用并发」就会频繁淘汰（原表述把风险归因于多应用并发，定位偏了）。§17 的依赖图级 prefetch 会进一步加压。选项：(a) 为 ESM 模块 fetch 使用独立的更大缓存（按子应用模块量级，如 ≥512）；(b) 提高全局 LRU 容量；(c) v1 先观察命中率。倾向 **(a)**（独立大缓存），而非沿用 50。
 5. **§12 集成架构方案选择（v1 阻塞决策，不可挂起）** —— 方案 C（移除 + 异步插入）需 POC 验证在 writable-dom 流式管线中的可行性。**修正**：多个动态插入的 module script **设 `async=false` 即由 HTML 规范保证按插入序执行**（与 classic 同机制，option B/C 均适用），并非 C 独有优势；option B 因此不应被「需验证是否在所有浏览器触发执行」低估。真正待验证的是占位/重插与 entry-script onload 钩子、defer 队列的交互。**此项必须在实现前定稿**。
 6. **`loadMicroApp` 多实例是否在 v1 scope 内？** —— 同一子应用加载两次时，不同实例通过 **实例唯一 specifier 前缀** 实现在全局 import map 中的隔离。
-7. **`__qk_realm` 的安全性（v1 阻塞决策）** —— 任何子应用经 proxy globalThis 即可 `__qk_realm('other-app')` 越权访问他人 sandbox proxy。**`Symbol`/token 缓解无效**（`Symbol.for` 可派生、token 可枚举，见 §1）。**结论**：v1 直接采用 **membrane get-trap 黑名单屏蔽 `__qk_*`**，内部函数统一经 `__qk_root`（真实 globalThis、不经 proxy）取用。不再「v1 先用简单方案、v1.1 再改」。
+7. **`__qk_realm` 的安全性（v1 阻塞决策）** —— 任何子应用经 proxy globalThis 即可 `__qk_realm('other-app')` 越权访问他人 sandbox proxy。**`Symbol`/token 缓解无效**（`Symbol.for` 可派生、token 可枚举，见 §1）。**结论**：v1 直接采用 **membrane get-trap 黑名单屏蔽 `__qk_*`**；内部入口收敛为唯一的 `__qk_realm`，被改写模块经 runtime 模块 import 取用（不经 proxy，见 §1）；改写器与 `__qk_dynamic_import` 拒绝透传 `__qk_*` 合成 specifier。不再「v1 先用简单方案、v1.1 再改」。
 8. **运行时 import map 是否违反"不把子应用 import map 注入主文档"的约束？** —— **已解决**：注入的是 qiankun 运行时用于 URL -> Blob 映射的 import map。由于 import map 是文档级单例且合并冲突时“先到先得”，我们必须通过 specifier 唯一化（Prefixing）来避免不同应用、不同实例间的 specifier 碰撞。
+9. **v2 namespace 级共享模块的 realm 语义** —— 共享 blob 的顶部注入只能绑定一个 realm：绑定「中立 realm（真实全局）」会让共享模块的 DOM 副作用绕过 dynamicAppend 归属；「动态归属当前活跃实例」又落回 §8 的异步归属难题。v1 已收缩为 source 级共享规避（§11）；v2 若要真单例共享，需连同跨实例引用计数（§8）单独设计并评审。
 
 ## References
 
