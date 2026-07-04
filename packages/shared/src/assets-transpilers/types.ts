@@ -7,6 +7,11 @@ import type { EsmSandboxEngine } from '../esm-sandbox';
 import type { MatchResult } from '../module-resolver';
 import type { Deferred } from '../utils';
 
+export type StyleIsolationOpts = {
+  appName: string;
+  scopeRoot: string;
+};
+
 export type BaseTranspilerOpts = BaseLoaderOpts & {
   moduleResolver?: (url: string) => MatchResult | undefined;
   sandbox?: {
@@ -14,6 +19,7 @@ export type BaseTranspilerOpts = BaseLoaderOpts & {
   };
   /** present when the ESM sandbox is enabled, routes module scripts through the ESM transpiler pipeline */
   esmEngine?: EsmSandboxEngine;
+  styleIsolation?: StyleIsolationOpts;
 };
 
 export type AssetsTranspilerOpts = BaseTranspilerOpts;

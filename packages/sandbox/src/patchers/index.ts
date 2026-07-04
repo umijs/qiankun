@@ -14,7 +14,7 @@ import patchWindowListener from './windowListener';
 export function patchAtBootstrapping(
   appName: string,
   getContainer: () => HTMLElement,
-  opts: Pick<SandboxConfig, 'sandbox' | 'fetch' | 'nodeTransformer'>,
+  opts: Pick<SandboxConfig, 'sandbox' | 'fetch' | 'nodeTransformer' | 'styleIsolation'>,
 ): Free[] {
   const patchersInSandbox = {
     [SandboxType.Standard]: [() => patchStandardSandbox(appName, getContainer, { mounting: false, ...opts })],
@@ -28,7 +28,7 @@ export function patchAtBootstrapping(
 export function patchAtMounting(
   appName: string,
   getContainer: () => HTMLElement,
-  opts: Pick<SandboxConfig, 'sandbox' | 'fetch' | 'nodeTransformer'>,
+  opts: Pick<SandboxConfig, 'sandbox' | 'fetch' | 'nodeTransformer' | 'styleIsolation'>,
 ): Free[] {
   const { sandbox } = opts;
   const basePatchers = [

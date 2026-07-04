@@ -44,6 +44,11 @@ export type RegistrableApp<T extends ObjectType> = LoadableApp<T> & {
 export type AppConfiguration = Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
   sandbox?: boolean;
   globalContext?: WindowProxy;
+  /**
+   * Enable runtime CSS isolation via @scope wrapping.
+   * When enabled, all micro-app styles are scoped to the app container.
+   */
+  styleIsolation?: boolean;
 };
 
 export type LifeCycleFn<T extends ObjectType> = (app: LoadableApp<T>, global: WindowProxy) => Promise<void>;

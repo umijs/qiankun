@@ -4,6 +4,7 @@
  */
 import transpileLink from './link';
 import transpileScript from './script';
+import transpileStyle from './style';
 import type { AssetsTranspilerOpts } from './types';
 
 /**
@@ -24,6 +25,16 @@ export function transpileAssets<T extends Node>(node: T, baseURI: string, opts: 
 
     case 'LINK': {
       return transpileLink(htmlElement as HTMLLinkElement, baseURI, opts) as unknown as T;
+    }
+
+    case 'STYLE': {
+      if (opts.styleIsolation) {
+        return transpileStyle(htmlElement as HTMLStyleElement, baseURI, {
+          ...opts.styleIsolation,
+          fetch: opts.fetch,
+        }) as unknown as T;
+      }
+      break;
     }
 
     default:
@@ -47,3 +58,6 @@ export function transpileAssets<T extends Node>(node: T, baseURI: string, opts: 
 export type * from './types';
 
 export { isValidJavaScriptType } from './utils';
+export { transpileStyleText, transpileStyleRule } from './style';
+export type { StyleTranspilerOpts } from './style';
+export { clearStylesheetCache, getStylesheetCacheStats } from './link';
