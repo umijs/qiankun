@@ -21,6 +21,18 @@ const stylesheetCache = new Map<string, StylesheetCacheEntry>();
 // Pending fetch promises to avoid duplicate fetches for concurrent requests
 const pendingFetches = new Map<string, Promise<string>>();
 
+/**
+ * Cross-package contract with the loader's writable-dom: when a <link rel="stylesheet"> is swapped
+ * for a <style> whose CSS text fills in asynchronously, the fill promise is attached under this
+ * registered symbol so the streaming walk can keep blocking subsequent scripts until the CSS is
+ * applied — preserving the native "stylesheets block later scripts" ordering.
+ */
+const pendingStylesheetFill = Symbol.for('qiankun.pendingStylesheetFill');
+
+function markPendingStylesheetFill(styleElement: HTMLStyleElement, fill: Promise<unknown>): void {
+  (styleElement as unknown as Record<symbol, unknown>)[pendingStylesheetFill] = fill;
+}
+
 function getTranspiledStyleCacheKey(appName: string, scopeRoot: string): string {
   return `${appName}:${scopeRoot}`;
 }
@@ -177,17 +189,22 @@ export default function transpileLink(
         return styleElement;
       }
       // Raw CSS cached but not transpiled for this app yet
-      void (async () => {
-        const result = transpileStyleText(cached.raw, {
-          appName,
-          scopeRoot,
-          fetch: opts.fetch,
-          baseURL: resolvedHref,
-        });
-        const transpiled = typeof result === 'string' ? result : await result;
-        cached.transpiled.set(cacheKey, transpiled);
-        styleElement.textContent = transpiled;
-      })();
+      markPendingStylesheetFill(
+        styleElement,
+        (async () => {
+          const result = transpileStyleText(cached.raw, {
+            appName,
+            scopeRoot,
+            fetch: opts.fetch,
+            baseURL: resolvedHref,
+          });
+          const transpiled = typeof result === 'string' ? result : await result;
+          cached.transpiled.set(cacheKey, transpiled);
+          styleElement.textContent = transpiled;
+        })().catch(() => {
+          warn(`Failed to transpile cached stylesheet "${resolvedHref}" for style isolation.`);
+        }),
+      );
       return styleElement;
     }
 
@@ -222,22 +239,25 @@ export default function transpileLink(
     }
 
     // Use the shared fetch promise
-    void fetchPromise
-      .then(async (cssText) => {
-        const result = transpileStyleText(cssText, { appName, scopeRoot, fetch: opts.fetch, baseURL: resolvedHref });
-        const transpiled = typeof result === 'string' ? result : await result;
+    markPendingStylesheetFill(
+      styleElement,
+      fetchPromise
+        .then(async (cssText) => {
+          const result = transpileStyleText(cssText, { appName, scopeRoot, fetch: opts.fetch, baseURL: resolvedHref });
+          const transpiled = typeof result === 'string' ? result : await result;
 
-        // Update cache with transpiled version
-        const entry = stylesheetCache.get(resolvedHref);
-        if (entry) {
-          entry.transpiled.set(cacheKey, transpiled);
-        }
+          // Update cache with transpiled version
+          const entry = stylesheetCache.get(resolvedHref);
+          if (entry) {
+            entry.transpiled.set(cacheKey, transpiled);
+          }
 
-        styleElement.textContent = transpiled;
-      })
-      .catch(() => {
-        // Error already logged in fetchPromise
-      });
+          styleElement.textContent = transpiled;
+        })
+        .catch(() => {
+          // Error already logged in fetchPromise
+        }),
+    );
 
     return styleElement;
   }
