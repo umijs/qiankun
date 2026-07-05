@@ -61,3 +61,6 @@ if (!window.__POWERED_BY_QIANKUN__) {
     unmount,
   };
 })(window);
+
+// Native ESM lifecycle exports, picked up by the qiankun ESM sandbox from the entry module namespace
+export { bootstrap, mount, unmount };

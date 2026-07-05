@@ -5,10 +5,13 @@ import Dashboard from './Dashboard';
 import { Spin, Result, Button } from 'antd';
 import { ReloadOutlined, HomeOutlined } from '@ant-design/icons';
 
+// Ports must match each sub app's dev server config:
+// react: examples/react/vite.config.ts, vue: examples/vue/vite.config.ts,
+// purehtml: examples/purehtml/package.json, vite: examples/vite/vite.config.ts
 const microAppsConfig: Record<string, { entry: string }> = {
   react: { entry: '//localhost:7100' },
-  vue: { entry: '//localhost:7104' },
-  purehtml: { entry: '//localhost:7105' },
+  vue: { entry: '//localhost:7101' },
+  purehtml: { entry: '//localhost:7104' },
   vite: { entry: '//localhost:5175' },
 };
 

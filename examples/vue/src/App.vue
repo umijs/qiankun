@@ -4,6 +4,8 @@ import { ref } from 'vue'
 
 const count = ref(0)
 const increment = () => count.value++
+// templates cannot access `window` directly, expose the flag from setup scope instead
+const isQiankun = !!(window as unknown as { __POWERED_BY_QIANKUN__?: boolean }).__POWERED_BY_QIANKUN__
 </script>
 
 <template>
@@ -23,7 +25,7 @@ const increment = () => count.value++
       <div class="info-card">
         <p><strong>Vue Version:</strong> {{ version }}</p>
         <p><strong>Bundler:</strong> Vite</p>
-        <p><strong>Running in:</strong> {{ (window as any).__POWERED_BY_QIANKUN__ ? 'qiankun' : 'standalone' }} mode</p>
+        <p><strong>Running in:</strong> {{ isQiankun ? 'qiankun' : 'standalone' }} mode</p>
       </div>
 
       <button type="button" @click="increment">count is {{ count }}</button>

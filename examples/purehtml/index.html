@@ -4,14 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Purehtml Example</title>
-  <script src="//cdn.bootcss.com/jquery/3.4.1/jquery.min.js">
-  </script>
+  <!-- vendored locally: qiankun fetches sub-app scripts with CORS, which public CDNs without
+       Access-Control-Allow-Origin headers (like the old bootcss one) would break -->
+  <script src="./vendor/jquery.min.js"></script>
 </head>
 <body>
   <div style="display: flex; justify-content: center; align-items: center; height: 200px;">
     Purehtml Example
   </div>
   <div id="purehtml-container" style="text-align:center"></div>
-  <script src="//localhost:7104/entry.js" entry></script>
+  <!-- relative URLs are rewritten against the entry by qiankun's asset transpiler -->
+  <script src="./entry.js" entry></script>
 </body>
 </html>

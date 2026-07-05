@@ -11,7 +11,10 @@ export default defineConfig(({ mode }) => {
     base: isQiankun ? './' : '/',
     plugins: [
       react(),
-      qiankun('react', {
+      // vite-plugin-qiankun only serves the legacy (qiankun-mode) build. In dev the app is
+      // loaded as a native ESM entry by the qiankun ESM sandbox; the plugin's dev bridge
+      // (renderWithQiankun protocol) would hijack the entry and hang the mount instead.
+      isQiankun && qiankun('react', {
         useDevMode: true
       }),
       isQiankun && legacy({ renderLegacyChunks: true }),

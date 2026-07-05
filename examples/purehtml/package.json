@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.html",
   "scripts": {
-    "start": "cross-env PORT=7104 http-server . --cors",
+    "start": "http-server . --cors -c-1 -p 7104",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
