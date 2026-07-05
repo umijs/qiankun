@@ -31,10 +31,52 @@ describe('rewriteModule', () => {
     const { code, destructured, needsRuntime } = rewrite(`console.log(window.foo);`);
     expect(needsRuntime).toBe(true);
     expect(code).toContain(
-      `import { __qk_view, __qk_resolve, __qk_dynamic_import } from "${instanceKey}/__runtime__";`,
+      `import { __qk_view, __qk_resolve, __qk_dynamic_import, __qk_track } from "${instanceKey}/__runtime__";`,
     );
     expect(destructured.sort()).toEqual(['console', 'window']);
     expect(code).toMatch(/const \{ (console, window|window, console) \} = __qk_view;/);
+  });
+
+  it('binds dunder feature-flag identifiers live via let + __qk_track', () => {
+    const { code, destructured } = rewrite(`window.__MY_FLAG__ = true;\nif (__MY_FLAG__) console.log(1);`);
+    expect(destructured).toContain('__MY_FLAG__');
+    expect(code).toContain('let { __MY_FLAG__ } = __qk_view;');
+    expect(code).toContain('__qk_track(() => ({ __MY_FLAG__ } = __qk_view));');
+    // dunder names never join the const snapshot group
+    expect(code).not.toMatch(/const \{[^}]*__MY_FLAG__[^}]*\} = __qk_view;/);
+  });
+
+  it('pre-excludes dunder names declared in the module (webpack ESM output pattern)', () => {
+    const { code, destructured } = rewrite(
+      `var __webpack_exports__ = {};\nfunction __WEBPACK_DEFAULT_EXPORT__() {}\nif (__MY_FLAG__) console.log(__webpack_exports__);`,
+    );
+    expect(destructured).not.toContain('__webpack_exports__');
+    expect(destructured).not.toContain('__WEBPACK_DEFAULT_EXPORT__');
+    expect(code).not.toContain('let { __webpack_exports__');
+    // an undeclared dunder in the same module still gets its live binding
+    expect(destructured).toContain('__MY_FLAG__');
+    expect(code).toContain('let { __MY_FLAG__ } = __qk_view;');
+  });
+
+  it('never binds internal or Object.prototype dunder names', () => {
+    const { code, destructured } = rewrite(`console.log(a.__proto__, __qk_view_fake__);\nconst b = {};`);
+    expect(destructured).not.toContain('__proto__');
+    expect(code).not.toContain('let { __proto__');
+    // __qk_-prefixed tokens are engine internals, they must stay unbound
+    expect(destructured.filter((name) => name.startsWith('__qk_'))).toEqual([]);
+  });
+
+  it('excludes dunder names from the live group on redeclaration retry', () => {
+    const { code, destructured } = rewriteModule({
+      source: `let __LOCAL_FLAG__ = 1;\nconsole.log(__LOCAL_FLAG__);`,
+      url: 'https://app-a.host/main.js',
+      instanceKey,
+      globalsBaseSet,
+      resolveSpecifier,
+      excludedNames: new Set(['__LOCAL_FLAG__']),
+    });
+    expect(destructured).not.toContain('__LOCAL_FLAG__');
+    expect(code).not.toContain('let { __LOCAL_FLAG__ } = __qk_view;');
   });
 
   it('excludes import bindings from the destructuring set', () => {

@@ -24,6 +24,9 @@ export interface Sandbox extends Compartment {
   /** membrane-backed globals view for the ESM top-of-module destructuring injection */
   getEsmGlobalsView(): Record<string, unknown>;
 
+  /** subscribe to sandbox global modifications; returns an unsubscribe function */
+  onGlobalSet(listener: (p: PropertyKey) => void): () => void;
+
   // TODO for gc
   // destroy(): void;
 }

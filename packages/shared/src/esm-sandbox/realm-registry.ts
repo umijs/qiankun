@@ -27,6 +27,8 @@ export type EsmRealm = {
   resolve: (specifier: string, baseUrl?: string) => string;
   /** dynamic import pipeline entry */
   dynamicImport: (specifier: unknown, ...args: unknown[]) => Promise<Record<string, unknown>>;
+  /** register a module's live dunder-global bindings refresher (the __qk_track injection) */
+  track: (refresh: () => void) => void;
 };
 
 export type RealmHandle = {

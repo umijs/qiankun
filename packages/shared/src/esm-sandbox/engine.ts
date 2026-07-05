@@ -8,6 +8,7 @@ import { noop } from 'lodash';
 import type { Fetch } from '../fetch-utils/utils';
 import { QiankunError } from '../reporter/QiankunError';
 import { Deferred, keys } from '../utils';
+import { isLiveBindableDunderName } from './identifier-scan';
 import { injectImportMapEntries } from './import-map-registry';
 import { prepareEsmLexer } from './lexer';
 import type { EsmRealm, RealmHandle } from './realm-registry';
@@ -27,6 +28,11 @@ export type EsmSandboxEngineOpts = {
   globalsBaseSet: readonly string[];
   /** source-level shared dependency canonicalization, v1 only reuses network responses (RFC §11) */
   moduleResolver?: (url: string) => { url: string } | undefined;
+  /**
+   * Subscribe to sandbox global modifications; the engine refreshes the live dunder-global bindings
+   * (`__qk_track` callbacks) of already-evaluated modules on every notification. Returns unsubscribe.
+   */
+  subscribeGlobalSets?: (listener: (p: PropertyKey) => void) => () => void;
   /**
    * Predicate telling the engine which executed module namespace carries the app lifecycles, used to
    * pick the entry when no `<script type="module" entry>` is marked (e.g. Vite drops the attribute).
@@ -149,6 +155,11 @@ export class EsmSandboxEngine {
 
   private disposed = false;
 
+  /** per-module refresh callbacks for the live dunder-global bindings (registered via __qk_track) */
+  private readonly liveBindingRefreshers = new Set<() => void>();
+
+  private readonly unsubscribeGlobalSets: (() => void) | undefined;
+
   private inlineModuleSeq = 0;
 
   private warnedTypedModule = false;
@@ -178,9 +189,21 @@ export class EsmSandboxEngine {
       },
       resolve: (specifier, baseUrl) => this.resolveSpecifier(specifier, baseUrl ?? this.entryBaseUrl),
       dynamicImport: (specifier, ...args) => this.dynamicImport(specifier, ...args),
+      track: (refresh) => {
+        if (!this.disposed) this.liveBindingRefreshers.add(refresh);
+      },
     };
     // register first so the runtime module can inline the random accessor key and unguessable token (RFC §1)
     this.realmHandle = registerEsmRealm(realm);
+
+    // Refresh the modules' live dunder bindings when the sandbox records a global modification.
+    // Only dunder-named properties can back a live binding, so every other write (which can be
+    // frequent — UMD vendor eval alone performs hundreds of global sets) is filtered out before
+    // the O(modules) refresh fan-out. String(symbol) never matches the dunder pattern.
+    this.unsubscribeGlobalSets = opts.subscribeGlobalSets?.((p) => {
+      if (this.liveBindingRefreshers.size === 0 || !isLiveBindableDunderName(String(p))) return;
+      this.liveBindingRefreshers.forEach((refresh) => refresh());
+    });
 
     // the runtime module is generated outside the rewrite pipeline, its globalThis is the real global (RFC §1)
     const runtimeModuleSource = [
@@ -190,6 +213,7 @@ export class EsmSandboxEngine {
       'export const __qk_view = rt.view;',
       'export const __qk_resolve = rt.resolve;',
       'export const __qk_dynamic_import = rt.dynamicImport;',
+      'export const __qk_track = rt.track;',
     ].join('\n');
     this.runtimeModuleUrl = this.track(this.createModuleUrl(runtimeModuleSource));
     this.pendingImportMapEntries[buildSyntheticSpecifier(this.instanceKey, runtimeModuleSubpath)] =
@@ -286,6 +310,8 @@ export class EsmSandboxEngine {
    */
   dispose(): void {
     this.disposed = true;
+    this.unsubscribeGlobalSets?.();
+    this.liveBindingRefreshers.clear();
     unregisterEsmRealm(this.realmHandle.token);
     this.createdModuleUrls.forEach((moduleUrl) => this.revokeModuleUrl(moduleUrl));
     this.createdModuleUrls.clear();

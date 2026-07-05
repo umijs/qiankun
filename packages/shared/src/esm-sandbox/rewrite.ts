@@ -9,7 +9,7 @@
  * - sourceMappingURL offset merge and sourceURL append
  */
 import { QiankunError } from '../reporter/QiankunError';
-import { scanReferencedGlobals } from './identifier-scan';
+import { scanDeclaredDunderNames, scanReferencedGlobals } from './identifier-scan';
 import { parseImportBindings } from './import-bindings';
 import { parseModuleSyntax } from './lexer';
 import { remapSourceMappingUrl } from './source-map';
@@ -116,21 +116,43 @@ export function rewriteModule(opts: RewriteModuleOpts): ModuleRewriteResult {
     }
   }
 
-  // destructuring set = identifier scan ∩ base set, minus module-own import bindings and retry exclusions (RFC §1)
-  const destructured = scanReferencedGlobals(source, globalsBaseSet).filter(
-    (name) => !importBindings.has(name) && !excludedNames?.has(name),
-  );
+  // Binding sets = identifier scan ∩ (base set ∪ dunder flags), minus module-own import bindings and
+  // retry exclusions (RFC §1). Single pass: the scan only admits base-set members or live-bindable
+  // dunder names, so every survivor lands in exactly one group.
+  // - base-set names get the immutable `const` snapshot (their values never change on the view);
+  // - dunder feature flags (`__X__`, e.g. Vue's __VUE_OPTIONS_API__) are typically CREATED at runtime
+  //   by one module and read bare by others — a snapshot would be stale, so they get mutable `let`
+  //   bindings refreshed via __qk_track whenever the sandbox records a dunder global modification.
+  //   Dunder names DECLARED in this module (webpack ESM output pattern) are pre-excluded to avoid a
+  //   guaranteed redeclaration probe round each. Accepted deviation: a bare ASSIGNMENT (`__X__ = v`
+  //   without a window./globalThis. prefix) writes the module-local binding only; real-world flag
+  //   writers use explicit member writes.
+  const declaredDunderNames = scanDeclaredDunderNames(source);
+  const destructured: string[] = [];
+  const liveBindings: string[] = [];
+  for (const name of scanReferencedGlobals(source, globalsBaseSet)) {
+    if (importBindings.has(name) || excludedNames?.has(name)) continue;
+    if (globalsBaseSet.has(name)) {
+      destructured.push(name);
+    } else if (!declaredDunderNames.has(name)) {
+      liveBindings.push(name);
+    }
+  }
 
-  const needsRuntime = destructured.length > 0 || usesImportMeta;
+  const needsRuntime = destructured.length > 0 || liveBindings.length > 0 || usesImportMeta;
   let header = '';
   if (needsRuntime) {
     // import bindings are initialized before the module body evaluates, so no TDZ by construction,
     // and no eval is involved, keeping the CSP requirement down to `script-src blob:` (RFC §1)
-    header += `import { __qk_view, __qk_resolve, __qk_dynamic_import } from ${JSON.stringify(
+    header += `import { __qk_view, __qk_resolve, __qk_dynamic_import, __qk_track } from ${JSON.stringify(
       buildSyntheticSpecifier(instanceKey, runtimeModuleSubpath),
     )};\n`;
     if (destructured.length > 0) {
       header += `const { ${destructured.join(', ')} } = __qk_view;\n`;
+    }
+    if (liveBindings.length > 0) {
+      header += `let { ${liveBindings.join(', ')} } = __qk_view;\n`;
+      header += `__qk_track(() => ({ ${liveBindings.join(', ')} } = __qk_view));\n`;
     }
     if (usesImportMeta) {
       header += `const __qk_import_meta = { url: ${JSON.stringify(url)}, resolve: (s) => __qk_resolve(s, ${JSON.stringify(
@@ -162,7 +184,9 @@ export function rewriteModule(opts: RewriteModuleOpts): ModuleRewriteResult {
     code,
     deps: Array.from(deps),
     typedDeps: Array.from(typedDeps),
-    destructured,
+    // every injected binding name (snapshot const + live let), the redeclaration probe retry
+    // must be able to exclude either kind
+    destructured: [...destructured, ...liveBindings],
     injectedLines,
     needsRuntime,
   };

@@ -90,6 +90,8 @@ const isNativeGlobalProp = (prop: string): boolean => {
 export class Membrane {
   private locking = false;
 
+  private readonly modificationListeners = new Set<(p: PropertyKey) => void>();
+
   modifications = new Set<PropertyKey>();
 
   realmGlobal: WindowProxy;
@@ -97,6 +99,33 @@ export class Membrane {
   target: MembraneTarget;
 
   latestSetProp: PropertyKey | undefined;
+
+  /**
+   * Subscribe to global property modifications made through the membrane (set/defineProperty/delete).
+   * Used by the ESM sandbox engine to refresh the live dunder-global bindings of rewritten modules.
+   */
+  onModification(listener: (p: PropertyKey) => void): () => void {
+    this.modificationListeners.add(listener);
+    return () => {
+      this.modificationListeners.delete(listener);
+    };
+  }
+
+  /**
+   * A throwing listener must never break the app's global assignment that triggered it —
+   * the set/defineProperty/deleteProperty traps were exception-free before listeners existed.
+   */
+  private notifyModification(p: PropertyKey): void {
+    this.modificationListeners.forEach((listener) => {
+      try {
+        listener(p);
+      } catch (e) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[qiankun] membrane modification listener threw', e);
+        }
+      }
+    });
+  }
 
   constructor(
     incubatorContext: WindowProxy,
@@ -141,6 +170,9 @@ export class Membrane {
 
           this.latestSetProp = p;
 
+          // notify subscribers (e.g. the ESM engine refreshing live global bindings)
+          this.notifyModification(p);
+
           return true;
         }
 
@@ -163,7 +195,7 @@ export class Membrane {
           return membraneTarget[p];
         }
 
-        if (p === 'string' && whitelistVars.indexOf(p) !== -1) {
+        if (typeof p === 'string' && whitelistVars.indexOf(p) !== -1) {
           return incubatorContext[p as never];
         }
 
@@ -247,18 +279,27 @@ export class Membrane {
          Descriptor must be defined to native window while it comes from native window via Object.getOwnPropertyDescriptor(window, p),
          otherwise it would cause a TypeError with illegal invocation.
          */
-        switch (from) {
-          case 'globalContext':
-            return Reflect.defineProperty(incubatorContext, p, attributes);
-          default:
-            return Reflect.defineProperty(membraneTarget, p, attributes);
+        const result =
+          from === 'globalContext'
+            ? Reflect.defineProperty(incubatorContext, p, attributes)
+            : Reflect.defineProperty(membraneTarget, p, attributes);
+
+        if (result && !this.locking) {
+          this.notifyModification(p);
         }
+
+        return result;
       },
 
       deleteProperty: (membraneTarget, p) => {
         if (hasOwnProperty(membraneTarget, p)) {
           delete membraneTarget[p];
           this.modifications.delete(p);
+
+          // deletions must refresh live bindings too, or modules keep reading the deleted value
+          if (!this.locking) {
+            this.notifyModification(p);
+          }
 
           return true;
         }

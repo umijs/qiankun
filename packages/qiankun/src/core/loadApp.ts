@@ -98,6 +98,8 @@ export default async function loadApp<T extends ObjectType>(
       fetch: enhancedFetch,
       getGlobalsView: () => sandboxInstance!.getEsmGlobalsView(),
       globalsBaseSet: esmDestructurableGlobals,
+      // keeps the live dunder-global bindings (e.g. runtime-created feature flags) in sync
+      subscribeGlobalSets: (listener) => sandboxInstance!.onGlobalSet(listener),
       moduleResolver: (url) => defaultModuleResolver(url, microAppDOMContainer, document.head),
       // pick the entry module by its lifecycle exports when no `entry` attribute is present (Vite drops
       // it during transformIndexHtml); a classic app's stray module script thus never hijacks the entry
@@ -161,8 +163,12 @@ export default async function loadApp<T extends ObjectType>(
         async () => {
           microAppDOMContainer = mountContainer;
 
-          // while the micro app is remounting, we need to load the entry manually
-          if (mountTimes > 1) {
+          // The entry html must be reloaded manually while remounting. mountTimes alone can not tell:
+          // a failed first mount leaves mountTimes at 1, yet the retry (usually on a freshly keyed
+          // container, or after unmount cleared it) starts from an uninitialized container — tracked
+          // explicitly rather than inferred from the DOM, since markup noise (whitespace text nodes,
+          // framework placeholder comments) would fool an emptiness check
+          if (mountTimes > 1 || !initializedContainers.has(mountContainer)) {
             initContainer(mountContainer, appName, { sandboxCfg: sandbox, mountTimes, instanceId });
             // html scripts should be removed to avoid repeatedly execute
             const htmlString = await getPureHTMLStringWithoutScripts(entry, enhancedFetch);
@@ -222,6 +228,13 @@ export default async function loadApp<T extends ObjectType>(
   };
 }
 
+/**
+ * Containers that hold (or are being filled with) their app's entry content. Membership is the
+ * remount-reload signal: initContainer adds, clearContainer removes, so a failed-mount retry on a
+ * cleared or freshly keyed container reliably reloads the entry html.
+ */
+const initializedContainers = new WeakSet<HTMLElement>();
+
 function initContainer(
   container: HTMLElement,
   appName: string,
@@ -231,6 +244,7 @@ function initContainer(
   while (container.firstChild) {
     container.removeChild(container.firstChild);
   }
+  initializedContainers.add(container);
 
   container.dataset.name = appName;
   container.dataset.version = version;
@@ -248,6 +262,7 @@ function clearContainer(container: HTMLElement): void {
   while (container.firstChild) {
     container.removeChild(container.firstChild);
   }
+  initializedContainers.delete(container);
 }
 
 function execHooksChain<T extends ObjectType>(

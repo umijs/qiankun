@@ -1,7 +1,6 @@
-import { defineProperty, hasOwnProperty } from '@qiankunjs/shared';
+import { hasOwnProperty } from '@qiankunjs/shared';
 import { without } from 'lodash';
 import { Compartment } from '../compartment';
-import { esmDestructurableGlobals } from '../esm-globals';
 import { globalsInES2015 } from '../globals';
 import type { Endowments } from '../membrane';
 import { Membrane } from '../membrane';
@@ -13,8 +12,6 @@ const whitelistBOMAPIs = ['requestAnimationFrame', 'cancelAnimationFrame'];
 
 export class StandardSandbox extends Compartment implements Sandbox {
   private readonly membrane: Membrane;
-
-  private esmGlobalsView: Record<string, unknown> | undefined;
 
   readonly type = SandboxType.Standard;
 
@@ -103,23 +100,23 @@ export class StandardSandbox extends Compartment implements Sandbox {
 
   /**
    * Globals view for the ESM top-of-module destructuring injection (ESM sandbox RFC §1).
-   * Built once per instance with lazy per-key getters, so destructuring only touches the requested
-   * keys and always observes the latest membrane state (e.g. the document proxy patched at mounting).
+   * The membrane realm global already provides exactly the required semantics for every key —
+   * base-set names, runtime-created dunder flags, and unknown keys all resolve through the same
+   * get trap (shielding, endowments, incubator read-through included) — so the view IS the realm
+   * global; a separate getter/Proxy layer would only duplicate that read path.
    */
   getEsmGlobalsView(): Record<string, unknown> {
-    if (!this.esmGlobalsView) {
-      const view: Record<string, unknown> = {};
-      const realmGlobal = this.membrane.realmGlobal as unknown as Record<string, unknown>;
-      esmDestructurableGlobals.forEach((name) => {
-        defineProperty(view, name, {
-          get: () => realmGlobal[name],
-          enumerable: true,
-          configurable: false,
-        });
-      });
-      this.esmGlobalsView = view;
-    }
-    return this.esmGlobalsView;
+    return this.membrane.realmGlobal as unknown as Record<string, unknown>;
+  }
+
+  /**
+   * Subscribe to global modifications inside this sandbox; the ESM engine uses it to keep the
+   * live dunder-global bindings of already-evaluated modules in sync (ESM sandbox RFC §1).
+   * Only membrane-mediated writes are observed: a host app writing directly on the real window
+   * after modules evaluated will not trigger a refresh (known one-way visibility boundary).
+   */
+  onGlobalSet(listener: (p: PropertyKey) => void): () => void {
+    return this.membrane.onModification(listener);
   }
 
   addIntrinsics(intrinsics: Record<string, PropertyDescriptor>) {
