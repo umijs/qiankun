@@ -133,8 +133,8 @@ describe('importmap script interception', () => {
   });
 });
 
-describe('modulepreload suppression', () => {
-  it('drops the href of modulepreload links when the esm engine is active', () => {
+describe('modulepreload rewriting', () => {
+  it('rewrites modulepreload links to as=fetch preloads when the esm engine is active', () => {
     const engine = createEngineMock();
     const link = document.createElement('link');
     link.rel = 'modulepreload';
@@ -144,10 +144,32 @@ describe('modulepreload suppression', () => {
       fetch: window.fetch,
       sandbox,
       esmEngine: engine as unknown as EsmSandboxEngine,
-    });
+    }) as HTMLLinkElement;
 
-    expect(transformed.hasAttribute('href')).toBe(false);
-    expect(transformed.dataset.consumed).toBe('true');
+    expect(transformed.rel).toBe('preload');
+    expect(transformed.as).toBe('fetch');
+    expect(transformed.getAttribute('href')).toBe('https://app.host/src/main.js');
+    // matches the pipeline fetch() defaults (cors + same-origin)
+    expect(transformed.crossOrigin).toBe('anonymous');
+  });
+
+  it('preserves use-credentials on rewritten modulepreload links', () => {
+    const engine = createEngineMock();
+    const link = document.createElement('link');
+    link.rel = 'modulepreload';
+    link.crossOrigin = 'use-credentials';
+    link.setAttribute('href', './chunk.js');
+
+    const transformed = transpileLink(link, baseUrl, {
+      fetch: window.fetch,
+      sandbox,
+      esmEngine: engine as unknown as EsmSandboxEngine,
+    }) as HTMLLinkElement;
+
+    expect(transformed.rel).toBe('preload');
+    expect(transformed.as).toBe('fetch');
+    expect(transformed.getAttribute('href')).toBe('https://app.host/chunk.js');
+    expect(transformed.crossOrigin).toBe('use-credentials');
   });
 
   it('keeps modulepreload links untouched without the esm engine', () => {

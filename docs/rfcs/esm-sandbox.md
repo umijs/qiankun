@@ -294,7 +294,7 @@ RFC 的改写管线需要递归处理整个模块依赖图。为避免串行瀑�
 - **全并行 blob 生成**：因为 specifier 改写为唯一标识后不再依赖其他模块的 blob URL，所有模块可独立、并行生成 blob URL，无需自底向上串行
 - **循环依赖**：见下方专项说明
 - **动态 import**：不在此阶段处理，保持 lazy（运行时通过 `__qk_dynamic_import` 按需触发同样的管线，并追加 import map 条目）
-- **与 `modulepreload` 的协同**：writable-dom 生成的 `modulepreload` 可作为 fetch 预热 hint，其响应通过 `makeFetchCacheable` LRU 被改写管线复用（见 §10.1）
+- **与 `modulepreload` 的协同**：writable-dom 生成的 `modulepreload` 被改写为 `rel="preload" as="fetch"`，预热请求仍由浏览器在 walk-ahead 时机发出，其响应经浏览器 preload cache 被改写管线的 `fetch()` 复用（与 classic 路径的 `as="script"` → `as="fetch"` 改写同一手法，见 §10.1）
 
 **循环依赖**
 
@@ -557,9 +557,13 @@ qiankun 用全局单变量 `nativeGlobal.__currentLockingSandbox__` 把 `documen
 
 仅在确实生成了 modulepreload 的**混合**场景，才需处理「原始 URL 预取一次 + 改写后 blob URL 再 `import()` 一次」的双取：
 
-- **抑制 / 改写**：接管 `<script type="module">` 时不生成对应 `modulepreload`，或改成指向最终 blob URL。
-- **更正：不能依赖「复用 `makeFetchCacheable` LRU」**。`modulepreload` 是**浏览器内部**的 link 资源获取，不经过 JS 层；`makeFetchCacheable`（`packages/shared/src/fetch-utils/makeFetchCacheable.ts`，全局 LRU 50）只缓存 qiankun 自己 `fetch()` 的响应。浏览器 modulepreload 的产物只进入**浏览器 HTTP 缓存**，无法直接灌进 qiankun 的 JS 级 LRU。原 RFC 把两者混为一谈，「让原始 URL 预取结果被改写流水线复用」这一「优先方案」**机制上不成立**。
-- 真正可行的复用路径只有两条：(a) 让 qiankun 改写流水线的 `fetch()` 与 modulepreload 命中**同一条浏览器 HTTP 缓存**（依赖响应可缓存、同 URL、同 credentials 与 `?t=`/`?v=` 查询）；(b) 干脆抑制 modulepreload、由 qiankun 改写流水线统一发起并经 `makeFetchCacheable` 复用。**推荐 (b)**，避免依赖不可控的 HTTP 缓存命中。
+- **更正一：不能依赖「复用 `makeFetchCacheable` LRU」**。`modulepreload` 是**浏览器内部**的 link 资源获取，不经过 JS 层；`makeFetchCacheable`（`packages/shared/src/fetch-utils/makeFetchCacheable.ts`，全局 LRU 50）只缓存 qiankun 自己 `fetch()` 的响应。浏览器 modulepreload 的产物只进入**浏览器缓存**，无法直接灌进 qiankun 的 JS 级 LRU。原 RFC 把两者混为一谈，「让原始 URL 预取结果被改写流水线复用」这一「优先方案」**机制上不成立**。
+- **更正二：modulepreload 的 module map 产物在改写方案下必然浪费**。modulepreload 会把**原始 URL** 的编译模块塞进 module map，但改写后的模块图只 `import` blob URL，原 URL 条目永远不会被消费——网络字节最多经缓存复用，编译则纯属白做。
+- 候选复用路径有三条：
+  - (a) **依赖 HTTP 缓存命中**：保留 modulepreload，寄希望于改写管线的 `fetch()` 与它命中同一条浏览器 HTTP 缓存。依赖响应可缓存、同 URL、同 credentials——dev server 普遍 `no-cache`，命中不可控，**不采用**。
+  - (b) **抑制**：直接摘掉 modulepreload、由改写管线统一发起并经 `makeFetchCacheable` 去重。缺点：writable-dom 只在被前序阻塞脚本挡住时才 walk-ahead 生成 modulepreload（「向前预热」），单纯抑制会**丢失这个预热时机**——模块下载被推迟到 walker 正序处理到 module script 时才开始，混合场景出现串行化回退；若要补偿还需在抑制处手动发 `cachedFetch` 预热。
+  - (b') **改写为 `rel="preload" as="fetch"`（采用，与 classic 路径对齐）**：classic script 沙箱路径早已用同一手法——`link.ts` 的 `postProcessPreloadLink` 把 `as="script"` 改成 `as="fetch"`，使浏览器 preload 请求的 destination/mode 与后续管线 `fetch()` 对齐、经 **preload cache** 命中（preload cache 匹配不依赖响应可缓存性，对 `no-cache` 的 dev server 同样有效）。modulepreload 照抄：改写为 `rel="preload" as="fetch"`，浏览器仍在 walk-ahead 时机发出预热请求（时机零丢失），管线 `fetch()` 从 preload cache 直取。
+- **(b') 的 credentials 对齐规则**：modulepreload 天然 `mode: 'cors'`，而裸 `as="fetch"` preload 是 no-cors、永远匹配不上 `fetch()`，因此必须显式映射——无 `crossorigin`/`anonymous` → 补 `crossorigin="anonymous"`（cors + same-origin，恰为 `fetch()` 默认值，与 `engine.fetchModuleSource` 一致）；`use-credentials` → 原样保留（要求引擎侧 `fetchCredentials` 同为 `include`，两者都来自子应用自身的 crossorigin 标注，正常情况下天然一致）。实现见 `packages/shared/src/assets-transpilers/link.ts` 对 `rel === 'modulepreload'` 的分支。
 
 ### 11. Import Map 运行时管理（已更新）
 
@@ -788,7 +792,7 @@ qiankun 现有 prefetch（`apis/prefetch.ts`）用 `DOMParser` 解析静态 entr
 | `packages/shared/src/assets-transpilers/module.ts` | **新增**：lexer 调用 + 标识符扫描过滤（∩ `globalsInBrowser`、剔除 import 绑定重名、SyntaxError 重试兜底，见 §1）+ 顶部注入（runtime 模块 import 引导）+ specifier 改写为实例级唯一 specifier（不改为 blob URL）+ import.meta rewrite + 既有 sourceMappingURL 绝对化与行偏移合并（§15）+ Blob URL 生成（`type: 'text/javascript'`） |
 | `packages/shared/src/assets-transpilers/import-map.ts` | **新增**：per-app import map 解析与查询（仓库现无 importmap 实现） |
 | `packages/loader/src/index.ts` | (1) 通过 `nodeTransformer` 把 `<script type="module">` / `<script type="importmap">` 路由到对应 transpiler；(2) 新增 ESM 入口解析分支：`onEntryLoaded` 内当 entry 为 module 时走 `await import(entryBlobUrl)`，绕过 `latestSetProp` |
-| `packages/loader/src/writable-dom/index.ts` | **不修改内部**；接入点改为 loader 的 `nodeTransformer`。仅需协同：抑制/改写为 module script 自动生成的 `modulepreload`，避免与 blob URL 二次取（见 §10.1） |
+| `packages/loader/src/writable-dom/index.ts` | **不修改内部**；接入点改为 loader 的 `nodeTransformer`。仅需协同：为 module script 自动生成的 `modulepreload` 在 link transpiler 中改写为 `rel="preload" as="fetch"`（保留浏览器预热时机、经 preload cache 被管线 `fetch()` 复用，与 classic 路径同一手法，见 §10.1） |
 | `packages/qiankun/src/core/loadApp.ts` | ESM 入口生命周期接入：从 ESM 入口分支拿到 `{bootstrap, mount, unmount}` 接入 single-spa（classic 路径不动） |
 | `packages/qiankun/src/apis/registerMicroApps.ts` | `start()` 中增加 `await esModuleLexer.init()`（公共启动入口） |
 | `packages/sandbox/src/core/globals.ts` | **复用**现有 `globalsInBrowser`（725 项）作为 ESM 顶部解构白名单**基集**（实际解构集按模块扫描过滤，见 §1）；静态剔除值类型/getter 语义属性项。**不新建** `membrane/globals.ts`（原 RFC 的 30 项手维护列表是倒退） |
