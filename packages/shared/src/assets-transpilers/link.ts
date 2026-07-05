@@ -24,10 +24,12 @@ const pendingFetches = new Map<string, Promise<string>>();
 /**
  * Cross-package contract with the loader's writable-dom: when a <link rel="stylesheet"> is swapped
  * for a <style> whose CSS text fills in asynchronously, the fill promise is attached under this
- * registered symbol so the streaming walk can keep blocking subsequent scripts until the CSS is
+ * symbol so the streaming walk can keep blocking subsequent scripts until the CSS is
  * applied — preserving the native "stylesheets block later scripts" ordering.
+ * A registered symbol (Symbol.for), so the contract survives duplicated @qiankunjs/shared
+ * instances in a dependency tree.
  */
-const pendingStylesheetFill = Symbol.for('qiankun.pendingStylesheetFill');
+export const pendingStylesheetFill = Symbol.for('qiankun.pendingStylesheetFill');
 
 function markPendingStylesheetFill(styleElement: HTMLStyleElement, fill: Promise<unknown>): void {
   (styleElement as unknown as Record<symbol, unknown>)[pendingStylesheetFill] = fill;

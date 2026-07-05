@@ -1,3 +1,5 @@
+import { pendingStylesheetFill } from '@qiankunjs/shared';
+
 type Writable = {
   write: (html: string) => void;
   abort: (err: Error) => void;
@@ -188,12 +190,10 @@ export default writableDOM as WritableDOM;
 
 /**
  * Cross-package contract with @qiankunjs/shared's link transpiler: a swapped stylesheet
- * placeholder carries a promise (under this registered symbol) that settles once its CSS text
- * has been fetched and filled in — the walk stays blocked until then to preserve the native
- * "stylesheets block later scripts" ordering.
+ * placeholder carries a promise (under the pendingStylesheetFill symbol) that settles once
+ * its CSS text has been fetched and filled in — the walk stays blocked until then to preserve
+ * the native "stylesheets block later scripts" ordering.
  */
-const pendingStylesheetFill = Symbol.for('qiankun.pendingStylesheetFill');
-
 function getPendingLoad(node: Node): Promise<unknown> | undefined {
   const pending = (node as unknown as Record<symbol, unknown>)[pendingStylesheetFill];
   return pending && typeof (pending as Promise<unknown>).then === 'function'
