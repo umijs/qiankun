@@ -1,23 +1,13 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
-import legacy from '@vitejs/plugin-legacy';
-import qiankunHtmlPlugin from './config/qiankunHtml';
+import { qiankun } from '@qiankunjs/bundler-plugin/vite';
 
-export default defineConfig(({ mode }) => {
-  const isQiankun = mode === 'qiankun';
-
-  return {
-    base: isQiankun ? './' : '/',
-    plugins: [
-      vue(),
-      isQiankun && legacy({ renderLegacyChunks: true }),
-      isQiankun && qiankunHtmlPlugin(),
-    ].filter(Boolean),
-    server: {
-      cors: true,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-      },
-    },
-  };
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [vue(), qiankun()],
+  server: {
+    // matches the sub-app entry preconfigured in a create-qiankun main app,
+    // adjust it per app when you scaffold multiple sub apps
+    port: 7101,
+  },
 });

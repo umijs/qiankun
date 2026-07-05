@@ -4,7 +4,7 @@ Scaffold a qiankun main app or sub app with a single command. Supports React and
 
 ## Requirements
 
-- Node.js v18 or higher
+- Node.js v20.19 or higher (required by Vite)
 
 ## Installation
 
@@ -89,9 +89,9 @@ Sub apps support 4 framework templates, all powered by Vite:
 
 Each sub app includes:
 
-- Proper qiankun entry point configuration
-- `build:qiankun` script for qiankun-compatible builds
-- qiankun sandbox isolation configuration
+- qiankun lifecycles exported straight from the entry module (loaded natively by qiankun's ESM sandbox)
+- `@qiankunjs/bundler-plugin/vite` wired into `vite.config`, handling cross-origin loading and entry marking
+- No legacy/SystemJS build mode: the regular `dev`/`build`/`preview` outputs are qiankun-ready
 
 ## Generated Project Structure
 
@@ -117,8 +117,8 @@ my-sub-app/
 │   ├── App.{ts,tsx}      # Qiankun entry export
 │   ├── main.{ts,tsx}     # Qiankun lifecycle hooks
 │   └── ...
-├── vite.config.ts        # Configured for qiankun
-├── package.json          # Includes build:qiankun script
+├── vite.config.ts        # Wires in @qiankunjs/bundler-plugin/vite
+├── package.json
 └── ...
 ```
 
@@ -132,11 +132,7 @@ pnpm install
 pnpm dev
 ```
 
-For sub apps, build for qiankun:
-
-```bash
-pnpm build:qiankun
-```
+The dev server and the production build are both loadable by qiankun as-is — no dedicated qiankun build step.
 
 ## License
 

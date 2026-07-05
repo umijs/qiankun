@@ -17,11 +17,16 @@ function App() {
     setLoading(true);
     setError(null);
 
-    microAppRef.current = loadMicroApp({
-      name: 'sub-app',
-      entry: '//localhost:7101',
-      container: containerRef.current,
-    });
+    microAppRef.current = loadMicroApp(
+      {
+        name: 'sub-app',
+        entry: '//localhost:7101',
+        container: containerRef.current,
+      },
+      // sandbox is on by default; kept explicit so you know where to configure it.
+      // styleIsolation: true additionally scopes the sub-app css with @scope
+      { sandbox: true },
+    );
 
     microAppRef.current.mountPromise
       .then(() => {

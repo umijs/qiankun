@@ -1,6 +1,6 @@
 # @qiankunjs/bundler-plugin
 
-Bundler plugins for the [qiankun](https://github.com/umijs/qiankun) micro-frontend framework. Currently supports Webpack (4 & 5), with plans to support other bundlers like Vite and Turbopack in the future.
+Bundler plugins for the [qiankun](https://github.com/umijs/qiankun) micro-frontend framework. Currently supports Webpack (4 & 5) and Vite (5+).
 
 ## Installation
 
@@ -54,6 +54,40 @@ The plugin automatically detects and marks the entry script in your HTML:
 2. For single entry builds: marks the main entry chunk's script
 3. For multi-entry builds: matches HTML filename to entrypoint name
 4. Falls back to the last script tag if automatic detection fails
+
+## Vite Plugin
+
+qiankun loads Vite apps natively through its ESM sandbox — no legacy/SystemJS transformation is required. The Vite plugin only takes care of the loading plumbing:
+
+### Features
+
+- Responds with permissive CORS headers from the dev and preview servers, so the main app can fetch the entry HTML and module graph cross-origin
+- Marks the entry module script with the `entry` attribute in the built HTML (same contract as the webpack plugin), so the qiankun loader picks the entry deterministically
+
+### Usage
+
+In your `vite.config.ts`:
+
+```typescript
+import { defineConfig } from 'vite';
+import { qiankun } from '@qiankunjs/bundler-plugin/vite';
+
+export default defineConfig({
+  plugins: [qiankun()],
+});
+```
+
+Your entry module just exports the qiankun lifecycles directly:
+
+```typescript
+export async function bootstrap() {}
+export async function mount(props) {
+  // render your app into props.container
+}
+export async function unmount(props) {
+  // tear your app down
+}
+```
 
 ## Contributing
 

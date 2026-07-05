@@ -1,6 +1,6 @@
 # @qiankunjs/bundler-plugin
 
-`@qiankunjs/bundler-plugin` 是为 [qiankun](https://github.com/umijs/qiankun) 微前端框架设计的打包工具插件集。当前支持 Webpack (4 & 5)，未来计划支持 Vite、Turbopack 等其他打包工具。
+`@qiankunjs/bundler-plugin` 是为 [qiankun](https://github.com/umijs/qiankun) 微前端框架设计的打包工具插件集。当前支持 Webpack (4 & 5) 与 Vite (5+)。
 
 ## 安装
 
@@ -54,6 +54,40 @@ module.exports = {
 2. 单入口构建：标记主入口 chunk 的脚本
 3. 多入口构建：根据 HTML 文件名匹配对应的 entrypoint
 4. 如果自动检测失败，回退到最后一个 script 标签
+
+## Vite 插件
+
+qiankun 通过 ESM 沙箱原生加载 Vite 应用——无需任何 legacy/SystemJS 转换。Vite 插件只负责加载链路上的基础设施：
+
+### 功能
+
+- dev / preview 服务器返回宽松的 CORS 头，使主应用可以跨域获取入口 HTML 与模块图
+- 构建产物 HTML 中的入口 module script 自动加上 `entry` 属性（与 webpack 插件同一约定），qiankun loader 可确定性地识别入口
+
+### 使用
+
+在您的 `vite.config.ts` 中：
+
+```typescript
+import { defineConfig } from 'vite';
+import { qiankun } from '@qiankunjs/bundler-plugin/vite';
+
+export default defineConfig({
+  plugins: [qiankun()],
+});
+```
+
+入口模块直接导出 qiankun 生命周期即可：
+
+```typescript
+export async function bootstrap() {}
+export async function mount(props) {
+  // 将应用渲染到 props.container
+}
+export async function unmount(props) {
+  // 卸载应用
+}
+```
 
 ## 贡献
 

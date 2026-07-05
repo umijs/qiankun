@@ -19,22 +19,31 @@
       "import": "./dist/esm/webpack/index.js",
       "require": "./dist/cjs/webpack/index.js",
       "types": "./dist/esm/webpack/index.d.ts"
+    },
+    "./vite": {
+      "import": "./dist/esm/vite/index.js",
+      "require": "./dist/cjs/vite/index.js",
+      "types": "./dist/esm/vite/index.d.ts"
     }
   },
   "scripts": {
     "build:webpack4": "cd ./tests/webpack4 && npm install && pnpm run build",
     "build:webpack5": "cd ./tests/webpack5 && npm install && pnpm run build",
     "test": "pnpm run build && pnpm run build:webpack4 && pnpm run build:webpack5 && vitest --run",
-    "build": "father build"
+    "build": "father build && node ./scripts/mark-module-types.mjs"
   },
   "files": [
     "dist"
   ],
   "peerDependencies": {
-    "webpack": "^4.0.0 || ^5.0.0"
+    "webpack": "^4.0.0 || ^5.0.0",
+    "vite": ">=5.0.0"
   },
   "peerDependenciesMeta": {
     "webpack": {
+      "optional": true
+    },
+    "vite": {
       "optional": true
     }
   },
@@ -46,6 +55,7 @@
   },
   "devDependencies": {
     "@types/webpack-sources": "^3.2.1",
+    "vite": "^8.1.3",
     "webpack": "^5.0.0"
   }
 }

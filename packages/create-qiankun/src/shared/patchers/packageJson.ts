@@ -2,13 +2,7 @@ import path from 'node:path';
 import fse from 'fs-extra';
 import type { ViteTemplate } from '../types';
 import { isReactTemplate } from '../types';
-import {
-  LEGACY_PLUGIN_VERSION,
-  CHEERIO_VERSION,
-  QIANKUN_VERSION,
-  QIANKUN_REACT_VERSION,
-  QIANKUN_VUE_VERSION,
-} from '../versions';
+import { BUNDLER_PLUGIN_VERSION, QIANKUN_VERSION, QIANKUN_REACT_VERSION, QIANKUN_VUE_VERSION } from '../versions';
 
 export async function patchPackageJson(appRoot: string, appName: string, template: ViteTemplate): Promise<void> {
   const pkgPath = path.join(appRoot, 'package.json');
@@ -16,16 +10,12 @@ export async function patchPackageJson(appRoot: string, appName: string, templat
 
   pkg.name = appName;
 
-  pkg.scripts = {
-    ...(pkg.scripts || {}),
-    'build:qiankun': 'vite build --mode qiankun',
-    'preview:qiankun': 'vite preview --mode qiankun',
-  };
-
+  // qiankun loads Vite apps natively through its ESM sandbox: the regular
+  // dev/build/preview outputs are already qiankun-compatible, no dedicated
+  // qiankun build mode is required
   pkg.devDependencies = {
     ...(pkg.devDependencies || {}),
-    '@vitejs/plugin-legacy': LEGACY_PLUGIN_VERSION,
-    cheerio: CHEERIO_VERSION,
+    '@qiankunjs/bundler-plugin': BUNDLER_PLUGIN_VERSION,
   };
 
   const qiankunBinding = isReactTemplate(template)

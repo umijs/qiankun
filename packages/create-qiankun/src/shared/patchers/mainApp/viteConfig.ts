@@ -11,10 +11,6 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 7099,
-    cors: true,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-    },
   },
 });
 `;

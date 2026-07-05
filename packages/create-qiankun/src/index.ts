@@ -159,8 +159,8 @@ async function main() {
     console.log('Next steps:');
     console.log(`  cd ${isInWorkspace ? `packages/${appName}` : appName}`);
     console.log('  pnpm install');
-    console.log('  pnpm dev              # Run standalone');
-    console.log('  pnpm build:qiankun    # Build for qiankun');
+    console.log('  pnpm dev              # Run standalone (loadable by qiankun as-is)');
+    console.log('  pnpm build            # Build (the ESM output is qiankun-ready)');
     console.log();
   }
 }

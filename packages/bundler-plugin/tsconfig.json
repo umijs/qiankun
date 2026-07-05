@@ -1,0 +1,8 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    // vite 8 ships exports-map-only type declarations that classic node resolution cannot see
+    "moduleResolution": "bundler"
+  },
+  "include": ["src", "tests"]
+}
