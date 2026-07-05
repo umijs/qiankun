@@ -30,6 +30,11 @@ const MIME_TYPES = {
   '.map': 'application/json; charset=utf-8',
 };
 
+// Per-path request counters behind the /__e2e__/ endpoints, so tests can assert network
+// behavior — e.g. a modulepreload warm-up being reused from the browser preload cache
+// shows up as exactly one hit for the module path.
+const requestCounts = new Map();
+
 const server = createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 'no-store');
@@ -44,14 +49,36 @@ const server = createServer(async (req, res) => {
   }
 
   // malformed percent-encoding must yield a 400, not an unhandled rejection killing the server
+  let url;
   let urlPath;
   try {
-    urlPath = decodeURIComponent(new URL(req.url, `http://localhost:${port}`).pathname);
+    url = new URL(req.url, `http://localhost:${port}`);
+    urlPath = decodeURIComponent(url.pathname);
   } catch {
     res.writeHead(400);
     res.end('Bad Request');
     return;
   }
+
+  if (urlPath === '/__e2e__/request-count' || urlPath === '/__e2e__/reset-request-count') {
+    const targetPath = url.searchParams.get('path');
+    if (!targetPath) {
+      res.writeHead(400);
+      res.end('missing path query');
+      return;
+    }
+    if (urlPath === '/__e2e__/reset-request-count') {
+      requestCounts.delete(targetPath);
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ count: requestCounts.get(targetPath) ?? 0 }));
+    return;
+  }
+
+  requestCounts.set(urlPath, (requestCounts.get(urlPath) ?? 0) + 1);
   let filePath = normalize(join(root, urlPath));
   if (!filePath.startsWith(root)) {
     res.writeHead(403);

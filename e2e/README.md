@@ -8,12 +8,15 @@ Browser end-to-end tests built on [Playwright](https://playwright.dev). They exe
 e2e/
 ├── ports.ts            # single source of truth for all fixture ports
 ├── playwright.config.ts # webServer array boots main + all sub apps automatically
-├── servers/serve.mjs    # zero-dep static server with CORS (real cross-origin deployment shape)
+├── servers/serve.mjs    # zero-dep static server with CORS (real cross-origin deployment shape);
+│                        # /__e2e__/request-count endpoints let tests assert per-path server hits
+│                        # (e.g. the modulepreload warm-up being reused from the preload cache)
 ├── fixtures/
 │   ├── main/            # vite-built main app, bundles the local `qiankun` package,
 │   │                    # exposes window.__E2E__ for tests to drive loadMicroApp imperatively
 │   ├── sub-classic/     # classic global-lifecycle sub app (the UMD shape), no build step
-│   ├── sub-esm/         # native ESM sub app with a multi-module graph, no build step
+│   ├── sub-esm/         # native ESM sub app with a multi-module graph, no build step;
+│   │                    # preload.html variant carries a <link rel="modulepreload"> (vite output shape)
 │   └── sub-misbehaving/ # deliberately bad app: mount errors + leaked intervals (via props)
 └── tests/               # suites organized by framework invariants, not by pages
 ```

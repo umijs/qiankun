@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test';
+import { PORTS } from '../ports';
 import { FIREFOX_ESM_LIMITATION, loadApp, readMainRealmGlobal, unmountApp } from './helpers';
+
+const SUB_ESM_ORIGIN = `http://localhost:${PORTS['sub-esm']}`;
+const PRELOADED_MODULE_PATH = '/modules/preloaded.js';
 
 // Expected failure, not a skip: the day Firefox starts passing, playwright reports
 // "passed unexpectedly" and we know to lift the annotation.
@@ -52,5 +56,39 @@ test.describe('esm sub app under sandbox', () => {
 
     // module-level state survives remount: the graph was cached, not re-evaluated
     await expect(page.getByTestId('esm-counters')).toHaveText('mount:2,importedCount:2');
+  });
+
+  test('modulepreload is rewritten to a preload-as-fetch warm-up that the module pipeline reuses', async ({
+    page,
+    request,
+  }) => {
+    // isolate from CI retries / --repeat-each residue; the module is only ever requested
+    // by this test's fixture graph, so parallel workers cannot pollute the count
+    await request.get(`${SUB_ESM_ORIGIN}/__e2e__/reset-request-count?path=${PRELOADED_MODULE_PATH}`);
+
+    const status = await loadApp(page, 'sub-esm-preload');
+    expect(status).toBe('MOUNTED');
+    await expect(page.getByTestId('esm-preload-marker')).toHaveText('preloaded:on');
+
+    // rewritten in place, classic-path alignment (RFC §10.1): href kept, modulepreload's
+    // cors semantics mapped onto the preload so it can match the pipeline fetch().
+    // Scoped to the container: the main app is a vite build with its own modulepreloads.
+    const container = page.locator('#container-sub-esm-preload');
+    const rewritten = container.locator(`link[rel="preload"][as="fetch"][href$="${PRELOADED_MODULE_PATH}"]`);
+    await expect(rewritten).toHaveAttribute('crossorigin', 'anonymous');
+    await expect(container.locator('link[rel="modulepreload"]')).toHaveCount(0);
+
+    // the warm-up request really came from the rewritten link, not from the pipeline fetch...
+    const initiators = await page.evaluate(
+      (url) => performance.getEntriesByName(url).map((entry) => (entry as PerformanceResourceTiming).initiatorType),
+      `${SUB_ESM_ORIGIN}${PRELOADED_MODULE_PATH}`,
+    );
+    expect(initiators).toContain('link');
+
+    // ...and it is the only server hit: the pipeline fetch() was served from the browser
+    // preload cache. The fixture server sends Cache-Control: no-store, so a preload-cache
+    // miss cannot hide in the HTTP cache — it would surface as a second request here.
+    const counter = await request.get(`${SUB_ESM_ORIGIN}/__e2e__/request-count?path=${PRELOADED_MODULE_PATH}`);
+    expect(((await counter.json()) as { count: number }).count).toBe(1);
   });
 });

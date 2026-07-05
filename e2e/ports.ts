@@ -11,6 +11,8 @@ export const PORTS = {
 export const SUB_APP_ENTRIES = {
   'sub-classic': `http://localhost:${PORTS['sub-classic']}`,
   'sub-esm': `http://localhost:${PORTS['sub-esm']}`,
+  // same server, dedicated page whose HTML carries a <link rel="modulepreload">
+  'sub-esm-preload': `http://localhost:${PORTS['sub-esm']}/preload.html`,
   'sub-misbehaving': `http://localhost:${PORTS['sub-misbehaving']}`,
   // resolves to a 404 on purpose: the error-handling suite asserts the failure path
   'sub-missing': `http://localhost:${PORTS['sub-misbehaving']}/missing/`,

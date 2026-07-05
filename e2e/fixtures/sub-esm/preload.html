@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>sub-esm-preload</title>
+    <!-- the production output pattern of bundlers like Vite: modulepreload for a dep chunk -->
+    <link rel="modulepreload" href="./modules/preloaded.js" />
+  </head>
+  <body>
+    <div id="esm-preload-root"></div>
+    <script type="module" src="./preload-entry.js" entry></script>
+  </body>
+</html>
