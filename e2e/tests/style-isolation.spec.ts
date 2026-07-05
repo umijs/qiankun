@@ -51,4 +51,24 @@ test.describe('runtime style isolation (@scope)', () => {
     const bodyBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
     expect(bodyBg).not.toBe(INJECTED);
   });
+
+  test('a dynamically injected chunk-CSS link fires its load event and stays scoped', async ({ page }) => {
+    const LAZY = 'rgb(4, 5, 6)';
+
+    await loadApp(page, 'sub-classic-multiscript', { styleIsolation: true });
+
+    // the app resolves its "chunk CSS loaded" promise on the link's own load event
+    // (the mini-css-extract-plugin pattern) — the transpiled link must keep firing it
+    await expect(page.getByTestId('lazy-css-status')).toHaveText('lazy-css:loaded');
+
+    // the link kept its identity (attributes survive) and now carries the scoped blob stylesheet
+    const href = await page.getByTestId('lazy-link').getAttribute('href');
+    expect(href).toMatch(/^blob:/);
+
+    // the scoped css applies inside the container...
+    await expect(page.getByTestId('lazy-css-status')).toHaveCSS('color', LAZY);
+    // ...while its body rule never reaches the main realm
+    const bodyBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+    expect(bodyBg).not.toBe(LAZY);
+  });
 });

@@ -1,4 +1,4 @@
-import { markLoaderStreamedNode, pendingStylesheetFill } from '@qiankunjs/shared';
+import { markLoaderStreamedNode } from '@qiankunjs/shared';
 
 type Writable = {
   write: (html: string) => void;
@@ -130,10 +130,10 @@ function writableDOM(
           appendInlineTextIfNeeded(previousPendingText, inlineHostNode, assetTransformer);
           inlineHostNode = null;
 
-          // Transform FIRST: a transformer may swap the node for a different tag (e.g.
-          // <link rel="stylesheet"> -> inline <style> under style isolation), and all the
+          // Transform FIRST: a transformer may swap the node for a different one, and all the
           // blocking/async bookkeeping below must apply to the node that actually gets inserted —
-          // wiring it to a discarded clone would leave the walk permanently blocked.
+          // wiring it to a discarded clone would leave the walk permanently blocked. (Qiankun's own
+          // transpilers now always mutate in place, but the transformer contract still allows swaps.)
           if (typeof assetTransformer === 'function') {
             const transformed = assetTransformer(clone);
             if (transformed !== clone) {
@@ -142,7 +142,6 @@ function writableDOM(
             }
           }
 
-          const pendingLoad = getPendingLoad(clone);
           if (isBlocking(clone)) {
             isBlocked = true;
             // a transformer (e.g. the entry-script bookkeeping in loadEntry) may have attached its
@@ -164,16 +163,6 @@ function writableDOM(
             };
             element.onload = (event: Event) => unblock(prevOnload, event);
             element.onerror = ((event: Event) => unblock(prevOnerror, event)) as typeof element.onerror;
-          } else if (pendingLoad) {
-            // A swapped stylesheet placeholder still filling asynchronously (style isolation):
-            // keep the native "stylesheets block later scripts" ordering until the fill settles.
-            isBlocked = true;
-            // eslint-disable-next-line @typescript-eslint/no-loop-func
-            const unblock = () => {
-              isBlocked = false;
-              if (clone.parentNode) walk();
-            };
-            void pendingLoad.then(unblock, unblock);
           }
 
           // document.importNode will reset the `async` attribute to true, here we need to set it manually.
@@ -205,24 +194,18 @@ function writableDOM(
 
 export default writableDOM as WritableDOM;
 
-/**
- * Cross-package contract with @qiankunjs/shared's link transpiler: a swapped stylesheet
- * placeholder carries a promise (under the pendingStylesheetFill symbol) that settles once
- * its CSS text has been fetched and filled in — the walk stays blocked until then to preserve
- * the native "stylesheets block later scripts" ordering.
- */
-function getPendingLoad(node: Node): Promise<unknown> | undefined {
-  const pending = (node as unknown as Record<symbol, unknown>)[pendingStylesheetFill];
-  return pending && typeof (pending as Promise<unknown>).then === 'function'
-    ? (pending as Promise<unknown>)
-    : undefined;
-}
-
 // A transpiled remote classic script has its src moved to data-src while its content is fetched
 // and evaluated through a blob url (see the shared script transpiler) — it must keep the original
 // blocking/sync semantics of the src it carried, otherwise later inline/entry scripts outrun it.
 function getScriptSrc(node: any): string | undefined {
   return (node.src as string) || (node.dataset?.src as string | undefined);
+}
+
+// Same story for stylesheets under style isolation: the link's href moves to data-href while the
+// CSS is fetched and @scope-transpiled into a blob href (see the shared link transpiler) — it must
+// keep the original "stylesheets block later scripts" semantics of the href it carried.
+function getStylesheetHref(node: any): string | undefined {
+  return (node.href as string) || (node.dataset?.href as string | undefined);
 }
 
 function isBlocking(node: any): node is HTMLElement {
@@ -231,7 +214,10 @@ function isBlocking(node: any): node is HTMLElement {
     ((node.tagName === 'SCRIPT' &&
       !!getScriptSrc(node) &&
       !(node.noModule || node.type === 'module' || node.hasAttribute('async') || node.hasAttribute('defer'))) ||
-      (node.tagName === 'LINK' && node.rel === 'stylesheet' && (!node.media || matchMedia(node.media).matches)))
+      (node.tagName === 'LINK' &&
+        node.rel === 'stylesheet' &&
+        !!getStylesheetHref(node) &&
+        (!node.media || matchMedia(node.media).matches)))
   );
 }
 

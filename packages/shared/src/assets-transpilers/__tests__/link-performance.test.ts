@@ -1,10 +1,27 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import transpileLink, { clearStylesheetCache, getStylesheetCacheStats } from '../link';
 import type { AssetsTranspilerOpts } from '../types';
 
 describe('link transpiler performance', () => {
+  const blobsByUrl = new Map<string, Blob>();
+
   beforeEach(() => {
+    if (typeof URL.createObjectURL !== 'function') {
+      URL.createObjectURL = () => '';
+      URL.revokeObjectURL = () => {};
+    }
+    vi.spyOn(URL, 'createObjectURL').mockImplementation((blob) => {
+      const url = `blob:mock/${blobsByUrl.size}`;
+      blobsByUrl.set(url, blob as Blob);
+      return url;
+    });
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
     clearStylesheetCache();
+    blobsByUrl.clear();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   const createMockFetch = (cssContent: string, delay = 0) => {
@@ -25,12 +42,18 @@ describe('link transpiler performance', () => {
 
   const createOpts = (fetch: typeof window.fetch, appName = 'test-app'): AssetsTranspilerOpts => ({
     fetch,
-    sandbox: true,
     styleIsolation: {
       appName,
       scopeRoot: `[data-name="${appName}"]`,
     },
   });
+
+  const hasBlobHref = (link: HTMLLinkElement) => /^blob:/.test(link.getAttribute('href') ?? '');
+  const readBlobCss = (link: HTMLLinkElement): Promise<string> => {
+    const blob = blobsByUrl.get(link.getAttribute('href')!);
+    if (!blob) throw new Error('no blob captured');
+    return blob.text();
+  };
 
   describe('cache hit performance', () => {
     it('should cache raw CSS and avoid redundant fetches', async () => {
@@ -42,20 +65,22 @@ describe('link transpiler performance', () => {
       const link2 = createLink('https://example.com/styles.css');
 
       // First call - should fetch
-      const style1 = transpileLink(link1, 'https://example.com/', opts) as HTMLStyleElement;
-      await vi.waitFor(() => expect(style1.textContent).toBeTruthy(), { timeout: 200 });
+      transpileLink(link1, 'https://example.com/', opts);
+      await vi.waitFor(() => expect(hasBlobHref(link1)).toBe(true), { timeout: 200 });
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
 
-      // Second call - should use cache
+      // Second call - should use cache and apply the blob href synchronously
       const start = performance.now();
-      const style2 = transpileLink(link2, 'https://example.com/', opts) as HTMLStyleElement;
+      transpileLink(link2, 'https://example.com/', opts);
       const duration = performance.now() - start;
 
       // Cache hit should be nearly instant (< 5ms)
       expect(duration).toBeLessThan(5);
       expect(mockFetch).toHaveBeenCalledTimes(1); // No additional fetch
-      expect(style2.textContent).toBeTruthy();
+      expect(hasBlobHref(link2)).toBe(true);
+      // the very same blob is reused, not a new copy of the CSS
+      expect(link2.getAttribute('href')).toBe(link1.getAttribute('href'));
     });
 
     it('should cache transpiled results per app', async () => {
@@ -65,8 +90,8 @@ describe('link transpiler performance', () => {
       // First app
       const opts1 = createOpts(mockFetch, 'app1');
       const link1 = createLink('https://example.com/common.css');
-      const style1 = transpileLink(link1, 'https://example.com/', opts1) as HTMLStyleElement;
-      await vi.waitFor(() => expect(style1.textContent).toBeTruthy(), { timeout: 200 });
+      transpileLink(link1, 'https://example.com/', opts1);
+      await vi.waitFor(() => expect(hasBlobHref(link1)).toBe(true), { timeout: 200 });
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
 
@@ -74,17 +99,18 @@ describe('link transpiler performance', () => {
       const opts2 = createOpts(mockFetch, 'app2');
       const link2 = createLink('https://example.com/common.css');
       const start = performance.now();
-      const style2 = transpileLink(link2, 'https://example.com/', opts2) as HTMLStyleElement;
+      transpileLink(link2, 'https://example.com/', opts2);
       const duration = performance.now() - start;
 
       // Should reuse raw CSS but transpile for new app (still fast)
       expect(duration).toBeLessThan(5);
       expect(mockFetch).toHaveBeenCalledTimes(1); // No additional fetch
-      await vi.waitFor(() => expect(style2.textContent).toBeTruthy(), { timeout: 100 });
+      await vi.waitFor(() => expect(hasBlobHref(link2)).toBe(true), { timeout: 100 });
 
       // Both should have scoped content but with different app names
-      expect(style1.textContent).toContain('[data-name="app1"]');
-      expect(style2.textContent).toContain('[data-name="app2"]');
+      expect(await readBlobCss(link1)).toContain('[data-name="app1"]');
+      expect(await readBlobCss(link2)).toContain('[data-name="app2"]');
+      expect(link2.getAttribute('href')).not.toBe(link1.getAttribute('href'));
     });
 
     it('should handle multiple concurrent requests efficiently', async () => {
@@ -95,7 +121,7 @@ describe('link transpiler performance', () => {
       const links = Array.from({ length: 10 }, () => createLink('https://example.com/layout.css'));
 
       const start = performance.now();
-      const styles = links.map((link) => transpileLink(link, 'https://example.com/', opts) as HTMLStyleElement);
+      links.forEach((link) => transpileLink(link, 'https://example.com/', opts));
       const syncDuration = performance.now() - start;
 
       // All 10 calls should complete synchronously in < 10ms
@@ -104,13 +130,16 @@ describe('link transpiler performance', () => {
       // Wait for all to resolve
       await vi.waitFor(
         () => {
-          expect(styles.every((s) => s.textContent)).toBe(true);
+          expect(links.every(hasBlobHref)).toBe(true);
         },
         { timeout: 300 },
       );
 
       // Should only fetch once despite 10 requests
       expect(mockFetch).toHaveBeenCalledTimes(1);
+      // and they all converge on the same blob
+      const uniqueHrefs = new Set(links.map((link) => link.getAttribute('href')));
+      expect(uniqueHrefs.size).toBe(1);
     });
   });
 
@@ -120,17 +149,18 @@ describe('link transpiler performance', () => {
       const opts1 = createOpts(mockFetch, 'app1');
       const opts2 = createOpts(mockFetch, 'app2');
 
-      const link1 = createLink('https://example.com/a.css');
-      const link2 = createLink('https://example.com/b.css');
+      const linkA1 = createLink('https://example.com/a.css');
+      const linkB1 = createLink('https://example.com/b.css');
+      const linkA2 = createLink('https://example.com/a.css');
 
-      const style1 = transpileLink(link1, 'https://example.com/', opts1) as HTMLStyleElement;
-      const style2 = transpileLink(link2, 'https://example.com/', opts1) as HTMLStyleElement;
-      const style3 = transpileLink(link1, 'https://example.com/', opts2) as HTMLStyleElement;
+      transpileLink(linkA1, 'https://example.com/', opts1);
+      transpileLink(linkB1, 'https://example.com/', opts1);
+      transpileLink(linkA2, 'https://example.com/', opts2);
 
-      // Wait for all styles to be populated
+      // Wait for all links to get their blob href
       await vi.waitFor(
         () => {
-          return style1.textContent && style2.textContent && style3.textContent;
+          expect([linkA1, linkB1, linkA2].every(hasBlobHref)).toBe(true);
         },
         { timeout: 1000 },
       );
@@ -176,22 +206,22 @@ describe('link transpiler performance', () => {
       // First call - cold cache
       const link1 = createLink('https://example.com/large.css');
       const coldStart = performance.now();
-      const style1 = transpileLink(link1, 'https://example.com/', opts) as HTMLStyleElement;
-      await vi.waitFor(() => expect(style1.textContent).toBeTruthy(), { timeout: 300 });
+      transpileLink(link1, 'https://example.com/', opts);
+      await vi.waitFor(() => expect(hasBlobHref(link1)).toBe(true), { timeout: 300 });
       const coldDuration = performance.now() - coldStart;
 
       // Second call - warm cache
       const link2 = createLink('https://example.com/large.css');
       const warmStart = performance.now();
-      const style2 = transpileLink(link2, 'https://example.com/', opts) as HTMLStyleElement;
+      transpileLink(link2, 'https://example.com/', opts);
       const warmDuration = performance.now() - warmStart;
 
       // Warm cache should be at least 10x faster
       expect(warmDuration).toBeLessThan(coldDuration / 10);
       expect(warmDuration).toBeLessThan(5);
 
-      // Both should have the same content
-      expect(style1.textContent).toBe(style2.textContent);
+      // Both should share the exact same blob
+      expect(link2.getAttribute('href')).toBe(link1.getAttribute('href'));
     });
 
     it('should measure memory efficiency of shared raw CSS', async () => {
@@ -199,19 +229,19 @@ describe('link transpiler performance', () => {
       const mockFetch = createMockFetch(cssContent, 10);
 
       const apps = ['app1', 'app2', 'app3', 'app4', 'app5'];
-      const link = createLink('https://example.com/shared.css');
-      const styles: HTMLStyleElement[] = [];
+      const links: HTMLLinkElement[] = [];
 
       for (const appName of apps) {
         const opts = createOpts(mockFetch, appName);
-        const style = transpileLink(link, 'https://example.com/', opts) as HTMLStyleElement;
-        styles.push(style);
+        const link = createLink('https://example.com/shared.css');
+        transpileLink(link, 'https://example.com/', opts);
+        links.push(link);
       }
 
-      // Wait for all styles to be populated
+      // Wait for all links to be filled
       await vi.waitFor(
         () => {
-          return styles.every((s) => s.textContent);
+          expect(links.every(hasBlobHref)).toBe(true);
         },
         { timeout: 1000 },
       );

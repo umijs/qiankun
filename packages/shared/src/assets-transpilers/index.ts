@@ -60,4 +60,4 @@ export type * from './types';
 export { isValidJavaScriptType } from './utils';
 export { transpileStyleText, transpileStyleRule } from './style';
 export type { StyleTranspilerOpts } from './style';
-export { clearStylesheetCache, getStylesheetCacheStats, pendingStylesheetFill } from './link';
+export { clearStylesheetCache, getStylesheetCacheStats } from './link';

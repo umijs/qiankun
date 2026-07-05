@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import transpileLink, { clearStylesheetCache } from '../link';
 import type { AssetsTranspilerOpts } from '../types';
 
@@ -9,10 +9,41 @@ const makeOpts = (overrides?: Partial<AssetsTranspilerOpts>): AssetsTranspilerOp
   ...overrides,
 });
 
+// Capture the blobs behind the object urls the transpiler creates, so tests can assert the
+// @scope-wrapped CSS without needing the environment to actually load blob stylesheets
+const blobsByUrl = new Map<string, Blob>();
+const readBlobCss = async (link: HTMLElement): Promise<string> => {
+  const href = link.getAttribute('href')!;
+  const blob = blobsByUrl.get(href);
+  if (!blob) throw new Error(`no blob captured for ${href}`);
+  return blob.text();
+};
+const waitForBlobHref = async (link: HTMLElement): Promise<void> => {
+  await vi.waitFor(() => {
+    expect(link.getAttribute('href')).toMatch(/^blob:/);
+  });
+};
+
 describe('transpileLink', () => {
   beforeEach(() => {
+    if (typeof URL.createObjectURL !== 'function') {
+      URL.createObjectURL = () => '';
+      URL.revokeObjectURL = () => {};
+    }
+    vi.spyOn(URL, 'createObjectURL').mockImplementation((blob) => {
+      const url = `blob:mock/${blobsByUrl.size}`;
+      blobsByUrl.set(url, blob as Blob);
+      return url;
+    });
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
     clearStylesheetCache();
+    blobsByUrl.clear();
   });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('without styleIsolation', () => {
     it('returns the original link element with resolved href', () => {
       const link = document.createElement('link');
@@ -40,7 +71,7 @@ describe('transpileLink', () => {
       scopeRoot: '[data-name="test-app"]',
     };
 
-    it('returns a <style> element instead of <link> for stylesheet links', () => {
+    it('keeps the <link> element and moves its href aside while transpiling', () => {
       const link = document.createElement('link');
       link.rel = 'stylesheet';
       link.setAttribute('href', '/styles/main.css');
@@ -48,99 +79,87 @@ describe('transpileLink', () => {
       const mockFetch = vi.fn().mockResolvedValue(new Response('.btn { color: red; }'));
       const result = transpileLink(link, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
 
-      expect(result.tagName).toBe('STYLE');
-      expect(result).toBeInstanceOf(HTMLStyleElement);
-      expect((result as HTMLStyleElement).dataset.href).toBe('http://localhost:8000/styles/main.css');
+      // node identity is the whole point: app-attached handlers and native link semantics survive
+      expect(result).toBe(link);
+      expect(result.tagName).toBe('LINK');
+      // the original href must never hit the network as an unscoped stylesheet
+      expect(link.getAttribute('href')).toBeNull();
+      expect(link.dataset.href).toBe('http://localhost:8000/styles/main.css');
     });
 
-    it('fetches the CSS and sets @scope-wrapped content as textContent', async () => {
+    it('fetches the CSS and lands an @scope-wrapped blob href', async () => {
       const link = document.createElement('link');
       link.rel = 'stylesheet';
       link.setAttribute('href', '/styles/main.css');
 
       const cssContent = '.container { margin: 0; }';
       const mockFetch = vi.fn().mockResolvedValue(new Response(cssContent));
-      const result = transpileLink(link, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
+      transpileLink(link, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
 
-      await vi.waitFor(() => {
-        expect((result as HTMLStyleElement).textContent).toBeTruthy();
-      });
+      await waitForBlobHref(link);
 
       expect(mockFetch).toHaveBeenCalledWith('http://localhost:8000/styles/main.css');
-      expect((result as HTMLStyleElement).textContent).toContain('@scope ([data-name="test-app"])');
-      expect((result as HTMLStyleElement).textContent).toContain('.container { margin: 0; }');
+      const css = await readBlobCss(link);
+      expect(css).toContain('@scope ([data-name="test-app"])');
+      expect(css).toContain('.container { margin: 0; }');
     });
 
-    it('drops the stylesheet (empty <style>) on fetch failure to preserve isolation', async () => {
+    it('dispatches an error event and drops the stylesheet on fetch failure', async () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const link = document.createElement('link');
       link.rel = 'stylesheet';
       link.setAttribute('href', '/styles/broken.css');
+      const onerror = vi.fn();
+      link.addEventListener('error', onerror);
 
       const mockFetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
-      const result = transpileLink(link, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
+      transpileLink(link, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
 
       await vi.waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalled();
+        expect(onerror).toHaveBeenCalled();
       });
 
-      // Must NOT contain an un-scoped @import that would leak globally.
-      expect((result as HTMLStyleElement).textContent).not.toContain('@import');
-      expect((result as HTMLStyleElement).textContent ?? '').toBe('');
+      // no href is ever set: the unscoped stylesheet must not leak globally
+      expect(link.getAttribute('href')).toBeNull();
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dropped to preserve isolation'));
       consoleSpy.mockRestore();
     });
 
-    it('copies media attribute from <link> to generated <style>', () => {
+    it('keeps native link attributes untouched (media/disabled/nonce/title)', () => {
       const link = document.createElement('link');
       link.rel = 'stylesheet';
       link.setAttribute('href', '/styles/print.css');
       link.setAttribute('media', 'print');
+      link.setAttribute('nonce', 'abc123');
+      link.setAttribute('title', 'Alternative Theme');
+      link.disabled = true;
 
       const mockFetch = vi.fn().mockResolvedValue(new Response('.print { color: black; }'));
       const result = transpileLink(link, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
 
-      expect(result.tagName).toBe('STYLE');
-      expect(result.getAttribute('media')).toBe('print');
+      expect(result).toBe(link);
+      expect(link.getAttribute('media')).toBe('print');
+      expect(link.getAttribute('nonce')).toBe('abc123');
+      expect(link.getAttribute('title')).toBe('Alternative Theme');
+      expect(link.disabled).toBe(true);
     });
 
-    it('copies disabled state from <link> to generated <style>', () => {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.setAttribute('href', '/styles/optional.css');
-      link.disabled = true;
+    it('reuses the same blob url for the same stylesheet and app', async () => {
+      const link1 = document.createElement('link');
+      link1.rel = 'stylesheet';
+      link1.setAttribute('href', '/styles/main.css');
+      const link2 = document.createElement('link');
+      link2.rel = 'stylesheet';
+      link2.setAttribute('href', '/styles/main.css');
 
-      const mockFetch = vi.fn().mockResolvedValue(new Response('.opt { color: gray; }'));
-      const result = transpileLink(link, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
+      const mockFetch = vi.fn().mockResolvedValue(new Response('.shared { color: red; }'));
+      transpileLink(link1, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
+      await waitForBlobHref(link1);
 
-      expect(result.tagName).toBe('STYLE');
-      expect((result as HTMLStyleElement).disabled).toBe(true);
-    });
-
-    it('copies nonce attribute from <link> to generated <style>', () => {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.setAttribute('href', '/styles/secure.css');
-      link.setAttribute('nonce', 'abc123');
-
-      const mockFetch = vi.fn().mockResolvedValue(new Response('.sec { color: green; }'));
-      const result = transpileLink(link, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
-
-      expect(result.tagName).toBe('STYLE');
-      expect(result.getAttribute('nonce')).toBe('abc123');
-    });
-
-    it('copies title attribute from <link> to generated <style>', () => {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.setAttribute('href', '/styles/alt.css');
-      link.setAttribute('title', 'Alternative Theme');
-
-      const mockFetch = vi.fn().mockResolvedValue(new Response('.alt { color: navy; }'));
-      const result = transpileLink(link, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
-
-      expect(result.tagName).toBe('STYLE');
-      expect(result.getAttribute('title')).toBe('Alternative Theme');
+      transpileLink(link2, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
+      // cache hit applies synchronously
+      expect(link2.getAttribute('href')).toBe(link1.getAttribute('href'));
+      expect(mockFetch).toHaveBeenCalledTimes(1);
     });
 
     it('passes baseURL so relative CSS assets get resolved', async () => {
@@ -150,13 +169,10 @@ describe('transpileLink', () => {
 
       const cssContent = `.bg { background: url("../images/hero.png"); }`;
       const mockFetch = vi.fn().mockResolvedValue(new Response(cssContent));
-      const result = transpileLink(link, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
+      transpileLink(link, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
 
-      await vi.waitFor(() => {
-        expect((result as HTMLStyleElement).textContent).toBeTruthy();
-      });
-
-      expect((result as HTMLStyleElement).textContent).toContain('url("http://localhost:8000/images/hero.png")');
+      await waitForBlobHref(link);
+      expect(await readBlobCss(link)).toContain('url("http://localhost:8000/images/hero.png")');
     });
 
     it('does not affect non-stylesheet links', () => {
@@ -168,6 +184,18 @@ describe('transpileLink', () => {
       const result = transpileLink(link, baseURI, makeOpts({ styleIsolation }));
       expect(result).toBe(link);
       expect(result.tagName).toBe('LINK');
+    });
+
+    it('rewrites a stylesheet preload to as=fetch so it matches the transpiler fetch', () => {
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'style';
+      link.setAttribute('href', '/styles/main.css');
+
+      const result = transpileLink(link, baseURI, makeOpts({ styleIsolation })) as HTMLLinkElement;
+      expect(result).toBe(link);
+      expect(result.as).toBe('fetch');
+      expect(result.crossOrigin).toBe('anonymous');
     });
 
     it('does not affect links without href', () => {
@@ -187,14 +215,12 @@ describe('transpileLink', () => {
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .element { animation-name: fadeIn; }`;
       const mockFetch = vi.fn().mockResolvedValue(new Response(cssContent));
-      const result = transpileLink(link, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
+      transpileLink(link, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
 
-      await vi.waitFor(() => {
-        expect((result as HTMLStyleElement).textContent).toBeTruthy();
-      });
-
-      expect((result as HTMLStyleElement).textContent).toContain('@keyframes __qk_test-app_fadeIn');
-      expect((result as HTMLStyleElement).textContent).toContain('animation-name: __qk_test-app_fadeIn');
+      await waitForBlobHref(link);
+      const css = await readBlobCss(link);
+      expect(css).toContain('@keyframes __qk_test-app_fadeIn');
+      expect(css).toContain('animation-name: __qk_test-app_fadeIn');
     });
 
     it('hoists @font-face outside @scope in fetched CSS', async () => {
@@ -206,15 +232,12 @@ describe('transpileLink', () => {
 @font-face { font-family: 'MyFont'; src: url('/fonts/myfont.woff2'); }
 .text { font-family: 'MyFont'; }`;
       const mockFetch = vi.fn().mockResolvedValue(new Response(cssContent));
-      const result = transpileLink(link, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
+      transpileLink(link, baseURI, makeOpts({ styleIsolation, fetch: mockFetch }));
 
-      await vi.waitFor(() => {
-        expect((result as HTMLStyleElement).textContent).toBeTruthy();
-      });
-
-      const text = (result as HTMLStyleElement).textContent!;
-      const fontFacePos = text.indexOf('@font-face');
-      const scopePos = text.indexOf('@scope');
+      await waitForBlobHref(link);
+      const css = await readBlobCss(link);
+      const fontFacePos = css.indexOf('@font-face');
+      const scopePos = css.indexOf('@scope');
       expect(fontFacePos).toBeGreaterThanOrEqual(0);
       expect(scopePos).toBeGreaterThan(fontFacePos);
     });

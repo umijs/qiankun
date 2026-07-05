@@ -38,6 +38,27 @@
       fragment.appendChild(wrapper.firstChild);
       document.head.appendChild(fragment);
 
+      // on-demand chunk CSS via a dynamic <link> (the mini-css-extract-plugin pattern): the
+      // webpack runtime resolves its import() promise on the link's load event — under style
+      // isolation the transpiled link must keep firing it, and the css must still be scoped
+      var lazyLink = document.createElement('link');
+      lazyLink.rel = 'stylesheet';
+      lazyLink.setAttribute('data-testid', 'lazy-link');
+      // setAttribute keeps the relative url raw so the transpiler resolves it against the app entry
+      lazyLink.setAttribute('href', './lazy.css');
+      var lazyStatus = document.createElement('p');
+      lazyStatus.setAttribute('data-testid', 'lazy-css-status');
+      lazyStatus.className = 'multiscript-lazy-marker';
+      lazyStatus.textContent = 'lazy-css:pending';
+      root.appendChild(lazyStatus);
+      lazyLink.onload = function () {
+        lazyStatus.textContent = 'lazy-css:loaded';
+      };
+      lazyLink.onerror = function () {
+        lazyStatus.textContent = 'lazy-css:error';
+      };
+      document.head.appendChild(lazyLink);
+
       return Promise.resolve();
     },
     unmount: function () {
