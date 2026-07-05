@@ -1,0 +1,18 @@
+{
+  "name": "@qiankunjs/e2e",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build:fixtures": "vite build fixtures/main",
+    "test:e2e": "pnpm run build:fixtures && playwright test --project=chromium",
+    "test:e2e:all": "pnpm run build:fixtures && playwright test",
+    "test:e2e:ui": "pnpm run build:fixtures && playwright test --ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.1",
+    "qiankun": "workspace:*",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.20"
+  }
+}

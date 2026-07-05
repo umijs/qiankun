@@ -1,0 +1,17 @@
+// Single source of truth for all e2e fixture ports.
+// Referenced by playwright.config.ts (which passes them to servers/serve.mjs via argv)
+// and by the main fixture app for its sub-app entry URLs.
+export const PORTS = {
+  main: 7500,
+  'sub-classic': 7501,
+  'sub-esm': 7502,
+  'sub-misbehaving': 7503,
+} as const;
+
+export const SUB_APP_ENTRIES = {
+  'sub-classic': `http://localhost:${PORTS['sub-classic']}`,
+  'sub-esm': `http://localhost:${PORTS['sub-esm']}`,
+  'sub-misbehaving': `http://localhost:${PORTS['sub-misbehaving']}`,
+  // resolves to a 404 on purpose: the error-handling suite asserts the failure path
+  'sub-missing': `http://localhost:${PORTS['sub-misbehaving']}/missing/`,
+} as const;

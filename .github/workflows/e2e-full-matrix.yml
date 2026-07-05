@@ -1,0 +1,35 @@
+name: E2E Full Browser Matrix
+
+# PRs only run chromium (see ci.yml). The full chromium+webkit+firefox matrix runs
+# nightly and on demand — engine-specific regressions (@scope cascade, ESM/import-map
+# behavior) surface here without slowing down every PR.
+on:
+  schedule:
+    - cron: "0 18 * * *" # daily, 02:00 Asia/Shanghai
+  workflow_dispatch:
+
+jobs:
+  e2e-full-matrix:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: next
+
+      - name: Setup e2e environment
+        uses: ./.github/actions/setup-e2e
+        with:
+          browsers: chromium webkit firefox
+          cache-key-prefix: playwright-full
+
+      - name: Run e2e tests on all browsers
+        run: pnpm --filter @qiankunjs/e2e run test:e2e:all
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-full-matrix
+          path: e2e/playwright-report/
+          retention-days: 14

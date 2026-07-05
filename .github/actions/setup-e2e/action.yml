@@ -1,0 +1,51 @@
+name: Setup e2e environment
+description: Install the toolchain, build all packages and install Playwright browsers for the e2e suite
+
+inputs:
+  browsers:
+    description: Space-separated Playwright browsers to install
+    required: false
+    default: chromium
+  cache-key-prefix:
+    description: Prefix for the Playwright browser cache key
+    required: false
+    default: playwright
+
+runs:
+  using: composite
+  steps:
+    - name: Install pnpm
+      uses: pnpm/action-setup@v2
+
+    - name: Use Node.js lts/*
+      uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+        cache: "pnpm"
+
+    - run: corepack enable # https://nodejs.org/api/corepack.html
+      shell: bash
+
+    - run: pnpm install
+      shell: bash
+
+    - name: Build packages
+      run: pnpm run build
+      shell: bash
+
+    - name: Get Playwright version
+      id: playwright-version
+      working-directory: e2e
+      run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      shell: bash
+
+    - name: Cache Playwright browsers
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: ${{ inputs.cache-key-prefix }}-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
+    - name: Install Playwright browsers
+      working-directory: e2e
+      run: npx playwright install --with-deps ${{ inputs.browsers }}
+      shell: bash

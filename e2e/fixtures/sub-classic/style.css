@@ -1,0 +1,8 @@
+/* aggressive global selector on purpose: style isolation must keep it inside the app container */
+h1 {
+  color: rgb(255, 0, 0);
+}
+
+[data-testid='classic-title'] {
+  font-style: italic;
+}

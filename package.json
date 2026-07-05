@@ -19,6 +19,7 @@
     "ci": "pnpm run build && pnpm run eslint && pnpm run prettier:check",
     "ci:publish": "changeset publish",
     "test": "pnpm -r run test",
+    "test:e2e": "pnpm run build && pnpm --filter @qiankunjs/e2e run test:e2e",
     "prepare": "husky install",
     "clean": "rimraf node_modules **/*/node_modules"
   },

@@ -69,3 +69,25 @@ jobs:
 
       - name: Run unit test
         run: pnpm run test
+
+  e2e-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup e2e environment
+        uses: ./.github/actions/setup-e2e
+        with:
+          browsers: chromium
+
+      - name: Run e2e tests
+        run: pnpm --filter @qiankunjs/e2e run test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 7

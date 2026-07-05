@@ -1,6 +1,7 @@
 packages:
   - "packages/*"
   - "packages/ui-bindings/*"
+  - "e2e"
   # - "examples/react15"
   # - "examples/react16"
   # - "examples/main"
