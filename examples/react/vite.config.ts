@@ -2,21 +2,17 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import legacy from '@vitejs/plugin-legacy';
 import qiankunHtmlPlugin from './config/qiankunHtml';
-import qiankun from 'vite-plugin-qiankun';
 
 export default defineConfig(({ mode }) => {
   const isQiankun = mode === 'qiankun';
 
   return {
     base: isQiankun ? './' : '/',
+    // No qiankun-specific vite plugin needed: in dev the app is loaded as a native ESM entry
+    // by the qiankun ESM sandbox (lifecycles exported from the entry module), and the
+    // qiankun-mode legacy build registers them on window['react'] itself (see src/main.tsx).
     plugins: [
       react(),
-      // vite-plugin-qiankun only serves the legacy (qiankun-mode) build. In dev the app is
-      // loaded as a native ESM entry by the qiankun ESM sandbox; the plugin's dev bridge
-      // (renderWithQiankun protocol) would hijack the entry and hang the mount instead.
-      isQiankun && qiankun('react', {
-        useDevMode: true
-      }),
       isQiankun && legacy({ renderLegacyChunks: true }),
       isQiankun && qiankunHtmlPlugin(),
     ].filter(Boolean),
