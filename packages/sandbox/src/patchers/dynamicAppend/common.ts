@@ -142,8 +142,13 @@ export function getOverwrittenAppendChildOrInsertBefore(
     if (element.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
       const fragment = newChild as unknown as DocumentFragment;
       const ownerConfig = getSandboxConfig(this as unknown as HTMLElement);
+      // nodes streamed by the loader's walk are already transpiled and batched into fragments for
+      // insertion performance — they must pass through natively, never through the pipeline again
       const shouldDecompose = Array.from(fragment.children).some(
-        (child) => isHijackingTag(child.tagName) && (getSandboxConfig(child as HTMLElement) ?? ownerConfig),
+        (child) =>
+          isHijackingTag(child.tagName) &&
+          !isLoaderStreamedNode(child) &&
+          (getSandboxConfig(child as HTMLElement) ?? ownerConfig),
       );
       if (shouldDecompose) {
         Array.from(fragment.childNodes).forEach((child) => {
@@ -152,6 +157,7 @@ export function getOverwrittenAppendChildOrInsertBefore(
             ownerConfig &&
             setSandboxConfig &&
             isHijackingTag(childElement.tagName) &&
+            !isLoaderStreamedNode(childElement) &&
             !getSandboxConfig(childElement)
           ) {
             setSandboxConfig(childElement, ownerConfig);

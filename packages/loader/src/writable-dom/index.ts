@@ -1,10 +1,33 @@
+/**
+ * Forked from https://github.com/marko-js/writable-dom (src/index.ts).
+ *
+ * Keep this file in sync with upstream: every qiankun-specific deviation is marked with a
+ * `[qiankun]` comment so periodic syncs can re-apply them mechanically. The deviations are:
+ * - the `assetTransformer` parameter: transpiles every node in place right before insertion
+ *   (enforced by assertInPlaceTransform), including inline script/style text via a grafted host
+ * - `isSyncScript` + `clone.async = false`: preserve document order for non-blocking external
+ *   scripts (see https://github.com/marko-js/writable-dom/issues/7)
+ * - `markLoaderStreamedNode`: lets the sandbox's patched container methods tell streamed
+ *   (already-transpiled) nodes apart from dynamic insertions made by app code
+ * - preload hints read the raw attributes (getAttribute) instead of the resolved properties, so
+ *   the transformer can resolve them against the app entry rather than the host document
+ * - an href-less stylesheet link is inert and must not block the walk
+ */
 import { markLoaderStreamedNode } from '@qiankunjs/shared';
 
+enum NodeType {
+  ELEMENT_NODE = 1,
+  TEXT_NODE = 3,
+}
+
 type Writable = {
-  write: (html: string) => void;
-  abort: (err: Error) => void;
-  close: () => Promise<void>;
+  write(html: string): void;
+  abort(err: Error): void;
+  close(): Promise<void>;
 };
+
+// [qiankun] the transformer contract: transpile the node IN PLACE and return the same reference
+type AssetTransformer = <T extends Node>(clone: T) => T;
 
 const createHTMLDocument = () => document.implementation.createHTMLDocument('');
 let createDocument = (target: ParentNode, nextSibling: ChildNode | null): Document => {
@@ -35,50 +58,36 @@ let createDocument = (target: ParentNode, nextSibling: ChildNode | null): Docume
   return createDocument(target, nextSibling);
 };
 
-type WritableDOM = {
-  new (
-    target: ParentNode,
-    previousSibling?: ChildNode | null,
-    assetTransformer?: (clone: Node) => Node,
-  ): WritableStream<string>;
-  (
-    target: ParentNode,
-    previousSibling?: ChildNode | null,
-    assetTransformer?: <T extends Node>(clone: T) => T,
-  ): Writable;
-};
 function writableDOM(
   this: unknown,
   target: ParentNode,
   previousSibling?: ChildNode | null,
-  assetTransformer?: <T extends Node>(clone: T) => T,
+  // [qiankun] extra parameter, threaded through the new-call branch below
+  assetTransformer?: AssetTransformer,
 ): Writable | WritableStream<string> {
   if (this instanceof writableDOM) {
     return new WritableStream(writableDOM(target, previousSibling, assetTransformer));
   }
 
   const nextSibling = previousSibling ? previousSibling.nextSibling : null;
+  const owner = target.ownerDocument!;
   const doc = createDocument(target, nextSibling);
   doc.write('<!DOCTYPE html><body><template>');
   const root = (doc.body.firstChild as HTMLTemplateElement).content;
   const walker = doc.createTreeWalker(root);
   const targetNodes = new WeakMap<Node, Node>([[root, target]]);
-  let pendingText: Text | null = null;
+  const targetFragments = new WeakMap<ParentNode, DocumentFragment>();
+  const isIncomplete = (node: ParentNode) => !(resolve || node.nextSibling || /<\/\w+>$/.test(curChunk));
+  let appendedTargets = new Set<ParentNode>();
   let scanNode: Node | null = null;
   let resolve: void | (() => void);
   let isBlocked = false;
-  let inlineHostNode: Node | null = null;
+  let curChunk = '';
 
   return {
     write(chunk: string) {
+      curChunk = chunk;
       doc.write(chunk);
-
-      if (pendingText && !inlineHostNode) {
-        // When we left on text, it's possible more text was written to the same node.
-        // here we copy in the final text content from the detached dom to the live dom.
-        (targetNodes.get(pendingText) as Text).data = pendingText.data;
-      }
-
       walk();
     },
     abort() {
@@ -87,23 +96,37 @@ function writableDOM(
       }
     },
     close() {
-      appendInlineTextIfNeeded(pendingText, inlineHostNode, assetTransformer);
-
-      return isBlocked ? new Promise<void>((_) => (resolve = _)) : Promise.resolve();
+      return new Promise((_) => {
+        resolve = _;
+        if (!isBlocked) walk();
+      });
     },
   };
 
+  // [qiankun] inline script/style text runs through the transformer before it reaches the live
+  // host (sandbox-wrapping inline scripts, @scope-wrapping inline styles): graft the text onto a
+  // detached copy of the host — transformers read the host's attributes (e.g. the script type) —
+  // transform in place, then take the resulting text back
+  function transformInlineText(host: Element, text: Text): Text {
+    if (typeof assetTransformer !== 'function') return text;
+    const graftedHost = owner.importNode(host, false);
+    graftedHost.appendChild(text);
+    assertInPlaceTransform(graftedHost, assetTransformer(graftedHost));
+    return graftedHost.firstChild as Text;
+  }
+
   function walk(): void {
+    const startNode = walker.currentNode;
     let node: Node | null;
     if (isBlocked) {
       // If we are blocked, we walk ahead and preload
       // any assets we can ahead of the last checked node.
-      const blockedNode = walker.currentNode;
       if (scanNode) walker.currentNode = scanNode;
 
       while ((node = walker.nextNode())) {
-        const link = getPreloadLink((scanNode = node));
+        const link = getPreloadLink((scanNode = node), owner);
         if (link) {
+          // [qiankun] preload hints must match what the transpiler pipeline will actually fetch
           if (typeof assetTransformer === 'function') {
             assertInPlaceTransform(link, assetTransformer(link));
           }
@@ -112,81 +135,105 @@ function writableDOM(
         }
       }
 
-      walker.currentNode = blockedNode;
+      walker.currentNode = startNode;
     } else {
+      if (startNode.nodeType === NodeType.TEXT_NODE) {
+        if (!isInlineScriptOrStyleTag((node = startNode.parentNode!))) {
+          (targetNodes.get(startNode) as Text).data = (startNode as Text).data;
+        } else if (!isIncomplete(node)) {
+          // [qiankun] completed inline text goes through the transformer before it executes
+          const host = targetNodes.get(node) as Element;
+          host.appendChild(transformInlineText(host, owner.importNode(startNode as Text, false)));
+        }
+      }
+
       while ((node = walker.nextNode())) {
-        const clone = document.importNode(node, false);
-        const previousPendingText = pendingText;
-        if (node.nodeType === Node.TEXT_NODE) {
-          pendingText = node as Text;
-        } else {
-          pendingText = null;
+        const parentNode = node.parentNode!;
+        if (node.nodeType === NodeType.TEXT_NODE && isInlineScriptOrStyleTag(parentNode) && isIncomplete(parentNode)) {
+          break;
         }
 
-        const parentNode = targetNodes.get(node.parentNode!)!;
+        const cloneParent = targetNodes.get(parentNode) as ParentNode;
+        let clone: Node = owner.importNode(node, false);
+        let insertParent: ParentNode = cloneParent;
+        // [qiankun] inline text landing in a script/style host is transformed like the
+        // completed-text branch above
+        if (node.nodeType === NodeType.TEXT_NODE && isInlineScriptOrStyleTag(parentNode)) {
+          clone = transformInlineText(cloneParent as Element, clone as Text);
+        }
         targetNodes.set(node, clone);
 
-        if (isInlineHost(parentNode!)) {
-          inlineHostNode = parentNode;
-        } else {
-          appendInlineTextIfNeeded(previousPendingText, inlineHostNode, assetTransformer);
-          inlineHostNode = null;
+        if (cloneParent.isConnected) {
+          appendedTargets.add(cloneParent);
+          (insertParent = targetFragments.get(cloneParent)!) ||
+            targetFragments.set(cloneParent, (insertParent = owner.createDocumentFragment()));
+        }
 
-          // Blocking semantics are judged on the untouched clone — the transformer runs after all
-          // the bookkeeping here, transpiles the node IN PLACE (enforced by assertInPlaceTransform)
-          // and must honor the original's loading contract, i.e. fire load/error eventually. This
-          // keeps writable-dom free of any knowledge about the transformers' internals.
-          if (isBlocking(clone)) {
-            isBlocked = true;
-            // eslint-disable-next-line @typescript-eslint/no-loop-func
-            clone.onload = clone.onerror = () => {
-              isBlocked = false;
-              // Continue the normal content injecting walk.
-              if (clone.parentNode) walk();
-            };
-          }
+        if (isBlocking(clone)) {
+          isBlocked = true;
+          // eslint-disable-next-line @typescript-eslint/no-loop-func
+          clone.onload = clone.onerror = () => {
+            isBlocked = false;
+            // Continue the normal content injecting walk.
+            if (clone.parentNode) walk();
+          };
+        }
 
-          // document.importNode will reset the `async` attribute to true, here we need to set it manually.
+        if (node.nodeType === NodeType.ELEMENT_NODE) {
+          // [qiankun] document.importNode resets the `async` attribute to true, set it back
+          // manually to preserve document execution order for non-blocking external scripts.
           // see https://github.com/marko-js/writable-dom/issues/7
           if (isSyncScript(clone)) {
             clone.async = false;
           }
 
-          // let the sandbox's patched container methods tell streamed nodes (already transpiled
-          // by this walk) apart from dynamic insertions made by app code
+          // [qiankun] let the sandbox's patched container methods tell streamed nodes (already
+          // transpiled by this walk) apart from dynamic insertions made by app code
           markLoaderStreamedNode(clone);
 
-          // A transformer that also listens for load/error (e.g. the entry bookkeeping in
-          // loadEntry) chains the handler wired above after its own logic — that keeps the entry
-          // deferred settling before the walk resumes and later inline scripts execute.
+          // [qiankun] transpile the node in place right before insertion. The blocking bookkeeping
+          // above stays wired to it; a transformer that also listens for load/error (e.g. the
+          // entry bookkeeping in loadEntry) chains the previously wired handler after its own
+          // logic, which keeps the entry deferred settling before the walk resumes.
           if (typeof assetTransformer === 'function') {
             assertInPlaceTransform(clone, assetTransformer(clone));
           }
-
-          if (parentNode === target) {
-            target.insertBefore(clone, nextSibling);
-          } else {
-            parentNode.appendChild(clone);
-          }
         }
 
-        // Start walking for preloads.
-        if (isBlocked) return walk();
+        insertParent.appendChild(clone);
+        if (isBlocked) break;
       }
 
-      // Some blocking content could have prevented load.
-      if (resolve) resolve();
+      for (const targetNode of appendedTargets) {
+        targetNode.insertBefore(targetFragments.get(targetNode)!, targetNode === target ? nextSibling : null);
+      }
+
+      appendedTargets = new Set();
+
+      if (isBlocked) {
+        walk();
+      } else if (resolve) {
+        // Some blocking content could have prevented load.
+        resolve();
+      }
     }
   }
 }
 
-export default writableDOM as WritableDOM;
+export default writableDOM as {
+  new (
+    target: ParentNode,
+    previousSibling?: ChildNode | null,
+    assetTransformer?: AssetTransformer,
+  ): WritableStream<string>;
+  (target: ParentNode, previousSibling?: ChildNode | null, assetTransformer?: AssetTransformer): Writable;
+};
 
 /**
- * The asset transformer contract: transpile the node IN PLACE and return the very same reference.
- * The walk wires its blocking bookkeeping before the transform runs — swapping the node would
- * orphan those handlers (and any the app attached itself) and leave the walk blocked forever, so
- * a violation fails loudly here instead.
+ * [qiankun] The asset transformer contract: transpile the node IN PLACE and return the very same
+ * reference. The walk wires its blocking bookkeeping before the transform runs — swapping the node
+ * would orphan those handlers (and any the app attached itself) and leave the walk blocked
+ * forever, so a violation fails loudly here instead.
  */
 function assertInPlaceTransform(original: Node, transformed: Node): void {
   if (transformed !== original) {
@@ -198,31 +245,34 @@ function assertInPlaceTransform(original: Node, transformed: Node): void {
 
 function isBlocking(node: any): node is HTMLElement {
   return (
-    node.nodeType === Node.ELEMENT_NODE &&
-    ((node.tagName === 'SCRIPT' &&
-      !!node.src &&
-      !(node.noModule || node.type === 'module' || node.hasAttribute('async') || node.hasAttribute('defer'))) ||
+    node.nodeType === NodeType.ELEMENT_NODE &&
+    (node.blocking === 'render' ||
+      (node.tagName === 'SCRIPT' &&
+        node.src &&
+        !(node.noModule || node.type === 'module' || node.hasAttribute('async') || node.hasAttribute('defer'))) ||
       (node.tagName === 'LINK' &&
         node.rel === 'stylesheet' &&
-        // an href-less stylesheet link is inert and must not block the walk
+        // [qiankun] an href-less stylesheet link is inert and must not block the walk
         !!node.href &&
         (!node.media || matchMedia(node.media).matches)))
   );
 }
 
+// [qiankun] see the async note in the walk above
 function isSyncScript(node: any): node is HTMLScriptElement {
   return (
     node.tagName === 'SCRIPT' && !!node.src && !(node.noModule || node.type === 'module' || node.hasAttribute('async'))
   );
 }
 
-function getPreloadLink(node: any) {
+function getPreloadLink(node: any, owner: Document) {
   let link: HTMLLinkElement | undefined;
-  if (node.nodeType === Node.ELEMENT_NODE) {
+  if (node.nodeType === NodeType.ELEMENT_NODE) {
     switch (node.tagName) {
       case 'SCRIPT':
         if (node.src && !node.noModule) {
-          link = document.createElement('link');
+          link = owner.createElement('link');
+          // [qiankun] raw attribute so the transformer can resolve it against the app entry
           link.href = node.getAttribute('src');
           if (node.getAttribute('type') === 'module') {
             link.rel = 'modulepreload';
@@ -234,20 +284,22 @@ function getPreloadLink(node: any) {
         break;
       case 'LINK':
         if (node.rel === 'stylesheet' && (!node.media || matchMedia(node.media).matches)) {
-          link = document.createElement('link');
+          link = owner.createElement('link');
+          // [qiankun] raw attribute so the transformer can resolve it against the app entry
           link.href = node.getAttribute('href');
           link.rel = 'preload';
           link.as = 'style';
         }
         break;
       case 'IMG':
-        link = document.createElement('link');
+        link = owner.createElement('link');
         link.rel = 'preload';
         link.as = 'image';
         if (node.srcset) {
           link.imageSrcset = node.srcset;
           link.imageSizes = node.sizes;
         } else {
+          // [qiankun] raw attribute so the transformer can resolve it against the app entry
           link.href = node.getAttribute('src');
         }
         break;
@@ -267,29 +319,9 @@ function getPreloadLink(node: any) {
   return link;
 }
 
-function appendInlineTextIfNeeded(
-  pendingText: Text | null,
-  inlineTextHostNode: Node | null,
-  assetTransformer?: <T extends Node>(clone: T) => T,
-) {
-  if (pendingText && inlineTextHostNode) {
-    let textNode = pendingText;
-
-    if (typeof assetTransformer === 'function') {
-      // copy the text node and host node, transform the copy in place, then graft the transformed
-      // text node back onto the live host
-      const graftedHost = document.importNode(inlineTextHostNode, false);
-      const graftedText = document.importNode(textNode, false);
-      graftedHost.appendChild(graftedText);
-      assertInPlaceTransform(graftedHost, assetTransformer(graftedHost));
-      textNode = graftedHost.firstChild as Text;
-    }
-
-    inlineTextHostNode.appendChild(textNode);
-  }
-}
-
-function isInlineHost(node: Node) {
-  const { tagName } = node as Element;
-  return (tagName === 'SCRIPT' && !(node as HTMLScriptElement).src) || tagName === 'STYLE';
+function isInlineScriptOrStyleTag(node: ParentNode): node is HTMLScriptElement | HTMLStyleElement {
+  return (
+    (node as Element).tagName === 'STYLE' ||
+    ((node as Element).tagName === 'SCRIPT' && !(node as HTMLScriptElement).src)
+  );
 }
