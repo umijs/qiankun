@@ -104,16 +104,18 @@ function writableDOM(
       while ((node = walker.nextNode())) {
         const link = getPreloadLink((scanNode = node));
         if (link) {
-          const transformedLink = typeof assetTransformer === 'function' ? assetTransformer(link) : link;
-          transformedLink.onload = transformedLink.onerror = () => target.removeChild(transformedLink);
-          target.insertBefore(transformedLink, nextSibling);
+          if (typeof assetTransformer === 'function') {
+            assertInPlaceTransform(link, assetTransformer(link));
+          }
+          link.onload = link.onerror = () => target.removeChild(link);
+          target.insertBefore(link, nextSibling);
         }
       }
 
       walker.currentNode = blockedNode;
     } else {
       while ((node = walker.nextNode())) {
-        let clone = document.importNode(node, false);
+        const clone = document.importNode(node, false);
         const previousPendingText = pendingText;
         if (node.nodeType === Node.TEXT_NODE) {
           pendingText = node as Text;
@@ -130,59 +132,36 @@ function writableDOM(
           appendInlineTextIfNeeded(previousPendingText, inlineHostNode, assetTransformer);
           inlineHostNode = null;
 
-          // Judge blocking/sync semantics on the pre-transform clone: an in-place transformer may
-          // temporarily strip src/href while it fetches and rewrites the asset, but the node it
-          // returns must honor the original's loading contract (fire load/error eventually), so the
-          // original markup is the truth about whether the walk must block — and writable-dom stays
-          // free of any knowledge about the transformers' internal bookkeeping.
-          let blocking = isBlocking(clone);
-          let syncScript = isSyncScript(clone);
-
-          // Transform BEFORE wiring handlers: they must land on the node that actually gets
-          // inserted — wiring them to a discarded clone would leave the walk permanently blocked.
-          if (typeof assetTransformer === 'function') {
-            const transformed = assetTransformer(clone);
-            if (transformed !== clone) {
-              targetNodes.set(node, transformed);
-              clone = transformed;
-              // a swapped node carries its own loading semantics — re-judge what is inserted
-              blocking = isBlocking(clone);
-              syncScript = isSyncScript(clone);
-            }
-          }
-
-          if (blocking) {
+          // Blocking semantics are judged on the untouched clone — the transformer runs after all
+          // the bookkeeping here, transpiles the node IN PLACE (enforced by assertInPlaceTransform)
+          // and must honor the original's loading contract, i.e. fire load/error eventually. This
+          // keeps writable-dom free of any knowledge about the transformers' internals.
+          if (isBlocking(clone)) {
             isBlocked = true;
-            // a transformer (e.g. the entry-script bookkeeping in loadEntry) may have attached its
-            // own load listeners already — chain them after unblocking instead of clobbering them
-            const element = clone as HTMLElement;
-            const prevOnload = element.onload;
-            const prevOnerror = element.onerror as typeof element.onload;
             // eslint-disable-next-line @typescript-eslint/no-loop-func
-            const unblock = (prev: typeof prevOnload, event: Event) => {
+            clone.onload = clone.onerror = () => {
               isBlocked = false;
-              try {
-                // run the chained listener before the walk resumes: the entry deferred must settle
-                // before any subsequent inline script mutates the sandbox (latestSetProp)
-                prev?.call(element, event);
-              } finally {
-                // Continue the normal content injecting walk.
-                if (clone.parentNode) walk();
-              }
+              // Continue the normal content injecting walk.
+              if (clone.parentNode) walk();
             };
-            element.onload = (event: Event) => unblock(prevOnload, event);
-            element.onerror = ((event: Event) => unblock(prevOnerror, event)) as typeof element.onerror;
           }
 
           // document.importNode will reset the `async` attribute to true, here we need to set it manually.
           // see https://github.com/marko-js/writable-dom/issues/7
-          if (syncScript) {
-            (clone as HTMLScriptElement).async = false;
+          if (isSyncScript(clone)) {
+            clone.async = false;
           }
 
           // let the sandbox's patched container methods tell streamed nodes (already transpiled
           // by this walk) apart from dynamic insertions made by app code
           markLoaderStreamedNode(clone);
+
+          // A transformer that also listens for load/error (e.g. the entry bookkeeping in
+          // loadEntry) chains the handler wired above after its own logic — that keeps the entry
+          // deferred settling before the walk resumes and later inline scripts execute.
+          if (typeof assetTransformer === 'function') {
+            assertInPlaceTransform(clone, assetTransformer(clone));
+          }
 
           if (parentNode === target) {
             target.insertBefore(clone, nextSibling);
@@ -202,6 +181,20 @@ function writableDOM(
 }
 
 export default writableDOM as WritableDOM;
+
+/**
+ * The asset transformer contract: transpile the node IN PLACE and return the very same reference.
+ * The walk wires its blocking bookkeeping before the transform runs — swapping the node would
+ * orphan those handlers (and any the app attached itself) and leave the walk blocked forever, so
+ * a violation fails loudly here instead.
+ */
+function assertInPlaceTransform(original: Node, transformed: Node): void {
+  if (transformed !== original) {
+    throw new Error(
+      `[qiankun] the asset transformer must transpile <${original.nodeName.toLowerCase()}> in place, but returned a different node`,
+    );
+  }
+}
 
 function isBlocking(node: any): node is HTMLElement {
   return (
@@ -283,12 +276,13 @@ function appendInlineTextIfNeeded(
     let textNode = pendingText;
 
     if (typeof assetTransformer === 'function') {
-      // copy the text node and host node and then get the transformed text node, thus we can append the transformed text node to live host
+      // copy the text node and host node, transform the copy in place, then graft the transformed
+      // text node back onto the live host
       const graftedHost = document.importNode(inlineTextHostNode, false);
       const graftedText = document.importNode(textNode, false);
       graftedHost.appendChild(graftedText);
-      const transformedHost = assetTransformer(graftedHost);
-      textNode = transformedHost.firstChild as Text;
+      assertInPlaceTransform(graftedHost, assetTransformer(graftedHost));
+      textNode = graftedHost.firstChild as Text;
     }
 
     inlineTextHostNode.appendChild(textNode);
