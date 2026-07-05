@@ -2,9 +2,7 @@
 
 **Updated:** 2026-07-06 · **Commit:** dcc42ae4 · **Branch:** next (qiankun 3.0, active dev)
 
-Qiankun is a micro-frontend framework built on [single-spa](https://github.com/single-spa/single-spa).
-v3 rewrites the runtime around **streaming HTML-entry loading**, a **Proxy-membrane JS sandbox**,
-and native **ESM-sandbox** execution. pnpm monorepo, built with `father` (UmiJS).
+Qiankun is a micro-frontend framework built on [single-spa](https://github.com/single-spa/single-spa). v3 rewrites the runtime around **streaming HTML-entry loading**, a **Proxy-membrane JS sandbox**, and native **ESM-sandbox** execution. pnpm monorepo, built with `father` (UmiJS).
 
 > Requires Node `>=20.19`, `pnpm@10.28.2` (see `packageManager`). Never use npm/yarn at the root.
 
@@ -39,22 +37,16 @@ qiankun/
 `loadApp` (`packages/qiankun/src/core/loadApp.ts`) is the orchestrator. Per micro-app it wires:
 
 1. **fetch** — decorated `window.fetch`: `makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)))`.
-2. **sandbox** — `createSandboxContainer()` builds a Proxy-membrane `window`/`document` view; patchers
-   (dynamicAppend, timers, listeners, history) each return a `free()` cleanup called on unmount.
-3. **loader** — `loadEntry(entry, container, opts)` streams the HTML entry through `writable-dom`,
-   virtualizing `<head>` → `<qiankun-head>` and running each node through a `nodeTransformer`.
+2. **sandbox** — `createSandboxContainer()` builds a Proxy-membrane `window`/`document` view; patchers (dynamicAppend, timers, listeners, history) each return a `free()` cleanup called on unmount.
+3. **loader** — `loadEntry(entry, container, opts)` streams the HTML entry through `writable-dom`, virtualizing `<head>` → `<qiankun-head>` and running each node through a `nodeTransformer`.
 4. **transpilers** (`shared/assets-transpilers`) rewrite each script/link/style node before it hits live DOM.
 
 Two execution paths, chosen per script type:
 
-- **Classic** (`<script entry>`, UMD/global): source is wrapped and run via a **blob URL** scoped to the
-  sandbox membrane. The app's export = `sandbox.latestSetProp` (the last global the entry script set).
-- **ESM** (`<script type="module">`): handled by `EsmSandboxEngine` (`shared/esm-sandbox`). Modules are
-  fetched, lexer-rewritten to route globals through the membrane, given synthetic specifiers via a
-  dynamically injected **import map**, and evaluated in order. The engine also handles dynamic `import()`.
+- **Classic** (`<script entry>`, UMD/global): source is wrapped and run via a **blob URL** scoped to the sandbox membrane. The app's export = `sandbox.latestSetProp` (the last global the entry script set).
+- **ESM** (`<script type="module">`): handled by `EsmSandboxEngine` (`shared/esm-sandbox`). Modules are fetched, lexer-rewritten to route globals through the membrane, given synthetic specifiers via a dynamically injected **import map**, and evaluated in order. The engine also handles dynamic `import()`.
 
-**Style isolation** (`shared/assets-transpilers/style.ts` + `link.ts`) uses CSS `@scope` at runtime;
-external stylesheets become blob-`<link>`s so `@scope` can wrap them. Opt-in via `styleIsolation`.
+**Style isolation** (`shared/assets-transpilers/style.ts` + `link.ts`) uses CSS `@scope` at runtime; external stylesheets become blob-`<link>`s so `@scope` can wrap them. Opt-in via `styleIsolation`.
 
 Internal dependency graph (never invert it):
 
@@ -97,8 +89,7 @@ pnpm run docs:dev            # VitePress docs
 TypeScript is strict + type-checked (`@typescript-eslint/recommended-requiring-type-checking`):
 
 - **No `any`** — `no-explicit-any` auto-fixes to `unknown`. No `as any`, `@ts-ignore`, `@ts-expect-error`.
-- **Inline type imports** — `import { type Foo, bar }`, not `import type { Foo }` on its own line
-  (`consistent-type-imports`/`consistent-type-exports` with `fixStyle: inline-type-imports`).
+- **Inline type imports** — `import { type Foo, bar }`, not `import type { Foo }` on its own line (`consistent-type-imports`/`consistent-type-exports` with `fixStyle: inline-type-imports`).
 - `no-unnecessary-condition` is an error — don't guard values the types prove are always truthy.
 - Unused vars/args must be prefixed `_` (`argsIgnorePattern: ^_`).
 - `array-simple`: `T[]` for simple, `Array<T>` for complex element types.
@@ -121,7 +112,6 @@ Build/release:
 
 ## NOTES
 
-- Firefox doesn't support dynamically injected import maps → ESM-sandbox e2e tests are annotated
-  `test.fail(firefox, …)` (expected failure, not skip). See `e2e/README.md`.
+- Firefox doesn't support dynamically injected import maps → ESM-sandbox e2e tests are annotated `test.fail(firefox, …)` (expected failure, not skip). See `e2e/README.md`.
 - Design decisions live in `docs/rfcs/` (e.g. the ESM-sandbox RFC).
 - v3 roadmap: github.com/umijs/qiankun/discussions/1378.

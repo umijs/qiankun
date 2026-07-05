@@ -1,8 +1,6 @@
 # @qiankunjs/shared
 
-Base utilities shared by `loader`/`sandbox`/`qiankun`: asset transpilers, fetch decorators, module
-resolution, error reporting, and the **ESM-sandbox engine**. No internal `@qiankunjs/*` dependencies —
-keep it at the bottom of the graph (it must never import `sandbox` or `loader`).
+Base utilities shared by `loader`/`sandbox`/`qiankun`: asset transpilers, fetch decorators, module resolution, error reporting, and the **ESM-sandbox engine**. No internal `@qiankunjs/*` dependencies — keep it at the bottom of the graph (it must never import `sandbox` or `loader`).
 
 ## STRUCTURE
 
@@ -27,11 +25,7 @@ shared/
 
 ## ESM-SANDBOX (`esm-sandbox/`, the largest subsystem here)
 
-`EsmSandboxEngine` runs a micro-app's `<script type="module">` graph inside the sandbox membrane
-without a bundler. See the RFC in `docs/rfcs/`. Pipeline: fetch modules in parallel (memoized) →
-lexer-scan imports/globals → rewrite source to route referenced globals through the membrane and
-give each module a synthetic specifier → inject an **import map** so the browser resolves those
-specifiers → evaluate in dependency order → keep dunder-globals (`__qk_track`) live on later global writes.
+`EsmSandboxEngine` runs a micro-app's `<script type="module">` graph inside the sandbox membrane without a bundler. See the RFC in `docs/rfcs/`. Pipeline: fetch modules in parallel (memoized) → lexer-scan imports/globals → rewrite source to route referenced globals through the membrane and give each module a synthetic specifier → inject an **import map** so the browser resolves those specifiers → evaluate in dependency order → keep dunder-globals (`__qk_track`) live on later global writes.
 
 | File | Responsibility |
 | --- | --- |
@@ -82,7 +76,4 @@ await d.promise;
 
 ## EXPORTS
 
-`src/index.ts` re-exports everything: `./assets-transpilers`, `./utils`, `./common`,
-`./module-resolver`, `./reporter`, `./esm-sandbox`, the three `fetch-utils/make*`, and `./deferred-queue`.
-Notable named exports: `transpileAssets`, `EsmSandboxEngine`, `moduleResolver`, `makeFetchCacheable`,
-`makeFetchRetryable`, `makeFetchThrowable`, `Deferred`, `QiankunError`, `warn`.
+`src/index.ts` re-exports everything: `./assets-transpilers`, `./utils`, `./common`, `./module-resolver`, `./reporter`, `./esm-sandbox`, the three `fetch-utils/make*`, and `./deferred-queue`. Notable named exports: `transpileAssets`, `EsmSandboxEngine`, `moduleResolver`, `makeFetchCacheable`, `makeFetchRetryable`, `makeFetchThrowable`, `Deferred`, `QiankunError`, `warn`.

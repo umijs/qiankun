@@ -1,7 +1,6 @@
 # @qiankunjs/sandbox
 
-JS isolation engine: Proxy-based **Membrane** + **Compartment** execution model. Also exposes the
-globals contract the ESM-sandbox engine (in `@qiankunjs/shared`) relies on. Depends only on `@qiankunjs/shared`.
+JS isolation engine: Proxy-based **Membrane** + **Compartment** execution model. Also exposes the globals contract the ESM-sandbox engine (in `@qiankunjs/shared`) relies on. Depends only on `@qiankunjs/shared`.
 
 ## STRUCTURE
 
@@ -39,8 +38,7 @@ sandbox/
 - **Writes** are trapped and stored on a local `target` object (the sandbox's own globals).
 - **Reads** check local target → endowments → fall back to the real host window.
 - **Native rebinding**: `fetch`, `console`, etc. are rebound to the real receiver to avoid "Illegal invocation".
-- `latestSetProp` records the last global the entry script assigned — that's how the loader recovers a
-  classic app's exported lifecycles when no explicit export exists.
+- `latestSetProp` records the last global the entry script assigned — that's how the loader recovers a classic app's exported lifecycles when no explicit export exists.
 
 ### Patcher / free pattern
 
@@ -64,8 +62,8 @@ free(); // on unmount — removes every listener/timer the micro-app added
 ## EXPORTS (`src/index.ts`)
 
 ```typescript
-export * from './core/sandbox';       // createSandboxContainer, type Sandbox, StandardSandbox
-export * from './core/compartment';   // Compartment
-export * from './consts';             // qiankunHeadTagName, qiankunBodyTagName, nativeGlobal, nativeDocument
+export * from './core/sandbox'; // createSandboxContainer, type Sandbox, StandardSandbox
+export * from './core/compartment'; // Compartment
+export * from './consts'; // qiankunHeadTagName, qiankunBodyTagName, nativeGlobal, nativeDocument
 export { esmDestructurableGlobals } from './core/esm-globals';
 ```

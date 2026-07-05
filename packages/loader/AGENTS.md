@@ -40,17 +40,16 @@ loader/
 ### Script classification (`index.ts`)
 
 ```typescript
-isExternalScript // has src or data-src
-isEntryScript    // external + [entry]  → resolves the load promise (app's main export point)
-isDeferScript    // external + [defer]  → ordered via shared prepareDeferredQueue
+isExternalScript; // has src or data-src
+isEntryScript; // external + [entry]  → resolves the load promise (app's main export point)
+isDeferScript; // external + [defer]  → ordered via shared prepareDeferredQueue
 ```
 
 - Exactly **one** `entry` script is allowed per HTML entry; a second one throws `QiankunError`.
 
 ### Detached parsing
 
-Nodes are parsed/transformed in a detached document first, then moved to live DOM — this prevents
-premature script execution before the transpiler has rewritten the node.
+Nodes are parsed/transformed in a detached document first, then moved to live DOM — this prevents premature script execution before the transpiler has rewritten the node.
 
 ## ANTI-PATTERNS
 
