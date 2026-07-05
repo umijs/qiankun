@@ -155,6 +155,11 @@ export default function transpileScript(
           })
           .catch((e) => {
             scriptTranspiledDeferred?.reject();
+            // the blob src will never be set, so the element can never fire load/error on its
+            // own — dispatch the error event manually to match the native failed-script
+            // semantics (the streaming walk blocks on this script and the entry bookkeeping
+            // listens for its completion, both must be released)
+            script.dispatchEvent(new Event('error'));
             throw e;
           });
 

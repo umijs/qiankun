@@ -39,6 +39,8 @@ export type LoadableApp<T extends ObjectType> = AppMetadata & {
 export type RegistrableApp<T extends ObjectType> = LoadableApp<T> & {
   loader?: (loading: boolean) => void;
   activeRule: RegisterApplicationConfig['activeWhen'];
+  // per-app loading configuration (sandbox, styleIsolation, fetch, ...), merged over the framework defaults
+  configuration?: AppConfiguration;
 };
 
 export type AppConfiguration = Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {

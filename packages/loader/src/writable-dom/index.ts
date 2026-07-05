@@ -1,4 +1,4 @@
-import { pendingStylesheetFill } from '@qiankunjs/shared';
+import { markLoaderStreamedNode, pendingStylesheetFill } from '@qiankunjs/shared';
 
 type Writable = {
   write: (html: string) => void;
@@ -145,12 +145,25 @@ function writableDOM(
           const pendingLoad = getPendingLoad(clone);
           if (isBlocking(clone)) {
             isBlocked = true;
+            // a transformer (e.g. the entry-script bookkeeping in loadEntry) may have attached its
+            // own load listeners already — chain them after unblocking instead of clobbering them
+            const element = clone as HTMLElement;
+            const prevOnload = element.onload;
+            const prevOnerror = element.onerror as typeof element.onload;
             // eslint-disable-next-line @typescript-eslint/no-loop-func
-            (clone as HTMLElement).onload = (clone as HTMLElement).onerror = () => {
+            const unblock = (prev: typeof prevOnload, event: Event) => {
               isBlocked = false;
-              // Continue the normal content injecting walk.
-              if (clone.parentNode) walk();
+              try {
+                // run the chained listener before the walk resumes: the entry deferred must settle
+                // before any subsequent inline script mutates the sandbox (latestSetProp)
+                prev?.call(element, event);
+              } finally {
+                // Continue the normal content injecting walk.
+                if (clone.parentNode) walk();
+              }
             };
+            element.onload = (event: Event) => unblock(prevOnload, event);
+            element.onerror = ((event: Event) => unblock(prevOnerror, event)) as typeof element.onerror;
           } else if (pendingLoad) {
             // A swapped stylesheet placeholder still filling asynchronously (style isolation):
             // keep the native "stylesheets block later scripts" ordering until the fill settles.
@@ -168,6 +181,10 @@ function writableDOM(
           if (isSyncScript(clone)) {
             clone.async = false;
           }
+
+          // let the sandbox's patched container methods tell streamed nodes (already transpiled
+          // by this walk) apart from dynamic insertions made by app code
+          markLoaderStreamedNode(clone);
 
           if (parentNode === target) {
             target.insertBefore(clone, nextSibling);
@@ -201,11 +218,18 @@ function getPendingLoad(node: Node): Promise<unknown> | undefined {
     : undefined;
 }
 
+// A transpiled remote classic script has its src moved to data-src while its content is fetched
+// and evaluated through a blob url (see the shared script transpiler) — it must keep the original
+// blocking/sync semantics of the src it carried, otherwise later inline/entry scripts outrun it.
+function getScriptSrc(node: any): string | undefined {
+  return (node.src as string) || (node.dataset?.src as string | undefined);
+}
+
 function isBlocking(node: any): node is HTMLElement {
   return (
     node.nodeType === Node.ELEMENT_NODE &&
     ((node.tagName === 'SCRIPT' &&
-      node.src &&
+      !!getScriptSrc(node) &&
       !(node.noModule || node.type === 'module' || node.hasAttribute('async') || node.hasAttribute('defer'))) ||
       (node.tagName === 'LINK' && node.rel === 'stylesheet' && (!node.media || matchMedia(node.media).matches)))
   );
@@ -213,7 +237,9 @@ function isBlocking(node: any): node is HTMLElement {
 
 function isSyncScript(node: any): node is HTMLScriptElement {
   return (
-    node.tagName === 'SCRIPT' && node.src && !(node.noModule || node.type === 'module' || node.hasAttribute('async'))
+    node.tagName === 'SCRIPT' &&
+    !!getScriptSrc(node) &&
+    !(node.noModule || node.type === 'module' || node.hasAttribute('async'))
   );
 }
 

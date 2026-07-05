@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>sub-classic-broken-asset</title>
+    <!-- 404 on purpose: a failed non-entry script must fire its error path and let the
+         stream continue (native semantics), not deadlock the blocking walk -->
+    <script src="./no-such-vendor.js"></script>
+  </head>
+  <body>
+    <div id="broken-asset-root"></div>
+    <script src="./entry-broken-asset.js" entry></script>
+  </body>
+</html>

@@ -3,6 +3,7 @@
  * @since 2019-04-11
  */
 import { patchAtBootstrapping, patchAtMounting } from '../../patchers';
+import { reattachDynamicStylesheets } from '../../patchers/dynamicAppend';
 import type { SandboxConfig } from '../../patchers/dynamicAppend/types';
 import type { Free, Rebuild } from '../../patchers/types';
 import type { Endowments } from '../membrane';
@@ -79,6 +80,12 @@ export function createSandboxContainer(
 
       // clean up rebuilds
       sideEffectsRebuilds = [];
+
+      /* ------------------------------------------ 4. 重挂载遗漏的动态样式 ------------------------------------*/
+      // the app's loading-phase DOM (including dynamically injected stylesheets) may have been wiped
+      // by the previous app's unmount before this app ever mounted; no rebuild was captured for that
+      // case, so re-attach any recorded stylesheet that is no longer connected (idempotent otherwise)
+      await reattachDynamicStylesheets(sandbox, container);
     },
 
     /**

@@ -17,6 +17,12 @@ registerMicroApps([
     container,
     activeRule: (location) => location.hash.startsWith('#/esm'),
   },
+  {
+    name: 'sub-classic-multiscript',
+    entry: SUB_APP_ENTRIES['sub-classic-multiscript'],
+    container,
+    activeRule: (location) => location.hash.startsWith('#/multiscript'),
+  },
 ]);
 
 start();

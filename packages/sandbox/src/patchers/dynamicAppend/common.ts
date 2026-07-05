@@ -4,7 +4,7 @@ import type { AssetsTranspilerOpts, ScriptTranspilerOpts } from '@qiankunjs/shar
  * @author Kuitos
  * @since 2019-10-21
  */
-import { prepareDeferredQueue, warn } from '@qiankunjs/shared';
+import { isLoaderStreamedNode, prepareDeferredQueue, warn } from '@qiankunjs/shared';
 import { qiankunHeadTagName } from '../../consts';
 import type { SandboxConfig } from './types';
 
@@ -133,7 +133,42 @@ export function getOverwrittenAppendChildOrInsertBefore(
     const appendChild = nativeFn;
 
     const element = newChild as unknown as HTMLElement;
-    const sandboxConfig = getSandboxConfig(element);
+
+    // jQuery-style insertions wrap nodes in a DocumentFragment, which would smuggle style/script
+    // elements past the per-tag hijacking below — decompose such a fragment and route every child
+    // through the same pipeline (a fragment empties on insertion natively, so per-child appends
+    // keep the same end state and order). Children parsed via innerHTML never went through the
+    // sandboxed createElement, so they inherit the config attached to the patched mount point.
+    if (element.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+      const fragment = newChild as unknown as DocumentFragment;
+      const ownerConfig = getSandboxConfig(this as unknown as HTMLElement);
+      const shouldDecompose = Array.from(fragment.children).some(
+        (child) => isHijackingTag(child.tagName) && (getSandboxConfig(child as HTMLElement) ?? ownerConfig),
+      );
+      if (shouldDecompose) {
+        Array.from(fragment.childNodes).forEach((child) => {
+          const childElement = child as HTMLElement;
+          if (
+            ownerConfig &&
+            setSandboxConfig &&
+            isHijackingTag(childElement.tagName) &&
+            !getSandboxConfig(childElement)
+          ) {
+            setSandboxConfig(childElement, ownerConfig);
+          }
+          appendChildInSandbox.call(this, child, refChild);
+        });
+        return newChild;
+      }
+    }
+
+    // elements parsed via innerHTML (e.g. jQuery's buildFragment) never went through the sandboxed
+    // createElement and carry no config of their own — inherit the one attached to the patched
+    // mount point, except for nodes inserted by the loader's streaming walk, which are already
+    // transpiled and must pass through untouched
+    const sandboxConfig =
+      getSandboxConfig(element) ??
+      (isLoaderStreamedNode(element) ? undefined : getSandboxConfig(this as unknown as HTMLElement));
 
     // no attached sandbox config means the element is not created from the sandbox environment
     if (!isHijackingTag(element.tagName) || !sandboxConfig) {

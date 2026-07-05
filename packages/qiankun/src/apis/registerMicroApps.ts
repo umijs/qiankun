@@ -20,7 +20,7 @@ export function registerMicroApps<T extends ObjectType>(apps: Array<RegistrableA
   microApps.push(...unregisteredApps);
 
   unregisteredApps.forEach((app) => {
-    const { name, activeRule, loader = noop, props, entry, container } = app;
+    const { name, activeRule, loader = noop, props, entry, container, configuration } = app;
 
     registerApplication({
       name,
@@ -29,7 +29,7 @@ export function registerMicroApps<T extends ObjectType>(apps: Array<RegistrableA
         await frameworkStartedDefer.promise;
 
         const { mount, ...otherMicroAppConfigs } = (
-          await loadApp({ name, entry, container, props }, frameworkConfiguration, lifeCycles)
+          await loadApp({ name, entry, container, props }, { ...frameworkConfiguration, ...configuration }, lifeCycles)
         )(container);
 
         return {

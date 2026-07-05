@@ -42,4 +42,23 @@ test.describe('registerMicroApps + activeRule routing', () => {
     await expect(page.getByTestId('classic-title')).toBeVisible();
     await expect(page.getByTestId('esm-title')).toHaveCount(0);
   });
+
+  test('loading-phase dynamic styles survive replacing another app in a shared container', async ({ page }) => {
+    await page.goto('/register.html');
+
+    // occupy the shared container first, so the incoming app's loading races its unmount
+    await page.evaluate(() => {
+      location.hash = '#/classic';
+    });
+    await expect(page.getByTestId('classic-title')).toBeVisible();
+
+    await page.evaluate(() => {
+      location.hash = '#/multiscript';
+    });
+    await expect(page.getByTestId('load-marker')).toBeVisible();
+
+    // the stylesheet injected during the loading phase must still apply after mount,
+    // even though the previous app's unmount cleared the container mid-loading
+    await expect(page.getByTestId('load-marker')).toHaveCSS('color', 'rgb(7, 8, 9)');
+  });
 });

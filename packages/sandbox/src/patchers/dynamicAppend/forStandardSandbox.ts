@@ -65,7 +65,7 @@ function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): Calla
     return () => {};
   }
 
-  const unpatch = patchDocumentHeadAndBodyMethods(container);
+  const unpatch = patchDocumentHeadAndBodyMethods(container, sandbox);
 
   const attachElementToSandbox = (element: HTMLElement) => {
     const sandboxConfig = sandboxConfigWeakMap.get(sandbox);
@@ -179,8 +179,16 @@ function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): Calla
   };
 }
 
-function patchDocumentHeadAndBodyMethods(container: HTMLElement): typeof noop {
+function patchDocumentHeadAndBodyMethods(container: HTMLElement, sandbox: Sandbox): typeof noop {
+  // tag the mount points with the owning app config, so fragment-wrapped children (parsed via
+  // innerHTML rather than the sandboxed createElement) can inherit it during decomposition
+  const tagMountPoint = (mountPoint: HTMLElement) => {
+    const sandboxConfig = sandboxConfigWeakMap.get(sandbox);
+    if (sandboxConfig) setSandboxConfig(mountPoint, sandboxConfig);
+  };
+
   const patchHeadElementMethod = (headElement: HTMLHeadElement) => {
+    tagMountPoint(headElement);
     headElement.appendChild = getOverwrittenAppendChildOrInsertBefore(
       document.head.appendChild,
       getSandboxConfig,
@@ -211,6 +219,7 @@ function patchDocumentHeadAndBodyMethods(container: HTMLElement): typeof noop {
   }
 
   const containerBodyElement = container;
+  tagMountPoint(containerBodyElement);
   containerBodyElement.appendChild = getOverwrittenAppendChildOrInsertBefore(
     document.body.appendChild,
     getSandboxConfig,
@@ -400,59 +409,81 @@ export function patchStandardSandbox(
 
     // As now the sub app content all wrapped with a special id container,
     // the dynamic style sheet could be removed automatically while unmounting
-    return async function rebuild(container: HTMLElement) {
-      const isElementExisted = (element: HTMLStyleElement | HTMLLinkElement) => {
-        if (container.contains(element)) return true;
-        if ('rel' in element && element.rel === 'stylesheet' && element.href)
-          return !!container.querySelector(`link[rel=stylesheet][href="${element.href}"]`);
-        return false;
-      };
-
-      await Promise.all(
-        rebuildCSSRules(dynamicStyleSheetElements, async (stylesheetElement) => {
-          if (!isElementExisted(stylesheetElement)) {
-            const mountDom =
-              stylesheetElement[styleElementTargetSymbol] === 'head'
-                ? (() => {
-                    const containerHeadElement = getContainerHeadElement(container);
-                    if (!containerHeadElement) {
-                      throw new QiankunError(
-                        `${appName} container ${qiankunHeadTagName} element not ready while rebuilding!`,
-                      );
-                    }
-                    return containerHeadElement;
-                  })()
-                : container;
-
-            let styleElement = stylesheetElement;
-
-            const deferred = new Deferred<boolean>();
-            if ('rel' in styleElement && styleElement.rel === 'stylesheet' && styleElement.href) {
-              // micro app rendering should wait unit the rebuilding link element is loaded, otherwise it may cause style blink
-              // As one external link element will just trigger loaded event once, although we append it multiple times, we need to clone it before every appending
-              styleElement = styleElement.cloneNode(true) as HTMLLinkElement;
-              styleElement.onload = () => deferred.resolve(true);
-              styleElement.onerror = () => deferred.resolve(false);
-            } else {
-              deferred.resolve(true);
-            }
-
-            const refNo = stylesheetElement[styleElementRefNodeNo];
-            if (typeof refNo === 'number' && refNo !== -1) {
-              // the reference node may be dynamic script comment which is not rebuilt while remounting thus reference node no longer exists
-              // in this case, we should append the style element to the end of mountDom
-              const refNode = mountDom.childNodes[refNo];
-              rawHeadInsertBefore.call(mountDom, styleElement, refNode);
-            } else {
-              rawHeadAppendChild.call(mountDom, styleElement);
-            }
-
-            return deferred.promise;
-          }
-
-          return false;
-        }),
-      );
-    };
+    return (container: HTMLElement) => attachRecordedStylesheets(appName, dynamicStyleSheetElements, container);
   };
+}
+
+async function attachRecordedStylesheets(
+  appName: string,
+  dynamicStyleSheetElements: SandboxConfig['dynamicStyleSheetElements'],
+  container: HTMLElement,
+): Promise<void> {
+  const isElementExisted = (element: HTMLStyleElement | HTMLLinkElement) => {
+    if (container.contains(element)) return true;
+    if ('rel' in element && element.rel === 'stylesheet' && element.href)
+      return !!container.querySelector(`link[rel=stylesheet][href="${element.href}"]`);
+    return false;
+  };
+
+  await Promise.all(
+    rebuildCSSRules(dynamicStyleSheetElements, async (stylesheetElement) => {
+      if (!isElementExisted(stylesheetElement)) {
+        const mountDom =
+          stylesheetElement[styleElementTargetSymbol] === 'head'
+            ? (() => {
+                const containerHeadElement = getContainerHeadElement(container);
+                if (!containerHeadElement) {
+                  throw new QiankunError(
+                    `${appName} container ${qiankunHeadTagName} element not ready while rebuilding!`,
+                  );
+                }
+                return containerHeadElement;
+              })()
+            : container;
+
+        let styleElement = stylesheetElement;
+
+        const deferred = new Deferred<boolean>();
+        if ('rel' in styleElement && styleElement.rel === 'stylesheet' && styleElement.href) {
+          // micro app rendering should wait unit the rebuilding link element is loaded, otherwise it may cause style blink
+          // As one external link element will just trigger loaded event once, although we append it multiple times, we need to clone it before every appending
+          styleElement = styleElement.cloneNode(true) as HTMLLinkElement;
+          styleElement.onload = () => deferred.resolve(true);
+          styleElement.onerror = () => deferred.resolve(false);
+        } else {
+          deferred.resolve(true);
+        }
+
+        const refNo = stylesheetElement[styleElementRefNodeNo];
+        if (typeof refNo === 'number' && refNo !== -1) {
+          // the reference node may be dynamic script comment which is not rebuilt while remounting thus reference node no longer exists
+          // in this case, we should append the style element to the end of mountDom
+          const refNode = mountDom.childNodes[refNo];
+          rawHeadInsertBefore.call(mountDom, styleElement, refNode);
+        } else {
+          rawHeadAppendChild.call(mountDom, styleElement);
+        }
+
+        return deferred.promise;
+      }
+
+      return false;
+    }),
+  );
+}
+
+/**
+ * Re-attach recorded dynamic stylesheets that are no longer connected to the container.
+ *
+ * Covers the first-mount-after-wipe race: when app X starts loading while app Y still occupies the
+ * shared container, Y's unmount clears the DOM X streamed during its loading phase — including the
+ * stylesheets X's scripts injected dynamically (e.g. Vite dev CSS-as-JS modules). X itself has never
+ * been unmounted, so no rebuild was captured for it; without this pass those styles are lost while
+ * the (cached, never re-executed) modules believe they are still attached. Idempotent for the regular
+ * remount path: already-attached elements are skipped.
+ */
+export function reattachDynamicStylesheets(sandbox: Sandbox, container: HTMLElement): Promise<void> {
+  const sandboxConfig = sandboxConfigWeakMap.get(sandbox);
+  if (!sandboxConfig) return Promise.resolve();
+  return attachRecordedStylesheets(sandboxConfig.appName, sandboxConfig.dynamicStyleSheetElements, container);
 }

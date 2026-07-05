@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>sub-classic-multiscript</title>
+    <!-- the classic vendor + inline + entry trio: document order is the contract under test -->
+    <script src="./vendor.js"></script>
+    <script>
+      // captures what an inline script observes right after the vendor script tag
+      window.__ORDER_AT_INLINE__ = String(window.__CLASSIC_VENDOR__);
+    </script>
+  </head>
+  <body>
+    <div id="multiscript-root"></div>
+    <script src="./entry-multiscript.js" entry></script>
+  </body>
+</html>
