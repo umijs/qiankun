@@ -130,19 +130,28 @@ function writableDOM(
           appendInlineTextIfNeeded(previousPendingText, inlineHostNode, assetTransformer);
           inlineHostNode = null;
 
-          // Transform FIRST: a transformer may swap the node for a different one, and all the
-          // blocking/async bookkeeping below must apply to the node that actually gets inserted —
-          // wiring it to a discarded clone would leave the walk permanently blocked. (Qiankun's own
-          // transpilers now always mutate in place, but the transformer contract still allows swaps.)
+          // Judge blocking/sync semantics on the pre-transform clone: an in-place transformer may
+          // temporarily strip src/href while it fetches and rewrites the asset, but the node it
+          // returns must honor the original's loading contract (fire load/error eventually), so the
+          // original markup is the truth about whether the walk must block — and writable-dom stays
+          // free of any knowledge about the transformers' internal bookkeeping.
+          let blocking = isBlocking(clone);
+          let syncScript = isSyncScript(clone);
+
+          // Transform BEFORE wiring handlers: they must land on the node that actually gets
+          // inserted — wiring them to a discarded clone would leave the walk permanently blocked.
           if (typeof assetTransformer === 'function') {
             const transformed = assetTransformer(clone);
             if (transformed !== clone) {
               targetNodes.set(node, transformed);
               clone = transformed;
+              // a swapped node carries its own loading semantics — re-judge what is inserted
+              blocking = isBlocking(clone);
+              syncScript = isSyncScript(clone);
             }
           }
 
-          if (isBlocking(clone)) {
+          if (blocking) {
             isBlocked = true;
             // a transformer (e.g. the entry-script bookkeeping in loadEntry) may have attached its
             // own load listeners already — chain them after unblocking instead of clobbering them
@@ -167,8 +176,8 @@ function writableDOM(
 
           // document.importNode will reset the `async` attribute to true, here we need to set it manually.
           // see https://github.com/marko-js/writable-dom/issues/7
-          if (isSyncScript(clone)) {
-            clone.async = false;
+          if (syncScript) {
+            (clone as HTMLScriptElement).async = false;
           }
 
           // let the sandbox's patched container methods tell streamed nodes (already transpiled
@@ -194,38 +203,23 @@ function writableDOM(
 
 export default writableDOM as WritableDOM;
 
-// A transpiled remote classic script has its src moved to data-src while its content is fetched
-// and evaluated through a blob url (see the shared script transpiler) — it must keep the original
-// blocking/sync semantics of the src it carried, otherwise later inline/entry scripts outrun it.
-function getScriptSrc(node: any): string | undefined {
-  return (node.src as string) || (node.dataset?.src as string | undefined);
-}
-
-// Same story for stylesheets under style isolation: the link's href moves to data-href while the
-// CSS is fetched and @scope-transpiled into a blob href (see the shared link transpiler) — it must
-// keep the original "stylesheets block later scripts" semantics of the href it carried.
-function getStylesheetHref(node: any): string | undefined {
-  return (node.href as string) || (node.dataset?.href as string | undefined);
-}
-
 function isBlocking(node: any): node is HTMLElement {
   return (
     node.nodeType === Node.ELEMENT_NODE &&
     ((node.tagName === 'SCRIPT' &&
-      !!getScriptSrc(node) &&
+      !!node.src &&
       !(node.noModule || node.type === 'module' || node.hasAttribute('async') || node.hasAttribute('defer'))) ||
       (node.tagName === 'LINK' &&
         node.rel === 'stylesheet' &&
-        !!getStylesheetHref(node) &&
+        // an href-less stylesheet link is inert and must not block the walk
+        !!node.href &&
         (!node.media || matchMedia(node.media).matches)))
   );
 }
 
 function isSyncScript(node: any): node is HTMLScriptElement {
   return (
-    node.tagName === 'SCRIPT' &&
-    !!getScriptSrc(node) &&
-    !(node.noModule || node.type === 'module' || node.hasAttribute('async'))
+    node.tagName === 'SCRIPT' && !!node.src && !(node.noModule || node.type === 'module' || node.hasAttribute('async'))
   );
 }
 
