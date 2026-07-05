@@ -103,9 +103,8 @@ function writableDOM(
         const link = getPreloadLink((scanNode = node));
         if (link) {
           const transformedLink = typeof assetTransformer === 'function' ? assetTransformer(link) : link;
-          // A transformer may consume the preload (e.g. strip the href of an engine-managed
-          // modulepreload): a preload without an href never fires load/error, so inserting it
-          // would leave a dead node in the target forever.
+          // A transformer may consume the preload (e.g. strip the href of an engine-managed modulepreload):
+          // a preload without a href never fires load/error, so inserting it would leave a dead node in the target forever.
           if (link.href && !(transformedLink as HTMLLinkElement).href) continue;
           transformedLink.onload = transformedLink.onerror = () => target.removeChild(transformedLink);
           target.insertBefore(transformedLink, nextSibling);
