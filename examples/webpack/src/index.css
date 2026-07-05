@@ -1,0 +1,153 @@
+/* All rules scoped under .webpack-app — no body/html rules here
+   (the style probe injects the only deliberate body rule at runtime). */
+
+.webpack-app {
+  --paper: #f7f8fa;
+  --surface: #ffffff;
+  --ink: #1b1f26;
+  --ink-soft: #5c6470;
+  --hairline: #e4e7ec;
+  --primary: #2f54eb;
+  --accent: #1c78c0;
+
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 24px 24px;
+  color: var(--ink);
+  font-family: 'IBM Plex Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.webpack-app .mono {
+  font-family: 'IBM Plex Mono', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', monospace;
+}
+
+/* Header */
+
+.webpack-app .header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.webpack-app .accent-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex: none;
+}
+
+.webpack-app .title {
+  margin: 0;
+  font-family: 'Space Grotesk', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  margin-right: 4px;
+}
+
+.webpack-app .badge {
+  padding: 2px 8px;
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.webpack-app .badge-accent {
+  color: var(--primary);
+  border-color: rgb(47 84 235 / 35%);
+}
+
+/* Cards */
+
+.webpack-app .card {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.webpack-app .card-title {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+
+/* Probe rows: control on the left, live output + explanation on the right */
+
+.webpack-app .probe {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 12px 0;
+}
+
+.webpack-app .probe + .probe {
+  border-top: 1px solid var(--hairline);
+}
+
+.webpack-app .control {
+  flex: none;
+  min-width: 120px;
+  padding: 6px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 160ms ease-out, color 160ms ease-out;
+}
+
+.webpack-app .control:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.webpack-app .control:disabled {
+  color: var(--ink-soft);
+  cursor: default;
+}
+
+.webpack-app .probe-result {
+  min-width: 0;
+}
+
+.webpack-app .probe-result code {
+  display: block;
+  font-size: 12px;
+  color: var(--ink);
+  word-break: break-all;
+}
+
+.webpack-app .probe-note {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+/* Footer */
+
+.webpack-app .footer {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .webpack-app .control {
+    transition: none;
+  }
+}

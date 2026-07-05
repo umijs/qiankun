@@ -33,3 +33,6 @@ packages/sandbox/src/core/sandbox/globals.ts
 e2e/test-results/
 e2e/playwright-report/
 e2e/blob-report/
+
+# typescript incremental build info
+*.tsbuildinfo

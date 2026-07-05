@@ -1,0 +1,50 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-paper: #f7f8fa;
+  --color-surface: #ffffff;
+  --color-ink: #1b1f26;
+  --color-ink-soft: #5c6470;
+  --color-hairline: #e4e7ec;
+  --color-primary: #2f54eb;
+  --color-primary-deep: #1d39c4;
+  --color-cinnabar: #d93026;
+  --color-success: #16a34a;
+
+  /* latin display face: geometric grotesque, reads developer-tool not literary */
+  --font-display: 'Space Grotesk', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  /* hanzi ornament only (the 乾坤 watermark & seal) */
+  --font-ornament: 'Songti SC', 'STSong', serif;
+  --font-sans: 'IBM Plex Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+
+  --shadow-stage: 0 1px 2px rgb(27 31 38 / 4%), 0 8px 24px rgb(27 31 38 / 6%);
+}
+
+html {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+/* the stage lifts in once per mount; a veil covers loading */
+@keyframes stage-lift {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stage-lift {
+  animation: stage-lift 280ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-lift {
+    animation: none;
+  }
+}

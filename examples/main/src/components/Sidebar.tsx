@@ -1,95 +1,83 @@
-import { useState } from 'react';
-import { Layout, Menu, Typography, Space, Tag } from 'antd';
-import { useQiankunStore } from '../store/qiankun';
-import {
-  HomeOutlined,
-  CodeOutlined,
-  NodeIndexOutlined,
-  ThunderboltOutlined,
-  Html5Outlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  SettingOutlined,
-  QuestionCircleOutlined,
-  ExperimentOutlined,
-} from '@ant-design/icons';
+import { microApps } from '../apps';
+import { navigate } from '../router';
+import Seal from './Seal';
 
-const { Sider } = Layout;
-const { Title, Text } = Typography;
+interface SidebarProps {
+  activePath: string;
+}
 
-const microApps = [
-  { key: 'home', name: '首页', icon: <HomeOutlined />, description: 'Dashboard 概览' },
-  { key: 'react', name: 'React', icon: <CodeOutlined />, description: 'React 18 + Vite', color: '#61DAFB' },
-  { key: 'vue', name: 'Vue', icon: <NodeIndexOutlined />, description: 'Vue 3 + Vite', color: '#4FC08D' },
-  { key: 'purehtml', name: 'Pure HTML', icon: <Html5Outlined />, description: 'Vanilla JS', color: '#E34F26' },
-  { key: 'vite', name: 'Vite App', icon: <ThunderboltOutlined />, description: 'Vite + React', color: '#646CFF' },
-];
-
-export default function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false);
-  const { activeApp, setActiveApp } = useQiankunStore();
-
-  const handleMenuClick = (key: string) => {
-    setActiveApp(key === 'home' ? null : key);
-  };
-
+export default function Sidebar({ activePath }: SidebarProps) {
   return (
-    <Sider
-      trigger={null}
-      collapsible
-      collapsed={collapsed}
-      width={260}
-      className="bg-white border-r border-gray-200"
-      style={{ position: 'sticky', top: 0, height: '100vh', overflow: 'auto' }}
-    >
-      <div className="flex items-center justify-between p-4 border-b border-gray-100">
-        <Space className={collapsed ? 'hidden' : 'flex'}>
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
-            <ExperimentOutlined className="text-white text-lg" />
-          </div>
-          <div>
-            <Title level={5} className="!m-0 !text-base">Qiankun</Title>
-            <Text className="text-xs text-gray-400">Micro-Frontend</Text>
-          </div>
-        </Space>
-        <button onClick={() => setCollapsed(!collapsed)} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
-          {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-        </button>
-      </div>
-
-      <Menu
-        mode="inline"
-        selectedKeys={[activeApp || 'home']}
-        onClick={({ key }) => handleMenuClick(key)}
-        className="border-0 pt-2"
-        style={{ background: 'transparent' }}
+    <aside className="flex w-64 shrink-0 flex-col border-r border-hairline bg-surface">
+      <button
+        type="button"
+        onClick={() => navigate('/')}
+        className="flex items-center gap-3 border-b border-hairline px-5 py-5 text-left"
       >
-        {microApps.map((app) => (
-          <Menu.Item key={app.key} icon={app.icon} className="!mx-3 !rounded-lg !mb-1 hover:!bg-gray-50">
-            <div className="flex items-center justify-between">
-              <span className="font-medium">{app.name}</span>
-              {app.color && !collapsed && (
-                <Tag className="!text-xs !border-0" style={{ backgroundColor: `${app.color}15`, color: app.color }}>
-                  {app.key.includes('react') ? 'React' : app.key.includes('vue') ? 'Vue' : app.key.includes('angular') ? 'Angular' : 'Other'}
-                </Tag>
-              )}
-            </div>
-            {!collapsed && <div className="text-xs text-gray-400 mt-0.5">{app.description}</div>}
-          </Menu.Item>
-        ))}
-      </Menu>
+        <Seal size={36} />
+        <span className="leading-tight">
+          <span className="block font-display text-lg font-semibold tracking-[-0.01em] text-ink">qiankun</span>
+          <span className="block font-mono text-[11px] text-ink-soft">micro-frontend shell</span>
+        </span>
+      </button>
 
-      {!collapsed && (
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100 bg-white">
-          <div className="flex items-center justify-between">
-            <Space>
-              <SettingOutlined className="text-gray-400 hover:text-gray-600 cursor-pointer" />
-              <QuestionCircleOutlined className="text-gray-400 hover:text-gray-600 cursor-pointer" />
-            </Space>
-            <Text className="text-xs text-gray-400">v2.0.0</Text>
-          </div>
-        </div>
-      )}
-    </Sider>
+      <nav className="flex-1 px-3 py-4">
+        <NavItem label="Dashboard" sub="host overview" active={activePath === '/'} onClick={() => navigate('/')} />
+
+        <p className="mt-6 mb-2 px-2 font-mono text-[10px] tracking-[0.18em] text-ink-soft uppercase">Micro apps</p>
+        {microApps.map((app) => (
+          <NavItem
+            key={app.name}
+            label={app.label}
+            sub={app.stack}
+            dot={app.accent}
+            mono={app.loadingPath === 'esm sandbox' ? 'esm' : 'classic'}
+            active={activePath.startsWith(app.path)}
+            onClick={() => navigate(app.path)}
+          />
+        ))}
+      </nav>
+
+      <footer className="border-t border-hairline px-5 py-4">
+        <a
+          href="https://github.com/umijs/qiankun"
+          target="_blank"
+          rel="noreferrer"
+          className="font-mono text-[11px] text-ink-soft transition-colors duration-150 hover:text-primary"
+        >
+          umijs/qiankun ↗
+        </a>
+      </footer>
+    </aside>
+  );
+}
+
+interface NavItemProps {
+  label: string;
+  sub: string;
+  active: boolean;
+  onClick: () => void;
+  dot?: string;
+  mono?: string;
+}
+
+function NavItem({ label, sub, active, onClick, dot, mono }: NavItemProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-current={active ? 'page' : undefined}
+      className={`relative flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors duration-150 ${
+        active ? 'bg-primary/8 text-primary' : 'text-ink hover:bg-paper'
+      }`}
+    >
+      {active && <span className="absolute top-2 bottom-2 left-0 w-[3px] rounded-full bg-primary" />}
+      {dot && <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: dot }} />}
+      <span className="flex-1 leading-tight">
+        <span className="block text-sm font-medium">{label}</span>
+        <span className={`block text-xs ${active ? 'text-primary/70' : 'text-ink-soft'}`}>{sub}</span>
+      </span>
+      {mono && <span className="font-mono text-[10px] text-ink-soft">{mono}</span>}
+    </button>
   );
 }

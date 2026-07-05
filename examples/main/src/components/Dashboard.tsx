@@ -1,114 +1,100 @@
-import { Row, Col, Card, Statistic, Typography, Tag, Space, Button } from 'antd';
-import {
-  AppstoreOutlined,
-  ThunderboltOutlined,
-  SafetyOutlined,
-  GlobalOutlined,
-  RocketOutlined,
-  CodeOutlined,
-  BranchesOutlined,
-} from '@ant-design/icons';
-import { useQiankunStore } from '../store/qiankun';
-
-const { Title, Text, Paragraph } = Typography;
-
-const microApps = [
-  { name: 'React', icon: '⚛️', color: '#61DAFB', status: 'active' },
-  { name: 'Vue', icon: '💚', color: '#4FC08D', status: 'active' },
-  { name: 'Pure HTML', icon: '🌐', color: '#E34F26', status: 'active' },
-  { name: 'Vite App', icon: '⚡', color: '#646CFF', status: 'active' },
-];
-
-const features = [
-  { icon: <ThunderboltOutlined />, title: '极速加载', desc: '基于 Qiankun 的微前端架构，实现秒级应用切换' },
-  { icon: <SafetyOutlined />, title: '沙箱隔离', desc: '完善的 JS/CSS 沙箱机制，确保应用间互不干扰' },
-  { icon: <GlobalOutlined />, title: '技术栈无关', desc: '支持 React、Vue 等多种前端框架' },
-  { icon: <AppstoreOutlined />, title: '状态共享', desc: '内置全局状态管理，实现跨应用数据通信' },
-];
+import { useCallback, useEffect, useState } from 'react';
+import { microApps } from '../apps';
+import { navigate } from '../router';
 
 export default function Dashboard() {
-  const { setActiveApp } = useQiankunStore();
+  return (
+    <div className="relative mx-auto max-w-4xl">
+      {/* the sleeve watermark */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -top-6 right-0 font-ornament text-[120px] leading-none font-semibold text-ink/4 select-none"
+      >
+        乾坤
+      </span>
+
+      <header className="pt-6 pb-10">
+        <p className="mb-3 font-mono text-[11px] tracking-[0.18em] text-primary uppercase">袖里乾坤 · qiankun examples</p>
+        <h1 className="max-w-xl font-display text-[40px] leading-[1.12] font-semibold tracking-[-0.02em] text-ink">
+          A universe in every sleeve.
+        </h1>
+        <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-ink-soft">
+          Four independent apps — React, Vue, a webpack classic build, and plain HTML — mount into this shell. Each one
+          runs inside its own JS sandbox with scoped styles, and this page can prove it.
+        </p>
+      </header>
+
+      <section aria-label="registered micro apps" className="rounded-[10px] border border-hairline bg-surface">
+        <div className="flex items-center justify-between border-b border-hairline px-5 py-3">
+          <h2 className="text-sm font-semibold text-ink">App registry</h2>
+          <span className="font-mono text-[11px] text-ink-soft">sandbox: on · style isolation: on</span>
+        </div>
+        <ul>
+          {microApps.map((app) => (
+            <li key={app.name} className="border-b border-hairline last:border-b-0">
+              <button
+                type="button"
+                onClick={() => navigate(app.path)}
+                className="group flex w-full items-center gap-4 px-5 py-4 text-left transition-colors duration-150 hover:bg-paper"
+              >
+                <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: app.accent }} />
+                <span className="w-28 shrink-0">
+                  <span className="block text-sm font-medium text-ink">{app.label}</span>
+                  <span className="block font-mono text-[10px] text-ink-soft">{app.name}</span>
+                </span>
+                <span className="flex-1 text-[13px] text-ink-soft">{app.stack}</span>
+                <span className="hidden font-mono text-[11px] text-ink-soft sm:block">{app.entry}</span>
+                <span
+                  className={`w-24 shrink-0 rounded-full border px-2 py-0.5 text-center font-mono text-[10px] ${
+                    app.loadingPath === 'esm sandbox'
+                      ? 'border-primary/25 text-primary'
+                      : 'border-hairline text-ink-soft'
+                  }`}
+                >
+                  {app.loadingPath}
+                </span>
+                <span className="text-ink-soft transition-transform duration-150 group-hover:translate-x-0.5">→</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <HostRealmCheck />
+    </div>
+  );
+}
+
+/**
+ * The host-side half of the sub apps' window probe: sub apps write
+ * window.__SANDBOX_PROBE__ from inside their sandbox; the host realm must never see it.
+ */
+function HostRealmCheck() {
+  const read = useCallback(() => String((window as Window & { __SANDBOX_PROBE__?: unknown }).__SANDBOX_PROBE__), []);
+  const [value, setValue] = useState(read);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setValue(read()), 1500);
+    return () => window.clearInterval(timer);
+  }, [read]);
+
+  const clean = value === 'undefined';
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-10">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
-            <RocketOutlined className="text-white text-2xl" />
-          </div>
-          <div>
-            <Title level={2} className="!mb-0 !text-2xl">欢迎使用 Qiankun</Title>
-            <Text type="secondary">下一代微前端解决方案演示平台</Text>
-          </div>
+    <section aria-label="host realm check" className="mt-6 rounded-[10px] border border-hairline bg-surface px-5 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-ink">Host realm check</h2>
+          <p className="mt-1 max-w-lg text-[13px] leading-relaxed text-ink-soft">
+            Every micro app has a probe button that writes <code className="font-mono text-xs">window.__SANDBOX_PROBE__</code>{' '}
+            inside its sandbox. The host window you are looking at reads:
+          </p>
         </div>
-
-        <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-0">
-          <Row gutter={[24, 24]} align="middle">
-            <Col xs={24} md={16}>
-              <Paragraph className="!mb-4 text-gray-600">
-                Qiankun 是一个基于 single-spa 的微前端实现库，旨在帮助大家能更简单、无痛的构建一个生产可用微前端架构系统。
-              </Paragraph>
-              <Space>
-                <Button type="primary" size="large" icon={<CodeOutlined />} onClick={() => setActiveApp('react')}>
-                  开始体验
-                </Button>
-                <Button size="large" icon={<BranchesOutlined />} onClick={() => window.open('https://qiankun.umijs.org/', '_blank')}>
-                  查看文档
-                </Button>
-              </Space>
-            </Col>
-            <Col xs={24} md={8} className="hidden md:block">
-              <div className="text-center">
-                <div className="text-5xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-                  4
-                </div>
-                <div className="text-gray-500 mt-2">示例应用</div>
-              </div>
-            </Col>
-          </Row>
-        </Card>
+        <div className="text-right">
+          <code className={`font-mono text-sm ${clean ? 'text-success' : 'text-cinnabar'}`}>{value}</code>
+          <p className="mt-1 font-mono text-[10px] text-ink-soft">{clean ? 'the membrane holds' : 'sandbox breached'}</p>
+        </div>
       </div>
-
-      <Row gutter={[16, 16]} className="mb-8">
-        {[
-          { title: '已接入应用', value: 4, suffix: '个', color: '#0ea5e9' },
-          { title: '支持框架', value: 3, suffix: '种', color: '#10b981' },
-          { title: '在线用户', value: 128, suffix: '人', color: '#f59e0b' },
-          { title: '系统运行', value: 99.9, suffix: '%', color: '#8b5cf6' },
-        ].map((stat, index) => (
-          <Col xs={12} md={6} key={index}>
-            <Card hoverable className="text-center">
-              <Statistic title={stat.title} value={stat.value} suffix={stat.suffix} valueStyle={{ color: stat.color }} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
-
-      <Card title={<div className="flex items-center justify-between"><span>子应用列表</span><Button type="link">查看全部</Button></div>} className="mb-8">
-        <Row gutter={[16, 16]}>
-          {microApps.slice(0, 8).map((app) => (
-            <Col xs={12} sm={8} md={6} key={app.name}>
-              <Card hoverable className="text-center transition-all duration-300 hover:shadow-md" bodyStyle={{ padding: '20px' }} onClick={() => setActiveApp(app.name.toLowerCase().replace(' ', ''))}>
-                <div className="text-3xl mb-2">{app.icon}</div>
-                <div className="font-medium text-gray-900 mb-1">{app.name}</div>
-                <Tag color={app.status === 'active' ? 'success' : 'default'}>{app.status === 'active' ? '运行中' : '即将上线'}</Tag>
-              </Card>
-            </Col>
-          ))}
-        </Row>
-      </Card>
-
-      <Row gutter={[16, 16]}>
-        {features.map((feature, index) => (
-          <Col xs={24} sm={12} md={6} key={index}>
-            <Card className="h-full hover:shadow-md transition-shadow">
-              <div className="text-blue-500 text-2xl mb-3">{feature.icon}</div>
-              <div className="font-medium text-gray-900 mb-2">{feature.title}</div>
-              <div className="text-sm text-gray-500">{feature.desc}</div>
-            </Card>
-          </Col>
-        ))}
-      </Row>
-    </div>
+    </section>
   );
 }

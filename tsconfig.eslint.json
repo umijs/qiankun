@@ -8,10 +8,12 @@
   "include": [
     // whatever paths you intend to lint
     "packages/*/src",
-    "packages/bundler-plugin/tests",
     "packages/ui-bindings/*/src",
     "vitest.workspace.ts",
     "vitest.config.ts",
     ".fatherrc.js"
-  ]
+  ],
+  // bundler-plugin ships a vite plugin whose types need moduleResolution: bundler — its own
+  // tsconfig (src + tests) takes over for linting
+  "exclude": ["packages/bundler-plugin"]
 }

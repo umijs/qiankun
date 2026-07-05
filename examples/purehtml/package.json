@@ -1,16 +1,12 @@
 {
   "name": "purehtml",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.html",
+  "private": true,
+  "version": "0.0.0",
+  "description": "qiankun micro app with no build step: static html + vendored jQuery",
   "scripts": {
-    "start": "http-server . --cors -c-1 -p 7104",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "http-server . --cors -c-1 -p 7104"
   },
-  "author": "",
-  "license": "MIT",
   "devDependencies": {
-    "cross-env": "^7.0.2",
-    "http-server": "^0.12.1"
+    "http-server": "^14.1.1"
   }
 }

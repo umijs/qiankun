@@ -1,19 +1,177 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Purehtml Example</title>
-  <!-- vendored locally: qiankun fetches sub-app scripts with CORS, which public CDNs without
-       Access-Control-Allow-Origin headers (like the old bootcss one) would break -->
-  <script src="./vendor/jquery.min.js"></script>
-</head>
-<body>
-  <div style="display: flex; justify-content: center; align-items: center; height: 200px;">
-    Purehtml Example
-  </div>
-  <div id="purehtml-container" style="text-align:center"></div>
-  <!-- relative URLs are rewritten against the entry by qiankun's asset transpiler -->
-  <script src="./entry.js" entry></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pure HTML micro app · qiankun</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- vendored locally: qiankun fetches sub-app scripts with CORS, which public CDNs without
+         Access-Control-Allow-Origin headers would break -->
+    <script src="./vendor/jquery.min.js"></script>
+    <style>
+      /* every rule scoped under the app root; qiankun's style isolation additionally
+         wraps this sheet in @scope when the app runs inside the shell */
+      .purehtml-app {
+        --paper: #f7f8fa;
+        --surface: #ffffff;
+        --ink: #1b1f26;
+        --ink-soft: #5c6470;
+        --hairline: #e4e7ec;
+        --primary: #2f54eb;
+        --accent: #b8860b;
+
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 40px 24px 48px;
+        color: var(--ink);
+        font-family: 'IBM Plex Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .purehtml-app .app-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 24px;
+      }
+
+      .purehtml-app .accent-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--accent);
+      }
+
+      .purehtml-app h1 {
+        margin: 0;
+        font-family: 'Space Grotesk', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+        font-size: 26px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+
+      .purehtml-app .badge {
+        padding: 2px 8px;
+        border: 1px solid var(--hairline);
+        border-radius: 999px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 10px;
+        color: var(--ink-soft);
+      }
+
+      .purehtml-app .badge.mode-qiankun {
+        border-color: rgb(47 84 235 / 35%);
+        color: var(--primary);
+      }
+
+      .purehtml-app .card {
+        background: var(--surface);
+        border: 1px solid var(--hairline);
+        border-radius: 10px;
+        margin-bottom: 16px;
+      }
+
+      .purehtml-app .card > h2 {
+        margin: 0;
+        padding: 12px 20px;
+        border-bottom: 1px solid var(--hairline);
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .purehtml-app .probe {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 16px 20px;
+      }
+
+      .purehtml-app .probe + .probe {
+        border-top: 1px solid var(--hairline);
+      }
+
+      .purehtml-app .probe button {
+        flex-shrink: 0;
+        min-width: 150px;
+        padding: 7px 12px;
+        border: 1px solid var(--hairline);
+        border-radius: 6px;
+        background: var(--surface);
+        color: var(--ink);
+        font: inherit;
+        font-size: 13px;
+        cursor: pointer;
+        transition:
+          border-color 160ms ease-out,
+          color 160ms ease-out;
+      }
+
+      .purehtml-app .probe button:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .purehtml-app .probe-result {
+        display: block;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 12px;
+        color: var(--ink);
+        min-height: 18px;
+        overflow-wrap: anywhere;
+      }
+
+      .purehtml-app .probe-note {
+        display: block;
+        margin-top: 2px;
+        font-size: 12px;
+        color: var(--ink-soft);
+      }
+
+      .purehtml-app .counter-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px 20px;
+      }
+
+      .purehtml-app .counter-value {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 20px;
+        min-width: 48px;
+        text-align: center;
+      }
+
+      .purehtml-app .app-footer {
+        margin-top: 24px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 11px;
+        color: var(--ink-soft);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .purehtml-app .probe button {
+          transition: none;
+        }
+      }
+    </style>
+    <!-- standalone page background only; scoped away by style isolation inside the shell -->
+    <style>
+      body {
+        margin: 0;
+        background: #f7f8fa;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="purehtml-container"></div>
+    <!-- relative URLs are rewritten against the entry by qiankun's asset transpiler -->
+    <script src="./entry.js" entry></script>
+  </body>
 </html>

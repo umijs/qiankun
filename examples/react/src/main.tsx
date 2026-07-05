@@ -1,11 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import './index.css';
 
 declare global {
   interface Window {
     __POWERED_BY_QIANKUN__?: boolean;
+    __SANDBOX_PROBE__?: string;
     [key: string]: unknown;
   }
 }
@@ -24,43 +24,24 @@ function render(props: { container?: Element } = {}) {
   );
 }
 
-function bootstrap() {
+export async function bootstrap() {
   console.log('[react] bootstrap');
-  return Promise.resolve();
 }
 
-function mount(props: { container?: Element }) {
+export async function mount(props: { container?: Element }) {
   console.log('[react] mount', props);
   render(props);
-  return Promise.resolve();
 }
 
-function unmount(props: { container?: Element }) {
+export async function unmount(props: { container?: Element }) {
   console.log('[react] unmount', props);
-  if (root) {
-    root.unmount();
-    root = undefined;
-  }
-  const container = props.container?.querySelector('#root') ?? document.getElementById('root');
-  if (container) {
-    container.innerHTML = '';
-  }
-  return Promise.resolve();
+  root?.unmount();
+  root = undefined;
 }
 
-// Standalone mode
-if (!window.__POWERED_BY_QIANKUN__) {
+if (window.__POWERED_BY_QIANKUN__) {
+  // classic-mode fallback: expose the lifecycles on window under the registered app name
+  window['react'] = { bootstrap, mount, unmount };
+} else {
   render();
 }
-
-// Export lifecycle functions to window - MUST be last global assignment
-(function(global) {
-  global['react'] = {
-    bootstrap,
-    mount,
-    unmount,
-  };
-})(window);
-
-// Native ESM lifecycle exports, picked up by the qiankun ESM sandbox from the entry module namespace
-export { bootstrap, mount, unmount };

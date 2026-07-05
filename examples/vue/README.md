@@ -1,5 +1,9 @@
-# Vue 3 + TypeScript + Vite
+# vue micro app
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+Vue 3.5 + Vite 8 micro app for the qiankun examples, loaded through the qiankun ESM sandbox.
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+- Entry: `index.html` marks `/src/main.ts` with the `entry` attribute; `@qiankunjs/bundler-plugin/vite` handles dev/preview CORS headers and entry marking.
+- Lifecycle: `src/main.ts` exports `bootstrap` / `mount` / `unmount` as native ESM exports, plus a `window['vue']` fallback for classic loading (the registered qiankun app name is `vue`).
+- UI: an isolation lab (window / timer / style probes) and a local state counter, following `examples/DESIGN.md`.
+
+Run standalone with `pnpm dev` (http://localhost:7101), or start the main app on port 7099 and open it from the sidebar.

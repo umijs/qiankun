@@ -1,42 +1,176 @@
-#root {
-  max-width: 1280px;
+/* All rules scoped under .react-app — no body/html rules here (design contract). */
+
+.react-app {
+  --paper: #f7f8fa;
+  --surface: #ffffff;
+  --ink: #1b1f26;
+  --ink-soft: #5c6470;
+  --hairline: #e4e7ec;
+  --primary: #2f54eb;
+  --accent: #087ea4;
+  --sans: 'IBM Plex Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --display: 'Space Grotesk', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+
+  box-sizing: border-box;
+  max-width: 720px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 40px 24px 32px;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.react-app *,
+.react-app *::before,
+.react-app *::after {
+  box-sizing: inherit;
+}
+
+.react-app .app-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.react-app .accent-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.react-app h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.react-app .badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.react-app .badge {
+  padding: 3px 8px;
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.react-app .badge-live {
+  border-color: rgb(47 84 235 / 35%);
+  color: var(--primary);
+}
+
+.react-app .card {
+  margin-bottom: 16px;
+  padding: 18px 20px;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.react-app .card h2 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.react-app .probe {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 8px 20px;
+  align-items: start;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.react-app .probe:last-of-type {
+  padding-bottom: 4px;
+  border-bottom: none;
+}
+
+.react-app button {
+  padding: 6px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease-out,
+    color 160ms ease-out;
+}
+
+.react-app button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .react-app button {
+    transition: none;
+  }
+}
+
+.react-app .probe-result output {
+  display: block;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.react-app .probe-result p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.react-app .counter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.react-app .counter-value {
+  min-width: 3ch;
   text-align: center;
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 500;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.react-app .counter p {
+  margin: 0 0 0 8px;
+  font-size: 13px;
+  color: var(--ink-soft);
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+.react-app .app-footer {
+  margin-top: 20px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-soft);
 }

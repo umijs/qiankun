@@ -2,12 +2,12 @@
   "name": "qiankun-monorepo",
   "private": true,
   "engines": {
-    "node": ">=16"
+    "node": ">=20.19"
   },
   "scripts": {
-    "start:example": "pnpm run build && npm run start:main",
-    "start:main": "cd ./examples/main && npm run dev",
+    "start:example": "pnpm run build:packages && pnpm --parallel --filter './examples/*' run dev",
     "build": "pnpm -r run build",
+    "build:packages": "pnpm --filter './packages/**' run build",
     "prerelease:alpha": "changeset pre enter alpha && changeset && changeset version",
     "release:alpha": "pnpm run build && changeset publish && changeset pre exit",
     "eslint": "eslint packages/",

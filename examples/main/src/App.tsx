@@ -1,37 +1,38 @@
-import { useEffect } from 'react';
-import { Layout } from 'antd';
-import { useQiankunStore } from './store/qiankun';
+import { useEffect, useRef, useState } from 'react';
+import { appByPath } from './apps';
+import Dashboard from './components/Dashboard';
 import Sidebar from './components/Sidebar';
-import Header from './components/Header';
-import MicroAppContainer from './components/MicroAppContainer';
+import Stage from './components/Stage';
+import { registerAll } from './register';
+import { usePathname } from './router';
 
-const { Content } = Layout;
+export default function App() {
+  const pathname = usePathname();
+  const activeApp = appByPath(pathname);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [loadingApps, setLoadingApps] = useState<Record<string, boolean>>({});
 
-function App() {
-  const { initGlobalState } = useQiankunStore();
-
+  // register once the stage container exists in the DOM; registerAll self-guards,
+  // so StrictMode's double effect is harmless
   useEffect(() => {
-    // Initialize qiankun global state
-    initGlobalState({
-      user: {
-        name: 'Qiankun User',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=qiankun',
-      },
-      theme: 'light',
-    });
-  }, [initGlobalState]);
+    if (containerRef.current) {
+      registerAll(containerRef.current, (name, loading) => {
+        setLoadingApps((prev) => (prev[name] === loading ? prev : { ...prev, [name]: loading }));
+      });
+    }
+  }, []);
 
   return (
-    <Layout className="min-h-screen bg-gray-50">
-      <Sidebar />
-      <Layout className="transition-all duration-300">
-        <Header />
-        <Content className="m-0 p-0 overflow-hidden">
-          <MicroAppContainer />
-        </Content>
-      </Layout>
-    </Layout>
+    <div className="flex min-h-screen bg-paper text-ink">
+      <Sidebar activePath={pathname} />
+      <main className="min-w-0 flex-1 px-10 py-8">
+        {!activeApp && <Dashboard />}
+        {/* the stage (and its container) stays mounted forever — qiankun holds the element
+            captured at registration, so this subtree must never be keyed or unmounted */}
+        <div className={activeApp ? 'stage-lift' : ''}>
+          <Stage app={activeApp} loading={activeApp ? !!loadingApps[activeApp.name] : false} containerRef={containerRef} />
+        </div>
+      </main>
+    </div>
   );
 }
-
-export default App;
