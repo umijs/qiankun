@@ -1,67 +1,71 @@
 # @qiankunjs/sandbox
 
-JS isolation engine using Proxy-based Membrane + Compartment execution model.
+JS isolation engine: Proxy-based **Membrane** + **Compartment** execution model. Also exposes the
+globals contract the ESM-sandbox engine (in `@qiankunjs/shared`) relies on. Depends only on `@qiankunjs/shared`.
 
 ## STRUCTURE
 
 ```
 sandbox/
 ├── core/
-│   ├── sandbox/          # StandardSandbox, createSandboxContainer
-│   ├── membrane/         # Proxy wrapper for global isolation
-│   ├── compartment/      # Code evaluation with `with(this)` binding
-│   └── globals.ts        # Global property definitions
+│   ├── sandbox/          # createSandboxContainer() + StandardSandbox (mount/unmount, latestSetProp)
+│   ├── membrane/         # Proxy wrapper for global (window/document) isolation
+│   ├── compartment/      # Code evaluation with `with(this)` scope binding + globalProps
+│   ├── globals.ts        # global property definitions
+│   └── esm-globals.ts    # esmDestructurableGlobals — globals the ESM engine may destructure/rebind
 ├── patchers/
-│   ├── dynamicAppend/    # DOM appendChild/insertBefore interception
-│   ├── windowListener.ts # Event listener tracking
-│   ├── interval.ts       # Timer tracking
+│   ├── dynamicAppend/    # appendChild/insertBefore interception → redirect to app container
+│   ├── windowListener.ts # event listener tracking
+│   ├── interval.ts       # timer tracking
 │   └── historyListener.ts
-└── consts.ts             # qiankunHeadTagName, etc.
+└── consts.ts             # qiankunHeadTagName / qiankunBodyTagName, nativeGlobal, nativeDocument
 ```
 
 ## WHERE TO LOOK
 
 | Task | File | Notes |
 | --- | --- | --- |
-| Create sandbox | `core/sandbox/index.ts` | `createSandboxContainer()` returns mount/unmount |
-| Proxy logic | `core/membrane/index.ts` | Write → local target, Read → target → endowments → host |
-| Code execution | `core/compartment/index.ts` | `with(this)` scope binding |
-| DOM interception | `patchers/dynamicAppend/forStandardSandbox.ts` | Redirects to app container |
-| Side effect cleanup | `patchers/*.ts` | Each returns `free()` function |
+| Create sandbox | `core/sandbox/index.ts` | `createSandboxContainer()` returns mount/unmount + membrane views |
+| Proxy logic | `core/membrane/index.ts` | Write → local target; Read → local → endowments → host window |
+| Code execution | `core/compartment/index.ts` | `with(this)` scope binding for classic (blob-URL) scripts |
+| DOM interception | `patchers/dynamicAppend/forStandardSandbox.ts` | Redirects dynamic script/style/link to app container |
+| Side-effect cleanup | `patchers/*.ts` | Each patcher returns a `free()` called on unmount |
+| ESM globals contract | `core/esm-globals.ts` | Consumed by `shared/esm-sandbox` engine, passed as `globalsBaseSet` |
 
 ## KEY PATTERNS
 
 ### Membrane (Proxy)
 
-- **Writes**: Trapped and stored in local `target` object
-- **Reads**: Check local → endowments → fallback to host window
-- **Native rebinding**: `fetch`, `console` rebound to avoid "Illegal invocation"
+- **Writes** are trapped and stored on a local `target` object (the sandbox's own globals).
+- **Reads** check local target → endowments → fall back to the real host window.
+- **Native rebinding**: `fetch`, `console`, etc. are rebound to the real receiver to avoid "Illegal invocation".
+- `latestSetProp` records the last global the entry script assigned — that's how the loader recovers a
+  classic app's exported lifecycles when no explicit export exists.
 
-### Patcher/Free Pattern
+### Patcher / free pattern
 
 ```typescript
-// Every patcher returns cleanup function
-const free = patchWindowListener(sandbox);
-// On unmount:
-free(); // Removes all listeners added by micro-app
+const free = patchWindowListener(sandbox); // on mount
+// ...
+free(); // on unmount — removes every listener/timer the micro-app added
 ```
 
-### WeakMap Metadata
+### WeakMap metadata
 
-- `sandboxConfigWeakMap`: Sandbox config per instance
-- `elementAttachSandboxConfigMap`: Tracks which app owns which DOM node
+- `sandboxConfigWeakMap` — per-instance sandbox config.
+- `elementAttachSandboxConfigMap` — which app owns which dynamically-appended DOM node.
 
 ## ANTI-PATTERNS
 
-- **NEVER** access real `window.document.head` directly - use proxied version
-- **FIXME**: Indirect `eval` in membrane causes System.js scope escape
-- **FIXME**: Global variable for runtime container may miss monkey-patched logic
+- **NEVER** access the real `window` / `document.head` directly — always the proxied view.
+- **FIXME** (in code): indirect `eval` in the membrane can let System.js escape sandbox scope.
+- **FIXME**: the runtime-container global may miss monkey-patched append logic.
 
-## EXPORTS
+## EXPORTS (`src/index.ts`)
 
 ```typescript
-export { createSandboxContainer } from './core/sandbox';
-export { StandardSandbox } from './core/sandbox/StandardSandbox';
-export { Compartment } from './core/compartment';
-export { qiankunHeadTagName } from './consts';
+export * from './core/sandbox';       // createSandboxContainer, type Sandbox, StandardSandbox
+export * from './core/compartment';   // Compartment
+export * from './consts';             // qiankunHeadTagName, qiankunBodyTagName, nativeGlobal, nativeDocument
+export { esmDestructurableGlobals } from './core/esm-globals';
 ```

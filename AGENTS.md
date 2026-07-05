@@ -1,119 +1,127 @@
 # QIANKUN PROJECT KNOWLEDGE BASE
 
-**Generated:** 2026-01-10 **Commit:** 058166b6 **Branch:** next
+**Updated:** 2026-07-06 · **Commit:** dcc42ae4 · **Branch:** next (qiankun 3.0, active dev)
 
-## OVERVIEW
+Qiankun is a micro-frontend framework built on [single-spa](https://github.com/single-spa/single-spa).
+v3 rewrites the runtime around **streaming HTML-entry loading**, a **Proxy-membrane JS sandbox**,
+and native **ESM-sandbox** execution. pnpm monorepo, built with `father` (UmiJS).
 
-Qiankun is a micro-frontend framework built on single-spa, providing HTML entry, JS sandbox, and style isolation. Monorepo managed by pnpm with `father` build tool.
+> Requires Node `>=20.19`, `pnpm@10.28.2` (see `packageManager`). Never use npm/yarn at the root.
 
 ## STRUCTURE
 
 ```
 qiankun/
 ├── packages/
-│   ├── qiankun/         # Main facade - re-exports from loader/sandbox/shared
-│   ├── sandbox/         # JS isolation via Proxy membrane + Compartment (SEE packages/sandbox/AGENTS.md)
-│   ├── loader/          # Streaming HTML entry loader (SEE packages/loader/AGENTS.md)
-│   ├── shared/          # fetch-utils, asset transpilers, module-resolver (SEE packages/shared/AGENTS.md)
-│   ├── ui-bindings/     # React/Vue <MicroApp> components
-│   ├── bundler-plugin/  # Entry point configuration plugin
-│   └── create-qiankun/  # CLI scaffolding tool
-├── examples/            # Integration examples (NOT in workspace currently)
-└── docs/                # VitePress documentation
+│   ├── qiankun/         # Facade: public APIs (register/loadMicroApp, start, prefetch) + loadApp orchestration
+│   ├── sandbox/         # JS isolation: Proxy membrane + Compartment  → packages/sandbox/AGENTS.md
+│   ├── loader/          # Streaming HTML-entry loader (writable-dom)  → packages/loader/AGENTS.md
+│   ├── shared/          # Transpilers, fetch-utils, module-resolver, ESM-sandbox engine → packages/shared/AGENTS.md
+│   ├── ui-bindings/     # <MicroApp> components: react/ vue/ shared/
+│   ├── bundler-plugin/  # Webpack(4/5) + Vite plugins: mark entry script, fix output library
+│   └── create-qiankun/  # `npm create qiankun` scaffolder (React/Vue, Vite)
+├── e2e/                 # Playwright, runs against BUILT dist → e2e/README.md
+├── examples/            # Runnable integration demos (main + react/vue/purehtml/webpack)
+└── docs/                # VitePress site (docs/rfcs holds design RFCs)
 ```
 
-## WHERE TO LOOK
+## PROGRESSIVE DISCLOSURE — read the scoped doc before editing a package
 
-| Task | Location | Notes |
-| --- | --- | --- |
-| Core APIs (registerMicroApps, loadMicroApp) | `packages/qiankun/src/apis/` | Thin wrappers around loader/sandbox |
-| App loading lifecycle | `packages/qiankun/src/core/loadApp.ts` | Orchestrates sandbox+loader+hooks |
-| JS sandbox implementation | `packages/sandbox/src/core/` | Membrane, Compartment, StandardSandbox |
-| HTML streaming loader | `packages/loader/src/index.ts` | Uses writable-dom for streaming |
-| Script/link transpilation | `packages/shared/src/assets-transpilers/` | Blob URL sandboxing |
-| Fetch enhancements | `packages/shared/src/fetch-utils/` | Cache, retry, error handling |
-| Dependency sharing | `packages/shared/src/module-resolver/` | Semver-based matching |
-| React/Vue bindings | `packages/ui-bindings/{react,vue}/` | `<MicroApp>` component |
+| Working in… | Read first |
+| --- | --- |
+| `packages/sandbox/**` | [`packages/sandbox/AGENTS.md`](packages/sandbox/AGENTS.md) — membrane, compartment, patchers, ESM globals |
+| `packages/loader/**` | [`packages/loader/AGENTS.md`](packages/loader/AGENTS.md) — streaming pipeline, head virtualization |
+| `packages/shared/**` | [`packages/shared/AGENTS.md`](packages/shared/AGENTS.md) — transpilers, fetch decorators, **esm-sandbox** |
+| `e2e/**` | [`e2e/README.md`](e2e/README.md) — Playwright layout, fixtures, anti-flake rules |
 
-## CODE MAP
+## ARCHITECTURE (big picture)
 
-### Package Dependencies (internal)
+`loadApp` (`packages/qiankun/src/core/loadApp.ts`) is the orchestrator. Per micro-app it wires:
+
+1. **fetch** — decorated `window.fetch`: `makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)))`.
+2. **sandbox** — `createSandboxContainer()` builds a Proxy-membrane `window`/`document` view; patchers
+   (dynamicAppend, timers, listeners, history) each return a `free()` cleanup called on unmount.
+3. **loader** — `loadEntry(entry, container, opts)` streams the HTML entry through `writable-dom`,
+   virtualizing `<head>` → `<qiankun-head>` and running each node through a `nodeTransformer`.
+4. **transpilers** (`shared/assets-transpilers`) rewrite each script/link/style node before it hits live DOM.
+
+Two execution paths, chosen per script type:
+
+- **Classic** (`<script entry>`, UMD/global): source is wrapped and run via a **blob URL** scoped to the
+  sandbox membrane. The app's export = `sandbox.latestSetProp` (the last global the entry script set).
+- **ESM** (`<script type="module">`): handled by `EsmSandboxEngine` (`shared/esm-sandbox`). Modules are
+  fetched, lexer-rewritten to route globals through the membrane, given synthetic specifiers via a
+  dynamically injected **import map**, and evaluated in order. The engine also handles dynamic `import()`.
+
+**Style isolation** (`shared/assets-transpilers/style.ts` + `link.ts`) uses CSS `@scope` at runtime;
+external stylesheets become blob-`<link>`s so `@scope` can wrap them. Opt-in via `styleIsolation`.
+
+Internal dependency graph (never invert it):
 
 ```
-qiankun (facade)
-├── @qiankunjs/loader
-│   ├── @qiankunjs/sandbox
-│   └── @qiankunjs/shared
-├── @qiankunjs/sandbox
-│   └── @qiankunjs/shared
-└── @qiankunjs/shared (base utilities)
+qiankun → loader → sandbox → shared
+                   sandbox → shared
+ui-bindings/{react,vue} → ui-bindings/shared → qiankun
 ```
-
-### Key Entry Points
-
-| Package            | Entry          | Primary Exports                                     |
-| ------------------ | -------------- | --------------------------------------------------- |
-| qiankun            | `src/index.ts` | `registerMicroApps`, `start`, `loadMicroApp`        |
-| @qiankunjs/sandbox | `src/index.ts` | `createSandboxContainer`, `StandardSandbox`         |
-| @qiankunjs/loader  | `src/index.ts` | `loadEntry`                                         |
-| @qiankunjs/shared  | `src/index.ts` | `transpileScript`, `makeFetchCacheable`, `Deferred` |
-
-## CONVENTIONS
-
-### TypeScript (STRICT - enforced by eslint)
-
-- `@typescript-eslint/no-explicit-any`: ERROR - use `unknown` instead
-- `@typescript-eslint/consistent-type-imports`: inline-type-imports required
-- `@typescript-eslint/no-unnecessary-condition`: ERROR
-- Path aliases: `@qiankunjs/*` → `packages/*/src`
-
-### Code Style
-
-- No `as any`, `@ts-ignore`, `@ts-expect-error`
-- Unused vars: prefix with `_` (e.g., `_unused`)
-- Type exports: use `export type { X }` inline syntax
-
-### Build
-
-- Tool: `father` (UmiJS ecosystem)
-- Output: dual ESM + CJS in `dist/`
-- No `exports` field in package.json (uses `main`/`module`/`types`)
-
-## ANTI-PATTERNS (THIS PROJECT)
-
-- **NEVER** add more than 1 `entry` attribute script per HTML entry
-- **NEVER** use `!important` in CSS unless absolutely necessary (breaks isolation)
-- **ALWAYS** unmount micro-apps when finished (`loadMicroApp` returns unmount handle)
-- **AVOID** global variables in micro-apps - sandbox tracks `latestSetProp` for exports
-
-### Technical Debt (from codebase comments)
-
-- `FIXME` in `loadApp.ts`: async execution order coordination
-- `FIXME` in sandbox: System.js scope escape via indirect eval
-- `TODO`: Snapshot sandbox and GC not yet implemented
 
 ## COMMANDS
 
 ```bash
-pnpm install              # Install all workspace deps
-pnpm run build            # Build all packages (father build)
-pnpm run test             # Run vitest across workspace
-pnpm run eslint           # Lint packages/
-pnpm run ci               # Full CI: build + eslint + prettier:check
+pnpm install                 # install all workspace deps
 
-# Development
-pnpm run start:example    # Build + run example apps
-pnpm run docs:dev         # VitePress dev server
+# build (father → dual ESM+CJS in each package's dist/)
+pnpm run build               # build everything (packages + examples)
+pnpm run build:packages      # build only packages/** (prereq for e2e & examples)
 
-# Release (changesets)
-pnpm run prerelease:alpha # Enter alpha, version bump
-pnpm run release:alpha    # Build, publish, exit alpha
+# unit tests — vitest + happy-dom, aliased to src (NO build needed, see vitest.config.ts)
+pnpm run test                            # all packages
+pnpm --filter @qiankunjs/shared run test # one package
+pnpm --filter @qiankunjs/sandbox exec vitest run path/to.test.ts   # single file
+pnpm --filter @qiankunjs/shared  exec vitest run -t "test name"    # single test by name
+
+# e2e — Playwright against BUILT dist (see e2e/README.md)
+pnpm run test:e2e            # build all + run chromium suite
+
+# lint / format / full CI gate
+pnpm run eslint              # eslint packages/
+pnpm run prettier:check      # prettier -c .
+pnpm run ci                  # build + eslint + prettier:check (what CI runs)
+
+# dev
+pnpm run start:example       # build packages + run all example apps in parallel
+pnpm run docs:dev            # VitePress docs
 ```
+
+## CONVENTIONS (enforced by eslint — `pnpm run eslint` will reject violations)
+
+TypeScript is strict + type-checked (`@typescript-eslint/recommended-requiring-type-checking`):
+
+- **No `any`** — `no-explicit-any` auto-fixes to `unknown`. No `as any`, `@ts-ignore`, `@ts-expect-error`.
+- **Inline type imports** — `import { type Foo, bar }`, not `import type { Foo }` on its own line
+  (`consistent-type-imports`/`consistent-type-exports` with `fixStyle: inline-type-imports`).
+- `no-unnecessary-condition` is an error — don't guard values the types prove are always truthy.
+- Unused vars/args must be prefixed `_` (`argsIgnorePattern: ^_`).
+- `array-simple`: `T[]` for simple, `Array<T>` for complex element types.
+- JS-wide: `no-else-return` (no `else` after `return`), `object-shorthand`.
+- Path alias `@qiankunjs/*` → `packages/*/src` (tsconfig + vitest); imports resolve to **source**, not dist.
+
+Build/release:
+
+- `father` build, dual ESM+CJS; packages use `main`/`module`/`types` (no `exports` field).
+- Versioning via **changesets** — add a changeset (`.changeset/`) for any user-facing change.
+- Conventional commits enforced by commitlint (`feat:`, `fix:`, `feat(esm-sandbox):`, …).
+
+## ANTI-PATTERNS (this project)
+
+- **NEVER** put more than one `entry` script in an HTML entry — the loader throws `QiankunError`.
+- **ALWAYS** unmount micro-apps; `loadMicroApp`/patchers return handles/`free()` — leaks break remount & multi-instance.
+- In sandbox code, **never touch the real `window`/`document.head`** — go through the proxied view.
+- Don't invert the package dependency graph above (e.g. `shared` must not import `sandbox`).
+- e2e: never `waitForTimeout`; use web-first assertions; all ports come from `e2e/ports.ts`.
 
 ## NOTES
 
-- **v3.0 Active Development**: Check roadmap at github.com/umijs/qiankun/discussions/1378
-- **Streaming Architecture**: v3 uses `writable-dom` for incremental HTML parsing
-- **Head Virtualization**: `<head>` → `<qiankun-head>` for isolation
-- **Blob URL Execution**: Scripts wrapped and executed via `URL.createObjectURL`
-- **Test Environment**: Vitest + happy-dom; edge-runtime for fetch tests
+- Firefox doesn't support dynamically injected import maps → ESM-sandbox e2e tests are annotated
+  `test.fail(firefox, …)` (expected failure, not skip). See `e2e/README.md`.
+- Design decisions live in `docs/rfcs/` (e.g. the ESM-sandbox RFC).
+- v3 roadmap: github.com/umijs/qiankun/discussions/1378.

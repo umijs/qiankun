@@ -1,71 +1,65 @@
 # @qiankunjs/loader
 
-Streaming HTML entry loader using writable-dom.
+Streaming HTML-entry loader built on a forked `writable-dom`. Depends on `@qiankunjs/sandbox` + `@qiankunjs/shared`.
 
 ## STRUCTURE
 
 ```
 loader/
-├── index.ts              # loadEntry() - main API
-├── TagTransformStream.ts # <head> → <qiankun-head> replacement
-├── writable-dom/         # Forked streaming DOM engine
-│   └── index.ts          # WritableDOMStream implementation
-└── parser.ts             # Static HTML parsing for prefetch
+├── index.ts              # loadEntry() — main API
+├── TagTransformStream.ts # <head> → <qiankun-head> string-level replacement
+├── writable-dom/         # forked streaming DOM engine (incremental parse + blocking scripts)
+│   └── index.ts
+└── parser.ts             # static HTML parsing for prefetch
 ```
 
 ## WHERE TO LOOK
 
-| Task                | File                    | Notes                                  |
-| ------------------- | ----------------------- | -------------------------------------- |
-| Load micro-app      | `index.ts`              | `loadEntry(url, container, opts)`      |
-| Head virtualization | `TagTransformStream.ts` | String-level tag replacement           |
-| Streaming DOM       | `writable-dom/index.ts` | Incremental parsing + blocking scripts |
+| Task | File | Notes |
+| --- | --- | --- |
+| Load micro-app | `index.ts` | `loadEntry(entry, container, opts)`; `opts` carries `sandbox` and/or `esmEngine` |
+| Head virtualization | `TagTransformStream.ts` | rewrites `<head>` tags at the string level before DOM insertion |
+| Streaming DOM | `writable-dom/index.ts` | incremental parsing, blocks on sync scripts/styles, preloads the rest |
 
 ## LOADING PIPELINE
 
 ```
-1. fetch(entry)
-   ↓
-2. TextDecoderStream (bytes → string)
-   ↓
-3. TagTransformStream (<head> → <qiankun-head>)
-   ↓
-4. WritableDOMStream (stream → live DOM)
-   ├─ nodeTransformer called per node
-   ├─ Blocks on sync scripts/styles
-   └─ Preloads other assets while blocked
-   ↓
-5. Resolve with sandbox.latestSetProp (app exports)
+1. fetch(entry)                              (decorated fetch: cacheable/retryable/throwable)
+2. TextDecoderStream                         bytes → string
+3. TagTransformStream                        <head> → <qiankun-head>
+4. WritableDOMStream                         stream → live DOM
+   ├─ nodeTransformer(node) per node         → shared/assets-transpilers rewrites script/link/style
+   ├─ classic <script entry> → blob-URL execution in the sandbox membrane
+   ├─ <script type="module"> → handed to opts.esmEngine (EsmSandboxEngine)
+   └─ blocks on sync scripts; preloads other assets while blocked
+5. resolve app export                        classic: sandbox.latestSetProp · esm: engine lifecycle namespace
 ```
 
 ## KEY PATTERNS
 
-### Entry Script Detection
+### Script classification (`index.ts`)
 
 ```typescript
-// Script with `entry` attribute = app's main export point
-<script src="main.js" entry></script>
-// Loader resolves promise when entry script loads
+isExternalScript // has src or data-src
+isEntryScript    // external + [entry]  → resolves the load promise (app's main export point)
+isDeferScript    // external + [defer]  → ordered via shared prepareDeferredQueue
 ```
 
-### Defer Script Ordering
+- Exactly **one** `entry` script is allowed per HTML entry; a second one throws `QiankunError`.
 
-- Deferred queue ensures correct execution order
-- `prepareDeferredQueue` from @qiankunjs/shared
+### Detached parsing
 
-### Detached Parsing
-
-- HTML parsed in detached document first
-- Nodes transformed before moving to live DOM
-- Prevents premature script execution
+Nodes are parsed/transformed in a detached document first, then moved to live DOM — this prevents
+premature script execution before the transpiler has rewritten the node.
 
 ## ANTI-PATTERNS
 
-- **NEVER** include >1 `entry` script per HTML entry (throws QiankunError)
-- **FIXME**: Non-standard HTML chunks lacking `<head>` tag
+- **NEVER** include more than one `entry` script per HTML entry (throws `QiankunError`).
+- **FIXME** (in code): non-standard HTML chunks that lack a `<head>` tag.
 
-## EXPORTS
+## EXPORTS (`src/index.ts`)
 
 ```typescript
 export { loadEntry, type LoaderOpts } from './index';
+// LoaderOpts = { fetch, sandbox?, esmEngine?, nodeTransformer?, streamTransformer? } & BaseTranspilerOpts
 ```
