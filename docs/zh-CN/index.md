@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: qiankun
-  text: 运行时组装的微前端
-  tagline: 基于 single-spa 的完整微前端方案 —— 流式加载任意 HTML Entry，用 Proxy 隔离膜为每个应用建立沙箱，并原生执行 ES 模块，无需构建步骤。
+  text: 微前端解决方案
+  tagline: 把多个独立开发、独立部署的前端应用，在运行时拼成一个整体。技术栈无关，接入简单。
   actions:
     - theme: brand
       text: 快速上手
@@ -13,44 +13,88 @@ hero:
       text: 什么是 qiankun
       link: /zh-CN/guide/what-is-qiankun
     - theme: alt
-      text: 在 GitHub 查看
+      text: GitHub
       link: https://github.com/umijs/qiankun
 
 features:
   - icon:
-      src: /icons/stream.svg
-    title: 流式 HTML Entry 加载
-    details: 只需给 qiankun 一个微应用的 HTML 地址。loader 通过 writable-dom 流式解析、虚拟化 head，并在资源到达时逐个预加载 —— 无需 manifest，也无需手工维护 entry 约定。
-    link: /zh-CN/concepts/html-entry-loading
-    linkText: 加载机制
+      src: /icons/agnostic.svg
+    title: 技术栈无关
+    details: React、Vue、Angular 还是老的 jQuery，都能接进来，新老框架混用也没问题。微应用只要导出三个生命周期函数就行。
   - icon:
       src: /icons/sandbox.svg
-    title: Proxy 隔离膜 JS 沙箱
-    details: 每个微应用都运行在自己的代理 window 与 document 之上。全局变量、定时器、事件监听与 history 都会被追踪，并在卸载时还原，应用得以挂载、卸载、共存而互不污染。
-    link: /zh-CN/concepts/js-sandbox
-    linkText: JS 沙箱
-  - icon:
-      src: /icons/esm.svg
-    title: 原生 ESM 执行
-    details: 携带原生 script type=module 的微应用会被抓取、经词法分析改写以将全局访问路由进隔离膜、配上合成的 import map，再交由浏览器自身的模块加载器求值。Vite 开发服务器开箱即用。
-    link: /zh-CN/concepts/esm-sandbox
-    linkText: ESM 沙箱
+    title: 应用之间互不干扰
+    details: 每个微应用跑在自己的 JS 沙箱里。全局变量、定时器、事件监听在卸载时自动还原，多个应用同时挂载也不会互相污染。
   - icon:
       src: /icons/scope.svg
-    title: 运行时样式隔离
-    details: 一个 styleIsolation 开关即可开启。样式在运行时被包进 CSS @scope 并限定到已挂载的应用 —— 不用 Shadow DOM、不做构建期改写，外部样式表也一并处理。
-    link: /zh-CN/concepts/style-isolation
-    linkText: 样式隔离
+    title: 样式不串味
+    details: 一个开关就能开启样式隔离，基于浏览器原生的 CSS @scope，不依赖 Shadow DOM，外部样式表也一并处理。
   - icon:
-      src: /icons/agnostic.svg
-    title: 框架无关
-    details: React、Vue、Angular 或纯 HTML —— 微应用只需导出 bootstrap、mount、unmount。React 与 Vue 提供一等的 MicroApp 组件绑定，create-qiankun 几秒即可脚手架出可运行的工程。
-    link: /zh-CN/ecosystem/
-    linkText: 了解生态
+      src: /icons/esm.svg
+    title: Vite 应用零改造
+    details: 直接运行微应用的原生 ES 模块，连 Vite 的 dev server 都能直接接。不用再为了接入而单独打一份 UMD 包。
+  - icon:
+      src: /icons/stream.svg
+    title: 切换更快
+    details: HTML 流式加载，资源边解析边预载，应用切换几乎无感。不用你手写预加载策略。
   - icon:
       src: /icons/singlespa.svg
-    title: 基于 single-spa
-    details: 路由、激活与生命周期编排由久经考验的 single-spa 内核负责，qiankun 在其之上补齐加载、沙箱与资源管线，因此基于路由的挂载与手动挂载都是一等能力。
-    link: /zh-CN/concepts/architecture
-    linkText: 架构概览
+    title: 久经考验
+    details: 基于 single-spa 构建，在蚂蚁集团内外的大量线上应用中长期打磨，可以放心用在生产环境。
 ---
+
+## 快速开始
+
+装上 qiankun:
+
+::: code-group
+
+```bash [npm]
+npm install qiankun
+```
+
+```bash [pnpm]
+pnpm add qiankun
+```
+
+```bash [yarn]
+yarn add qiankun
+```
+
+:::
+
+在主应用里注册微应用，然后启动：
+
+```ts
+import { registerMicroApps, start } from 'qiankun';
+
+registerMicroApps([
+  {
+    name: 'react-app',
+    entry: '//localhost:7100',
+    container: document.getElementById('subapp-container')!,
+    activeRule: '/react',
+  },
+  {
+    name: 'vue-app',
+    entry: '//localhost:7101',
+    container: document.getElementById('subapp-container')!,
+    activeRule: '/vue',
+  },
+]);
+
+start();
+```
+
+微应用侧只需导出 `bootstrap`、`mount`、`unmount` 三个生命周期函数，不用改造构建产物的格式。想少写点样板，用 [`create-qiankun`](/zh-CN/ecosystem/create-qiankun) 一条命令就能生成可运行的工程。
+
+完整流程见 [快速上手](/zh-CN/guide/getting-started)，想逐行搭一遍就走 [手把手教程](/zh-CN/tutorial/)。
+
+## 社区
+
+- [GitHub 仓库](https://github.com/umijs/qiankun) —— 源码、Issue、Star
+- [社区讨论](https://github.com/umijs/qiankun/discussions) —— 提问、分享方案、参与设计讨论
+- [v3 路线图](https://github.com/umijs/qiankun/discussions/1378) —— 了解 3.0 的规划与进展
+- [更新日志](https://github.com/umijs/qiankun/releases) —— 每个版本改了什么
+
+遇到问题先翻一遍 [常见问题](/zh-CN/faq/)，多半能找到答案。

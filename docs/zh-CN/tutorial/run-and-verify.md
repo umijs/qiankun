@@ -1,10 +1,10 @@
-# 第三步 —— 接入、运行并验证
+# 第三步 —— 接入、跑起来、验证
 
-你已经在[第一步](/zh-CN/tutorial/build-the-micro-app)中构建了一个微应用，并在[第二步](/zh-CN/tutorial/build-the-main-app)中从主应用注册了它。这最后一步会同时启动两个服务器，观察微应用流式加载进容器，并验证隔离与清理是否真正生效。文末列出了你在首次运行时最可能遇到的问题，以及后续可以深入的方向。
+[第一步](/zh-CN/tutorial/build-the-micro-app)里你写好了一个微应用，[第二步](/zh-CN/tutorial/build-the-main-app)在主应用里把它注册了进来。这一步把两边的服务都启起来，看着微应用流式地灌进容器，再确认隔离和清理是真的在生效。最后收个尾：列一遍第一次跑最容易撞上的报错，以及接下来该往哪走。
 
-## 同时启动两个开发服务器
+## 把两个开发服务都启起来
 
-主应用和每个微应用都作为独立的开发服务器运行。请在不同的终端中启动它们（或运行 monorepo 辅助脚本，一次性并行启动所有应用）。
+主应用和每个微应用各跑各的开发服务，互不相干。在不同的终端里分别启动(或者用 monorepo 的一键脚本，把所有应用并行拉起来)。
 
 ::: code-group
 
@@ -28,15 +28,15 @@ pnpm start:example
 
 :::
 
-在 `http://localhost:7099` 打开主应用，并导航到你用 `activeRule` 注册的路由（例如 `/react`）。qiankun 会将当前的 `window.location.pathname` 与 `activeRule` 进行匹配，拉取微应用的 HTML Entry，并将其流式加载进容器。
+打开主应用 `http://localhost:7099`，切到你用 `activeRule` 注册的那个路由(比如 `/react`)。qiankun 拿当前的 `window.location.pathname` 去和 `activeRule` 匹配，命中后抓取微应用的 HTML 入口，把它流式地灌进容器。
 
-由于 loader 会随着字节到达而增量地把 HTML 提交到实时 DOM —— 而不是缓冲整个文档 —— 你可以在 Elements 面板中看到微应用的标记逐步出现，而此时它的脚本还在下载中。关于该管线的工作原理，参见 [HTML Entry 流式加载](/zh-CN/concepts/html-entry-loading)。
+加载器不会等整份文档下载完再一次性写入，而是字节一到就往真实 DOM 里增量提交。所以脚本还在下载的过程中，你就能在 Elements 面板里看到微应用的标签一点点冒出来。这条流水线怎么运转的，见 [HTML 入口流式加载](/zh-CN/concepts/html-entry-loading)。
 
-## 以宽松的 CORS 策略托管微应用
+## 微应用的服务要放开 CORS
 
-qiankun 使用一个经过装饰的 `window.fetch`，从主应用所在的源去拉取每个微应用的 Entry HTML 及资源。由于子应用运行在不同的端口上，每个请求都是跨域的，因此子应用的开发服务器必须发送 `Access-Control-Allow-Origin` 响应头。缺少它时，浏览器会阻止该 fetch，微应用将永远无法加载。
+qiankun 用一个包装过的 `window.fetch`，从主应用这边去拉每个微应用的入口 HTML 和资源。微应用跑在另一个端口上，所以每个请求都是跨域的——微应用的开发服务必须带上 `Access-Control-Allow-Origin` 响应头，否则浏览器会拦掉这次 fetch，微应用永远加载不出来。
 
-如何提供这个响应头取决于所用的 bundler：
+这个头怎么加，取决于你用的打包工具：
 
 ::: code-group
 
@@ -72,15 +72,15 @@ http-server . --cors -c-1 -p 7104
 
 :::
 
-Vite 的 `qiankun()` 插件会自动为你设置 dev/preview 的 CORS 响应头。Webpack 和纯静态服务器则需要如上所示手动设置该响应头。完整配置参见 [@qiankunjs/bundler-plugin](/zh-CN/ecosystem/bundler-plugin)、[让 Vite 应用支持 qiankun](/zh-CN/cookbook/prepare-a-vite-app) 以及[让 Webpack 应用支持 qiankun](/zh-CN/cookbook/prepare-a-webpack-app)。
+Vite 的 `qiankun()` 插件会替你把 dev/preview 的 CORS 头设好。Webpack 和纯静态服务就得像上面那样手动加。完整的接入步骤见 [@qiankunjs/bundler-plugin](/zh-CN/ecosystem/bundler-plugin)、[让 Vite 应用接入 qiankun](/zh-CN/cookbook/prepare-a-vite-app) 和[让 Webpack 应用接入 qiankun](/zh-CN/cookbook/prepare-a-webpack-app)。
 
 ::: warning 第三方资源同样需要 CORS
-Entry 加载的一切内容 —— vendor 脚本、外部样式表 —— 都以同样的跨域方式被拉取。省略 `Access-Control-Allow-Origin` 的公共 CDN 会导致加载失败。请将这些资源本地化，或从一个启用了 CORS 的源来托管它们。
+入口里加载的东西——vendor 脚本、外链样式——走的是同一套跨域 fetch。那些不带 `Access-Control-Allow-Origin` 的公共 CDN 会直接把加载搞挂。把这类资源放到本地，或者从一个开了 CORS 的源去取。
 :::
 
 ## 在容器上验证隔离
 
-当 qiankun 初始化一个微应用时，它会清空挂载元素，并在其上打上若干 `data-*` 属性。检查这些属性是确认应用已按预期隔离方式挂载的最快方式。在浏览器的 Elements 面板中，选中你的容器元素并读取它的属性：
+qiankun 初始化一个微应用时，会清空挂载元素，并往上面打几个 `data-*` 属性。想快速确认应用是不是按预期的隔离方式挂上去的，看这几个属性最省事。在浏览器的 Elements 面板里选中你的容器元素，读它的属性：
 
 ```html
 <div
@@ -95,13 +95,13 @@ Entry 加载的一切内容 —— vendor 脚本、外部样式表 —— 都以
 
 | 属性 | 含义 |
 | --- | --- |
-| `data-name` | 挂载于此的应用所注册的 `name`。同时也是样式隔离所使用的 `@scope` 根选择器 `[data-name="<name>"]`。 |
-| `data-version` | 挂载该应用的 qiankun 运行时版本。 |
-| `data-sandbox-cfg` | 序列化后的沙箱配置。存在且不为 `"false"` 表示 JS 沙箱处于激活状态。 |
+| `data-name` | 挂在这里的应用注册时的 `name`。它同时也是样式隔离用的 `@scope` 根选择器 `[data-name="<name>"]`。 |
+| `data-version` | 挂载这个应用的 qiankun 运行时版本。 |
+| `data-sandbox-cfg` | 序列化后的沙箱配置。只要它存在且不是 `"false"`，就说明 JS 沙箱是开着的。 |
 
-另外两个属性仅在多实例场景下出现：`data-mount-times`（当一个应用被挂载超过一次时）和 `data-instance-id`（当同一个应用同时被加载进多个容器时）。你也可以在代码中通过 `el.dataset.name`、`el.dataset.version` 和 `el.dataset.sandboxCfg` 读取相同的值。
+还有两个属性只在多实例场景下才会出现：`data-mount-times`(应用挂载超过一次之后)和 `data-instance-id`(同一个应用被同时加载进多个容器时)。这几个值在代码里也读得到，分别是 `el.dataset.name`、`el.dataset.version`、`el.dataset.sandboxCfg`。
 
-要确认 JS 沙箱确实隔离了全局变量，可在微应用挂载期间于主应用页面的控制台中运行：
+想确认 JS 沙箱真的在隔离全局变量，趁微应用挂着的时候，在主应用页面的 console 里跑这一句：
 
 ```js
 // A global the sub-app assigned to *its* window is invisible on the host window,
@@ -109,54 +109,54 @@ Entry 加载的一切内容 —— vendor 脚本、外部样式表 —— 都以
 window.__SOME_SUBAPP_GLOBAL__; // → undefined on the host
 ```
 
-读取操作仍会穿透到真实的主应用 `window`，因此应用能看到它从未触碰过的真实浏览器 API —— 但它的写入会被隔离在内。membrane 还会在沙箱内部注入 `window.__POWERED_BY_QIANKUN__ = true`，以便子应用可以检测到自己正运行在 qiankun 之下。完整模型请阅读 [JS 沙箱](/zh-CN/concepts/js-sandbox)。
+读操作仍然会穿透到真实的主应用 `window`，所以微应用照样能拿到它从没碰过的原生浏览器 API——但它的写操作被关在里面出不来。隔离膜还会往沙箱里注入 `window.__POWERED_BY_QIANKUN__ = true`，让微应用能判断自己正跑在 qiankun 下面。完整模型见 [JS 沙箱](/zh-CN/concepts/js-sandbox)。
 
-## 确认路由切换时的干净卸载
+## 确认路由切走时干净卸载
 
-从微应用的路由导航离开（切换到另一个应用的路由，或返回仅属于主应用的页面）。qiankun 会匹配新的路径，卸载该应用，并拆除它所建立的一切。一次正确的卸载会：
+从微应用的路由切走(切到另一个应用的路由，或者回到只属于主应用的页面)。qiankun 匹配到新路径，把应用卸载掉，并拆掉它先前搭起来的一切。一次正确的卸载会：
 
-- 调用子应用的 `unmount(props)` 生命周期钩子，使其销毁自己的视图（`root.unmount()`、`app.unmount()` 等）；
-- 运行每个 patcher 的 `free()`，它会清除通过沙箱注册的定时器、移除 window 事件监听器，并还原 `history` 补丁；
-- 清空容器的 DOM。
+- 调用微应用的 `unmount(props)` 生命周期，让它销毁自己的视图(`root.unmount()`、`app.unmount()` 之类);
+- 跑一遍每个 patcher 的 `free()`，清掉通过沙箱注册的定时器、摘掉 window 上的事件监听、还原对 `history` 的改动；
+- 清空容器里的 DOM。
 
 ```mermaid
 sequenceDiagram
   participant U as 用户
   participant Q as qiankun
   participant A as 微应用
-  U->>Q: 导航离开（路由不再匹配 activeRule）
+  U->>Q: 切走(路由不再命中 activeRule)
   Q->>A: unmount(props)
-  A-->>A: 销毁自身视图（root/app.unmount）
-  Q->>Q: free() 所有 patcher（定时器、监听器、history）
-  Q->>Q: 锁定沙箱 membrane，清空容器
+  A-->>A: 销毁自己的视图(root/app.unmount)
+  Q->>Q: free() 所有 patcher(定时器、监听、history)
+  Q->>Q: 锁定沙箱隔离膜,清空容器
 ```
 
-要发现泄漏，可以检查应用创建的定时器和监听器在你离开路由后是否不再触发。例如，应用启动的一个 interval 应停止打印日志，它的 `window` 事件处理函数也应不再运行。如果它们仍然存在，那么该应用很可能在沙箱所补丁的 API 之外注册了副作用，或者它的 `unmount` 生命周期钩子没有清理自己的视图。
+想查有没有泄漏，就看应用创建的定时器和监听在你离开路由之后还会不会触发。比如应用起的 interval 应该不再打日志了，它挂在 `window` 上的事件处理函数也不该再跑。要是它们还赖着，多半是应用在沙箱托管的那套 API 之外注册了副作用，或者它的 `unmount` 生命周期没把自己的视图清干净。
 
-::: tip 始终记得卸载
-patcher 只有通过卸载时返回的 `free()` 才会还原其副作用。如果你以命令式方式使用 `loadMicroApp`，请保留返回的句柄并自行调用 `unmount()`。跳过卸载会泄漏定时器和监听器，并同时破坏重新挂载和[运行多个实例](/zh-CN/cookbook/run-multiple-instances)。
+::: tip 一定要卸载
+patcher 只有靠卸载时返回的 `free()` 才会还原自己的副作用。如果你用 `loadMicroApp` 命令式地加载，记得把返回的句柄留住，自己调 `unmount()`。不卸载会漏掉定时器和监听，重新挂载和[跑多个实例](/zh-CN/cookbook/run-multiple-instances)都会被搞坏。
 :::
 
-## 首次运行的常见问题
+## 第一次跑常见的翻车点
 
-| 现象 | 可能原因 | 修复方式 |
+| 现象 | 大概原因 | 怎么修 |
 | --- | --- | --- |
-| 控制台中 Entry 请求被 CORS 阻止；容器保持为空 | 子应用服务器未发送 `Access-Control-Allow-Origin` | Vite 使用 `qiankun()`，Webpack 设置 `headers` + `allowedHosts`，静态服务器使用 `--cors`（见上文）。 |
-| `QiankunError: You should not include more than 1 entry scripts in a single HTML entry` | Entry HTML 中有两个脚本携带了 `entry` 属性 | 确保只有一个脚本标记了 `entry`。bundler 插件会为你标记 —— 不要再手动添加。 |
-| `QiankunError: You need to export lifecycle functions in <name> entry ...` | 找不到应用导出的生命周期函数，通常是 name/global 不匹配 | 注册的 `name` 必须与子应用暴露的全局变量一致。一个 `output.library.name` 为 `webpack-app` 的 Webpack 应用必须以 `name: 'webpack-app'` 注册。请以 ESM 导出（或一个 `default` 对象）的形式导出 `bootstrap`/`mount`/`unmount`，或者赋值 `window[name] = { bootstrap, mount, unmount }`。 |
-| 应用始终不挂载，或 qiankun 持有了一个陈旧的元素 | 注册时容器元素不在 DOM 中，或它后来被替换/重新 key 了 | 仅在容器存在之后再注册（例如在一个 mount effect 内部），并在应用的整个生命周期内保持那个确切的元素处于挂载状态 —— qiankun 在注册时就捕获了该元素引用。 |
-| 微应用的样式渗漏到主应用（或反之） | 样式隔离未开启（默认关闭） | 通过 `configuration: { styleIsolation: true }` 开启，然后参见[启用 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation)。 |
+| console 里入口请求被 CORS 拦掉，容器一直空着 | 微应用服务没带 `Access-Control-Allow-Origin` | Vite 用 `qiankun()`,Webpack 设 `headers` + `allowedHosts`，静态服务加 `--cors`(见上文)。 |
+| `QiankunError: You should not include more than 1 entry scripts in a single HTML entry` | 入口 HTML 里有两个脚本都带了 `entry` 属性 | 有且只有一个脚本标 `entry`。打包插件会替你标好——别自己再手动加一遍。 |
+| `QiankunError: You need to export lifecycle functions in <name> entry ...` | 找不到应用导出的生命周期，通常是 name 和全局变量对不上 | 注册用的 `name` 必须和微应用暴露的全局变量一致。一个 `output.library.name` 是 `webpack-app` 的 Webpack 应用，就得注册成 `name: 'webpack-app'`。把 `bootstrap`/`mount`/`unmount` 作为 ESM export 导出(或导出一个 `default` 对象)，或者 `window[name] = { bootstrap, mount, unmount }`。 |
+| 应用一直挂不上，或者 qiankun 抓着一个失效的元素 | 注册时容器元素还不在 DOM 里，或者之后被替换 / 重新 key 过 | 等容器存在了再注册(比如放在 mount effect 里)，并且在应用的整个生命周期里让那个元素原样挂着——qiankun 在注册那一刻就把元素引用捕获住了。 |
+| 微应用的样式漏到主应用(或者反过来) | 样式隔离没开(默认就是关的) | 用 `configuration: { styleIsolation: true }` 开启，再看[开启 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation)。 |
 
-::: info Firefox 与 ESM-sandbox 应用
-ESM-sandbox 执行路径依赖于动态注入的 import map，而 Firefox 并不支持它。ESM-sandbox 微应用在 Firefox 上预期会失败；请使用基于 Chromium 的浏览器来开发和验证它们。经典（UMD/global）应用不受影响。参见 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)。
+::: info Firefox 与 ESM 沙箱应用
+ESM 沙箱这条执行路径依赖动态注入的 import map，而 Firefox 不支持。走 ESM 沙箱的微应用在 Firefox 上预期就是跑不起来的，开发和验证请用 Chromium 系的浏览器。走经典打包(UMD/global)方式的应用不受影响。见 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)。
 :::
 
-## 后续方向
+## 接下来去哪
 
-你的两个应用已经接入、流式加载、隔离，并在卸载时完成清理。从这里出发：
+两个应用已经接上了、能流式加载、隔离到位、卸载时也会清理。往下走可以看：
 
-- 将微应用的 CSS 限定在它自己的子树内 —— [启用 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation)。
-- 使用 `<MicroApp>` 组件声明式地渲染加载与错误状态 —— [React](/zh-CN/ecosystem/react) 或 [Vue](/zh-CN/ecosystem/vue)。
-- 集中处理加载与运行时失败 —— [处理加载与运行时错误](/zh-CN/cookbook/handle-errors)。
-- 加快首屏渲染并减少加载卡顿 —— [优化加载与预加载](/zh-CN/cookbook/optimize-loading)。
-- 查阅每一个选项及其默认值 —— [API 参考](/zh-CN/api/index)，从 [registerMicroApps](/zh-CN/api/register-micro-apps)、[start](/zh-CN/api/start) 和 [AppConfiguration](/zh-CN/api/configuration) 开始。
+- 把微应用的 CSS 限定在它自己的子树里 —— [开启 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation)。
+- 用 `<MicroApp>` 组件声明式地渲染加载态和错误态 —— [React](/zh-CN/ecosystem/react) 或 [Vue](/zh-CN/ecosystem/vue)。
+- 集中处理加载和运行时的失败 —— [处理加载与运行时错误](/zh-CN/cookbook/handle-errors)。
+- 加快首屏、减少加载抖动 —— [优化加载与预加载](/zh-CN/cookbook/optimize-loading)。
+- 查每一个选项和默认值 —— [API 参考](/zh-CN/api/index)，从 [registerMicroApps](/zh-CN/api/register-micro-apps)、[start](/zh-CN/api/start) 和 [AppConfiguration](/zh-CN/api/configuration) 开始。

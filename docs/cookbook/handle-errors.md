@@ -1,6 +1,6 @@
-# Handle load and runtime errors
+# Handle Loading and Runtime Errors
 
-Micro-apps fail for reasons the shell cannot fully control: a bad deploy, a network blip, a CORS misconfiguration, a broken lifecycle export. This guide shows the two layers qiankun gives you to surface and recover from those failures — a global error handler for route-driven apps, and component-level error UI for `<MicroApp>` — plus the concrete error messages you will see and where they come from.
+Most of the reasons a micro-app fails are outside the host's control: a bad deploy, a network hiccup, a misconfigured CORS header, a wrong lifecycle export. qiankun gives you two layers for surfacing and recovering from these errors — a global error handler for route-driven apps, and component-level error UI for `<MicroApp>`. This page walks through both, and lists the error messages you'll actually run into along with where each one is thrown.
 
 ## Two layers of error handling
 
@@ -10,16 +10,16 @@ flowchart TD
   B -->|registerMicroApps / loadMicroApp| C[single-spa error channel]
   C --> D[addErrorHandler handlers]
   B -->|MicroApp component| E{autoCaptureError or errorBoundary set?}
-  E -->|yes| F[Rendered error UI]
-  E -->|no| G[Error re-thrown to host framework]
+  E -->|set| F[Render error UI]
+  E -->|not set| G[Error re-thrown to host framework]
 ```
 
-- Route-driven and imperative apps (`registerMicroApps`, `loadMicroApp`) route failures through single-spa. Register a handler with [`addErrorHandler`](/api/error-handling).
-- The `<MicroApp>` components ([React](/ecosystem/react), [Vue](/ecosystem/vue)) surface load/bootstrap/mount errors as UI when you opt in, and otherwise re-throw them.
+- Route-driven and imperatively loaded apps (`registerMicroApps`, `loadMicroApp`) route all errors through single-spa. Register a handler with [`addErrorHandler`](/api/error-handling) and you're done.
+- The `<MicroApp>` component ([React](/ecosystem/react), [Vue](/ecosystem/vue)) renders load / bootstrap / mount errors as UI when you opt in; otherwise it re-throws them as-is.
 
-## Global handlers: addErrorHandler / removeErrorHandler
+## Global handling: addErrorHandler / removeErrorHandler
 
-`addErrorHandler` and `removeErrorHandler` are re-exported straight from single-spa. They receive every error thrown while single-spa loads, bootstraps, mounts, or unmounts an application — including errors from qiankun's streaming loader, the JS sandbox, and the ESM module graph.
+`addErrorHandler` and `removeErrorHandler` are re-exported straight from single-spa. They receive every error single-spa throws while loading, bootstrapping, mounting, and unmounting apps — including errors thrown by qiankun's streaming loader, the JS sandbox, and the ESM module graph.
 
 ```ts [main/src/index.ts]
 import { registerMicroApps, addErrorHandler, start } from 'qiankun';
@@ -34,9 +34,9 @@ registerMicroApps([
 ]);
 
 addErrorHandler((err) => {
-  // err.appOrParcelName — which app failed
+  // err.appOrParcelName — which app went down
   // err.message         — the underlying error message
-  // (err as Error).stack — the stack trace
+  // (err as Error).stack — the call stack
   console.error(`[qiankun] ${err.appOrParcelName} failed:`, err);
   reportToMonitoring(err);
 });
@@ -44,7 +44,7 @@ addErrorHandler((err) => {
 start();
 ```
 
-The handler is global — it fires for any registered app, so branch on `err.appOrParcelName` if you need per-app behavior. Remove a handler with the same reference you registered:
+The handler is global — it fires for any registered app that errors, so branch on `err.appOrParcelName` to handle individual apps differently. To remove a handler, pass the same reference you registered:
 
 ```ts
 const handler = (err: Error) => reportToMonitoring(err);
@@ -53,26 +53,26 @@ addErrorHandler(handler);
 removeErrorHandler(handler);
 ```
 
-::: info ESM module-graph and top-level-await errors
-For apps that run as native ES modules (`<script type="module">`, e.g. Vite), qiankun's ESM engine plumbs module-graph evaluation errors and top-level-`await` rejections back into single-spa's error channel instead of letting them escape as an `unhandledrejection`. That means a throw inside an ESM entry module reaches your `addErrorHandler` handler the same way a classic script failure does. See [the ESM sandbox](/concepts/esm-sandbox).
+::: info Errors from the ESM module graph and top-level await
+For apps that run as native ES modules (`<script type="module">`, e.g. Vite), qiankun's ESM engine routes errors thrown while evaluating the module graph — and rejections from top-level `await` — back into single-spa's error channel, instead of letting them escape as an `unhandledrejection`. In other words, a throw in an ESM entry module reaches your `addErrorHandler` handlers just like a classic script failure would. See [ESM sandbox](/concepts/esm-sandbox).
 :::
 
-When an app errors, single-spa moves it to a broken state. `loadMicroApp` returns a [`MicroApp`](/api/types) handle whose `getStatus()` reports `LOAD_ERROR` or `SKIP_BECAUSE_BROKEN` for the failed instance — useful when you drive apps imperatively and want to inspect or retry.
+Once an app errors, single-spa puts it into a broken state. `loadMicroApp` returns a [`MicroApp`](/api/types) handle whose `getStatus()` returns `LOAD_ERROR` or `SKIP_BECAUSE_BROKEN` for the failed instance — useful when you drive apps imperatively and want to check status or retry.
 
 ## Component-level: `<MicroApp>` error UI
 
-The `<MicroApp>` wrappers do not show errors by default. You must opt in, otherwise the error is re-thrown into your host framework's render tree.
+The `<MicroApp>` wrapper shows no error by default. You have to opt in, or errors are re-thrown into the host framework's render tree.
 
 ### React
 
-Opt in with `autoCaptureError` for the built-in placeholder, or pass a custom `errorBoundary` render prop for real UI:
+Turn on the built-in placeholder UI with `autoCaptureError`, or pass a custom `errorBoundary` render prop to render real UI:
 
 ::: code-group
 
 ```tsx [Built-in placeholder]
 import { MicroApp } from '@qiankunjs/react';
 
-// Default UI renders <div>{error.message}</div>
+// default UI renders <div>{error.message}</div>
 <MicroApp name="app1" entry="http://localhost:8000" autoCaptureError />
 ```
 
@@ -95,7 +95,7 @@ import { MicroApp } from '@qiankunjs/react';
 
 ### Vue
 
-Opt in with `autoCaptureError`, or provide an `#error-boundary` scoped slot:
+Use `autoCaptureError`, or provide an `#error-boundary` scoped slot:
 
 ::: code-group
 
@@ -104,7 +104,7 @@ Opt in with `autoCaptureError`, or provide an `#error-boundary` scoped slot:
 import { MicroApp } from '@qiankunjs/vue';
 </script>
 
-<!-- Default UI renders <div>{{ error.message }}</div> -->
+<!-- default UI renders <div>{{ error.message }}</div> -->
 <template>
   <micro-app name="app1" entry="http://localhost:8000" auto-capture-error />
 </template>
@@ -126,9 +126,9 @@ import { MicroApp } from '@qiankunjs/vue';
 
 :::
 
-### Without opt-in, errors are re-thrown
+### Opt out, and errors are re-thrown
 
-If you set neither `autoCaptureError` nor a custom error boundary, load/bootstrap/mount errors are re-thrown from the component rather than swallowed. Catch them at the framework level:
+If neither `autoCaptureError` nor a custom error boundary is set, load / bootstrap / mount errors are re-thrown from the component rather than swallowed. Catch them at the framework layer:
 
 ::: code-group
 
@@ -176,44 +176,44 @@ export default {
 
 :::
 
-::: tip Choose the right layer
-`autoCaptureError` / `errorBoundary` handle failures visually, per component. `addErrorHandler` handles them centrally, for reporting. The two are complementary — a production shell usually wires a global handler for monitoring and component-level UI for user-facing recovery.
+::: tip Pick the right layer
+`autoCaptureError` / `errorBoundary` present a failure to the user at component granularity; `addErrorHandler` centralizes reporting. The two are complementary — a production host usually wires up both: the global handler for monitoring, the component-level UI for user-facing recovery.
 :::
 
 ## Common error sources and messages
 
-The failures below come straight from qiankun's runtime. Knowing the exact message speeds up diagnosis.
+The failures below come straight from the qiankun runtime. Recognizing the specific message makes debugging much faster.
 
-| Symptom / message | Where it is thrown | Cause and fix |
+| Symptom / message | Thrown from | Cause and fix |
 | --- | --- | --- |
-| `You should not include more than 1 entry scripts in a single HTML entry <url> !` | loader | Two external scripts carry the `entry` marker. An HTML entry may have exactly one entry script. Make sure your [bundler plugin](/ecosystem/bundler-plugin) marks a single entry chunk. |
-| `You need to export lifecycle functions in <app> entry as neither globalLatestSetProp ... nor window['<app>'] export correctly` | `getLifecyclesFromExports` | The micro-app entry did not expose `bootstrap` / `mount` / `unmount`. See [Micro-app lifecycle and props](/concepts/lifecycle-and-props) for the export contract. |
-| `The response body of entry <url> is empty!` | loader | The entry responded with no body (for example a `204`, a redirect with an empty payload, or a proxy that stripped the body). Verify the entry URL serves the app's HTML. |
-| `<url> [RESPONSE_ERROR_AS_STATUS_INVALID] <status> <statusText>` | `makeFetchThrowable` | The entry (or an asset) returned a non-2xx status. qiankun's enhanced `fetch` turns non-2xx responses into throws so they surface instead of loading a broken app. |
-| CORS / network `TypeError: Failed to fetch` | browser `fetch` | The entry or its assets are not reachable, or the server does not send `Access-Control-Allow-Origin`. qiankun loads everything over `fetch`, so cross-origin entries and assets need CORS headers. |
-| `failed to resolve the bare specifier '<spec>' ... no import map entry found in app <app>` | ESM engine | An ESM sub-app imported a bare specifier with no matching import map entry. Provide the sub-app's own `<script type="importmap">` or use URL-like specifiers. See [the ESM sandbox](/concepts/esm-sandbox). |
-| Styles missing after enabling isolation | style transpiler | Under [style isolation](/cookbook/enable-style-isolation) external stylesheets are re-fetched as blob `<link>`s so CSS `@scope` can wrap them; a dropped or CORS-blocked stylesheet request leaves the app unstyled. Check the network panel for failed CSS requests. |
+| `You should not include more than 1 entry scripts in a single HTML entry <url> !` | loader | Two external scripts are both marked `entry`. An HTML entry can have only one entry script. Check that your [bundler plugin](/ecosystem/bundler-plugin) marks a single entry chunk. |
+| `You need to export lifecycle functions in <app> entry as neither globalLatestSetProp ... nor window['<app>'] export correctly` | `getLifecyclesFromExports` | The micro-app entry doesn't expose `bootstrap` / `mount` / `unmount`. See the export contract in [micro-app lifecycle and props](/concepts/lifecycle-and-props). |
+| `The response body of entry <url> is empty!` | loader | The entry returned an empty body (a `204`, a redirect with no body, or a proxy that stripped the body). Confirm the entry URL actually returns the app's HTML. |
+| `<url> [RESPONSE_ERROR_AS_STATUS_INVALID] <status> <statusText>` | `makeFetchThrowable` | The entry (or a resource) returned a non-2xx status. qiankun's enhanced `fetch` turns non-2xx responses into throws so the problem surfaces instead of loading a broken app. |
+| CORS / network `TypeError: Failed to fetch` | browser `fetch` | The entry or one of its resources can't be reached, or the server didn't return `Access-Control-Allow-Origin`. qiankun loads everything through `fetch`, so cross-origin entries and resources all need CORS headers. |
+| `failed to resolve the bare specifier '<spec>' ... no import map entry found in app <app>` | ESM engine | An ESM child app imported a bare specifier with no matching import map entry. Give the child app its own `<script type="importmap">`, or switch to a URL-like specifier. See [ESM sandbox](/concepts/esm-sandbox). |
+| Styles missing after enabling style isolation | style transpiler | With [style isolation](/cookbook/enable-style-isolation) on, external stylesheets are re-fetched into blob `<link>`s so CSS `@scope` can wrap them; if a stylesheet request fails or is blocked by CORS, the app renders unstyled. Check the network panel for failed CSS requests. |
 
-::: warning Missing lifecycle exports are the most common failure
-The lifecycle error surfaces after the entry loads successfully — the HTML and scripts fetched fine, but qiankun could not find `bootstrap` / `mount` / `unmount`. This usually means the sub-app was not built as a library (UMD/ESM) with the qiankun lifecycle exports, or the entry script was not marked as the entry. Prepare the sub-app first: [Vite](/cookbook/prepare-a-vite-app) / [Webpack](/cookbook/prepare-a-webpack-app).
+::: warning A missing lifecycle export is the most common failure
+The lifecycle error surfaces after the entry loads successfully — the HTML and scripts fetch fine, qiankun just can't find `bootstrap` / `mount` / `unmount`. Usually the child app wasn't built as a library (UMD/ESM) with qiankun's lifecycle exports, or the entry script wasn't marked as the entry. Prepare the child app first: [Vite](/cookbook/prepare-a-vite-app) / [Webpack](/cookbook/prepare-a-webpack-app).
 :::
 
-## Retry behaviour is built in for transient failures
+## Retries for transient failures come built in
 
-qiankun wraps the configured `fetch` as `makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)))`. Transient network failures are retried automatically before an error is thrown, so you do not need to implement retry for the entry/asset fetch yourself. Only after retries are exhausted does the error reach `addErrorHandler` or the component error boundary. To customize this, pass your own `fetch` through [`AppConfiguration`](/api/configuration).
+qiankun wraps the configured `fetch` as `makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)))`. Transient network failures are retried automatically before an error is thrown, so you don't have to write your own retry logic for entry and resource fetches. Only once the retries are exhausted does the error reach `addErrorHandler` or a component error boundary. To customize this behavior, pass your own `fetch` via [`AppConfiguration`](/api/configuration).
 
-## ESM observability caveat: blob: stacks
+## An ESM observability gotcha: blob: stack traces
 
-For ESM sub-apps, qiankun rewrites each module and evaluates it from a `blob:` URL. As a result, uncaught errors' `error.stack` points at `blob:<host-origin>/<uuid>` rather than the original source file. The injected `//# sourceURL` only changes the DevTools display name — it does not change the stack URL or line numbers.
+In an ESM child app, qiankun rewrites each module and evaluates it from a `blob:` URL. As a result, an uncaught error's `error.stack` points at `blob:<host-origin>/<uuid>` rather than the original source file. The injected `//# sourceURL` only changes the name shown in DevTools — it doesn't change the URLs and line numbers in the stack.
 
-::: danger Plan source maps for production error reporting
-Without source maps, a monitoring service cannot map an ESM sub-app's stack frames back to real files. Treat full source maps as a production requirement, not a nice-to-have, for any app running through the ESM sandbox. Ship source maps from the sub-app build and configure your reporting tool to consume them. Classic (UMD/global) sub-apps are not affected in the same way — their `//# sourceURL` gives meaningful frames.
+::: danger Plan for source maps in production error reporting
+Without source maps, your monitoring service can't map an ESM child app's stack frames back to real files. For any app running through the ESM sandbox, treat full source maps as a hard production requirement, not a nice-to-have. Have the child app emit source maps at build time and configure your reporting tool to consume them. Classic (UMD/global) child apps aren't affected — their `//# sourceURL` yields meaningful stack frames.
 :::
 
 ## Related
 
 - [addErrorHandler / removeErrorHandler](/api/error-handling) — API reference
-- [`<MicroApp>` for React](/ecosystem/react) and [for Vue](/ecosystem/vue)
+- [`<MicroApp>` (React)](/ecosystem/react) and [`<MicroApp>` (Vue)](/ecosystem/vue)
 - [Micro-app lifecycle and props](/concepts/lifecycle-and-props) — the export contract
-- [The ESM sandbox](/concepts/esm-sandbox) — blob URLs, import maps, source maps
+- [ESM sandbox](/concepts/esm-sandbox) — blob URLs, import maps, source maps
 - [Enable CSS style isolation](/cookbook/enable-style-isolation)

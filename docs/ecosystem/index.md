@@ -100,7 +100,7 @@ The Webpack plugin fixes the output library (so lifecycle exports land on `windo
 
 See [@qiankunjs/bundler-plugin](/ecosystem/bundler-plugin) for the complete option and behavior reference, and the cookbook guides for [Webpack](/cookbook/prepare-a-webpack-app) and [Vite](/cookbook/prepare-a-vite-app) apps.
 
-## @qiankunjs/react and @qiankunjs/vue — &lt;MicroApp&gt; components
+## @qiankunjs/react and @qiankunjs/vue — the `<MicroApp>` component
 
 Both bindings expose a single `MicroApp` component that wraps `loadMicroApp`. You give it a `name` and an `entry`, and it handles mount, update on prop change, and unmount on teardown for you.
 

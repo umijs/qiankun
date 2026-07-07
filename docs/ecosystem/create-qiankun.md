@@ -1,23 +1,23 @@
 # create-qiankun
 
-`create-qiankun` is the official scaffolder for qiankun 3.0. It generates a [Vite](https://vite.dev) project — either a main app or a sub app — and patches the generated output to wire in qiankun. Because qiankun v3 loads Vite apps natively through its [ESM sandbox](/concepts/esm-sandbox), there is no dedicated SystemJS or "qiankun build mode": the ordinary `dev`, `build`, and `preview` outputs are already loadable as-is.
+`create-qiankun` is the official scaffolder for qiankun 3.0. It generates a [Vite](https://vite.dev) project — either a main app or a micro app — and then rewrites the output to wire in what qiankun needs. qiankun v3 loads Vite apps natively through the [ESM sandbox](/concepts/esm-sandbox), so there's no separate SystemJS bundle and no "qiankun build mode": the ordinary `dev`, `build`, and `preview` output is loadable as-is.
 
-## Purpose
+## What it does
 
 The scaffolder does two things:
 
-1. Delegates to upstream [`create-vite`](https://github.com/vitejs/vite/tree/main/packages/create-vite) to produce a standard React or Vue project.
-2. Overwrites a small set of files (`package.json`, `vite.config.*`, the entry file, and — for main apps — `App.tsx`/`App.css`) so the project is qiankun-ready out of the box.
+1. It delegates the base project to the upstream [`create-vite`](https://github.com/vitejs/vite/tree/main/packages/create-vite), producing a standard React or Vue project.
+2. It overwrites a handful of files (`package.json`, `vite.config.*`, the entry file, plus `App.tsx`/`App.css` for the main app) so the project is qiankun-ready out of the box.
 
-A generated sub app exposes qiankun lifecycles and stays runnable standalone. A generated main app comes preconfigured to load that sub app. The two default ports are matched so they connect without further configuration.
+The generated micro app exports the qiankun lifecycle while keeping the ability to run standalone. The generated main app comes preconfigured to load that micro app. The default ports on both sides line up, so they connect without any config changes.
 
 ## Requirements
 
-- Node.js `>=20.19` (required by Vite).
+- Node.js `>=20.19` (Vite's requirement).
 
-## Invocation
+## Running it
 
-Run the scaffolder with your package manager's create/exec command:
+Use your package manager's create/exec command:
 
 ::: code-group
 
@@ -35,7 +35,7 @@ pnpm dlx create-qiankun@latest
 
 :::
 
-With no arguments, the CLI prompts interactively for the app type, name, and — for sub apps — the template. You can also pass any of these on the command line to skip the corresponding prompt.
+With no arguments, the CLI asks interactively for the app type, name, and (for a micro app) template. Each of these can also be given on the command line, which skips the corresponding prompt.
 
 ```bash
 # scaffold a React + TypeScript sub app named "my-app"
@@ -45,31 +45,31 @@ npx create-qiankun@latest my-app --type sub --template react-ts
 npx create-qiankun@latest my-main --type main
 ```
 
-## CLI arguments and flags
+## CLI arguments and options
 
 | Argument | Alias | Values | Default | Applies to |
 | --- | --- | --- | --- | --- |
 | `<app-name>` (positional) | — | must match `/^[a-z0-9-]+$/` | prompted | both |
 | `--type` | `-T` | `main` \| `sub` | `sub` | both |
-| `--template` | `-t` | `react-ts` \| `react` \| `vue-ts` \| `vue` | prompted | sub only |
+| `--template` | `-t` | `react-ts` \| `react` \| `vue-ts` \| `vue` | prompted | sub app only |
 
 ### App name
 
-The positional app name must contain only lowercase letters, digits, and hyphens. It becomes the `package.json` `name` and, for sub apps, the global key the lifecycles are published under (`window[appName]`, see below). An invalid name is rejected with:
+The positional app name may contain only lowercase letters, digits, and hyphens. It becomes the `name` in `package.json`; for a micro app it's also the key the lifecycle attaches to on the global (`window[appName]`, see below). An invalid name is rejected outright:
 
 ```
 App name can only contain lowercase letters, numbers, and hyphens
 ```
 
-When omitted, the prompt defaults to `qiankun-main-app` for a main app or `qiankun-sub-app` for a sub app.
+If omitted, the main app defaults to `qiankun-main-app` and the micro app to `qiankun-sub-app`.
 
 ### App type
 
-`--type` (or `-T`) selects `main` or `sub`. Sub is the default when nothing is specified. An unrecognized value exits with `Invalid type: ...`.
+`--type` (or `-T`) chooses between `main` and `sub`, defaulting to `sub`. An unrecognized value exits with `Invalid type: ...`.
 
 ### Template
 
-`--template` (or `-t`) selects the framework template for a **sub app** only. Available templates:
+`--template` (or `-t`) selects the framework template, for **micro apps** only. The choices are:
 
 | Value | Description |
 | --- | --- |
@@ -78,53 +78,53 @@ When omitted, the prompt defaults to `qiankun-main-app` for a main app or `qiank
 | `vue-ts` | Vue + TypeScript |
 | `vue` | Vue |
 
-::: warning Main apps are always React + TypeScript
-The template only applies to sub apps. A main app is always scaffolded as `react-ts`. Passing `--template` together with `--type main` is a hard error:
+::: warning The main app is always React + TypeScript
+The template only applies to micro apps. The main app is always generated as `react-ts`. Passing `--template` together with `--type main` is a hard error:
 
 ```
 The --template option is only supported for sub apps.
 Please remove --template when using --type main.
 ```
 
-Note also that passing `--template` implies a sub app, so it skips the app-type prompt.
+Also, passing `--template` implies a micro app, so the app-type prompt is skipped.
 :::
 
 ## Interactive prompts
 
-When the relevant flag is not supplied, the CLI prompts for it:
+For any option not given on the command line, the CLI asks for it:
 
-- **App type** — a select between `Main App (主应用)` and `Sub App (子应用)`. Skipped when either `--type` or `--template` is passed.
-- **App name** — a text input validated against `/^[a-z0-9-]+$/`. Skipped when a positional name is passed.
-- **Template** — a select over the four templates above. Only shown for sub apps; skipped when `--template` is passed or when the app type is main.
+- **App type** — choose between `Main App (主应用)` and `Sub App (子应用)`. Skipped when `--type` or `--template` is passed.
+- **App name** — a text input, validated against `/^[a-z0-9-]+$/`. Skipped when the positional name is already given.
+- **Template** — pick one of the four templates above. Only asked for micro apps; skipped when `--template` is passed or the app type is main.
 
 Cancelling any prompt prints `Operation cancelled` and exits.
 
 ## Target directory (workspace-aware)
 
-Before generating, the CLI checks whether the **parent** of the current directory contains a `pnpm-workspace.yaml`:
+Before generating, the CLI checks the **parent** of the current directory for a `pnpm-workspace.yaml`:
 
-- Inside a pnpm workspace, the app is generated into `<workspaceRoot>/packages/<app-name>`.
-- Otherwise, it is generated into `<cwd>/<app-name>`.
+- Inside a pnpm workspace, the app is generated at `<workspaceRoot>/packages/<app-name>`.
+- Otherwise, it's generated at `<cwd>/<app-name>`.
 
-If the target directory already exists, the CLI exits with `Directory ... already exists`. The `cd` line in the next-steps output reflects the resolved path (`packages/<app-name>` inside a workspace, else `<app-name>`).
+If the target directory already exists, the CLI exits with `Directory ... already exists`. The `cd` line in the follow-up output uses the resolved path (`packages/<app-name>` inside a workspace, `<app-name>` otherwise).
 
-## What it generates
+## What gets generated
 
-The base project is produced by `create-vite` with its standard template, then create-qiankun overwrites specific files.
+The base project comes from `create-vite` using its standard templates, then create-qiankun overwrites specific files.
 
 ```mermaid
 flowchart TD
-  A[create-qiankun] --> B[create-vite scaffolds base project]
-  B --> C{app type}
-  C -->|sub| D[patch package.json + vite.config + entry file]
-  C -->|main| E[patch package.json + vite.config + main.tsx + App.tsx + App.css]
+  A[create-qiankun] --> B[create-vite generates the base project]
+  B --> C{App type}
+  C -->|sub| D[rewrite package.json + vite.config + entry file]
+  C -->|main| E[rewrite package.json + vite.config + main.tsx + App.tsx + App.css]
 ```
 
-### Sub app
+### Micro app
 
-A sub app is patched in three steps.
+The micro app is rewritten in three steps.
 
-**`package.json`** — the name is set to your app name, and qiankun dependencies are added. Versions are fixed strings, not resolved ranges (this is an RC-era scaffolder):
+**`package.json`** — set `name` to your app name and add the qiankun dependencies. The versions are hardcoded strings rather than resolved ranges (this being an RC-stage scaffolder):
 
 | Dependency | Location | Version |
 | --- | --- | --- |
@@ -132,9 +132,9 @@ A sub app is patched in three steps.
 | `@qiankunjs/react` or `@qiankunjs/vue` | `dependencies` | `latest` |
 | `@qiankunjs/bundler-plugin` | `devDependencies` | `rc` |
 
-The framework binding ([`@qiankunjs/react`](/ecosystem/react) or [`@qiankunjs/vue`](/ecosystem/vue)) is added for convenience even though the generated entry file does not import it — it is there for you to use.
+The framework binding ([`@qiankunjs/react`](/ecosystem/react) or [`@qiankunjs/vue`](/ecosystem/vue)) is added for convenience — the generated entry file doesn't import it, but it's there for when you need it.
 
-**`vite.config.ts`** — imports the framework plugin and the qiankun [bundler plugin](/ecosystem/bundler-plugin), and sets the dev server port to `7101`.
+**`vite.config.ts`** — import the framework plugin and qiankun's [bundler plugin](/ecosystem/bundler-plugin), and set the dev server port to `7101`.
 
 ::: code-group
 
@@ -172,7 +172,7 @@ export default defineConfig({
 
 :::
 
-**Entry file** (`src/main.tsx` / `src/main.ts`) — replaced with a qiankun-lifecycle entry. It exports `bootstrap`, `mount`, and `unmount`, and when running under qiankun it publishes them on `window[appName]`; otherwise it renders itself standalone.
+**Entry file** (`src/main.tsx` / `src/main.ts`) — replaced with an entry that exports the qiankun lifecycle. It exports `bootstrap`, `mount`, and `unmount`; when running under qiankun it publishes them to `window[appName]`, otherwise it renders itself standalone.
 
 ::: code-group
 
@@ -282,18 +282,18 @@ if (window.__POWERED_BY_QIANKUN__) {
 :::
 
 ::: info
-`__POWERED_BY_QIANKUN__` is a global qiankun sets on the sandboxed window while the app runs inside a container. The entry uses it to decide between standalone rendering and lifecycle export. See [Micro-app lifecycle and props](/concepts/lifecycle-and-props) for how these hooks are called. For non-TypeScript templates the `declare global` block is omitted; everything else is identical.
+`__POWERED_BY_QIANKUN__` is a global flag qiankun sets on the sandbox window when the app runs inside a container. The entry uses it to decide whether to render standalone or export the lifecycle. For how these hooks get called, see [Micro-app lifecycle and props](/concepts/lifecycle-and-props). Non-TypeScript templates drop the `declare global` block but are otherwise identical.
 
-The default `create-vite` `App` component is left in place for sub apps — you build your UI from there.
+The micro app keeps `create-vite`'s default `App` component — you build your own UI starting from there.
 :::
 
 ### Main app
 
-A main app is always `react-ts` and is patched in five steps.
+The main app is always `react-ts`, rewritten in five steps.
 
-**`package.json`** — sets the name and adds `qiankun` at version `rc` to `dependencies`. No bundler plugin or framework binding is added, since the main app does not build a micro-app bundle.
+**`package.json`** — set `name` and add `qiankun` at version `rc` to `dependencies`. No bundler plugin and no framework binding, because the main app doesn't build the micro app's output.
 
-**`vite.config.ts`** — a plain React config on port `7099`. The qiankun bundler plugin is not applied to the main app.
+**`vite.config.ts`** — a plain React config on port `7099`. qiankun's bundler plugin isn't needed on the main app.
 
 ```ts
 import { defineConfig } from 'vite';
@@ -307,7 +307,7 @@ export default defineConfig({
 });
 ```
 
-**`src/main.tsx`** — a normal React root render, followed by a commented-out route-based alternative using [`registerMicroApps`](/api/register-micro-apps) and [`start`](/api/start):
+**`src/main.tsx`** — a plain React root render, followed by a commented-out route-based alternative using [`registerMicroApps`](/api/register-micro-apps) plus [`start`](/api/start):
 
 ```tsx
 import React from 'react';
@@ -341,7 +341,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 // start();
 ```
 
-**`src/App.tsx`** — the wiring showcase. It loads the sub app manually with [`loadMicroApp`](/api/load-micro-app), tracks the mount promise for loading/error UI, and unmounts on cleanup:
+**`src/App.tsx`** — the wiring boilerplate. It loads the micro app manually with [`loadMicroApp`](/api/load-micro-app), watches the mount promise to drive the loading/error UI, and unmounts on cleanup:
 
 ```tsx
 import { useEffect, useRef, useState } from 'react';
@@ -411,29 +411,29 @@ function App() {
 export default App;
 ```
 
-**`src/App.css`** — styles for the header, content, `.loading`/`.error` states, and `#micro-app-container`.
+**`src/App.css`** — styles for the header, the content area, the `.loading`/`.error` states, and `#micro-app-container`.
 
 ::: tip styleIsolation and @scope
-The generated `App.tsx` comment points at the two options qiankun accepts here. `sandbox` (default `true`) enables the [JS sandbox](/concepts/js-sandbox); `styleIsolation: true` additionally scopes the sub app's CSS with the runtime [`@scope`](/concepts/style-isolation) strategy. These are the only two fields the scaffolded example sets — see [AppConfiguration](/api/configuration) for the full set.
+The comment in the generated `App.tsx` points at the two options qiankun accepts here. `sandbox` (default `true`) enables the [JS sandbox](/concepts/js-sandbox); `styleIsolation: true` additionally scopes the micro app's styles with the runtime [`@scope`](/concepts/style-isolation) strategy. The scaffolded example sets only these two fields — for the full set, see [AppConfiguration](/api/configuration).
 :::
 
-## How main and sub connect
+## How the main app and micro app connect
 
-The two generated projects are preconfigured to work together:
+The two generated projects are configured to work together from the start:
 
 ```mermaid
 flowchart LR
-  M["Main app (:7099)<br/>loadMicroApp(entry '//localhost:7101')"] -->|loads| S["Sub app (:7101)<br/>@qiankunjs/bundler-plugin/vite<br/>exports bootstrap/mount/unmount"]
+  M["Main app (:7099)<br/>loadMicroApp(entry '//localhost:7101')"] -->|loads| S["Micro app (:7101)<br/>@qiankunjs/bundler-plugin/vite<br/>exports bootstrap/mount/unmount"]
 ```
 
-- The sub app runs its own Vite dev server on port **7101** and exposes qiankun lifecycles.
-- The main app runs on port **7099** and loads the sub app from `//localhost:7101`.
+- The micro app runs its own Vite dev server on port **7101** and exposes the qiankun lifecycle.
+- The main app runs on port **7099** and loads the micro app from `//localhost:7101`.
 
-The sub app's default port and the main app's hardcoded entry are intentionally matched. To scaffold multiple sub apps, change each one's `server.port` (a comment in the generated `vite.config` notes this) and add the matching `loadMicroApp`/`registerMicroApps` entries in the main app. See [Run multiple micro-app instances](/cookbook/run-multiple-instances).
+The micro app's default port and the entry hardcoded in the main app are matched on purpose. To scaffold multiple micro apps, change each one's `server.port` (the generated `vite.config` has a comment reminding you of this) and add a matching `loadMicroApp`/`registerMicroApps` entry in the main app. See [Running multiple micro-app instances](/cookbook/run-multiple-instances).
 
-## Next steps output
+## What to run next
 
-After generation the CLI prints `Done!` followed by the commands to run. For a sub app:
+Once generation finishes, the CLI prints `Done!` followed by the commands to run. For a micro app:
 
 ```bash
 cd my-app
@@ -442,14 +442,14 @@ pnpm dev              # Run standalone (loadable by qiankun as-is)
 pnpm build            # Build (the ESM output is qiankun-ready)
 ```
 
-For a main app the last two lines are the plain `pnpm dev` / `pnpm build`. The `cd` path is `packages/<app-name>` when generated inside a pnpm workspace.
+For the main app, the last two lines are a plain `pnpm dev` / `pnpm build`. When generated inside a pnpm workspace, the `cd` path is `packages/<app-name>`.
 
 ::: info No SystemJS build mode
-Unlike qiankun 2.x, which required a UMD/library build configuration, v3 loads the Vite ESM output natively via the [ESM sandbox](/concepts/esm-sandbox). The standard `dev`, `build`, and `preview` outputs are all qiankun-ready. To retrofit an existing app instead of scaffolding a new one, see [Make a Vite app qiankun-ready](/cookbook/prepare-a-vite-app).
+qiankun 2.x needed a UMD/library build config; v3 is different — it loads Vite's ESM output natively through the [ESM sandbox](/concepts/esm-sandbox). The ordinary `dev`, `build`, and `preview` output is all qiankun-ready. If you're converting an existing app rather than starting a new one, see [Making a Vite app qiankun-ready](/cookbook/prepare-a-vite-app).
 :::
 
-## Related
+## Related reading
 
-- [@qiankunjs/bundler-plugin](/ecosystem/bundler-plugin) — the Vite and Webpack plugins the sub app uses.
-- [loadMicroApp](/api/load-micro-app) and [registerMicroApps](/api/register-micro-apps) — the two loading modes shown in the generated main app.
-- [Getting started](/guide/getting-started) and the [Tutorial](/tutorial/index) — build the same setup step by step.
+- [@qiankunjs/bundler-plugin](/ecosystem/bundler-plugin) — the Vite and Webpack plugins the micro app uses.
+- [loadMicroApp](/api/load-micro-app) and [registerMicroApps](/api/register-micro-apps) — the two loading approaches shown in the generated main app.
+- [Getting started](/guide/getting-started) and the [tutorial](/tutorial/) — building the same setup step by step.

@@ -1,12 +1,12 @@
-# prefetchApps（已废弃）
+# prefetchApps(已废弃)
 
-`prefetchApps` 会提前为一组微应用预热浏览器的 HTTP 缓存。在 qiankun 3.0 中它已被废弃，因为流式 HTML Entry 加载器在解析每个入口时已经会自动预加载资源。新代码不应再调用它。
+`prefetchApps` 会提前把一批微应用的资源塞进浏览器的 HTTP 缓存，好让它们后面加载得快一些。在 qiankun 3.0 里它已经废弃了：流式 HTML 加载器边解析入口边加载，资源本来就是顺带预取的，不再需要这一步。新代码不要再调它。
 
 ::: warning 3.0 中已废弃
-`prefetchApps` 仅为向后兼容而保留。v3 中没有独立的 `prefetch` 导出，也没有 `start()` 层面的预取策略。请转而依赖流式加载器的自动预加载 —— 参见[优化加载与预加载](/zh-CN/cookbook/optimize-loading)。
+`prefetchApps` 只是为了兼容旧代码才保留下来。v3 既没有单独的 `prefetch` 导出，也没有 `start()` 层面的预取策略，一切交给流式加载器自动预取——参见[优化加载与预加载](/zh-CN/cookbook/optimize-loading)。
 :::
 
-## 签名
+## 函数签名
 
 ```ts
 function prefetchApps(
@@ -17,12 +17,12 @@ function prefetchApps(
 
 | 参数 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `apps` | `AppMetadata[]` | — | 需要预热的微应用。每一项为 `{ name: string; entry: string }`，其中 `entry` 是 HTML Entry 的 URL。 |
-| `fetch` | `typeof window.fetch` | `window.fetch` | 用于请求入口及其资源的自定义 fetch。如需附加鉴权头或走代理，可传入一个装饰过的 fetch。 |
+| `apps` | `AppMetadata[]` | — | 要预热的微应用列表。每一项是 `{ name: string; entry: string }`，其中 `entry` 是 HTML 入口地址。 |
+| `fetch` | `typeof window.fetch` | `window.fetch` | 用来请求入口和资源的自定义 fetch。需要带鉴权头或走代理时，传一个装饰过的 fetch 进来。 |
 
-返回 `void`。预取是发起即忘（fire-and-forget）的：该函数只是调度任务并立即返回。
+返回 `void`。预取是发出去就不管的：函数把活儿排好队就立刻返回。
 
-`AppMetadata` 是整个公共 API 通用的结构：
+`AppMetadata` 是公开 API 里通用的那个结构：
 
 ```ts
 type AppMetadata = {
@@ -33,48 +33,48 @@ type AppMetadata = {
 
 ## 为什么废弃
 
-在 qiankun 2.x 中，预取是一等公民策略：`start({ prefetch })` 可以提前下载尚未激活的微应用资源，从而加速后续导航。
+在 qiankun 2.x 里，预取是一等的策略：`start({ prefetch })` 能提前把还没激活的微应用资源下下来，让之后切过去更快。
 
-v3 在架构层面消除了这一需求：
+到了 v3，这个需求在架构层面就被消化掉了：
 
-- 加载器通过 `writable-dom` 流式处理每个 HTML Entry，一旦 `<script>` 和 `<link>` 节点出现在流中就立即开始拉取并执行，而无需等待整个文档就绪。资源实际上是作为加载的副作用被预加载的。
-- v3 的 `start()` 只接受 single-spa 的 `{ urlRerouteOnly }` —— 2.x 中的 `prefetch`、`sandbox`、`singular`、`fetch` 以及模板等选项都已移除。没有可供配置的框架级预取策略。
-- 不存在独立导出的 `prefetch` 函数。内部的 `prefetch()` 辅助函数是私有的；只有 `prefetchApps` 是公开的。
+- 加载器通过 `writable-dom` 流式解析每个 HTML 入口，`<script>`、`<link>` 节点一在流里出现就开始拉取和执行，而不是等整份文档下完。资源在加载过程中就顺带预取了。
+- v3 的 `start()` 只接收 single-spa 的 `{ urlRerouteOnly }`——2.x 那些 `prefetch`、`sandbox`、`singular`、`fetch` 和模板选项都没了。框架层面没有预取策略可配。
+- 也没有单独导出的 `prefetch` 函数。内部的 `prefetch()` 只是私有工具，对外公开的只有 `prefetchApps`。
 
-因此，调用 `prefetchApps` 通常收益甚微。在开发构建中它会打印一条废弃警告：
+所以调 `prefetchApps` 基本没什么必要。开发构建下它会打一条废弃警告：
 
 ```text
 [qiankun] prefetchApps is deprecated in 3.0; streaming loader performs automatic preload.
 ```
 
-## 如果调用它仍会做什么
+## 真调了它还会做什么
 
-被调用时，`prefetchApps` 会遍历 `apps` 数组，并为每个入口调度一次缓存预热。这些工作会推迟到 `requestIdleCallback`（对不支持它的浏览器提供 `setTimeout` 兜底）中执行，因此绝不会与前台渲染争抢资源。
+一旦调用，`prefetchApps` 会遍历 `apps` 数组，给每个入口排一趟预热缓存的活儿。这些活儿都推迟到 `requestIdleCallback` 里做(不支持的浏览器用 `setTimeout` 兜底)，这样绝不会跟前台渲染抢资源。
 
 ```mermaid
 flowchart TD
-  A["prefetchApps(apps, fetch)"] --> B{"在线且非慢速网络 / 未开启省流量？"}
-  B -- 否 --> Z["跳过：什么都不做"]
+  A["prefetchApps(apps, fetch)"] --> B{"在线,且不是慢网 / 省流量?"}
+  B -- 否 --> Z["跳过:什么都不做"]
   B -- 是 --> C["requestIdleCallback"]
   C --> D["fetch(entry) -> 解析 HTML"]
-  D --> E["fetch 每个 script[src]"]
-  D --> F["fetch 每个 link[rel=stylesheet]"]
-  E --> G["资源在 HTTP 缓存中预热就绪"]
+  D --> E["逐个 fetch script[src]"]
+  D --> F["逐个 fetch link[rel=stylesheet]"]
+  E --> G["资源热在 HTTP 缓存里"]
   F --> G
 ```
 
 对每个入口，它会：
 
-1. 拉取入口 HTML 以预热缓存，然后用 `DOMParser` 解析它。
-2. 收集所有 `script[src]` 和 `link[rel="stylesheet"]`，将每个 URL 相对入口解析，并在各自的 `requestIdleCallback` tick 中拉取。fetch 错误会被静默吞掉。
+1. 先把入口 HTML 抓回来热一遍缓存，再用 `DOMParser` 解析。
+2. 收集所有 `script[src]` 和 `link[rel="stylesheet"]`，把每个 URL 相对入口地址解析出来，各自在自己的 `requestIdleCallback` 时间片里 fetch。fetch 报错会被吞掉。
 
-当网络不适宜时，它会——静默且逐次调用地——跳过上述全部工作：
+碰上下面这些网络不合适的情况，它会按次静默跳过，什么都不做：
 
-- `navigator.onLine` 为 `false`（离线），或
-- 设置了 `navigator.connection.saveData`（省流量模式），或
-- 有效连接类型是慢速蜂窝类型（`2g`/`3g`），而非 `wifi`/`ethernet`。
+- `navigator.onLine` 为 `false`(离线)，或
+- `navigator.connection.saveData` 打开了(省流量模式)，或
+- 有效连接类型是慢速蜂窝网络(`2g`/`3g`)，而不是 `wifi`/`ethernet`。
 
-预取只会预热 HTTP 缓存。它不会创建沙箱、执行脚本或挂载任何东西 —— 后续的 `registerMicroApps`/`loadMicroApp` 仍会执行真正的加载。
+预取只热 HTTP 缓存，不会创建沙箱、不执行脚本、也不挂载任何东西——真正的加载还是要靠后面的 `registerMicroApps`/`loadMicroApp`。
 
 ### 示例
 
@@ -88,7 +88,7 @@ prefetchApps([
 ]);
 ```
 
-配合自定义 fetch（例如附加一个鉴权头）：
+配一个自定义 fetch(比如给请求带上鉴权头):
 
 ```ts
 prefetchApps(
@@ -99,7 +99,7 @@ prefetchApps(
 
 ## PrefetchStrategy 类型
 
-`PrefetchStrategy` 类型出于向后兼容仍被导出，但 v3 中没有任何公共 API 会消费它 —— `start()` 不再接受 `prefetch` 选项。请将其视为遗留类型。
+`PrefetchStrategy` 类型出于兼容还留着导出，但 v3 里没有任何公开 API 会用到它——`start()` 不再接 `prefetch` 选项。当它是遗留产物就好。
 
 ```ts
 type PrefetchStrategy =
@@ -111,12 +111,12 @@ type PrefetchStrategy =
 
 ## 建议
 
-不要在新应用中引入 `prefetchApps`。流式加载器在加载微应用时已经会预加载其资源，因此显式的预热过程收益甚微，还会造成重复拉取。如果你需要调优加载性能，请参阅[优化加载与预加载](/zh-CN/cookbook/optimize-loading)手册，其中介绍了流式加载器自动完成的工作以及 v3 中仍可调节的手段。
+新应用别再引入 `prefetchApps`。流式加载器在加载微应用时已经顺带把它的资源预取了，再单独热一遍意义不大，还会重复请求。想调优加载性能，看[优化加载与预加载](/zh-CN/cookbook/optimize-loading)，那里讲了流式加载器自动做了哪些事，以及 v3 里还剩下哪些可调的手段。
 
-## 参见
+## 相关阅读
 
-- [start](/zh-CN/api/start) —— v3 只接受 `{ urlRerouteOnly }`；没有 `prefetch` 选项。
-- [registerMicroApps](/zh-CN/api/register-micro-apps) —— 加载路由驱动微应用的常规方式。
-- [HTML Entry 流式加载](/zh-CN/concepts/html-entry-loading) —— 自动预加载的工作原理。
-- [优化加载与预加载](/zh-CN/cookbook/optimize-loading) —— 性能指南。
+- [start](/zh-CN/api/start) —— v3 只接收 `{ urlRerouteOnly }`，没有 `prefetch` 选项。
+- [registerMicroApps](/zh-CN/api/register-micro-apps) —— 加载路由驱动微应用的常规做法。
+- [HTML 入口流式加载](/zh-CN/concepts/html-entry-loading) —— 自动预取是怎么运转的。
+- [优化加载与预加载](/zh-CN/cookbook/optimize-loading) —— 性能调优指引。
 - [从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x) —— 替换 2.x 的预取策略。

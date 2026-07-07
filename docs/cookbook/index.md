@@ -1,39 +1,39 @@
 # Cookbook
 
-Task-oriented recipes for common qiankun v3 jobs. Each recipe is goal-first: it states the outcome, shows the code, and assumes you already know the surrounding concepts. When you need the underlying model instead of a procedure, follow the concept links.
+This is the collection of hands-on recipes for the common jobs you'll do with qiankun v3. Every recipe is goal-first: it states what you're trying to achieve, then goes straight to the code, assuming you already know the surrounding concepts. If you want the reasoning behind a step rather than the step itself, follow the concept links inline.
 
 ## How to read a recipe
 
-- Every recipe starts from a concrete goal ("enable X", "make Y ready", "handle Z"), not from an API surface.
-- Recipes are self-contained. They assume the framework is already installed and that you have a working main app and at least one micro-app. If you do not, start with [Getting started](/guide/getting-started) or the [tutorial](/tutorial/index).
-- Concepts are covered elsewhere. A recipe links to the relevant concept page ([the JS sandbox](/concepts/js-sandbox), [Style isolation](/concepts/style-isolation), [HTML-entry streaming loading](/concepts/html-entry-loading)) rather than re-explaining it.
-- API details live in the [reference](/api/index). Recipes show the option in context; the reference lists every field, type, and default.
+- Each recipe starts from a concrete goal (turn on a capability, get an app ready, handle a situation) rather than from the full surface of an API.
+- Recipes are self-contained. They assume the framework is already installed and that you have a working main app and at least one micro-app. If you don't yet, start with [Getting started](/guide/getting-started) or the [tutorial](/tutorial/index).
+- Concepts are covered elsewhere. A recipe just points you to the relevant concept page ([the JS sandbox](/concepts/js-sandbox), [style isolation](/concepts/style-isolation), [HTML streaming loading](/concepts/html-entry-loading)) instead of re-explaining it.
+- API details live in the [reference](/api/index). Recipes show an option in a real scenario; the reference lists every field with its type and default.
 
-## Recipes
+## Recipes at a glance
 
-| Recipe | Intent |
+| Recipe | Goal |
 | --- | --- |
-| [Enable CSS style isolation](/cookbook/enable-style-isolation) | Turn on per-app `styleIsolation` so a micro-app's CSS cannot leak into the main app or its siblings. |
-| [Optimize loading and preloading](/cookbook/optimize-loading) | Get the most out of the streaming loader, fetch caching, and automatic preload instead of manual prefetch. |
-| [Handle load and runtime errors](/cookbook/handle-errors) | Catch load and lifecycle failures with `addErrorHandler` / `removeErrorHandler` and per-app loaders. |
-| [Share state and communicate between apps](/cookbook/communicate-between-apps) | Pass data and callbacks across the main app and micro-apps via `props`, since v3 ships no built-in store. |
-| [Migrate from qiankun 2.x](/cookbook/migrate-from-2x) | Move a 2.x integration to v3: string `entry`, element `container`, per-app `configuration`, and removed options. |
-| [Make a Vite app qiankun-ready](/cookbook/prepare-a-vite-app) | Wire the `@qiankunjs/bundler-plugin/vite` plugin and export lifecycles so a Vite app runs as a micro-app. |
-| [Make a Webpack app qiankun-ready](/cookbook/prepare-a-webpack-app) | Add `QiankunWebpackPlugin` and export lifecycles so a Webpack app runs as a micro-app. |
-| [Run multiple micro-app instances](/cookbook/run-multiple-instances) | Mount the same or several micro-apps at once with `loadMicroApp`, and unmount each cleanly. |
+| [Enable CSS style isolation](/cookbook/enable-style-isolation) | Turn on `styleIsolation` for a single app so a micro-app's CSS can't leak into the main app or its siblings. |
+| [Optimize loading and preloading](/cookbook/optimize-loading) | Get the most out of the streaming loader, fetch caching, and automatic preload instead of relying on manual prefetch. |
+| [Handle load and runtime errors](/cookbook/handle-errors) | Catch failures during loading and the lifecycle with `addErrorHandler` / `removeErrorHandler` and a per-app loader. |
+| [Share state and communicate between apps](/cookbook/communicate-between-apps) | v3 no longer ships a built-in store; pass data and callbacks between the main app and micro-apps through `props`. |
+| [Migrate from qiankun 2.x](/cookbook/migrate-from-2x) | Move a 2.x integration to v3: string `entry`, element `container`, per-app `configuration`, and the options that were removed. |
+| [Make a Vite app qiankun-ready](/cookbook/prepare-a-vite-app) | Wire up the `@qiankunjs/bundler-plugin/vite` plugin and export lifecycles so a Vite app can run as a micro-app. |
+| [Make a Webpack app qiankun-ready](/cookbook/prepare-a-webpack-app) | Add `QiankunWebpackPlugin` and export lifecycles so a Webpack app can run as a micro-app. |
+| [Run multiple micro-app instances](/cookbook/run-multiple-instances) | Use `loadMicroApp` to mount the same or several micro-apps at once, and unmount each cleanly. |
 
-## Quick chooser
+## Quick routing
 
-Not sure which recipe you need? Match your goal to a starting point.
+Not sure which recipe to open? Match it to your goal.
 
 ```mermaid
 flowchart TD
-  A[What is your goal?] --> B[Styles bleed between apps]
+  A[What do you want to do?] --> B[Styles pollute across apps]
   A --> C[First paint or navigation feels slow]
   A --> D[A micro-app fails to load or mount]
   A --> E[Apps need to share data]
   A --> F[Coming from qiankun 2.x]
-  A --> G[Prepare a sub-app to be loaded]
+  A --> G[Get a sub-app ready to be loaded]
   A --> H[Show more than one app at once]
 
   B --> B1[Enable style isolation]
@@ -41,22 +41,22 @@ flowchart TD
   D --> D1[Handle errors]
   E --> E1[Communicate between apps]
   F --> F1[Migrate from 2.x]
-  G --> G1{Bundler?}
+  G --> G1{Which bundler?}
   G1 -->|Vite| G2[Prepare a Vite app]
   G1 -->|Webpack| G3[Prepare a Webpack app]
   H --> H1[Run multiple instances]
 ```
 
-::: tip Two ways to configure an app
-Most recipes touch one of two configuration surfaces. Registered apps carry a per-app [`configuration`](/api/configuration) field on [`registerMicroApps`](/api/register-micro-apps); manually loaded apps take the same [`AppConfiguration`](/api/configuration) as the second argument to [`loadMicroApp`](/api/load-micro-app). Both accept exactly `fetch`, `streamTransformer`, `nodeTransformer`, `sandbox` (default `true`), `globalContext` (default `window`), and `styleIsolation` (default `false`).
+::: tip The two places you configure an app
+Most recipes touch one of these two configuration sites. For a registered app, the config goes on each app's own [`configuration`](/api/configuration) field inside [`registerMicroApps`](/api/register-micro-apps); for a manually loaded app, you pass the same [`AppConfiguration`](/api/configuration) as the second argument to [`loadMicroApp`](/api/load-micro-app). Both accept exactly the same fields: `fetch`, `streamTransformer`, `nodeTransformer`, `sandbox` (default `true`), `globalContext` (default `window`), and `styleIsolation` (default `false`).
 :::
 
-::: warning No global-state store in v3
-qiankun 2.x shipped `initGlobalState` / `onGlobalStateChange` / `setGlobalState`. Version 3 does not. To share state, pass your own values and callbacks through `props` — see [Share state and communicate between apps](/cookbook/communicate-between-apps).
+::: warning v3 no longer ships a global-state store
+qiankun 2.x offered `initGlobalState` / `onGlobalStateChange` / `setGlobalState`; v3 drops them. To share state, pass the values and callbacks down through `props` yourself — see [Share state and communicate between apps](/cookbook/communicate-between-apps).
 :::
 
 ## Related
 
 - [API reference overview](/api/index) — every export and type.
-- [Architecture overview](/concepts/architecture) — how `loadApp` wires fetch, sandbox, and loader together.
-- [FAQ](/faq/index) — shorter answers to recurring questions.
+- [Architecture overview](/concepts/architecture) — how `loadApp` wires fetch, the sandbox, and the loader together.
+- [FAQ](/faq/index) — short answers to common questions.

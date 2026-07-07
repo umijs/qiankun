@@ -100,6 +100,14 @@ export default withMermaid(
               "link": "/guide/what-is-qiankun"
             },
             {
+              "text": "What is a micro-frontend",
+              "link": "/guide/what-is-micro-frontend"
+            },
+            {
+              "text": "Why not iframes",
+              "link": "/guide/why-not-iframe"
+            },
+            {
               "text": "Getting started",
               "link": "/guide/getting-started"
             }
@@ -356,6 +364,14 @@ export default withMermaid(
             {
               "text": "什么是 qiankun",
               "link": "/zh-CN/guide/what-is-qiankun"
+            },
+            {
+              "text": "什么是微前端",
+              "link": "/zh-CN/guide/what-is-micro-frontend"
+            },
+            {
+              "text": "为什么不是 iframe",
+              "link": "/zh-CN/guide/why-not-iframe"
             },
             {
               "text": "快速上手",

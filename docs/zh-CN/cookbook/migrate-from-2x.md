@@ -1,30 +1,31 @@
 # 从 qiankun 2.x 迁移
 
-qiankun 3.0 围绕流式 HTML Entry 加载、基于 Proxy membrane 的 JS 沙箱以及原生 ESM 执行重写了运行时。相比 2.x，公共 API 更精简、更严格，若干 2.x 选项已不复存在。本指南逐一讲解破坏性变更，每项都附带前后对照，帮助你把 2.x 接入迁移到 v3。
+qiankun 3.0 把运行时整个重写了：流式 HTML 入口加载、基于 `Proxy` 隔离膜的 JS 沙箱、原生 ESM 执行。这些重写不只是换了实现——比如加载内核改成客户端流式渲染后，资源边到边解析执行，渲染更快，还避开了老方案手动 `eval` 脚本带来的一类晦涩 bug(细节见 [HTML entry 流式加载](/zh-CN/concepts/html-entry-loading))。对外的 API 则比 2.x 更小、也更严格，有几个 2.x 的选项直接没了。下面按破坏性变更逐条过，每条都给一个改前 / 改后的对照，照着把 2.x 的接入改成 v3。
 
 ::: info 版本
-本页面针对 qiankun `3.0.0-rc.21`。下文中的确切选项名和默认值均来自 `packages/` 下的 v3 源码。
+本页对应 qiankun `3.0.0-rc.21`。下面出现的选项名和默认值，都以 `packages/` 下 v3 的源码为准。
+
 :::
 
-## 概览
+## 总览
 
-| 领域 | qiankun 2.x | qiankun 3.0 |
+| 方面 | qiankun 2.x | qiankun 3.0 |
 | --- | --- | --- |
-| `entry` | 字符串或 `{ scripts, styles }` 对象 | 仅支持 HTML URL 字符串 |
-| `container` | 选择器字符串或 `HTMLElement` | 仅支持 `HTMLElement` 实例 |
-| `start()` 选项 | `prefetch`、`sandbox`、`singular`、`fetch`、`getPublicPath`、`getTemplate`、`excludeAssetFilter`……​ | 仅 single-spa 的 `StartOpts`（`{ urlRerouteOnly? }`） |
-| 沙箱 / 样式隔离 | `sandbox: { strictStyleIsolation \| experimentalStyleIsolation }`（Shadow DOM） | `sandbox: boolean` + 独立的 `styleIsolation: boolean`（CSS `@scope`） |
-| 单应用配置 | 混入 `start()` | 每个应用独立的 `configuration: AppConfiguration` |
-| 全局状态 store | `initGlobalState` / `onGlobalStateChange` / `setGlobalState` | 已移除 —— 通过 props 传入你自己的 store |
-| 微应用构建 | 手动 UMD / `libraryTarget` / `jsonpFunction` / `chunkLoadingGlobal` | `@qiankunjs/bundler-plugin`（webpack）或 `qiankun()`（Vite） |
-| 预取 | `start()` 上的 `prefetch: 'all' \| string[] \| fn` | 流式 loader 自动预加载；`prefetchApps` 已废弃 |
-| 运行时下限 | Node 16+、更老的浏览器 | Node `>=20.19`；Proxy + TransformStream + `URL.createObjectURL` |
+| `entry` | 字符串，或 `{ scripts, styles }` 对象 | 只能是 HTML URL 字符串 |
+| `container` | 选择器字符串或 `HTMLElement` | 只能是 `HTMLElement` 实例 |
+| `start()` 选项 | `prefetch`、`sandbox`、`singular`、`fetch`、`getPublicPath`、`getTemplate`、`excludeAssetFilter` 等 | 只有 single-spa 的 `StartOpts`(`{ urlRerouteOnly? }`) |
+| 沙箱 / 样式隔离 | `sandbox: { strictStyleIsolation \| experimentalStyleIsolation }`(Shadow DOM) | `sandbox: boolean` + 独立的 `styleIsolation: boolean`(CSS `@scope`) |
+| 单应用配置 | 混在 `start()` 里 | 每个应用各自的 `configuration: AppConfiguration` |
+| 全局状态 store | `initGlobalState` / `onGlobalStateChange` / `setGlobalState` | 移除——自己通过 props 传 store |
+| 微应用构建 | 手写 UMD / `libraryTarget` / `jsonpFunction` / `chunkLoadingGlobal` | `@qiankunjs/bundler-plugin`(webpack)或 `qiankun()`(Vite) |
+| 预加载 | `start()` 上的 `prefetch: 'all' \| string[] \| fn` | 流式加载器自动预加载；`prefetchApps` 已废弃 |
+| 运行环境下限 | Node 16+，较老的浏览器 | Node `>=20.19`;`Proxy` + `TransformStream` + `URL.createObjectURL` |
 
-本页其余部分详述每一行。
+下面把每一行展开讲。
 
-## Entry：从对象到纯 URL 字符串
+## entry:从对象改成一个 URL 字符串
 
-在 2.x 中，`entry` 可以是列出 scripts 和 styles 的配置对象。在 v3 中，`entry` 始终是单个 HTML URL 字符串 —— qiankun 会流式加载这份 HTML 文档并从中发现资源。
+2.x 里 `entry` 可以是一个配置对象，列出脚本和样式。v3 里 `entry` 永远是单个 HTML URL 字符串——qiankun 会流式解析那份 HTML 文档，从里面自己发现资源。
 
 ::: code-group
 ```ts [2.x]
@@ -53,11 +54,11 @@ registerMicroApps([
 ```
 :::
 
-现在类型为 `type HTMLEntry = string`。`{ scripts, styles }` 形式和 2.x 的 `EntryOpts` 类型均已不复存在。
+类型现在是 `type HTMLEntry = string`。`{ scripts, styles }` 这种写法和 2.x 的 `EntryOpts` 类型都没了。
 
-## Container：从选择器字符串到 HTMLElement
+## container:从选择器字符串改成 HTMLElement
 
-在 2.x 中，`container` 接受 CSS 选择器字符串。在 v3 中，`container` 的类型和使用方式都是 `HTMLElement` 实例 —— 请传入元素，而非选择器。
+2.x 里 `container` 能接收一个 CSS 选择器字符串。v3 里 `container` 的类型和实际消费都是 `HTMLElement` 实例——传元素，别传选择器。
 
 ::: code-group
 ```ts [2.x]
@@ -76,19 +77,20 @@ registerMicroApps([
 :::
 
 ::: warning
-传入选择器字符串现在会导致类型错误，且在运行时无法解析。如果你在 DOM 节点存在之前就注册应用，请把注册推迟到元素可用之后（例如在你的 shell 的 mount effect 中解析它）。
+传选择器字符串现在会直接报类型错误，运行时也拿不到元素。如果你在 DOM 节点还没生成时就注册应用，那就把注册往后推，等元素有了再注册(比如放到基座的挂载副作用里去解析)。
+
 :::
 
-## start()：以单应用配置取代全局选项
+## start():单应用配置取代全局选项
 
-这是最大的变更。在 2.x 中，`start()` 接受一堆框架选项（`prefetch`、`sandbox`、`singular`、`fetch`、`getPublicPath`、`getTemplate`、`excludeAssetFilter`……）。在 v3 中，`start()` 只转发 single-spa 的 `StartOpts` —— 唯一的字段是 `urlRerouteOnly`。所有过去作为全局 `start()` 选项的东西，现在要么被移除，要么移到了每个应用独立的 `configuration` 中。
+这是改动最大的一处。2.x 的 `start()` 接收一大堆框架级选项(`prefetch`、`sandbox`、`singular`、`fetch`、`getPublicPath`、`getTemplate`、`excludeAssetFilter` 等)。v3 的 `start()` 只往下透传 single-spa 的 `StartOpts`——唯一的字段就是 `urlRerouteOnly`。凡是过去作为 `start()` 全局选项的东西，要么被移除了，要么挪到了每个应用各自的 `configuration` 上。
 
 ```ts
 // v3 signature
 function start(opts?: { urlRerouteOnly?: boolean }): void;
 ```
 
-单应用的可调项位于应用的 `configuration` 字段上（类型为 [`AppConfiguration`](/zh-CN/api/configuration)），它会针对该应用叠加到框架默认值之上。
+单应用的各种开关都放在应用的 `configuration` 字段上(类型是 [`AppConfiguration`](/zh-CN/api/configuration))，它会覆盖合并到该应用的框架默认值之上。
 
 ::: code-group
 ```ts [2.x]
@@ -114,22 +116,22 @@ start(); // no qiankun-specific options here
 ```
 :::
 
-v3 中的 `AppConfiguration` 恰好包含以下字段：
+v3 的 `AppConfiguration` 就这几个字段，不多不少：
 
-| 字段 | 类型 | 默认值 | 描述 |
+| 字段 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `sandbox` | `boolean` | `true` | 启用基于 Proxy membrane 的 JS 沙箱 |
-| `styleIsolation` | `boolean` | `false` | 通过运行时 `@scope` 隔离应用的 CSS |
-| `globalContext` | `WindowProxy` | `window` | 沙箱 membrane 代理的基础全局对象 |
-| `fetch` | `typeof window.fetch` | `window.fetch` | 自定义 fetch（会被包装为 cacheable/retryable/throwable） |
-| `streamTransformer` | `() => TransformStream<string, string>` | — | 对 HTML 流的可选变换 |
-| `nodeTransformer` | `NodeTransformer` | internal | 高级用法：重写每个资源节点 |
+| `sandbox` | `boolean` | `true` | 开启 Proxy 隔离膜 JS 沙箱 |
+| `styleIsolation` | `boolean` | `false` | 用运行时 `@scope` 给应用的 CSS 加作用域 |
+| `globalContext` | `WindowProxy` | `window` | 沙箱隔离膜代理的基础全局对象 |
+| `fetch` | `typeof window.fetch` | `window.fetch` | 自定义 fetch(会被包上 cacheable / retryable / throwable) |
+| `streamTransformer` | `() => TransformStream<string, string>` | — | 可选，对 HTML 流做一层变换 |
+| `nodeTransformer` | `NodeTransformer` | 内置 | 进阶用法：改写每个资源节点 |
 
-v3 中没有 `FrameworkConfiguration` 类型，没有 `getPublicPath`/`getTemplate`/`excludeAssetFilter`，也没有 `singular`。完整参考见 [AppConfiguration](/zh-CN/api/configuration)。
+v3 里没有 `FrameworkConfiguration` 类型，没有 `getPublicPath` / `getTemplate` / `excludeAssetFilter`，也没有 `singular`。完整参考见 [AppConfiguration](/zh-CN/api/configuration)。
 
-## 沙箱与样式隔离：两个独立的布尔值
+## 沙箱与样式隔离：拆成两个独立的布尔值
 
-在 2.x 中，隔离是一个嵌套对象，采用基于 Shadow DOM 的策略。v3 把它拆成两个独立的布尔值，并使用原生 CSS `@scope` —— 不再有 Shadow DOM 路径。
+2.x 里隔离是一个嵌套对象，策略都基于 Shadow DOM。v3 把它拆成两个互不相干的布尔值，并改用原生 CSS `@scope`——没有 Shadow DOM 这条路了。
 
 ::: code-group
 ```ts [2.x]
@@ -151,21 +153,22 @@ configuration: {
 ```
 :::
 
-关键区别：
+几处关键差别：
 
-- `sandbox` 现在是普通的 `boolean`（仅 JS 隔离）。设置 `sandbox: false` 可让应用运行在真实的 `window` 上 —— 对于无法容忍被代理的全局对象的遗留应用很有用。
-- `styleIsolation` 是一个独立的 `boolean`（默认关闭）。开启后，每个应用的样式会被包裹在 `@scope ([data-name="<appName>"]) { ... }` 中；外部样式表会被重新拉取并以 blob `<link>` 提供，以便 `@scope` 能包裹它们。
-- scope 选择器在内部派生为 `[data-name="<appName>"]`，不可由用户配置。
+- `sandbox` 现在是个纯 `boolean`(只管 JS 隔离)。设成 `sandbox: false` 就让应用跑在真实的 `window` 上——对那些受不了被代理全局的老应用有用。
+- `styleIsolation` 是另一个独立的 `boolean`(默认关)。开启后，每个应用的样式会被包进 `@scope ([data-name="<appName>"]) { ... }`；外部样式表会被重新抓取、以 blob `<link>` 的形式提供，好让 `@scope` 能把它包起来。
+- 作用域选择器由内部按 `[data-name="<appName>"]` 推导，不开放给用户配置。
 
-::: warning `@scope` 浏览器支持
-v3 的样式隔离依赖原生 CSS `@scope`。没有 Shadow DOM 回退，也没有 polyfill。不支持 `@scope` 的浏览器不会对样式进行隔离。详情及注意事项（font-face 与 keyframes 的处理）见 [样式隔离](/zh-CN/concepts/style-isolation) 和 [启用 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation)。
+::: warning `@scope` 的浏览器支持
+v3 的样式隔离依赖原生 CSS `@scope`，既没有 Shadow DOM 兜底，也没有 polyfill。不支持 `@scope` 的浏览器不会对样式生效隔离。细节和注意事项(font-face 和 keyframes 的处理)见[样式隔离](/zh-CN/concepts/style-isolation)和[开启 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation)。
+
 :::
 
-## 全局状态 store：已移除
+## 全局状态 store:移除
 
-qiankun 2.x 自带一个跨应用 store：`initGlobalState`、`onGlobalStateChange`、`setGlobalState` 和 `MicroAppStateActions`。这些在 v3 中都不存在。
+qiankun 2.x 自带一套跨应用的 store:`initGlobalState`、`onGlobalStateChange`、`setGlobalState`，还有 `MicroAppStateActions`。这些在 v3 里一个都不剩。
 
-请通过 `props` 向下传递你需要的任何东西来进行通信。由于 `props` 可以携带函数和对象，你可以把一个小型 store 或事件总线交给每个微应用。
+通信改成把你需要的东西通过 `props` 往下传。`props` 能带函数也能带对象，所以你完全可以把一个小 store 或事件总线交给每个微应用。
 
 ::: code-group
 ```ts [2.x]
@@ -194,15 +197,15 @@ registerMicroApps([
 ```
 :::
 
-在微应用内部，于 `mount(props)` 中读取 `props.store`。相关模式（props 握手、共享事件总线、unmount 清理）见 [在应用间共享状态与通信](/zh-CN/cookbook/communicate-between-apps)。
+微应用这头，在 `mount(props)` 里读 `props.store` 就行。各种通信模式(props 握手、共享事件总线、卸载时清理)见[应用间共享状态与通信](/zh-CN/cookbook/communicate-between-apps)。
 
-## 构建配置：放弃手动 UMD 改造，改用 bundler 插件
+## 构建配置：别再手动动 UMD，交给 bundler 插件
 
-在 2.x 中，微应用需要手写输出配置，把生命周期导出到全局，并让 chunk-loading 名称唯一。v3 用 `@qiankunjs/bundler-plugin` 取而代之。
+2.x 里微应用得手写输出配置，把生命周期挂到某个全局上，再让 chunk-loading 的名字唯一。v3 用 `@qiankunjs/bundler-plugin` 把这些替掉了。
 
 ### Webpack
 
-该插件会把 output library 设为 `window`（在 webpack 4 上还会设置 `jsonpFunction`），并为入口 `<script>` 标记 loader 所依赖的 `entry` 属性。将其安装为开发依赖并加入 `plugins`；保留数组中的 `html-webpack-plugin`，以便入口脚本能被自动标记。
+插件会把输出库设成 `window`(在 webpack 4 上还会设 `jsonpFunction`)，并给入口 `<script>` 打上加载器识别用的 `entry` 属性。把它装成 dev 依赖、加进 `plugins` 就行；记得 `html-webpack-plugin` 也留在数组里，这样入口脚本才能被自动标记。
 
 ::: code-group
 ```js [2.x webpack.config.js]
@@ -237,11 +240,11 @@ module.exports = {
 ```
 :::
 
-webpack 插件接受一个可选字段 `packageName`，默认为你 `package.json` 中的 `name`。见 [让 Webpack 应用适配 qiankun](/zh-CN/cookbook/prepare-a-webpack-app) 和 [bundler-plugin 参考](/zh-CN/ecosystem/bundler-plugin)。
+webpack 插件只接收一个可选字段 `packageName`，默认取你 `package.json` 里的 `name`。见[让 Webpack 应用接入 qiankun](/zh-CN/cookbook/prepare-a-webpack-app)和 [bundler-plugin 参考](/zh-CN/ecosystem/bundler-plugin)。
 
 ### Vite
 
-v3 在开发和生产环境下都通过其 ESM 沙箱原生加载 Vite 应用 —— 没有 SystemJS 或 UMD 构建模式。加入零参数的 `qiankun()` 插件；它会为 dev 和 preview 设置宽松的 CORS，并在构建时标记入口 module 脚本。
+v3 在 dev 和生产环境下都通过它的 ESM 沙箱原生加载 Vite 应用——没有 SystemJS，也没有 UMD 构建模式。加上零参数的 `qiankun()` 插件即可；它会为 dev 和 preview 设好宽松的 CORS，并在构建时标记入口 module 脚本。
 
 ```ts [vite.config.ts]
 import { defineConfig } from 'vite';
@@ -254,13 +257,14 @@ export default defineConfig({
 });
 ```
 
-::: info 脚手架搭建全新应用
-对于新项目，`create-qiankun` 会把这些都配好。见 [create-qiankun](/zh-CN/ecosystem/create-qiankun) 和 [快速上手](/zh-CN/guide/getting-started)。
+::: info 从零搭一个新应用
+新项目的话，`create-qiankun` 会把这些全给你接好。见 [create-qiankun](/zh-CN/ecosystem/create-qiankun) 和[快速上手](/zh-CN/guide/getting-started)。
+
 :::
 
-## 微应用入口：以现代方式渲染到 props.container
+## 微应用入口：用现代 API 渲染进 props.container
 
-保持相同的生命周期契约 —— `bootstrap`、`mount`、`unmount` —— 但改用现代 API 渲染，并挂载到 `props.container`（应用自己的容器子树），而非全局 document。在 webpack（classic 模式）下，当由 qiankun 驱动时，应用仍会把生命周期发布到 `window[appName]` 上；入口 `<script>` 携带 `entry` 属性（由 bundler 插件添加）。
+生命周期约定不变——还是 `bootstrap`、`mount`、`unmount`——但要用现代 API 渲染，并且挂进 `props.container`(应用自己的容器子树)，而不是全局 document。在 webpack(经典模式)下，由 qiankun 驱动时应用仍然把生命周期发布到 `window[appName]` 上；入口 `<script>` 带着 `entry` 属性(由 bundler 插件加上)。
 
 ::: code-group
 ```tsx [2.x main.tsx]
@@ -310,20 +314,21 @@ if (window.__POWERED_BY_QIANKUN__) {
 ```
 :::
 
-对于 Vue，同样的结构适用：在 `mount` 中使用 `createApp(...).mount(...)`，在 `unmount` 中使用 `app.unmount()`。`window[appName]` 发布和带 `entry` 属性的脚本仅适用于 classic（webpack）路径；原生 Vite/ESM 应用直接导出生命周期，由 ESM 引擎解析。见 [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
+Vue 的写法结构一样，`mount` 里用 `createApp(...).mount(...)`,`unmount` 里用 `app.unmount()`。往 `window[appName]` 发布、以及带 `entry` 属性的脚本，只对经典(webpack)这条路适用；原生 Vite / ESM 应用直接导出生命周期，由 ESM 引擎解析。见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
 
-::: danger 有且仅有一个 entry 脚本
-一份 HTML entry 最多只能包含一个被标记为 `entry` 的脚本。两个 entry 脚本会让 loader 抛出 `QiankunError`。bundler 插件是幂等的，会为你标记单个 entry 脚本。
+::: danger 入口脚本有且只能有一个
+一份 HTML 入口里，标记 `entry` 的脚本至多一个。出现两个 entry 脚本，加载器会抛 `QiankunError`。bundler 插件是幂等的，会替你只标记一个入口脚本。
+
 :::
 
-## 运行时与工具链下限
+## 运行环境与工具链下限
 
 v3 抬高了最低环境要求。
 
-- **Node**：构建和运行工具链（`create-qiankun`、Vite）需要 `>=20.19`。
-- **浏览器**：运行时需要 `Proxy`、`TransformStream` 和 `URL.createObjectURL`。样式隔离额外需要原生 CSS `@scope`。
+- **Node**:构建和跑工具链(`create-qiankun`、Vite)需要 `>=20.19`。
+- **浏览器**:运行时需要 `Proxy`、`TransformStream`、`URL.createObjectURL`。样式隔离还额外需要原生 CSS `@scope`。
 
-在 `start()` 之前，使用新的 [`isRuntimeCompatible`](/zh-CN/api/is-runtime-compatible) 导出按能力进行门控：
+`start()` 之前先用 v3 新增的 [`isRuntimeCompatible`](/zh-CN/api/is-runtime-compatible) 按能力做个判断：
 
 ```ts
 import { isRuntimeCompatible, registerMicroApps, start } from 'qiankun';
@@ -336,31 +341,33 @@ if (isRuntimeCompatible()) {
 }
 ```
 
-只有当 `Proxy`、`TransformStream` 和 `URL.createObjectURL` 全部存在时，`isRuntimeCompatible()` 才返回 `true`。
+只有当 `Proxy`、`TransformStream`、`URL.createObjectURL` 三个都在，`isRuntimeCompatible()` 才返回 `true`。
 
 ::: info Firefox 与 ESM 应用
-Firefox 不支持动态注入的 import map，而 ESM 沙箱依赖它来原生加载（Vite）微应用。classic（webpack）应用不受影响。见 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)。
+Firefox 不支持动态注入的 import map，而原生加载(Vite)的微应用要靠它，ESM 沙箱才转得起来。经典(webpack)应用不受影响。见 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)。
+
 :::
 
-## 值得采用的 v3 新导出
+## v3 新增、值得用起来的导出
 
-- [`isRuntimeCompatible`](/zh-CN/api/is-runtime-compatible) —— 在启动前探测浏览器支持情况。
-- `RegistrableApp`（以及 `loadMicroApp` 的第二个参数）上的每应用 [`configuration`](/zh-CN/api/configuration) —— `sandbox`、`styleIsolation`、`globalContext` 和 `fetch` 现在都位于此处。
+- [`isRuntimeCompatible`](/zh-CN/api/is-runtime-compatible)——启动前探一下浏览器支持情况。
+- `RegistrableApp`(以及 `loadMicroApp` 第二个参数)上的单应用 [`configuration`](/zh-CN/api/configuration)——`sandbox`、`styleIsolation`、`globalContext`、`fetch` 现在都住在这里。
 
-v3 完整的公共接口为 `registerMicroApps`、`start`、`loadMicroApp`、`setDefaultMountApp`、`runAfterFirstMounted`、`addErrorHandler`、`removeErrorHandler`、`isRuntimeCompatible` 以及 `prefetchApps`（已废弃）。见 [API 参考概览](/zh-CN/api/index)。
+v3 完整的对外 API 是：`registerMicroApps`、`start`、`loadMicroApp`、`setDefaultMountApp`、`runAfterFirstMounted`、`addErrorHandler`、`removeErrorHandler`、`isRuntimeCompatible`，以及已废弃的 `prefetchApps`。见 [API 参考总览](/zh-CN/api/index)。
 
 ::: warning prefetchApps 已废弃
-流式 loader 会在解析入口 HTML 时自动预加载资源，因此很少需要显式预取。`prefetchApps` 仍然存在，但在 3.0 中已废弃，而 2.x 中 `start()` 上的 `prefetch` 策略已被移除。关于加载调优，见 [优化加载与预加载](/zh-CN/cookbook/optimize-loading)。
+流式加载器在解析入口 HTML 的过程中就自动预加载资源了，所以基本用不着显式预取。`prefetchApps` 还在，但在 3.0 里已废弃；2.x 里 `start()` 上的那套 `prefetch` 策略则彻底没了。加载调优见[优化加载与预加载](/zh-CN/cookbook/optimize-loading)。
+
 :::
 
 ## 迁移清单
 
-1. 把每个 `entry` 改为 HTML URL 字符串。
-2. 把每个 `container` 改为 `HTMLElement` 实例。
-3. 从 `start()` 移除所有 qiankun 专属选项；把 `sandbox`/`styleIsolation`/`fetch` 移入每个应用的 `configuration`。
-4. 用 `sandbox: boolean` 加 `styleIsolation: boolean` 替换 `sandbox: { strictStyleIsolation | experimentalStyleIsolation }`。
-5. 移除 `initGlobalState`/`onGlobalStateChange`/`setGlobalState`；通过 `props` 传入你自己的 store。
-6. 删除手动的 UMD/`libraryTarget`/`jsonpFunction` 输出配置；添加 `@qiankunjs/bundler-plugin`（webpack）或 `qiankun()`（Vite）。
-7. 把微应用入口现代化为渲染进 `props.container` 的 `createRoot` / `app.mount`。
-8. 放弃 `prefetch` 策略；依赖流式自动预加载。
-9. 用 `isRuntimeCompatible()` 门控启动，并确认你的 Node/浏览器下限。
+1. 把每个 `entry` 改成 HTML URL 字符串。
+2. 把每个 `container` 改成 `HTMLElement` 实例。
+3. 从 `start()` 里去掉所有 qiankun 特有的选项；把 `sandbox` / `styleIsolation` / `fetch` 挪进每个应用的 `configuration`。
+4. 把 `sandbox: { strictStyleIsolation | experimentalStyleIsolation }` 换成 `sandbox: boolean` 加 `styleIsolation: boolean`。
+5. 移除 `initGlobalState` / `onGlobalStateChange` / `setGlobalState`；自己的 store 通过 `props` 传。
+6. 删掉手写的 UMD / `libraryTarget` / `jsonpFunction` 输出配置；加上 `@qiankunjs/bundler-plugin`(webpack)或 `qiankun()`(Vite)。
+7. 把微应用入口改成用 `createRoot` / `app.mount` 渲染进 `props.container`。
+8. 丢掉 `prefetch` 策略，靠流式自动预加载。
+9. 用 `isRuntimeCompatible()` 给启动加道闸，确认你的 Node / 浏览器下限达标。

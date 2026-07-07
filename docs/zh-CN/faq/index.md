@@ -1,12 +1,12 @@
 # 常见问题
 
-采用 qiankun 3.0 时最常遇到的问题解答。每一条都链接到对应的参考文档或实践指南页面，其中有对该主题的完整讲解。
+接入 qiankun 3.0 时最容易撞上的一些问题都收在这里。每一条都指向对应的参考页或实战页，想看细节顺着链接过去就行。
 
-## 我需要构建插件吗？
+## 需要装构建插件吗
 
-主应用（host）不需要任何插件——它只调用 [registerMicroApps](/zh-CN/api/register-micro-apps) / [start](/zh-CN/api/start) 或 [loadMicroApp](/zh-CN/api/load-micro-app)。主应用自身的入口 `<script>` 不能带上 `entry` 属性，因为主应用本身并不是一个微应用。
+主应用(基座)不需要任何插件——它只是调用 [registerMicroApps](/zh-CN/api/register-micro-apps) / [start](/zh-CN/api/start)，或者 [loadMicroApp](/zh-CN/api/load-micro-app)。它自己的入口 `<script>` 不要带 `entry` 属性，因为主应用本身不是一个微应用。
 
-微应用需要做两件事：其构建必须（1）用 `entry` 属性标记入口 `<script>`，并且（2）以宽松的 CORS 策略提供资源。[@qiankunjs/bundler-plugin](/zh-CN/ecosystem/bundler-plugin) 会替你完成这两件事。
+微应用要做两件事：构建时(1)给入口 `<script>` 打上 `entry` 属性，(2)让资源带上宽松的 CORS。这两件事 [@qiankunjs/bundler-plugin](/zh-CN/ecosystem/bundler-plugin) 都替你做了。
 
 ::: code-group
 
@@ -37,43 +37,43 @@ module.exports = {
 
 :::
 
-`qiankun()` 会处理开发/预览环境的 CORS 响应头，并为 ESM sandbox 路径标记 `type="module"` 的入口脚本。`QiankunWebpackPlugin` 会将 `output.library` 设为 `{ name, type: 'window' }`（这样 classic 路径就能从 `window[name]` 读取应用），并标记注入的入口脚本。
+`qiankun()` 负责处理开发 / 预览环境的 CORS 响应头，并给 `type="module"` 的入口脚本打标，让它走 ESM sandbox 这条路。`QiankunWebpackPlugin` 把 `output.library` 设成 `{ name, type: 'window' }`(这样 classic 路径就能从 `window[name]` 上读到应用)，并给注入的入口脚本打标。
 
-无构建（no-build）的应用可以手动标记入口——为暴露 lifecycle 的那个脚本加上 `entry`：
+不走构建的 no-build 应用可以手动打标——给暴露 lifecycle 的那个脚本加上 `entry`:
 
 ```html
 <script src="./entry.js" entry></script>
 ```
 
-参见 [让 Vite 应用适配 qiankun](/zh-CN/cookbook/prepare-a-vite-app) 与 [让 Webpack 应用适配 qiankun](/zh-CN/cookbook/prepare-a-webpack-app)。
+参见 [让 Vite 应用适配 qiankun](/zh-CN/cookbook/prepare-a-vite-app) 和 [让 Webpack 应用适配 qiankun](/zh-CN/cookbook/prepare-a-webpack-app)。
 
-## 为什么会出现 CORS 错误？
+## 为什么会报 CORS 错误
 
-qiankun 通过一个装饰过的 `window.fetch` 跨域抓取每个微应用的 HTML Entry 及其资源。因此子应用服务器必须以宽松的 CORS 响应头作出应答，例如 `Access-Control-Allow-Origin: *`。缺少这些响应头时，浏览器会拦截该 fetch，应用也就永远加载不出来。
+qiankun 通过一个装饰过的 `window.fetch` 跨域抓取每个微应用的 HTML Entry 和它的资源。所以子应用的服务器必须回一个宽松的 CORS 响应头，比如 `Access-Control-Allow-Origin: *`。没有这个头，浏览器会直接拦掉这次 fetch，应用根本加载不出来。
 
-- Vite：使用 `qiankun()`，它会设置开发/预览环境的 CORS 响应头。
-- Webpack：设置 `devServer.headers['Access-Control-Allow-Origin'] = '*'` 与 `allowedHosts: 'all'`。
-- 静态托管：以启用 CORS 的方式提供资源（例如 `http-server . --cors`）。
+- Vite:用 `qiankun()`，它会把开发 / 预览环境的 CORS 响应头设好。
+- Webpack:设置 `devServer.headers['Access-Control-Allow-Origin'] = '*'`，并且 `allowedHosts: 'all'`。
+- 静态托管：以启用 CORS 的方式提供资源(比如 `http-server . --cors`)。
 
 ::: warning 第三方库同样需要 CORS
-子应用加载的任何库——jQuery、某个 UI 组件库、一段埋点脚本——都会被 qiankun 以同样的方式抓取。一个不发送 `Access-Control-Allow-Origin` 的公共 CDN 会失败。请将该库自行打包托管，用你自己启用了 CORS 的源来提供，而不是用一个不带响应头的 CDN。
+子应用加载的任何库——jQuery、某个 UI 组件库、一段埋点脚本——都会被 qiankun 用同样的方式抓取。一个不发 `Access-Control-Allow-Origin` 的公共 CDN 会失败。把这个库自己收下来，从你自己开了 CORS 的源上托管，别用一个不带响应头的 CDN。
 :::
 
-在开启 [样式隔离](/zh-CN/concepts/style-isolation) 时，外部的 `<link rel="stylesheet">` 样式表也会被重新抓取（这样它们的 CSS 才能被 `@scope` 包裹）。一个没有 CORS 响应头的跨域样式表会被丢弃，以维持隔离。请同样为样式表提供 CORS。
+开了[样式隔离](/zh-CN/concepts/style-isolation)之后，外部的 `<link rel="stylesheet">` 样式表也会被重新抓取(好把它们的 CSS 用 `@scope` 包起来)。一个没有 CORS 响应头的跨域样式表会被丢弃，以保住隔离。样式表也要带 CORS 一起托管。
 
-## 为什么报 “more than one entry script” 错误？
+## 为什么报 “more than one entry script”
 
-一个 HTML Entry 里最多只能包含一个带 `entry` 属性的 `<script>`。这个脚本正是暴露微应用 lifecycle 的那一个；qiankun 会等待它来解析出应用。第二个带 `entry` 属性的脚本会抛出 `QiankunError`。
+一个 HTML Entry 里，带 `entry` 属性的 `<script>` 只能有一个。它就是暴露微应用 lifecycle 的那个脚本，qiankun 要等它 resolve 才能拿到应用。出现第二个带 `entry` 的脚本会抛 `QiankunError`。
 
-如果你的构建注入了多个脚本（vendor chunk、runtime chunk、main chunk），就交给 bundler 插件去决定哪一个是入口——不要在此之上再手动添加 `entry`。非入口脚本（`<head>` 里自打包的某个库、代码分割出的 chunk）会正常加载，且不能带上该属性。
+如果你的构建注入了好几个脚本(vendor chunk、runtime chunk、main chunk)，让 bundler 插件去决定哪个是入口——别自己再手动加一个 `entry` 上去。其余非入口脚本(放在 `<head>` 里自打包的某个库、代码分割出来的 chunk)照常加载，不要带这个属性。
 
-## 为什么报 “lifecycle functions not found”？
+## 为什么报 “lifecycle functions not found”
 
-qiankun 能加载入口，却无法在其上找到 `bootstrap` / `mount` / `unmount` 函数。请确认微应用确实暴露了它们，并且暴露的方式与其加载路径相匹配。
+qiankun 把入口加载出来了，却在上面找不到 `bootstrap` / `mount` / `unmount` 这几个函数。确认一下微应用确实暴露了它们，而且暴露的方式和它的加载路径对得上。
 
 ::: code-group
 
-```ts [ESM 路径（Vite）]
+```ts [ESM 路径(Vite)]
 // 原生的 module 导出本身就是 lifecycle。
 export async function bootstrap() {}
 export async function mount(props: { container?: Element }) {
@@ -84,8 +84,8 @@ export async function unmount(props: { container?: Element }) {
 }
 ```
 
-```tsx [Classic 路径（window 全局变量）]
-// 打包产物的 library 名必须等于注册的应用名，
+```tsx [Classic 路径(window 全局变量)]
+// 打包产物的 library 名必须等于注册的应用名,
 // 这样导出才会落到 window[name] 上。
 export async function bootstrap() {}
 export async function mount(props) { render(props); }
@@ -97,36 +97,36 @@ export async function unmount(props) { root?.unmount(); }
 
 常见原因：
 
-- **注册的 `name` 与全局变量不匹配。** 在 classic 路径上，应用是从 `window[name]`（即 library 名）读取的。如果你注册的是 `name: 'webpack-app'`，那么打包产物的 `output.library.name` 就必须是 `'webpack-app'`。不匹配意味着 qiankun 查到的是一个空的全局变量。
-- **lifecycle 没有被导出。** 在 ESM 路径上，`bootstrap`/`mount`/`unmount` 必须从入口 module 中 `export`。在 classic 路径上，它们必须能通过 window library 访问到（插件会为你赋值；手写的应用则要赋值 `window[name] = { bootstrap, mount, unmount }`）。
-- **ESM module 里的隐式全局变量。** ESM 运行在严格模式下，因此一个隐式的 `foo = 1` 会抛出 `ReferenceError`，而不是写入 sandbox。请显式声明你的全局变量。
+- **注册的 `name` 和全局变量对不上。** classic 路径下，应用是从 `window[name]`(也就是 library 名)上读出来的。如果你注册的是 `name: 'webpack-app'`，那打包产物的 `output.library.name` 就必须是 `'webpack-app'`。对不上，qiankun 查到的就是个空的全局变量。
+- **lifecycle 没导出。** ESM 路径下，`bootstrap`/`mount`/`unmount` 必须从入口 module 里 `export` 出来。classic 路径下，它们要能通过 window library 取到(插件会帮你赋值；手写的应用就自己 `window[name] = { bootstrap, mount, unmount }`)。
+- **ESM module 里的隐式全局变量。** ESM 跑在严格模式下，像 `foo = 1` 这样的隐式赋值会抛 `ReferenceError`，而不是写进 sandbox。全局变量都要先声明。
 
 参见 [微应用的 lifecycle 与 props](/zh-CN/concepts/lifecycle-and-props)。
 
-## qiankun 支持 Vite / ESM 吗？
+## qiankun 支持 Vite / ESM 吗
 
-支持，原生支持，且开发和生产环境皆可。一个 `<script type="module">` 入口会由 [ESM sandbox](/zh-CN/concepts/esm-sandbox) 执行：module 会被抓取、被改写以使其全局变量经由 JS sandbox membrane 路由、通过一个动态注入的 import map 被赋予合成的 specifier，并由浏览器原生的 module loader 按序求值。除了标记入口（`qiankun()` 会做这件事）之外，不需要任何构建期转换。
+支持，原生支持，开发和生产环境都可以。一个 `<script type="module">` 入口会交给 [ESM sandbox](/zh-CN/concepts/esm-sandbox) 执行：module 被抓下来，经过改写让它的全局变量都经由 JS sandbox membrane 路由，再通过一个动态注入的 import map 分配到合成的 specifier，最后由浏览器原生的 module loader 按序求值。除了给入口打标(这件事 `qiankun()` 做了)，不需要任何构建期的转换。
 
-::: warning sandbox 内部禁用 HMR
-在 Vite 开发模式下，qiankun 会打桩（stub）掉 `/@vite/client`，使 HMR WebSocket 永不开启——若放任其存活，它会从 sandbox 内部发起连接，并触发一次破坏性的整页 `location.reload()`。当 Vite 应用在 qiankun 内部运行时，请手动“编辑并刷新”。
+::: warning sandbox 内部禁用了 HMR
+Vite 开发模式下，qiankun 会把 `/@vite/client` 打桩(stub)掉，让 HMR WebSocket 根本不去连——留着它的话，连接会从 sandbox 内部发起，进而触发一次破坏性的整页 `location.reload()`。Vite 应用跑在 qiankun 里的时候，手动改代码、手动刷新。
 :::
 
-::: info Firefox 需要一个开关
-ESM sandbox 依赖于多个动态注入的 import map。Chrome/Edge 133+ 与 Safari 18.4+ 原生支持这一点；Firefox 则需要 `dom.multiple_import_maps.enabled`（默认关闭），或者采用 es-module-shims。正因如此，ESM 的 e2e 测试套件在 Firefox 上被标注为“预期失败”。
+::: info Firefox 需要开个开关
+ESM sandbox 依赖多个动态注入的 import map。Chrome/Edge 133+ 和 Safari 18.4+ 原生支持；Firefox 则需要打开 `dom.multiple_import_maps.enabled`(默认关闭)，或者采用 es-module-shims。正因如此，ESM 的 e2e 测试套件在 Firefox 上被标注为“预期失败”。
 :::
 
-## 有内置的全局状态存储吗？
+## 有内置的全局状态存储吗
 
-没有。qiankun 3.0 没有 `initGlobalState` / `onGlobalStateChange` / `setGlobalState` API。请改为显式地共享状态：
+没有。qiankun 3.0 没有 `initGlobalState` / `onGlobalStateChange` / `setGlobalState` 这套 API。请改为显式地共享状态：
 
-- 通过 `props`（注册应用配置的第四个键 / `loadMicroApp` 的 `props` 字段）向微应用传递数据与回调。props 会到达微应用的 lifecycle 函数。
-- 若有更复杂的需求，请使用你自己的 store（一个共享 module、一个事件总线、一个 signals 库），并通过 props 把它的 API 交给微应用。
+- 通过 `props`(注册应用配置的第四个键 / `loadMicroApp` 上的 `props` 字段)向微应用传数据和回调。props 会到达微应用的 lifecycle 函数。
+- 需求更复杂时，用你自己的 store(一个共享 module、一个事件总线、一个 signals 库)，再通过 props 把它的 API 交给微应用。
 
 参见 [在应用间共享状态与通信](/zh-CN/cookbook/communicate-between-apps)。
 
-## 我该如何隔离样式？
+## 怎么隔离样式
 
-通过应用配置中的 `styleIsolation` 布尔值逐个应用开启。它默认关闭。
+在应用配置里用 `styleIsolation` 这个布尔值逐个应用开启。它默认关闭。
 
 ```ts
 registerMicroApps([
@@ -140,24 +140,24 @@ registerMicroApps([
 ]);
 ```
 
-开启后，qiankun 会将微应用的 CSS 包裹进一个原生 CSS `@scope` 块中，其作用域限定在应用容器（`[data-name="<appName>"]`）上。外部样式表会被重新抓取，并以 blob-`<link>` 的形式提供，这样它们的规则也能被限定作用域。
+开启后，qiankun 会把微应用的 CSS 包进一个原生 CSS `@scope` 块里，作用域限定在应用容器(`[data-name="<appName>"]`)上。外部样式表会被重新抓取，并以 blob-`<link>` 的形式提供，这样它们的规则也能被限定作用域。
 
 ::: info 不是 Shadow DOM
-v3 不使用 Shadow DOM。2.x 里的选项对象 `sandbox: { strictStyleIsolation | experimentalStyleIsolation }` 已不复存在——唯一的开关就是布尔值 `styleIsolation`。
+v3 不使用 Shadow DOM。2.x 里那个选项对象 `sandbox: { strictStyleIsolation | experimentalStyleIsolation }` 已经不存在了——唯一的开关就是布尔值 `styleIsolation`。
 :::
 
-要求与限制：
+要求和限制：
 
 - 浏览器必须支持 CSS `@scope`。没有 polyfill；不支持它的浏览器不会限定样式作用域。
-- 外部样式表必须可通过 CORS 抓取，否则会被丢弃以维持隔离。
-- `@font-face` 与 `@namespace` 被有意保持为全局（对它们限定作用域会破坏字体加载），因此它们仍可能在应用间发生冲突。
-- `@keyframes` 会以逐应用的前缀重命名；在 JS 中以字符串动态拼出的 keyframe 名不会被改写。
+- 外部样式表必须能通过 CORS 抓取，否则会被丢弃以保住隔离。
+- `@font-face` 和 `@namespace` 是故意保持为全局的(对它们限定作用域会破坏字体加载)，所以它们跨应用之间仍然可能冲突。
+- `@keyframes` 会以逐应用的前缀重命名；在 JS 里用字符串动态拼出来的 keyframe 名不会被改写。
 
-参见 [样式隔离](/zh-CN/concepts/style-isolation) 与 [启用 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation)。
+参见 [样式隔离](/zh-CN/concepts/style-isolation) 和 [启用 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation)。
 
-## 支持哪些浏览器？
+## 支持哪些浏览器
 
-v3 运行时需要 `Proxy`、`TransformStream` 与 `URL.createObjectURL`。请在启动前探测当前浏览器：
+v3 运行时需要 `Proxy`、`TransformStream` 和 `URL.createObjectURL`。启动前先探一下当前浏览器：
 
 ```ts
 import { isRuntimeCompatible } from 'qiankun';
@@ -177,20 +177,20 @@ typeof Proxy === 'function' &&
   typeof URL?.createObjectURL === 'function';
 ```
 
-`TransformStream` 是三者中门槛最高的（流式 HTML Entry 加载依赖它）。ESM-sandbox 微应用还额外需要 import map 支持（参见上面关于 Firefox 的说明）。参见 [isRuntimeCompatible](/zh-CN/api/is-runtime-compatible)。
+三者里 `TransformStream` 的门槛最高(流式 HTML Entry 加载靠它)。走 ESM-sandbox 的微应用还额外需要 import map 支持(见上面关于 Firefox 的说明)。参见 [isRuntimeCompatible](/zh-CN/api/is-runtime-compatible)。
 
-## 为什么我的应用在 remount 时不会重新运行（ESM）？
+## 为什么应用 remount 时不重新运行(ESM)
 
-这是设计使然。在 ESM 路径上，一次 remount 会重新 import 同一个 blob URL，因此浏览器返回的是**同一个 module namespace**——顶层 module 代码不会再次运行，只有 `mount(props)` 会被重新调用。（classic 路径则会在每次 remount 时重新执行整个脚本。）
+这是设计如此。ESM 路径下，一次 remount 会重新 import 同一个 blob URL，于是浏览器返回的是**同一个 module namespace**——顶层 module 代码不会再跑一遍，只有 `mount(props)` 会被再次调用。(classic 路径则是每次 remount 都会把整个脚本重新执行一遍。)
 
-如果你在 module 顶层创建应用状态，它会在 unmount 与 remount 之间存活下来，从而显得“过期”或在第二次 mount 时失败。请把所有实例创建都移入 `mount()`，并在 `unmount()` 中将其销毁：
+如果你把应用状态建在 module 顶层，它会在 unmount、remount 之间一直活着，于是第二次 mount 时表现为“过期”或者干脆报错。把所有实例的创建都挪进 `mount()`，再在 `unmount()` 里拆掉：
 
 ```ts
 let root: Root | undefined;
 
 export async function mount(props: { container?: Element }) {
   const el = props.container?.querySelector('#root') ?? document.getElementById('root');
-  root = createRoot(el);          // 在 mount 中创建，而不是在 module 顶层
+  root = createRoot(el);          // 在 mount 里创建,而不是 module 顶层
   root.render(<App />);
 }
 
@@ -200,19 +200,19 @@ export async function unmount() {
 }
 ```
 
-这既是现代框架的标准接线方式，也是让 [多实例](/zh-CN/cookbook/run-multiple-instances) 正常工作的关键。参见 [ESM sandbox](/zh-CN/concepts/esm-sandbox)。
+这本来就是现代框架标准的接线方式，也是让[多实例](/zh-CN/cookbook/run-multiple-instances)能正常工作的前提。参见 [ESM sandbox](/zh-CN/concepts/esm-sandbox)。
 
-## 2.x 的那些选项去哪了？
+## 2.x 的那些选项去哪了
 
-若干 qiankun 2.x 的 API 与选项在 3.0 中已不存在：
+qiankun 2.x 的若干 API 和选项在 3.0 里已经不存在：
 
 | 2.x | 3.0 |
 | --- | --- |
-| `start({ prefetch, sandbox, singular, fetch, ... })` | 仅 `start({ urlRerouteOnly? })`；逐应用的选项放在 `configuration` 中 |
-| `sandbox: { strictStyleIsolation \| experimentalStyleIsolation }` | `styleIsolation: boolean`（CSS `@scope`） |
-| `initGlobalState` / `onGlobalStateChange` / `setGlobalState` | 通过 `props` / 你自己的 store 传递状态 |
-| `entry: { scripts, styles }` 对象 | `entry: string`（一个 HTML URL） |
+| `start({ prefetch, sandbox, singular, fetch, ... })` | 只剩 `start({ urlRerouteOnly? })`；逐应用的选项挪到了 `configuration` 里 |
+| `sandbox: { strictStyleIsolation \| experimentalStyleIsolation }` | `styleIsolation: boolean`(CSS `@scope`) |
+| `initGlobalState` / `onGlobalStateChange` / `setGlobalState` | 通过 `props` / 你自己的 store 传状态 |
+| `entry: { scripts, styles }` 对象 | `entry: string`(一个 HTML URL) |
 | `container: '#selector'` 字符串 | `container: HTMLElement` |
-| `prefetch` 策略 | 流式 loader 自动预加载；`prefetchApps` 已废弃 |
+| `prefetch` 各种预取策略 | 流式 loader 自动预加载；`prefetchApps` 已废弃 |
 
-完整的逐步指引见 [从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
+完整的分步指引见 [从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。

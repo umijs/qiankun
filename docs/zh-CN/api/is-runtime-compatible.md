@@ -1,6 +1,6 @@
 # isRuntimeCompatible
 
-一个运行时能力探测函数，用于报告当前浏览器是否能够运行 qiankun 3.0 运行时。它是 v3 新增的 API，让你可以据此决定是否启动应用，并在缺少 qiankun 所依赖底层能力的浏览器上呈现优雅的降级方案。
+一个运行时能力探针，用来判断当前浏览器能不能跑起来 qiankun 3.0 的运行时。这是 v3 新增的 API:在启动微应用之前先探一下，遇到缺少必需能力的浏览器就退回到一个兜底方案。
 
 ## 签名
 
@@ -8,19 +8,19 @@
 function isRuntimeCompatible(): boolean
 ```
 
-`isRuntimeCompatible` 由 `qiankun` 从 [`@qiankunjs/shared`](/zh-CN/api/index) 重新导出。它不接受任何参数，并同步返回结果。
+`isRuntimeCompatible` 由 `qiankun` 从 [`@qiankunjs/shared`](/zh-CN/api/index) 转发出来。不接收参数，同步返回。
 
 ```ts
 import { isRuntimeCompatible } from 'qiankun';
 
 if (isRuntimeCompatible()) {
-  // 可以安全地注册并启动微应用
+  // safe to register and start micro-apps
 }
 ```
 
 ## 它检查什么
 
-该探测会验证 v3 运行时所依赖的三个全局对象是否作为可调用的 API 存在：
+探针会确认 v3 运行时依赖的三个全局能力都存在、而且是可调用的：
 
 ```ts
 typeof Proxy === 'function' &&
@@ -30,27 +30,27 @@ typeof Proxy === 'function' &&
 
 | 能力 | 用途 |
 | --- | --- |
-| `Proxy` | 基于 Proxy membrane 的 [JS 沙箱](/zh-CN/concepts/js-sandbox)，为每个微应用提供隔离的 `window`/`document` 视图。 |
-| `TransformStream` | 流式 [HTML Entry 加载器](/zh-CN/concepts/html-entry-loading)，在入口 HTML 到达时将其通过 transform stream 进行处理。 |
-| `URL.createObjectURL` | Blob URL，classic 脚本路径与 [ESM 沙箱](/zh-CN/concepts/esm-sandbox) 都依赖它。 |
+| `Proxy` | 基于 Proxy 隔离膜的 [JS 沙箱](/zh-CN/concepts/js-sandbox)，给每个微应用一份隔离的 `window`/`document` 视图。 |
+| `TransformStream` | 流式的 [HTML 入口加载器](/zh-CN/concepts/html-entry-loading)，入口 HTML 一边到达一边过一遍 transform stream。 |
+| `URL.createObjectURL` | Blob URL，经典脚本路径和 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)都靠它。 |
 
 ::: info 它不检查什么
-该探测有意保持最小化。它只是对上述三个底层能力的特性检测（feature detection）。它**不会**检测 import map、动态 `import()` 或任何 ESM 特有的能力，也不会读取 user-agent 字符串或比较版本号。
+探针刻意做得很薄，只对上面这三个基础能力做特性检测。它**不会**探测 import map、动态 `import()` 或任何 ESM 相关的能力，也不会去读 user-agent、比对版本号。
 :::
 
 ## 浏览器支持
 
-三个要求中最严格的是 `TransformStream`，因此它决定了实际的支持下限。作为大致参考，`TransformStream` 大约在以下版本开始被广泛支持：
+三个要求里 `TransformStream` 最苛刻，实际的门槛就由它划定。粗略地说，`TransformStream` 大致从这些版本开始广泛可用：
 
 - Chrome / Edge 67+
 - Firefox 102+
 - Safari 14.1+
 
-请将这些版本视为粗略的基线，而非精确的兼容性矩阵。`Proxy` 和 `URL.createObjectURL` 支持得更早，因此在实践中，支持 `TransformStream` 的浏览器都会通过这三项检查。如有疑问，请在运行时调用 `isRuntimeCompatible()`，而不是维护一份版本清单。
+这几个版本当个大致基线看就行，别当成精确的兼容性对照表。`Proxy` 和 `URL.createObjectURL` 出现得更早，所以一个浏览器只要支持 `TransformStream`，三项检查基本都能过。拿不准的时候，与其自己维护一份版本清单，不如运行时直接调 `isRuntimeCompatible()`。
 
 ## 用法
 
-在注册或启动微应用之前调用该探测，当它返回 `false` 时渲染降级方案。
+在注册或启动微应用之前先调探针，返回 `false` 时渲染一个兜底内容。
 
 ```ts
 import { registerMicroApps, start, isRuntimeCompatible } from 'qiankun';
@@ -72,14 +72,14 @@ if (isRuntimeCompatible()) {
 }
 ```
 
-这项检查开销很低且是同步的，因此可以安全地在主应用（shell）的启动流程中执行一次。
+这项检查开销很小，又是同步的，放心在基座的启动流程里跑一次就够了。
 
-## ESM 沙箱有更严格的要求
+## ESM 沙箱要求更高
 
-`isRuntimeCompatible` 反映的是核心运行时的要求。以原生 ES 模块（`<script type="module">`）形式交付的微应用会走 [ESM 沙箱](/zh-CN/concepts/esm-sandbox) 路径，而该路径额外依赖**动态注入的 import map**。通过 `isRuntimeCompatible()` 本身并不能保证该路径可以正常工作。
+`isRuntimeCompatible` 反映的是核心运行时的要求。而以原生 ES module(`<script type="module">`)方式交付的微应用会走 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)，这条路还额外依赖**动态注入的 import map**。所以 `isRuntimeCompatible()` 过了，并不等于这条路一定能跑通。
 
 ::: warning Firefox 与 import map
-Firefox 默认不支持多个动态注入的 import map（该能力被 `dom.multiple_import_maps.enabled` 标志所限制）。若要在 Firefox 或较旧浏览器上获得确定的支持，请采用 [es-module-shims](/zh-CN/concepts/esm-sandbox) 作为受支持的基座，而不是依赖原生 import map。Chrome/Edge 以及较新的 Safari 原生支持该特性。
+Firefox 默认不支持注入多个动态 import map(该能力被 `dom.multiple_import_maps.enabled` 开关挡着)。想在 Firefox 或更老的浏览器上拿到确定的支持，别指望原生 import map，改用 [es-module-shims](/zh-CN/concepts/esm-sandbox) 作为受支持的基座。Chrome/Edge 和较新的 Safari 都原生支持这个特性。
 :::
 
 ## 相关链接

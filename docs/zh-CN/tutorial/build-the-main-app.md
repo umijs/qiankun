@@ -1,21 +1,21 @@
-# 第 2 步 — 构建主应用
+# 第二步 —— 搭建主应用
 
-在[第 1 步](/zh-CN/tutorial/build-the-micro-app)中，你已经在 `//localhost:7100` 上暴露了一个微应用。现在你将构建**主应用**（即宿主，也称为 shell）：一个普通的 Vite 应用，它注册微应用，根据 URL 决定微应用何时激活，并把它渲染进一个由自己持有的容器中。
+[第一步](/zh-CN/tutorial/build-the-micro-app)里，你已经把一个微应用跑在了 `//localhost:7100` 上。这一步来搭**主应用**(也就是基座、外壳):一个普通的 Vite 应用，负责注册微应用、根据 URL 决定它什么时候激活，并把它渲染进一个由主应用自己掌管的容器里。
 
-读完本页后，你将拥有一个具备以下能力的宿主应用：
+这一页写完，你会得到一个这样的基座：
 
-- 通过 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 注册微应用，并通过 [`start`](/zh-CN/api/start) 启动 qiankun；
-- 持有一个供微应用挂载的、持久存在的容器元素；
-- 用寥寥数行手写的路由逻辑，根据 URL 驱动 mount/unmount；
-- 在微应用被拉取和挂载期间显示一个加载指示器。
+- 用 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 注册微应用，再用 [`start`](/zh-CN/api/start) 启动 qiankun;
+- 独占一个常驻的容器元素，微应用就挂载到它里面；
+- 用几行手写的路由，靠 URL 驱动微应用的挂载和卸载；
+- 微应用抓取、挂载的过程中，显示一个加载提示。
 
-::: info 宿主不是微应用
-主应用是一个普通应用。它**不**使用 `@qiankunjs/bundler-plugin`，其 HTML 入口脚本也**不**带 `entry` 属性——该属性只用于那些将被 qiankun 加载的应用。子应用一侧的做法请参见[让 Vite 应用支持 qiankun](/zh-CN/cookbook/prepare-a-vite-app)。
+::: info 基座不是微应用
+主应用就是一个普通应用。它**不用** `@qiankunjs/bundler-plugin`,HTML 入口的 script 标签上也**没有** `entry` 属性——那个属性只属于会被 qiankun 加载的应用。子应用这一侧的准备工作见 [让 Vite 应用接入 qiankun](/zh-CN/cookbook/prepare-a-vite-app)。
 :::
 
-## 创建宿主 Vite 应用
+## 建一个基座 Vite 应用
 
-搭建一个普通的 React + Vite 应用。它所需的插件，就是你在任何 Vite 应用中都会用到的那些。
+照常起一个 React + Vite 应用。需要的插件跟你平时写 Vite 应用没有任何区别。
 
 ::: code-group
 
@@ -60,7 +60,7 @@ HTML 入口就是标准的 Vite SPA 入口。注意 script 标签上没有 `entr
 
 ## 注册微应用
 
-注册是宿主的核心。调用 [`registerMicroApps`](/zh-CN/api/register-micro-apps)，为每个微应用传入一项配置，然后恰好调用一次 [`start`](/zh-CN/api/start)。
+注册是基座的核心。给 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 传一份数组，每个微应用一项，然后调用 [`start`](/zh-CN/api/start) 一次，只调一次。
 
 ```ts [main/src/register.ts]
 import { registerMicroApps, start } from 'qiankun';
@@ -93,40 +93,40 @@ export function registerAll(
 }
 ```
 
-数组中的每一项都是一个 `RegistrableApp`。这里用到的字段如下：
+数组里的每一项都是一个 `RegistrableApp`。这里用到的字段：
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
-| `name` | `string` | 唯一的应用名。必须与子应用暴露的 window 全局变量 / 库名一致（见下文）。 |
-| `entry` | `string` | 子应用 HTML 入口的 URL。在 v3 中是一个普通字符串——始终为一个 HTML URL。 |
-| `container` | `HTMLElement` | 应用挂载进的 DOM 元素。是元素实例，而非选择器。 |
-| `activeRule` | `string \| fn \| Array` | single-spa 的激活规则。当它匹配 `location.pathname` 时，应用挂载；否则卸载。 |
-| `loader` | `(loading: boolean) => void` | 挂载前以 `true` 调用、挂载后以 `false` 调用——在这里驱动你的加载 UI。 |
-| `configuration` | `AppConfiguration` | 单个应用的选项。参见 [AppConfiguration](/zh-CN/api/configuration)。 |
+| `name` | `string` | 应用的唯一名字。必须和子应用暴露的 window 全局 / library 名字一致(见下文)。 |
+| `entry` | `string` | 子应用 HTML 入口的地址。v3 里就是个普通字符串——永远是一个 HTML 地址。 |
+| `container` | `HTMLElement` | 应用挂载进去的 DOM 元素。是元素实例本身，不是选择器。 |
+| `activeRule` | `string \| fn \| Array` | single-spa 的激活规则。命中 `location.pathname` 时应用挂载，否则卸载。 |
+| `loader` | `(loading: boolean) => void` | 挂载前传 `true`、挂载后传 `false`——加载 UI 在这里驱动。 |
+| `configuration` | `AppConfiguration` | 每个应用各自的配置。见 [AppConfiguration](/zh-CN/api/configuration)。 |
 
-::: tip v3 中 configuration 是按应用维度配置的
-在 qiankun 3.0 中，不存在通过 `start()` 传入的全局配置。`start` 只接受 `{ urlRerouteOnly? }`（single-spa 的选项）。其他一切——`sandbox`、`styleIsolation`、`fetch`、`globalContext`、`nodeTransformer`、`streamTransformer`——都放在每个应用各自的 `configuration` 对象上。完整选项集记录在 [AppConfiguration](/zh-CN/api/configuration) 中。
+::: tip v3 的配置是按应用维度走的
+qiankun 3.0 里没有通过 `start()` 传的全局配置。`start` 只收 `{ urlRerouteOnly? }`(single-spa 的选项)。其余的一切——`sandbox`、`styleIsolation`、`fetch`、`globalContext`、`nodeTransformer`、`streamTransformer`——都挂在每个应用各自的 `configuration` 对象上。完整清单见 [AppConfiguration](/zh-CN/api/configuration)。
 :::
 
-### 为什么 `name` 必须与子应用的全局变量一致
+### 为什么 `name` 必须和子应用的全局对上
 
-当 qiankun 加载完一个经典（UMD/全局）微应用后，它会去发现该应用的 lifecycle 函数。这个查找过程的最后一道兜底是 `window[name]`——即以注册的 `name` 为键的全局变量。因此一旦不匹配，qiankun 就找不到 `bootstrap`/`mount`/`unmount`，从而抛出错误。
+qiankun 加载完一个经典(UMD/全局)微应用后，要去找它的生命周期函数。这个查找的最后一道兜底就是 `window[name]`——以注册时的 `name` 为键取全局。所以一旦对不上，qiankun 就找不到 `bootstrap`/`mount`/`unmount`，直接抛错。
 
-具体来说，如果你注册的是 `name: 'react'`，那么子应用就必须把它的 lifecycle 暴露为 `window['react']`（用于经典路径），或从它的 ESM 入口模块中导出它们。如果你的 bundler 设置了库名——例如 `@qiankunjs/bundler-plugin` 为 Webpack 生成 `output.library = { name: 'webpack-app', type: 'window' }`——那么注册的 `name` 就必须等于那个库名（`'webpack-app'`），而它往往与路由不同。
+具体说，如果你注册的是 `name: 'react'`，那子应用就得把生命周期挂成 `window['react']`(经典路径)，或者从它的 ESM 入口模块里导出。如果你的打包工具设了 library 名字——比如 `@qiankunjs/bundler-plugin` 给 Webpack 生成的是 `output.library = { name: 'webpack-app', type: 'window' }`——那注册的 `name` 就必须等于这个 library 名字(`'webpack-app'`)，它常常和路由不是一回事。
 
-::: warning `name` 是应用身份，而非路由
-`name` 与 `activeRule` 是相互独立的。一个名为 `webpack-app` 的应用在 `/webpack` 上激活是完全合理的。让 `name` 与子应用的全局变量保持一致；用 `activeRule` 来对应 URL。
+::: warning `name` 是应用身份，不是路由
+`name` 和 `activeRule` 各管各的。一个叫 `webpack-app` 的应用在 `/webpack` 上激活，完全没问题。`name` 要跟子应用的全局对齐，URL 的事交给 `activeRule`。
 :::
 
-## 提供一个持久的容器
+## 提供一个常驻的容器
 
-qiankun 会在注册时捕获 `container` 的**元素引用**，并在该应用每一次 mount 和 unmount 时复用它。这引出了一条硬性规则。
+qiankun 在注册那一刻就把 `container` 的**元素引用**记下了，之后这个应用每次挂载、卸载都复用同一个元素。这带来一条硬规矩。
 
-::: danger 容器绝不能被卸载或加 key
-一次性渲染出单个容器 `<div>`，并让它在宿主的整个生命周期内一直留在 DOM 中。不要条件式地渲染它，不要把它放在某个路由后面，也不要给它一个会变化的 React `key`——上述任何一种做法都会把该元素替换成一个新元素，而 qiankun 会继续往那个陈旧的、已脱离文档的节点里写内容。可见的症状就是：微应用"挂载了"却始终不显示。
+::: danger 容器绝对不能被卸载，也不能加 key
+把容器 `<div>` 渲染一次，让它在基座的整个生命周期里一直待在 DOM 里。别条件渲染它，别把它塞进某条路由后面，也别给它一个会变的 React `key`——这几种做法任意一个都会把元素换成新的一个，而 qiankun 还在往那个已经脱离文档、失效的旧节点里写东西。表现出来就是：微应用"挂载"了，却永远不显示。
 :::
 
-用一个 ref 来捕获该元素，并且只在它已存在于 DOM 中之后才进行注册。
+用 ref 捕获这个元素，等它真进了 DOM 再去注册。
 
 ```tsx [main/src/App.tsx]
 import { useEffect, useRef, useState } from 'react';
@@ -162,18 +162,18 @@ export default function App() {
 }
 ```
 
-::: tip 隐藏，而不是移除
-当没有微应用激活时，你可以隐藏容器（`hidden`、`display: none`、零高度），但绝不能把它从树中移除。隐藏能让同一个元素引用保持存活；移除它则会破坏下一次 mount。
+::: tip 藏起来，别删掉
+没有微应用激活时，你可以把容器藏起来(`hidden`、`display: none`、高度设为零)，但不能把它从树里移除。藏起来元素引用还在；删掉了，下一次挂载就废了。
 :::
 
-## 接通路由
+## 接上路由
 
-qiankun 构建于 [single-spa](https://github.com/single-spa/single-spa) 之上：当 URL 变化时，single-spa 会重新评估每个应用的 `activeRule`，并相应地 mount 或 unmount。为此你并不需要一个路由库——你只需要两样东西：
+qiankun 建在 [single-spa](https://github.com/single-spa/single-spa) 上：URL 一变，single-spa 就重新核对每个应用的 `activeRule`，该挂的挂、该卸的卸。这件事用不着路由库，只要两样东西：
 
-1. 一种**改变** URL 的方式（`history.pushState`），以及
-2. 一种**响应** URL 变化的方式，好让你自己的 shell UI（当前激活的导航项、容器的可见性）保持同步。
+1. 一个**改** URL 的办法(`history.pushState`)，以及
+2. 一个**响应** URL 变化的办法，好让你自己的外壳 UI(当前高亮的导航项、容器的显隐)跟着同步。
 
-对于第二点，同时监听 `popstate`（浏览器前进/后退）和 `single-spa:routing-event`（single-spa 在每次 reroute 之后发出，包括由 `pushState` 触发的那些）。
+第二样，同时监听 `popstate`(浏览器前进 / 后退)和 `single-spa:routing-event`(single-spa 每次重路由后都会派发，包括 `pushState` 触发的那些)。
 
 ```ts [main/src/router.ts]
 import { useSyncExternalStore } from 'react';
@@ -200,7 +200,7 @@ export function navigate(path: string): void {
 }
 ```
 
-于是，导航就只是一次 `pushState`；剩下的交给 qiankun。
+跳转就只是一次 `pushState`，剩下的 qiankun 全包了。
 
 ```tsx [main/src/App.tsx (nav)]
 import { navigate } from './router';
@@ -214,27 +214,27 @@ import { navigate } from './router';
 </button>
 ```
 
-点击 **Open micro-app** 会 push `/sub`，single-spa 发现 `activeRule: '/sub'` 现在匹配了，于是把应用挂载进你的容器。点击 **Home** 会 push `/`，规则不再匹配，single-spa 便卸载该应用并运行它的 `unmount` lifecycle。
+点 **Open micro-app** 会 push 一个 `/sub`,single-spa 发现 `activeRule: '/sub'` 现在命中了，就把应用挂进你的容器。点 **Home** 会 push 一个 `/`，规则不再命中，single-spa 就把应用卸载，并跑它的 `unmount` 生命周期。
 
-端到端的流程：
+整条链路是这样：
 
 ```mermaid
 flowchart TD
   A["navigate('/sub')"] --> B["history.pushState"]
-  B --> C["single-spa reroute"]
-  C --> D{"activeRule '/sub'<br/>匹配 pathname？"}
+  B --> C["single-spa 重路由"]
+  C --> D{"activeRule '/sub'<br/>命中 pathname?"}
   D -->|是| E["loader(true)"]
-  E --> F["fetch + 将 entry 流式写入容器"]
-  F --> G["运行子应用 mount()"]
+  E --> F["抓取入口并流式写入容器"]
+  F --> G["执行子应用 mount()"]
   G --> H["loader(false)"]
-  D -->|否| I["运行子应用 unmount()"]
+  D -->|否| I["执行子应用 unmount()"]
   C --> J["single-spa:routing-event"]
-  J --> K["shell 重新渲染（导航、可见性）"]
+  J --> K["外壳重渲染(导航、显隐)"]
 ```
 
 ## 驱动加载 UI
 
-每个注册的应用都可以接收一个 `loader` 回调。qiankun 在挂载之前立即以 `true` 调用它，在 mount 完成后以 `false` 调用它，因此它是给 spinner 或骨架屏挂钩的天然位置。你已经在 `register.ts` 里接好了它；宿主只需把这个信号转换成 UI。
+每个注册的应用都能带一个 `loader` 回调。qiankun 会在挂载前紧接着调它并传 `true`，挂载 resolve 后传 `false`，所以它天然就是接 spinner 或骨架屏的地方。你在 `register.ts` 里已经把它接好了，基座这边只要把这个信号变成 UI 就行。
 
 ```tsx [main/src/App.tsx (loading)]
 // onLoading was passed into registerAll and stored in state:
@@ -250,7 +250,7 @@ useEffect(() => {
 {loading && <p>loading micro-app…</p>}
 ```
 
-当有多个微应用时，用 `name` 作为 loading 状态的键，好让每个应用显示各自的指示器：
+微应用不止一个时，按 `name` 给加载状态分键，让每个应用显示各自的提示：
 
 ```tsx
 const [loadingApps, setLoadingApps] = useState<Record<string, boolean>>({});
@@ -260,13 +260,13 @@ registerAll(containerRef.current, (name, isLoading) => {
 });
 ```
 
-::: tip 查看 qiankun 往容器上写入了什么
-当一个应用挂载时，qiankun 会在它的容器上打上一些可供诊断读取的 data 属性：`data-name`（应用名）、`data-version`（qiankun 版本）以及 `data-sandbox-cfg`（序列化后的 sandbox 配置）。它们很适合用来在 shell 里搭建一个状态徽标。
+::: tip 看看 qiankun 往容器上写了什么
+应用挂载时，qiankun 会在它的容器上打一些 data 属性，拿来做诊断很方便：`data-name`(应用名)、`data-version`(qiankun 版本)、`data-sandbox-cfg`(序列化后的沙箱配置)。想在外壳里做个状态徽标，用它们正合适。
 :::
 
-## 启动宿主
+## 启动基座
 
-像往常一样渲染 `App`。入口文件里不需要任何 qiankun 特有的接线——注册发生在 `App` 的 effect 内部。
+照常渲染 `App`。入口文件里不用写任何 qiankun 相关的接线——注册发生在 `App` 的 effect 里。
 
 ```tsx [main/src/main.tsx]
 import { StrictMode } from 'react';
@@ -280,15 +280,15 @@ createRoot(document.getElementById('root')!).render(
 );
 ```
 
-由于 `registerAll` 用 `registered` 标志给自己加了防护，StrictMode 对 effect 有意为之的双次调用不会把应用注册两次，也不会把 `start()` 调用两次。`start()` 本身是幂等的，但把注册收拢在单一防护之后是更干净的模式。
+`registerAll` 用 `registered` 标志给自己上了闩，所以 StrictMode 故意把 effect 跑两遍，也不会把应用重复注册、或者把 `start()` 调两次。`start()` 本身是幂等的，不过把注册也拦在一道闸后面，是更干净的写法。
 
 ## 小结
 
-- 宿主是一个普通的 Vite 应用——没有 bundler 插件，其 script 上也没有 `entry` 属性。
-- `registerMicroApps([...])` 声明每个应用；`start()` 运行一次以激活它们。
-- 一个容器元素在注册时被捕获，并且必须永久存活——绝不加 key，绝不卸载。
-- `name` 必须与子应用暴露的全局变量 / 库名一致；`activeRule` 根据 URL 驱动 mount/unmount。
+- 基座就是个普通 Vite 应用——不用 bundler 插件，script 上也没有 `entry` 属性。
+- `registerMicroApps([...])` 声明每个应用；`start()` 跑一次把它们激活。
+- 容器元素在注册时被捕获，必须一直活着——别加 key，别卸载。
+- `name` 必须和子应用暴露的全局 / library 名字对上；`activeRule` 用 URL 驱动挂载和卸载。
 - 路由就是 `history.pushState` 加上对 `popstate` 和 `single-spa:routing-event` 的监听。
-- `loader(loading)` 给你提供 mount/unmount 信号，用于加载指示器。
+- `loader(loading)` 把挂载 / 卸载的信号给你，拿去做加载提示。
 
-接下来，[第 3 步 — 连接、运行并验证](/zh-CN/tutorial/run-and-verify) 会同时启动两个 dev server，并确认微应用能够挂载、卸载，并在 sandbox 内保持隔离。
+接下来，[第三步 —— 连起来、跑起来、验证](/zh-CN/tutorial/run-and-verify) 会把两个 dev server 都启动，确认微应用能挂载、能卸载，并且稳稳待在沙箱里保持隔离。

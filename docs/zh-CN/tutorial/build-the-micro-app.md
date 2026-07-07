@@ -1,12 +1,12 @@
-# 第 1 步 —— 构建微应用
+# 第一步 —— 搭一个微应用
 
-一个 qiankun 微应用就是一个普通的 Web 应用，只是它额外导出三个 lifecycle 函数 —— `bootstrap`、`mount` 和 `unmount` —— 并标记自己的入口脚本，以便 loader 能够找到它们。在这一步中，你会把一个全新的 Vite 应用改造成既能作为微应用、又能独立运行的应用，并在把它接入主应用之前先独立验证一遍（接入见[第 2 步](/zh-CN/tutorial/build-the-main-app)）。
+一个 qiankun 微应用，本质上就是个普通的前端应用，只是额外导出了 `bootstrap`、`mount`、`unmount` 三个生命周期函数，并在入口脚本上做个标记，好让加载器找到它们。这一步的目标，是把一个全新的 Vite 应用改造成微应用，同时保证它还能独立跑起来；改完先单独验证一遍，再去 [第二步](/zh-CN/tutorial/build-the-main-app) 把它接进主应用。
 
-这里我们使用 Vite + React。Vue 除了框架调用不同之外完全一致，差异会在行内标注。对于 Webpack 微应用，参见[让 Webpack 应用适配 qiankun](/zh-CN/cookbook/prepare-a-webpack-app)。
+下面用 Vite + React 演示。Vue 除了框架自身的几个调用不一样，其余完全一致，差异之处会就地标出来。如果你的微应用是 Webpack 构建的，看[让 Webpack 应用接入 qiankun](/zh-CN/cookbook/prepare-a-webpack-app)。
 
 ## 初始化一个 Vite 应用
 
-创建一个标准的 Vite 应用，并将 qiankun 的 bundler 插件安装为开发依赖。
+照常创建一个 Vite 应用，再把 qiankun 的 bundler 插件装成开发依赖。
 
 ::: code-group
 
@@ -26,13 +26,13 @@ npm install -D @qiankunjs/bundler-plugin
 
 :::
 
-::: tip 更推荐使用脚手架
-`npm create qiankun` 会生成一个开箱即用的 React 或 Vue 微应用，下文所有的配置都已经就位。参见 [create-qiankun](/zh-CN/ecosystem/create-qiankun)。
+::: tip 想省事就用脚手架
+`npm create qiankun` 直接生成一个开箱即用的 React 或 Vue 微应用，下面这些接线它都替你配好了。见 [create-qiankun](/zh-CN/ecosystem/create-qiankun)。
 :::
 
 ## 配置 Vite 插件
 
-在框架插件旁边加入 qiankun 的 Vite 插件。它位于 `/vite` 子路径下，调用时不需要传入任何参数。
+把 qiankun 的 Vite 插件加到框架插件旁边。它挂在 `/vite` 这个子路径下，调用时不传任何参数。
 
 ::: code-group
 
@@ -60,22 +60,22 @@ export default defineConfig({
 
 :::
 
-`qiankun()` 插件只做两件事，除此之外别无其他：
+`qiankun()` 插件只干两件事，别的一概不管：
 
-- **CORS。** 它会在开发 `server` 和 `preview` 服务器上都设置 `cors: true` 与 `Access-Control-Allow-Origin: *`，这样主应用就能跨域获取该应用的入口 HTML 及其模块依赖图。
-- **入口标记。** 在 `build` 时，它会给产物 `index.html` 中的入口 module 脚本添加 `entry` 属性（见下文）。而在开发态 serve 时它什么都不做 —— ESM 沙箱会通过 lifecycle 导出来识别入口，因此不需要标记。
+- **CORS。** 它给开发用的 `server` 和 `preview` 服务器都设上 `cors: true` 和 `Access-Control-Allow-Origin: *`，这样主应用才能跨域抓到这个应用的入口 HTML 和它的模块依赖图。
+- **入口标记。** 在 `build` 时，给产物 `index.html` 里的入口模块脚本加上 `entry` 属性(见下文)。开发模式下它什么都不做——ESM 沙箱靠生命周期导出来定位入口，不需要这个标记。
 
-`server.port` 固定了主应用 `entry` 指向的端口；`strictPort: true` 让 Vite 在端口被占用时直接快速失败，而不是悄悄换用另一个端口。
+`server.port` 固定了主应用 `entry` 要指向的端口；`strictPort: true` 让 Vite 在端口被占用时直接报错退出，而不是悄悄换一个端口。
 
-::: warning 为每个应用分配固定且唯一的端口
-主应用是通过微应用开发服务器的 URL（例如 `//localhost:7100`）来注册它的。如果端口发生漂移，主应用就会加载到错误的应用，甚至什么都加载不到。请务必用 `strictPort: true` 把端口钉死。
+::: warning 每个应用都固定一个唯一端口
+主应用是按开发服务器的 URL(比如 `//localhost:7100`)来注册微应用的。端口一旦漂移，主应用要么加载到别的应用，要么什么都加载不到。务必用 `strictPort: true` 把它钉死。
 :::
 
-Vite 插件不接受任何选项。对于 Webpack 的对应实现（`QiankunWebpackPlugin`，它唯一的选项是 `packageName`），参见 [@qiankunjs/bundler-plugin](/zh-CN/ecosystem/bundler-plugin)。
+Vite 插件不接受任何选项。Webpack 对应的是 `QiankunWebpackPlugin`(它只有一个选项 `packageName`)，见 [@qiankunjs/bundler-plugin](/zh-CN/ecosystem/bundler-plugin)。
 
-## 编写 lifecycle 入口
+## 写生命周期入口
 
-替换应用的入口模块，让它导出三个 lifecycle，同时保留独立运行的分支。关键手法是把渲染逻辑抽取成一个 `render(props)` 函数，qiankun 模式和独立模式都调用它。
+改写应用的入口模块，让它导出三个生命周期，同时保留一条独立运行的分支。关键的一招，是把渲染逻辑抽成一个 `render(props)` 函数，qiankun 和独立运行两种模式都调它。
 
 ::: code-group
 
@@ -170,13 +170,13 @@ if (window.__POWERED_BY_QIANKUN__) {
 
 :::
 
-### 各部分的作用
+### 每一块各自在干嘛
 
-- **`bootstrap`** 只在应用首次加载时运行一次。在这里做一次性的初始化，并保持轻量。
-- **`mount(props)`** 在每次激活时运行。它把应用渲染到 qiankun 提供的 DOM 节点中。qiankun 会把 `container`（一个 `HTMLElement`）连同 single-spa 的标准 props 一起注入到 `props` 中，因此 `mount` 接收到的是 `{ ...customProps, container }`。
-- **`unmount(props)`** 在每次停用时运行。它必须彻底销毁应用 —— React 用 `root.unmount()`，Vue 用 `app.unmount()` —— 并清空对它的引用，以便下一次 mount 从干净的状态开始。泄漏的 mount 会破坏重新挂载以及[多实例运行](/zh-CN/cookbook/run-multiple-instances)。
+- **`bootstrap`** 只在应用第一次加载时跑一次。一次性的初始化放这里，但别塞太重的活。
+- **`mount(props)`** 每次激活都会跑。它把应用渲染到 qiankun 给的那个 DOM 节点里。qiankun 会在 `props` 里注入 `container`(一个 `HTMLElement`)，和 single-spa 的标准 props 放在一起，所以 `mount` 收到的是 `{ ...customProps, container }`。
+- **`unmount(props)`** 每次停用都会跑。它必须把应用彻底拆干净——React 调 `root.unmount()`,Vue 调 `app.unmount()`——并把持有的引用清空，好让下一次挂载从零开始。挂载没卸干净，重新挂载和[多实例](/zh-CN/cookbook/run-multiple-instances)都会出问题。
 
-这三个函数都必须是 `async` 的（返回一个 `Promise`）。此外还支持一个可选的 `update` lifecycle，但这里用不到。
+这三个函数都必须是 `async` 的(返回 `Promise`)。另外还支持一个可选的 `update` 生命周期，这里用不上。
 
 ### 定位挂载节点
 
@@ -184,15 +184,15 @@ if (window.__POWERED_BY_QIANKUN__) {
 const container = props.container?.querySelector('#root') ?? document.getElementById('root');
 ```
 
-这一行代码在两种场景下都能工作。被主应用托管时，`props.container` 是 qiankun 把应用挂载进去的那个元素，应用则渲染到它内部的 `#root` 中。独立运行时，`props.container` 不存在，于是回退到页面自身的 `#root`。Vue 用的是 `#app`；请使用你 `index.html` 中声明的那个 id。
+这一行在两种世界里都成立。被主应用托管时，`props.container` 是 qiankun 挂载应用用的那个元素，应用就渲染到它内部的 `#root` 里。独立运行时，`props.container` 不存在，于是回退到页面自己的 `#root`。Vue 用的是 `#app`；你的 `index.html` 里声明的是什么 id 就用什么。
 
-::: danger props.container 由 qiankun 提供 —— 不要硬编码全局选择器
-在 qiankun 下，你应用的标记位于主应用页面内部，而非文档根节点；而且同一个应用的多个实例可能同时存在于页面上。请始终渲染到 `props.container` 中，只有在独立运行时才回退到全局的 `document.getElementById(...)`。在被托管时直接使用 `document.getElementById('root')`，可能会选中主应用的节点或错误的实例。
+::: danger props.container 是 qiankun 给的 —— 别写死全局选择器
+在 qiankun 里，你的应用标签是活在主应用页面内部的，不在文档根节点上，而且同一个应用可能有好几个实例同时在页面上。永远往 `props.container` 里渲染，只有独立运行这一种情况才回退到全局的 `document.getElementById(...)`。被托管时还直接去抓 `document.getElementById('root')`，可能选中主应用的节点，或者选错实例。
 :::
 
-### 独立运行 vs 被托管：双分支模式
+### 独立运行 vs 被托管：两分支写法
 
-入口文件的末尾决定了应用如何启动：
+入口末尾这段，决定了应用以哪种方式启动：
 
 ```ts
 if (window.__POWERED_BY_QIANKUN__) {
@@ -202,22 +202,22 @@ if (window.__POWERED_BY_QIANKUN__) {
 }
 ```
 
-`window.__POWERED_BY_QIANKUN__` 是 qiankun 在你的代码运行之前，设置在沙箱化 `window` 上的一个标志位。当它不存在时，说明应用在独立运行，于是我们立即渲染。当它存在时，说明 qiankun 掌控着一切，会自行调用 lifecycle —— 此时我们绝不能在这里调用 `render()`。
+`window.__POWERED_BY_QIANKUN__` 是 qiankun 在你的代码跑起来之前，写到沙箱 `window` 上的一个标记。它不存在，说明应用是自己在跑，那就立刻渲染。它存在，说明 qiankun 在掌控，会自己去调那几个生命周期——这时候我们绝不能在这里调 `render()`。
 
-既然我们已经 `export` 了 lifecycle，为什么还要做 `window['react'] = { ... }` 这个赋值？
+既然已经 `export` 了生命周期，为什么还要写 `window['react'] = { ... }` 这一句？
 
-- 在 **ESM 沙箱**（Vite 应用无论开发还是生产都走的默认路径）下，你原生 ESM `export` 出的 `bootstrap`/`mount`/`unmount` **就是** qiankun 拾取的 lifecycle。这是主要机制。
-- `window['<name>']` 赋值是一个 **classic 模式的回退方案**。如果这个应用哪天走的是 classic（非 module）路径加载，qiankun 会从全局变量上读取 lifecycle。该全局变量的键名必须与你在主应用中注册该应用时所用的 `name` 一致（这里是 `react`）。
+- 走 **ESM 沙箱**(Vite 应用的默认路径，开发和生产都是)时，你用原生 ESM `export` 出去的 `bootstrap`/`mount`/`unmount`,**就是** qiankun 拿到的生命周期。这是主路径。
+- `window['<name>']` 这一句是给**经典模式兜底**的。万一这个应用哪天走了经典(非 module)路径加载，qiankun 会从全局变量上读生命周期。这个全局变量的 key，必须和你在主应用里注册该应用时用的 `name` 对上(这里是 `react`)。
 
-这两种机制分别对应 qiankun 的两条执行路径 —— 完整介绍参见 [JS 沙箱](/zh-CN/concepts/js-sandbox)和 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)。同时保留两者能让应用在任意路径下都保持可移植性。
+这两套机制，对应 qiankun 的两条执行路径——完整的来龙去脉见 [JS 沙箱](/zh-CN/concepts/js-sandbox)和 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)。两条都留着，应用就能在任一路径下通用。
 
-::: info Vue esm-bundler 标志
-用 Vite 8 构建的 Vue 应用还应在 `vite.config.ts` 中定义 `__VUE_OPTIONS_API__` 等标志。这属于标准的 Vue esm-bundler 配置，而非 qiankun 的要求；参见 [Vite 配方](/zh-CN/cookbook/prepare-a-vite-app)。
+::: info Vue 的 esm-bundler 标志
+用 Vite 8 构建的 Vue 应用，还应该在 `vite.config.ts` 里定义 `__VUE_OPTIONS_API__` 之类的标志。这是 Vue esm-bundler 的标准配置，不是 qiankun 的要求；见 [Vite 接入指南](/zh-CN/cookbook/prepare-a-vite-app)。
 :::
 
-## 在 index.html 中标记入口
+## 在 index.html 里标记入口
 
-loader 通过 `entry` 属性来选出入口脚本。你的 `index.html` 需要恰好有一个 module 脚本，并标记 `entry`：
+加载器靠 `entry` 属性来挑入口脚本。你的 `index.html` 里必须有且只有一个 module 脚本带上 `entry` 标记：
 
 ```html [index.html]
 <!doctype html>
@@ -241,36 +241,36 @@ loader 通过 `entry` 属性来选出入口脚本。你的 `index.html` 需要�
 </html>
 ```
 
-- **`type="module"`** 选择 ESM 路径（ESM 沙箱）。classic 入口则不带它。
-- **`entry`** 是 loader 所依据的契约。在开发态 serve 时，Vite 会剥离掉这个未知属性，且插件不会重新加回来 —— 这没有问题，因为 ESM 引擎会通过 lifecycle 导出来识别入口。在 `build` 时，插件会把 `entry` 属性写回到产物 `index.html` 中。
-- 那段内联的 `<style>` **仅在独立运行时**设置页面背景。在 qiankun 内部，页面外壳由主应用掌控，因此请把应用级的 `body`/`html` 规则排除在组件样式之外。
+- **`type="module"`** 选的是 ESM 路径(ESM 沙箱)。经典入口不写这个。
+- **`entry`** 是加载器认准的那个契约。开发模式下，Vite 会把这个它不认识的属性删掉，插件也不会再补回去——没关系，ESM 引擎靠生命周期导出就能找到入口。到 `build` 时，插件会把 `entry` 属性写回产物 `index.html`。
+- 那段内联 `<style>` 设的页面背景**只在独立运行时生效**。在 qiankun 里，页面外壳归主应用管，所以别把 `body`/`html` 这类全局规则塞进你的组件样式里。
 
-::: warning 有且仅有一个入口脚本
-一个 HTML 入口最多只能包含一个带 `entry` 属性的脚本。出现第二个会让 loader 抛出 `QiankunError`。只有外部脚本（带 `src`）才能作为入口；页面上的其他脚本会正常加载。
+::: warning 入口脚本有且只有一个
+一个 HTML 入口里，最多只能有一个带 `entry` 属性的脚本。出现第二个，加载器会抛 `QiankunError`。只有带 `src` 的外部脚本能当入口；页面上其他脚本照常加载。
 :::
 
 ```mermaid
 flowchart TD
-  A[主应用获取入口 index.html] --> B[loader 流式处理该 HTML]
-  B --> C{脚本是否带 entry 属性?}
+  A[主应用抓取入口 index.html] --> B[加载器流式解析 HTML]
+  B --> C{脚本带 entry 属性?}
   C -->|type=module| D[ESM 沙箱运行该模块]
-  D --> E[从模块导出中读取<br/>bootstrap / mount / unmount]
-  C -->|classic| F[在 JS 沙箱中运行脚本]
-  F --> G["从 window[name] 读取 lifecycle"]
-  E --> H[qiankun 驱动 lifecycle]
+  D --> E[从模块导出里读取<br/>bootstrap / mount / unmount]
+  C -->|经典| F[在 JS 沙箱里运行脚本]
+  F --> G["从 window[name] 读取生命周期"]
+  E --> H[qiankun 驱动生命周期]
   G --> H
 ```
 
-在 Webpack 下，你无需手写入口脚本标签 —— `html-webpack-plugin` 会注入它，`QiankunWebpackPlugin` 会加上 `entry` 属性。参见 [bundler-plugin 参考](/zh-CN/ecosystem/bundler-plugin)。
+在 Webpack 下，入口的 script 标签不用你手写——`html-webpack-plugin` 会注入它，`QiankunWebpackPlugin` 会加上 `entry` 属性。见 [bundler-plugin 参考](/zh-CN/ecosystem/bundler-plugin)。
 
-## 独立运行验证
+## 先让它独立跑起来
 
-在引入主应用之前，先确认该应用完全独立时仍能正常工作。
+在扯上主应用之前，先确认这个应用完全靠自己也能正常工作。
 
 ```bash
 npm run dev
 ```
 
-在其端口上打开应用（React 示例为 `http://localhost:7100`）。由于此时 `window.__POWERED_BY_QIANKUN__` 是 undefined，`else` 分支会调用 `render()`，你应当看到它就是一个普通的 Vite 应用 —— 路由、热更新等等一应俱全。如果它在独立模式下无法渲染，请先修复这个问题；被托管路径正是构建在同一个 `render(props)` 之上的。
+在它的端口上打开应用(React 示例是 `http://localhost:7100`)。这里 `window.__POWERED_BY_QIANKUN__` 是 undefined，所以走 `else` 分支调 `render()`，你应该看到它跟一个普通 Vite 应用一模一样——路由、热更新，全都在。如果独立模式下渲染不出来，先把这个修好；被托管那条路径，底下用的是同一个 `render(props)`。
 
-当微应用能够构建、能够独立渲染、并且导出了它的 lifecycle 之后，继续前往[第 2 步 —— 构建主应用](/zh-CN/tutorial/build-the-main-app)，去注册并托管它。
+微应用能构建、能独立渲染、也导出了生命周期，就可以接着去 [第二步 —— 搭主应用](/zh-CN/tutorial/build-the-main-app)，把它注册并托管起来。

@@ -41,7 +41,7 @@ flowchart TD
   I --> J["mount({ container, ...props })<br/>micro-app renders into the container"]
 ```
 
-Two things worth noting up front, because they shape every step below:
+Two points up front, because everything below follows from them:
 
 - The host passes qiankun a **string entry** (an HTML URL) and an **HTMLElement container**. qiankun does the fetching and streaming; you never hand it a pre-fetched template or a component.
 - The micro-app's HTML must contain exactly **one entry script** — the script whose exports are the lifecycles. The bundler plugin marks it for you. Including a second entry script makes the loader throw.

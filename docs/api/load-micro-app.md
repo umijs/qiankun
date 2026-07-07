@@ -136,7 +136,7 @@ type Parcel = {
 The promises reject if loading or mounting fails. Attach a `.catch` (or wrap in `try/await`) so failures do not surface as unhandled rejections.
 :::
 
-## Behavior
+## Behavior {#behavior}
 
 A few v3-specific behaviors are worth knowing.
 

@@ -1,8 +1,8 @@
-# &lt;MicroApp&gt; for React (@qiankunjs/react)
+# The `<MicroApp>` component for React (@qiankunjs/react)
 
-`@qiankunjs/react` provides a `MicroApp` component that mounts a qiankun micro-app inside your React tree. It wraps [`loadMicroApp`](/api/load-micro-app), managing mount, update, and unmount as the component lives and re-renders, so you never call the imperative API by hand.
+`@qiankunjs/react` gives you a `MicroApp` component that mounts a qiankun micro-app into your React component tree. It wraps [`loadMicroApp`](/api/load-micro-app) and ties the whole lifecycle — mount, update, unmount — to the component's own lifecycle and re-renders, so you never have to reach for that imperative API yourself.
 
-Use this when the main app is a React SPA and you want to embed a micro-app as an ordinary component (for example on a route or in a panel), rather than registering it globally with [`registerMicroApps`](/api/register-micro-apps).
+Use it when the host is a React SPA and you want to drop a micro-app in as an ordinary component (on a route, inside a panel) rather than registering it globally with [`registerMicroApps`](/api/register-micro-apps).
 
 ## Installation
 
@@ -10,11 +10,11 @@ Use this when the main app is a React SPA and you want to embed a micro-app as a
 pnpm add @qiankunjs/react qiankun
 ```
 
-Peer dependencies: `react` and `react-dom` `>=16.9.0`.
+The peer dependencies are `react` and `react-dom`, both required at `>=16.9.0`.
 
 ## Basic usage
 
-`name` and `entry` are the only required props. `entry` is the URL of the micro-app's HTML entry.
+The only required props are `name` and `entry`, where `entry` is the URL of the micro-app's HTML entry.
 
 ```tsx
 import { MicroApp } from '@qiankunjs/react';
@@ -24,10 +24,10 @@ export default function Page() {
 }
 ```
 
-The component renders a container `<div>` and mounts the micro-app into it. When the component unmounts, the micro-app is unmounted automatically.
+The component renders a container `<div>` and mounts the micro-app into it; when the component unmounts, the micro-app unmounts with it.
 
 ::: warning name and entry are required
-If either `name` or `entry` is missing, the component logs `the name and entry of MicroApp is needed` and does nothing — it does not throw. Make sure both are always provided.
+If either `name` or `entry` is missing, the component just logs `the name and entry of MicroApp is needed` and does nothing — it does not throw. Make sure you always pass both.
 :::
 
 ## Props
@@ -39,18 +39,18 @@ import { type MicroApp } from 'qiankun';
 type Props = SharedProps & SharedSlots<React.ReactNode> & Record<string, unknown>;
 ```
 
-The `Record<string, unknown>` part is deliberate: **any prop you pass that is not one of the reserved props below is forwarded to the micro-app as its props**. There is no separate `appProps` — extra props _are_ the app props.
+That trailing `Record<string, unknown>` is deliberate: **any prop that isn't one of the reserved props listed below is forwarded to the micro-app as-is, becoming its props**. There's no separate `appProps` here — the extra props _are_ the micro-app's props.
 
 ### Reserved props
 
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
-| `name` * | `string` | — | Unique micro-app name. Changing it remounts a fresh micro-app. |
-| `entry` * | `string` | — | HTML entry URL of the micro-app. |
-| `settings` | [`AppConfiguration`](/api/configuration) | — | Loader/sandbox configuration passed through to `loadMicroApp`. |
-| `lifeCycles` | [`LifeCycles`](/api/lifecycles) | — | Global lifecycle hooks (`beforeLoad`, `beforeMount`, …) for this micro-app. |
-| `autoSetLoading` | `boolean` | `false` | Render the built-in loader and auto-clear it once the app is mounted. |
-| `autoCaptureError` | `boolean` | `false` | Render the built-in error boundary instead of re-throwing load errors. |
+| `name` * | `string` | — | The unique name of the micro-app. Changing it remounts a brand-new micro-app. |
+| `entry` * | `string` | — | The micro-app's HTML entry URL. |
+| `settings` | [`AppConfiguration`](/api/configuration) | — | Loader / sandbox configuration passed through to `loadMicroApp`. |
+| `lifeCycles` | [`LifeCycles`](/api/lifecycles) | — | Global lifecycle hooks (`beforeLoad`, `beforeMount`, etc.) for this micro-app. |
+| `autoSetLoading` | `boolean` | `false` | Render the built-in loader and clear it automatically once the app is mounted. |
+| `autoCaptureError` | `boolean` | `false` | Render the built-in error boundary instead of throwing loading errors outward. |
 | `wrapperClassName` | `string` | — | Class prepended to the wrapper element. Only takes effect when a loader or error boundary is active. |
 | `className` | `string` | — | Class prepended to the mount container element. |
 | `loader` | `(loading: boolean) => ReactNode` | — | Render-prop slot for a custom loading UI. |
@@ -58,13 +58,13 @@ The `Record<string, unknown>` part is deliberate: **any prop you pass that is no
 
 `*` = required.
 
-Every other prop is deep-compared across renders and forwarded to the micro-app. See [passing props](#passing-props-to-the-micro-app).
+Every other prop is deep-compared on each render and then forwarded to the micro-app. See [Passing props to the micro-app](#passing-props-to-the-micro-app).
 
-::: info Reserved names cannot be forwarded
-Because `name`, `entry`, `settings`, `lifeCycles`, `wrapperClassName`, and `className` are consumed by the component, they are stripped before props reach the micro-app. Do not rely on receiving them inside the sub-app.
+::: info Reserved fields are not forwarded
+`name`, `entry`, `settings`, `lifeCycles`, `wrapperClassName`, and `className` are consumed by the component itself and stripped off before the props reach the micro-app. Don't expect to receive them inside the sub-app.
 :::
 
-## Passing props to the micro-app
+## Passing props to the micro-app {#passing-props-to-the-micro-app}
 
 Any non-reserved prop is forwarded to the micro-app and delivered to its `bootstrap`/`mount`/`update` lifecycles.
 
@@ -79,7 +79,7 @@ Any non-reserved prop is forwarded to the micro-app and delivered to its `bootst
 />
 ```
 
-Inside the micro-app the values arrive on the lifecycle `props`:
+Inside the micro-app, these values show up on the `props` of each lifecycle:
 
 ```ts
 export async function mount(props) {
@@ -87,15 +87,15 @@ export async function mount(props) {
 }
 ```
 
-When these props change, the component deep-compares them (lodash `isEqual`) and calls `microApp.update(props)` on the running app — the micro-app is not remounted. An update only runs while the app's status is `MOUNTED`.
+When these props change, the component deep-compares them with lodash's `isEqual` and calls `microApp.update(props)` on the running app — the micro-app is not remounted. And the update only actually runs when the app's status is `MOUNTED`.
 
 ::: tip Remount vs update
-Changing `name` remounts a brand-new micro-app. Changing any forwarded prop triggers an in-place `update`. If you want a hard reset, change (or `key`) the `name`.
+Changing `name` mounts a brand-new micro-app; changing any forwarded prop triggers a single in-place `update`. To reset completely, change `name` (or give it a `key`).
 :::
 
 ## Loading state
 
-The internal loading flag starts as `true`. It is only auto-cleared — via `setLoading(false)` on the app's `mountPromise` — when `autoSetLoading` is enabled. Without a loader configured, nothing renders for the loading state anyway, so this flag has no visible effect.
+The internal loading flag starts out `true`. It's only cleared automatically — via `setLoading(false)`, driven by the app's `mountPromise` — when `autoSetLoading` is enabled. Without a loader configured there's nothing to render for the loading state anyway, so the flag has no visible effect.
 
 ### Built-in loader
 
@@ -103,7 +103,7 @@ The internal loading flag starts as `true`. It is only auto-cleared — via `set
 <MicroApp name="app1" entry="http://localhost:8000" autoSetLoading />
 ```
 
-The built-in loader is a placeholder that renders the literal text `loading...`. For real UI, provide a custom `loader`.
+The built-in loader is just a placeholder that renders the literal text `loading...`. For a real UI, pass your own `loader`.
 
 ### Custom loader
 
@@ -115,14 +115,14 @@ The built-in loader is a placeholder that renders the literal text `loading...`.
 />
 ```
 
-When a `loader` prop is supplied you do not need `autoSetLoading` — the presence of the slot activates the loading UI. `wrapperClassName` only applies when a loader or error boundary is active, because only then does the component render a positioned wrapper element.
+If you pass a `loader` you don't also need `autoSetLoading` — the loading UI is activated as soon as the slot is present. `wrapperClassName` only takes effect when a loader or error boundary is active, because that's the only time the component renders the positioned wrapper element.
 
 ## Error handling
 
-By default, load, bootstrap, and mount errors are **re-thrown** — they are not swallowed. You must catch them with an outer React error boundary, or opt in to the built-in/custom error UI.
+By default, errors from loading, bootstrap, and mount are **thrown outward** — the component doesn't swallow them for you. You have to catch them with an outer React error boundary, or opt into the built-in / custom error UI.
 
-::: danger Uncaptured errors propagate
-Without `autoCaptureError` or a custom `errorBoundary`, a failed load throws during render and will crash the subtree unless an ancestor React error boundary catches it.
+::: danger Uncaught errors propagate upward
+With neither `autoCaptureError` nor `errorBoundary` set, a failed load throws during render and takes down the whole subtree — unless a React error boundary higher up catches it.
 :::
 
 ### Built-in error boundary
@@ -131,7 +131,7 @@ Without `autoCaptureError` or a custom `errorBoundary`, a failed load throws dur
 <MicroApp name="app1" entry="http://localhost:8000" autoCaptureError />
 ```
 
-The built-in boundary renders a bare `<div>` containing `error.message`. Provide a custom `errorBoundary` for production UI.
+The built-in boundary renders a bare `<div>` containing `error.message`. For production UI, pass your own `errorBoundary`.
 
 ### Custom error boundary
 
@@ -143,7 +143,7 @@ The built-in boundary renders a bare `<div>` containing `error.message`. Provide
 />
 ```
 
-### Auto loading and error together
+### Loading and error together
 
 ```tsx
 <MicroApp
@@ -154,11 +154,11 @@ The built-in boundary renders a bare `<div>` containing `error.message`. Provide
 />
 ```
 
-For a broader treatment of error strategy, see [Handle load and runtime errors](/cookbook/handle-errors) and [addErrorHandler / removeErrorHandler](/api/error-handling).
+For a more systematic treatment of error handling, see [Handling loading and runtime errors](/cookbook/handle-errors) and [addErrorHandler / removeErrorHandler](/api/error-handling).
 
-## Accessing the running app via ref
+## Getting the running app through a ref
 
-The component is a `forwardRef`. The forwarded ref resolves to the running micro-app handle — a single-spa Parcel (`MicroApp` type from `qiankun`) — so you can read its status and await its lifecycle promises.
+The component is a `forwardRef`. The forwarded ref points at the running micro-app handle — a single-spa Parcel (the `MicroApp` type from `qiankun`) — so you can read its status and await its lifecycle promises.
 
 ```tsx
 import { useRef, useEffect } from 'react';
@@ -183,24 +183,24 @@ The handle is single-spa's Parcel interface:
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `getStatus()` | `() => Status` | Current lifecycle status (see below). |
+| `getStatus()` | `() => Status` | The current lifecycle status (see below). |
 | `mount()` | `() => Promise<null>` | Mount the app. |
 | `unmount()` | `() => Promise<null>` | Unmount the app. |
 | `update?(props)` | `(props) => Promise<unknown>` | Push new props (present only if the app exports an `update` lifecycle). |
-| `loadPromise` | `Promise<null>` | Resolves when source code has loaded. |
-| `bootstrapPromise` | `Promise<null>` | Resolves when the app has bootstrapped. |
-| `mountPromise` | `Promise<null>` | Resolves when the app has mounted. |
-| `unmountPromise` | `Promise<null>` | Resolves when the app has unmounted. |
+| `loadPromise` | `Promise<null>` | Resolves when the source code has finished loading. |
+| `bootstrapPromise` | `Promise<null>` | Resolves when the app has finished bootstrapping. |
+| `mountPromise` | `Promise<null>` | Resolves when the app has finished mounting. |
+| `unmountPromise` | `Promise<null>` | Resolves when the app has finished unmounting. |
 
 `getStatus()` returns one of: `NOT_LOADED`, `LOADING_SOURCE_CODE`, `NOT_BOOTSTRAPPED`, `BOOTSTRAPPING`, `NOT_MOUNTED`, `MOUNTING`, `MOUNTED`, `UPDATING`, `UNMOUNTING`, `UNLOADING`, `SKIP_BECAUSE_BROKEN`, `LOAD_ERROR`.
 
-::: warning Let the component own the lifecycle
-The ref lets you read status and await promises. Avoid calling `mount()`/`unmount()` on it manually — the component manages mount/update/unmount for you and guards against concurrent unmount and remount. Manual calls can desync that state.
+::: warning Let the component manage the lifecycle
+The ref is for reading status and awaiting promises. Don't call its `mount()`/`unmount()` yourself — the component owns mount / update / unmount, and it also guards against concurrent unmount and remount. Calling those by hand tends to corrupt that state.
 :::
 
 ## Passing configuration
 
-Loader and sandbox options go through `settings`, which is an [`AppConfiguration`](/api/configuration).
+Loader- and sandbox-related options all go through `settings`, an [`AppConfiguration`](/api/configuration).
 
 ```tsx
 <MicroApp
@@ -210,11 +210,11 @@ Loader and sandbox options go through `settings`, which is an [`AppConfiguration
 />
 ```
 
-The component always forces `globalContext: window` and merges your `settings` on top before calling `loadMicroApp`. See [Style isolation](/concepts/style-isolation) for what `styleIsolation` enables, and [The JS sandbox](/concepts/js-sandbox) for `sandbox`.
+Before calling `loadMicroApp`, the component always forces `globalContext: window`, then merges your `settings` on top. For what `styleIsolation` actually enables, see [Style isolation](/concepts/style-isolation); for `sandbox`, see [The JS sandbox](/concepts/js-sandbox).
 
 ## Lifecycle hooks
 
-Pass framework-level hooks via `lifeCycles`. They are merged (appended, not replaced) with any global hooks and run around this micro-app's load/mount/unmount.
+Framework-level hooks are passed via `lifeCycles`. They're merged with the global hooks (appended, not replaced) and run around this micro-app's load / mount / unmount.
 
 ```tsx
 <MicroApp
@@ -227,11 +227,11 @@ Pass framework-level hooks via `lifeCycles`. They are merged (appended, not repl
 />
 ```
 
-See [Lifecycle hooks](/api/lifecycles) for the full hook set and signatures.
+For the full list of hooks and their signatures, see [Lifecycle hooks](/api/lifecycles).
 
 ## Styling hooks
 
-The component always applies two class names you can target from CSS:
+The component always attaches two classes you can target in CSS:
 
 | Element | Class |
 | --- | --- |
@@ -248,34 +248,34 @@ The component always applies two class names you can target from CSS:
 }
 ```
 
-`wrapperClassName` and `className` are _prepended_ to these classes, so you get both your class and the qiankun hook.
+`wrapperClassName` and `className` are **prepended** to these two classes, so both your own class and qiankun's hook class end up on the element.
 
-## How it behaves under the hood
+## How it works under the hood
 
 ```mermaid
 flowchart TD
-  A[MicroApp renders] --> B{name / entry present?}
-  B -- no --> B0[console.error, no-op]
+  A[MicroApp renders] --> B{name / entry both present?}
+  B -- no --> B0[console.error, do nothing]
   B -- yes --> C["loading = true, mountMicroApp()"]
   C --> D["loadMicroApp(app, settings, lifeCycles)"]
   D --> E{mountPromise}
-  E -- resolved --> F["if autoSetLoading: loading = false"]
-  E -- rejected --> G{loader/errorBoundary configured?}
+  E -- success --> F["if autoSetLoading: loading = false"]
+  E -- failure --> G{loader / errorBoundary set?}
   G -- yes --> H["setError(err)"]
-  G -- no --> I["throw err (outer boundary catches)"]
+  G -- no --> I["throw err (caught by outer boundary)"]
   J[name changes] --> K[unmount old, mount new]
   L[forwarded props change] --> M["deep compare, microApp.update(props)"]
   N[component unmounts] --> O[unmount micro-app]
 ```
 
-- Mounting is keyed on `name`; changing it remounts a fresh app.
-- Prop updates are keyed on a deep comparison of the forwarded props and routed through `microApp.update`.
-- Unmount waits for the app's `mountPromise` before unmounting and guards concurrent teardown, so remounts and multiple instances stay consistent.
+- Mounting is keyed on `name`; changing it remounts a brand-new app.
+- Prop updates are driven by a deep comparison of the forwarded props and go through `microApp.update`.
+- Before unmounting, the component waits for the app's `mountPromise` and guards against concurrent teardown, so remounting and multiple instances stay consistent.
 
 ## Related
 
 - [loadMicroApp](/api/load-micro-app) — the facade API this component wraps.
 - [AppConfiguration](/api/configuration) — the shape of `settings`.
 - [Lifecycle hooks](/api/lifecycles) — the shape of `lifeCycles`.
-- [&lt;MicroApp&gt; for Vue](/ecosystem/vue) — the Vue equivalent (note: Vue passes app props via a dedicated `appProps` object).
-- [Run multiple micro-app instances](/cookbook/run-multiple-instances)
+- [The `<MicroApp>` component for Vue](/ecosystem/vue) — the Vue version (note: Vue passes app props through a dedicated `appProps` object).
+- [Running multiple micro-app instances at once](/cookbook/run-multiple-instances)

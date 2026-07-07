@@ -1,33 +1,33 @@
 # 应用间共享状态与通信
 
-qiankun v3 没有内置的全局状态存储。你需要自己搭建通信机制：把数据和回调作为 props 往下传，并借助每个应用本就共享的浏览器原语。本页介绍在 JS 沙箱下依然可靠的几种模式。
+qiankun v3 没有内置的全局状态库。应用之间怎么通信，得你自己接线：把数据和回调当作 props 一层层传下去，再借助每个应用本来就共享的那些浏览器原语。这一页讲的，是几种在 JS 沙箱下真正立得住的做法。
 
 ::: danger v3 移除了 2.x 的全局状态 API
-`initGlobalState`、`onGlobalStateChange`、`setGlobalState` 和 `MicroAppStateActions` 在 qiankun v3 中并不存在，任何 package 都不会导出它们。如果你正从 2.x 迁移，请用下面基于 props 的模式替代它们。参见[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
+`initGlobalState`、`onGlobalStateChange`、`setGlobalState`、`MicroAppStateActions` 在 qiankun v3 里都不存在了，任何包都不再导出它们。如果你从 2.x 迁移过来，把它们换成下面这些基于 props 的写法。参见[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
 :::
 
-## 为什么没有共享全局
+## 为什么没有共享的全局对象
 
-[JS 沙箱](/zh-CN/concepts/js-sandbox)给每个微应用各自独立的 `window`。子应用做的任何写入——`window.store = ...`、一个顶层 `var`、给全局赋值——都落在该应用自己的 membrane 目标上，而非真实的 `window`，因此对主应用和其他所有应用都是不可见的。这种隔离正是沙箱的意义所在，也正是为什么一个魔法般的全局 store 在 v3 中行不通。
+[JS 沙箱](/zh-CN/concepts/js-sandbox)给每个微应用发了一份自己的 `window`。子应用写下的东西——`window.store = ...`、一个顶层 `var`、给全局变量赋值——都落在这个应用自己的隔离膜目标上，而不是真正的 `window`，所以主应用看不到，别的应用也看不到。这种隔离正是沙箱存在的意义，也正因为如此，v3 里那种"魔法般的全局 store"根本没法工作。
 
-由此得出的通信结论很简单：**任何共享值都必须存在于主应用中，并显式地交给每个微应用。**主应用拥有该对象；微应用通过 props 拿到指向它的引用。
+落到通信上，结论很直白：**任何要共享的值，都得住在主应用里，再显式地交到每个微应用手上。**对象归主应用所有，微应用通过 props 拿到指向它的引用。
 
 ```mermaid
 flowchart TD
-  Host["主应用（拥有共享对象）"]
-  Host -- "props: { store, onEvent, ... }" --> A["微应用 A（沙箱化的 window）"]
-  Host -- "props: { store, onEvent, ... }" --> B["微应用 B（沙箱化的 window）"]
-  A -- "调用主应用回调" --> Host
-  B -- "调用主应用回调" --> Host
+  Host["主应用(持有共享对象)"]
+  Host -- "props: { store, onEvent, ... }" --> A["微应用 A(沙箱化的 window)"]
+  Host -- "props: { store, onEvent, ... }" --> B["微应用 B(沙箱化的 window)"]
+  A -- "调用主应用的回调" --> Host
+  B -- "调用主应用的回调" --> Host
 ```
 
-## 通过 props 把数据往下传
+## 用 props 把数据传下去
 
-每一种加载微应用的方式都接受一个 `props` 对象，qiankun 会把它转发给子应用的 `bootstrap`、`mount`、`unmount` 和 `update` lifecycle 函数（连同 single-spa 注入的 props 以及 qiankun 注入的 `container`）。
+加载微应用的每一种方式都接收一个 `props` 对象，qiankun 会把它转发给子应用的 `bootstrap`、`mount`、`unmount`、`update` 生命周期函数(和 single-spa 注入的 props、qiankun 注入的 `container` 一起)。
 
 ::: code-group
 
-```ts [registerMicroApps (route-driven)]
+```ts [registerMicroApps(路由驱动)]
 import { registerMicroApps, start } from 'qiankun';
 
 registerMicroApps([
@@ -46,7 +46,7 @@ registerMicroApps([
 start();
 ```
 
-```ts [loadMicroApp (imperative)]
+```ts [loadMicroApp(手动加载)]
 import { loadMicroApp } from 'qiankun';
 
 const microApp = loadMicroApp({
@@ -60,11 +60,11 @@ const microApp = loadMicroApp({
 });
 ```
 
-```tsx [MicroApp (React)]
+```tsx [MicroApp(React)]
 import { MicroApp } from '@qiankunjs/react';
 
-// Any prop that is not a reserved key (name, entry, settings,
-// lifeCycles, wrapperClassName, className) is forwarded to the sub-app.
+// 除了保留字段(name、entry、settings、lifeCycles、
+// wrapperClassName、className),其余 prop 都会转发给子应用。
 <MicroApp
   name="react-app"
   entry="//localhost:7100"
@@ -73,13 +73,13 @@ import { MicroApp } from '@qiankunjs/react';
 />;
 ```
 
-```vue [MicroApp (Vue)]
+```vue [MicroApp(Vue)]
 <script setup>
 import { MicroApp } from '@qiankunjs/vue';
 </script>
 
 <template>
-  <!-- Vue forwards props only through the dedicated appProps object -->
+  <!-- Vue 只通过专门的 appProps 对象转发 props -->
   <micro-app
     name="react-app"
     entry="//localhost:7100"
@@ -90,24 +90,24 @@ import { MicroApp } from '@qiankunjs/vue';
 
 :::
 
-在微应用一侧，从 lifecycle 参数中读取这些 props：
+在微应用这边，从生命周期参数里把 props 读出来：
 
-```ts [micro-app entry]
+```ts [微应用入口]
 export async function mount(props) {
-  // props includes your custom props plus qiankun's container and
-  // single-spa's injected props (name, singleSpa, mountParcel, ...)
+  // props 里既有你自定义的 props,也有 qiankun 注入的 container
+  // 和 single-spa 注入的 props(name、singleSpa、mountParcel……)
   const { user, token, container } = props;
   render(container, { user, token });
 }
 ```
 
-::: tip React 与 Vue 的 prop 传递差异
-使用 React 的 `<MicroApp>` 时，你传的任何额外 prop 都会转发给子应用。使用 Vue 的 `<MicroApp>` 时不存在任意 prop 透传——你必须用专门的 `appProps` 对象 prop。参见 [React 绑定](/zh-CN/ecosystem/react)和 [Vue 绑定](/zh-CN/ecosystem/vue)。
+::: tip React 和 Vue 传 prop 的差别
+用 React 的 `<MicroApp>` 时，你多传的任何 prop 都会转发给子应用。用 Vue 的 `<MicroApp>` 时没有这种任意 prop 透传——必须走专门的 `appProps` 对象 prop。参见 [React 绑定](/zh-CN/ecosystem/react)和 [Vue 绑定](/zh-CN/ecosystem/vue)。
 :::
 
 ## 用 microApp.update 推送更新
 
-props 是 mount 时拍下的一张快照。要在 mount 之后推送新数据，请在 `loadMicroApp` 返回的 parcel 句柄上调用 `update`。qiankun 会把新的 props 转发给子应用可选的 `update` lifecycle。
+props 是挂载那一刻拍下的快照。挂载之后想再推新数据，就调用 `loadMicroApp` 返回的 parcel 句柄上的 `update`,qiankun 会把新的 props 转发给子应用可选的 `update` 生命周期。
 
 ```ts
 import { loadMicroApp } from 'qiankun';
@@ -119,39 +119,39 @@ const microApp = loadMicroApp({
   props: { count: 0 },
 });
 
-// later, when host state changes:
+// 之后,当主应用状态变化时:
 await microApp.mountPromise;
 await microApp.update?.({ count: 1 });
 ```
 
-子应用通过导出一个 `update` lifecycle 来选择性地接入：
+子应用这边通过导出一个 `update` 生命周期来接住它：
 
-```ts [micro-app entry]
+```ts [微应用入口]
 export async function update(props) {
-  // re-render with the new props
+  // 用新的 props 重新渲染
   rerender(props);
 }
 ```
 
-在微应用的导出契约里 `update` 是可选的——只有 `bootstrap`、`mount` 和 `unmount` 是必需的。如果子应用没有导出 `update`，在句柄上调用它就是一个空操作（只有当应用提供了该方法时它才存在）。
+微应用的导出契约里 `update` 是可选的——只有 `bootstrap`、`mount`、`unmount` 是必需的。如果子应用没导出 `update`，在句柄上调用它就是个空操作(这个方法只有在应用提供了它时才会出现)。
 
-使用 `<MicroApp>` 组件时你永远不需要自己调用 `update`。改变一个被转发的 prop 会自动触发 `microApp.update`：React 会对额外的 props 做深比较，Vue 会深度 watch `appProps`。
+用 `<MicroApp>` 组件时，你永远不用自己调 `update`。改动一个转发下去的 prop 就会自动触发 `microApp.update`:React 会对多传的那些 props 做深比较，Vue 会深度 watch `appProps`。
 
 ::: warning 路由注册的应用没有 update 句柄
-`registerMicroApps` 不返回每个应用的句柄，因此对 route-driven 的应用没有便捷的 `update`。对于 props 在运行时频繁变化的应用，优先使用 `loadMicroApp`（或 `<MicroApp>` 组件），或者传入一个由主应用改写内容的活对象／回调（见下一节），这样子应用无需再次 `update` 就能读到最新的值。
+`registerMicroApps` 不返回每个应用的句柄，所以路由驱动的应用没有顺手的 `update` 可用。如果某个应用的 props 在运行时变得很频繁，优先用 `loadMicroApp`(或 `<MicroApp>` 组件)；或者传一个"活的"对象 / 回调下去，由主应用去改它的内容，这样子应用不必重新 `update` 也能读到最新的值(见下一节)。
 :::
 
-## 把方法和 store 作为 props 往下传
+## 把方法和 store 当 props 传下去
 
-由于 props 可以持有函数和对象引用，最干净的通信方式是**在主应用中**构建你的共享 store 或 event bus，并把它交给每一个微应用。主应用拥有它；微应用从中读取并回调它。这能在沙箱下成立，因为该引用是被显式传入的，而不是从某个全局上去取的。
+props 里可以放函数，也可以放对象引用。所以最干净的通信方式，是**在主应用里**把共享的 store 或事件总线建好，再交给每个微应用。主应用持有它，微应用从里面读、往里面回调。这一套之所以能扛住沙箱，是因为这个引用是显式传进去的，而不是从某个全局变量上去够的。
 
-### 回调：子应用向主应用回话
+### 回调：子应用向主应用喊话
 
 ```ts [host]
 import { registerMicroApps, start } from 'qiankun';
 
 function onSubAppEvent(payload: { type: string; data: unknown }) {
-  // host reacts to something the sub-app did
+  // 主应用对子应用做的某件事作出反应
   console.log('sub-app said', payload);
 }
 
@@ -175,9 +175,9 @@ export async function mount(props) {
 }
 ```
 
-### 由主应用持有的共享可观察 store
+### 由主应用持有的可订阅 store
 
-在主应用里定义一个极小的 store，把它的句柄往下传，让每个应用去订阅。任何状态库都可以——下面是一个零依赖的示意：
+在主应用里定义一个小小的 store，把它的句柄传下去，让每个应用各自订阅。任何状态库都行——下面是个不依赖任何库的示意：
 
 ```ts [host/store.ts]
 type Listener<T> = (state: T) => void;
@@ -193,7 +193,7 @@ export function createStore<T extends object>(initial: T) {
     },
     subscribe(listener: Listener<T>) {
       listeners.add(listener);
-      return () => listeners.delete(listener); // return an unsubscribe
+      return () => listeners.delete(listener); // 返回一个取消订阅的函数
     },
   };
 }
@@ -203,7 +203,7 @@ export function createStore<T extends object>(initial: T) {
 import { registerMicroApps, start } from 'qiankun';
 import { createStore } from './store';
 
-// the store lives in the host — the single source of truth
+// store 住在主应用里 —— 唯一的数据来源
 const store = createStore({ theme: 'light', user: null });
 
 registerMicroApps([
@@ -212,7 +212,7 @@ registerMicroApps([
     entry: '//localhost:7100',
     container: document.getElementById('subapp')!,
     activeRule: '/react',
-    props: { store }, // hand the same reference to every app
+    props: { store }, // 把同一个引用交给每个应用
   },
 ]);
 
@@ -226,30 +226,30 @@ export async function mount(props) {
   const { store } = props;
   render(props.container, store.get());
 
-  // react to host-driven changes
+  // 响应主应用驱动的变化
   unsubscribe = store.subscribe((state) => rerender(state));
 
-  // push a change back up — every subscriber (host + other apps) sees it
+  // 把一个变化推回去 —— 每个订阅者(主应用 + 其他应用)都会看到
   store.set({ theme: 'dark' });
 }
 
 export async function unmount() {
-  unsubscribe?.(); // always clean up your subscription
+  unsubscribe?.(); // 一定要清掉你的订阅
   unsubscribe = undefined;
 }
 ```
 
-每个拿到同一个 `store` 引用的应用现在都共享同一个单一数据源，并由主应用居中协调。event bus（例如一个小型 emitter，或你已经在用的某个库）也是同样的做法：在主应用中构造它，把实例作为 prop 往下传。
+拿到同一个 `store` 引用的每个应用，现在共享同一份数据来源，由主应用居中协调。事件总线(比如一个小的 emitter，或者你手头已经在用的某个库)也是同样的路子：在主应用里把它构造出来，把实例当 prop 传下去。
 
-::: warning unmount 时务必取消订阅
-沙箱会回收微应用制造的定时器、监听器和 DOM 副作用，但它并不知道你在一个主应用拥有的对象上注册过的订阅。如果你在 `mount` 中订阅了一个主应用的 store，请在 `unmount` 中调用返回的取消订阅函数，否则主应用会一直持有对你（已卸载的）应用的引用，并在多次重新挂载间泄漏它。参见[运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)。
+::: warning 卸载时一定要取消订阅
+沙箱会把微应用装的定时器、监听器、DOM 副作用都还原掉，但它不知道你在某个主应用持有的对象上注册过订阅。如果你在 `mount` 里订阅了主应用的 store，就要在 `unmount` 里调用返回的那个取消订阅函数，否则主应用会一直攥着你这个(已经卸载的)应用的引用，在反复挂载 / 卸载之间造成泄漏。参见[运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)。
 :::
 
-## 通过路由来协调
+## 借助路由来协调
 
-在 route-driven 的架构里，微应用是由 URL 激活的，因此导航本身就是一条通信通道——而且完全不需要任何共享对象。
+在路由驱动的接入方式里，微应用是由 URL 激活的，所以导航本身就是一条通信渠道——而且它根本不需要任何共享对象。
 
-`activeRule` 决定对给定路径挂载哪个应用。从任何地方（主应用链接、子应用路由、`history.pushState`）改变 URL，都会重新路由整个页面，并相应地挂载或卸载应用。
+`activeRule` 决定某个路径下挂载哪个应用。从任何地方改动 URL(主应用的链接、子应用的路由、`history.pushState`)都会让整个页面重新路由，按规则挂载或卸载相应的应用。
 
 ```ts
 registerMicroApps([
@@ -257,7 +257,7 @@ registerMicroApps([
     name: 'orders',
     entry: '//localhost:7100',
     container: document.getElementById('subapp')!,
-    activeRule: '/orders', // mounted whenever the path starts with /orders
+    activeRule: '/orders', // 路径以 /orders 开头时挂载
   },
   {
     name: 'billing',
@@ -268,40 +268,40 @@ registerMicroApps([
 ]);
 ```
 
-single-spa（qiankun 构建于其上）会 patch `history.pushState`/`replaceState`，并在每次重新路由后派发一个 `single-spa:routing-event`。主应用——或任何应用——都可以监听它来与导航保持同步，包括那些仅靠 `popstate` 会漏掉的 qiankun 驱动的重新路由：
+qiankun 底层的 single-spa 会打补丁劫持 `history.pushState` / `replaceState`，并在每次重新路由后派发一个 `single-spa:routing-event` 事件。主应用——或者任何一个应用——都可以监听它，好跟上导航的变化，包括那些只靠 `popstate` 会漏掉的、由 qiankun 驱动的重新路由：
 
 ```ts
 function onRouteChange() {
   syncActiveNav(window.location.pathname);
 }
 
-// listen to both: popstate for back/forward, the single-spa event for pushState reroutes
+// 两个都监听:popstate 管前进 / 后退,single-spa 事件管 pushState 触发的重新路由
 window.addEventListener('popstate', onRouteChange);
 window.addEventListener('single-spa:routing-event', onRouteChange);
 ```
 
-要从主应用驱动导航，push 一个新的 URL；路由事件和任何 `activeRule` 切换都会随之发生：
+想从主应用发起导航，就 push 一个新的 URL，路由事件和相应的 `activeRule` 切换会跟着发生：
 
 ```ts
 window.history.pushState(null, '', '/billing');
 ```
 
-Query string、路径片段和 hash 都可以拿来在应用间传递小型、可序列化的协调数据，而无需任何共享的 JS 引用。
+query string、路径段、hash 都可以用来在应用之间传递少量、可序列化的协调数据，完全不用共享任何 JS 引用。
 
-每个应用共享的其他浏览器原语——真实 `window` 上的 `localStorage`、`sessionStorage`、`BroadcastChannel`、`postMessage` 和 `CustomEvent`——同样可用于松耦合的消息传递。它们不是沙箱化的全局，因此主应用和微应用看到的是同一个实例。对于任何结构化或与 lifecycle 绑定的数据，优先用 props；当你明确需要 fire-and-forget、跨标签页或仅限字符串的通道时，再动用它们。
+每个应用共享的其他浏览器原语——`localStorage`、`sessionStorage`、`BroadcastChannel`、`postMessage`，以及真实 `window` 上的 `CustomEvent`——也都能拿来做松耦合的消息传递。它们不是被沙箱隔离的全局变量，所以主应用和微应用看到的是同一个实例。凡是结构化的、跟生命周期挂钩的东西，优先用 props；当你确实要的是那种"发完就不管"、跨标签页，或者只传字符串的通道时，再动用这些。
 
-## 需要牢记的边界
+## 几条要记住的边界
 
-- **沙箱隔离写入。**微应用无法通过给 `window` 赋值来发布一个值；那次写入停留在它自己的 membrane 里。通信必须走主应用传入的引用，或走一个真正共享的浏览器原语（storage、`BroadcastChannel`、真实 window 上的事件）。参见 [JS 沙箱](/zh-CN/concepts/js-sandbox)。
-- **共享 store 必须存在于主应用中。**在主应用里构造它一次，并通过 props 把同一个引用交给每个应用。不要指望在某个微应用内部创建的 store 能从另一个微应用触及——它们的全局是彼此隔离的 realm。
-- **读取仍会穿透到主应用的 window。**微应用可以读取真实 `window` 上任何它没有遮蔽的东西，因此主应用提供的只读全局是可见的。但不要依赖这个来做双向状态——写入不会回流。
-- **ESM-sandbox 的全局传播是单向的。**在 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)中，引擎只对经 membrane 中介的写入（`onGlobalSet`）保持已求值模块的全局绑定同步。如果主应用在某个微应用的模块已经求值之后直接写入真实的 `window`，这些模块将看不到该变化。请通过 props 和回调来传递数据，而不要去改写共享全局。
-- **务必 unmount，并务必清理订阅。**props 和沙箱会在 unmount 时替你拆除，但你在一个主应用拥有的 store 上注册的订阅不会——请返回并调用一个取消订阅函数。参见[微应用的 lifecycle 与 props](/zh-CN/concepts/lifecycle-and-props)。
+- **沙箱隔离的是写。** 微应用没法靠给 `window` 赋值来对外发布一个值，那次写始终待在它自己的隔离膜里。通信必须走主应用传进来的引用，或者走一个真正共享的浏览器原语(storage、`BroadcastChannel`、真实 window 上的事件)。参见 [JS 沙箱](/zh-CN/concepts/js-sandbox)。
+- **共享的 store 必须住在主应用里。** 在主应用里构造一次，把同一个引用通过 props 交给每个应用。别指望在某个微应用内部创建的 store 能被另一个微应用够到——它们的全局环境是彼此隔离的 realm。
+- **读操作仍会穿透到主应用的 window。** 微应用可以读到真实 `window` 上它没有遮蔽掉的任何东西，所以主应用提供的只读全局变量是可见的。但别拿这个来做双向状态——写是流不回去的。
+- **ESM 沙箱的全局传播是单向的。** 在 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)里，引擎只会为经隔离膜中转的写(`onGlobalSet`)去同步那些已求值模块的全局绑定。如果主应用在某个微应用的模块求值之后，直接往真实 `window` 上写，这些模块看不到这次改动。所以要通过 props 和回调来传数据，别去改共享的全局变量。
+- **一定要卸载，也一定要清理订阅。** props 和沙箱会在卸载时帮你拆掉，但你注册在主应用持有对象上的订阅不会——把取消订阅的函数返回出来并调用它。参见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
 
-## 相关
+## 相关阅读
 
-- [微应用的 lifecycle 与 props](/zh-CN/concepts/lifecycle-and-props) —— props 如何抵达每个 lifecycle
+- [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props) —— props 是怎么送到每个生命周期的
 - [registerMicroApps](/zh-CN/api/register-micro-apps) 和 [loadMicroApp](/zh-CN/api/load-micro-app) —— 在哪里设置 `props`
 - [React 的 `<MicroApp>`](/zh-CN/ecosystem/react) 和 [Vue 的 `<MicroApp>`](/zh-CN/ecosystem/vue) —— prop 转发与 `appProps`
-- [JS 沙箱](/zh-CN/concepts/js-sandbox) —— 为什么全局是隔离的
-- [从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x) —— 替换旧的全局状态 API
+- [JS 沙箱](/zh-CN/concepts/js-sandbox) —— 为什么全局变量是隔离的
+- [从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x) —— 替换掉旧的全局状态 API

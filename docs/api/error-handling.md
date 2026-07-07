@@ -1,6 +1,6 @@
 # addErrorHandler / removeErrorHandler
 
-Register and unregister global error handlers that fire whenever any micro-app fails to load, bootstrap, mount, or unmount. Both functions are re-exported verbatim from [single-spa](https://single-spa.js.org/docs/api#adderrorhandler), so their behavior matches single-spa's error pipeline exactly.
+Register and unregister global error handlers. They fire whenever any micro-app throws during its load, bootstrap, mount, or unmount phase. Both functions are re-exported verbatim from [single-spa](https://single-spa.js.org/docs/api#adderrorhandler), so their behavior matches single-spa's error-handling chain exactly.
 
 ```ts
 import { addErrorHandler, removeErrorHandler } from 'qiankun';
@@ -13,7 +13,7 @@ function addErrorHandler(handler: (err: AppError) => void): void;
 function removeErrorHandler(handler: (err: AppError) => void): void;
 ```
 
-`AppError` is single-spa's error shape — a standard `Error` augmented with the name of the app or parcel that failed:
+`AppError` is single-spa's error shape — a standard `Error` with the name of the failing app or parcel attached:
 
 ```ts
 type AppError = Error & {
@@ -21,33 +21,33 @@ type AppError = Error & {
 };
 ```
 
-`removeErrorHandler` unregisters a handler by reference, so you must pass the same function object you registered.
+`removeErrorHandler` unregisters by reference, so you must pass the same function object you originally registered.
 
 ::: info Pure re-export
-qiankun does not wrap or transform these functions. `packages/qiankun/src/apis/errorHandler.ts` is literally `export { addErrorHandler, removeErrorHandler } from 'single-spa';`. Handlers you add through qiankun and handlers you add by importing directly from single-spa share the same registry.
+qiankun does not wrap or rewrite these functions in any way. `packages/qiankun/src/apis/errorHandler.ts` is a single line: `export { addErrorHandler, removeErrorHandler } from 'single-spa';`. A handler you add through qiankun and one you add by importing directly from single-spa share the same registry.
 :::
 
-## What errors surface here
+## Which errors reach here
 
-Handlers registered with `addErrorHandler` receive errors thrown by any app registered through [`registerMicroApps`](/api/register-micro-apps) or loaded imperatively through [`loadMicroApp`](/api/load-micro-app), across every lifecycle phase:
+A handler registered with `addErrorHandler` receives errors thrown by any micro-app — whether the app was registered through [`registerMicroApps`](/api/register-micro-apps) or loaded imperatively through [`loadMicroApp`](/api/load-micro-app) — across every lifecycle phase:
 
-- **Load** — the HTML entry cannot be fetched (network failure, non-2xx status), the response body is empty, or no valid lifecycle object can be discovered from the entry's exports.
+- **Load** — the HTML entry can't be fetched (network failure, non-2xx status code), the response body is empty, or no valid lifecycle object can be found in the entry's exports.
 - **Bootstrap / mount / unmount** — the micro-app's own `bootstrap`, `mount`, or `unmount` function rejects.
-- **ESM module-graph failures** — for `<script type="module">` entries handled by the [ESM sandbox](/concepts/esm-sandbox), a module that fails to fetch or evaluate, and top-level `await` (TLA) rejections in the module graph, are plumbed through to the entry deferred so they surface here rather than vanishing as an unhandled rejection.
+- **ESM module graph failures** — for a `<script type="module">` entry handled by the [ESM sandbox](/concepts/esm-sandbox), any module that fails to fetch or evaluate, plus a rejected top-level `await` (TLA) anywhere in the module graph, is wired onto the entry's deferred and surfaces here rather than being silently dropped as an unhandled rejection.
 
-When a micro-app throws during a lifecycle transition, single-spa moves that app into a broken status — `SKIP_BECAUSE_BROKEN` for a lifecycle failure or `LOAD_ERROR` for a load failure — and invokes every registered error handler with the `AppError`. A broken app stops participating in route-driven changes; a `LOAD_ERROR` app will be retried on the next route change.
+When a micro-app throws while switching lifecycle states, single-spa marks it broken — `SKIP_BECAUSE_BROKEN` for a lifecycle failure, `LOAD_ERROR` for a load failure — and then calls each registered error handler in turn with the `AppError`. A broken app no longer participates in route-driven transitions; a `LOAD_ERROR` app is retried on the next route change.
 
 ```mermaid
 flowchart TD
-  A[Micro-app lifecycle] -->|load / bootstrap / mount / unmount rejects| B[single-spa catches error]
-  A -->|ESM module-graph / TLA rejection| B
-  B --> C[App marked SKIP_BECAUSE_BROKEN or LOAD_ERROR]
-  B --> D[Every registered handler called with AppError]
+  A[Micro-app lifecycle] -->|load / bootstrap / mount / unmount reject| B[single-spa catches the error]
+  A -->|ESM module graph / TLA reject| B
+  B --> C[app marked SKIP_BECAUSE_BROKEN or LOAD_ERROR]
+  B --> D[every registered handler called with AppError]
 ```
 
 ## Example
 
-Register a handler once, early in your main-app bootstrap, before or after calling [`start`](/api/start):
+Register the handler once, early in the host app's startup, either before or after calling [`start`](/api/start):
 
 ```ts
 import { addErrorHandler, registerMicroApps, start } from 'qiankun';
@@ -67,7 +67,7 @@ registerMicroApps([
 start();
 ```
 
-To tear a handler down (for example in a hot-reload boundary or a test), keep a reference and pass it to `removeErrorHandler`:
+To tear a handler down (say, across a hot-reload boundary or in tests), keep a reference to it and pass that to `removeErrorHandler`:
 
 ```ts
 const handler = (err: AppError) => console.error(err);
@@ -77,31 +77,31 @@ addErrorHandler(handler);
 removeErrorHandler(handler);
 ```
 
-::: warning Handlers must not throw
-An error thrown from inside your handler propagates back into single-spa's error path. Keep handlers defensive — log, report, and return.
+::: warning Don't throw from a handler
+An error thrown inside a handler re-enters single-spa's error-handling path. Keep handlers defensive — log, report, and return; don't throw from within.
 :::
 
-## Global handlers vs the `<MicroApp>` error boundary
+## Global handler vs. `<MicroApp>` error boundary
 
-`addErrorHandler` is a **global, framework-level** hook: one handler observes failures from every registered app and receives an `AppError` tagged with `appOrParcelName`. It does not render anything — it is for logging, monitoring, and telemetry.
+`addErrorHandler` is a **framework-level global** hook: one handler watches every registered app's failures and receives an `AppError` tagged with `appOrParcelName`. It renders nothing — it's for logging, monitoring, and telemetry reporting.
 
-The [`<MicroApp>` React](/ecosystem/react) and [Vue](/ecosystem/vue) components provide a **component-level** error boundary instead. Because `<MicroApp>` wraps [`loadMicroApp`](/api/load-micro-app) for a single instance, it can catch that instance's load/bootstrap/mount rejection and render fallback UI in place:
+The [React](/ecosystem/react) and [Vue](/ecosystem/vue) versions of `<MicroApp>` provide a **component-level** error boundary instead. Because `<MicroApp>` wraps [`loadMicroApp`](/api/load-micro-app) for a single instance, it can catch that instance's load/bootstrap/mount rejection and render fallback UI in place:
 
-- Opt in with `autoCaptureError` for the default error view, or pass a custom `errorBoundary` render prop (React) / `#error-boundary` slot (Vue).
-- If you do **not** opt in, the component re-throws the error — in React it reaches the nearest React error boundary, in Vue it surfaces through `errorCaptured` / the global handler.
+- Enable the default error view with `autoCaptureError`, or pass a custom `errorBoundary` render prop (React) / `#error-boundary` slot (Vue).
+- If you **don't** enable it, the component rethrows the error — in React it bubbles to the nearest React error boundary, in Vue it surfaces through `errorCaptured` / the global handler.
 
-The two mechanisms are complementary. Use a global `addErrorHandler` for centralized reporting across all apps, and the `<MicroApp>` error boundary for per-instance fallback UI. A single failure can reach both: single-spa notifies your global handlers, and the component surfaces the rejected `mountPromise`/`loadPromise` to its own boundary.
+The two mechanisms are complementary. Use the global `addErrorHandler` for centralized reporting across all apps, and the `<MicroApp>` error boundary for a single instance's fallback UI. A single failure can reach both at once: single-spa notifies your global handler, and the component hands its rejected `mountPromise`/`loadPromise` to its own error boundary.
 
 | Concern | `addErrorHandler` | `<MicroApp>` error boundary |
 | --- | --- | --- |
-| Scope | Global — all registered/loaded apps | A single `<MicroApp>` instance |
-| Purpose | Logging, monitoring, telemetry | Render fallback UI in place |
+| Scope | Global — every registered / loaded app | A single `<MicroApp>` instance |
+| Purpose | Logging, monitoring, telemetry reporting | Rendering fallback UI in place |
 | Input | `AppError` (`Error & { appOrParcelName }`) | The rejected lifecycle `Error` |
-| Opt-in | Always active once registered | `autoCaptureError` / custom `errorBoundary` |
+| How to enable | Always active once registered | `autoCaptureError` / custom `errorBoundary` |
 
 ## See also
 
-- [Handle load and runtime errors](/cookbook/handle-errors) — end-to-end recipes for retry, fallback UI, and reporting.
+- [Handling load and runtime errors](/cookbook/handle-errors) — an end-to-end approach to retries, fallback UI, and reporting.
 - [`<MicroApp>` for React](/ecosystem/react) and [`<MicroApp>` for Vue](/ecosystem/vue) — component-level error boundaries.
 - [Micro-app lifecycle and props](/concepts/lifecycle-and-props) — the phases that can fail.
-- [The ESM sandbox](/concepts/esm-sandbox) — how module-graph and TLA rejections are routed here.
+- [ESM sandbox](/concepts/esm-sandbox) — how module-graph and TLA rejections get routed here.

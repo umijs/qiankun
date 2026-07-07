@@ -1,23 +1,23 @@
 # create-qiankun
 
-`create-qiankun` 是 qiankun 3.0 的官方脚手架。它会生成一个 [Vite](https://vite.dev) 项目——主应用或子应用——并对生成的产物进行改写，从而接入 qiankun。由于 qiankun v3 通过其 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)原生加载 Vite 应用，因此不再需要专门的 SystemJS 或所谓的「qiankun 构建模式」：普通的 `dev`、`build` 和 `preview` 产物开箱即可被加载。
+`create-qiankun` 是 qiankun 3.0 的官方脚手架。它生成一个 [Vite](https://vite.dev) 项目——主应用或微应用二选一——再对生成的产物做一层改写，把 qiankun 需要的东西接上。qiankun v3 通过 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)原生加载 Vite 应用，所以这里没有单独的 SystemJS 产物，也没有所谓的 "qiankun 构建模式":平常的 `dev`、`build`、`preview` 产出的东西，拿过来就能被加载。
 
-## 用途
+## 它做了什么
 
-脚手架做两件事：
+脚手架就干两件事：
 
-1. 委托上游的 [`create-vite`](https://github.com/vitejs/vite/tree/main/packages/create-vite) 生成一个标准的 React 或 Vue 项目。
-2. 覆写一小部分文件（`package.json`、`vite.config.*`、入口文件，以及主应用的 `App.tsx`/`App.css`），使项目开箱即用地支持 qiankun。
+1. 把生成基础项目的活交给上游的 [`create-vite`](https://github.com/vitejs/vite/tree/main/packages/create-vite)，产出一个标准的 React 或 Vue 项目。
+2. 覆写其中一小撮文件(`package.json`、`vite.config.*`、入口文件，主应用还包括 `App.tsx`/`App.css`)，让项目开箱就是 qiankun-ready 的状态。
 
-生成的子应用暴露了 qiankun 生命周期，同时仍可独立运行。生成的主应用已预先配置好，可加载该子应用。两者的默认端口相互匹配，无需额外配置即可连通。
+生成的微应用会导出 qiankun 生命周期，同时保留独立运行的能力。生成的主应用则预先配好了去加载那个微应用。两边的默认端口是对上的，不用再改配置就能连起来。
 
 ## 环境要求
 
-- Node.js `>=20.19`（Vite 所需）。
+- Node.js `>=20.19`(Vite 的要求)。
 
-## 调用方式
+## 怎么跑
 
-使用你的包管理器的 create/exec 命令运行脚手架：
+用你的包管理器的 create/exec 命令来跑：
 
 ::: code-group
 
@@ -35,41 +35,41 @@ pnpm dlx create-qiankun@latest
 
 :::
 
-在不带参数时，CLI 会以交互方式依次询问应用类型、名称，以及（子应用的）模板。你也可以在命令行上传入其中任意一项，从而跳过对应的提问。
+不带任何参数时，CLI 会交互式地问你应用类型、名字，以及(微应用的)模板。这些也都可以在命令行上直接给出，对应的那一问就跳过了。
 
 ```bash
-# 生成一个名为 "my-app" 的 React + TypeScript 子应用
+# scaffold a React + TypeScript sub app named "my-app"
 npx create-qiankun@latest my-app --type sub --template react-ts
 
-# 生成主应用
+# scaffold the main app
 npx create-qiankun@latest my-main --type main
 ```
 
-## CLI 参数与选项
+## 命令行参数与选项
 
-| 参数 | 别名 | 取值 | 默认值 | 适用于 |
+| 参数 | 别名 | 取值 | 默认值 | 适用对象 |
 | --- | --- | --- | --- | --- |
-| `<app-name>`（位置参数） | — | 必须匹配 `/^[a-z0-9-]+$/` | 交互询问 | 两者 |
-| `--type` | `-T` | `main` \| `sub` | `sub` | 两者 |
-| `--template` | `-t` | `react-ts` \| `react` \| `vue-ts` \| `vue` | 交互询问 | 仅子应用 |
+| `<app-name>`(位置参数) | — | 必须匹配 `/^[a-z0-9-]+$/` | 交互询问 | 两者都用 |
+| `--type` | `-T` | `main` \| `sub` | `sub` | 两者都用 |
+| `--template` | `-t` | `react-ts` \| `react` \| `vue-ts` \| `vue` | 交互询问 | 仅微应用 |
 
-### 应用名称
+### 应用名
 
-位置参数形式的应用名称只能包含小写字母、数字和连字符。它会成为 `package.json` 的 `name`，并且对于子应用，它还是生命周期发布所用的全局键（`window[appName]`，见下文）。非法的名称会被拒绝，并提示：
+位置参数里的应用名只能包含小写字母、数字和连字符。它会成为 `package.json` 的 `name`；对微应用来说，它还是生命周期挂载到全局上用的那个键(`window[appName]`，见下文)。名字不合法会被直接拒掉：
 
 ```
 App name can only contain lowercase letters, numbers, and hyphens
 ```
 
-当省略时，提问的默认值为主应用的 `qiankun-main-app` 或子应用的 `qiankun-sub-app`。
+不填的话，主应用默认叫 `qiankun-main-app`，微应用默认叫 `qiankun-sub-app`。
 
 ### 应用类型
 
-`--type`（或 `-T`）用于选择 `main` 或 `sub`。未指定时默认为 sub。无法识别的取值会以 `Invalid type: ...` 退出。
+`--type`(或 `-T`)在 `main` 和 `sub` 之间选，不指定时默认是 `sub`。给了它不认识的值会以 `Invalid type: ...` 退出。
 
 ### 模板
 
-`--template`（或 `-t`）仅用于为**子应用**选择框架模板。可用模板：
+`--template`(或 `-t`)只对**微应用**选框架模板。可选的有：
 
 | 取值 | 说明 |
 | --- | --- |
@@ -78,39 +78,39 @@ App name can only contain lowercase letters, numbers, and hyphens
 | `vue-ts` | Vue + TypeScript |
 | `vue` | Vue |
 
-::: warning 主应用始终是 React + TypeScript
-模板仅适用于子应用。主应用始终以 `react-ts` 生成。将 `--template` 与 `--type main` 一起传入会直接报错：
+::: warning 主应用一律是 React + TypeScript
+模板只对微应用生效。主应用永远按 `react-ts` 生成。把 `--template` 和 `--type main` 一起传是硬报错：
 
 ```
 The --template option is only supported for sub apps.
 Please remove --template when using --type main.
 ```
 
-另请注意，传入 `--template` 意味着这是一个子应用，因此会跳过应用类型的提问。
+另外，传了 `--template` 就等于表明这是个微应用，应用类型那一问也就跳过了。
 :::
 
-## 交互式提问
+## 交互式询问
 
-当相关选项未提供时，CLI 会就此发起提问：
+对应的选项没在命令行给出时，CLI 会一项项来问：
 
-- **应用类型** —— 在 `Main App (主应用)` 与 `Sub App (子应用)` 之间进行选择。当传入了 `--type` 或 `--template` 时跳过。
-- **应用名称** —— 一个文本输入，按 `/^[a-z0-9-]+$/` 校验。当传入了位置参数名称时跳过。
-- **模板** —— 在上述四个模板之间进行选择。仅对子应用显示；当传入了 `--template` 或应用类型为主应用时跳过。
+- **应用类型** —— 在 `Main App (主应用)` 和 `Sub App (子应用)` 之间选。传了 `--type` 或 `--template` 时跳过。
+- **应用名** —— 一个文本输入，按 `/^[a-z0-9-]+$/` 校验。已经给了位置参数名字时跳过。
+- **模板** —— 在上面四个模板里选。只有微应用才问；传了 `--template`、或应用类型是主应用时跳过。
 
-取消任何提问都会打印 `Operation cancelled` 并退出。
+任何一问按取消，都会打印 `Operation cancelled` 然后退出。
 
-## 目标目录（感知 workspace）
+## 目标目录(认 workspace)
 
-在生成之前，CLI 会检查当前目录的**父目录**是否包含 `pnpm-workspace.yaml`：
+生成之前，CLI 会看当前目录的**父目录**里有没有 `pnpm-workspace.yaml`:
 
-- 在 pnpm workspace 内部，应用会生成到 `<workspaceRoot>/packages/<app-name>`。
+- 在 pnpm workspace 里，应用生成到 `<workspaceRoot>/packages/<app-name>`。
 - 否则，生成到 `<cwd>/<app-name>`。
 
-如果目标目录已存在，CLI 会以 `Directory ... already exists` 退出。后续步骤输出中的 `cd` 一行会反映解析后的路径（workspace 内部为 `packages/<app-name>`，否则为 `<app-name>`）。
+目标目录已经存在的话，CLI 会以 `Directory ... already exists` 退出。后续步骤输出里的那行 `cd`，走的是解析后的实际路径(在 workspace 里是 `packages/<app-name>`，否则是 `<app-name>`)。
 
-## 生成内容
+## 生成出来的东西
 
-基础项目由 `create-vite` 使用其标准模板生成，随后 create-qiankun 覆写特定文件。
+基础项目由 `create-vite` 用它的标准模板产出，然后 create-qiankun 覆写掉特定的几个文件。
 
 ```mermaid
 flowchart TD
@@ -120,11 +120,11 @@ flowchart TD
   C -->|main| E[改写 package.json + vite.config + main.tsx + App.tsx + App.css]
 ```
 
-### 子应用
+### 微应用
 
-子应用的改写分三步进行。
+微应用分三步改写。
 
-**`package.json`** —— name 被设置为你的应用名称，并添加 qiankun 相关依赖。版本号是固定的字符串，而非解析后的范围（这是一个 RC 阶段的脚手架）：
+**`package.json`** —— 把 name 设成你的应用名，加上 qiankun 相关依赖。版本号是写死的字符串，不是解析出来的范围(毕竟这是 RC 阶段的脚手架):
 
 | 依赖 | 位置 | 版本 |
 | --- | --- | --- |
@@ -132,9 +132,9 @@ flowchart TD
 | `@qiankunjs/react` 或 `@qiankunjs/vue` | `dependencies` | `latest` |
 | `@qiankunjs/bundler-plugin` | `devDependencies` | `rc` |
 
-框架绑定（[`@qiankunjs/react`](/zh-CN/ecosystem/react) 或 [`@qiankunjs/vue`](/zh-CN/ecosystem/vue)）作为便利项被加入，尽管生成的入口文件并未导入它——它就放在那里供你使用。
+框架绑定([`@qiankunjs/react`](/zh-CN/ecosystem/react) 或 [`@qiankunjs/vue`](/zh-CN/ecosystem/vue))是顺手给你加上的——虽然生成的入口文件并没有 import 它，但放在那儿等你要用的时候直接用。
 
-**`vite.config.ts`** —— 导入框架插件和 qiankun [bundler 插件](/zh-CN/ecosystem/bundler-plugin)，并将开发服务器端口设置为 `7101`。
+**`vite.config.ts`** —— import 框架插件和 qiankun 的 [bundler 插件](/zh-CN/ecosystem/bundler-plugin)，并把开发服务器端口设成 `7101`。
 
 ::: code-group
 
@@ -172,7 +172,7 @@ export default defineConfig({
 
 :::
 
-**入口文件**（`src/main.tsx` / `src/main.ts`）—— 替换为一个带 qiankun 生命周期的入口。它导出 `bootstrap`、`mount` 和 `unmount`，并在运行于 qiankun 之下时将它们发布到 `window[appName]`；否则自行独立渲染。
+**入口文件**(`src/main.tsx` / `src/main.ts`)—— 换成一个导出 qiankun 生命周期的入口。它导出 `bootstrap`、`mount`、`unmount`；在 qiankun 里跑时把它们发布到 `window[appName]` 上，否则就自己独立渲染。
 
 ::: code-group
 
@@ -282,18 +282,18 @@ if (window.__POWERED_BY_QIANKUN__) {
 :::
 
 ::: info
-`__POWERED_BY_QIANKUN__` 是 qiankun 在应用运行于容器内期间设置到沙箱 window 上的一个全局变量。入口用它来在独立渲染与生命周期导出之间做出决定。关于这些钩子如何被调用，参见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。对于非 TypeScript 模板，会省略 `declare global` 块；其余部分完全相同。
+`__POWERED_BY_QIANKUN__` 是 qiankun 在应用于容器内运行时，往沙箱 window 上设的一个全局标志。入口就靠它来判断：是独立渲染，还是导出生命周期。这几个钩子怎么被调用，见 [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。非 TypeScript 模板不带那段 `declare global`，其余完全一样。
 
-对于子应用，`create-vite` 默认的 `App` 组件被保留原样——你从这里开始构建自己的 UI。
+微应用会保留 `create-vite` 默认的 `App` 组件——你从它开始搭自己的界面。
 :::
 
 ### 主应用
 
-主应用始终是 `react-ts`，并分五步进行改写。
+主应用永远是 `react-ts`，分五步改写。
 
-**`package.json`** —— 设置 name，并将版本为 `rc` 的 `qiankun` 加入 `dependencies`。不添加 bundler 插件或框架绑定，因为主应用并不构建微应用 bundle。
+**`package.json`** —— 设好 name，往 `dependencies` 里加上版本为 `rc` 的 `qiankun`。不加 bundler 插件，也不加框架绑定，因为主应用并不构建微应用的产物。
 
-**`vite.config.ts`** —— 一份端口为 `7099` 的普通 React 配置。qiankun bundler 插件不会应用到主应用。
+**`vite.config.ts`** —— 一个普通的 React 配置，端口 `7099`。qiankun 的 bundler 插件不用在主应用上。
 
 ```ts
 import { defineConfig } from 'vite';
@@ -307,7 +307,7 @@ export default defineConfig({
 });
 ```
 
-**`src/main.tsx`** —— 一个常规的 React 根渲染，后面跟着一段被注释掉的、基于路由的替代方案，使用了 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 与 [`start`](/zh-CN/api/start)：
+**`src/main.tsx`** —— 一个普通的 React 根渲染，后面跟着一段注释掉的、基于路由的备选方案，用的是 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 加 [`start`](/zh-CN/api/start):
 
 ```tsx
 import React from 'react';
@@ -341,7 +341,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 // start();
 ```
 
-**`src/App.tsx`** —— 接线的示范。它使用 [`loadMicroApp`](/zh-CN/api/load-micro-app) 手动加载子应用，跟踪 mount promise 以呈现加载中/错误 UI，并在清理时执行 unmount：
+**`src/App.tsx`** —— 接线的样板。它用 [`loadMicroApp`](/zh-CN/api/load-micro-app) 手动加载微应用，盯着 mount 的 promise 来做加载中 / 出错的界面，并在清理时卸载：
 
 ```tsx
 import { useEffect, useRef, useState } from 'react';
@@ -411,29 +411,29 @@ function App() {
 export default App;
 ```
 
-**`src/App.css`** —— header、content、`.loading`/`.error` 状态以及 `#micro-app-container` 的样式。
+**`src/App.css`** —— header、内容区、`.loading`/`.error` 状态，以及 `#micro-app-container` 的样式。
 
 ::: tip styleIsolation 与 @scope
-生成的 `App.tsx` 中的注释指向 qiankun 在此处接受的两个选项。`sandbox`（默认为 `true`）启用 [JS 沙箱](/zh-CN/concepts/js-sandbox)；`styleIsolation: true` 则额外通过运行时的 [`@scope`](/zh-CN/concepts/style-isolation) 策略对子应用的 CSS 进行作用域隔离。这是脚手架示例仅设置的两个字段——完整字段集参见 [AppConfiguration](/zh-CN/api/configuration)。
+生成的 `App.tsx` 里那段注释，指的正是 qiankun 在这里接受的两个选项。`sandbox`(默认 `true`)开启 [JS 沙箱](/zh-CN/concepts/js-sandbox);`styleIsolation: true` 会额外用运行时的 [`@scope`](/zh-CN/concepts/style-isolation) 策略把微应用的样式圈起来。脚手架的示例只设了这两个字段——完整字段见 [AppConfiguration](/zh-CN/api/configuration)。
 :::
 
-## 主应用与子应用如何连通
+## 主应用和微应用是怎么连上的
 
-两个生成的项目已预先配置为协同工作：
+两个生成出来的项目一开始就配好了配合工作：
 
 ```mermaid
 flowchart LR
-  M["主应用 (:7099)<br/>loadMicroApp(entry '//localhost:7101')"] -->|加载| S["子应用 (:7101)<br/>@qiankunjs/bundler-plugin/vite<br/>导出 bootstrap/mount/unmount"]
+  M["主应用 (:7099)<br/>loadMicroApp(entry '//localhost:7101')"] -->|加载| S["微应用 (:7101)<br/>@qiankunjs/bundler-plugin/vite<br/>导出 bootstrap/mount/unmount"]
 ```
 
-- 子应用在 **7101** 端口上运行自己的 Vite 开发服务器，并暴露 qiankun 生命周期。
-- 主应用在 **7099** 端口上运行，并从 `//localhost:7101` 加载子应用。
+- 微应用在 **7101** 端口跑自己的 Vite 开发服务器，对外暴露 qiankun 生命周期。
+- 主应用在 **7099** 端口跑，从 `//localhost:7101` 加载微应用。
 
-子应用的默认端口与主应用硬编码的 entry 是有意匹配的。若要生成多个子应用，请更改每个子应用的 `server.port`（生成的 `vite.config` 中的一段注释对此有说明），并在主应用中添加相匹配的 `loadMicroApp`/`registerMicroApps` 条目。参见[运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)。
+微应用的默认端口和主应用里写死的入口，是特意对上的。要生成多个微应用，把每一个的 `server.port` 改掉(生成的 `vite.config` 里有条注释提醒了这一点)，再在主应用里补上对应的 `loadMicroApp`/`registerMicroApps` 条目。见 [运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)。
 
-## 后续步骤输出
+## 下一步该跑什么
 
-生成完成后，CLI 会打印 `Done!`，随后是需要运行的命令。对于子应用：
+生成完，CLI 会打印 `Done!`，后面跟着要跑的命令。微应用是这样：
 
 ```bash
 cd my-app
@@ -442,14 +442,14 @@ pnpm dev              # Run standalone (loadable by qiankun as-is)
 pnpm build            # Build (the ESM output is qiankun-ready)
 ```
 
-对于主应用，最后两行是普通的 `pnpm dev` / `pnpm build`。当在 pnpm workspace 内部生成时，`cd` 路径为 `packages/<app-name>`。
+主应用最后两行是干净的 `pnpm dev` / `pnpm build`。在 pnpm workspace 里生成时，`cd` 的路径是 `packages/<app-name>`。
 
 ::: info 没有 SystemJS 构建模式
-与 qiankun 2.x 需要 UMD/library 构建配置不同，v3 通过 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)原生加载 Vite 的 ESM 产物。标准的 `dev`、`build` 和 `preview` 产物均已就绪可供 qiankun 使用。若要改造现有应用而非新建脚手架，参见[让 Vite 应用支持 qiankun](/zh-CN/cookbook/prepare-a-vite-app)。
+qiankun 2.x 需要一份 UMD/library 的构建配置，v3 不一样，它通过 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)原生加载 Vite 的 ESM 产物。平常的 `dev`、`build`、`preview` 产物全都是 qiankun-ready 的。如果你不是新建项目，而是要改造一个已有的应用，见 [让一个 Vite 应用变成 qiankun-ready](/zh-CN/cookbook/prepare-a-vite-app)。
 :::
 
-## 相关
+## 相关阅读
 
-- [@qiankunjs/bundler-plugin](/zh-CN/ecosystem/bundler-plugin) —— 子应用所使用的 Vite 与 Webpack 插件。
-- [loadMicroApp](/zh-CN/api/load-micro-app) 与 [registerMicroApps](/zh-CN/api/register-micro-apps) —— 生成的主应用中展示的两种加载模式。
-- [快速开始](/zh-CN/guide/getting-started)与[教程](/zh-CN/tutorial/index) —— 一步步搭建同样的组合。
+- [@qiankunjs/bundler-plugin](/zh-CN/ecosystem/bundler-plugin) —— 微应用用到的 Vite 和 Webpack 插件。
+- [loadMicroApp](/zh-CN/api/load-micro-app) 和 [registerMicroApps](/zh-CN/api/register-micro-apps) —— 生成的主应用里展示的两种加载方式。
+- [快速上手](/zh-CN/guide/getting-started) 和[教程](/zh-CN/tutorial/) —— 一步步搭出同样的一套。

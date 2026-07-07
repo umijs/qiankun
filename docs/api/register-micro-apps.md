@@ -1,6 +1,6 @@
 # registerMicroApps
 
-Registers route-driven micro-apps against the main app. Each registered app is bound to an `activeRule`; qiankun mounts it when the URL matches and unmounts it when it stops matching. This is the primary way to wire micro-apps in v3 — for imperative, manually-controlled mounting use [loadMicroApp](/api/load-micro-app) instead.
+Register micro-apps against the main app by route. Every registered app is bound to an `activeRule`; qiankun mounts it when the URL matches and unmounts it when it no longer does. This is the primary way to integrate micro-apps in v3 — if you want to control mounting manually and imperatively, use [loadMicroApp](/api/load-micro-app) instead.
 
 ## Signature
 
@@ -11,7 +11,7 @@ function registerMicroApps<T extends ObjectType>(
 ): void
 ```
 
-`registerMicroApps` only records the apps and hands them to [single-spa](https://single-spa.js.org/). Nothing loads until you call [start](/api/start). Registration and activation are two separate steps:
+`registerMicroApps` only records these apps and hands them off to [single-spa](https://single-spa.js.org/). Nothing loads until you call [start](/api/start). Registration and activation are two separate steps:
 
 ```ts
 import { registerMicroApps, start } from 'qiankun';
@@ -25,7 +25,7 @@ start();
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
 | `apps` | `Array<RegistrableApp<T>>` | Yes | The micro-apps to register. See [RegistrableApp fields](#registrableapp-fields). |
-| `lifeCycles` | `LifeCycles<T>` | No | Global lifecycle hooks applied to every app in this call. See [Global lifecycle hooks](#global-lifecycle-hooks). |
+| `lifeCycles` | `LifeCycles<T>` | No | Global lifecycle hooks applied to every app registered in this call. See [Global lifecycle hooks](#global-lifecycle-hooks). |
 
 ## RegistrableApp fields
 
@@ -43,19 +43,19 @@ type RegistrableApp<T extends ObjectType> = {
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `name` | `string` | Yes | Unique app name. See the [name matching note](#the-name-must-match-the-sub-app-s-exported-global) — it should match the global/library the sub-app exposes. |
-| `entry` | `string` | Yes | URL of the micro-app's HTML entry, for example `//localhost:7100`. In v3 `entry` is always a string (an HTML URL) — the 2.x object form `{ scripts, styles }` no longer exists. |
-| `container` | `HTMLElement` | Yes | The DOM element the micro-app mounts into — an actual element, not a selector string. Pass a ref'd node or `document.getElementById(...)`. |
-| `activeRule` | `string \| ActivityFn \| Array<string \| ActivityFn>` | Yes | When the app is active. Forwarded to single-spa's `activeWhen`. A string is a path prefix; a function `(location) => boolean` gives full control; an array matches if any entry matches. |
-| `props` | `T` | No | Data passed to the micro-app on every lifecycle call (`bootstrap`/`mount`/`unmount`/`update`). |
-| `loader` | `(loading: boolean) => void` | No | Called with `true` immediately before the app mounts and `false` after it finishes, so the host can drive a loading indicator. |
-| `configuration` | `AppConfiguration` | No | Per-app runtime configuration: `sandbox`, `styleIsolation`, `fetch`, and more. See [AppConfiguration](/api/configuration) and the [per-app configuration note](#per-app-configuration-is-the-only-config-injection-point). |
+| `name` | `string` | Yes | The app's unique name. See [`name` must match the global the sub-app exposes](#name-must-match-the-global-the-sub-app-exposes) — it should equal the global variable / library name the sub-app exposes. |
+| `entry` | `string` | Yes | The URL of the micro-app's HTML entry, e.g. `//localhost:7100`. In v3 `entry` is always a string (an HTML address); the 2.x `{ scripts, styles }` object form is gone. |
+| `container` | `HTMLElement` | Yes | The DOM element the micro-app mounts into — a real element, not a selector string. Pass a node obtained from a ref, or `document.getElementById(...)`. |
+| `activeRule` | `string \| ActivityFn \| Array<string \| ActivityFn>` | Yes | When the app activates; forwarded as-is to single-spa's `activeWhen`. A string is a path prefix; a function `(location) => boolean` gives you full control; an array activates when any entry matches. |
+| `props` | `T` | No | Data passed to the micro-app on every lifecycle call (`bootstrap` / `mount` / `unmount` / `update`). |
+| `loader` | `(loading: boolean) => void` | No | Called once with `true` right before mount and once with `false` after mount completes, so the main app can drive a loading indicator. |
+| `configuration` | `AppConfiguration` | No | Per-app runtime configuration: `sandbox`, `styleIsolation`, `fetch`, and so on. See [AppConfiguration](/api/configuration) and [Per-app configuration is the only configuration entry point](#per-app-configuration-is-the-only-configuration-entry-point). |
 
 ::: info entry and container
-`entry` must be served with permissive CORS headers, because qiankun fetches the HTML and its assets cross-origin. The `container` element must stay mounted for the lifetime of the registration — qiankun captures the element reference at registration time, so it must not be replaced, keyed, or unmounted by the host framework.
+`entry` must be served with permissive CORS response headers, because qiankun fetches this HTML and its assets cross-origin. The `container` element must stay in the page for the entire registration lifetime — qiankun captures a reference to this element at registration time, so it must not be replaced by the host framework, re-created via a key, or unmounted.
 :::
 
-### The `activeRule`
+### About `activeRule`
 
 `activeRule` is single-spa's `activeWhen`. The most common form is a path prefix:
 
@@ -65,7 +65,7 @@ registerMicroApps([
 ]);
 ```
 
-For anything a prefix cannot express, use a function or an array:
+When a prefix can't express what you need, reach for a function or an array:
 
 ```ts
 registerMicroApps([
@@ -81,7 +81,7 @@ registerMicroApps([
 
 ## Global lifecycle hooks
 
-The second argument applies to every app registered in the call. Each hook is a function (or array of functions) `(app, global) => Promise<void>`:
+The second argument applies to every app registered in this call. Each hook is a function (or array of functions) `(app, global) => Promise<void>`:
 
 ```ts
 registerMicroApps(apps, {
@@ -93,31 +93,31 @@ registerMicroApps(apps, {
 });
 ```
 
-The second argument, `global`, is the micro-app's sandboxed `window` view (the Proxy membrane), not the real `window`. These framework-level hooks are distinct from the `bootstrap`/`mount`/`unmount` functions the sub-app itself exports. See [Lifecycle hooks](/api/lifecycles) and [Micro-app lifecycle and props](/concepts/lifecycle-and-props) for the full reference.
+The second argument, `global`, is the micro-app's sandbox-isolated `window` view (the Proxy membrane), not the real `window`. These framework-level hooks are a different thing from the `bootstrap` / `mount` / `unmount` a sub-app exports itself. For the full story see [Lifecycle hooks](/api/lifecycles) and [Micro-app lifecycle and props](/concepts/lifecycle-and-props).
 
 ## Behavior
 
-- **Deduplicated by `name`.** An app whose `name` is already registered is skipped, so calling `registerMicroApps` twice with overlapping apps is safe.
-- **Registered to single-spa.** Each new app becomes a single-spa application with `activeWhen: activeRule` and `customProps: props`.
-- **Activation awaits `start()`.** The internal loader waits until you call [start](/api/start) before it loads and mounts anything. Registration alone does nothing visible.
-- **`loader` wraps mount.** When present, `loader(true)` runs before mount and `loader(false)` after, on every activation.
-- **`lifeCycles` are global.** The hooks passed as the second argument run for every app in that call, in addition to the built-in addons that inject `__POWERED_BY_QIANKUN__` and `__INJECTED_PUBLIC_PATH_BY_QIANKUN__`.
+- **Deduplicated by `name`.** If an app's `name` is already registered, it is skipped, so calling `registerMicroApps` twice with overlapping apps is safe.
+- **Registered with single-spa.** Each new app becomes a single-spa application, with `activeWhen` taken from `activeRule` and `customProps` from `props`.
+- **Activation waits for `start()`.** The internal loader waits until you call [start](/api/start) before loading and mounting. Registration alone has no visible effect.
+- **`loader` wraps the mount.** When a `loader` is provided, every activation runs `loader(true)` before mount and `loader(false)` after.
+- **`lifeCycles` is global.** Hooks passed as the second argument run for every app in that call; on top of that, built-in addons inject `__POWERED_BY_QIANKUN__` and `__INJECTED_PUBLIC_PATH_BY_QIANKUN__`.
 
 ```mermaid
 flowchart TD
-  A[registerMicroApps apps, lifeCycles] --> B{name already registered?}
-  B -- yes --> C[skip]
-  B -- no --> D[single-spa registerApplication]
-  D --> E[wait for start]
-  F[start] --> E
-  E --> G{activeRule matches URL?}
-  G -- yes --> H[loader true -> load entry -> mount -> loader false]
-  G -- no --> I[unmount when it stops matching]
+  A["registerMicroApps(apps, lifeCycles)"] --> B{"name already registered?"}
+  B -- Yes --> C["Skip"]
+  B -- No --> D["single-spa registerApplication"]
+  D --> E["Wait for start"]
+  F["start"] --> E
+  E --> G{"activeRule matches URL?"}
+  G -- Yes --> H["loader(true) → load entry → mount → loader(false)"]
+  G -- No --> I["Unmount when it no longer matches"]
 ```
 
 ## Example
 
-A complete host setup: obtain a real container element, register each app with its own `configuration`, then call `start()` once.
+A complete main-app integration: get a real container element, give each app its own `configuration`, and call `start()` once at the end.
 
 ::: code-group
 
@@ -184,20 +184,20 @@ export default function App() {
 :::
 
 ::: tip One container for many apps
-A single container element can host every route-driven app, because only one app is active at a time. qiankun empties and re-fills the container as routes change. Whatever you pass, the element must remain in the DOM for the whole session.
+A single container element can host every route-driven app, because only one app is active at a time. On route changes qiankun clears the container and refills it. Whichever element you pass, it must stay in the DOM for the entire session.
 :::
 
-## Notes and caveats
+## Notes and pitfalls
 
-### The `name` must match the sub-app's exported global
+### `name` must match the global the sub-app exposes
 
-qiankun discovers the micro-app's lifecycle functions from the global (or library) it exposes. For classic (UMD / window-library) apps, the registered `name` must equal the key the sub-app writes to `window` — for example a sub-app that sets `window['webpack-app'] = { bootstrap, mount, unmount }` (or a Webpack build whose `output.library.name` is `webpack-app`) must be registered as `name: 'webpack-app'`. If the name does not match the exposed global, qiankun cannot find the lifecycles and throws a `QiankunError`.
+qiankun finds a sub-app's lifecycle functions through the global variable (or library) it exposes. For classically bundled apps (UMD / window library), the `name` you register must equal the key the sub-app writes onto `window` — for example, if a sub-app sets `window['webpack-app'] = { bootstrap, mount, unmount }` (or a Webpack build's `output.library.name` is `webpack-app`), you must register it as `name: 'webpack-app'`. If the name and the exposed global don't line up, qiankun can't find the lifecycles and throws a `QiankunError`.
 
-ESM sub-apps expose their lifecycles as native `export`s, so the name is less load-bearing there, but keeping `name` aligned with the app's identity is still recommended. See [Micro-app lifecycle and props](/concepts/lifecycle-and-props) for the full lifecycle-discovery order.
+ESM sub-apps expose their lifecycles via native `export`, so the name matters less there, but it's still recommended to keep `name` consistent with the app's own identifier. For the full lifecycle lookup order, see [Micro-app lifecycle and props](/concepts/lifecycle-and-props).
 
-### Per-app `configuration` is the only config injection point
+### Per-app configuration is the only configuration entry point
 
-In v3 there is no framework-wide configuration injected through `start()`. `start()` accepts only single-spa's `{ urlRerouteOnly? }`. Everything that used to be a global framework option — `sandbox`, `styleIsolation`, a custom `fetch` — is now set **per app** through `RegistrableApp.configuration`:
+There is no framework-level global config injected through `start()` in v3. `start()` only takes single-spa's `{ urlRerouteOnly? }`. What used to be global framework options — `sandbox`, `styleIsolation`, a custom `fetch` — are now all set **per app** in `RegistrableApp.configuration`:
 
 ```ts
 registerMicroApps([
@@ -215,21 +215,21 @@ registerMicroApps([
 ]);
 ```
 
-See [AppConfiguration](/api/configuration) for every field and default.
+For each field and its default, see [AppConfiguration](/api/configuration).
 
 ::: warning No 2.x start options
-Options like `prefetch`, `sandbox: { strictStyleIsolation | experimentalStyleIsolation }`, `singular`, `getPublicPath`, and `getTemplate` were qiankun 2.x `start` options. They do not exist in v3. Style isolation is a single boolean `styleIsolation` implemented with CSS `@scope` — there is no Shadow DOM mode. Preloading is automatic via the streaming loader, so there is no `prefetch` strategy to configure. See [Migrate from qiankun 2.x](/cookbook/migrate-from-2x).
+`prefetch`, `sandbox: { strictStyleIsolation | experimentalStyleIsolation }`, `singular`, `getPublicPath`, and `getTemplate` were all qiankun 2.x `start` options, and none of them exist in v3. Style isolation is a single boolean `styleIsolation`, implemented under the hood with CSS `@scope` — there is no Shadow DOM mode. Prefetching is done automatically by the streaming loader, so there is no `prefetch` strategy to configure. See [Migrating from qiankun 2.x](/cookbook/migrate-from-2x).
 :::
 
-::: info No built-in global state store
-v3 does not ship `initGlobalState` / `onGlobalStateChange` / `setGlobalState`. To share state, pass your own methods or store into each app through `props`. See [Share state and communicate between apps](/cookbook/communicate-between-apps).
+::: info No built-in global state library
+v3 no longer ships `initGlobalState` / `onGlobalStateChange` / `setGlobalState`. To share state, pass your own methods or store to each app through `props`. See [Sharing state and communicating between apps](/cookbook/communicate-between-apps).
 :::
 
 ## See also
 
-- [start](/api/start) — activate the registered apps
-- [loadMicroApp](/api/load-micro-app) — mount an app imperatively instead of by route
+- [start](/api/start) — activate registered apps
+- [loadMicroApp](/api/load-micro-app) — mount an app imperatively rather than by route
 - [AppConfiguration](/api/configuration) — per-app `sandbox`, `styleIsolation`, `fetch`
-- [Lifecycle hooks (LifeCycles)](/api/lifecycles) — the global hook reference
-- [setDefaultMountApp / runAfterFirstMounted](/api/effects) — route/first-mount effects
-- [Types reference](/api/types) — `RegistrableApp`, `LoadableApp`, `HTMLEntry`
+- [Lifecycle hooks (LifeCycles)](/api/lifecycles) — global hook reference
+- [setDefaultMountApp / runAfterFirstMounted](/api/effects) — routing / first-mount side effects
+- [Type reference](/api/types) — `RegistrableApp`, `LoadableApp`, `HTMLEntry`

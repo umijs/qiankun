@@ -122,7 +122,7 @@ The type surface is documented in full on the [Types reference](/api/types) page
 The `version` constant exists in the package source but is **not** re-exported from the entry barrel, so `import { version } from 'qiankun'` does not work.
 :::
 
-## Not in v3
+## Not in v3 {#not-in-v3}
 
 qiankun 3.0 is a runtime rewrite, and several qiankun 2.x APIs and options were removed. The following do not exist in v3 — code that references them will not compile or will silently do nothing.
 

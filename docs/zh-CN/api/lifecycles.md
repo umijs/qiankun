@@ -1,8 +1,8 @@
 # 生命周期钩子（LifeCycles）
 
-主应用的生命周期钩子让主应用能够观察并响应微应用在加载、mount、unmount 各个阶段的状态。你可以把它们传给 [`registerMicroApps`](/zh-CN/api/register-micro-apps)（此时它们会全局作用于每一个注册的应用），或者传给 [`loadMicroApp`](/zh-CN/api/load-micro-app)（此时它们只作用于那一个实例）。
+框架级的生命周期钩子，让主应用能观察并介入微应用加载、挂载、卸载的每一个阶段。你可以把它们传给 [`registerMicroApps`](/zh-CN/api/register-micro-apps)（这时它们会对本次注册的每个应用都生效），也可以传给 [`loadMicroApp`](/zh-CN/api/load-micro-app)（这时只对当前这一个实例生效）。
 
-这些钩子与子应用自身导出的 bootstrap/mount/unmount 是两回事——参见下文的 [MicroAppLifeCycles](#microapplifecycles-子应用自身的导出)。
+要分清楚，这里说的钩子和微应用自己导出的 bootstrap/mount/unmount 不是一回事——后者见下文的 [MicroAppLifeCycles](#microapplifecycles)。
 
 ## 类型
 
@@ -23,66 +23,66 @@ type LifeCycles<T extends ObjectType> = {
 };
 ```
 
-`LoadableApp<T>` 是应用描述对象——`{ name, entry, container, props? }`。完整结构参见[类型参考](/zh-CN/api/types)。
+`LoadableApp<T>` 是应用描述对象，形如 `{ name, entry, container, props? }`，完整结构见[类型参考](/zh-CN/api/types)。
 
-每个钩子可以是单个函数，也可以是一个函数数组。当它是数组时，qiankun 会按顺序依次执行这些函数，并在开始下一个之前 await 前一个。
+每个钩子既可以是单个函数，也可以是一组函数。传数组时，qiankun 按顺序执行它们，前一个 await 完了再跑下一个。
 
 ### 五个钩子
 
-| 钩子 | 触发时机 | 典型用途 |
+| 钩子 | 触发时机 | 常见用途 |
 | --- | --- | --- |
-| `beforeLoad` | 在 fetch 入口 HTML、await 子应用生命周期之前 | 显示全局 loading 指示器、记录一次加载的开始 |
-| `beforeMount` | 在子应用 `mount` 运行之前（mount 阶段内部） | 准备共享上下文、向沙箱全局注入初始值 |
-| `afterMount` | 在子应用 `mount` resolve 之后 | 隐藏 loading 指示器、执行 mount 后的埋点 |
-| `beforeUnmount` | 在子应用 `unmount` 运行之前 | 持久化状态、拆除主应用侧的监听器 |
-| `afterUnmount` | 在子应用 `unmount` resolve 之后 | 最终清理、记录一次会话的结束 |
+| `beforeLoad` | 抓取入口 HTML、await 微应用生命周期之前 | 显示全局 loading、记录一次加载的开始 |
+| `beforeMount` | 微应用 `mount` 执行之前（处于挂载阶段内） | 准备共享上下文、往沙箱全局里塞初始值 |
+| `afterMount` | 微应用 `mount` resolve 之后 | 关掉 loading、跑挂载后的埋点 |
+| `beforeUnmount` | 微应用 `unmount` 执行之前 | 持久化状态、拆掉主应用侧的监听 |
+| `afterUnmount` | 微应用 `unmount` resolve 之后 | 收尾清理、记录一次会话的结束 |
 
 ## 第二个参数是沙箱化的 window
 
-::: danger arg2 是被代理的全局对象，而不是子应用的导出
-`global`（第二个参数）是被**沙箱代理的 `WindowProxy`**，也就是这个微应用把它当作自己 `window` 的那个对象——它既不是子应用导出的生命周期对象，也不是页面真实的 `window`。
+::: danger 第二个参数是被代理的全局对象，不是微应用的导出
+`global`（第二个参数）是**经沙箱代理的 `WindowProxy`**——也就是这个微应用眼里那份属于自己的 `window`，既不是微应用导出的生命周期对象，也不是页面真正的 `window`。
 
-通过 `global` 的读写都被限定在膜（membrane）之内：它们对微应用可见，但不会泄漏到宿主页面，并且会在应用 unmount 时被回滚。绝不要在钩子内部去访问真实的 `window` 或 `document.head`——那样会破坏 [JS 沙箱](/zh-CN/concepts/js-sandbox)，并可能污染其他应用。
+通过 `global` 的读写都被关在隔离膜里：微应用看得到，但不会泄漏到宿主页面，应用卸载时这些改动还会被逐一还原。别在钩子里去碰真正的 `window` 或 `document.head`——那样会绕过 [JS 沙箱](/zh-CN/concepts/js-sandbox)，还可能连累到别的应用。
 :::
 
 ```ts
 const lifeCycles = {
   beforeMount: async (app, global) => {
-    // 正确做法：注入一个微应用会从自己 window 上读取的值。
+    // Correct: seed a value the micro-app reads off its own window.
     global.__APP_THEME__ = 'dark';
   },
 };
 ```
 
-框架自身正是使用这一机制：内置 addon 会在 `beforeLoad`/`beforeMount` 阶段把 `global.__POWERED_BY_QIANKUN__` 和 `global.__INJECTED_PUBLIC_PATH_BY_QIANKUN__` 设置到被代理的 window 上，并在 `beforeUnmount` 阶段移除它们。
+框架自己走的就是这条路：内置 addon 会在 `beforeLoad`/`beforeMount` 阶段往被代理的 window 上设置 `global.__POWERED_BY_QIANKUN__` 和 `global.__INJECTED_PUBLIC_PATH_BY_QIANKUN__`，再在 `beforeUnmount` 时把它们移除。
 
 ## 执行时机
 
-`beforeLoad` 在 `loadApp` 主体中运行，早于 await 入口生命周期。其余四个钩子运行在 single-spa parcel 的 mount/unmount 数组内部，与子应用自身的生命周期交错执行。
+`beforeLoad` 跑在 `loadApp` 主体里，在 await 入口生命周期之前。其余四个钩子跑在 single-spa parcel 的 mount/unmount 数组里，和微应用自己的生命周期交错执行。
 
 ```mermaid
 flowchart TD
-  A[beforeLoad] --> B[fetch + 流式加载入口 HTML]
-  B --> C[解析子应用生命周期]
-  C --> D[mount 阶段]
+  A[beforeLoad] --> B[抓取并流式解析入口 HTML]
+  B --> C[解析微应用生命周期]
+  C --> D[挂载阶段]
   D --> E[beforeMount]
-  E --> F["子应用 mount(props)"]
+  E --> F["微应用 mount(props)"]
   F --> G[afterMount]
-  G -. 稍后 .-> H[unmount 阶段]
+  G -. 稍后 .-> H[卸载阶段]
   H --> I[beforeUnmount]
-  I --> J["子应用 unmount(props)"]
+  I --> J["微应用 unmount(props)"]
   J --> K[afterUnmount]
 ```
 
-完整的 mount 顺序是：初始化/重载容器 → 激活沙箱 → `beforeMount` → 子应用 `mount({ ...props, container })` → `afterMount`。完整的 unmount 顺序是：`beforeUnmount` → 子应用 `unmount({ ...props, container })` → 停用沙箱 → `afterUnmount` → 清空容器。
+完整的挂载顺序是：初始化 / 复用容器 → 激活沙箱 → `beforeMount` → 微应用 `mount({ ...props, container })` → `afterMount`。完整的卸载顺序是：`beforeUnmount` → 微应用 `unmount({ ...props, container })` → 停用沙箱 → `afterUnmount` → 清空容器。
 
-::: info 内置 addon 先于你的钩子运行
-对每个钩子，qiankun 会把两个内置 addon（`engineFlag` 和 `runtimePublicPath`）拼接在你提供的钩子**之前**，然后按顺序运行合并后的链。因此当你的 `beforeMount` 运行时，`__POWERED_BY_QIANKUN__` 和 `__INJECTED_PUBLIC_PATH_BY_QIANKUN__` 已经被设置到 `global` 上。你无法在这些 addon 之前运行。
+::: info 内置 addon 跑在你的钩子之前
+对每个钩子，qiankun 都会把两个内置 addon（`engineFlag` 和 `runtimePublicPath`）拼在你自己传的钩子**前面**，再按顺序执行整条链。所以轮到你的 `beforeMount` 时，`__POWERED_BY_QIANKUN__` 和 `__INJECTED_PUBLIC_PATH_BY_QIANKUN__` 早已设好。你没办法比这些 addon 更早执行。
 :::
 
 ## 示例
 
-传给 `registerMicroApps` 的钩子是全局的——它们会为该次调用中注册的每一个应用触发。`app` 参数告诉你当前正在处理的是哪个应用。
+传给 `registerMicroApps` 的钩子是全局的——本次注册里的每个应用都会触发它们。当前在跑的是哪个应用，看 `app` 参数就知道。
 
 ::: code-group
 
@@ -123,7 +123,7 @@ start();
 
 :::
 
-传入一个数组即可让某个阶段按顺序运行多个函数：
+同一个阶段想跑好几个函数，传数组就行，它们会依次执行：
 
 ```ts
 registerMicroApps(apps, {
@@ -134,7 +134,7 @@ registerMicroApps(apps, {
 });
 ```
 
-在 [`loadMicroApp`](/zh-CN/api/load-micro-app) 中，同样的 `LifeCycles` 对象作为第三个参数，只作用于该实例：
+用 [`loadMicroApp`](/zh-CN/api/load-micro-app) 时，同样的 `LifeCycles` 对象是第三个参数，只作用于当前这个实例：
 
 ```ts
 import { loadMicroApp } from 'qiankun';
@@ -154,9 +154,9 @@ const microApp = loadMicroApp(
 );
 ```
 
-## MicroAppLifeCycles——子应用自身的导出
+## MicroAppLifeCycles：微应用自己导出的生命周期 {#microapplifecycles}
 
-上文的 `LifeCycles` 是**主应用**的钩子集合。它不同于 `MicroAppLifeCycles`——后者是**微应用自身**必须从其入口导出的契约，以便 single-spa 能够驱动它。
+上面那个 `LifeCycles` 是**主应用**这一侧的钩子集合，和 `MicroAppLifeCycles` 不是一回事。后者是**微应用自己**要从入口导出的契约，single-spa 靠它来驱动这个微应用。
 
 ```ts
 type MicroAppLifeCycles = {
@@ -167,12 +167,12 @@ type MicroAppLifeCycles = {
 };
 ```
 
-qiankun 会从入口中发现这些导出：具名 ESM 导出（`export async function mount() {}`）、一个 `export default { bootstrap, mount, unmount }`，或者由 classic/UMD 入口脚本赋值的一个全局变量。`bootstrap`、`mount`、`unmount` 是必需的；`update` 是可选的，且只有当它是函数时才会被接入。
+qiankun 会从入口里去发现这些导出：具名 ESM 导出（`export async function mount() {}`）、`export default { bootstrap, mount, unmount }`，或是 classic/UMD 入口脚本挂上去的一个全局变量。`bootstrap`、`mount`、`unmount` 三个是必需的；`update` 可选，只有当它是函数时才会被接上。
 
-它们每一个都会收到一个 `props` 对象，其中包含 single-spa 注入的 props、你的 `customProps`（应用的 `props`），以及——最关键的——qiankun 注入的 `container: HTMLElement`。子应用必须渲染到 `props.container`，而不是硬编码的选择器。
+这几个函数都会收到一个 `props` 对象，里面既有 single-spa 注入的 props，也有你的 `customProps`（也就是应用的 `props`），还有一个关键的、由 qiankun 注入的 `container: HTMLElement`。微应用必须渲染进 `props.container`，别写死一个选择器。
 
 ```ts
-// react-app/src/index.tsx（微应用）
+// react-app/src/index.tsx (the micro-app)
 export async function bootstrap() {}
 
 export async function mount(props: { container: HTMLElement }) {
@@ -181,19 +181,20 @@ export async function mount(props: { container: HTMLElement }) {
 }
 
 export async function unmount(props: { container: HTMLElement }) {
-  // 拆除应用自身的视图
+  // tear down the app's own view
 }
 ```
 
 ::: warning 两个不同的生命周期概念
-`LifeCycles`（本页）把主应用挂接到微应用的各个阶段上；它的函数接收 `(app, global)`。`MicroAppLifeCycles` 是微应用导出的内容；它的函数接收 `(props)`，其中包含 `container`。它们位于边界的相对两侧。
+`LifeCycles`（本页讲的）是把主应用挂到微应用各阶段上的钩子，函数收到的是 `(app, global)`。`MicroAppLifeCycles` 是微应用自己导出的东西，函数收到的是包含 `container` 的 `(props)`。两者分处边界的两侧。
 :::
 
-关于 props 如何流向子应用、以及 mount/unmount 如何被编排的端到端模型，参见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
+props 是怎么一路流到微应用的、mount/unmount 又是怎么编排的，端到端的模型见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
 
 ## 相关内容
 
 - [registerMicroApps](/zh-CN/api/register-micro-apps)——全局 `lifeCycles` 的注册入口
-- [loadMicroApp](/zh-CN/api/load-micro-app)——按实例的 `lifeCycles`
-- [JS 沙箱](/zh-CN/concepts/js-sandbox)——`global`（arg2）到底是什么
+- [loadMicroApp](/zh-CN/api/load-micro-app)——按实例传入的 `lifeCycles`
+- [JS 沙箱](/zh-CN/concepts/js-sandbox)——`global`（第二个参数）到底是什么
 - [类型参考](/zh-CN/api/types)——`LoadableApp`、`MicroApp` 及相关类型
+```
