@@ -1,5 +1,91 @@
 # @qiankunjs/loader
 
+## 1.0.0-rc.22
+
+### Major Changes
+
+- refactor(webpack-plugin): refactor QiankunPlugin webpack for more bundler support later (#3103)
+
+### Minor Changes
+
+- feat: playwright e2e infrastructure + sandbox/loader fixes it surfaced (#3135)
+- feat: add transformer options for app loader (#2747)
+- feat(loader): compatible with defer entry script (#2801)
+- feat: improve fetch error message by prepending url (#3105)
+- feat(sandbox): support dynamic sync scripts executed by order in sandbox (#2776)
+- feat: change script src before it execute thus we can be more consistent with the native browser logic (#2805)
+- feat(loader): add lru cache for assets fetch by default (#2794)
+- feat(loader): supports passing Response as entry parameter for loadEntry function (#2919)
+- feat: add isRuntimeCompatible api to check qiankun3 compatibility (#2778)
+- feat: support defer scripts and keep the executing order to consist with browser (#2811)
+- feat: support huge inline-script who might be split into multiple chunks during transfer (#2878)
+- feat: support ESM sandbox (#3133)
+- feat: modernize examples on current tech stacks (+4 sandbox/loading fixes it surfaced) (#3138)
+- feat: extract NodeTransformer type to shared package (#2808)
+
+### Patch Changes
+
+- fix(loader): we should invoke our script load listener before its own (#2768)
+- fix: transformer should be generated in every load (#2755)
+- fix: prefer reading script.dataset.src in script load error message (#2831)
+- fix: fix eslint error (#2740)
+- fix(sandbox): should get container from getter function while accessing (#2781)
+- fix(ci): git url
+- fix(qiankun): remove premature lifecycle check to allow fallback detection (#3099)
+- fix: defer scripts should wait until html loaded (#2816)
+- fix(sandbox): should get container from getter function in every accessing
+- fix: dynamic append element should support for the same container between micro apps (#2825)
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @qiankunjs/sandbox@1.0.0-rc.18
+  - @qiankunjs/shared@1.0.0-rc.14
+
 ## 0.0.1-rc.21
 
 ### Patch Changes

@@ -1,5 +1,80 @@
 # @qiankunjs/sandbox
 
+## 1.0.0-rc.18
+
+### Major Changes
+
+- refactor(webpack-plugin): refactor QiankunPlugin webpack for more bundler support later (#3103)
+
+### Minor Changes
+
+- feat: playwright e2e infrastructure + sandbox/loader fixes it surfaced (#3135)
+- feat(sandbox): set proxy appendChild/insertBefore method for every sandbox rather than modify prototype on HTMLElement (#2736)
+- feat(sandbox): support dynamic sync scripts executed by order in sandbox (#2776)
+- feat(loader): add lru cache for assets fetch by default (#2794)
+- feat: runtime style isolation with @scope for micro-app CSS sandboxing (#3123)
+- feat: support defer scripts and keep the executing order to consist with browser (#2811)
+- feat: support huge inline-script who might be split into multiple chunks during transfer (#2878)
+- feat(sandbox): micro app mounting should wait unit rebuilding link element loaded to avoid unstyled content flash (#2784)
+- feat: modernize examples with latest tech stacks
+- feat: optimize lifecycle validation log (#2841)
+- feat(sandbox): use cloneNode api instead of importNode for compatible (#2791)
+- feat: support ESM sandbox (#3133)
+- feat: modernize examples on current tech stacks (+4 sandbox/loading fixes it surfaced) (#3138)
+- feat: not rebind non-native global properties (#2742)
+- feat: pass container with parameters rather than getter function (#2827)
+- feat: extract NodeTransformer type to shared package (#2808)
+- feat(vue): introduce vue component binding (#2775)
+
+### Patch Changes
+
+- fix: should invoke getContainer method to get container every time to avoid reference misordering (#2760)
+- fix(sandbox): should calculate async script order on the fly (#2788)
+- fix: move cheerio to dependencies (#2867)
+- fix: should patch the container head/body element immediately rather than patch its functions with proxy (#2752)
+- fix: fix eslint error (#2740)
+- fix(sandbox): should get container from getter function while accessing (#2781)
+- fix(sandbox): non-hijacking elements should be appended to global document (#2861)
+- fix: should bind listener to window (#3071)
+- fix(ci): git url
+- fix(sandbox): createElement hijack must be paired to avoid rewriting leak (#2783)
+- fix(sandbox): compatible with dynamically appending scripts to detached containers (#2857)
+- fix: defer scripts should wait until html loaded (#2816)
+- fix: double quote link element href as selector (#2865)
+- fix: add write permissions for changeset workflow (#3112)
+- fix(sandbox): compatible with dynamically appending stylesheets to detached containers (#2860)
+- fix(sandbox): should get container from getter function in every accessing
+- fix: dynamic append element should support for the same container between micro apps (#2825)
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @qiankunjs/shared@1.0.0-rc.14
+
 ## 0.0.1-rc.17
 
 ### Patch Changes

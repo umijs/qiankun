@@ -1,5 +1,105 @@
 # qiankun
 
+## 3.0.0-rc.22
+
+### Minor Changes
+
+- feat: playwright e2e infrastructure + sandbox/loader fixes it surfaced (#3135)
+- feat: remove lru-cache and move wrapFetch to shared package (#2796)
+- feat: add transformer options for app loader (#2747)
+- feat: introduce create qiankun cli (#2700)
+- feat: remove webpack chunk cache attributes just while there are multi instances loaded on document (#2873)
+- feat(sandbox): support dynamic sync scripts executed by order in sandbox (#2776)
+- feat(apis): add legacy APIs for qiankun 3.0 (#2823)
+- feat(loader): add lru cache for assets fetch by default (#2794)
+- feat(loader): supports passing Response as entry parameter for loadEntry function (#2919)
+- feat: add isRuntimeCompatible api to check qiankun3 compatibility (#2778)
+- feat: runtime style isolation with @scope for micro-app CSS sandboxing (#3123)
+- feat: support huge inline-script who might be split into multiple chunks during transfer (#2878)
+- feat: enable sandbox by default (#2814)
+- feat: modernize examples with latest tech stacks
+- feat: optimize lifecycle validation log (#2841)
+- feat: support ESM sandbox (#3133)
+- feat: modernize examples on current tech stacks (+4 sandbox/loading fixes it surfaced) (#3138)
+- feat: make loadEntry and beforeLoad runs parallelly (#2749)
+- feat(shared): introduce retryable and throwable to fetch-utils (#2921)
+- feat: pass container with parameters rather than getter function (#2827)
+- feat: extract NodeTransformer type to shared package (#2808)
+- feat(vue): introduce vue component binding (#2775)
+
+### Patch Changes
+
+- fix: transformer should be generated in every load (#2755)
+- fix: should invoke getContainer method to get container every time to avoid reference misordering (#2760)
+- fix: optimize types and add a warning for preload (#2844)
+- fix: fix eslint error (#2740)
+- fix(sandbox): should get container from getter function while accessing (#2781)
+- fix(qiankun): remove premature lifecycle check to allow fallback detection (#3099)
+- fix: remove unused umd bundle configuration (#2879)
+- fix(doc): fix changelog
+- fix(ci): git url
+- fix(sandbox): should get container from getter function in every accessing
+- fix(qiankun): should remove internal cache of loadMicroApp while loading failed (#2922)
+- fix: should re-init container while app remounted from cache (#2751)
+- fix: dynamic append element should support for the same container between micro apps (#2825)
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @qiankunjs/loader@1.0.0-rc.22
+  - @qiankunjs/sandbox@1.0.0-rc.18
+  - @qiankunjs/shared@1.0.0-rc.14
+
 ## 3.0.0-rc.21
 
 ### Patch Changes

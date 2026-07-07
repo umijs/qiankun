@@ -1,5 +1,26 @@
 # @qiankunjs/react
 
+## 0.1.0-rc.15
+
+### Minor Changes
+
+- feat(sandbox): support dynamic sync scripts executed by order in sandbox (#2776)
+- feat(loader): add lru cache for assets fetch by default (#2794)
+- feat: refactor-microapp (#2853)
+- feat: not rebind non-native global properties (#2742)
+- feat: extract NodeTransformer type to shared package (#2808)
+- feat(vue): introduce vue component binding (#2775)
+
+### Patch Changes
+
+- fix(sandbox): should get container from getter function while accessing (#2781)
+- fix: remove unused umd bundle configuration (#2879)
+- fix(sandbox): should get container from getter function in every accessing
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @qiankunjs/ui-shared@0.1.0-rc.2
+
 ## 0.0.1-rc.14
 
 ### Patch Changes

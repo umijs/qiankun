@@ -1,5 +1,44 @@
 # @qiankunjs/shared
 
+## 1.0.0-rc.14
+
+### Major Changes
+
+- refactor(webpack-plugin): refactor QiankunPlugin webpack for more bundler support later (#3103)
+
+### Minor Changes
+
+- feat: playwright e2e infrastructure + sandbox/loader fixes it surfaced (#3135)
+- feat: remove lru-cache and move wrapFetch to shared package (#2796)
+- feat(loader): compatible with defer entry script (#2801)
+- feat: remove webpack chunk cache attributes just while there are multi instances loaded on document (#2873)
+- feat: improve fetch error message by prepending url (#3105)
+- feat(sandbox): support dynamic sync scripts executed by order in sandbox (#2776)
+- feat(transpiler): assets transpiler should work well while sandbox disabled (#2793)
+- feat: change script src before it execute thus we can be more consistent with the native browser logic (#2805)
+- feat(loader): add lru cache for assets fetch by default (#2794)
+- feat: add isRuntimeCompatible api to check qiankun3 compatibility (#2778)
+- feat: runtime style isolation with @scope for micro-app CSS sandboxing (#3123)
+- feat: support defer scripts and keep the executing order to consist with browser (#2811)
+- feat: support huge inline-script who might be split into multiple chunks during transfer (#2878)
+- feat: support ESM sandbox (#3133)
+- feat: modernize examples on current tech stacks (+4 sandbox/loading fixes it surfaced) (#3138)
+- feat(shared): introduce retryable and throwable to fetch-utils (#2921)
+- feat: extract NodeTransformer type to shared package (#2808)
+
+### Patch Changes
+
+- fix: should not transform url which have entired protocol already (#3110)
+- fix: move cheerio to dependencies (#2867)
+- fix: optimize types and add a warning for preload (#2844)
+- fix: fix eslint error (#2740)
+- fix(ci): git url
+- refactor(shared): replace semver with compare-versions (#3107)
+- fix: remove inline script source-url (#2850)
+- fix: defer scripts should wait until html loaded (#2816)
+- fix(esm-sandbox): rewrite modulepreload as preload-as-fetch to align with classic path (#3136)
+- fix: dynamic append element should support for the same container between micro apps (#2825)
+
 ## 0.0.1-rc.13
 
 ### Patch Changes

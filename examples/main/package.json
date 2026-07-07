@@ -1,7 +1,7 @@
 {
   "name": "qiankun-example-main",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1-rc.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

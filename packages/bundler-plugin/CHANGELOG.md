@@ -1,5 +1,19 @@
 # @qiankunjs/webpack-plugin
 
+## 1.0.0-rc.2
+
+### Major Changes
+
+- refactor(webpack-plugin): refactor QiankunPlugin webpack for more bundler support later (#3103)
+
+### Minor Changes
+
+- feat: modernize examples on current tech stacks (+4 sandbox/loading fixes it surfaced) (#3138)
+
+### Patch Changes
+
+- fix: changeset version confusion (#3111)
+
 ## 0.0.1-rc.1
 
 ### Patch Changes
