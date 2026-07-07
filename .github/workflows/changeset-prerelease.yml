@@ -17,6 +17,10 @@ jobs:
     environment: changeset-release
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history + tags: the changeset/release-notes generators derive
+          # the release range from `git describe`/`git log` (see scripts/commit-utils.mjs).
+          fetch-depth: 0
 
       - name: Setup PNPM
         uses: pnpm/action-setup@v2
@@ -33,6 +37,13 @@ jobs:
 
       - name: Build Packages
         run: pnpm run build
+
+      # Replaces the manual "write a .changeset/*.md per PR" step: derive the
+      # pending changesets from Conventional Commits since the last release, so
+      # the changesets action below picks them up like hand-written ones.
+      # Idempotent (files named auto-<sha>); over-wide ranges never duplicate.
+      - name: Generate changesets from commits
+        run: node scripts/generate-changesets.mjs
 
       - name: Create Release Pull Request or Publish
         id: changesets
@@ -52,6 +63,9 @@ jobs:
           VERSION=$(jq -r '.version' packages/qiankun/package.json)
           TAG="v${VERSION}"
 
+          # Aggregate every published package's CHANGELOG entry into one set of
+          # notes → a single GitHub Release. It can then be polished after the
+          # fact via the /release-changelog skill (gh release edit).
           node scripts/generate-release-notes.mjs '${{ steps.changesets.outputs.publishedPackages }}' > /tmp/release-notes.md
 
           gh release create "${TAG}" \

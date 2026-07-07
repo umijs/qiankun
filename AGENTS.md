@@ -99,7 +99,7 @@ TypeScript is strict + type-checked (`@typescript-eslint/recommended-requiring-t
 Build/release:
 
 - `father` build, dual ESM+CJS; packages use `main`/`module`/`types` (no `exports` field).
-- Versioning via **changesets** — add a changeset (`.changeset/`) for any user-facing change.
+- Versioning via **changesets**, but changesets are **auto-derived from Conventional Commits** in CI (`scripts/generate-changesets.mjs`) — do **not** hand-write `.changeset/*.md`. Just land a well-formed conventional commit (`feat`/`fix`/`feat!`…); the release job maps changed files → packages and infers the bump. Each sub-package keeps its own `CHANGELOG.md` (changeset default, visible on npm); on publish `scripts/generate-release-notes.mjs` aggregates them into **one GitHub Release**, which can be polished after the fact via the `/release-changelog` skill (`gh release edit`). Full flow: `.changeset/README.md`.
 - Conventional commits enforced by commitlint (`feat:`, `fix:`, `feat(esm-sandbox):`, …).
 
 ## ANTI-PATTERNS (this project)
