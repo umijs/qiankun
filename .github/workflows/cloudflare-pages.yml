@@ -65,10 +65,16 @@ jobs:
             --project-name=qiankun --branch="$DEPLOY_BRANCH" 2>&1) || code=$?
           echo "$output"
           if [ "${code:-0}" -ne 0 ]; then exit "$code"; fi
-          # The exact per-deploy URL is the last *.pages.dev printed by wrangler.
-          deploy_url=$(printf '%s\n' "$output" | grep -oE 'https://[a-z0-9-]+\.qiankun\.pages\.dev' | tail -n1 || true)
-          # The branch alias is deterministic and stable across a PR's pushes.
-          alias_url="https://${DEPLOY_BRANCH}.qiankun.pages.dev"
+          # Parse the real URLs from wrangler's output — the project's public
+          # subdomain (e.g. qiankun-d6r.pages.dev) is not derivable from the name.
+          # "alias URL"     -> stable per-branch link (pr-<n>.<project>.pages.dev)
+          # "peek over at"  -> unique per-deploy link (<hash>.<project>.pages.dev)
+          alias_url=$(printf '%s\n' "$output" | sed -n 's#.*[Aa]lias URL: *\(https://[A-Za-z0-9.-]*\.pages\.dev\).*#\1#p' | tail -n1)
+          deploy_url=$(printf '%s\n' "$output" | sed -n 's#.*peek over at \(https://[A-Za-z0-9.-]*\.pages\.dev\).*#\1#p' | tail -n1)
+          # Fall back to any *.pages.dev URL if the wording changes.
+          any_url=$(printf '%s\n' "$output" | grep -oE 'https://[A-Za-z0-9.-]+\.pages\.dev' | tail -n1 || true)
+          [ -z "$deploy_url" ] && deploy_url="$any_url"
+          [ -z "$alias_url" ] && alias_url="$deploy_url"
           echo "deploy_url=$deploy_url" >> "$GITHUB_OUTPUT"
           echo "alias_url=$alias_url" >> "$GITHUB_OUTPUT"
 
