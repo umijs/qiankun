@@ -1,16 +1,20 @@
-# Lifecycles
+# 生命周期钩子（LifeCycles）
 
-生命周期钩子允许您在微应用生命周期的不同阶段执行自定义逻辑。这些钩子在应用加载、挂载和卸载过程中由 qiankun 自动执行。
+主应用的生命周期钩子让主应用能够观察并响应微应用在加载、mount、unmount 各个阶段的状态。你可以把它们传给 [`registerMicroApps`](/zh-CN/api/register-micro-apps)（此时它们会全局作用于每一个注册的应用），或者传给 [`loadMicroApp`](/zh-CN/api/load-micro-app)（此时它们只作用于那一个实例）。
 
-## 🎯 类型定义
+这些钩子与子应用自身导出的 bootstrap/mount/unmount 是两回事——参见下文的 [MicroAppLifeCycles](#microapplifecycles-子应用自身的导出)。
 
-```typescript
-export type LifeCycleFn<T extends ObjectType> = (
-  app: LoadableApp<T>, 
-  global: WindowProxy
+## 类型
+
+```ts
+type ObjectType = Record<string, unknown>;
+
+type LifeCycleFn<T extends ObjectType> = (
+  app: LoadableApp<T>,
+  global: WindowProxy,
 ) => Promise<void>;
 
-export type LifeCycles<T extends ObjectType> = {
+type LifeCycles<T extends ObjectType> = {
   beforeLoad?: LifeCycleFn<T> | Array<LifeCycleFn<T>>;
   beforeMount?: LifeCycleFn<T> | Array<LifeCycleFn<T>>;
   afterMount?: LifeCycleFn<T> | Array<LifeCycleFn<T>>;
@@ -19,537 +23,177 @@ export type LifeCycles<T extends ObjectType> = {
 };
 ```
 
-## 📋 可用的生命周期钩子
+`LoadableApp<T>` 是应用描述对象——`{ name, entry, container, props? }`。完整结构参见[类型参考](/zh-CN/api/types)。
 
-### beforeLoad
+每个钩子可以是单个函数，也可以是一个函数数组。当它是数组时，qiankun 会按顺序依次执行这些函数，并在开始下一个之前 await 前一个。
 
-**时机**: 在微应用开始加载之前调用。
+### 五个钩子
 
-**目的**: 在获取和解析应用代码之前执行设置任务。
+| 钩子 | 触发时机 | 典型用途 |
+| --- | --- | --- |
+| `beforeLoad` | 在 fetch 入口 HTML、await 子应用生命周期之前 | 显示全局 loading 指示器、记录一次加载的开始 |
+| `beforeMount` | 在子应用 `mount` 运行之前（mount 阶段内部） | 准备共享上下文、向沙箱全局注入初始值 |
+| `afterMount` | 在子应用 `mount` resolve 之后 | 隐藏 loading 指示器、执行 mount 后的埋点 |
+| `beforeUnmount` | 在子应用 `unmount` 运行之前 | 持久化状态、拆除主应用侧的监听器 |
+| `afterUnmount` | 在子应用 `unmount` resolve 之后 | 最终清理、记录一次会话的结束 |
 
-```typescript
-beforeLoad: async (app, global) => {
-  console.log(`About to load ${app.name}`);
-  // Setup global configurations
-  global.__INITIAL_CONFIG__ = getInitialConfig();
-}
+## 第二个参数是沙箱化的 window
+
+::: danger arg2 是被代理的全局对象，而不是子应用的导出
+`global`（第二个参数）是被**沙箱代理的 `WindowProxy`**，也就是这个微应用把它当作自己 `window` 的那个对象——它既不是子应用导出的生命周期对象，也不是页面真实的 `window`。
+
+通过 `global` 的读写都被限定在膜（membrane）之内：它们对微应用可见，但不会泄漏到宿主页面，并且会在应用 unmount 时被回滚。绝不要在钩子内部去访问真实的 `window` 或 `document.head`——那样会破坏 [JS 沙箱](/zh-CN/concepts/js-sandbox)，并可能污染其他应用。
+:::
+
+```ts
+const lifeCycles = {
+  beforeMount: async (app, global) => {
+    // 正确做法：注入一个微应用会从自己 window 上读取的值。
+    global.__APP_THEME__ = 'dark';
+  },
+};
 ```
 
-### beforeMount
+框架自身正是使用这一机制：内置 addon 会在 `beforeLoad`/`beforeMount` 阶段把 `global.__POWERED_BY_QIANKUN__` 和 `global.__INJECTED_PUBLIC_PATH_BY_QIANKUN__` 设置到被代理的 window 上，并在 `beforeUnmount` 阶段移除它们。
 
-**时机**: 在应用加载完成后但在挂载到 DOM 之前调用。
+## 执行时机
 
-**目的**: 在应用激活之前执行最终设置。
-
-```typescript
-beforeMount: async (app, global) => {
-  console.log(`About to mount ${app.name}`);
-  // Initialize services
-  await initializeServices();
-  // Set loading state
-  setLoadingState(false);
-}
-```
-
-### afterMount
-
-**时机**: 在微应用成功挂载后调用。
-
-**目的**: 执行挂载后操作，如分析、功能初始化等。
-
-```typescript
-afterMount: async (app, global) => {
-  console.log(`${app.name} mounted successfully`);
-  // Track analytics
-  analytics.track('micro_app_mounted', { appName: app.name });
-  // Initialize features that depend on DOM
-  initializeDOMDependentFeatures();
-}
-```
-
-### beforeUnmount
-
-**时机**: 在微应用开始卸载之前调用。
-
-**目的**: 在应用被移除之前执行清理操作。
-
-```typescript
-beforeUnmount: async (app, global) => {
-  console.log(`About to unmount ${app.name}`);
-  // Save application state
-  saveApplicationState(app.name);
-  // Cleanup event listeners
-  cleanupEventListeners();
-}
-```
-
-### afterUnmount
-
-**时机**: 在微应用完全卸载后调用。
-
-**目的**: 最终清理和资源释放。
-
-```typescript
-afterUnmount: async (app, global) => {
-  console.log(`${app.name} unmounted`);
-  // Clear caches
-  clearApplicationCache(app.name);
-  // Reset global state
-  resetGlobalState();
-}
-```
-
-## 🔄 生命周期流程
+`beforeLoad` 在 `loadApp` 主体中运行，早于 await 入口生命周期。其余四个钩子运行在 single-spa parcel 的 mount/unmount 数组内部，与子应用自身的生命周期交错执行。
 
 ```mermaid
-graph TD
-    A[Start Loading] --> B[beforeLoad]
-    B --> C[Load Application Code]
-    C --> D[beforeMount]
-    D --> E[Mount Application]
-    E --> F[afterMount]
-    F --> G[Application Running]
-    G --> H[beforeUnmount]
-    H --> I[Unmount Application]
-    I --> J[afterUnmount]
-    J --> K[Application Cleaned Up]
+flowchart TD
+  A[beforeLoad] --> B[fetch + 流式加载入口 HTML]
+  B --> C[解析子应用生命周期]
+  C --> D[mount 阶段]
+  D --> E[beforeMount]
+  E --> F["子应用 mount(props)"]
+  F --> G[afterMount]
+  G -. 稍后 .-> H[unmount 阶段]
+  H --> I[beforeUnmount]
+  I --> J["子应用 unmount(props)"]
+  J --> K[afterUnmount]
 ```
 
-## 💡 使用示例
+完整的 mount 顺序是：初始化/重载容器 → 激活沙箱 → `beforeMount` → 子应用 `mount({ ...props, container })` → `afterMount`。完整的 unmount 顺序是：`beforeUnmount` → 子应用 `unmount({ ...props, container })` → 停用沙箱 → `afterUnmount` → 清空容器。
 
-### 与 registerMicroApps 一起使用
+::: info 内置 addon 先于你的钩子运行
+对每个钩子，qiankun 会把两个内置 addon（`engineFlag` 和 `runtimePublicPath`）拼接在你提供的钩子**之前**，然后按顺序运行合并后的链。因此当你的 `beforeMount` 运行时，`__POWERED_BY_QIANKUN__` 和 `__INJECTED_PUBLIC_PATH_BY_QIANKUN__` 已经被设置到 `global` 上。你无法在这些 addon 之前运行。
+:::
 
-```typescript
+## 示例
+
+传给 `registerMicroApps` 的钩子是全局的——它们会为该次调用中注册的每一个应用触发。`app` 参数告诉你当前正在处理的是哪个应用。
+
+::: code-group
+
+```ts [main/src/index.ts]
 import { registerMicroApps, start } from 'qiankun';
 
-registerMicroApps([
+registerMicroApps(
+  [
+    {
+      name: 'react-app',
+      entry: 'http://localhost:7100',
+      container: document.getElementById('subapp-container')!,
+      activeRule: '/react',
+    },
+  ],
   {
-    name: 'react-app',
-    entry: '//localhost:7100',
-    container: '#subapp-viewport',
-    activeRule: '/react',
-  }
-], {
-  beforeLoad: async (app) => {
-    console.log('Loading app:', app.name);
+    beforeLoad: async (app) => {
+      console.log('[before load]', app.name);
+    },
+    beforeMount: async (app, global) => {
+      console.log('[before mount]', app.name);
+      global.__APP_THEME__ = 'dark';
+    },
+    afterMount: async (app) => {
+      console.log('[after mount]', app.name);
+    },
+    beforeUnmount: async (app) => {
+      console.log('[before unmount]', app.name);
+    },
+    afterUnmount: async (app) => {
+      console.log('[after unmount]', app.name);
+    },
   },
-  afterMount: async (app) => {
-    console.log('App mounted:', app.name);
-  },
-  beforeUnmount: async (app) => {
-    console.log('Unmounting app:', app.name);
-  }
-});
+);
 
 start();
 ```
 
-### 与 loadMicroApp 一起使用
+:::
 
-```typescript
-import { loadMicroApp } from 'qiankun';
+传入一个数组即可让某个阶段按顺序运行多个函数：
 
-const microApp = loadMicroApp({
-  name: 'dashboard',
-  entry: '//localhost:8080',
-  container: '#dashboard-container',
-}, undefined, {
-  beforeLoad: async (app, global) => {
-    // Setup dashboard-specific configurations
-    global.DASHBOARD_CONFIG = getDashboardConfig();
-  },
-  afterMount: async (app) => {
-    // Initialize dashboard widgets
-    initializeDashboardWidgets();
-  }
+```ts
+registerMicroApps(apps, {
+  beforeMount: [
+    async (app) => console.log('[1]', app.name),
+    async (app) => console.log('[2]', app.name),
+  ],
 });
 ```
 
-### 多个钩子
+在 [`loadMicroApp`](/zh-CN/api/load-micro-app) 中，同样的 `LifeCycles` 对象作为第三个参数，只作用于该实例：
 
-```typescript
-// You can provide multiple hooks as an array
-const lifecycles = {
-  beforeMount: [
-    async (app) => {
-      await setupDatabase();
+```ts
+import { loadMicroApp } from 'qiankun';
+
+const microApp = loadMicroApp(
+  {
+    name: 'react-app',
+    entry: 'http://localhost:7100',
+    container: document.getElementById('subapp-container')!,
+  },
+  { sandbox: true },
+  {
+    afterMount: async (app) => {
+      console.log('mounted', app.name);
     },
-    async (app) => {
-      await setupAnalytics();
-    },
-    async (app) => {
-      await setupFeatureFlags();
-    }
-  ],
-  afterMount: [
-    async (app) => {
-      trackPageView(app.name);
-    },
-    async (app) => {
-      initializeUserTracking();
-    }
-  ]
+  },
+);
+```
+
+## MicroAppLifeCycles——子应用自身的导出
+
+上文的 `LifeCycles` 是**主应用**的钩子集合。它不同于 `MicroAppLifeCycles`——后者是**微应用自身**必须从其入口导出的契约，以便 single-spa 能够驱动它。
+
+```ts
+type MicroAppLifeCycles = {
+  bootstrap: (props) => Promise<void>;
+  mount: (props) => Promise<void>;
+  unmount: (props) => Promise<void>;
+  update?: (props) => Promise<void>;
 };
 ```
 
-## 🔧 高级模式
+qiankun 会从入口中发现这些导出：具名 ESM 导出（`export async function mount() {}`）、一个 `export default { bootstrap, mount, unmount }`，或者由 classic/UMD 入口脚本赋值的一个全局变量。`bootstrap`、`mount`、`unmount` 是必需的；`update` 是可选的，且只有当它是函数时才会被接入。
 
-### 1. 状态管理集成
+它们每一个都会收到一个 `props` 对象，其中包含 single-spa 注入的 props、你的 `customProps`（应用的 `props`），以及——最关键的——qiankun 注入的 `container: HTMLElement`。子应用必须渲染到 `props.container`，而不是硬编码的选择器。
 
-```typescript
-import { store } from './store';
+```ts
+// react-app/src/index.tsx（微应用）
+export async function bootstrap() {}
 
-const lifecycles = {
-  beforeLoad: async (app) => {
-    // Set loading state
-    store.dispatch({ type: 'SET_APP_LOADING', payload: { appName: app.name, loading: true } });
-  },
-  
-  afterMount: async (app) => {
-    // Update mounted apps list
-    store.dispatch({ type: 'ADD_MOUNTED_APP', payload: app.name });
-    store.dispatch({ type: 'SET_APP_LOADING', payload: { appName: app.name, loading: false } });
-  },
-  
-  beforeUnmount: async (app) => {
-    // Save app state before unmounting
-    const appState = getAppState(app.name);
-    store.dispatch({ type: 'SAVE_APP_STATE', payload: { appName: app.name, state: appState } });
-  },
-  
-  afterUnmount: async (app) => {
-    // Remove from mounted apps list
-    store.dispatch({ type: 'REMOVE_MOUNTED_APP', payload: app.name });
-  }
-};
-```
-
-### 2. 错误处理
-
-```typescript
-const lifecycles = {
-  beforeLoad: async (app) => {
-    try {
-      await performPreLoadChecks(app);
-    } catch (error) {
-      console.error(`Pre-load checks failed for ${app.name}:`, error);
-      // Optionally prevent loading by throwing
-      throw new Error(`Failed to initialize ${app.name}`);
-    }
-  },
-  
-  afterMount: async (app) => {
-    try {
-      await performPostMountTasks(app);
-    } catch (error) {
-      console.error(`Post-mount tasks failed for ${app.name}:`, error);
-      // Log error but don't prevent the app from running
-      reportError(error, { context: 'afterMount', appName: app.name });
-    }
-  }
-};
-```
-
-### 3. 性能监控
-
-```typescript
-const performanceTracker = new Map();
-
-const lifecycles = {
-  beforeLoad: async (app) => {
-    performanceTracker.set(app.name, {
-      loadStart: performance.now()
-    });
-  },
-  
-  beforeMount: async (app) => {
-    const timing = performanceTracker.get(app.name);
-    timing.loadEnd = performance.now();
-    timing.mountStart = performance.now();
-  },
-  
-  afterMount: async (app) => {
-    const timing = performanceTracker.get(app.name);
-    timing.mountEnd = performance.now();
-    
-    // Calculate and report metrics
-    const loadTime = timing.loadEnd - timing.loadStart;
-    const mountTime = timing.mountEnd - timing.mountStart;
-    
-    analytics.track('micro_app_performance', {
-      appName: app.name,
-      loadTime,
-      mountTime,
-      totalTime: loadTime + mountTime
-    });
-  }
-};
-```
-
-### 4. 资源管理
-
-```typescript
-const resourceMap = new Map();
-
-const lifecycles = {
-  beforeMount: async (app) => {
-    // Allocate resources
-    const resources = await allocateResources(app.name);
-    resourceMap.set(app.name, resources);
-  },
-  
-  beforeUnmount: async (app) => {
-    // Save critical data
-    const resources = resourceMap.get(app.name);
-    if (resources) {
-      await saveCriticalData(app.name, resources);
-    }
-  },
-  
-  afterUnmount: async (app) => {
-    // Release resources
-    const resources = resourceMap.get(app.name);
-    if (resources) {
-      await releaseResources(resources);
-      resourceMap.delete(app.name);
-    }
-  }
-};
-```
-
-## 🎯 常见用例
-
-### 1. 加载状态
-
-```typescript
-const loadingManager = {
-  show: (appName) => {
-    const loader = document.createElement('div');
-    loader.id = `loader-${appName}`;
-    loader.innerHTML = '<div class="spinner">Loading...</div>';
-    document.body.appendChild(loader);
-  },
-  
-  hide: (appName) => {
-    const loader = document.getElementById(`loader-${appName}`);
-    if (loader) loader.remove();
-  }
-};
-
-const lifecycles = {
-  beforeLoad: async (app) => {
-    loadingManager.show(app.name);
-  },
-  
-  afterMount: async (app) => {
-    loadingManager.hide(app.name);
-  }
-};
-```
-
-### 2. 身份验证检查
-
-```typescript
-const lifecycles = {
-  beforeLoad: async (app) => {
-    const isAuthenticated = await checkAuthentication();
-    if (!isAuthenticated) {
-      throw new Error('User not authenticated');
-    }
-  },
-  
-  beforeMount: async (app, global) => {
-    // Inject user context
-    const userContext = await getUserContext();
-    global.__USER_CONTEXT__ = userContext;
-  }
-};
-```
-
-### 3. 主题同步
-
-```typescript
-const lifecycles = {
-  beforeMount: async (app, global) => {
-    // Sync theme with micro app
-    const currentTheme = getCurrentTheme();
-    global.__THEME__ = currentTheme;
-    
-    // Apply theme-specific styles
-    applyThemeStyles(currentTheme);
-  },
-  
-  afterUnmount: async (app) => {
-    // Clean up theme styles
-    removeThemeStyles(app.name);
-  }
-};
-```
-
-### 4. 特性标志管理
-
-```typescript
-const lifecycles = {
-  beforeLoad: async (app, global) => {
-    // Load feature flags for the specific app
-    const featureFlags = await getFeatureFlags(app.name);
-    global.__FEATURE_FLAGS__ = featureFlags;
-  },
-  
-  afterMount: async (app) => {
-    // Track which features are enabled
-    trackEnabledFeatures(app.name);
-  }
-};
-```
-
-## ⚠️ 重要注意事项
-
-### 1. 钩子执行顺序
-
-```typescript
-// Hooks are executed in this order:
-// 1. beforeLoad (before app code is loaded)
-// 2. beforeMount (after load, before DOM mount)
-// 3. afterMount (after DOM mount)
-// ... app is running ...
-// 4. beforeUnmount (before DOM unmount)
-// 5. afterUnmount (after DOM unmount)
-```
-
-### 2. 错误处理
-
-```typescript
-// ❌ 错误：未处理的错误可能破坏生命周期
-beforeLoad: async (app) => {
-  riskyOperation(); // This could throw
+export async function mount(props: { container: HTMLElement }) {
+  const root = ReactDOM.createRoot(props.container.querySelector('#root')!);
+  root.render(<App />);
 }
 
-// ✅ 正确：始终处理潜在错误
-beforeLoad: async (app) => {
-  try {
-    await riskyOperation();
-  } catch (error) {
-    console.error('Error in beforeLoad:', error);
-    // Decide whether to throw or handle gracefully
-  }
+export async function unmount(props: { container: HTMLElement }) {
+  // 拆除应用自身的视图
 }
 ```
 
-### 3. 异步操作
+::: warning 两个不同的生命周期概念
+`LifeCycles`（本页）把主应用挂接到微应用的各个阶段上；它的函数接收 `(app, global)`。`MicroAppLifeCycles` 是微应用导出的内容；它的函数接收 `(props)`，其中包含 `container`。它们位于边界的相对两侧。
+:::
 
-```typescript
-// ✅ 正确：所有生命周期钩子都是异步的
-beforeMount: async (app) => {
-  await setupDatabase();
-  await loadUserPreferences();
-}
+关于 props 如何流向子应用、以及 mount/unmount 如何被编排的端到端模型，参见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
 
-// ❌ 错误：不要忘记异步操作的 await
-beforeMount: async (app) => {
-  setupDatabase(); // Missing await!
-  loadUserPreferences(); // Missing await!
-}
-```
+## 相关内容
 
-### 4. 全局上下文
-
-```typescript
-// ✅ 正确：使用提供的全局上下文
-beforeMount: async (app, global) => {
-  global.MY_CONFIG = getConfig(); // Set on the isolated global
-}
-
-// ❌ 错误：不要直接使用 window
-beforeMount: async (app, global) => {
-  window.MY_CONFIG = getConfig(); // Might affect other apps
-}
-```
-
-## 🚀 最佳实践
-
-### 1. 保持钩子轻量
-
-```typescript
-// ✅ 正确：快速操作
-beforeMount: async (app) => {
-  setAppTheme(app.name);
-  updateNavigationState();
-}
-
-// ❌ 错误：重操作
-beforeMount: async (app) => {
-  await downloadLargeDataset(); // This will block mounting
-  await processHeavyCalculations();
-}
-```
-
-### 2. 使用钩子数组进行组织
-
-```typescript
-const lifecycles = {
-  beforeMount: [
-    setupAuthentication,
-    setupTheme,
-    setupAnalytics,
-    setupFeatureFlags
-  ],
-  afterMount: [
-    trackPageView,
-    initializeWidgets,
-    preloadCriticalData
-  ]
-};
-```
-
-### 3. 一致的错误日志记录
-
-```typescript
-const createSafeHook = (hookName, hookFn) => async (app, global) => {
-  try {
-    await hookFn(app, global);
-  } catch (error) {
-    console.error(`Error in ${hookName} for ${app.name}:`, error);
-    // Report to error tracking service
-    errorTracker.report(error, { hook: hookName, app: app.name });
-  }
-};
-
-const lifecycles = {
-  beforeLoad: createSafeHook('beforeLoad', async (app) => {
-    // Your beforeLoad logic
-  }),
-  afterMount: createSafeHook('afterMount', async (app) => {
-    // Your afterMount logic
-  })
-};
-```
-
-### 4. 资源清理
-
-```typescript
-// Track resources in a way that survives app reloads
-const globalResourceMap = window.__QIANKUN_RESOURCES__ || new Map();
-window.__QIANKUN_RESOURCES__ = globalResourceMap;
-
-const lifecycles = {
-  beforeMount: async (app) => {
-    const resources = await allocateResources();
-    globalResourceMap.set(app.name, resources);
-  },
-  
-  afterUnmount: async (app) => {
-    const resources = globalResourceMap.get(app.name);
-    if (resources) {
-      await cleanupResources(resources);
-      globalResourceMap.delete(app.name);
-    }
-  }
-};
-```
-
-## 🔗 相关 API
-
-- [registerMicroApps](/zh-CN/api/register-micro-apps) - 与已注册应用一起使用生命周期
-- [loadMicroApp](/zh-CN/api/load-micro-app) - 与手动加载的应用一起使用生命周期
-- [start](/zh-CN/api/start) - 框架启动配置 
+- [registerMicroApps](/zh-CN/api/register-micro-apps)——全局 `lifeCycles` 的注册入口
+- [loadMicroApp](/zh-CN/api/load-micro-app)——按实例的 `lifeCycles`
+- [JS 沙箱](/zh-CN/concepts/js-sandbox)——`global`（arg2）到底是什么
+- [类型参考](/zh-CN/api/types)——`LoadableApp`、`MicroApp` 及相关类型

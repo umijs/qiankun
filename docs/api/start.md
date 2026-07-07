@@ -1,407 +1,82 @@
 # start
 
-Start the qiankun framework. This function initializes the micro-frontend system and enables automatic routing-based micro application loading.
+Boots the qiankun runtime and hands control to single-spa's router. Call `start()` once, after you have registered your micro-apps with [registerMicroApps](/api/register-micro-apps), so single-spa begins matching the current URL against each app's `activeRule` and mounts the ones that match.
 
-## 🎯 Function Signature
+## Signature
 
-```typescript
+```ts
 function start(opts?: StartOpts): void
 ```
 
-## 📋 Parameters
-
-### opts
-
-- **Type**: `StartOpts`
-- **Required**: ❌
-- **Description**: Startup configuration options
-
-```typescript
-interface StartOpts {
-  prefetch?: boolean | 'all' | string[] | ((apps: RegistrableApp[]) => { criticalAppNames: string[]; minorAppsName: string[] });
-  sandbox?: boolean | { strictStyleIsolation?: boolean; experimentalStyleIsolation?: boolean; };
-  singular?: boolean;
-  urlRerouteOnly?: boolean;
-  // ... other single-spa start options
-}
-```
+`StartOpts` is single-spa's own type. In qiankun v3 it exposes a single field:
 
 | Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `prefetch` | `boolean \| 'all' \| string[] \| Function` | `true` | Resource prefetch strategy |
-| `sandbox` | `boolean \| SandboxOpts` | `true` | Sandbox isolation configuration |
-| `singular` | `boolean` | `true` | Whether only one micro app can be mounted at a time |
-| `urlRerouteOnly` | `boolean` | `true` | Whether to trigger routing only on URL changes |
+| --- | --- | --- | --- |
+| `urlRerouteOnly` | `boolean` | `false` | Forwarded straight to single-spa. When `true`, single-spa only reroutes when the URL actually changes, so `history.pushState` / `history.replaceState` calls that do not change the URL will not trigger a reroute. See the [single-spa API docs](https://single-spa.js.org/docs/api#start). |
 
-## 💡 Usage Examples
-
-### Basic Usage
-
-```typescript
+```ts
 import { registerMicroApps, start } from 'qiankun';
 
-// Register micro apps first
 registerMicroApps([
-  {
-    name: 'react-app',
-    entry: '//localhost:7100',
-    container: '#subapp-viewport',
-    activeRule: '/react',
-  },
-  {
-    name: 'vue-app',
-    entry: '//localhost:7101',
-    container: '#subapp-viewport',
-    activeRule: '/vue',
-  },
+  /* ... */
 ]);
 
-// Start qiankun
 start();
 ```
 
-### With Configuration
+## What it does
 
-```typescript
-start({
-  prefetch: false,          // Disable prefetch
-  sandbox: true,           // Enable sandbox
-  singular: true,          // Only one app at a time
-  urlRerouteOnly: true,    // Route only on URL changes
-});
+`start()` performs four things, in order, and only on the first call:
+
+```mermaid
+flowchart TD
+  A["start(opts)"] --> B{started?}
+  B -- "true" --> Z["return (no-op)"]
+  B -- "false" --> C["prepareEsmLexer() — warm the ESM wasm lexer"]
+  C --> D["single-spa start(opts)"]
+  D --> E["started = true"]
+  E --> F["resolve the framework-started deferred"]
+  F --> G["registered apps whose activeRule matches now load & mount"]
 ```
 
-### Advanced Sandbox Configuration
+1. Warms the ESM sandbox's WebAssembly lexer via `prepareEsmLexer()`, so the first micro-app to load does not pay the one-time instantiation cost. The transpiler pipeline awaits the same lexer again later as a safety net, so this is purely an optimization.
+2. Calls single-spa's `start(opts)`, forwarding your `opts` unchanged.
+3. Sets the internal `started` flag to `true`.
+4. Resolves the internal framework-started deferred. Each app registered through `registerMicroApps` blocks on this deferred before it loads, so resolving it releases every matching app to begin loading and mounting.
 
-```typescript
-start({
-  sandbox: {
-    strictStyleIsolation: true,      // Enable strict style isolation
-    experimentalStyleIsolation: true, // Enable experimental style isolation
-  }
-});
-```
+::: tip Idempotent
+`start()` is guarded by the internal `started` flag. Calling it more than once is safe and does nothing after the first call. It never throws on a repeat call.
+:::
 
-### Custom Prefetch Strategy
+## `loadMicroApp` starts the framework for you
 
-```typescript
-start({
-  prefetch: 'all', // Prefetch all micro apps
-});
+If you use [loadMicroApp](/api/load-micro-app) for manual, imperative mounting, you do not have to call `start()` yourself. `loadMicroApp` invokes `start()` automatically when the framework has not been started yet, so that the main app's `pushState` / `replaceState` navigations dispatch `popstate` correctly through single-spa.
 
-// Or prefetch specific apps
-start({
-  prefetch: ['react-app', 'vue-app'], // Only prefetch these apps
-});
+You still call `start()` explicitly in the common route-driven setup, where apps are wired up with `registerMicroApps` and mounted based on the URL.
 
-// Or custom prefetch function
-start({
-  prefetch: (apps) => ({
-    criticalAppNames: ['dashboard', 'user-center'], // Critical apps to prefetch immediately
-    minorAppsName: ['analytics', 'settings'],       // Minor apps to prefetch later
-  })
-});
-```
+## 2.x options removed in v3
 
-## ⚙️ Configuration Options
+::: warning Breaking change from qiankun 2.x
+In qiankun 2.x, `start()` accepted a large configuration object. In v3 the only accepted field is single-spa's `urlRerouteOnly`. The 2.x options below **do not exist** — they are commented out in the source and passing them has no effect:
 
-### Prefetch Strategies
+`prefetch`, `sandbox`, `singular`, `fetch`, `getPublicPath`, `getTemplate`, `excludeAssetFilter`.
 
-#### 1. Boolean Values
+Where the behavior lives now:
 
-```typescript
-// Disable prefetch completely
-start({ prefetch: false });
+| 2.x `start` option | v3 replacement |
+| --- | --- |
+| `prefetch` | The streaming HTML-entry loader preloads assets automatically. See [Optimize loading and preloading](/cookbook/optimize-loading). The legacy [prefetchApps](/api/prefetch-apps) API is deprecated. |
+| `sandbox` (boolean or `{ strictStyleIsolation, experimentalStyleIsolation }`) | Per-app `sandbox` (boolean) and `styleIsolation` (boolean, CSS `@scope`) in [AppConfiguration](/api/configuration). |
+| `singular` | Not configured globally. Multiple instances are supported per container — see [Run multiple micro-app instances](/cookbook/run-multiple-instances). |
+| `fetch` | Per-app `fetch` in [AppConfiguration](/api/configuration). |
+| `getPublicPath`, `getTemplate`, `excludeAssetFilter` | Removed. The HTML-entry loader and per-app `nodeTransformer` / `streamTransformer` cover these cases. |
 
-// Enable default prefetch behavior
-start({ prefetch: true });
-```
+See [Migrate from qiankun 2.x](/cookbook/migrate-from-2x) for the full migration path.
+:::
 
-#### 2. Prefetch All
+## See also
 
-```typescript
-// Prefetch all registered micro apps
-start({ prefetch: 'all' });
-```
-
-#### 3. Selective Prefetch
-
-```typescript
-// Prefetch only specified apps
-start({ 
-  prefetch: ['critical-app1', 'critical-app2'] 
-});
-```
-
-#### 4. Dynamic Prefetch Strategy
-
-```typescript
-start({
-  prefetch: (apps) => {
-    // Custom logic to determine which apps to prefetch
-    const criticalApps = apps
-      .filter(app => app.name.includes('critical'))
-      .map(app => app.name);
-    
-    const minorApps = apps
-      .filter(app => !app.name.includes('critical'))
-      .map(app => app.name);
-
-    return {
-      criticalAppNames: criticalApps,  // Prefetch immediately
-      minorAppsName: minorApps,        // Prefetch when idle
-    };
-  }
-});
-```
-
-### Sandbox Configuration
-
-#### 1. Boolean Sandbox
-
-```typescript
-// Enable basic sandbox
-start({ sandbox: true });
-
-// Disable sandbox (not recommended)
-start({ sandbox: false });
-```
-
-#### 2. Advanced Sandbox
-
-```typescript
-start({
-  sandbox: {
-    strictStyleIsolation: true,       // Shadow DOM based style isolation
-    experimentalStyleIsolation: true, // Scoped CSS based style isolation
-  }
-});
-```
-
-### Performance Options
-
-```typescript
-start({
-  singular: false,        // Allow multiple apps to mount simultaneously
-  urlRerouteOnly: false,  // Trigger routing on both URL and programmatic changes
-});
-```
-
-## 🚀 Best Practices
-
-### 1. Call After Registration
-
-```typescript
-// ✅ Correct order
-registerMicroApps([...]);
-start();
-
-// ❌ Wrong order
-start();
-registerMicroApps([...]); // This won't work properly
-```
-
-### 2. Environment-based Configuration
-
-```typescript
-const startOpts = {
-  prefetch: process.env.NODE_ENV === 'production' ? 'all' : false,
-  sandbox: {
-    strictStyleIsolation: process.env.NODE_ENV === 'production',
-  },
-};
-
-start(startOpts);
-```
-
-### 3. Performance Optimization
-
-```typescript
-// For better performance in production
-start({
-  prefetch: (apps) => ({
-    criticalAppNames: ['dashboard'], // Only prefetch critical apps
-    minorAppsName: [], // Don't prefetch minor apps
-  }),
-  singular: true, // Prevent memory issues
-  sandbox: {
-    strictStyleIsolation: false, // Use lightweight style isolation
-    experimentalStyleIsolation: true,
-  },
-});
-```
-
-### 4. Development vs Production
-
-```typescript
-if (process.env.NODE_ENV === 'development') {
-  start({
-    prefetch: false,    // Faster development reload
-    sandbox: false,     // Easier debugging
-    singular: false,    // More flexible development
-  });
-} else {
-  start({
-    prefetch: 'all',    // Better user experience
-    sandbox: true,      // Better isolation
-    singular: true,     // Stable performance
-  });
-}
-```
-
-## 🔧 Integration Patterns
-
-### 1. With Loading States
-
-```typescript
-import { registerMicroApps, start } from 'qiankun';
-
-let isQiankunStarted = false;
-
-function startQiankunWithLoading() {
-  if (isQiankunStarted) return;
-
-  showGlobalLoading();
-
-  registerMicroApps([...], {
-    beforeLoad: (app) => {
-      console.log(`Loading ${app.name}...`);
-    },
-    afterMount: (app) => {
-      console.log(`${app.name} mounted`);
-      hideGlobalLoading();
-    },
-  });
-
-  start({
-    prefetch: 'all',
-    sandbox: true,
-  });
-
-  isQiankunStarted = true;
-}
-```
-
-### 2. With Error Handling
-
-```typescript
-function startQiankunSafely() {
-  try {
-    registerMicroApps([...]);
-    
-    start({
-      prefetch: 'all',
-      sandbox: true,
-    });
-
-    console.log('Qiankun started successfully');
-  } catch (error) {
-    console.error('Failed to start qiankun:', error);
-    // Fallback to traditional routing or show error page
-    window.location.href = '/fallback';
-  }
-}
-```
-
-### 3. With Feature Detection
-
-```typescript
-import { isRuntimeCompatible } from 'qiankun';
-
-if (isRuntimeCompatible()) {
-  registerMicroApps([...]);
-  start();
-} else {
-  console.warn('Browser not compatible with qiankun');
-  // Fallback implementation
-  initTraditionalRouting();
-}
-```
-
-## ⚠️ Important Notes
-
-### 1. Call Only Once
-
-```typescript
-// ❌ Bad: Multiple calls
-start();
-start(); // This will be ignored
-
-// ✅ Good: Single call
-start();
-```
-
-### 2. Order Matters
-
-```typescript
-// ✅ Correct order
-registerMicroApps([...]);  // 1. Register apps first
-start();                   // 2. Then start
-
-// ❌ Wrong order - apps won't be registered properly
-start();
-registerMicroApps([...]);
-```
-
-### 3. Prefetch Considerations
-
-```typescript
-// ⚠️ Be careful with 'all' in large applications
-start({ prefetch: 'all' }); // Might impact initial load performance
-
-// ✅ Better: Selective prefetch
-start({ 
-  prefetch: ['critical-app1', 'critical-app2'] 
-});
-```
-
-## 🎯 Common Use Cases
-
-### 1. E-commerce Platform
-
-```typescript
-registerMicroApps([
-  { name: 'product-catalog', entry: '//catalog.example.com', activeRule: '/products' },
-  { name: 'shopping-cart', entry: '//cart.example.com', activeRule: '/cart' },
-  { name: 'user-account', entry: '//account.example.com', activeRule: '/account' },
-]);
-
-start({
-  prefetch: (apps) => ({
-    criticalAppNames: ['shopping-cart'], // Always prefetch cart
-    minorAppsName: ['user-account'],     // Prefetch account when idle
-  }),
-  sandbox: true,
-  singular: true,
-});
-```
-
-### 2. Admin Dashboard
-
-```typescript
-start({
-  prefetch: false,  // Don't prefetch - admin tools are used on demand
-  sandbox: {
-    strictStyleIsolation: true, // Prevent style conflicts between admin tools
-  },
-  singular: false,  // Allow multiple admin tools open simultaneously
-});
-```
-
-### 3. Multi-tenant Platform
-
-```typescript
-const tenantId = getCurrentTenantId();
-
-start({
-  prefetch: [`tenant-${tenantId}-dashboard`], // Only prefetch current tenant's apps
-  sandbox: true, // Isolate tenant data
-  singular: true,
-});
-```
-
-## 🔗 Related APIs
-
-- [registerMicroApps](/api/register-micro-apps) - Register micro applications
-- [loadMicroApp](/api/load-micro-app) - Manually load micro applications
-- [isRuntimeCompatible](/api/is-runtime-compatible) - Check browser compatibility 
+- [registerMicroApps](/api/register-micro-apps) — register route-driven apps before calling `start()`.
+- [loadMicroApp](/api/load-micro-app) — imperative mounting that auto-starts the framework.
+- [AppConfiguration](/api/configuration) — per-app `sandbox`, `styleIsolation`, `fetch`, and transformer options.
+- [The ESM sandbox](/concepts/esm-sandbox) — what the warmed wasm lexer is for.

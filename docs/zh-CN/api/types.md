@@ -1,208 +1,194 @@
-# TypeScript 类型
+# 类型参考
 
-qiankun 提供了全面的 TypeScript 类型定义，确保类型安全和出色的开发者体验。本文档涵盖了所有可用的类型和接口。
+qiankun 从其公共入口（`packages/qiankun/src/types.ts`）导出的每个类型，外加运行时依赖的 `Window` 增强声明。这些类型全部从包根部重新导出，因此你可以直接导入：
 
-## 📋 核心类型
+```ts
+import type {
+  ObjectType,
+  HTMLEntry,
+  AppMetadata,
+  LoadableApp,
+  RegistrableApp,
+  AppConfiguration,
+  LifeCycleFn,
+  LifeCycles,
+  MicroApp,
+  MicroAppLifeCycles,
+  PrefetchStrategy,
+} from 'qiankun';
+```
 
-### ObjectType
+::: warning 从 qiankun 2.x 迁移
+有三处结构发生了变化，如果你原样移植 2.x 代码，将会产生类型错误：
 
-**描述**：通用对象结构的基础类型。
+- `entry` 是一个纯字符串（`HTMLEntry = string`）。不存在对象形式的 entry（`{ scripts, styles }`），也没有 `EntryOpts`。
+- `container` 是一个 `HTMLElement`。像 `'#subapp-viewport'` 这样的选择器字符串不再被接受。
+- 不存在 `FrameworkConfiguration` 类型。单个应用的配置是 `AppConfiguration`，而 `start()` 只接受 single-spa 的 `StartOpts`。
 
-```typescript
+完整清单请参阅[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
+:::
+
+## 类型总览
+
+| 类型 | 结构 | 说明 |
+| --- | --- | --- |
+| `ObjectType` | `Record<string, unknown>` | props 泛型 `T` 的基础约束。 |
+| `HTMLEntry` | `string` | 微应用的 HTML entry URL。仅支持字符串。 |
+| `AppMetadata` | `{ name; entry }` | 微应用的最小身份标识。 |
+| `LoadableApp<T>` | `AppMetadata & { container; props? }` | 与 [`loadMicroApp`](/zh-CN/api/load-micro-app) 配合使用。`container` 是一个 `HTMLElement`。 |
+| `RegistrableApp<T>` | `LoadableApp<T> & { loader?; activeRule; configuration? }` | 与 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 配合使用。 |
+| `AppConfiguration` | loader 选项 `& { sandbox?; globalContext?; styleIsolation? }` | 单个应用的运行时配置。参阅 [AppConfiguration](/zh-CN/api/configuration)。 |
+| `LifeCycleFn<T>` | `(app, global) => Promise<void>` | 单个框架级 lifecycle 钩子。 |
+| `LifeCycles<T>` | `{ beforeLoad?; beforeMount?; afterMount?; beforeUnmount?; afterUnmount? }` | 框架级钩子。参阅[生命周期钩子](/zh-CN/api/lifecycles)。 |
+| `MicroApp` | single-spa `Parcel` | `loadMicroApp` 返回的句柄。 |
+| `MicroAppLifeCycles` | `{ bootstrap; mount; unmount; update? }` | 微应用自身提供的 lifecycle 导出。 |
+| `PrefetchStrategy` | `boolean \| 'all' \| string[] \| fn` | 为向后兼容而导出；任何 v3 API 都不再使用它。 |
+
+## ObjectType
+
+```ts
 export type ObjectType = Record<string, unknown>;
 ```
 
-**用法**：
-```typescript
-// 用作泛型类型的约束
-function processApp<T extends ObjectType>(props: T): void {
-  // T 可以是任何对象类型
-}
+在 qiankun 接受 props 泛型 `T` 的所有场景中使用的约束。当你为自己的 props 对象定义类型时，它必须扩展自 `ObjectType`：
+
+```ts
+type Props = { userId: number; theme: 'light' | 'dark' };
+// Props satisfies Record<string, unknown>, so it is a valid T
 ```
 
-### HTMLEntry
+## HTMLEntry
 
-**描述**：微应用入口点的类型。
-
-```typescript
+```ts
 export type HTMLEntry = string;
 ```
 
-**用法**：
-```typescript
-const appEntry: HTMLEntry = '//localhost:8080';
-const appEntryWithPath: HTMLEntry = '//localhost:8080/micro-app';
+微应用的 entry 始终是其 HTML 文档的 URL。qiankun 通过 [HTML Entry 加载器](/zh-CN/concepts/html-entry-loading)以流式方式处理该 HTML，并执行其中引用的脚本。
+
+```ts
+const entry: HTMLEntry = 'http://localhost:7100';
 ```
 
-## 🏗️ 应用类型
+::: danger 不支持对象形式的 entry
+qiankun 2.x 的 `entry: { scripts: [...], styles: [...] }` 形式在 v3 中不复存在。将 `entry` 指向一个 HTML 页面，让加载器自行发现其资源。
+:::
 
-### AppMetadata
+## AppMetadata
 
-**描述**：微应用的基础元数据。
-
-```typescript
-type AppMetadata = {
-  name: string;    // 唯一的应用名称
-  entry: HTMLEntry; // 应用入口 URL
+```ts
+export type AppMetadata = {
+  name: string;
+  entry: HTMLEntry;
 };
 ```
 
-### LoadableApp\<T\>
+微应用的最小描述符：一个唯一的 `name` 和它的 HTML `entry`。`AppMetadata` 是 `LoadableApp` 和 `RegistrableApp` 所扩展的基础，也是 [`prefetchApps`](/zh-CN/api/prefetch-apps) 接受的元素类型。
 
-**描述**：手动加载微应用的配置。
+## LoadableApp
 
-```typescript
+```ts
 export type LoadableApp<T extends ObjectType> = AppMetadata & {
-  container: HTMLElement;  // DOM 容器元素
-  props?: T;              // 传递给应用的自定义属性
+  container: HTMLElement;
+  props?: T;
 };
 ```
 
-**用法**：
-```typescript
-// 基础用法
-const app: LoadableApp<{}> = {
-  name: 'my-app',
-  entry: '//localhost:8080',
-  container: document.getElementById('app-container')!,
-};
+用于以命令式方式通过 [`loadMicroApp`](/zh-CN/api/load-micro-app) 挂载应用的描述符。
 
-// 带自定义属性
-interface MyAppProps {
-  theme: 'light' | 'dark';
-  userId: string;
-}
+| 字段 | 类型 | 描述 |
+| --- | --- | --- |
+| `name` | `string` | 唯一的微应用名称。 |
+| `entry` | `HTMLEntry` | HTML entry URL。 |
+| `container` | `HTMLElement` | 应用挂载到的 DOM 元素。必须是元素，而不是选择器。 |
+| `props` | `T`（可选） | 转发给微应用 lifecycle 导出的 props。 |
 
-const appWithProps: LoadableApp<MyAppProps> = {
-  name: 'themed-app',
-  entry: '//localhost:8080',
-  container: document.getElementById('container')!,
-  props: {
-    theme: 'dark',
-    userId: '123'
-  }
-};
-```
-
-### RegistrableApp\<T\>
-
-**描述**：基于路由的微应用配置。
-
-```typescript
-export type RegistrableApp<T extends ObjectType> = LoadableApp<T> & {
-  loader?: (loading: boolean) => void;                    // 加载状态回调
-  activeRule: RegisterApplicationConfig['activeWhen'];    // 路由激活规则
-};
-```
-
-**用法**：
-```typescript
-import { registerMicroApps } from 'qiankun';
-
-interface UserAppProps {
-  currentUser: { id: string; name: string };
-}
-
-const apps: RegistrableApp<UserAppProps>[] = [
-  {
-    name: 'user-dashboard',
-    entry: '//localhost:8001',
-    container: '#subapp-viewport',
-    activeRule: '/dashboard',
-    props: {
-      currentUser: { id: '123', name: 'John' }
-    },
-    loader: (loading) => {
-      if (loading) {
-        showLoadingSpinner();
-      } else {
-        hideLoadingSpinner();
-      }
-    }
-  }
-];
-
-registerMicroApps(apps);
-```
-
-## ⚙️ 配置类型
-
-### AppConfiguration
-
-**描述**：单个微应用的配置选项。
-
-```typescript
-export type AppConfiguration = Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
-  sandbox?: boolean;        // 启用沙箱隔离
-  globalContext?: WindowProxy; // 自定义全局上下文
-};
-```
-
-**用法**：
-```typescript
+```ts
 import { loadMicroApp } from 'qiankun';
 
-const customConfig: AppConfiguration = {
-  sandbox: true,
-  globalContext: window,
-  fetch: async (url, options) => {
-    // 自定义 fetch 实现
-    return fetch(url, {
-      ...options,
-      headers: {
-        ...options?.headers,
-        'Authorization': 'Bearer token'
-      }
-    });
+const container = document.getElementById('subapp')!;
+const app = loadMicroApp<{ userId: number }>({
+  name: 'app1',
+  entry: 'http://localhost:7100',
+  container,
+  props: { userId: 42 },
+});
+```
+
+::: warning container 是一个 HTMLElement
+`container: '#subapp'` 在 2.x 中可以编译通过，但在 v3 中是类型错误。请自行解析出元素，例如通过 `document.getElementById(...)` 或框架的 ref。
+:::
+
+## RegistrableApp
+
+```ts
+export type RegistrableApp<T extends ObjectType> = LoadableApp<T> & {
+  loader?: (loading: boolean) => void;
+  activeRule: RegisterApplicationConfig['activeWhen'];
+  configuration?: AppConfiguration;
+};
+```
+
+用于交给 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 的、由路由驱动的应用的描述符。它在 `LoadableApp` 的基础上扩展了三个路由/加载相关的字段。
+
+| 字段 | 类型 | 描述 |
+| --- | --- | --- |
+| `loader` | `(loading: boolean) => void`（可选） | 在挂载前以 `true`、挂载后以 `false` 调用，便于你驱动加载指示器。 |
+| `activeRule` | single-spa `Activity` | 应用何时处于激活状态。可以是路径前缀字符串、`(location) => boolean` 函数，或两者混合的数组。 |
+| `configuration` | `AppConfiguration`（可选） | 单个应用的运行时配置，会合并覆盖框架默认值。 |
+
+`activeRule` 是 single-spa 的 `activeWhen` 类型 —— `string | ((location: Location) => boolean) | Array<string | ((location: Location) => boolean)>`：
+
+```ts
+import { registerMicroApps } from 'qiankun';
+
+registerMicroApps([
+  {
+    name: 'app1',
+    entry: 'http://localhost:7100',
+    container: document.getElementById('subapp')!,
+    activeRule: '/app1',
+    configuration: { sandbox: true, styleIsolation: true },
   },
-  nodeTransformer: (node, opts) => {
-    // 转换 DOM 节点
-    if (node.tagName === 'SCRIPT') {
-      node.setAttribute('data-app', 'my-app');
-    }
-    return node;
-  }
-};
-
-loadMicroApp({
-  name: 'configured-app',
-  entry: '//localhost:8080',
-  container: document.getElementById('container')!
-}, customConfig);
+]);
 ```
 
-## 🔄 生命周期类型
+## AppConfiguration
 
-### LifeCycleFn\<T\>
+```ts
+export type AppConfiguration = Partial<
+  Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>
+> & {
+  sandbox?: boolean;
+  globalContext?: WindowProxy;
+  styleIsolation?: boolean;
+};
+```
 
-**描述**：生命周期钩子函数的类型。
+单个应用的运行时配置。它是 [`loadMicroApp`](/zh-CN/api/load-micro-app) 的第二个参数，也是 `RegistrableApp` 的 `configuration` 字段。
 
-```typescript
+| 字段 | 类型 | 默认值 | 描述 |
+| --- | --- | --- | --- |
+| `fetch` | `typeof window.fetch` | `window.fetch` | 用于 entry 和资源请求的自定义 fetch。qiankun 会将其包装为可缓存、可重试，并在非 2xx 响应时抛出错误。 |
+| `streamTransformer` | `() => TransformStream<string, string>` | `undefined` | 在 HTML 流加载时接入其中的一个 transform。 |
+| `nodeTransformer` | `<T extends Node>(node: T, opts) => T` | 内置默认值 | 在每个 script/link/style 节点进入真实 DOM 之前对其进行改写。默认实现会运行 `transpileAssets`。 |
+| `sandbox` | `boolean` | `true` | 启用 [JS 沙箱](/zh-CN/concepts/js-sandbox)膜，并在适用场景下启用 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)。 |
+| `globalContext` | `WindowProxy` | `window` | 沙箱膜所代理的基础全局对象。 |
+| `styleIsolation` | `boolean` | `false` | 启用作用域限定于应用容器的运行时 CSS `@scope` [样式隔离](/zh-CN/concepts/style-isolation)。 |
+
+前三个字段来自加载器的 `LoaderOpts`。默认值在 `loadApp` 内部解析，而非在类型中体现。详情请参阅专门的 [AppConfiguration](/zh-CN/api/configuration) 页面。
+
+::: danger 没有 sandbox 对象，也没有 FrameworkConfiguration
+`sandbox` 是一个布尔值。2.x 的对象形式 `sandbox: { strictStyleIsolation, experimentalStyleIsolation }` 以及 Shadow DOM 隔离都已移除。样式隔离是独立的布尔值 `styleIsolation`，通过 CSS `@scope` 实现。不存在 `FrameworkConfiguration` 类型，且 `start()` 不接受任何 sandbox、prefetch 或单例相关的选项。
+:::
+
+## LifeCycleFn 与 LifeCycles
+
+```ts
 export type LifeCycleFn<T extends ObjectType> = (
-  app: LoadableApp<T>, 
-  global: WindowProxy
+  app: LoadableApp<T>,
+  global: WindowProxy,
 ) => Promise<void>;
-```
 
-**用法**：
-```typescript
-const beforeLoadHook: LifeCycleFn<{ theme: string }> = async (app, global) => {
-  console.log(`正在加载应用: ${app.name}`);
-  global.__APP_THEME__ = app.props?.theme || 'default';
-};
-
-const afterMountHook: LifeCycleFn<any> = async (app, global) => {
-  console.log(`应用 ${app.name} 挂载成功`);
-  // 跟踪分析
-  analytics.track('app_mounted', { appName: app.name });
-};
-```
-
-### LifeCycles\<T\>
-
-**描述**：完整的生命周期钩子配置。
-
-```typescript
 export type LifeCycles<T extends ObjectType> = {
   beforeLoad?: LifeCycleFn<T> | Array<LifeCycleFn<T>>;
   beforeMount?: LifeCycleFn<T> | Array<LifeCycleFn<T>>;
@@ -212,414 +198,163 @@ export type LifeCycles<T extends ObjectType> = {
 };
 ```
 
-**用法**：
-```typescript
-interface AppProps {
-  userId: string;
-  permissions: string[];
-}
+你作为可选的最后一个参数传给 `registerMicroApps` 和 `loadMicroApp` 的框架级钩子。每个钩子可以是一个函数或一个函数数组，按顺序执行。第二个参数 `global` 是该应用经沙箱代理的 `window`，而非真实的 `window`。
 
-const lifecycles: LifeCycles<AppProps> = {
-  beforeLoad: async (app, global) => {
-    // 加载前设置
-    global.__USER_ID__ = app.props?.userId;
-  },
-  
-  beforeMount: [
-    async (app, global) => {
-      // 多个钩子作为数组
-      await setupAuthentication(app.props?.userId);
-    },
-    async (app, global) => {
-      await loadUserPermissions(app.props?.permissions);
-    }
+```ts
+const lifeCycles: LifeCycles<Record<string, unknown>> = {
+  beforeLoad: async (app) => console.log('before load', app.name),
+  afterMount: [
+    async (app, global) => console.log('mounted into', app.container, global),
   ],
-  
-  afterMount: async (app) => {
-    console.log(`${app.name} 已准备就绪`);
-  },
-  
-  beforeUnmount: async (app) => {
-    // 卸载前清理
-    await saveUserState(app.name);
-  },
-  
-  afterUnmount: async (app) => {
-    // 最终清理
-    await clearUserData(app.name);
-  }
 };
 ```
 
-## 🎯 微应用类型
+::: info 两种不同的 lifecycle 类型
+`LifeCycles`（上面的五个框架级钩子）与 `MicroAppLifeCycles`（微应用自身导出的 `bootstrap`/`mount`/`unmount`/`update`）是相互独立的。参阅[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
+:::
 
-### MicroApp
+## MicroApp
 
-**描述**：已加载微应用的实例。
-
-```typescript
+```ts
+import type { Parcel } from 'single-spa';
 export type MicroApp = Parcel;
 ```
 
-`MicroApp` 类型扩展了 single-spa 的 `Parcel` 接口，包含以下方法：
+[`loadMicroApp`](/zh-CN/api/load-micro-app) 返回的句柄。它是 single-spa 的 `Parcel`，为你提供命令式控制能力以及每个阶段对应的 promise。
 
-```typescript
-interface MicroApp {
-  mount(): Promise<void>;           // 挂载应用
-  unmount(): Promise<void>;         // 卸载应用
-  update(props: any): Promise<void>; // 更新应用属性
-  getStatus(): string;              // 获取当前状态
-  loadPromise: Promise<void>;       // 加载完成时解析的 Promise
-  mountPromise: Promise<void>;      // 挂载完成时解析的 Promise
-  unmountPromise: Promise<void>;    // 卸载完成时解析的 Promise
-}
+| 成员 | 类型 | 描述 |
+| --- | --- | --- |
+| `mount()` | `() => Promise<null>` | 挂载应用。 |
+| `unmount()` | `() => Promise<null>` | 卸载应用。 |
+| `update?(props)` | `(props) => Promise<any>` | 当应用导出了 `update` 钩子时，推送新的 props。 |
+| `getStatus()` | `() => Status` | 当前的 lifecycle 状态（下方为联合类型）。 |
+| `loadPromise` | `Promise<null>` | 源代码加载完成时 resolve。 |
+| `bootstrapPromise` | `Promise<null>` | bootstrap 完成时 resolve。 |
+| `mountPromise` | `Promise<null>` | mount 完成时 resolve。 |
+| `unmountPromise` | `Promise<null>` | unmount 完成时 resolve。 |
+
+`getStatus()` 返回 single-spa 的其中一个状态字符串：
+
+```ts
+type Status =
+  | 'NOT_LOADED'
+  | 'LOADING_SOURCE_CODE'
+  | 'NOT_BOOTSTRAPPED'
+  | 'BOOTSTRAPPING'
+  | 'NOT_MOUNTED'
+  | 'MOUNTING'
+  | 'MOUNTED'
+  | 'UPDATING'
+  | 'UNMOUNTING'
+  | 'UNLOADING'
+  | 'SKIP_BECAUSE_BROKEN'
+  | 'LOAD_ERROR';
 ```
 
-**用法**：
-```typescript
-import { loadMicroApp } from 'qiankun';
-
-const microApp: MicroApp = loadMicroApp({
-  name: 'my-app',
-  entry: '//localhost:8080',
-  container: document.getElementById('container')!
-});
-
-// 检查状态
-console.log(microApp.getStatus()); // 'LOADING', 'MOUNTED', 'UNMOUNTED', 等
-
-// 等待挂载
-await microApp.mountPromise;
-console.log('应用已挂载');
-
-// 更新属性
-await microApp.update({ newTheme: 'dark' });
-
-// 完成后卸载
-await microApp.unmount();
+```ts
+const app = loadMicroApp({ name: 'app1', entry, container });
+await app.mountPromise;
+console.log(app.getStatus()); // 'MOUNTED'
+await app.unmount();
 ```
 
-### MicroAppLifeCycles
+## MicroAppLifeCycles
 
-**描述**：qiankun 使用的内部生命周期类型。
-
-```typescript
+```ts
+type ExtraProps = { container: HTMLElement };
 export type MicroAppLifeCycles = FlattenArrayValue<ParcelLifeCycles<ExtraProps>>;
 ```
 
-这个类型主要用于内部使用，表示微应用必须导出的扁平化生命周期函数。
+微应用导出给 qiankun 用以驱动它的 lifecycle 对象的结构。在展平 single-spa 的数组形式后，它解析为：
 
-## 🌐 全局类型
+```ts
+type MicroAppLifeCycles = {
+  bootstrap: (props) => Promise<void>;
+  mount: (props) => Promise<void>;
+  unmount: (props) => Promise<void>;
+  update?: (props) => Promise<void>;
+};
+```
 
-### Window 扩展
+每个函数都会接收到 mount props，其中包含 `container: HTMLElement`（要渲染进去的节点）以及你通过 `props` 传入的任何内容。微应用的 entry 导出这些函数：
 
-qiankun 为全局 `Window` 接口添加了特殊属性：
+```ts
+export async function bootstrap() {}
+export async function mount(props: { container: HTMLElement }) {
+  render(props.container);
+}
+export async function unmount(props: { container: HTMLElement }) {
+  unmount(props.container);
+}
+```
 
-```typescript
+## PrefetchStrategy
+
+```ts
+export type PrefetchStrategy =
+  | boolean
+  | 'all'
+  | string[]
+  | ((apps: AppMetadata[]) => {
+      criticalAppNames: string[];
+      minorAppsName: string[];
+    });
+```
+
+::: warning 已导出但未使用
+`PrefetchStrategy` 是一个为源码兼容而保留的遗留类型。没有任何 v3 公共 API 消费它 —— 流式加载器会自动预加载，而 [`prefetchApps`](/zh-CN/api/prefetch-apps) 已被弃用。这里对它进行说明，仅仅是因为它仍然被导出。
+:::
+
+## Window 增强声明
+
+qiankun 会对全局 `Window` 接口进行增强。微应用正是通过这些属性来检测自己运行在 qiankun 之下，运行时也借此与基于 zone 的框架协作。
+
+```ts
 declare global {
   interface Window {
-    __POWERED_BY_QIANKUN__?: boolean;           // 指示应用运行在 qiankun 中
-    __INJECTED_PUBLIC_PATH_BY_QIANKUN__?: string; // 注入的公共路径
-    __QIANKUN_DEVELOPMENT__?: boolean;          // 开发模式标志
-    Zone?: CallableFunction;                    // Zone.js 兼容性
-    __zone_symbol__setTimeout?: Window['setTimeout']; // Zone.js 超时
+    __POWERED_BY_QIANKUN__?: boolean;
+    __INJECTED_PUBLIC_PATH_BY_QIANKUN__?: string;
+    __QIANKUN_DEVELOPMENT__?: boolean;
+    Zone?: CallableFunction;
+    __zone_symbol__setTimeout?: Window['setTimeout'];
   }
 }
 ```
 
-**在微应用中的用法**：
-```typescript
-// 检查是否在 qiankun 中运行
+| 属性 | 类型 | 描述 |
+| --- | --- | --- |
+| `__POWERED_BY_QIANKUN__` | `boolean` | 当应用运行在 qiankun 内部时，会被设置到沙箱化的全局对象上。读取它可以区分独立运行与被嵌入运行的行为分支。 |
+| `__INJECTED_PUBLIC_PATH_BY_QIANKUN__` | `string` | qiankun 注入的运行时 public path，使应用能够从正确的源解析其资源。 |
+| `__QIANKUN_DEVELOPMENT__` | `boolean` | 当 qiankun 以开发模式运行时被设置，用于启用额外的开发期诊断。 |
+| `Zone` | `CallableFunction` | 当 zone.js 被加载时存在（例如 Angular）。qiankun 会将其纳入考量，以保证被打过补丁的定时器行为正确。 |
+| `__zone_symbol__setTimeout` | `Window['setTimeout']` | zone.js 保存的对原始 `setTimeout` 的引用，在 zone.js 生效时用于访问未被打补丁的定时器。 |
+
+微应用通常会读取前两个属性以在运行时进行适配：
+
+```ts
+// Inside the micro-app
 if (window.__POWERED_BY_QIANKUN__) {
-  console.log('作为微应用运行');
-  
-  // 使用注入的公共路径
-  const publicPath = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__ || '/';
-  
-  // 相应地配置你的应用
-  setupApp({ publicPath });
+  // running under qiankun: export bootstrap/mount/unmount
 } else {
-  console.log('独立运行');
-  setupApp({ publicPath: '/' });
+  // running standalone
+  render(document.getElementById('root'));
+}
+
+// Align the module public path with qiankun's injected value (webpack)
+if (window.__POWERED_BY_QIANKUN__) {
+  // eslint-disable-next-line no-undef, camelcase
+  __webpack_public_path__ = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
 }
 ```
 
-## 🎨 工具类型
+::: tip 全局增强是自动生效的
+从 `qiankun` 导入任何内容都会引入这个 `declare global` 块，因此无需额外设置，`window.__POWERED_BY_QIANKUN__` 在你的项目中就已具备类型。在不依赖 `qiankun` 的微应用中，请自行添加一个包含相同属性的 `declare global` 块。
+:::
 
-### 自定义类型守卫
+## 参见
 
-为更好的类型安全创建类型守卫：
-
-```typescript
-// LoadableApp 的类型守卫
-function isLoadableApp<T extends ObjectType>(
-  app: any
-): app is LoadableApp<T> {
-  return (
-    typeof app === 'object' &&
-    typeof app.name === 'string' &&
-    typeof app.entry === 'string' &&
-    app.container instanceof HTMLElement
-  );
-}
-
-// RegistrableApp 的类型守卫
-function isRegistrableApp<T extends ObjectType>(
-  app: any
-): app is RegistrableApp<T> {
-  return (
-    isLoadableApp(app) &&
-    (typeof app.activeRule === 'string' || typeof app.activeRule === 'function')
-  );
-}
-
-// 用法
-function processApp(app: unknown) {
-  if (isRegistrableApp(app)) {
-    // TypeScript 在这里知道 app 是 RegistrableApp
-    console.log(`注册应用: ${app.name}，规则: ${app.activeRule}`);
-  } else if (isLoadableApp(app)) {
-    // TypeScript 在这里知道 app 是 LoadableApp
-    console.log(`加载应用: ${app.name}`);
-  }
-}
-```
-
-### 通用辅助类型
-
-为常见模式创建可重用的泛型类型：
-
-```typescript
-// 支持主题的属性
-type ThemedProps<T = {}> = T & {
-  theme?: 'light' | 'dark';
-};
-
-// 带用户上下文的属性
-type UserAwareProps<T = {}> = T & {
-  currentUser?: {
-    id: string;
-    name: string;
-    role: string;
-  };
-};
-
-// 组合属性
-type AppProps<T = {}> = ThemedProps<UserAwareProps<T>>;
-
-// 用法
-const app: LoadableApp<AppProps<{ customData: string }>> = {
-  name: 'themed-user-app',
-  entry: '//localhost:8080',
-  container: document.getElementById('container')!,
-  props: {
-    theme: 'dark',
-    currentUser: { id: '123', name: 'John', role: 'admin' },
-    customData: '自定义值'
-  }
-};
-```
-
-## 📖 高级类型模式
-
-### 基于配置的条件类型
-
-```typescript
-// 基于环境的配置
-type EnvironmentConfig<T extends 'development' | 'production'> = T extends 'development'
-  ? {
-      sandbox: false;
-      prefetch: false;
-      strictStyleIsolation: false;
-    }
-  : {
-      sandbox: true;
-      prefetch: 'all';
-      strictStyleIsolation: true;
-    };
-
-// 与环境检测一起使用
-declare const NODE_ENV: 'development' | 'production';
-type CurrentConfig = EnvironmentConfig<typeof NODE_ENV>;
-```
-
-### 应用名称的品牌类型
-
-```typescript
-// 为应用名称创建品牌类型以防止混淆
-type AppName = string & { readonly __brand: unique symbol };
-
-function createAppName(name: string): AppName {
-  return name as AppName;
-}
-
-// 带品牌名称的增强 LoadableApp
-type SafeLoadableApp<T extends ObjectType> = Omit<LoadableApp<T>, 'name'> & {
-  name: AppName;
-};
-
-// 用法
-const appName = createAppName('my-secure-app');
-const app: SafeLoadableApp<{}> = {
-  name: appName, // 类型安全的应用名称
-  entry: '//localhost:8080',
-  container: document.getElementById('container')!
-};
-```
-
-### 生命周期事件类型
-
-```typescript
-// 带事件数据的增强生命周期
-type LifeCycleEvent<T extends ObjectType> = {
-  app: LoadableApp<T>;
-  global: WindowProxy;
-  timestamp: number;
-  phase: 'beforeLoad' | 'beforeMount' | 'afterMount' | 'beforeUnmount' | 'afterUnmount';
-};
-
-type EnhancedLifeCycleFn<T extends ObjectType> = (event: LifeCycleEvent<T>) => Promise<void>;
-
-// 用法
-const enhancedHook: EnhancedLifeCycleFn<{ userId: string }> = async (event) => {
-  console.log(`阶段: ${event.phase}，应用: ${event.app.name}，时间: ${event.timestamp}`);
-  
-  if (event.phase === 'beforeMount') {
-    // 设置用户上下文
-    event.global.__USER_ID__ = event.app.props?.userId;
-  }
-};
-```
-
-## 🔍 类型推断示例
-
-### 自动属性类型推断
-
-```typescript
-// 带自动类型推断的辅助函数
-function createTypedApp<T extends ObjectType>(
-  config: {
-    name: string;
-    entry: string;
-    container: HTMLElement;
-    props: T;
-  }
-): LoadableApp<T> {
-  return config; // TypeScript 推断正确的类型
-}
-
-// 用法 - TypeScript 自动推断属性类型
-const app = createTypedApp({
-  name: 'inferred-app',
-  entry: '//localhost:8080',
-  container: document.getElementById('container')!,
-  props: {
-    theme: 'dark',
-    userId: '123',
-    features: ['feature1', 'feature2']
-  }
-  // TypeScript 知道 props 类型是 { theme: string; userId: string; features: string[] }
-});
-```
-
-### 生命周期类型推断
-
-```typescript
-// 创建类型化生命周期的辅助函数
-function createLifecycles<T extends ObjectType>(
-  lifecycles: LifeCycles<T>
-): LifeCycles<T> {
-  return lifecycles;
-}
-
-// 带推断的用法
-const typedLifecycles = createLifecycles({
-  beforeMount: async (app) => {
-    // TypeScript 根据用法推断 app.props 类型
-    console.log(app.props?.theme); // TypeScript 知道这可能是 undefined
-  }
-});
-```
-
-## ⚡ 最佳实践
-
-### 1. 使用严格类型
-
-```typescript
-// ✅ 好：严格类型
-interface StrictAppProps {
-  readonly userId: string;
-  readonly theme: 'light' | 'dark';
-  readonly permissions: readonly string[];
-}
-
-const app: LoadableApp<StrictAppProps> = {
-  name: 'strict-app',
-  entry: '//localhost:8080',
-  container: document.getElementById('container')!,
-  props: {
-    userId: '123',
-    theme: 'dark',
-    permissions: ['read', 'write']
-  }
-};
-
-// ❌ 坏：松散类型
-const looseApp: LoadableApp<any> = {
-  name: 'loose-app',
-  entry: '//localhost:8080',
-  container: document.getElementById('container')!,
-  props: { anything: 'goes' } // 没有类型安全
-};
-```
-
-### 2. 创建领域特定类型
-
-```typescript
-// 为你的领域创建特定类型
-interface ECommerceAppProps {
-  cartId: string;
-  currency: 'USD' | 'EUR' | 'GBP';
-  customerSegment: 'premium' | 'standard';
-  features: {
-    wishlist: boolean;
-    recommendations: boolean;
-    reviews: boolean;
-  };
-}
-
-type ECommerceApp = LoadableApp<ECommerceAppProps>;
-type ECommerceLifecycles = LifeCycles<ECommerceAppProps>;
-```
-
-### 3. 使用泛型约束
-
-```typescript
-// 为更好的类型安全约束泛型类型
-interface BaseAppProps {
-  version: string;
-  environment: 'development' | 'staging' | 'production';
-}
-
-function createApp<T extends BaseAppProps>(
-  config: Omit<LoadableApp<T>, 'container'> & {
-    containerId: string;
-  }
-): LoadableApp<T> {
-  const container = document.getElementById(config.containerId);
-  if (!container) {
-    throw new Error(`容器 ${config.containerId} 未找到`);
-  }
-  
-  return {
-    ...config,
-    container
-  };
-}
-```
-
-## 🔗 相关文档
-
-- [API 参考](/zh-CN/api/) - 主要 API 文档
-- [生命周期](/zh-CN/api/lifecycles) - 详细的生命周期文档
-- [配置选项](/zh-CN/api/configuration) - 配置选项 
+- [AppConfiguration](/zh-CN/api/configuration) —— 深入讲解每个配置字段
+- [生命周期钩子（LifeCycles）](/zh-CN/api/lifecycles) —— 框架级钩子参考
+- [registerMicroApps](/zh-CN/api/register-micro-apps) 与 [loadMicroApp](/zh-CN/api/load-micro-app) —— 这些类型被消费的地方
+- [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props) —— mount props 如何流转到微应用
+- [从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x) —— 集中一处的破坏性类型变更

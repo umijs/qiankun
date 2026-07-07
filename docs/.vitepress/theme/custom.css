@@ -1,0 +1,291 @@
+/* =============================================================================
+   qiankun docs — 袖里乾坤 design language
+   Brand primary: geekblue #2F54EB · seal/danger: cinnabar #D93026
+   Flat, hairline-driven, one stage shadow, no gradients except the hero name.
+   Light tokens are verbatim from examples/main/src/index.css @theme.
+   Dark tokens are derived for the docs (no dark palette exists in source).
+   ============================================================================= */
+
+:root {
+  /* ---- brand fonts ---- */
+  --qk-font-display: 'Space Grotesk', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --qk-font-ornament: 'Songti SC', 'STSong', 'Songti TC', serif;
+
+  --vp-font-family-base: 'IBM Plex Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', -apple-system, sans-serif;
+  --vp-font-family-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* ---- brand color (geekblue) ---- */
+  --vp-c-brand-1: #2f54eb;
+  --vp-c-brand-2: #1d39c4;
+  --vp-c-brand-3: #2f54eb;
+  --vp-c-brand-soft: rgba(47, 84, 235, 0.10);
+  --vp-c-brand-softer: rgba(47, 84, 235, 0.05);
+
+  /* ---- surfaces & ink (light) ---- */
+  --vp-c-bg: #ffffff;
+  --vp-c-bg-alt: #f7f8fa;
+  --vp-c-bg-soft: #f7f8fa;
+  --vp-c-bg-elv: #ffffff;
+  --vp-c-divider: #e4e7ec;
+  --vp-c-border: #e4e7ec;
+  --vp-c-gutter: #e4e7ec;
+  --vp-c-text-1: #1b1f26;
+  --vp-c-text-2: #5c6470;
+  --vp-c-text-3: #8b93a1;
+
+  /* ---- semantic roles ---- */
+  --vp-c-success-1: #16a34a;
+  --vp-c-success-2: #15903f;
+  --vp-c-success-3: #16a34a;
+  --vp-c-warning-1: #b8860b;
+  --vp-c-warning-2: #a2760a;
+  --vp-c-warning-3: #b8860b;
+  --vp-c-danger-1: #d93026; /* cinnabar — reserved for danger + the seal */
+  --vp-c-danger-2: #bf2820;
+  --vp-c-danger-3: #d93026;
+
+  /* ---- shape & depth ---- */
+  --qk-radius-card: 10px;
+  --qk-radius-control: 6px;
+  --qk-hairline: 1px solid var(--vp-c-divider);
+  --qk-shadow-stage: 0 1px 2px rgb(27 31 38 / 4%), 0 8px 24px rgb(27 31 38 / 6%);
+
+  --vp-shadow-1: 0 1px 2px rgb(27 31 38 / 4%);
+  --vp-shadow-2: var(--qk-shadow-stage);
+  --vp-shadow-3: var(--qk-shadow-stage);
+}
+
+/* ---- dark (author-derived; keep geekblue, lift for contrast) ---- */
+.dark {
+  --vp-c-brand-1: #6a8bff;
+  --vp-c-brand-2: #8aa4ff;
+  --vp-c-brand-3: #4f74ff;
+  --vp-c-brand-soft: rgba(106, 139, 255, 0.14);
+  --vp-c-brand-softer: rgba(106, 139, 255, 0.07);
+
+  --vp-c-bg: #121419;
+  --vp-c-bg-alt: #0d0f13;
+  --vp-c-bg-soft: #1a1d24;
+  --vp-c-bg-elv: #1a1d24;
+  --vp-c-divider: #272b33;
+  --vp-c-border: #2f343d;
+  --vp-c-gutter: #0d0f13;
+  --vp-c-text-1: #eceef2;
+  --vp-c-text-2: #a2abb8;
+  --vp-c-text-3: #6d7684;
+
+  --vp-c-danger-1: #f26158;
+  --vp-c-danger-2: #e8493f;
+  --vp-c-success-1: #35c46a;
+  --vp-c-warning-1: #d4a72c;
+
+  --qk-shadow-stage: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 36%);
+}
+
+/* =============================================================================
+   Home hero
+   ============================================================================= */
+
+:root {
+  --vp-home-hero-name-color: transparent;
+  /* the single sanctioned gradient: geekblue #2F54EB → deep #1D39C4 */
+  --vp-home-hero-name-background: linear-gradient(120deg, #2f54eb 20%, #1d39c4);
+}
+.dark {
+  --vp-home-hero-name-background: linear-gradient(120deg, #8aa4ff 20%, #6a8bff);
+}
+
+.VPHero .name {
+  font-family: var(--qk-font-display);
+  letter-spacing: -0.02em;
+}
+.VPHero .text {
+  font-family: var(--qk-font-display);
+  letter-spacing: -0.01em;
+  color: var(--vp-c-text-1);
+}
+.VPHero .tagline {
+  color: var(--vp-c-text-2);
+  max-width: 34rem;
+}
+
+/* faint 乾坤 watermark behind the hero (home only) */
+.qk-hero-watermark {
+  position: absolute;
+  top: 0;
+  right: 4%;
+  z-index: 0;
+  font-family: var(--qk-font-ornament);
+  font-size: clamp(9rem, 26vw, 24rem);
+  line-height: 0.9;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: var(--vp-c-brand-1);
+  opacity: 0.05;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+.dark .qk-hero-watermark {
+  opacity: 0.07;
+}
+@media (max-width: 768px) {
+  .qk-hero-watermark {
+    right: -6%;
+    opacity: 0.04;
+  }
+}
+
+/* hero action buttons — flat, hairline secondary */
+.VPButton.brand {
+  border-radius: var(--qk-radius-control);
+  font-weight: 600;
+}
+.VPButton.alt {
+  border-radius: var(--qk-radius-control);
+  border: var(--qk-hairline);
+  background: transparent;
+}
+
+/* =============================================================================
+   Feature cards — hairline, flat, 160ms hover lift
+   ============================================================================= */
+
+.VPFeature {
+  border: var(--qk-hairline);
+  border-radius: var(--qk-radius-card);
+  background: var(--vp-c-bg);
+  transition: transform 160ms ease-out, border-color 160ms ease-out, box-shadow 160ms ease-out;
+}
+.VPFeature:hover {
+  transform: translateY(-2px);
+  border-color: var(--vp-c-brand-1);
+  box-shadow: var(--qk-shadow-stage);
+}
+.VPFeature .title {
+  font-family: var(--qk-font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.VPFeature .icon {
+  border-radius: var(--qk-radius-control);
+  background: var(--vp-c-brand-soft) !important;
+  font-size: 22px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .VPFeature,
+  .VPFeature:hover {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* =============================================================================
+   Navigation & sidebar
+   ============================================================================= */
+
+.VPNavBar .title,
+.VPNavBarTitle .text {
+  font-family: var(--qk-font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.VPSidebarItem.level-0 > .item > .text {
+  font-family: var(--qk-font-display);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--vp-c-text-2);
+}
+
+/* =============================================================================
+   Content typography & code
+   ============================================================================= */
+
+.vp-doc h1,
+.vp-doc h2,
+.vp-doc h3 {
+  font-family: var(--qk-font-display);
+  letter-spacing: -0.015em;
+}
+.vp-doc h2 {
+  border-top: var(--qk-hairline);
+  padding-top: 24px;
+}
+
+/* inline code + badges read as data (mono) */
+.vp-doc :not(pre) > code {
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.85em;
+  border-radius: 4px;
+}
+
+.vp-doc div[class*='language-'] {
+  border-radius: var(--qk-radius-card);
+  border: var(--qk-hairline);
+}
+
+/* code-group tabs */
+.vp-doc .vp-code-group .tabs {
+  font-family: var(--vp-font-family-mono);
+}
+
+/* tables — hairline grid, the reference workhorse */
+.vp-doc table {
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
+}
+.vp-doc tr {
+  border-top: var(--qk-hairline);
+  background: transparent;
+}
+.vp-doc th {
+  font-family: var(--qk-font-display);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--vp-c-text-2);
+  background: var(--vp-c-bg-alt);
+}
+.vp-doc th,
+.vp-doc td {
+  border: var(--qk-hairline);
+}
+
+/* custom containers — brand tip, cinnabar danger */
+.vp-doc .custom-block {
+  border-radius: var(--qk-radius-control);
+  border-width: 1px;
+  border-left-width: 3px;
+}
+.vp-doc .custom-block.tip {
+  border-color: var(--vp-c-brand-1);
+}
+
+/* mermaid diagrams sit on a stage frame */
+.vp-doc .mermaid {
+  border: var(--qk-hairline);
+  border-radius: var(--qk-radius-card);
+  background: var(--vp-c-bg);
+  padding: 20px;
+  box-shadow: var(--qk-shadow-stage);
+  overflow-x: auto;
+}
+.vp-doc .mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* =============================================================================
+   Misc chrome
+   ============================================================================= */
+
+.VPNavBar {
+  border-bottom: var(--qk-hairline);
+}
+::selection {
+  background: var(--vp-c-brand-soft);
+}

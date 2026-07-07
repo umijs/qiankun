@@ -1,328 +1,139 @@
-# Ecosystem
+# Ecosystem overview
 
-qiankun provides a rich ecosystem of UI bindings and tools to help you build and maintain micro-frontend applications efficiently.
+Beyond the core `qiankun` package, the project ships a small set of official companion packages that cover scaffolding, bundler integration, and framework component bindings. This page maps out what each one is, its current pre-release version, and when to reach for it.
 
-## 🧩 UI Bindings
+All companion packages are published as pre-release (`rc`) alongside qiankun 3.0, and their APIs may still shift before the stable release.
 
-qiankun offers declarative UI components for popular frameworks, making it easier to load and manage micro applications within your main application.
+## Package map
 
-### React
+| Package | Version | Kind | Reach for it when… |
+| --- | --- | --- | --- |
+| [`create-qiankun`](/ecosystem/create-qiankun) | `0.0.1-rc.2` | CLI scaffolder | You want a ready-to-run main app or sub-app wired for qiankun, generated on top of Vite. |
+| [`@qiankunjs/bundler-plugin`](/ecosystem/bundler-plugin) | `0.0.1-rc.1` | Build plugin (Webpack + Vite) | You are preparing a micro-app's build so qiankun can load it — marking the entry script and fixing the output library. |
+| [`@qiankunjs/react`](/ecosystem/react) | `0.0.1-rc.14` | React component | You mount micro-apps declaratively from React with a `<MicroApp>` component instead of calling `loadMicroApp` by hand. |
+| [`@qiankunjs/vue`](/ecosystem/vue) | `0.0.1-rc.2` | Vue component | You mount micro-apps declaratively from Vue (2 or 3) with a `<MicroApp>` component. |
 
-**`@qiankunjs/react`** - Official React bindings for qiankun
+::: info Internal package
+`@qiankunjs/ui-shared` (`0.0.1-rc.1`) is an internal package shared by the React and Vue bindings. It defines the common prop types and the `mountMicroApp`/`updateMicroApp`/`unmountMicroApp` helpers around `loadMicroApp`. It is not meant to be imported directly by applications — depend on `@qiankunjs/react` or `@qiankunjs/vue` instead.
+:::
 
-- **Features**: Declarative MicroApp component, automatic loading states, error boundaries
-- **Benefits**: Type-safe, React hooks support, seamless integration
-- **Use Case**: Perfect for React-based main applications
-
-```bash
-npm install @qiankunjs/react
-```
-
-[Learn more about React bindings →](/ecosystem/react)
-
-### Vue
-
-**`@qiankunjs/vue`** - Official Vue bindings for qiankun
-
-- **Features**: Vue 2/3 compatible, composition API support, slot-based customization
-- **Benefits**: Reactive loading states, template-based approach, TypeScript support
-- **Use Case**: Ideal for Vue-based main applications
-
-```bash
-npm install @qiankunjs/vue
-```
-
-[Learn more about Vue bindings →](/ecosystem/vue)
-
-## 🛠️ Development Tools
-
-### Webpack Plugin
-
-**`@qiankunjs/webpack-plugin`** - Webpack plugin for micro applications
-
-- **Features**: Automatic public path injection, build optimization, development mode support
-- **Benefits**: Zero-config setup, improved developer experience, production-ready builds
-- **Use Case**: Essential for webpack-based micro applications
-
-```bash
-npm install @qiankunjs/webpack-plugin --save-dev
-```
-
-[Learn more about Webpack Plugin →](/ecosystem/webpack-plugin)
-
-### Create Qiankun
-
-**`create-qiankun`** - CLI tool for scaffolding qiankun projects
-
-- **Features**: Multiple templates, main app + micro app setup, best practices included
-- **Benefits**: Quick project initialization, production-ready configurations, modern tooling
-- **Use Case**: Starting new qiankun projects or adding micro-frontend capabilities
-
-```bash
-npx create-qiankun my-micro-frontend-app
-```
-
-[Learn more about Create Qiankun →](/ecosystem/create-qiankun)
-
-## 🎯 Quick Start Comparison
-
-### Without UI Bindings (Core API)
-
-```typescript
-import { loadMicroApp } from 'qiankun';
-
-// Manual approach
-const microApp = loadMicroApp({
-  name: 'my-app',
-  entry: '//localhost:8080',
-  container: '#subapp-container'
-});
-
-// Manual lifecycle management
-microApp.mountPromise.then(() => {
-  setLoading(false);
-}).catch(error => {
-  setError(error);
-});
-```
-
-### With React Binding
-
-```tsx
-import { MicroApp } from '@qiankunjs/react';
-
-function App() {
-  return (
-    <MicroApp
-      name="my-app"
-      entry="//localhost:8080"
-      autoSetLoading
-      autoCaptureError
-    />
-  );
-}
-```
-
-### With Vue Binding
-
-```vue
-<template>
-  <MicroApp
-    name="my-app"
-    entry="//localhost:8080"
-    autoSetLoading
-    autoCaptureError
-  />
-</template>
-
-<script setup>
-import { MicroApp } from '@qiankunjs/vue';
-</script>
-```
-
-## 🔄 Integration Flow
+## Where each package fits
 
 ```mermaid
-graph LR
-    A[Main App] --> B[UI Binding]
-    B --> C[qiankun Core]
-    C --> D[Micro App 1]
-    C --> E[Micro App 2]
-    C --> F[Micro App 3]
-    
-    G[Webpack Plugin] --> D
-    G --> E
-    G --> F
-    
-    H[Create Qiankun] --> A
-    H --> D
-    H --> E
-    H --> F
+flowchart TD
+  CQ["create-qiankun<br/>(scaffolder)"] --> Main["Main app"]
+  CQ --> Sub["Sub-app (Vite)"]
+  BP["@qiankunjs/bundler-plugin<br/>(Webpack / Vite)"] --> Sub
+  BP --> SubWP["Sub-app (Webpack)"]
+  React["@qiankunjs/react &lt;MicroApp&gt;"] --> Main
+  Vue["@qiankunjs/vue &lt;MicroApp&gt;"] --> Main
+  React --> QK["loadMicroApp (qiankun core)"]
+  Vue --> QK
+  Main --> QK
+  QK --> Sub
+  QK --> SubWP
 ```
 
-## 📋 Feature Comparison
+The core `qiankun` package (`registerMicroApps`, `start`, `loadMicroApp`) is always the runtime. The companion packages sit at the edges: `create-qiankun` bootstraps projects, `@qiankunjs/bundler-plugin` prepares a sub-app's build output, and the `<MicroApp>` bindings wrap `loadMicroApp` for a component-driven mounting model.
 
-| Feature | Core API | React Binding | Vue Binding |
-|---------|----------|---------------|-------------|
-| **Loading States** | Manual | ✅ Automatic | ✅ Automatic |
-| **Error Handling** | Manual | ✅ Error Boundary | ✅ Error Boundary |
-| **Custom Loading** | Manual | ✅ Component | ✅ Slot |
-| **Custom Errors** | Manual | ✅ Component | ✅ Slot |
-| **TypeScript** | ✅ Full | ✅ Full | ✅ Full |
-| **Framework Integration** | Manual | ✅ Hooks | ✅ Composition API |
+## create-qiankun — scaffolding
 
-## 🎨 Usage Patterns
-
-### 1. Simple Loading
-
-**React:**
-```tsx
-<MicroApp 
-  name="dashboard" 
-  entry="//localhost:8080" 
-  autoSetLoading 
-/>
-```
-
-**Vue:**
-```vue
-<MicroApp 
-  name="dashboard" 
-  entry="//localhost:8080" 
-  auto-set-loading 
-/>
-```
-
-### 2. Custom Loading & Error Handling
-
-**React:**
-```tsx
-<MicroApp
-  name="dashboard"
-  entry="//localhost:8080"
-  loader={(loading) => loading ? <Spinner /> : null}
-  errorBoundary={(error) => <ErrorAlert error={error} />}
-/>
-```
-
-**Vue:**
-```vue
-<MicroApp name="dashboard" entry="//localhost:8080">
-  <template #loader="{ loading }">
-    <Spinner v-if="loading" />
-  </template>
-  <template #error-boundary="{ error }">
-    <ErrorAlert :error="error" />
-  </template>
-</MicroApp>
-```
-
-### 3. Props Passing
-
-**React:**
-```tsx
-<MicroApp
-  name="user-profile"
-  entry="//localhost:8080"
-  userId={currentUser.id}
-  theme={theme}
-/>
-```
-
-**Vue:**
-```vue
-<MicroApp
-  name="user-profile"
-  entry="//localhost:8080"
-  :app-props="{ userId: currentUser.id, theme }"
-/>
-```
-
-## 🚀 Getting Started
-
-### Step 1: Choose Your Stack
-
-1. **React Main App** → Use `@qiankunjs/react`
-2. **Vue Main App** → Use `@qiankunjs/vue`
-3. **Other Framework** → Use core qiankun APIs
-
-### Step 2: Scaffold Your Project
+`create-qiankun` is the recommended getting-started path. It generates a main app or a sub-app as a Vite project, then patches the generated files to wire in qiankun (entry lifecycles, the Vite plugin, and dependencies).
 
 ```bash
-# Create new project
-npx create-qiankun my-app
+# npm
+npx create-qiankun@latest
 
-# Choose template:
-# - React main + React micro apps
-# - Vue main + Vue micro apps
-# - Umi main + multiple micro apps
-# - Custom configuration
+# yarn
+yarn create qiankun@latest
+
+# pnpm
+pnpm dlx create-qiankun@latest
 ```
 
-### Step 3: Configure Micro Apps
+It supports React and Vue sub-app templates (with or without TypeScript); the main app is always React + TypeScript. Because qiankun v3 loads Vite apps natively through its ESM sandbox, the generated `dev`/`build`/`preview` outputs are already qiankun-compatible — there is no dedicated SystemJS build mode.
 
-Add webpack plugin to each micro application:
+See [create-qiankun](/ecosystem/create-qiankun) for the full CLI reference and what it generates.
 
-```javascript
-// webpack.config.js
-const { QiankunWebpackPlugin } = require('@qiankunjs/webpack-plugin');
+## @qiankunjs/bundler-plugin — build integration
+
+`@qiankunjs/bundler-plugin` prepares a micro-app's build so qiankun's loader can pick up its entry deterministically. Install it as a dev dependency:
+
+```bash
+npm install @qiankunjs/bundler-plugin --save-dev
+```
+
+The package name is `@qiankunjs/bundler-plugin`. There is no `@qiankunjs/webpack-plugin` package — the single package covers both bundlers through subpath exports.
+
+| Import path | Export | Bundler |
+| --- | --- | --- |
+| `@qiankunjs/bundler-plugin` | `QiankunWebpackPlugin` (named and default) | Webpack 4 / 5 |
+| `@qiankunjs/bundler-plugin/webpack` | `QiankunWebpackPlugin` | Webpack 4 / 5 |
+| `@qiankunjs/bundler-plugin/vite` | `qiankun()` (named and default) | Vite (>= 5) |
+
+::: code-group
+
+```js [webpack.config.js]
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const { QiankunWebpackPlugin } = require('@qiankunjs/bundler-plugin');
 
 module.exports = {
   plugins: [
-    new QiankunWebpackPlugin()
-  ]
+    new HtmlWebpackPlugin({ template: './src/index.html' }),
+    new QiankunWebpackPlugin(),
+  ],
 };
 ```
 
-### Step 4: Start Development
+```ts [vite.config.ts]
+import { defineConfig } from 'vite';
+import { qiankun } from '@qiankunjs/bundler-plugin/vite';
 
-```bash
-# Start main app
-cd main-app && npm start
-
-# Start micro app (in separate terminal)
-cd micro-app && npm start
+export default defineConfig({
+  plugins: [qiankun()],
+});
 ```
 
-## 🔧 Advanced Configuration
+:::
 
-### Environment-based Configuration
+The Webpack plugin fixes the output library (so lifecycle exports land on `window[packageName]`) and marks the entry `<script>` in the emitted HTML; it accepts a single `packageName` option. The Vite plugin marks the entry module script in built HTML and configures permissive CORS for dev and preview; it takes no options.
 
-```typescript
-// React main app
-const MicroAppConfig = {
-  development: {
-    entry: '//localhost:8080',
-    autoSetLoading: true,
-    autoCaptureError: true,
-  },
-  production: {
-    entry: '//your-domain.com/micro-app',
-    autoSetLoading: false, // Custom loading
-    autoCaptureError: true,
-  }
-};
+See [@qiankunjs/bundler-plugin](/ecosystem/bundler-plugin) for the complete option and behavior reference, and the cookbook guides for [Webpack](/cookbook/prepare-a-webpack-app) and [Vite](/cookbook/prepare-a-vite-app) apps.
 
-const config = MicroAppConfig[process.env.NODE_ENV];
+## @qiankunjs/react and @qiankunjs/vue — &lt;MicroApp&gt; components
 
-function App() {
-  return <MicroApp name="my-app" {...config} />;
+Both bindings expose a single `MicroApp` component that wraps `loadMicroApp`. You give it a `name` and an `entry`, and it handles mount, update on prop change, and unmount on teardown for you.
+
+::: code-group
+
+```tsx [React]
+import { MicroApp } from '@qiankunjs/react';
+
+export default function Page() {
+  return <MicroApp name="app1" entry="http://localhost:7101" />;
 }
 ```
 
-### Multi-app Dashboard
+```vue [Vue]
+<script setup>
+import { MicroApp } from '@qiankunjs/vue';
+</script>
 
-```tsx
-// React - Multiple micro apps
-function Dashboard() {
-  return (
-    <div className="dashboard">
-      <aside>
-        <MicroApp name="navigation" entry="//localhost:8001" />
-      </aside>
-      <main>
-        <MicroApp name="content" entry="//localhost:8002" />
-      </main>
-      <footer>
-        <MicroApp name="footer" entry="//localhost:8003" />
-      </footer>
-    </div>
-  );
-}
+<template>
+  <micro-app name="app1" entry="http://localhost:7101" />
+</template>
 ```
 
-## 📚 Documentation Links
+:::
 
-- [React Bindings](/ecosystem/react) - Complete React integration guide
-- [Vue Bindings](/ecosystem/vue) - Complete Vue integration guide  
-- [Webpack Plugin](/ecosystem/webpack-plugin) - Build tool configuration
-- [Create Qiankun](/ecosystem/create-qiankun) - Project scaffolding
-- [API Reference](/api/) - Core qiankun APIs
+Both share the same core props — `name`, `entry`, `settings` (an [AppConfiguration](/api/configuration)), `lifeCycles`, `autoSetLoading`, `autoCaptureError`, `wrapperClassName`, `className` — plus optional loader and error-boundary customization. The React binding forwards any extra prop to the sub-app; the Vue binding uses a dedicated `appProps` object for that. The React `MicroApp` requires `react`/`react-dom` >= 16.9; the Vue `MicroApp` is built on `vue-demi` and supports both Vue 2 and Vue 3.
 
-## 🤝 Community
+Reach for these when you mount micro-apps at specific points in a component tree (manual mode). For URL-driven, route-based mounting, use [`registerMicroApps`](/api/register-micro-apps) + [`start`](/api/start) from the core package instead.
 
-- [GitHub Discussions](https://github.com/umijs/qiankun/discussions) - Ask questions and share ideas
-- [Issues](https://github.com/umijs/qiankun/issues) - Bug reports and feature requests
-- [Changelog](https://github.com/umijs/qiankun/releases) - Latest updates and releases
+See [`<MicroApp>` for React](/ecosystem/react) and [`<MicroApp>` for Vue](/ecosystem/vue) for the full props, slots, and ref reference.
 
-Choose the tools that best fit your project needs and start building powerful micro-frontend applications! 
+## Related
+
+- [API reference overview](/api/index) — the core `qiankun` runtime APIs the bindings and plugins build on.
+- [Getting started](/guide/getting-started) — install and run your first main app and micro-app.
+- [Make a Vite app qiankun-ready](/cookbook/prepare-a-vite-app) and [Make a Webpack app qiankun-ready](/cookbook/prepare-a-webpack-app) — bundler-plugin in context.

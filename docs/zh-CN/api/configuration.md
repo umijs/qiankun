@@ -1,662 +1,184 @@
-# Configuration
+# AppConfiguration
 
-qiankun 提供灵活的配置选项来自定义微前端应用的行为。本文档涵盖了不同用例的所有可用配置选项。
+`AppConfiguration` 是 qiankun v3 中的单应用配置对象。它控制 JS 沙箱、沙箱代理的全局上下文、运行时 CSS 样式隔离，以及底层的 loader 钩子（`fetch`、`streamTransformer`、`nodeTransformer`）。
 
-## 📋 配置类型
+v3 中不再有 `FrameworkConfiguration` 类型。配置是**按微应用**设置的，可以通过 [`registerMicroApps`](/zh-CN/api/register-micro-apps)（每个应用上的 `configuration` 字段）设置，也可以作为 [`loadMicroApp`](/zh-CN/api/load-micro-app) 的第二个参数传入。`<MicroApp>` 组件则通过其 `settings` prop 暴露该配置。
 
-### AppConfiguration
+## 类型
 
-与 `loadMicroApp` 一起使用的单个微应用配置。
+```ts
+import type { LoaderOpts } from '@qiankunjs/loader';
 
-```typescript
-type AppConfiguration = {
+export type AppConfiguration = Partial<
+  Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>
+> & {
   sandbox?: boolean;
   globalContext?: WindowProxy;
-  fetch?: Function;
-  streamTransformer?: Function;
-  nodeTransformer?: Function;
+  styleIsolation?: boolean;
 };
 ```
 
-### StartOpts
+每个字段都是可选的。下表列出了各字段，以及字段省略时 `loadApp` 所解析出的默认值。
 
-与 `start()` 一起使用的启动 qiankun 框架的配置。
+| 字段 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `sandbox` | `boolean` | `true` | 启用 Proxy-membrane JS 沙箱（对于 `<script type="module">`，还会启用 ESM 沙箱引擎）。设为 `false` 可让微应用直接运行在真实的全局对象上。 |
+| `globalContext` | `WindowProxy` | `window` | 沙箱 membrane 所代理的基础全局对象。很少需要修改。 |
+| `styleIsolation` | `boolean` | `false` | 启用运行时 CSS 隔离。将微应用的样式包裹在一个作用于应用容器的 CSS `@scope` 块中。需显式开启。 |
+| `fetch` | `typeof window.fetch` | `window.fetch` | 用于加载入口 HTML 及每个资源的 `fetch` 实现。qiankun 会用 cache/retry/throw 装饰器对其进行包装（见下文）。 |
+| `streamTransformer` | `() => TransformStream<string, string>` | `undefined` | 可选的 transform，会被插入到 HTML 入口的流式管线中。以字符串流的形式接收解码后的 HTML。 |
+| `nodeTransformer` | `<T extends Node>(node: T, opts) => T` | 内部的 `transpileAssets` transformer | 在每个 script/link/style 节点流入容器时对其进行改写。仅在需要自定义资源改写时才覆盖它。 |
 
-```typescript
-interface StartOpts {
-  prefetch?: boolean | 'all' | string[] | ((apps: RegistrableApp[]) => { criticalAppNames: string[]; minorAppsName: string[] });
-  sandbox?: boolean | { strictStyleIsolation?: boolean; experimentalStyleIsolation?: boolean; };
-  singular?: boolean;
-  urlRerouteOnly?: boolean;
-  // ... other single-spa options
-}
-```
-
-## ⚙️ 应用配置选项
+## 字段详解
 
 ### sandbox
 
-**类型**: `boolean`  
-**默认值**: `true`  
-**描述**: 为微应用启用沙箱隔离。
+默认为 `true`。启用时，`loadApp` 会调用 `createSandboxContainer`，为微应用构建一个 Proxy-membrane 的 `window`/`document` 视图；当入口包含 `<script type="module">` 时，还会接入 ESM 沙箱引擎。每个微应用都拥有各自独立的全局对象；应用内部对 `window` 的写入会被 membrane 拦截，永远不会触及宿主 realm。
 
-#### 基础用法
+设置 `sandbox: false` 可让微应用运行在真实的全局上下文中——这对于无法容忍代理全局对象的遗留应用很有用，但代价是失去隔离性。
 
-```typescript
-// Enable sandbox (default)
-loadMicroApp({
-  name: 'my-app',
-  entry: '//localhost:8080',
-  container: '#container',
-}, {
-  sandbox: true
-});
-
-// Disable sandbox (not recommended)
-loadMicroApp({
-  name: 'legacy-app',
-  entry: '//localhost:8080',
-  container: '#container',
-}, {
-  sandbox: false
-});
+```ts
+configuration: { sandbox: false }
 ```
 
-#### 为什么使用沙箱？
+在 v3 中，`sandbox` 是一个普通布尔值。关于旧的对象形式，参见 [v3 中已移除](#gone-in-v3) 说明。
 
-```typescript
-// With sandbox enabled, global variables are isolated
-loadMicroApp({
-  name: 'app1',
-  entry: '//localhost:8001',
-  container: '#container1',
-}, {
-  sandbox: true  // app1 gets its own global scope
-});
-
-loadMicroApp({
-  name: 'app2', 
-  entry: '//localhost:8002',
-  container: '#container2',
-}, {
-  sandbox: true  // app2 gets its own isolated global scope
-});
-```
+关于 membrane 的工作原理，参见 [JS 沙箱](/zh-CN/concepts/js-sandbox) 和 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)。
 
 ### globalContext
 
-**类型**: `WindowProxy`  
-**默认值**: `window`  
-**描述**: 微应用的自定义全局上下文。
+默认为 `window`。这是沙箱 membrane 所代理的基础全局对象。在普通的单窗口场景下你无需设置它；它是为那些基础 realm 并非顶层 `window` 的高级托管场景而存在的。
 
-```typescript
-// Create a custom global context
-const customGlobal = new Proxy(window, {
-  get(target, prop) {
-    // Custom logic for property access
-    if (prop === 'customAPI') {
-      return { version: '1.0' };
-    }
-    return target[prop];
-  }
-});
+### styleIsolation
 
-loadMicroApp({
-  name: 'custom-app',
-  entry: '//localhost:8080',
-  container: '#container',
-}, {
-  globalContext: customGlobal
-});
+默认为 `false`（关闭）。设为 `true` 时，qiankun 会在运行时使用原生 CSS [`@scope`](https://developer.mozilla.org/en-US/docs/Web/CSS/@scope) at-rule 对微应用的 CSS 进行作用域限定。`loadApp` 内部会推导出：
+
+```ts
+const styleIsolationOpts = { appName, scopeRoot: `[data-name="${appName}"]` };
 ```
+
+来自应用内联 `<style>` 和外部 `<link rel="stylesheet">` 的每一条规则，都会被包裹进 `@scope ([data-name="<appName>"]) { ... }`，其中 `data-name` 是 qiankun 设置在应用容器上的属性。外部样式表会被重新拉取并以 blob-`<link>` 的形式重新提供，以便其内容也能被限定作用域。`@keyframes` 会按应用重命名；`@font-face` 和 `@namespace` 则有意保持为全局。
+
+作用域选择器是内部推导出来的，无法自定义。
+
+::: warning 浏览器支持与 CORS
+样式隔离依赖原生 CSS `@scope`，这是一项较新的浏览器特性——qiankun 中没有 polyfill。不支持 `@scope` 的浏览器不会对样式进行作用域限定。此外，外部样式表必须可通过 CORS 拉取：一旦 fetch 或 transpile 失败，该样式表会被丢弃（绝不会以未限定作用域的方式加载），以保持隔离性。
+:::
+
+关于该机制参见 [样式隔离](/zh-CN/concepts/style-isolation)，操作演示参见 [启用 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation)。
 
 ### fetch
 
-**类型**: `Function`  
-**默认值**: `window.fetch`  
-**描述**: 用于加载应用资源的自定义 fetch 函数。
+默认为 `window.fetch`。无论你传入什么，在使用前都会被包装：
 
-#### 自定义头部
-
-```typescript
-const customFetch = async (url, options) => {
-  return fetch(url, {
-    ...options,
-    headers: {
-      ...options?.headers,
-      'Authorization': `Bearer ${getToken()}`,
-      'X-Custom-Header': 'custom-value'
-    }
-  });
-};
-
-loadMicroApp({
-  name: 'authenticated-app',
-  entry: '//localhost:8080',
-  container: '#container',
-}, {
-  fetch: customFetch
-});
+```ts
+const enhancedFetch = makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)));
 ```
 
-#### 请求转换
+- `makeFetchThrowable` —— 将非 `ok` 的 HTTP 响应转为抛出的错误。
+- `makeFetchRetryable` —— 对临时性网络失败进行重试。
+- `makeFetchCacheable` —— 对响应进行去重与缓存，使流式 loader 的自动资源预加载不会重复拉取。
 
-```typescript
-const transformFetch = async (url, options) => {
-  // Transform URLs
-  const transformedUrl = url.replace('//localhost', '//production-domain');
-  
-  // Add custom logic
-  console.log(`Fetching: ${transformedUrl}`);
-  
-  const response = await fetch(transformedUrl, options);
-  
-  // Transform response
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ${transformedUrl}: ${response.status}`);
-  }
-  
-  return response;
-};
-```
-
-#### 缓存策略
-
-```typescript
-const cache = new Map();
-
-const cachingFetch = async (url, options) => {
-  const cacheKey = `${url}${JSON.stringify(options)}`;
-  
-  if (cache.has(cacheKey)) {
-    console.log(`Cache hit for ${url}`);
-    return cache.get(cacheKey);
-  }
-  
-  const response = await fetch(url, options);
-  cache.set(cacheKey, response.clone());
-  
-  return response;
-};
-```
+传入自定义 `fetch` 可用于注入凭证、请求头或代理。无论你传入什么，上述包装始终会叠加在其之上。
 
 ### streamTransformer
 
-**类型**: `Function`  
-**描述**: 在加载过程中转换流式 HTML 内容。
+默认为 `undefined`。提供时，它的 `TransformStream<string, string>` 会在字节解码之后、qiankun 自身的标签改写之前，被拼接进 HTML 入口的流式管线中。可用它来实时改写入口 HTML（例如注入或剔除标记）。大多数应用永远不需要它。
 
-```typescript
-const customStreamTransformer = (stream) => {
-  return stream.pipeThrough(new TransformStream({
-    transform(chunk, controller) {
-      // Transform HTML chunks
-      const transformedChunk = chunk
-        .replace(/old-api/g, 'new-api')
-        .replace(/deprecated-feature/g, 'updated-feature');
-      
-      controller.enqueue(transformedChunk);
-    }
-  }));
-};
-
-loadMicroApp({
-  name: 'streaming-app',
-  entry: '//localhost:8080',
-  container: '#container',
-}, {
-  streamTransformer: customStreamTransformer
-});
-```
+关于该管线参见 [HTML Entry 流式加载](/zh-CN/concepts/html-entry-loading)。
 
 ### nodeTransformer
 
-**类型**: `Function`  
-**描述**: 在应用加载过程中转换 DOM 节点。
+默认为一个基于 `transpileAssets` 构建的内部 transformer，它会改写每个 `<script>`、`<link>` 和 `<style>` 节点——将全局访问路由经过沙箱 membrane、解析 module specifier，并（在开启 `styleIsolation` 时）对样式进行作用域限定。仅在你需要自定义单个资源节点如何在流入容器时被转换时，才覆盖它。替换它意味着退出 qiankun 的默认资源改写，因此请谨慎操作。
 
-```typescript
-const customNodeTransformer = (node, options) => {
-  // Transform script tags
-  if (node.tagName === 'SCRIPT') {
-    // Add custom attributes
-    node.setAttribute('data-app', 'my-app');
-    
-    // Modify script source
-    if (node.src) {
-      node.src = node.src.replace('localhost', 'production-domain');
-    }
-  }
-  
-  // Transform style tags
-  if (node.tagName === 'STYLE') {
-    // Add CSS scope
-    node.textContent = `.app-scope { ${node.textContent} }`;
-  }
-  
-  return node;
-};
+## 在哪里传入配置
 
-loadMicroApp({
-  name: 'transformed-app',
-  entry: '//localhost:8080',
-  container: '#container',
-}, {
-  nodeTransformer: customNodeTransformer
-});
-```
+`AppConfiguration` 可在三处被接受，均为按应用维度。
 
-## 🚀 启动配置选项
+::: code-group
 
-### prefetch
+```ts [registerMicroApps]
+import { registerMicroApps, start } from 'qiankun';
 
-**类型**: `boolean | 'all' | string[] | Function`  
-**默认值**: `true`  
-**描述**: 用于提升性能的资源预取策略。
-
-#### 布尔值
-
-```typescript
-// Disable prefetch
-start({ prefetch: false });
-
-// Enable default prefetch
-start({ prefetch: true });
-```
-
-#### 预取所有
-
-```typescript
-// Prefetch all registered micro apps
-start({ prefetch: 'all' });
-```
-
-#### 选择性预取
-
-```typescript
-// Prefetch specific apps
-start({ 
-  prefetch: ['dashboard', 'user-profile', 'analytics'] 
-});
-```
-
-#### 动态预取策略
-
-```typescript
-start({
-  prefetch: (apps) => {
-    // Business logic to determine prefetch strategy
-    const currentTime = new Date().getHours();
-    const isBusinessHours = currentTime >= 9 && currentTime <= 17;
-    
-    if (isBusinessHours) {
-      // Prefetch business-critical apps during business hours
-      return {
-        criticalAppNames: ['dashboard', 'crm', 'finance'],
-        minorAppsName: ['reporting', 'settings']
-      };
-    } else {
-      // Minimal prefetch during off-hours
-      return {
-        criticalAppNames: ['dashboard'],
-        minorAppsName: []
-      };
-    }
-  }
-});
-```
-
-#### 基于用户的预取
-
-```typescript
-start({
-  prefetch: (apps) => {
-    const userRole = getCurrentUserRole();
-    
-    switch (userRole) {
-      case 'admin':
-        return {
-          criticalAppNames: ['admin-panel', 'user-management', 'system-monitor'],
-          minorAppsName: ['reports', 'settings']
-        };
-      case 'user':
-        return {
-          criticalAppNames: ['dashboard', 'profile'],
-          minorAppsName: ['help', 'feedback']
-        };
-      default:
-        return {
-          criticalAppNames: ['dashboard'],
-          minorAppsName: []
-        };
-    }
-  }
-});
-```
-
-### sandbox
-
-**类型**: `boolean | SandboxConfig`  
-**默认值**: `true`  
-**描述**: 所有微应用的全局沙箱配置。
-
-#### 基础沙箱
-
-```typescript
-// Enable sandbox for all apps
-start({ sandbox: true });
-
-// Disable sandbox for all apps (not recommended)
-start({ sandbox: false });
-```
-
-#### 高级沙箱配置
-
-```typescript
-start({
-  sandbox: {
-    strictStyleIsolation: true,        // Enable Shadow DOM style isolation
-    experimentalStyleIsolation: true,  // Enable scoped CSS style isolation
-  }
-});
-```
-
-#### 样式隔离选项
-
-**strictStyleIsolation**: 使用 Shadow DOM 来完全隔离样式
-```typescript
-start({
-  sandbox: {
-    strictStyleIsolation: true,  // Strongest isolation but may break some UI libraries
-  }
-});
-```
-
-**experimentalStyleIsolation**: 使用作用域 CSS 来隔离样式
-```typescript
-start({
-  sandbox: {
-    experimentalStyleIsolation: true,  // Good balance of isolation and compatibility
-  }
-});
-```
-
-#### 组合样式隔离
-
-```typescript
-start({
-  sandbox: {
-    strictStyleIsolation: false,       // Disable Shadow DOM
-    experimentalStyleIsolation: true,  // Enable scoped CSS
-  }
-});
-```
-
-### singular
-
-**类型**: `boolean`  
-**默认值**: `true`  
-**描述**: 是否同时只能挂载一个微应用。
-
-```typescript
-// Only one app at a time (default)
-start({ singular: true });
-
-// Allow multiple apps simultaneously
-start({ 
-  singular: false  // Useful for dashboard-style applications
-});
-```
-
-#### 多应用用例
-
-```typescript
-// Dashboard with multiple widgets
-start({ 
-  singular: false,
-  // Other configurations
-});
-
-// Register widget-style micro apps
 registerMicroApps([
-  { name: 'widget-weather', entry: '//localhost:8001', container: '#widget-1', activeRule: '/dashboard' },
-  { name: 'widget-stocks', entry: '//localhost:8002', container: '#widget-2', activeRule: '/dashboard' },
-  { name: 'widget-news', entry: '//localhost:8003', container: '#widget-3', activeRule: '/dashboard' },
+  {
+    name: 'react-app',
+    entry: '//localhost:7100',
+    container: document.getElementById('subapp-container')!,
+    activeRule: '/react',
+    configuration: {
+      sandbox: true,
+      styleIsolation: true,
+    },
+  },
 ]);
+
+start();
 ```
 
-### urlRerouteOnly
+```ts [loadMicroApp]
+import { loadMicroApp } from 'qiankun';
 
-**类型**: `boolean`  
-**默认值**: `true`  
-**描述**: 是否仅在 URL 变化时触发路由。
-
-```typescript
-// Only route on URL changes (default)
-start({ urlRerouteOnly: true });
-
-// Route on both URL and programmatic changes
-start({ 
-  urlRerouteOnly: false  // More responsive but potentially more performance overhead
-});
-```
-
-## 🔧 基于环境的配置
-
-### 开发配置
-
-```typescript
-const developmentConfig = {
-  prefetch: false,                    // Faster rebuilds
-  sandbox: {
-    strictStyleIsolation: false,      // Easier debugging
-    experimentalStyleIsolation: true,
+const microApp = loadMicroApp(
+  {
+    name: 'react-app',
+    entry: '//localhost:7100',
+    container: document.getElementById('subapp-container')!,
   },
-  singular: false,                    // More flexible development
-  urlRerouteOnly: false,             // More responsive navigation
-};
-
-if (process.env.NODE_ENV === 'development') {
-  start(developmentConfig);
-}
-```
-
-### 生产配置
-
-```typescript
-const productionConfig = {
-  prefetch: 'all',                    // Better user experience
-  sandbox: {
-    strictStyleIsolation: true,       // Better isolation
-    experimentalStyleIsolation: false,
-  },
-  singular: true,                     // Stable performance
-  urlRerouteOnly: true,              // Optimized routing
-};
-
-if (process.env.NODE_ENV === 'production') {
-  start(productionConfig);
-}
-```
-
-### 移动端配置
-
-```typescript
-const mobileConfig = {
-  prefetch: (apps) => ({
-    // Conservative prefetch on mobile
-    criticalAppNames: ['home'],
-    minorAppsName: []
-  }),
-  sandbox: {
-    // Lighter sandbox for mobile performance
-    strictStyleIsolation: false,
-    experimentalStyleIsolation: true,
-  },
-  singular: true,                     // Better for mobile UX
-};
-
-const isMobile = window.innerWidth < 768;
-if (isMobile) {
-  start(mobileConfig);
-}
-```
-
-## 🎯 高级配置模式
-
-### 1. 特性标志集成
-
-```typescript
-const getConfigWithFeatureFlags = async () => {
-  const featureFlags = await getFeatureFlags();
-  
-  return {
-    prefetch: featureFlags.enablePrefetch ? 'all' : false,
-    sandbox: {
-      strictStyleIsolation: featureFlags.strictIsolation,
-      experimentalStyleIsolation: !featureFlags.strictIsolation,
-    },
-    singular: featureFlags.allowMultipleApps ? false : true,
-  };
-};
-
-getConfigWithFeatureFlags().then(config => start(config));
-```
-
-### 2. 基于性能的配置
-
-```typescript
-const getPerformanceConfig = () => {
-  const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-  const isSlowConnection = connection?.effectiveType === '2g' || connection?.effectiveType === 'slow-2g';
-  
-  if (isSlowConnection) {
-    return {
-      prefetch: false,              // No prefetch on slow connections
-      sandbox: {
-        strictStyleIsolation: false,
-        experimentalStyleIsolation: true,
-      },
-      singular: true,
-    };
-  }
-  
-  return {
-    prefetch: 'all',
-    sandbox: {
-      strictStyleIsolation: true,
-      experimentalStyleIsolation: false,
-    },
-    singular: false,
-  };
-};
-
-start(getPerformanceConfig());
-```
-
-### 3. 基于用户角色的配置
-
-```typescript
-const getRoleBasedConfig = (userRole) => {
-  const baseConfig = {
+  // 第二个参数即 AppConfiguration
+  {
     sandbox: true,
-    singular: true,
-  };
-  
-  switch (userRole) {
-    case 'admin':
-      return {
-        ...baseConfig,
-        prefetch: 'all',              // Admins get all features
-        singular: false,              // Can use multiple admin tools
-      };
-    case 'poweruser':
-      return {
-        ...baseConfig,
-        prefetch: ['dashboard', 'analytics', 'reports'],
-        singular: false,
-      };
-    default:
-      return {
-        ...baseConfig,
-        prefetch: ['dashboard'],      // Basic users get minimal prefetch
-        singular: true,
-      };
-  }
-};
-
-const userRole = getCurrentUserRole();
-start(getRoleBasedConfig(userRole));
+    styleIsolation: true,
+  },
+);
 ```
 
-## ⚠️ 重要注意事项
+```tsx [MicroApp (React)]
+import { MicroApp } from '@qiankunjs/react';
 
-### 1. 配置优先级
-
-```typescript
-// App-level configuration overrides global configuration
-start({
-  sandbox: true,  // Global setting
-});
-
-loadMicroApp({
-  name: 'special-app',
-  entry: '//localhost:8080',
-  container: '#container',
-}, {
-  sandbox: false  // This overrides the global setting for this app
-});
+export default function App() {
+  return (
+    <MicroApp
+      name="react-app"
+      entry="//localhost:7100"
+      settings={{ sandbox: true, styleIsolation: true }}
+    />
+  );
+}
 ```
 
-### 2. 性能考虑
+:::
 
-```typescript
-// ❌ 错误：影响性能的重配置
-start({
-  prefetch: 'all',                 // Might slow down initial load
-  sandbox: {
-    strictStyleIsolation: true,    // More overhead
-  },
-  singular: false,                 // More memory usage
-  urlRerouteOnly: false,          // More frequent route checks
-});
+`container` 是一个 `HTMLElement`，而非选择器字符串。请传入真实的元素（例如 `document.getElementById(...)` 或框架的 ref）。`<MicroApp>` 组件在内部自行管理其容器，所以你只需提供 `settings`。
 
-// ✅ 正确：平衡的配置
-start({
-  prefetch: ['critical-app'],      // Only prefetch what's needed
-  sandbox: {
-    experimentalStyleIsolation: true, // Good balance
-  },
-  singular: true,                  // Stable performance
-  urlRerouteOnly: true,           // Optimized routing
-});
+## 优先级
+
+在 v3 中，按应用的 `configuration` 实际上就是该应用的全部配置。不存在通过 `start()` 合并进来的框架级配置。
+
+```mermaid
+flowchart TD
+  A["RegistrableApp.configuration<br/>（或 loadMicroApp 第二个参数 /<br/>&lt;MicroApp&gt; settings）"] --> B["loadApp 解析默认值<br/>(sandbox=true, globalContext=window,<br/>styleIsolation=off, fetch=window.fetch, ...)"]
+  B --> C["按应用的运行时配置"]
 ```
 
-### 3. 调试配置
+在内部，`registerMicroApps` 会在调用 `loadApp` 前合并 `{ ...frameworkConfiguration, ...configuration }`。但 `frameworkConfiguration` 是一个模块级的空对象，在 v3 中从不会被填充——`start()` 不会向其中注入配置。所以实际上只有按应用的 `configuration` 起作用。请在注册应用的地方，或在调用 `loadMicroApp` 的地方，为每个应用配置。
 
-```typescript
-const debugConfig = {
-  sandbox: {
-    strictStyleIsolation: false,   // Easier to inspect styles
-    experimentalStyleIsolation: true,
-  },
-  // Custom fetch for logging
-  fetch: async (url, options) => {
-    console.log(`[DEBUG] Fetching: ${url}`);
-    const response = await fetch(url, options);
-    console.log(`[DEBUG] Response: ${response.status}`);
-    return response;
-  },
-  // Custom node transformer for debugging
-  nodeTransformer: (node, options) => {
-    if (node.tagName === 'SCRIPT') {
-      console.log(`[DEBUG] Processing script: ${node.src || 'inline'}`);
-    }
-    return node;
-  }
-};
-```
+## v3 中已移除 {#gone-in-v3}
 
-## 🔗 相关 API
+::: danger 这些 2.x 选项在 v3 中不存在
+- **没有 `sandbox: { ... }` 对象。** `sandbox` 是一个普通布尔值。不存在 `strictStyleIsolation`、`experimentalStyleIsolation`，也没有 Shadow DOM。样式隔离是独立的布尔值 `styleIsolation`，用 CSS `@scope` 实现。
+- **除 `styleIsolation` 外没有其他样式隔离选项。** 2.x 的 `sandbox.strictStyleIsolation` / `sandbox.experimentalStyleIsolation` 开关已移除。
+- **`start()` 上没有框架级配置。** [`start`](/zh-CN/api/start) 只接受 single-spa 的 `{ urlRerouteOnly }`。2.x 的 `prefetch`、`sandbox`、`singular`、`fetch`、`getPublicPath`、`getTemplate` 和 `excludeAssetFilter` 选项均已移除。
+- **`AppConfiguration` 中没有 `prefetch` 或 `singular`。** 流式 loader 会自动预加载资源；[`prefetchApps`](/zh-CN/api/prefetch-apps) 已废弃。`singular` 不再存在。
+- **没有内置的全局状态存储。** `initGlobalState`、`onGlobalStateChange` 和 `setGlobalState` 不属于 v3。参见 [在应用间共享状态与通信](/zh-CN/cookbook/communicate-between-apps)。
+:::
 
-- [start](/zh-CN/api/start) - 使用配置启动 qiankun
-- [loadMicroApp](/zh-CN/api/load-micro-app) - 使用配置加载应用
-- [registerMicroApps](/zh-CN/api/register-micro-apps) - 注册应用 
+正在从 qiankun 2.x 迁移？参见 [从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
+
+## 相关
+
+- [registerMicroApps](/zh-CN/api/register-micro-apps) —— 为路由驱动的应用设置按应用 `configuration` 的地方。
+- [loadMicroApp](/zh-CN/api/load-micro-app) —— 以 `AppConfiguration` 作为第二个参数的手动 loader。
+- [start](/zh-CN/api/start) —— 框架启动；注意它只接受 `{ urlRerouteOnly }`。
+- [类型参考](/zh-CN/api/types) —— 完整的类型面，包括 `RegistrableApp` 和 `LoadableApp`。
+- [样式隔离](/zh-CN/concepts/style-isolation) 和 [JS 沙箱](/zh-CN/concepts/js-sandbox) —— `styleIsolation` 与 `sandbox` 背后的概念。

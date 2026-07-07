@@ -1,407 +1,82 @@
 # start
 
-启动 qiankun 框架。此函数初始化微前端系统并启用基于路由的微应用自动加载。
+启动 qiankun 运行时，并将控制权交给 single-spa 的路由。在通过 [registerMicroApps](/zh-CN/api/register-micro-apps) 注册完微应用之后，调用一次 `start()`，single-spa 便会开始将当前 URL 与每个应用的 `activeRule` 进行匹配，并挂载匹配成功的应用。
 
-## 🎯 函数签名
+## 签名
 
-```typescript
+```ts
 function start(opts?: StartOpts): void
 ```
 
-## 📋 参数
+`StartOpts` 是 single-spa 自带的类型。在 qiankun v3 中它仅暴露一个字段：
 
-### opts
+| 选项 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `urlRerouteOnly` | `boolean` | `false` | 直接透传给 single-spa。当设为 `true` 时，single-spa 仅在 URL 实际发生变化时才重新路由，因此不会改变 URL 的 `history.pushState` / `history.replaceState` 调用不会触发重新路由。参见 [single-spa API 文档](https://single-spa.js.org/docs/api#start)。 |
 
-- **类型**: `StartOpts`
-- **必填**: ❌
-- **描述**: 启动配置选项
-
-```typescript
-interface StartOpts {
-  prefetch?: boolean | 'all' | string[] | ((apps: RegistrableApp[]) => { criticalAppNames: string[]; minorAppsName: string[] });
-  sandbox?: boolean | { strictStyleIsolation?: boolean; experimentalStyleIsolation?: boolean; };
-  singular?: boolean;
-  urlRerouteOnly?: boolean;
-  // ... 其他 single-spa 启动选项
-}
-```
-
-| 选项 | 类型 | 默认值 | 描述 |
-|------|------|--------|------|
-| `prefetch` | `boolean \| 'all' \| string[] \| Function` | `true` | 资源预取策略 |
-| `sandbox` | `boolean \| SandboxOpts` | `true` | 沙箱隔离配置 |
-| `singular` | `boolean` | `true` | 是否同时只能挂载一个微应用 |
-| `urlRerouteOnly` | `boolean` | `true` | 是否仅在 URL 变化时触发路由 |
-
-## 💡 使用示例
-
-### 基础用法
-
-```typescript
+```ts
 import { registerMicroApps, start } from 'qiankun';
 
-// 先注册微应用
 registerMicroApps([
-  {
-    name: 'react-app',
-    entry: '//localhost:7100',
-    container: '#subapp-viewport',
-    activeRule: '/react',
-  },
-  {
-    name: 'vue-app',
-    entry: '//localhost:7101',
-    container: '#subapp-viewport',
-    activeRule: '/vue',
-  },
+  /* ... */
 ]);
 
-// 启动 qiankun
 start();
 ```
 
-### 带配置的用法
+## 它做了什么
 
-```typescript
-start({
-  prefetch: false,          // 禁用预取
-  sandbox: true,           // 启用沙箱
-  singular: true,          // 同时只能有一个应用
-  urlRerouteOnly: true,    // 仅在 URL 变化时路由
-});
+`start()` 会按顺序完成四件事，并且只在首次调用时执行：
+
+```mermaid
+flowchart TD
+  A["start(opts)"] --> B{已启动？}
+  B -- "true" --> Z["直接返回（空操作）"]
+  B -- "false" --> C["prepareEsmLexer() — 预热 ESM wasm 词法分析器"]
+  C --> D["single-spa start(opts)"]
+  D --> E["started = true"]
+  E --> F["resolve framework-started deferred"]
+  F --> G["activeRule 匹配的已注册应用现在开始加载并挂载"]
 ```
 
-### 高级沙箱配置
+1. 通过 `prepareEsmLexer()` 预热 ESM 沙箱的 WebAssembly 词法分析器，使首个加载的微应用无需承担一次性的实例化开销。transpiler 管线稍后会再次 await 同一个词法分析器作为兜底保障，因此这一步纯粹是一种优化。
+2. 调用 single-spa 的 `start(opts)`，原封不动地转发你的 `opts`。
+3. 将内部 `started` 标志置为 `true`。
+4. resolve 内部的 framework-started deferred。每个通过 `registerMicroApps` 注册的应用在加载前都会阻塞于该 deferred，因此 resolve 它会释放所有匹配的应用，使其开始加载和挂载。
 
-```typescript
-start({
-  sandbox: {
-    strictStyleIsolation: true,      // 启用严格样式隔离
-    experimentalStyleIsolation: true, // 启用实验性样式隔离
-  }
-});
-```
+::: tip 幂等
+`start()` 受内部 `started` 标志保护。多次调用是安全的，首次调用之后再次调用不会有任何效果。重复调用也绝不会抛出异常。
+:::
 
-### 自定义预取策略
+## `loadMicroApp` 会为你启动框架
 
-```typescript
-start({
-  prefetch: 'all', // 预取所有微应用
-});
+如果你使用 [loadMicroApp](/zh-CN/api/load-micro-app) 进行手动、命令式的挂载，则无需自己调用 `start()`。当框架尚未启动时，`loadMicroApp` 会自动调用 `start()`，以便主应用的 `pushState` / `replaceState` 导航能够通过 single-spa 正确地派发 `popstate`。
 
-// 或者预取指定应用
-start({
-  prefetch: ['react-app', 'vue-app'], // 只预取这些应用
-});
+在常见的路由驱动方案中，应用通过 `registerMicroApps` 接入并基于 URL 挂载，此时你仍需显式调用 `start()`。
 
-// 或者自定义预取函数
-start({
-  prefetch: (apps) => ({
-    criticalAppNames: ['dashboard', 'user-center'], // 关键应用立即预取
-    minorAppsName: ['analytics', 'settings'],       // 次要应用稍后预取
-  })
-});
-```
+## v3 中移除的 2.x 选项
 
-## ⚙️ 配置选项
+::: warning 相对 qiankun 2.x 的破坏性变更
+在 qiankun 2.x 中，`start()` 接受一个庞大的配置对象。在 v3 中唯一被接受的字段是 single-spa 的 `urlRerouteOnly`。下列 2.x 选项**已不存在**——它们在源码中被注释掉，传入它们不会有任何效果：
 
-### 预取策略
+`prefetch`、`sandbox`、`singular`、`fetch`、`getPublicPath`、`getTemplate`、`excludeAssetFilter`。
 
-#### 1. 布尔值
+这些行为现在归属于：
 
-```typescript
-// 完全禁用预取
-start({ prefetch: false });
+| 2.x `start` 选项 | v3 替代方案 |
+| --- | --- |
+| `prefetch` | 流式 HTML Entry 加载器会自动预加载资源。参见 [优化加载与预加载](/zh-CN/cookbook/optimize-loading)。旧版 [prefetchApps](/zh-CN/api/prefetch-apps) API 已废弃。 |
+| `sandbox`（布尔值或 `{ strictStyleIsolation, experimentalStyleIsolation }`） | 改为 [AppConfiguration](/zh-CN/api/configuration) 中的每应用级 `sandbox`（布尔值）与 `styleIsolation`（布尔值，基于 CSS `@scope`）。 |
+| `singular` | 不再全局配置。每个容器均支持多实例——参见 [运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)。 |
+| `fetch` | 改为 [AppConfiguration](/zh-CN/api/configuration) 中的每应用级 `fetch`。 |
+| `getPublicPath`、`getTemplate`、`excludeAssetFilter` | 已移除。HTML Entry 加载器以及每应用级的 `nodeTransformer` / `streamTransformer` 覆盖了这些场景。 |
 
-// 启用默认预取行为
-start({ prefetch: true });
-```
+完整的迁移路径参见 [从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
+:::
 
-#### 2. 预取所有
+## 参见
 
-```typescript
-// 预取所有已注册的微应用
-start({ prefetch: 'all' });
-```
-
-#### 3. 选择性预取
-
-```typescript
-// 只预取指定的应用
-start({ 
-  prefetch: ['critical-app1', 'critical-app2'] 
-});
-```
-
-#### 4. 动态预取策略
-
-```typescript
-start({
-  prefetch: (apps) => {
-    // 自定义逻辑决定预取哪些应用
-    const criticalApps = apps
-      .filter(app => app.name.includes('critical'))
-      .map(app => app.name);
-    
-    const minorApps = apps
-      .filter(app => !app.name.includes('critical'))
-      .map(app => app.name);
-
-    return {
-      criticalAppNames: criticalApps,  // 立即预取
-      minorAppsName: minorApps,        // 空闲时预取
-    };
-  }
-});
-```
-
-### 沙箱配置
-
-#### 1. 布尔型沙箱
-
-```typescript
-// 启用基础沙箱
-start({ sandbox: true });
-
-// 禁用沙箱（不推荐）
-start({ sandbox: false });
-```
-
-#### 2. 高级沙箱
-
-```typescript
-start({
-  sandbox: {
-    strictStyleIsolation: true,       // 基于 Shadow DOM 的样式隔离
-    experimentalStyleIsolation: true, // 基于作用域 CSS 的样式隔离
-  }
-});
-```
-
-### 性能选项
-
-```typescript
-start({
-  singular: false,        // 允许多个应用同时挂载
-  urlRerouteOnly: false,  // 在 URL 和编程式变化时都触发路由
-});
-```
-
-## 🚀 最佳实践
-
-### 1. 在注册后调用
-
-```typescript
-// ✅ 正确的顺序
-registerMicroApps([...]);
-start();
-
-// ❌ 错误的顺序
-start();
-registerMicroApps([...]); // 这样不会正常工作
-```
-
-### 2. 基于环境的配置
-
-```typescript
-const startOpts = {
-  prefetch: process.env.NODE_ENV === 'production' ? 'all' : false,
-  sandbox: {
-    strictStyleIsolation: process.env.NODE_ENV === 'production',
-  },
-};
-
-start(startOpts);
-```
-
-### 3. 性能优化
-
-```typescript
-// 在生产环境中获得更好的性能
-start({
-  prefetch: (apps) => ({
-    criticalAppNames: ['dashboard'], // 只预取关键应用
-    minorAppsName: [], // 不预取次要应用
-  }),
-  singular: true, // 防止内存问题
-  sandbox: {
-    strictStyleIsolation: false, // 使用轻量级样式隔离
-    experimentalStyleIsolation: true,
-  },
-});
-```
-
-### 4. 开发环境 vs 生产环境
-
-```typescript
-if (process.env.NODE_ENV === 'development') {
-  start({
-    prefetch: false,    // 更快的开发重载
-    sandbox: false,     // 更容易调试
-    singular: false,    // 更灵活的开发
-  });
-} else {
-  start({
-    prefetch: 'all',    // 更好的用户体验
-    sandbox: true,      // 更好的隔离
-    singular: true,     // 稳定的性能
-  });
-}
-```
-
-## 🔧 集成模式
-
-### 1. 带加载状态
-
-```typescript
-import { registerMicroApps, start } from 'qiankun';
-
-let isQiankunStarted = false;
-
-function startQiankunWithLoading() {
-  if (isQiankunStarted) return;
-
-  showGlobalLoading();
-
-  registerMicroApps([...], {
-    beforeLoad: (app) => {
-      console.log(`Loading ${app.name}...`);
-    },
-    afterMount: (app) => {
-      console.log(`${app.name} mounted`);
-      hideGlobalLoading();
-    },
-  });
-
-  start({
-    prefetch: 'all',
-    sandbox: true,
-  });
-
-  isQiankunStarted = true;
-}
-```
-
-### 2. 带错误处理
-
-```typescript
-function startQiankunSafely() {
-  try {
-    registerMicroApps([...]);
-    
-    start({
-      prefetch: 'all',
-      sandbox: true,
-    });
-
-    console.log('Qiankun started successfully');
-  } catch (error) {
-    console.error('Failed to start qiankun:', error);
-    // 回退到传统路由或显示错误页面
-    window.location.href = '/fallback';
-  }
-}
-```
-
-### 3. 带特性检测
-
-```typescript
-import { isRuntimeCompatible } from 'qiankun';
-
-if (isRuntimeCompatible()) {
-  registerMicroApps([...]);
-  start();
-} else {
-  console.warn('Browser not compatible with qiankun');
-  // 回退实现
-  initTraditionalRouting();
-}
-```
-
-## ⚠️ 重要注意事项
-
-### 1. 只调用一次
-
-```typescript
-// ❌ 错误：多次调用
-start();
-start(); // 这个调用会被忽略
-
-// ✅ 正确：单次调用
-start();
-```
-
-### 2. 顺序很重要
-
-```typescript
-// ✅ 正确顺序
-registerMicroApps([...]);  // 1. 先注册应用
-start();                   // 2. 然后启动
-
-// ❌ 错误顺序 - 应用不会被正确注册
-start();
-registerMicroApps([...]);
-```
-
-### 3. 预取注意事项
-
-```typescript
-// ⚠️ 在大型应用中要小心使用 'all'
-start({ prefetch: 'all' }); // 可能影响初始加载性能
-
-// ✅ 更好：选择性预取
-start({ 
-  prefetch: ['critical-app1', 'critical-app2'] 
-});
-```
-
-## 🎯 常见用例
-
-### 1. 电商平台
-
-```typescript
-registerMicroApps([
-  { name: 'product-catalog', entry: '//catalog.example.com', activeRule: '/products' },
-  { name: 'shopping-cart', entry: '//cart.example.com', activeRule: '/cart' },
-  { name: 'user-account', entry: '//account.example.com', activeRule: '/account' },
-]);
-
-start({
-  prefetch: (apps) => ({
-    criticalAppNames: ['shopping-cart'], // 总是预取购物车
-    minorAppsName: ['user-account'],     // 空闲时预取账户
-  }),
-  sandbox: true,
-  singular: true,
-});
-```
-
-### 2. 管理后台
-
-```typescript
-start({
-  prefetch: false,  // 不预取 - 管理工具按需使用
-  sandbox: {
-    strictStyleIsolation: true, // 防止管理工具间的样式冲突
-  },
-  singular: false,  // 允许多个管理工具同时打开
-});
-```
-
-### 3. 多租户平台
-
-```typescript
-const tenantId = getCurrentTenantId();
-
-start({
-  prefetch: [`tenant-${tenantId}-dashboard`], // 只预取当前租户的应用
-  sandbox: true, // 隔离租户数据
-  singular: true,
-});
-```
-
-## 🔗 相关 API
-
-- [registerMicroApps](/zh-CN/api/register-micro-apps) - 注册微应用
-- [loadMicroApp](/zh-CN/api/load-micro-app) - 手动加载微应用
-- [isRuntimeCompatible](/zh-CN/api/is-runtime-compatible) - 检查浏览器兼容性 
+- [registerMicroApps](/zh-CN/api/register-micro-apps) —— 在调用 `start()` 之前注册路由驱动的应用。
+- [loadMicroApp](/zh-CN/api/load-micro-app) —— 命令式挂载，会自动启动框架。
+- [AppConfiguration](/zh-CN/api/configuration) —— 每应用级的 `sandbox`、`styleIsolation`、`fetch` 以及 transformer 选项。
+- [ESM 沙箱](/zh-CN/concepts/esm-sandbox) —— 预热的 wasm 词法分析器的用途所在。

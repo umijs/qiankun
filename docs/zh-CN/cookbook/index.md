@@ -1,275 +1,62 @@
-# 最佳实践
+# Cookbook
 
-本节包含使用 qiankun 构建生产级微前端应用的实用指南和最佳实践。这些指南基于真实世界的经验和实施微前端架构时面临的常见挑战。
+面向任务的实用配方，覆盖 qiankun v3 的常见工作。每个配方都以目标为先：它先陈述结果，再展示代码，并假设你已经了解相关的周边概念。当你需要的是底层模型而非操作步骤时，请跟随概念链接。
 
-## 🎯 概述
+## 如何阅读配方
 
-构建微前端需要仔细考虑各个方面，包括架构设计、性能优化、开发工作流和部署策略。这些指南将帮助你避免常见陷阱并实施稳健的解决方案。
+- 每个配方都从一个具体目标出发（"启用 X"、"让 Y 就绪"、"处理 Z"），而不是从某个 API 面出发。
+- 配方是自包含的。它们假设框架已经安装完毕，并且你已经有一个可运行的主应用和至少一个微应用。如果还没有，请先从 [快速上手](/zh-CN/guide/getting-started) 或[教程](/zh-CN/tutorial/index)开始。
+- 概念在别处讲解。配方会链接到相关的概念页面（[JS 沙箱](/zh-CN/concepts/js-sandbox)、[样式隔离](/zh-CN/concepts/style-isolation)、[HTML Entry 流式加载](/zh-CN/concepts/html-entry-loading)），而不是重新解释它。
+- API 细节位于[参考手册](/zh-CN/api/index)。配方展示的是在具体场景中的选项；参考手册则列出每个字段、类型和默认值。
 
-## 📚 可用指南
+## 配方
 
-### 🎨 [样式隔离](/zh-CN/cookbook/style-isolation)
+| 配方 | 意图 |
+| --- | --- |
+| [启用 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation) | 为单个应用开启 `styleIsolation`，使微应用的 CSS 不会泄漏到主应用或其同级应用。 |
+| [优化加载与预加载](/zh-CN/cookbook/optimize-loading) | 充分利用流式加载器、fetch 缓存以及自动预加载，而非手动 prefetch。 |
+| [处理加载与运行时错误](/zh-CN/cookbook/handle-errors) | 通过 `addErrorHandler` / `removeErrorHandler` 以及单应用 loader 捕获加载与 lifecycle 失败。 |
+| [在应用间共享状态与通信](/zh-CN/cookbook/communicate-between-apps) | 由于 v3 不再内置 store，通过 `props` 在主应用与微应用之间传递数据和回调。 |
+| [从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x) | 将 2.x 集成迁移到 v3：字符串 `entry`、元素 `container`、单应用 `configuration`，以及被移除的选项。 |
+| [让 Vite 应用支持 qiankun](/zh-CN/cookbook/prepare-a-vite-app) | 接入 `@qiankunjs/bundler-plugin/vite` 插件并导出 lifecycles，让 Vite 应用作为微应用运行。 |
+| [让 Webpack 应用支持 qiankun](/zh-CN/cookbook/prepare-a-webpack-app) | 添加 `QiankunWebpackPlugin` 并导出 lifecycles，让 Webpack 应用作为微应用运行。 |
+| [运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances) | 使用 `loadMicroApp` 同时挂载同一个或多个微应用，并各自干净地卸载。 |
 
-学习如何防止微应用之间的 CSS 冲突并实施有效的样式隔离策略。
+## 快速选择
 
-**你将学到：**
-- CSS 隔离技术
-- Shadow DOM 实现
-- CSS 作用域策略
-- 运行时样式冲突解决
-- 组件库最佳实践
-
-### ⚡ [性能优化](/zh-CN/cookbook/performance)
-
-优化你的微前端应用以获得更好的加载时间和运行时性能。
-
-**你将学到：**
-- 资源加载优化
-- 包拆分策略
-- 缓存机制
-- 懒加载技术
-- 性能监控
-
-### 🛠️ [错误处理](/zh-CN/cookbook/error-handling)
-
-为微前端应用实施稳健的错误处理和恢复机制。
-
-**你将学到：**
-- 错误边界实现
-- 优雅降级策略
-- 错误监控和报告
-- 恢复机制
-- 用户体验考虑
-
-### 🔍 [调试和开发](/zh-CN/cookbook/debugging)
-
-掌握微前端应用的调试技术和开发工作流。
-
-**你将学到：**
-- 开发环境设置
-- 调试工具和技术
-- 热重载配置
-- 跨应用调试
-- 生产调试策略
-
-### 🚀 [部署策略](/zh-CN/cookbook/deployment)
-
-学习微前端应用的部署模式和 CI/CD 策略。
-
-**你将学到：**
-- 独立部署工作流
-- 版本管理
-- 回滚策略
-- 环境配置
-- 零停机部署
-
-### 🔄 [状态管理](/zh-CN/cookbook/state-management)
-
-在微应用之间实施有效的状态管理。
-
-**你将学到：**
-- 跨应用状态共享
-- 事件驱动通信
-- 状态同步
-- 数据流模式
-- 存储管理
-
-### 🌐 [路由和导航](/zh-CN/cookbook/routing)
-
-为微前端应用设计和实施导航模式。
-
-**你将学到：**
-- 路由配置策略
-- 深度链接支持
-- 导航守卫
-- 历史管理
-- SEO 考虑
-
-### 🔒 [安全](/zh-CN/cookbook/security)
-
-为微前端架构实施安全最佳实践。
-
-**你将学到：**
-- 内容安全策略 (CSP)
-- 跨源资源共享 (CORS)
-- 身份验证和授权
-- 安全通信模式
-- 漏洞防护
-
-### 🧪 [测试策略](/zh-CN/cookbook/testing)
-
-为微前端应用开发全面的测试策略。
-
-**你将学到：**
-- 微应用单元测试
-- 集成测试策略
-- 端到端测试
-- 视觉回归测试
-- 性能测试
-
-### 📊 [监控和分析](/zh-CN/cookbook/monitoring)
-
-为微前端应用实施监控和分析。
-
-**你将学到：**
-- 性能监控
-- 错误跟踪
-- 用户分析
-- 应用健康检查
-- 业务指标
-
-## 🎯 入门指南
-
-如果你是 qiankun 或微前端的新手，我们建议按以下顺序开始这些指南：
-
-1. **[样式隔离](/zh-CN/cookbook/style-isolation)** - 防止 CSS 冲突的必备知识
-2. **[错误处理](/zh-CN/cookbook/error-handling)** - 生产稳定性的关键
-3. **[性能优化](/zh-CN/cookbook/performance)** - 用户体验的重要因素
-4. **[调试和开发](/zh-CN/cookbook/debugging)** - 提高开发效率
-
-## 🏗️ 常见模式
-
-### 微前端架构模式
+不确定你需要哪个配方？把你的目标与一个起点对应起来。
 
 ```mermaid
-graph TB
-    A[主应用] --> B[用户管理]
-    A --> C[产品目录]
-    A --> D[购物车]
-    A --> E[订单处理]
-    
-    B --> F[用户服务]
-    C --> G[产品服务]
-    D --> H[购物车服务]
-    E --> I[订单服务]
-    
-    F --> J[用户数据库]
-    G --> K[产品数据库]
-    H --> L[会话存储]
-    I --> M[订单数据库]
+flowchart TD
+  A[你的目标是什么？] --> B[样式在应用间相互串扰]
+  A --> C[首屏或导航感觉很慢]
+  A --> D[某个微应用加载或挂载失败]
+  A --> E[应用之间需要共享数据]
+  A --> F[从 qiankun 2.x 迁移过来]
+  A --> G[准备一个待被加载的子应用]
+  A --> H[同时展示多个应用]
+
+  B --> B1[启用样式隔离]
+  C --> C1[优化加载]
+  D --> D1[处理错误]
+  E --> E1[应用间通信]
+  F --> F1[从 2.x 迁移]
+  G --> G1{Bundler？}
+  G1 -->|Vite| G2[准备 Vite 应用]
+  G1 -->|Webpack| G3[准备 Webpack 应用]
+  H --> H1[运行多个实例]
 ```
 
-### 通信模式
+::: tip 配置应用的两种方式
+大多数配方都会涉及两种配置面之一。注册的应用在 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 上携带一个单应用的 [`configuration`](/zh-CN/api/configuration) 字段；手动加载的应用则把同样的 [`AppConfiguration`](/zh-CN/api/configuration) 作为 [`loadMicroApp`](/zh-CN/api/load-micro-app) 的第二个参数。两者都恰好接受 `fetch`、`streamTransformer`、`nodeTransformer`、`sandbox`（默认 `true`）、`globalContext`（默认 `window`）以及 `styleIsolation`（默认 `false`）。
+:::
 
-```mermaid
-sequenceDiagram
-    participant M as 主应用
-    participant A as 微应用 A
-    participant B as 微应用 B
-    participant S as 共享存储
-    
-    M->>A: 加载并挂载
-    A->>S: 订阅事件
-    M->>B: 加载并挂载
-    B->>S: 订阅事件
-    
-    A->>S: 发出事件
-    S->>B: 通知事件
-    B->>S: 更新状态
-    S->>A: 广播更新
-```
+::: warning v3 中没有全局状态 store
+qiankun 2.x 提供了 `initGlobalState` / `onGlobalStateChange` / `setGlobalState`。版本 3 不再提供。要共享状态，请通过 `props` 传递你自己的值和回调 —— 参见[在应用间共享状态与通信](/zh-CN/cookbook/communicate-between-apps)。
+:::
 
-## 🎪 真实世界示例
+## 相关
 
-### 电商平台
-
-典型的电商平台可能结构如下：
-
-- **主应用**：导航、布局、用户会话
-- **产品目录**：浏览和搜索产品
-- **购物车**：管理购物车项目和结账
-- **用户账户**：个人资料管理和订单历史
-- **管理面板**：内容管理和分析
-
-### 企业仪表板
-
-企业仪表板可能包括：
-
-- **主框架**：身份验证和导航
-- **分析模块**：商业智能和报告
-- **用户管理**：角色和权限管理
-- **内容管理**：动态内容编辑
-- **设置模块**：系统配置
-
-## ⚠️ 常见陷阱
-
-### 1. 过度工程化
-
-**问题**：为小功能创建太多微应用。
-
-**解决方案**：从单体开始，当团队或领域自然分离时再提取微应用。
-
-### 2. 共享依赖
-
-**问题**：微应用共享依赖导致版本冲突。
-
-**解决方案**：使用适当的打包策略，考虑为共享库使用模块联邦。
-
-### 3. 性能问题
-
-**问题**：多个微应用同时加载导致性能下降。
-
-**解决方案**：实施懒加载、适当的缓存和资源优化。
-
-### 4. 测试复杂性
-
-**问题**：独立测试微应用无法捕获集成问题。
-
-**解决方案**：在单元测试的基础上实施全面的集成测试。
-
-## 🔧 开发工作流
-
-### 推荐的开发流程
-
-1. **设计阶段**
-   - 定义应用边界
-   - 规划通信模式
-   - 设计共享接口
-
-2. **开发阶段**
-   - 设置开发环境
-   - 实现微应用
-   - 配置构建和部署
-
-3. **测试阶段**
-   - 单独的应用单元测试
-   - 完整系统集成测试
-   - 性能和安全测试
-
-4. **部署阶段**
-   - 独立部署应用
-   - 监控应用健康
-   - 实施回滚策略
-
-### 团队组织
-
-```mermaid
-graph LR
-    A[平台团队] --> B[共享基础设施]
-    A --> C[主应用]
-    
-    D[功能团队 1] --> E[微应用 1]
-    F[功能团队 2] --> G[微应用 2]
-    H[功能团队 3] --> I[微应用 3]
-    
-    B --> E
-    B --> G
-    B --> I
-```
-
-## 📖 进一步阅读
-
-- [微前端架构](https://micro-frontends.org/)
-- [模块联邦](https://webpack.js.org/concepts/module-federation/)
-- [Single-SPA 文档](https://single-spa.js.org/)
-- [qiankun GitHub 仓库](https://github.com/umijs/qiankun)
-
-## 🤝 贡献
-
-有想要分享的模式或实践吗？欢迎为手册贡献内容！请遵循我们的[贡献指南](https://github.com/umijs/qiankun/blob/master/CONTRIBUTING.md)。
-
-## 🔗 相关文档
-
-- [API 参考](/zh-CN/api/) - 完整的 API 文档
-- [快速开始指南](/zh-CN/guide/quick-start) - qiankun 入门
-- [生态系统](/zh-CN/ecosystem/) - UI 绑定和工具 
+- [API 参考总览](/zh-CN/api/index) —— 每个导出与类型。
+- [架构总览](/zh-CN/concepts/architecture) —— `loadApp` 如何把 fetch、沙箱和 loader 串联起来。
+- [FAQ](/zh-CN/faq/index) —— 对常见问题的简短解答。

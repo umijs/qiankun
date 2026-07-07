@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      '@braintree/sanitize-url':
+        specifier: ^7.1.2
+        version: 7.1.2
       '@changesets/cli':
         specifier: ^2.29.8
         version: 2.29.8(@types/node@18.19.130)
@@ -38,6 +41,18 @@ importers:
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
+      cytoscape:
+        specifier: ^3.33.1
+        version: 3.33.1
+      cytoscape-cose-bilkent:
+        specifier: ^4.1.0
+        version: 4.1.0(cytoscape@3.33.1)
+      dayjs:
+        specifier: ^1.11.19
+        version: 1.11.19
+      debug:
+        specifier: ^4.4.3
+        version: 4.4.3
       eslint:
         specifier: ^8.57.1
         version: 8.57.1
@@ -74,6 +89,9 @@ importers:
       vitepress:
         specifier: ^1.6.4
         version: 1.6.4(@algolia/client-search@5.47.0)(@types/node@18.19.130)(@types/react@18.0.0)(less@4.5.1)(lightningcss@1.32.0)(postcss@8.5.16)(react-dom@18.2.0(react@19.2.7))(react@19.2.7)(sass@1.54.0)(search-insights@2.17.3)(terser@5.46.0)(typescript@5.9.3)
+      vitepress-plugin-mermaid:
+        specifier: ^2.0.17
+        version: 2.0.17(mermaid@11.12.2)(vitepress@1.6.4(@algolia/client-search@5.47.0)(@types/node@18.19.130)(@types/react@18.0.0)(less@4.5.1)(lightningcss@1.32.0)(postcss@8.5.16)(react-dom@18.2.0(react@19.2.7))(react@19.2.7)(sass@1.54.0)(search-insights@2.17.3)(terser@5.46.0)(typescript@5.9.3))
       vitest:
         specifier: ^0.34.6
         version: 0.34.6(@edge-runtime/vm@3.2.0)(happy-dom@12.10.3)(less@4.5.1)(lightningcss@1.32.0)(playwright@1.61.1)(sass@1.54.0)(terser@5.46.0)
@@ -134,7 +152,7 @@ importers:
     devDependencies:
       http-server:
         specifier: ^14.1.1
-        version: 14.1.1
+        version: 14.1.1(debug@4.4.3)
 
   examples/react:
     dependencies:
@@ -236,7 +254,7 @@ importers:
         version: 6.0.1(webpack-dev-server@5.2.6)(webpack@5.108.4)
       webpack-dev-server:
         specifier: ^5.2.2
-        version: 5.2.6(tslib@2.8.1)(webpack-cli@6.0.1)(webpack@5.108.4)
+        version: 5.2.6(debug@4.4.3)(tslib@2.8.1)(webpack-cli@6.0.1)(webpack@5.108.4)
 
   packages/bundler-plugin:
     dependencies:
@@ -630,6 +648,9 @@ packages:
 
   '@bloomberg/record-tuple-polyfill@0.0.4':
     resolution: {integrity: sha512-h0OYmPR3A5Dfbetra/GzxBAzQk8sH7LhRkRUTdagX6nrtlUgJGYCTv4bBK33jsTQw9HDd8PE2x1Ma+iRKEDUsw==}
+
+  '@braintree/sanitize-url@6.0.4':
+    resolution: {integrity: sha512-s3jaWicZd0pkP0jf5ysyHUI/RE7MHos6qlToFcGWXVp+ykHOy77OUMrfbgJ9it2C5bow7OIQwYYaHjk9XlBQ2A==}
 
   '@braintree/sanitize-url@7.1.2':
     resolution: {integrity: sha512-jigsZK+sMF/cuiB7sERuo9V7N9jx+dhmHHnQyDSVdpZwVutaBu7WvNYqMDLSgFgfB30n452TP3vjDAvFC973mA==}
@@ -1518,6 +1539,9 @@ packages:
 
   '@manypkg/get-packages@1.1.3':
     resolution: {integrity: sha512-fo+QhuU3qE/2TQMQmbVMqaQ6EWbMhi4ABWP+O4AM1NqPBuy0OrApV5LO6BrrgnhtAHS2NH6RrVk9OL181tTi8A==}
+
+  '@mermaid-js/mermaid-mindmap@9.3.0':
+    resolution: {integrity: sha512-IhtYSVBBRYviH1Ehu8gk69pMDF8DSRqXBRDMWrEfHoaMruHeaP2DXA3PBnuwsMaCdPQhlUUcy/7DBLAEIXvCAw==}
 
   '@mermaid-js/parser@0.6.3':
     resolution: {integrity: sha512-lnjOhe7zyHjc+If7yT4zoedx2vo4sHaTmtkl1+or8BRTnCtDmcTpAjpzDSfCZrshM5bCoz0GyidzadJAH1xobA==}
@@ -6285,6 +6309,9 @@ packages:
   node-releases@2.0.27:
     resolution: {integrity: sha512-nmh3lCkYZ3grZvqcCH+fjmQ7X+H0OeZgP40OierEaAptX4XofMh5kwNbWh7lBduUzCcV/8kZ+NDLCwm2iorIlA==}
 
+  non-layered-tidy-tree-layout@2.0.2:
+    resolution: {integrity: sha512-gkXMxRzUH+PB0ax9dUN0yYF0S25BqeAYqhgMaLUFmpXLEk7Fcu8f4emJuOAY0V8kjDICxROIKsTAKsV/v355xw==}
+
   normalize-path@3.0.0:
     resolution: {integrity: sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==}
     engines: {node: '>=0.10.0'}
@@ -8080,6 +8107,12 @@ packages:
       yaml:
         optional: true
 
+  vitepress-plugin-mermaid@2.0.17:
+    resolution: {integrity: sha512-IUzYpwf61GC6k0XzfmAmNrLvMi9TRrVRMsUyCA8KNXhg/mQ1VqWnO0/tBVPiX5UoKF1mDUwqn5QV4qAJl6JnUg==}
+    peerDependencies:
+      mermaid: 10 || 11
+      vitepress: ^1.0.0 || ^1.0.0-alpha
+
   vitepress@1.6.4:
     resolution: {integrity: sha512-+2ym1/+0VVrbhNyRoFFesVvBvHAVMZMK0rw60E3X/5349M1GuVdKeazuksqopEdvkKwKGs21Q729jX81/bkBJg==}
     hasBin: true
@@ -8689,6 +8722,9 @@ snapshots:
   '@bazel/runfiles@6.5.0': {}
 
   '@bloomberg/record-tuple-polyfill@0.0.4': {}
+
+  '@braintree/sanitize-url@6.0.4':
+    optional: true
 
   '@braintree/sanitize-url@7.1.2': {}
 
@@ -9580,6 +9616,17 @@ snapshots:
       fs-extra: 8.1.0
       globby: 11.1.0
       read-yaml-file: 1.1.0
+
+  '@mermaid-js/mermaid-mindmap@9.3.0':
+    dependencies:
+      '@braintree/sanitize-url': 6.0.4
+      cytoscape: 3.33.1
+      cytoscape-cose-bilkent: 4.1.0(cytoscape@3.33.1)
+      cytoscape-fcose: 2.2.0(cytoscape@3.33.1)
+      d3: 7.9.0
+      khroma: 2.1.0
+      non-layered-tidy-tree-layout: 2.0.2
+    optional: true
 
   '@mermaid-js/parser@0.6.3':
     dependencies:
@@ -11371,7 +11418,7 @@ snapshots:
       webpack: 5.108.4(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.16)(webpack-cli@6.0.1)
       webpack-cli: 6.0.1(webpack-dev-server@5.2.6)(webpack@5.108.4)
     optionalDependencies:
-      webpack-dev-server: 5.2.6(tslib@2.8.1)(webpack-cli@6.0.1)(webpack@5.108.4)
+      webpack-dev-server: 5.2.6(debug@4.4.3)(tslib@2.8.1)(webpack-cli@6.0.1)(webpack@5.108.4)
 
   '@xtuc/ieee754@1.2.0': {}
 
@@ -13436,7 +13483,9 @@ snapshots:
     dependencies:
       tabbable: 6.4.0
 
-  follow-redirects@1.16.0: {}
+  follow-redirects@1.16.0(debug@4.4.3):
+    optionalDependencies:
+      debug: 4.4.3
 
   for-each@0.3.5:
     dependencies:
@@ -13817,10 +13866,10 @@ snapshots:
 
   http-parser-js@0.5.10: {}
 
-  http-proxy-middleware@2.0.10(@types/express@4.17.25):
+  http-proxy-middleware@2.0.10(@types/express@4.17.25)(debug@4.4.3):
     dependencies:
       '@types/http-proxy': 1.17.17
-      http-proxy: 1.18.1
+      http-proxy: 1.18.1(debug@4.4.3)
       is-glob: 4.0.3
       is-plain-obj: 3.0.0
       micromatch: 4.0.8
@@ -13829,22 +13878,22 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  http-proxy@1.18.1:
+  http-proxy@1.18.1(debug@4.4.3):
     dependencies:
       eventemitter3: 4.0.7
-      follow-redirects: 1.16.0
+      follow-redirects: 1.16.0(debug@4.4.3)
       requires-port: 1.0.0
     transitivePeerDependencies:
       - debug
 
-  http-server@14.1.1:
+  http-server@14.1.1(debug@4.4.3):
     dependencies:
       basic-auth: 2.0.1
       chalk: 4.1.2
       corser: 2.0.1
       he: 1.2.0
       html-encoding-sniffer: 3.0.0
-      http-proxy: 1.18.1
+      http-proxy: 1.18.1(debug@4.4.3)
       mime: 1.6.0
       minimist: 1.2.8
       opener: 1.5.2
@@ -15004,6 +15053,9 @@ snapshots:
       vm-browserify: 1.1.2
 
   node-releases@2.0.27: {}
+
+  non-layered-tidy-tree-layout@2.0.2:
+    optional: true
 
   normalize-path@3.0.0: {}
 
@@ -17157,6 +17209,13 @@ snapshots:
       sass: 1.54.0
       terser: 5.46.0
 
+  vitepress-plugin-mermaid@2.0.17(mermaid@11.12.2)(vitepress@1.6.4(@algolia/client-search@5.47.0)(@types/node@18.19.130)(@types/react@18.0.0)(less@4.5.1)(lightningcss@1.32.0)(postcss@8.5.16)(react-dom@18.2.0(react@19.2.7))(react@19.2.7)(sass@1.54.0)(search-insights@2.17.3)(terser@5.46.0)(typescript@5.9.3)):
+    dependencies:
+      mermaid: 11.12.2
+      vitepress: 1.6.4(@algolia/client-search@5.47.0)(@types/node@18.19.130)(@types/react@18.0.0)(less@4.5.1)(lightningcss@1.32.0)(postcss@8.5.16)(react-dom@18.2.0(react@19.2.7))(react@19.2.7)(sass@1.54.0)(search-insights@2.17.3)(terser@5.46.0)(typescript@5.9.3)
+    optionalDependencies:
+      '@mermaid-js/mermaid-mindmap': 9.3.0
+
   vitepress@1.6.4(@algolia/client-search@5.47.0)(@types/node@18.19.130)(@types/react@18.0.0)(less@4.5.1)(lightningcss@1.32.0)(postcss@8.5.16)(react-dom@18.2.0(react@19.2.7))(react@19.2.7)(sass@1.54.0)(search-insights@2.17.3)(terser@5.46.0)(typescript@5.9.3):
     dependencies:
       '@docsearch/css': 3.8.2
@@ -17364,7 +17423,7 @@ snapshots:
       webpack: 5.108.4(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.16)(webpack-cli@6.0.1)
       webpack-merge: 6.0.1
     optionalDependencies:
-      webpack-dev-server: 5.2.6(tslib@2.8.1)(webpack-cli@6.0.1)(webpack@5.108.4)
+      webpack-dev-server: 5.2.6(debug@4.4.3)(tslib@2.8.1)(webpack-cli@6.0.1)(webpack@5.108.4)
 
   webpack-dev-middleware@7.4.5(tslib@2.8.1)(webpack@5.108.4):
     dependencies:
@@ -17379,7 +17438,7 @@ snapshots:
     transitivePeerDependencies:
       - tslib
 
-  webpack-dev-server@5.2.6(tslib@2.8.1)(webpack-cli@6.0.1)(webpack@5.108.4):
+  webpack-dev-server@5.2.6(debug@4.4.3)(tslib@2.8.1)(webpack-cli@6.0.1)(webpack@5.108.4):
     dependencies:
       '@types/bonjour': 3.5.13
       '@types/connect-history-api-fallback': 1.5.4
@@ -17397,7 +17456,7 @@ snapshots:
       connect-history-api-fallback: 2.0.0
       express: 4.22.2
       graceful-fs: 4.2.11
-      http-proxy-middleware: 2.0.10(@types/express@4.17.25)
+      http-proxy-middleware: 2.0.10(@types/express@4.17.25)(debug@4.4.3)
       ipaddr.js: 2.4.0
       launch-editor: 2.14.1
       open: 10.2.0

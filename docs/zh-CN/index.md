@@ -2,167 +2,55 @@
 layout: home
 
 hero:
-  name: Qiankun
-  text: 微前端解决方案
-  tagline: 可能是你见过的最完善的微前端解决方案🧐
-  image:
-    src: /logo.png
-    alt: Qiankun
+  name: qiankun
+  text: 运行时组装的微前端
+  tagline: 基于 single-spa 的完整微前端方案 —— 流式加载任意 HTML Entry，用 Proxy 隔离膜为每个应用建立沙箱，并原生执行 ES 模块，无需构建步骤。
   actions:
     - theme: brand
-      text: 快速开始
-      link: /zh-CN/guide/quick-start
+      text: 快速上手
+      link: /zh-CN/guide/getting-started
     - theme: alt
-      text: 在 GitHub 上查看
+      text: 什么是 qiankun
+      link: /zh-CN/guide/what-is-qiankun
+    - theme: alt
+      text: 在 GitHub 查看
       link: https://github.com/umijs/qiankun
 
 features:
-  - icon: 🚀
-    title: 简单
-    details: 兼容任何 JavaScript 框架。构建微前端系统就像使用 iframe 一样简单，但实际上不是 iframe。
-  - icon: 🛡️
-    title: 完整
-    details: 包含构建微前端系统所需的几乎所有基本功能，如样式隔离、JS 沙箱、预加载等。
-  - icon: 🔧
-    title: 生产就绪
-    details: 已经过蚂蚁集团内外大量线上应用的广泛测试和打磨，健壮性值得信赖。
-  - icon: ⚡
-    title: 高性能
-    details: 支持应用预加载，优化用户体验并提高应用切换速度。
-  - icon: 🎯
-    title: 技术栈无关
-    details: 主应用不限制接入应用的技术栈，微应用具备完全自主权。
-  - icon: 🔄
-    title: 状态隔离
-    details: 提供完整的 JS 沙箱机制，确保应用之间不会相互影响。
+  - icon:
+      src: /icons/stream.svg
+    title: 流式 HTML Entry 加载
+    details: 只需给 qiankun 一个微应用的 HTML 地址。loader 通过 writable-dom 流式解析、虚拟化 head，并在资源到达时逐个预加载 —— 无需 manifest，也无需手工维护 entry 约定。
+    link: /zh-CN/concepts/html-entry-loading
+    linkText: 加载机制
+  - icon:
+      src: /icons/sandbox.svg
+    title: Proxy 隔离膜 JS 沙箱
+    details: 每个微应用都运行在自己的代理 window 与 document 之上。全局变量、定时器、事件监听与 history 都会被追踪，并在卸载时还原，应用得以挂载、卸载、共存而互不污染。
+    link: /zh-CN/concepts/js-sandbox
+    linkText: JS 沙箱
+  - icon:
+      src: /icons/esm.svg
+    title: 原生 ESM 执行
+    details: 携带原生 script type=module 的微应用会被抓取、经词法分析改写以将全局访问路由进隔离膜、配上合成的 import map，再交由浏览器自身的模块加载器求值。Vite 开发服务器开箱即用。
+    link: /zh-CN/concepts/esm-sandbox
+    linkText: ESM 沙箱
+  - icon:
+      src: /icons/scope.svg
+    title: 运行时样式隔离
+    details: 一个 styleIsolation 开关即可开启。样式在运行时被包进 CSS @scope 并限定到已挂载的应用 —— 不用 Shadow DOM、不做构建期改写，外部样式表也一并处理。
+    link: /zh-CN/concepts/style-isolation
+    linkText: 样式隔离
+  - icon:
+      src: /icons/agnostic.svg
+    title: 框架无关
+    details: React、Vue、Angular 或纯 HTML —— 微应用只需导出 bootstrap、mount、unmount。React 与 Vue 提供一等的 MicroApp 组件绑定，create-qiankun 几秒即可脚手架出可运行的工程。
+    link: /zh-CN/ecosystem/
+    linkText: 了解生态
+  - icon:
+      src: /icons/singlespa.svg
+    title: 基于 single-spa
+    details: 路由、激活与生命周期编排由久经考验的 single-spa 内核负责，qiankun 在其之上补齐加载、沙箱与资源管线，因此基于路由的挂载与手动挂载都是一等能力。
+    link: /zh-CN/concepts/architecture
+    linkText: 架构概览
 ---
-
-## 📦 安装
-
-::: code-group
-
-```bash [npm]
-npm install qiankun
-```
-
-```bash [yarn]
-yarn add qiankun
-```
-
-```bash [pnpm]
-pnpm add qiankun
-```
-
-:::
-
-## 🔨 快速开始
-
-### 主应用
-
-```typescript
-import { registerMicroApps, start } from 'qiankun';
-
-// 注册微应用
-registerMicroApps([
-  {
-    name: 'reactApp',
-    entry: '//localhost:7100',
-    container: '#yourContainer',
-    activeRule: '/yourActiveRule',
-  },
-  {
-    name: 'vueApp',
-    entry: { scripts: ['//localhost:7100/main.js'] },
-    container: '#yourContainer2',
-    activeRule: '/yourActiveRule2',
-  },
-]);
-
-// 启动 qiankun
-start();
-```
-
-### 微应用
-
-```typescript
-/**
- * bootstrap 只会在微应用初始化的时候调用一次
- * mount 会在每次进入微应用时调用
- * unmount 会在每次切出/卸载微应用时调用
- */
-export async function bootstrap() {
-  console.log('react app bootstraped');
-}
-
-export async function mount(props) {
-  ReactDOM.render(<App />, props.container ? props.container.querySelector('#root') : document.getElementById('root'));
-}
-
-export async function unmount(props) {
-  ReactDOM.unmountComponentAtNode(
-    props.container ? props.container.querySelector('#root') : document.getElementById('root'),
-  );
-}
-```
-
-## 🌟 为什么选择 qiankun？
-
-<div class="features-grid">
-<div class="feature-card">
-<h3>🎯 零侵入</h3>
-<p>对现有应用几乎零侵入，只需要暴露必要的生命周期函数即可</p>
-</div>
-
-<div class="feature-card">
-<h3>📱 全场景</h3>
-<p>支持基于路由的微应用加载和手动加载模式</p>
-</div>
-
-<div class="feature-card">
-<h3>🔒 安全隔离</h3>
-<p>完整的沙箱解决方案，包括 JS 隔离和 CSS 隔离</p>
-</div>
-
-<div class="feature-card">
-<h3>⚡ 高性能</h3>
-<p>支持预加载、缓存等多种性能优化方案</p>
-</div>
-</div>
-
-## 👥 社区
-
-| GitHub 讨论 | 钉钉群 | 微信群 |
-| --- | --- | --- |
-| [qiankun 讨论](https://github.com/umijs/qiankun/discussions) | <img src="https://mdn.alipayobjects.com/huamei_zvchwx/afts/img/A*GG8zTJaUnTAAAAAAAAAAAAAADuWEAQ/original" width="150" alt="钉钉群二维码" /> | [查看群二维码](https://github.com/umijs/qiankun/discussions/2343) |
-
-<style>
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1rem;
-  margin: 2rem 0;
-}
-
-.feature-card {
-  padding: 1.5rem;
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 8px;
-  transition: border-color 0.25s;
-}
-
-.feature-card:hover {
-  border-color: var(--vp-c-brand-1);
-}
-
-.feature-card h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.1rem;
-}
-
-.feature-card p {
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--vp-c-text-2);
-  line-height: 1.5;
-}
-</style> 

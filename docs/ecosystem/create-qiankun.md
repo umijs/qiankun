@@ -1,513 +1,455 @@
-# Create Qiankun
+# create-qiankun
 
-`create-qiankun` is a CLI scaffolding tool designed specifically for the qiankun micro-frontend framework. It helps developers quickly bootstrap example projects and get started with micro-frontend development efficiently.
+`create-qiankun` is the official scaffolder for qiankun 3.0. It generates a [Vite](https://vite.dev) project — either a main app or a sub app — and patches the generated output to wire in qiankun. Because qiankun v3 loads Vite apps natively through its [ESM sandbox](/concepts/esm-sandbox), there is no dedicated SystemJS or "qiankun build mode": the ordinary `dev`, `build`, and `preview` outputs are already loadable as-is.
 
-## 🚀 Quick Start
+## Purpose
 
-### Using npm
+The scaffolder does two things:
 
-```bash
+1. Delegates to upstream [`create-vite`](https://github.com/vitejs/vite/tree/main/packages/create-vite) to produce a standard React or Vue project.
+2. Overwrites a small set of files (`package.json`, `vite.config.*`, the entry file, and — for main apps — `App.tsx`/`App.css`) so the project is qiankun-ready out of the box.
+
+A generated sub app exposes qiankun lifecycles and stays runnable standalone. A generated main app comes preconfigured to load that sub app. The two default ports are matched so they connect without further configuration.
+
+## Requirements
+
+- Node.js `>=20.19` (required by Vite).
+
+## Invocation
+
+Run the scaffolder with your package manager's create/exec command:
+
+::: code-group
+
+```bash [npm]
 npx create-qiankun@latest
 ```
 
-### Using yarn
-
-```bash
+```bash [yarn]
 yarn create qiankun@latest
 ```
 
-### Using pnpm
-
-```bash
+```bash [pnpm]
 pnpm dlx create-qiankun@latest
 ```
 
-## 🎯 Features
+:::
 
-- **Multiple Project Types**: Choose between main app only, micro apps only, or complete setup
-- **Framework Support**: React 18, Vue 3, Vue 2, and Umi 4 templates
-- **Routing Modes**: Support for both hash and history routing patterns
-- **Package Manager Options**: npm, yarn, pnpm, or pnpm workspace
-- **Auto Configuration**: Automatic port conflict detection and startup scripts injection
-- **Monorepo Support**: Built-in pnpm workspace setup for managing multiple applications
-
-## 📋 Requirements
-
-- **Node.js**: v18 or higher (recommended: use [fnm](https://github.com/Schniz/fnm) for version management)
-- **Package Manager**: npm, yarn, or pnpm
-
-## 🎮 Interactive Setup
-
-When you run `create-qiankun`, you'll be guided through an interactive setup process:
-
-### Step 1: Project Name
+With no arguments, the CLI prompts interactively for the app type, name, and — for sub apps — the template. You can also pass any of these on the command line to skip the corresponding prompt.
 
 ```bash
-? Project name: › my-qiankun-project
+# scaffold a React + TypeScript sub app named "my-app"
+npx create-qiankun@latest my-app --type sub --template react-ts
+
+# scaffold the main app
+npx create-qiankun@latest my-main --type main
 ```
 
-### Step 2: Project Type
+## CLI arguments and flags
 
-```bash
-? Choose a way to create › 
-❯ Create main application and sub applications
-  Just create main application  
-  Just create sub applications
-```
+| Argument | Alias | Values | Default | Applies to |
+| --- | --- | --- | --- | --- |
+| `<app-name>` (positional) | — | must match `/^[a-z0-9-]+$/` | prompted | both |
+| `--type` | `-T` | `main` \| `sub` | `sub` | both |
+| `--template` | `-t` | `react-ts` \| `react` \| `vue-ts` \| `vue` | prompted | sub only |
 
-**Options:**
-- **Create main application and sub applications**: Complete setup with main app and multiple micro apps
-- **Just create main application**: Only create the main (shell) application
-- **Just create sub applications**: Only create micro applications
+### App name
 
-### Step 3: Main Application Framework (if applicable)
-
-```bash
-? Choose a framework for your main application › 
-❯ React18+Webpack
-  Vue3+Webpack
-  React18+umi4
-```
-
-### Step 4: Routing Pattern (if applicable)
-
-```bash
-? Choose a route pattern for your main application › 
-❯ hash
-  history
-```
-
-### Step 5: Sub Applications Framework (if applicable)
-
-```bash
-? Choose a framework for your sub application › 
-Space to select. Return to submit.
-
-❯◯ React18+Webpack
- ◯ Vue3+Webpack  
- ◯ Vue2+Webpack
- ◯ React18+umi4
-```
-
-### Step 6: Package Manager
-
-```bash
-? Which package manager do you want to use? › 
-❯ npm
-  yarn
-  pnpm
-  pnpm with workspace
-```
-
-## 📦 Available Templates
-
-### Main Application Templates
-
-| Template | Description | Features |
-|----------|-------------|----------|
-| **React18+Webpack** | React 18 with Webpack 5 | Modern React, TypeScript support, Hot reload |
-| **Vue3+Webpack** | Vue 3 with Vue CLI | Composition API, TypeScript, Element Plus |
-| **React18+umi4** | Umi 4 framework | Built-in qiankun support, Ant Design Pro |
-
-### Sub Application Templates
-
-| Template | Description | Status | Notes |
-|----------|-------------|--------|-------|
-| **React18+Webpack** | React 18 micro app | ✅ Stable | Production ready |
-| **Vue3+Webpack** | Vue 3 micro app | ✅ Stable | Production ready |
-| **Vue2+Webpack** | Vue 2 micro app | ⚠️ Limited | Issues with pnpm workspace |
-| **React18+umi4** | Umi 4 micro app | ✅ Stable | Built-in micro app support |
-| **Vite+Vue3** | Vue 3 with Vite | 🚧 WIP | Under development |
-| **Vite+React18** | React 18 with Vite | 🚧 WIP | Under development |
-
-## 🏗️ Project Structure
-
-### Single Project Structure
+The positional app name must contain only lowercase letters, digits, and hyphens. It becomes the `package.json` `name` and, for sub apps, the global key the lifecycles are published under (`window[appName]`, see below). An invalid name is rejected with:
 
 ```
-my-qiankun-project/
-├── main-app/                 # Main application
-│   ├── src/
-│   ├── package.json
-│   └── webpack.config.js
-├── react18-sub/              # React micro app
-│   ├── src/
-│   ├── package.json
-│   └── webpack.config.js
-├── vue3-sub/                 # Vue micro app
-│   ├── src/
-│   ├── package.json
-│   └── vue.config.js
-└── package.json
+App name can only contain lowercase letters, numbers, and hyphens
 ```
 
-### Pnpm Workspace Structure
+When omitted, the prompt defaults to `qiankun-main-app` for a main app or `qiankun-sub-app` for a sub app.
+
+### App type
+
+`--type` (or `-T`) selects `main` or `sub`. Sub is the default when nothing is specified. An unrecognized value exits with `Invalid type: ...`.
+
+### Template
+
+`--template` (or `-t`) selects the framework template for a **sub app** only. Available templates:
+
+| Value | Description |
+| --- | --- |
+| `react-ts` | React + TypeScript |
+| `react` | React |
+| `vue-ts` | Vue + TypeScript |
+| `vue` | Vue |
+
+::: warning Main apps are always React + TypeScript
+The template only applies to sub apps. A main app is always scaffolded as `react-ts`. Passing `--template` together with `--type main` is a hard error:
 
 ```
-my-qiankun-project/
-├── packages/
-│   ├── main-app/             # Main application
-│   ├── react18-sub/          # React micro app
-│   └── vue3-sub/             # Vue micro app
-├── package.json              # Workspace configuration
-├── pnpm-workspace.yaml       # Workspace definition
-└── scripts/
-    └── checkPnpm.js          # Package manager validation
+The --template option is only supported for sub apps.
+Please remove --template when using --type main.
 ```
 
-## 🔧 Generated Configuration
+Note also that passing `--template` implies a sub app, so it skips the app-type prompt.
+:::
 
-### Main Application Configuration
+## Interactive prompts
 
-The main application is automatically configured with:
+When the relevant flag is not supplied, the CLI prompts for it:
 
-```typescript
-// Main app micro app registration
-import { registerMicroApps, start } from 'qiankun';
+- **App type** — a select between `Main App (主应用)` and `Sub App (子应用)`. Skipped when either `--type` or `--template` is passed.
+- **App name** — a text input validated against `/^[a-z0-9-]+$/`. Skipped when a positional name is passed.
+- **Template** — a select over the four templates above. Only shown for sub apps; skipped when `--template` is passed or when the app type is main.
 
-registerMicroApps([
-  {
-    name: 'react18-sub',
-    entry: '//localhost:8080',
-    container: '#subapp-viewport',
-    activeRule: '/react18-sub',
+Cancelling any prompt prints `Operation cancelled` and exits.
+
+## Target directory (workspace-aware)
+
+Before generating, the CLI checks whether the **parent** of the current directory contains a `pnpm-workspace.yaml`:
+
+- Inside a pnpm workspace, the app is generated into `<workspaceRoot>/packages/<app-name>`.
+- Otherwise, it is generated into `<cwd>/<app-name>`.
+
+If the target directory already exists, the CLI exits with `Directory ... already exists`. The `cd` line in the next-steps output reflects the resolved path (`packages/<app-name>` inside a workspace, else `<app-name>`).
+
+## What it generates
+
+The base project is produced by `create-vite` with its standard template, then create-qiankun overwrites specific files.
+
+```mermaid
+flowchart TD
+  A[create-qiankun] --> B[create-vite scaffolds base project]
+  B --> C{app type}
+  C -->|sub| D[patch package.json + vite.config + entry file]
+  C -->|main| E[patch package.json + vite.config + main.tsx + App.tsx + App.css]
+```
+
+### Sub app
+
+A sub app is patched in three steps.
+
+**`package.json`** — the name is set to your app name, and qiankun dependencies are added. Versions are fixed strings, not resolved ranges (this is an RC-era scaffolder):
+
+| Dependency | Location | Version |
+| --- | --- | --- |
+| `qiankun` | `dependencies` | `rc` |
+| `@qiankunjs/react` or `@qiankunjs/vue` | `dependencies` | `latest` |
+| `@qiankunjs/bundler-plugin` | `devDependencies` | `rc` |
+
+The framework binding ([`@qiankunjs/react`](/ecosystem/react) or [`@qiankunjs/vue`](/ecosystem/vue)) is added for convenience even though the generated entry file does not import it — it is there for you to use.
+
+**`vite.config.ts`** — imports the framework plugin and the qiankun [bundler plugin](/ecosystem/bundler-plugin), and sets the dev server port to `7101`.
+
+::: code-group
+
+```ts [react-ts]
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { qiankun } from '@qiankunjs/bundler-plugin/vite';
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react(), qiankun()],
+  server: {
+    // matches the sub-app entry preconfigured in a create-qiankun main app,
+    // adjust it per app when you scaffold multiple sub apps
+    port: 7101,
   },
-  {
-    name: 'vue3-sub', 
-    entry: '//localhost:8081',
-    container: '#subapp-viewport',
-    activeRule: '/vue3-sub',
-  }
-]);
-
-start();
-```
-
-### Micro Application Configuration
-
-Each micro application includes:
-
-**React Micro App:**
-```javascript
-// webpack.config.js
-const { QiankunWebpackPlugin } = require('@qiankunjs/webpack-plugin');
-
-module.exports = {
-  plugins: [
-    new QiankunWebpackPlugin()
-  ]
-};
-```
-
-**Vue Micro App:**
-```javascript
-// vue.config.js
-const { defineConfig } = require('@vue/cli-service');
-const { QiankunWebpackPlugin } = require('@qiankunjs/webpack-plugin');
-
-module.exports = defineConfig({
-  configureWebpack: {
-    plugins: [
-      new QiankunWebpackPlugin()
-    ]
-  }
 });
 ```
 
-### Port Configuration
+```ts [vue-ts]
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+import { qiankun } from '@qiankunjs/bundler-plugin/vite';
 
-Automatic port assignment prevents conflicts:
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [vue(), qiankun()],
+  server: {
+    // matches the sub-app entry preconfigured in a create-qiankun main app,
+    // adjust it per app when you scaffold multiple sub apps
+    port: 7101,
+  },
+});
+```
 
-```json
-{
-  "scripts": {
-    "dev": "PORT=8080 react-scripts start",
-    "check-port": "node scripts/checkPort.js"
+:::
+
+**Entry file** (`src/main.tsx` / `src/main.ts`) — replaced with a qiankun-lifecycle entry. It exports `bootstrap`, `mount`, and `unmount`, and when running under qiankun it publishes them on `window[appName]`; otherwise it renders itself standalone.
+
+::: code-group
+
+```tsx [react]
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './index.css';
+
+const appName = 'my-app';
+let root: ReactDOM.Root | undefined;
+
+function render(props: { container?: Element } = {}) {
+  const container = props.container?.querySelector('#root') ?? document.getElementById('root');
+  if (!container) return;
+
+  root = ReactDOM.createRoot(container);
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+  );
+}
+
+export async function bootstrap() {
+  return Promise.resolve();
+}
+
+export async function mount(props: { container?: Element }) {
+  render(props);
+}
+
+export async function unmount(props: { container?: Element }) {
+  if (root) {
+    root.unmount();
+    root = undefined;
   }
+  const container = props.container?.querySelector('#root') ?? document.getElementById('root');
+  if (container) {
+    container.innerHTML = '';
+  }
+}
+
+declare global {
+  interface Window {
+    __POWERED_BY_QIANKUN__?: boolean;
+    [key: string]: unknown;
+  }
+}
+
+if (window.__POWERED_BY_QIANKUN__) {
+  window[appName] = { bootstrap, mount, unmount };
+} else {
+  render();
 }
 ```
 
-## 🎨 Customization Options
+```ts [vue]
+import { createApp } from 'vue';
+import App from './App.vue';
+import './style.css';
 
-### Environment-specific Configuration
+const appName = 'my-app';
+let app: ReturnType<typeof createApp> | undefined;
 
-```javascript
-// config/development.js
-module.exports = {
-  microApps: [
-    {
-      name: 'react-app',
-      entry: '//localhost:8080',
-      activeRule: '/react-app'
-    }
-  ]
-};
+function render(props: { container?: Element } = {}) {
+  const container = props.container?.querySelector('#app') ?? document.getElementById('app');
+  if (!container) return;
 
-// config/production.js
-module.exports = {
-  microApps: [
-    {
-      name: 'react-app', 
-      entry: '//app.example.com',
-      activeRule: '/react-app'
-    }
-  ]
-};
-```
+  app = createApp(App);
+  app.mount(container);
+}
 
-### Custom Routing
+export async function bootstrap() {
+  return Promise.resolve();
+}
 
-```typescript
-// Hash routing (default)
-const router = createRouter({
-  history: createWebHashHistory(),
-  routes: [...]
-});
+export async function mount(props: { container?: Element }) {
+  render(props);
+}
 
-// History routing  
-const router = createRouter({
-  history: createWebHistory(),
-  routes: [...]
-});
-```
-
-## 🚀 Development Workflow
-
-### Single Package Manager
-
-```bash
-# Start main application
-cd main-app && npm run dev
-
-# Start micro applications (in separate terminals)
-cd react18-sub && npm run dev  
-cd vue3-sub && npm run dev
-```
-
-### Pnpm Workspace
-
-```bash
-# Install all dependencies
-pnpm install
-
-# Start all applications concurrently
-pnpm run dev
-
-# Start specific application
-pnpm --filter main-app run dev
-pnpm --filter react18-sub run dev
-```
-
-### Generated Scripts
-
-The CLI automatically injects useful scripts:
-
-```json
-{
-  "scripts": {
-    "dev": "concurrently \"npm run dev:main\" \"npm run dev:subs\"",
-    "dev:main": "cd main-app && npm run dev",
-    "dev:subs": "concurrently \"cd react18-sub && npm run dev\" \"cd vue3-sub && npm run dev\"",
-    "build": "npm run build:main && npm run build:subs",
-    "clean": "rimraf node_modules **/*/node_modules"
+export async function unmount(props: { container?: Element }) {
+  if (app) {
+    app.unmount();
+    app = undefined;
   }
+  const container = props.container?.querySelector('#app') ?? document.getElementById('app');
+  if (container) {
+    container.innerHTML = '';
+  }
+}
+
+declare global {
+  interface Window {
+    __POWERED_BY_QIANKUN__?: boolean;
+    [key: string]: unknown;
+  }
+}
+
+if (window.__POWERED_BY_QIANKUN__) {
+  window[appName] = { bootstrap, mount, unmount };
+} else {
+  render();
 }
 ```
 
-## 🔧 Advanced Usage
+:::
 
-### Command Line Arguments
+::: info
+`__POWERED_BY_QIANKUN__` is a global qiankun sets on the sandboxed window while the app runs inside a container. The entry uses it to decide between standalone rendering and lifecycle export. See [Micro-app lifecycle and props](/concepts/lifecycle-and-props) for how these hooks are called. For non-TypeScript templates the `declare global` block is omitted; everything else is identical.
 
-Skip the interactive prompts by providing arguments:
+The default `create-vite` `App` component is left in place for sub apps — you build your UI from there.
+:::
 
-```bash
-npx create-qiankun my-project CreateMainAndSubApp react18-main hash react18-webpack-sub,vue3-webpack-sub pnpm
+### Main app
+
+A main app is always `react-ts` and is patched in five steps.
+
+**`package.json`** — sets the name and adds `qiankun` at version `rc` to `dependencies`. No bundler plugin or framework binding is added, since the main app does not build a micro-app bundle.
+
+**`vite.config.ts`** — a plain React config on port `7099`. The qiankun bundler plugin is not applied to the main app.
+
+```ts
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 7099,
+  },
+});
 ```
 
-**Arguments order:**
-1. Project name
-2. Create kind (`CreateMainApp` | `CreateSubApp` | `CreateMainAndSubApp`)
-3. Main app template (if applicable)
-4. Routing pattern (if applicable) 
-5. Sub app templates (comma-separated, if applicable)
-6. Package manager
+**`src/main.tsx`** — a normal React root render, followed by a commented-out route-based alternative using [`registerMicroApps`](/api/register-micro-apps) and [`start`](/api/start):
 
-### Batch Creation
+```tsx
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './index.css';
 
-```bash
-# Create multiple projects
-for project in app1 app2 app3; do
-  npx create-qiankun $project CreateMainAndSubApp react18-main history react18-webpack-sub pnpm
-done
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+);
+
+// ============================================================
+// Alternative: Route-based micro-app loading
+// Uncomment the following code to use registerMicroApps + start
+// instead of the manual loadMicroApp approach in App.tsx
+// ============================================================
+//
+// import { registerMicroApps, start } from 'qiankun';
+//
+// registerMicroApps([
+//   {
+//     name: 'sub-app',
+//     entry: '//localhost:7101',
+//     container: '#micro-app-container',
+//     activeRule: '/sub-app',
+//   },
+// ]);
+//
+// start();
 ```
 
-### Custom Templates
+**`src/App.tsx`** — the wiring showcase. It loads the sub app manually with [`loadMicroApp`](/api/load-micro-app), tracks the mount promise for loading/error UI, and unmounts on cleanup:
 
-You can extend the CLI with custom templates by contributing to the project or forking the repository.
+```tsx
+import { useEffect, useRef, useState } from 'react';
+import { loadMicroApp } from 'qiankun';
+import type { MicroApp } from 'qiankun';
+import './App.css';
 
-## 🎯 Project Examples
+function App() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const microAppRef = useRef<MicroApp | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-### Complete React + Vue Setup
+  useEffect(() => {
+    let isUnmounted = false;
 
-```bash
-npx create-qiankun my-micro-frontend-app
-# Choose: Create main application and sub applications
-# Main: React18+Webpack
-# Routing: history
-# Subs: React18+Webpack, Vue3+Webpack
-# Package Manager: pnpm with workspace
+    if (!containerRef.current) return;
+
+    setLoading(true);
+    setError(null);
+
+    microAppRef.current = loadMicroApp(
+      {
+        name: 'sub-app',
+        entry: '//localhost:7101',
+        container: containerRef.current,
+      },
+      // sandbox is on by default; kept explicit so you know where to configure it.
+      // styleIsolation: true additionally scopes the sub-app css with @scope
+      { sandbox: true },
+    );
+
+    microAppRef.current.mountPromise
+      .then(() => {
+        if (!isUnmounted) {
+          setLoading(false);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!isUnmounted) {
+          setError(err instanceof Error ? err.message : 'Failed to load micro app');
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isUnmounted = true;
+      microAppRef.current?.unmount();
+      microAppRef.current = null;
+    };
+  }, []);
+
+  return (
+    <div className="main-app">
+      <header className="main-app-header">
+        <h1>Qiankun Main App</h1>
+      </header>
+      <main className="main-app-content">
+        {loading && <div className="loading">Loading micro app...</div>}
+        {error && <div className="error">Error: {error}</div>}
+        <div ref={containerRef} id="micro-app-container" />
+      </main>
+    </div>
+  );
+}
+
+export default App;
 ```
 
-**Result:**
-- Main React app with routing
-- React 18 micro app
-- Vue 3 micro app  
-- Automatic port assignment (3000, 8080, 8081)
-- Workspace configuration
-- Development scripts
+**`src/App.css`** — styles for the header, content, `.loading`/`.error` states, and `#micro-app-container`.
 
-### Umi-based Monorepo
+::: tip styleIsolation and @scope
+The generated `App.tsx` comment points at the two options qiankun accepts here. `sandbox` (default `true`) enables the [JS sandbox](/concepts/js-sandbox); `styleIsolation: true` additionally scopes the sub app's CSS with the runtime [`@scope`](/concepts/style-isolation) strategy. These are the only two fields the scaffolded example sets — see [AppConfiguration](/api/configuration) for the full set.
+:::
 
-```bash
-npx create-qiankun enterprise-app
-# Choose: Create main application and sub applications  
-# Main: React18+umi4
-# Routing: history
-# Subs: React18+umi4, Vue3+Webpack
-# Package Manager: pnpm with workspace
+## How main and sub connect
+
+The two generated projects are preconfigured to work together:
+
+```mermaid
+flowchart LR
+  M["Main app (:7099)<br/>loadMicroApp(entry '//localhost:7101')"] -->|loads| S["Sub app (:7101)<br/>@qiankunjs/bundler-plugin/vite<br/>exports bootstrap/mount/unmount"]
 ```
 
-**Features:**
-- Umi 4 main application with built-in qiankun support
-- Umi 4 micro application
-- Vue 3 micro application
-- Ant Design Pro components
-- TypeScript configuration
+- The sub app runs its own Vite dev server on port **7101** and exposes qiankun lifecycles.
+- The main app runs on port **7099** and loads the sub app from `//localhost:7101`.
 
-## 📚 Best Practices
+The sub app's default port and the main app's hardcoded entry are intentionally matched. To scaffold multiple sub apps, change each one's `server.port` (a comment in the generated `vite.config` notes this) and add the matching `loadMicroApp`/`registerMicroApps` entries in the main app. See [Run multiple micro-app instances](/cookbook/run-multiple-instances).
 
-### 1. Use Descriptive Names
+## Next steps output
+
+After generation the CLI prints `Done!` followed by the commands to run. For a sub app:
 
 ```bash
-# ✅ Good: Descriptive project names
-npx create-qiankun e-commerce-platform
-npx create-qiankun admin-dashboard
-
-# ❌ Bad: Generic names
-npx create-qiankun app1
-npx create-qiankun project
-```
-
-### 2. Choose Appropriate Package Manager
-
-```bash
-# For simple projects
-npm / yarn
-
-# For monorepo with multiple teams
-pnpm with workspace
-```
-
-### 3. Plan Your Routing Strategy
-
-```bash
-# Hash routing - simpler deployment
-# History routing - better SEO, requires server configuration
-```
-
-### 4. Consider Framework Compatibility
-
-- **React + Vue**: Good for mixed teams
-- **Same Framework**: Easier dependency management
-- **Umi**: Best for enterprise applications
-
-## 🐛 Troubleshooting
-
-### Port Conflicts
-
-The CLI automatically detects and resolves port conflicts. If you encounter issues:
-
-```bash
-# Check running processes
-lsof -i :8080
-
-# Kill conflicting processes
-kill -9 $(lsof -t -i:8080)
-```
-
-### Pnpm Workspace Issues
-
-```bash
-# Clear node_modules and reinstall
-pnpm run clean
+cd my-app
 pnpm install
-
-# Check workspace configuration
-cat pnpm-workspace.yaml
+pnpm dev              # Run standalone (loadable by qiankun as-is)
+pnpm build            # Build (the ESM output is qiankun-ready)
 ```
 
-### Build Errors
+For a main app the last two lines are the plain `pnpm dev` / `pnpm build`. The `cd` path is `packages/<app-name>` when generated inside a pnpm workspace.
 
-```bash
-# Clear build cache
-rm -rf dist/ build/ .cache/
+::: info No SystemJS build mode
+Unlike qiankun 2.x, which required a UMD/library build configuration, v3 loads the Vite ESM output natively via the [ESM sandbox](/concepts/esm-sandbox). The standard `dev`, `build`, and `preview` outputs are all qiankun-ready. To retrofit an existing app instead of scaffolding a new one, see [Make a Vite app qiankun-ready](/cookbook/prepare-a-vite-app).
+:::
 
-# Reinstall dependencies
-rm -rf node_modules package-lock.json
-npm install
-```
+## Related
 
-### Vue 2 with Pnpm Workspace
-
-Known limitation: Vue 2 templates have compatibility issues with pnpm workspace. Use alternative approaches:
-
-```bash
-# Use regular pnpm instead
-# Choose: pnpm (not pnpm with workspace)
-
-# Or use yarn/npm for Vue 2 projects
-```
-
-## 🔗 Generated Project Features
-
-### Automatic Configuration
-
-- **Webpack optimization** for micro-frontend builds
-- **CORS handling** for cross-origin requests  
-- **Public path** configuration for different environments
-- **Development proxy** setup for local development
-
-### Development Experience
-
-- **Hot module replacement** in all applications
-- **Error boundaries** for micro app failures
-- **Loading states** during micro app transitions
-- **TypeScript support** where applicable
-
-### Production Ready
-
-- **Build optimization** for micro-frontend deployment
-- **Asset optimization** and code splitting
-- **Environment configuration** for different stages
-- **CI/CD friendly** structure
-
-## 📖 Next Steps
-
-After creating your project:
-
-1. **Explore the generated code** to understand the structure
-2. **Customize the configuration** based on your needs
-3. **Add more micro applications** as your project grows
-4. **Set up CI/CD pipelines** for automated deployment
-5. **Read the qiankun documentation** for advanced features
-
-## 🔗 Related Documentation
-
-- [Core APIs](/api/) - qiankun core APIs
-- [React Bindings](/ecosystem/react) - React UI bindings
-- [Vue Bindings](/ecosystem/vue) - Vue UI bindings
-- [Webpack Plugin](/ecosystem/webpack-plugin) - Build tool configuration
-
-## 🤝 Contributing
-
-Want to add new templates or improve the CLI? Check out the [GitHub repository](https://github.com/umijs/qiankun) and contribute to the `packages/create-qiankun` directory. 
+- [@qiankunjs/bundler-plugin](/ecosystem/bundler-plugin) — the Vite and Webpack plugins the sub app uses.
+- [loadMicroApp](/api/load-micro-app) and [registerMicroApps](/api/register-micro-apps) — the two loading modes shown in the generated main app.
+- [Getting started](/guide/getting-started) and the [Tutorial](/tutorial/index) — build the same setup step by step.

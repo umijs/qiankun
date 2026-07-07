@@ -36,3 +36,6 @@ e2e/blob-report/
 
 # typescript incremental build info
 *.tsbuildinfo
+
+# VitePress build cache
+docs/.vitepress/cache

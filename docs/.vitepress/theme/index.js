@@ -1,75 +1,19 @@
-// .vitepress/theme/index.js
+// qiankun docs theme — extends the VitePress default theme with the
+// 袖里乾坤 ("a universe in every sleeve") design language.
+//
+// Mermaid diagrams are rendered by vitepress-plugin-mermaid (wired in
+// config.mjs via withMermaid). No manual mermaid bootstrapping is needed.
 import DefaultTheme from 'vitepress/theme'
-import { onMounted, nextTick } from 'vue'
+import { h } from 'vue'
+import './custom.css'
 
 export default {
   extends: DefaultTheme,
-  enhanceApp({ app, router }) {
-    // 路由变化时重新渲染 Mermaid
-    if (typeof window !== 'undefined') {
-      router.onAfterRouteChanged = () => {
-        nextTick(() => {
-          renderMermaidCharts()
-        })
-      }
-    }
+  Layout() {
+    // A faint 乾坤 seal watermark sits behind the home hero only.
+    return h(DefaultTheme.Layout, null, {
+      'home-hero-before': () =>
+        h('div', { class: 'qk-hero-watermark', 'aria-hidden': 'true' }, '乾坤'),
+    })
   },
-  setup() {
-    onMounted(() => {
-      // 初始加载时渲染 Mermaid
-      setTimeout(() => {
-        renderMermaidCharts()
-      }, 100)
-    })
-  }
 }
-
-function renderMermaidCharts() {
-  if (typeof window === 'undefined' || !window.mermaid) {
-    return
-  }
-
-  try {
-    // 初始化 mermaid
-    window.mermaid.initialize({ 
-      startOnLoad: false,
-      theme: 'default'
-    })
-
-    // 查找所有 mermaid 代码块
-    const mermaidElements = document.querySelectorAll('pre code.language-mermaid')
-    
-    mermaidElements.forEach((element, index) => {
-      // 如果已经渲染过，跳过
-      if (element.getAttribute('data-processed') === 'true') {
-        return
-      }
-      
-      const code = element.textContent || element.innerText
-      const uniqueId = `mermaid-${Date.now()}-${index}`
-      
-      // 创建容器
-      const container = document.createElement('div')
-      container.className = 'mermaid-container'
-      container.id = uniqueId
-      
-      // 渲染图表
-      window.mermaid.render(uniqueId + '-svg', code).then(({ svg }) => {
-        container.innerHTML = svg
-        
-        // 替换原来的代码块
-        const parent = element.closest('pre')
-        if (parent && parent.parentNode) {
-          parent.parentNode.replaceChild(container, parent)
-        }
-      }).catch(error => {
-        console.warn('Mermaid 渲染错误:', error)
-      })
-      
-      // 标记为已处理
-      element.setAttribute('data-processed', 'true')
-    })
-  } catch (error) {
-    console.warn('Mermaid 初始化错误:', error)
-  }
-} 

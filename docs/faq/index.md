@@ -1,691 +1,218 @@
-# Frequently Asked Questions
+# FAQ
 
-This FAQ covers the most common questions and issues encountered when working with qiankun. If you can't find the answer you're looking for, please check our [GitHub Issues](https://github.com/umijs/qiankun/issues) or join our community discussions.
+Answers to the questions that come up most often when adopting qiankun 3.0. Each entry links to the reference or cookbook page where the topic is covered in full.
 
-## 🚀 Getting Started
+## Do I need a build plugin?
 
-### Q: What is qiankun and when should I use it?
+The host (main) app needs no plugin — it only calls [registerMicroApps](/api/register-micro-apps) / [start](/api/start) or [loadMicroApp](/api/load-micro-app). Its own entry `<script>` must not carry the `entry` attribute, because the host is not itself a micro-app.
 
-**A:** qiankun is a micro-frontend framework based on single-spa that enables you to build large-scale frontend applications by composing multiple smaller, independent applications. You should consider qiankun when:
+Micro-apps need two things: their build must (1) mark the entry `<script>` with the `entry` attribute, and (2) serve assets with permissive CORS. The [@qiankunjs/bundler-plugin](/ecosystem/bundler-plugin) does both for you.
 
-- Your team is growing and you need to scale development across multiple teams
-- You have legacy applications that need to coexist with new features
-- You want to use different frameworks (React, Vue, Angular) in one application
-- You need independent deployment capabilities for different parts of your app
+::: code-group
 
-### Q: How does qiankun differ from other micro-frontend solutions?
+```ts [Vite]
+// vite.config.ts
+import { defineConfig } from 'vite';
+import { qiankun } from '@qiankunjs/bundler-plugin/vite';
 
-**A:** qiankun provides several key advantages:
-
-- **Production-ready**: Built and tested by Ant Financial (now Ant Group) in large-scale applications
-- **Framework agnostic**: Works with React, Vue, Angular, and vanilla JavaScript
-- **Powerful sandboxing**: JavaScript and CSS isolation out of the box
-- **HTML entry**: Simple configuration using HTML files as entry points
-- **Rich ecosystem**: UI bindings, CLI tools, and webpack plugins
-
-### Q: Can I use qiankun with existing applications?
-
-**A:** Yes! qiankun is designed to work with existing applications. You can:
-
-1. **Wrap existing apps**: Turn your current app into a qiankun main application
-2. **Incremental migration**: Gradually extract features into micro applications
-3. **Legacy integration**: Run legacy apps alongside new micro apps
-4. **Framework migration**: Migrate from one framework to another progressively
-
-## 🔧 Installation and Setup
-
-### Q: I'm getting CORS errors when loading micro applications. How do I fix this?
-
-**A:** CORS errors are common in development. Here are solutions:
-
-**For webpack dev server:**
-```javascript
-// webpack.config.js or vue.config.js
-module.exports = {
-  devServer: {
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-      'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization'
-    }
-  }
-};
+export default defineConfig({
+  plugins: [qiankun()],
+  server: { port: 7100, strictPort: true },
+});
 ```
 
-**For Create React App (using CRACO):**
-```javascript
-// craco.config.js
-module.exports = {
-  devServer: {
-    headers: {
-      'Access-Control-Allow-Origin': '*'
-    }
-  }
-};
-```
-
-**For production, configure your server:**
-```nginx
-# nginx.conf
-location / {
-    add_header Access-Control-Allow-Origin *;
-    add_header Access-Control-Allow-Methods 'GET, POST, OPTIONS';
-    add_header Access-Control-Allow-Headers 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
-}
-```
-
-### Q: My micro application won't load. What should I check?
-
-**A:** Follow this troubleshooting checklist:
-
-1. **Check the network tab**: Are there 404 errors for your micro app resources?
-2. **Verify CORS**: Are there CORS errors in the console?
-3. **Check the entry point**: Is your HTML entry file accessible?
-4. **Validate the export**: Does your micro app export the required lifecycle methods?
-5. **Check the container**: Is the container element present in the DOM?
-
-**Example of correct micro app export:**
-```javascript
-// Micro app entry file
-export async function bootstrap() {
-  console.log('micro app bootstrapped');
-}
-
-export async function mount(props) {
-  console.log('micro app mounted', props);
-  // Your app mounting logic
-}
-
-export async function unmount(props) {
-  console.log('micro app unmounted', props);
-  // Your app cleanup logic
-}
-```
-
-### Q: How do I handle different base paths for my micro applications?
-
-**A:** Configure the public path in your micro applications:
-
-**For webpack:**
-```javascript
+```js [Webpack]
 // webpack.config.js
+const { QiankunWebpackPlugin } = require('@qiankunjs/bundler-plugin');
+
 module.exports = {
-  output: {
-    publicPath: process.env.NODE_ENV === 'production' 
-      ? 'https://mycdn.com/micro-app/' 
-      : 'http://localhost:8080/'
-  }
-};
-```
-
-**For runtime configuration:**
-```javascript
-// public-path.js in your micro app
-if (window.__POWERED_BY_QIANKUN__) {
-  __webpack_public_path__ = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
-}
-```
-
-## 🏗️ Architecture and Design
-
-### Q: How should I structure my micro-frontend architecture?
-
-**A:** Follow these architectural principles:
-
-**1. Domain-driven design:**
-```
-Main App (Shell)
-├── User Management (HR Domain)
-├── Product Catalog (Commerce Domain)
-├── Analytics Dashboard (BI Domain)
-└── Settings (System Domain)
-```
-
-**2. Shared vs. Independent:**
-- **Shared**: Authentication, navigation, design system
-- **Independent**: Business logic, data fetching, internal state
-
-**3. Communication patterns:**
-```javascript
-// Event-driven communication
-window.dispatchEvent(new CustomEvent('user-updated', { 
-  detail: { userId: 123 } 
-}));
-
-// Props-based communication
-registerMicroApps([{
-  name: 'user-app',
-  entry: '//localhost:8080',
-  container: '#container',
-  activeRule: '/users',
-  props: { 
-    userPermissions: currentUser.permissions,
-    onUserUpdate: handleUserUpdate
-  }
-}]);
-```
-
-### Q: How do I share dependencies between micro applications?
-
-**A:** Several approaches work well:
-
-**1. External dependencies (recommended):**
-```javascript
-// webpack.config.js
-module.exports = {
-  externals: {
-    'react': 'React',
-    'react-dom': 'ReactDOM',
-    'lodash': '_'
-  }
-};
-```
-
-**2. Module Federation:**
-```javascript
-// Main app webpack config
-new ModuleFederationPlugin({
-  name: 'shell',
-  shared: {
-    react: { singleton: true },
-    'react-dom': { singleton: true }
-  }
-});
-```
-
-**3. CDN approach:**
-```html
-<!-- Load shared libraries from CDN -->
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-```
-
-### Q: Can micro applications communicate with each other?
-
-**A:** Yes, here are the recommended patterns:
-
-**1. Event-driven communication:**
-```javascript
-// Micro app A
-const notifyOtherApps = (data) => {
-  window.dispatchEvent(new CustomEvent('app-a-event', { detail: data }));
-};
-
-// Micro app B
-window.addEventListener('app-a-event', (event) => {
-  console.log('Received from app A:', event.detail);
-});
-```
-
-**2. Shared state management:**
-```javascript
-// Global store
-window.__SHARED_STORE__ = {
-  user: null,
-  subscribe: [],
-  updateUser: (user) => {
-    window.__SHARED_STORE__.user = user;
-    window.__SHARED_STORE__.subscribers.forEach(callback => callback(user));
-  }
-};
-```
-
-**3. Props from main app:**
-```javascript
-// Main app coordinates communication
-const handleDataChange = (data) => {
-  // Update props for all relevant micro apps
-  updateMicroAppProps('app-a', { sharedData: data });
-  updateMicroAppProps('app-b', { sharedData: data });
-};
-```
-
-## 🎨 Styling and CSS
-
-### Q: My CSS styles are conflicting between micro applications. How do I fix this?
-
-**A:** Use qiankun's built-in style isolation:
-
-**1. Strict style isolation (Shadow DOM):**
-```javascript
-import { start } from 'qiankun';
-
-start({
-  sandbox: {
-    strictStyleIsolation: true
-  }
-});
-```
-
-**2. Experimental style isolation (CSS scoping):**
-```javascript
-start({
-  sandbox: {
-    experimentalStyleIsolation: true
-  }
-});
-```
-
-**3. Manual CSS scoping:**
-```css
-/* Prefix all your styles */
-.my-micro-app .button {
-  background: blue;
-}
-
-.my-micro-app .container {
-  padding: 20px;
-}
-```
-
-See our [Style Isolation Guide](/cookbook/style-isolation) for comprehensive solutions.
-
-### Q: Can I use CSS-in-JS libraries with qiankun?
-
-**A:** Absolutely! CSS-in-JS libraries work great with qiankun:
-
-**Styled Components:**
-```jsx
-import styled from 'styled-components';
-
-const Button = styled.button`
-  background: blue;
-  color: white;
-`;
-```
-
-**Emotion:**
-```jsx
-/** @jsxImportSource @emotion/react */
-import { css } from '@emotion/react';
-
-const buttonStyle = css`
-  background: blue;
-  color: white;
-`;
-```
-
-CSS-in-JS provides natural isolation since styles are scoped to components.
-
-## 🔄 Routing and Navigation
-
-### Q: How do I handle routing in a micro-frontend setup?
-
-**A:** qiankun supports multiple routing strategies:
-
-**1. Route-based micro apps (recommended):**
-```javascript
-registerMicroApps([
-  {
-    name: 'user-management',
-    entry: '//localhost:8080',
-    container: '#container',
-    activeRule: '/users' // Loads when route starts with /users
+  output: { publicPath: 'auto' },
+  plugins: [new QiankunWebpackPlugin()],
+  devServer: {
+    headers: { 'Access-Control-Allow-Origin': '*' },
+    allowedHosts: 'all',
   },
-  {
-    name: 'product-catalog',
-    entry: '//localhost:8081', 
-    container: '#container',
-    activeRule: ['/products', '/categories'] // Multiple routes
-  }
-]);
-```
-
-**2. Programmatic routing:**
-```javascript
-// Navigate between micro apps
-import { navigateToUrl } from 'single-spa';
-
-const navigateToUsers = () => {
-  navigateToUrl('/users');
 };
 ```
 
-**3. Hash routing:**
-```javascript
-registerMicroApps([
-  {
-    name: 'hash-app',
-    entry: '//localhost:8080',
-    container: '#container',
-    activeRule: '#/app' // Hash-based routing
-  }
-]);
+:::
+
+`qiankun()` handles dev/preview CORS headers and marks the `type="module"` entry script for the ESM sandbox path. `QiankunWebpackPlugin` sets `output.library` to `{ name, type: 'window' }` (so the classic path can read the app off `window[name]`) and marks the injected entry script.
+
+A no-build app can mark the entry manually — add `entry` to the one script that exposes the lifecycles:
+
+```html
+<script src="./entry.js" entry></script>
 ```
 
-### Q: Can micro applications have their own internal routing?
+See [Make a Vite app qiankun-ready](/cookbook/prepare-a-vite-app) and [Make a Webpack app qiankun-ready](/cookbook/prepare-a-webpack-app).
 
-**A:** Yes! Each micro application can have its own internal router:
+## Why am I getting CORS errors?
 
-**React Router example:**
-```jsx
-// In your micro app
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+qiankun fetches every micro-app's HTML entry and its assets cross-origin through a decorated `window.fetch`. The sub-app server must therefore answer with permissive CORS headers, for example `Access-Control-Allow-Origin: *`. Without them the browser blocks the fetch and the app never loads.
 
-function App() {
-  const basename = window.__POWERED_BY_QIANKUN__ ? '/users' : '/';
-  
-  return (
-    <BrowserRouter basename={basename}>
-      <Routes>
-        <Route path="/" element={<UserList />} />
-        <Route path="/profile" element={<UserProfile />} />
-        <Route path="/settings" element={<UserSettings />} />
-      </Routes>
-    </BrowserRouter>
-  );
+- Vite: use `qiankun()`, which sets the dev/preview CORS headers.
+- Webpack: set `devServer.headers['Access-Control-Allow-Origin'] = '*'` and `allowedHosts: 'all'`.
+- Static hosting: serve with CORS enabled (for example `http-server . --cors`).
+
+::: warning Third-party libraries need CORS too
+Any library the sub-app loads — jQuery, a UI kit, an analytics script — is fetched by qiankun the same way. A public CDN that does not send `Access-Control-Allow-Origin` will fail. Vendor the library and serve it from your own CORS-enabled origin instead of a headerless CDN.
+:::
+
+Under [style isolation](/concepts/style-isolation), external `<link rel="stylesheet">` sheets are also re-fetched (so their CSS can be `@scope`-wrapped). A cross-origin stylesheet without CORS headers is dropped to preserve isolation. Serve stylesheets with CORS as well.
+
+## Why the error "more than one entry script"?
+
+An HTML entry may contain exactly one `<script>` marked with the `entry` attribute. That script is the one that exposes the micro-app's lifecycles; qiankun waits on it to resolve the app. A second `entry`-attributed script throws a `QiankunError`.
+
+If your build injects multiple scripts (vendor chunk, runtime chunk, main chunk), let the bundler plugin decide which one is the entry — do not add `entry` by hand on top of it. Non-entry scripts (a vendored library in `<head>`, code-split chunks) load normally and must not carry the attribute.
+
+## Why "lifecycle functions not found"?
+
+qiankun could load the entry but could not find the `bootstrap` / `mount` / `unmount` functions on it. Make sure the micro-app actually exposes them, and that the way it exposes them matches its loading path.
+
+::: code-group
+
+```ts [ESM path (Vite)]
+// The native module exports ARE the lifecycles.
+export async function bootstrap() {}
+export async function mount(props: { container?: Element }) {
+  render(props);
+}
+export async function unmount(props: { container?: Element }) {
+  root?.unmount();
 }
 ```
 
-## 🚀 Performance
-
-### Q: My micro-frontend app is loading slowly. How can I improve performance?
-
-**A:** Follow these optimization strategies:
-
-**1. Enable prefetching:**
-```javascript
-start({
-  prefetch: true // or 'all' or specific app names
-});
+```tsx [Classic path (window global)]
+// The bundle's library name must equal the registered app name,
+// so the exports land on window[name].
+export async function bootstrap() {}
+export async function mount(props) { render(props); }
+export async function unmount(props) { root?.unmount(); }
+// QiankunWebpackPlugin wires output.library → window['webpack-app']
 ```
 
-**2. Use code splitting:**
-```javascript
-// Dynamic imports in micro apps
-const HeavyComponent = React.lazy(() => import('./HeavyComponent'));
+:::
+
+Common causes:
+
+- **The registered `name` does not match the global.** On the classic path the app is read from `window[name]` (the library name). If you register `name: 'webpack-app'`, the bundle's `output.library.name` must be `'webpack-app'`. A mismatch means qiankun looks up an empty global.
+- **Lifecycles are not exported.** On the ESM path, `bootstrap`/`mount`/`unmount` must be `export`ed from the entry module. On the classic path, they must be reachable via the window library (the plugin assigns it; a hand-written app assigns `window[name] = { bootstrap, mount, unmount }`).
+- **Implicit globals in an ESM module.** ESM runs in strict mode, so an implicit `foo = 1` throws a `ReferenceError` instead of writing to the sandbox. Declare your globals.
+
+See [Micro-app lifecycle and props](/concepts/lifecycle-and-props).
+
+## Does qiankun support Vite / ESM?
+
+Yes, natively, in both development and production. A `<script type="module">` entry is executed by the [ESM sandbox](/concepts/esm-sandbox): modules are fetched, rewritten so their globals route through the JS sandbox membrane, given synthetic specifiers via a dynamically injected import map, and evaluated in order by the browser's native module loader. No build-time transform is required beyond marking the entry (which `qiankun()` does).
+
+::: warning HMR is disabled inside the sandbox
+For Vite dev, qiankun stubs `/@vite/client` so the HMR WebSocket never opens — left live it would connect from inside the sandbox and trigger a destructive full-page `location.reload()`. Edit-and-reload manually while a Vite app runs inside qiankun.
+:::
+
+::: info Firefox needs a flag
+The ESM sandbox relies on multiple dynamically injected import maps. Chrome/Edge 133+ and Safari 18.4+ support this natively; Firefox requires `dom.multiple_import_maps.enabled` (off by default) or the adoption of es-module-shims. The ESM e2e suite is annotated as an expected failure on Firefox for this reason.
+:::
+
+## Is there a built-in global-state store?
+
+No. qiankun 3.0 has no `initGlobalState` / `onGlobalStateChange` / `setGlobalState` API. Share state explicitly instead:
+
+- Pass data and callbacks to a micro-app through `props` (the fourth key on a registered app / the `props` field on `loadMicroApp`). Props reach the micro-app's lifecycle functions.
+- For richer needs, use your own store (a shared module, an event bus, a signals library) and hand its API to the micro-app via props.
+
+See [Share state and communicate between apps](/cookbook/communicate-between-apps).
+
+## How do I isolate styles?
+
+Enable it per app with the `styleIsolation` boolean in the app's configuration. It is off by default.
+
+```ts
+registerMicroApps([
+  {
+    name: 'react',
+    entry: '//localhost:7100',
+    container,
+    activeRule: '/react',
+    configuration: { sandbox: true, styleIsolation: true },
+  },
+]);
 ```
 
-**3. Optimize bundle sizes:**
-```javascript
-// webpack.config.js
-module.exports = {
-  optimization: {
-    splitChunks: {
-      chunks: 'all'
-    }
-  }
-};
+When enabled, qiankun wraps the micro-app's CSS in a native CSS `@scope` block scoped to the app container (`[data-name="<appName>"]`). External stylesheets are re-fetched and served as blob-`<link>`s so their rules can be scoped too.
+
+::: info Not Shadow DOM
+v3 does not use Shadow DOM. The 2.x option object `sandbox: { strictStyleIsolation | experimentalStyleIsolation }` no longer exists — the only knob is the boolean `styleIsolation`.
+:::
+
+Requirements and limits:
+
+- The browser must support CSS `@scope`. There is no polyfill; browsers without it will not scope styles.
+- External stylesheets must be CORS-fetchable, or they are dropped to preserve isolation.
+- `@font-face` and `@namespace` are intentionally kept global (scoping them breaks font loading), so they can still collide across apps.
+- `@keyframes` are renamed with a per-app prefix; keyframe names built dynamically as strings in JS are not rewritten.
+
+See [Style isolation](/concepts/style-isolation) and [Enable CSS style isolation](/cookbook/enable-style-isolation).
+
+## What browsers are supported?
+
+The v3 runtime needs `Proxy`, `TransformStream`, and `URL.createObjectURL`. Probe the current browser before starting:
+
+```ts
+import { isRuntimeCompatible } from 'qiankun';
+
+if (isRuntimeCompatible()) {
+  start();
+} else {
+  // render a fallback / upgrade notice
+}
 ```
 
-See our [Performance Optimization Guide](/cookbook/performance) for detailed strategies.
+`isRuntimeCompatible()` returns:
 
-### Q: How do I prevent memory leaks in micro applications?
+```ts
+typeof Proxy === 'function' &&
+  typeof TransformStream === 'function' &&
+  typeof URL?.createObjectURL === 'function';
+```
 
-**A:** Implement proper cleanup:
+`TransformStream` is the highest floor of the three (streaming HTML-entry loading depends on it). ESM-sandbox micro-apps additionally need import-map support (see the Firefox note above). See [isRuntimeCompatible](/api/is-runtime-compatible).
 
-```javascript
-// Micro app lifecycle
+## Why does my app not re-run on remount (ESM)?
+
+By design. On the ESM path a remount re-imports the same blob URL, so the browser returns the **same module namespace** — top-level module code does not run again, only `mount(props)` is re-invoked. (The classic path re-executes the whole script on each remount.)
+
+If you create app state at module top level, it survives across unmount and remount and appears "stale" or fails on the second mount. Move all instance creation into `mount()` and tear it down in `unmount()`:
+
+```ts
+let root: Root | undefined;
+
+export async function mount(props: { container?: Element }) {
+  const el = props.container?.querySelector('#root') ?? document.getElementById('root');
+  root = createRoot(el);          // create in mount, not at module top level
+  root.render(<App />);
+}
+
 export async function unmount() {
-  // Clear timers
-  clearInterval(myInterval);
-  
-  // Remove event listeners
-  window.removeEventListener('resize', handleResize);
-  
-  // Clean up subscriptions
-  subscription.unsubscribe();
-  
-  // Clear caches
-  cache.clear();
+  root?.unmount();
+  root = undefined;
 }
 ```
 
-## 🛠️ Development and Debugging
+This is the standard modern-framework wiring and also what keeps [multiple instances](/cookbook/run-multiple-instances) working. See [The ESM sandbox](/concepts/esm-sandbox).
 
-### Q: How do I debug micro applications in development?
+## Where did the 2.x options go?
 
-**A:** Use these debugging strategies:
+Several qiankun 2.x APIs and options do not exist in 3.0:
 
-**1. Enable source maps:**
-```javascript
-// webpack.config.js
-module.exports = {
-  devtool: 'source-map'
-};
-```
+| 2.x | 3.0 |
+| --- | --- |
+| `start({ prefetch, sandbox, singular, fetch, ... })` | `start({ urlRerouteOnly? })` only; per-app options live in `configuration` |
+| `sandbox: { strictStyleIsolation \| experimentalStyleIsolation }` | `styleIsolation: boolean` (CSS `@scope`) |
+| `initGlobalState` / `onGlobalStateChange` / `setGlobalState` | pass state via `props` / your own store |
+| `entry: { scripts, styles }` object | `entry: string` (an HTML URL) |
+| `container: '#selector'` string | `container: HTMLElement` |
+| `prefetch` strategies | streaming loader auto-preloads; `prefetchApps` is deprecated |
 
-**2. Use browser dev tools:**
-- Network tab: Check resource loading
-- Console: View error messages
-- Elements: Inspect DOM structure
-- Sources: Debug JavaScript with breakpoints
-
-**3. qiankun debugging:**
-```javascript
-// Enable detailed logging
-localStorage.setItem('qiankun:debug', true);
-```
-
-### Q: Can I use hot reload with micro applications?
-
-**A:** Yes, with some configuration:
-
-**For webpack dev server:**
-```javascript
-// webpack.config.js
-module.exports = {
-  devServer: {
-    hot: true,
-    headers: {
-      'Access-Control-Allow-Origin': '*'
-    }
-  }
-};
-```
-
-**Note**: Hot reload works within each micro app, but changes to the main app may require a full refresh.
-
-## 🔒 Security
-
-### Q: How do I handle authentication across micro applications?
-
-**A:** Centralize authentication in the main application:
-
-**1. Token-based authentication:**
-```javascript
-// Main app handles auth
-const userToken = await authenticate(credentials);
-localStorage.setItem('token', userToken);
-
-// Pass token to micro apps
-registerMicroApps([{
-  name: 'secure-app',
-  entry: '//localhost:8080',
-  container: '#container',
-  activeRule: '/secure',
-  props: {
-    token: userToken,
-    user: currentUser
-  }
-}]);
-```
-
-**2. Shared authentication state:**
-```javascript
-// Global auth state
-window.__AUTH_STATE__ = {
-  user: currentUser,
-  token: userToken,
-  isAuthenticated: true
-};
-```
-
-### Q: Are there security concerns with micro-frontends?
-
-**A:** Be aware of these security considerations:
-
-**1. Content Security Policy (CSP):**
-```html
-<meta http-equiv="Content-Security-Policy" 
-      content="script-src 'self' https://trusted-cdn.com;">
-```
-
-**2. CORS configuration:**
-- Only allow trusted origins
-- Validate requests properly
-- Use HTTPS in production
-
-**3. Dependency security:**
-- Regularly audit dependencies
-- Use tools like `npm audit`
-- Keep dependencies updated
-
-## 📱 Mobile and Browser Support
-
-### Q: Does qiankun work on mobile devices?
-
-**A:** Yes, qiankun works on mobile with considerations:
-
-**1. Touch event optimization:**
-```javascript
-// Use passive listeners
-element.addEventListener('touchstart', handler, { passive: true });
-```
-
-**2. Viewport management:**
-```html
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-```
-
-**3. Performance optimization:**
-- Reduce bundle sizes
-- Use lazy loading
-- Optimize images and assets
-
-### Q: Which browsers does qiankun support?
-
-**A:** qiankun supports modern browsers:
-
-- **Chrome**: 49+
-- **Firefox**: 45+
-- **Safari**: 10+
-- **Edge**: 79+
-- **IE**: Not supported
-
-For older browsers, consider polyfills:
-```html
-<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-```
-
-## 🚢 Deployment
-
-### Q: How do I deploy micro-frontend applications?
-
-**A:** Use independent deployment strategy:
-
-**1. Separate builds:**
-```bash
-# Build each app independently
-cd main-app && npm run build
-cd micro-app-1 && npm run build  
-cd micro-app-2 && npm run build
-```
-
-**2. CDN deployment:**
-```javascript
-// Configure different CDNs for each app
-const microApps = [
-  {
-    name: 'app-1',
-    entry: 'https://cdn1.example.com/app-1/',
-    container: '#container',
-    activeRule: '/app-1'
-  },
-  {
-    name: 'app-2', 
-    entry: 'https://cdn2.example.com/app-2/',
-    container: '#container',
-    activeRule: '/app-2'
-  }
-];
-```
-
-### Q: How do I handle versioning and updates?
-
-**A:** Implement version management:
-
-**1. Semantic versioning:**
-```javascript
-// Package.json for each micro app
-{
-  "name": "user-management-app",
-  "version": "1.2.3"
-}
-```
-
-**2. Runtime version checking:**
-```javascript
-const requiredVersion = '1.2.0';
-const currentVersion = window.__MICRO_APP_VERSION__;
-
-if (!semver.gte(currentVersion, requiredVersion)) {
-  console.warn('Micro app version compatibility issue');
-}
-```
-
-## 🔗 Integration
-
-### Q: Can I use qiankun with Server-Side Rendering (SSR)?
-
-**A:** SSR with micro-frontends is complex but possible:
-
-**1. Static rendering:**
-- Render micro apps on the server
-- Hydrate on the client
-
-**2. Considerations:**
-- Each micro app needs SSR support
-- Coordination between apps is challenging
-- Performance implications
-
-**Alternative approaches:**
-- Use edge-side includes (ESI)
-- Implement micro-frontends at the page level
-- Consider client-side rendering with fast initial loads
-
-### Q: How do I integrate qiankun with existing build tools?
-
-**A:** qiankun works with various build tools:
-
-**Webpack:** Use `@qiankunjs/webpack-plugin`
-**Vite:** Use `vite-plugin-qiankun`
-**Rollup:** Manual configuration
-**Parcel:** Manual configuration
-
-See our [Ecosystem](/ecosystem/) section for specific integrations.
-
-## 🤝 Community and Support
-
-### Q: Where can I get help if I'm stuck?
-
-**A:** Multiple support channels are available:
-
-1. **GitHub Issues**: [umijs/qiankun](https://github.com/umijs/qiankun/issues)
-2. **Discussions**: GitHub Discussions for questions
-3. **Stack Overflow**: Tag questions with `qiankun`
-4. **Discord/Slack**: Community chat rooms
-
-### Q: How can I contribute to qiankun?
-
-**A:** We welcome contributions:
-
-1. **Bug reports**: Submit detailed issue reports
-2. **Feature requests**: Propose new features
-3. **Code contributions**: Submit pull requests
-4. **Documentation**: Improve docs and examples
-5. **Community**: Help answer questions
-
-See our [Contributing Guide](https://github.com/umijs/qiankun/blob/master/CONTRIBUTING.md) for details.
-
----
-
-## 📚 Additional Resources
-
-- [Complete API Reference](/api/)
-- [Best Practices Guide](/cookbook/)
-- [Ecosystem Tools](/ecosystem/)
-- [GitHub Repository](https://github.com/umijs/qiankun)
-- [Example Applications](https://github.com/umijs/qiankun/tree/master/examples)
-
-**Can't find what you're looking for?** Please [open an issue](https://github.com/umijs/qiankun/issues/new) or start a [discussion](https://github.com/umijs/qiankun/discussions) - we're here to help! 
+The full step-by-step is in [Migrate from qiankun 2.x](/cookbook/migrate-from-2x).
