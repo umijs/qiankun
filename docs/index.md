@@ -3,8 +3,10 @@ layout: home
 
 hero:
   name: qiankun
-  text: A micro-frontends solution
-  tagline: Assemble independently built and deployed front-end apps into one product at runtime. Framework agnostic, easy to adopt.
+  tagline: Probably the most complete micro-frontends solution you'll ever meet🧐
+  image:
+    src: /logo.png
+    alt: qiankun
   actions:
     - theme: brand
       text: Get started
@@ -17,30 +19,24 @@ hero:
       link: https://github.com/umijs/qiankun
 
 features:
-  - icon:
-      src: /icons/agnostic.svg
+  - icon: 🚀
+    title: Simple
+    details: Works with any JavaScript framework. Building a micro-frontend system is as simple as using iframes, except it isn't iframes.
+  - icon: 🛡️
+    title: Complete
+    details: Ships almost everything a micro-frontend system needs — style isolation, a JS sandbox, preloading, and more.
+  - icon: 🔧
+    title: Production ready
+    details: Battle-tested and hardened across a large number of production apps inside and outside Ant Group.
+  - icon: ⚡
+    title: High performance
+    details: Streams the HTML entry and preloads assets as they are parsed, so switching between apps stays fast.
+  - icon: 🎯
     title: Framework agnostic
-    details: React, Vue, Angular, even legacy jQuery — mix new and old however you like. A micro-app only needs to export three lifecycle functions.
-  - icon:
-      src: /icons/sandbox.svg
-    title: Apps stay out of each other's way
-    details: Each micro-app runs in its own JS sandbox. Globals, timers and event listeners are reverted on unmount, so apps mounted side by side never pollute one another.
-  - icon:
-      src: /icons/scope.svg
-    title: Styles that don't leak
-    details: Turn on style isolation with a single flag. It builds on the browser's native CSS @scope — no Shadow DOM — and handles external stylesheets too.
-  - icon:
-      src: /icons/esm.svg
-    title: Vite apps, zero rework
-    details: Run a micro-app's native ES modules directly, Vite dev server included. No separate UMD build just to make an app loadable.
-  - icon:
-      src: /icons/stream.svg
-    title: Faster switching
-    details: The HTML entry streams in and assets preload as they are parsed, so switching apps feels instant. You don't hand-write a preload strategy.
-  - icon:
-      src: /icons/singlespa.svg
-    title: Battle tested
-    details: Built on single-spa and hardened across a large number of production apps inside and outside Ant Group. Safe to ship.
+    details: The main app puts no constraints on a micro-app's stack; each micro-app keeps full autonomy.
+  - icon: 🧬
+    title: State isolation
+    details: A complete JS sandbox, plus native ESM-sandbox support, keeps apps from affecting one another.
 ---
 
 ## Quick start
@@ -75,26 +71,9 @@ registerMicroApps([
     container: document.getElementById('subapp-container')!,
     activeRule: '/react',
   },
-  {
-    name: 'vue-app',
-    entry: '//localhost:7101',
-    container: document.getElementById('subapp-container')!,
-    activeRule: '/vue',
-  },
 ]);
 
 start();
 ```
 
-On the micro-app side you only export three lifecycle functions — `bootstrap`, `mount`, `unmount` — with no change to your build output format. To skip the boilerplate, [`create-qiankun`](/ecosystem/create-qiankun) scaffolds a working setup in one command.
-
-For the full flow see [Getting started](/guide/getting-started), or build one line by line in the [hand-built tutorial](/tutorial/).
-
-## Community
-
-- [GitHub repository](https://github.com/umijs/qiankun) — source, issues, stars
-- [Discussions](https://github.com/umijs/qiankun/discussions) — ask questions, share setups, join design threads
-- [v3 roadmap](https://github.com/umijs/qiankun/discussions/1378) — where 3.0 is headed
-- [Changelog](https://github.com/umijs/qiankun/releases) — what changed in each release
-
-Stuck on something? Check the [FAQ](/faq/) first — it likely has your answer.
+On the micro-app side you only export three lifecycle functions — `bootstrap`, `mount`, `unmount` — with no change to your build output. See [Getting started](/guide/getting-started) for the full flow.
