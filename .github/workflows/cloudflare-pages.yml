@@ -7,18 +7,31 @@ on:
     paths:
       - "docs/**"
       - ".github/workflows/cloudflare-pages.yml"
+  pull_request:
+    paths:
+      - "docs/**"
+      - ".github/workflows/cloudflare-pages.yml"
   workflow_dispatch:
 
-# Avoid overlapping deploys stepping on each other
+# Scope concurrency per ref so a PR preview and the production (next) deploy
+# never cancel each other; a newer push to the same ref supersedes the old one.
 concurrency:
-  group: cloudflare-pages
+  group: cloudflare-pages-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Fork PRs cannot read the Cloudflare secrets, so skip the preview for them
+    # (they would only fail). Same-repo branch PRs and pushes still run.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: read
+      pull-requests: write
+    env:
+      # PRs deploy to a stable per-PR preview branch (pr-<number>); pushes and
+      # manual runs deploy under their own ref name (next => production).
+      DEPLOY_BRANCH: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref_name }}
 
     steps:
       - uses: actions/checkout@v4
@@ -43,7 +56,64 @@ jobs:
       # auto-installs wrangler via `pnpm add`, which fails at a pnpm workspace
       # root (ERR_PNPM_ADDING_TO_ROOT). npx installs to its own cache instead.
       - name: Deploy to Cloudflare Pages
+        id: deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx -y wrangler@4 pages deploy docs/.vitepress/dist --project-name=qiankun --branch=${{ github.ref_name }}
+        run: |
+          output=$(npx -y wrangler@4 pages deploy docs/.vitepress/dist \
+            --project-name=qiankun --branch="$DEPLOY_BRANCH" 2>&1) || code=$?
+          echo "$output"
+          if [ "${code:-0}" -ne 0 ]; then exit "$code"; fi
+          # The exact per-deploy URL is the last *.pages.dev printed by wrangler.
+          deploy_url=$(printf '%s\n' "$output" | grep -oE 'https://[a-z0-9-]+\.qiankun\.pages\.dev' | tail -n1 || true)
+          # The branch alias is deterministic and stable across a PR's pushes.
+          alias_url="https://${DEPLOY_BRANCH}.qiankun.pages.dev"
+          echo "deploy_url=$deploy_url" >> "$GITHUB_OUTPUT"
+          echo "alias_url=$alias_url" >> "$GITHUB_OUTPUT"
+
+      - name: Comment preview URL on the PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          ALIAS_URL: ${{ steps.deploy.outputs.alias_url }}
+          DEPLOY_URL: ${{ steps.deploy.outputs.deploy_url }}
+        with:
+          script: |
+            const marker = '<!-- cloudflare-pages-preview -->';
+            const alias = process.env.ALIAS_URL;
+            const deploy = process.env.DEPLOY_URL || alias;
+            const sha = context.sha.substring(0, 7);
+            const body = [
+              marker,
+              '### 📖 Docs preview is ready',
+              '',
+              '| | |',
+              '| --- | --- |',
+              `| **Preview (this PR)** | ${alias} |`,
+              `| **This build** | ${deploy} |`,
+              `| **Commit** | \`${sha}\` |`,
+              '',
+              '<sub>Deployed to Cloudflare Pages. Updates on every push to this PR.</sub>',
+            ].join('\n');
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find((c) => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
