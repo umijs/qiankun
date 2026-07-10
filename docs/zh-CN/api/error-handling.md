@@ -1,107 +1,70 @@
 # addErrorHandler / removeErrorHandler
 
-注册和注销全局错误处理器，任何微应用在加载、bootstrap、mount、unmount 阶段出错时都会触发。这两个函数是从 [single-spa](https://single-spa.js.org/docs/api#adderrorhandler) 原样再导出的，所以行为和 single-spa 的错误处理链完全一致。
+注册一个全局观察器来接收微应用加载和生命周期失败，再用同一个函数引用注销它。qiankun 从 single-spa 原样导出这两个函数，没有改变其行为。
 
-```ts
-import { addErrorHandler, removeErrorHandler } from 'qiankun';
-```
+这个 API 适合集中记录日志和上报监控。面向用户的恢复界面应由受影响 UI 对应的 `loadMicroApp` 实例或 `<MicroApp>` 组件负责。
 
 ## 函数签名
-
-```ts
-function addErrorHandler(handler: (err: AppError) => void): void;
-function removeErrorHandler(handler: (err: AppError) => void): void;
-```
-
-`AppError` 就是 single-spa 的错误结构——一个标准 `Error`，额外带上了出错的 app 或 parcel 的名字：
 
 ```ts
 type AppError = Error & {
   appOrParcelName: string;
 };
+
+function addErrorHandler(handler: (error: AppError) => void): void;
+function removeErrorHandler(handler: (error: AppError) => void): void;
 ```
 
-`removeErrorHandler` 按引用注销，所以传进去的必须是当初注册的那个函数对象。
+`appOrParcelName` 标识与错误关联的应用或实例。`removeErrorHandler` 按函数引用匹配，因此内容相同的新函数不能注销原来的处理器。
 
-::: info 纯再导出
-qiankun 没有对这两个函数做任何包装或改写。`packages/qiankun/src/apis/errorHandler.ts` 里就一行 `export { addErrorHandler, removeErrorHandler } from 'single-spa';`。你通过 qiankun 添加的处理器，和你直接从 single-spa 导入添加的处理器，用的是同一份注册表。
-:::
+## 使用方式
 
-## 哪些错误会走到这里
-
-用 `addErrorHandler` 注册的处理器，能收到任何微应用抛出的错误——不管这个应用是通过 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 注册的，还是通过 [`loadMicroApp`](/zh-CN/api/load-micro-app) 命令式加载的，每一个生命周期阶段都覆盖：
-
-- **加载(Load)** —— HTML Entry 抓不回来(网络失败、非 2xx 状态码)、响应体是空的，或者从 entry 的 exports 里找不到有效的生命周期对象。
-- **Bootstrap / mount / unmount** —— 微应用自己的 `bootstrap`、`mount`、`unmount` 函数 reject 了。
-- **ESM 模块图失败** —— 对于交给 [ESM 沙箱](/zh-CN/concepts/esm-sandbox) 处理的 `<script type="module">` entry，某个 fetch 或求值失败的模块，以及模块图里顶层 `await`(TLA)的 reject，都会被接到 entry 的 deferred 上，从这里冒出来，而不是变成一个没人管的 unhandled rejection 悄悄丢掉。
-
-微应用在生命周期切换过程中抛错，single-spa 会把它置成 broken 状态——生命周期失败对应 `SKIP_BECAUSE_BROKEN`，加载失败对应 `LOAD_ERROR`——然后带着 `AppError` 挨个调用注册过的错误处理器。broken 的 app 不再参与路由驱动的切换；`LOAD_ERROR` 的 app 会在下一次路由变化时重试。
-
-```mermaid
-flowchart TD
-  A[微应用生命周期] -->|load / bootstrap / mount / unmount reject| B[single-spa 捕获错误]
-  A -->|ESM 模块图 / TLA reject| B
-  B --> C[app 被标记为 SKIP_BECAUSE_BROKEN 或 LOAD_ERROR]
-  B --> D[携带 AppError 调用每一个已注册的处理器]
-```
-
-## 示例
-
-在主应用启动流程的早期注册一次处理器，放在调用 [`start`](/zh-CN/api/start) 之前或之后都行：
+在主应用启动阶段注册一次观察器：
 
 ```ts
-import { addErrorHandler, registerMicroApps, start } from 'qiankun';
+import { addErrorHandler, removeErrorHandler } from 'qiankun';
 
-addErrorHandler((err) => {
-  // err is a standard Error; err.appOrParcelName tells you which app failed
-  console.error(`[qiankun] "${err.appOrParcelName}" failed:`, err.message);
+type AppError = Error & { appOrParcelName: string };
 
-  // report to your monitoring service
-  reportToSentry(err, { app: err.appOrParcelName });
+const reportMicroAppError = (error: AppError) => {
+  reportToMonitoring(error, {
+    app: error.appOrParcelName,
+  });
+};
+
+addErrorHandler(reportMicroAppError);
+
+// 主应用清理或测试结束时：
+removeErrorHandler(reportMicroAppError);
+```
+
+通过 [`loadMicroApp`](/zh-CN/api/load-micro-app) 加载的应用，以及路由驱动的 `registerMicroApps` 流程，产生的错误都会进入这个观察器。其中包括入口加载失败和微应用生命周期函数被拒绝。
+
+这个处理器是全局的，不负责渲染。实例级界面应单独观察返回句柄：
+
+```ts
+import { loadMicroApp } from 'qiankun';
+
+const microApp = loadMicroApp({ name, entry, container });
+
+void microApp.mountPromise.catch((error: unknown) => {
+  showFallback(container, error);
 });
-
-registerMicroApps([
-  { name: 'app1', entry: '//localhost:7100', container: document.querySelector('#subapp')!, activeRule: '/app1' },
-]);
-
-start();
 ```
 
-要把某个处理器拆掉(比如在热更新边界或测试里)，先留着它的引用，再传给 `removeErrorHandler`:
+请继续保留 `MicroApp` 句柄，并在成功挂载的视图移除时调用 `unmount()`。
 
-```ts
-const handler = (err: AppError) => console.error(err);
+## 处理器职责
 
-addErrorHandler(handler);
-// later
-removeErrorHandler(handler);
-```
+- 处理器应保持防御性：上报错误后直接返回，不要继续抛错；
+- 不要从全局通道启动无上限重试；
+- 不要向用户展示原始调用栈或含敏感信息的响应；
+- 为生产构建保留 source map，让监控系统能够还原转换后的应用调用栈。
 
-::: warning 处理器里别再抛错
-处理器内部抛出的错误会重新回到 single-spa 的错误处理路径里。让处理器保持防御性——记日志、上报、然后返回就好，别在里面再抛。
-:::
+React 和 Vue 的 `<MicroApp>` 组件通过各自的错误边界选项提供组件级兜底界面。组件边界和全局观察器可能同时收到同一次失败；前者用于就近恢复，后者用于遥测上报。
 
-## 全局处理器 vs `<MicroApp>` 错误边界
+## 相关链接
 
-`addErrorHandler` 是一个**框架层面的全局**钩子：一个处理器盯着所有已注册 app 的失败，拿到的是一个带 `appOrParcelName` 标记的 `AppError`。它不渲染任何东西——用途是记日志、监控、埋点上报。
-
-[`<MicroApp>` 的 React 版](/zh-CN/ecosystem/react)和 [Vue 版](/zh-CN/ecosystem/vue)提供的则是**组件层面**的错误边界。因为 `<MicroApp>` 就是对单个实例的 [`loadMicroApp`](/zh-CN/api/load-micro-app) 做了一层封装，它能捕获这个实例的 load/bootstrap/mount reject，并就地渲染兜底 UI:
-
-- 用 `autoCaptureError` 启用默认的错误视图，或者传一个自定义的 `errorBoundary` render prop(React)/ `#error-boundary` slot(Vue)。
-- 如果你**不**启用，组件会把错误重新抛出——在 React 里它会冒到最近的 React 错误边界，在 Vue 里则通过 `errorCaptured` / 全局处理器浮现出来。
-
-这两套机制是互补的。跨所有 app 的集中式上报用全局 `addErrorHandler`，单个实例的兜底 UI 用 `<MicroApp>` 错误边界。同一次失败可以同时到达两边：single-spa 通知你的全局处理器，组件也把被 reject 的 `mountPromise`/`loadPromise` 交给它自己的错误边界。
-
-| 关注点 | `addErrorHandler` | `<MicroApp>` 错误边界 |
-| --- | --- | --- |
-| 作用范围 | 全局——所有已注册 / 已加载的 app | 单个 `<MicroApp>` 实例 |
-| 用途 | 记日志、监控、埋点上报 | 就地渲染兜底 UI |
-| 输入 | `AppError`(`Error & { appOrParcelName }`) | 被 reject 的生命周期 `Error` |
-| 启用方式 | 注册后始终生效 | `autoCaptureError` / 自定义 `errorBoundary` |
-
-## 另请参阅
-
-- [处理加载与运行时错误](/zh-CN/cookbook/handle-errors) —— 重试、兜底 UI、上报的端到端方案。
-- [`<MicroApp>` for React](/zh-CN/ecosystem/react) 和 [`<MicroApp>` for Vue](/zh-CN/ecosystem/vue) —— 组件层面的错误边界。
-- [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props) —— 可能失败的各个阶段。
-- [ESM 沙箱](/zh-CN/concepts/esm-sandbox) —— 模块图与 TLA 的 reject 是怎么被路由到这里的。
+- [处理微应用错误](/zh-CN/cookbook/handle-errors)——兜底界面、诊断与重试建议
+- [`loadMicroApp`](/zh-CN/api/load-micro-app)——实例 Promise 与清理
+- [React `<MicroApp>`](/zh-CN/ecosystem/react)和 [Vue `<MicroApp>`](/zh-CN/ecosystem/vue)——组件错误边界

@@ -1,6 +1,6 @@
 # Types reference
 
-Every type qiankun exports from its public barrel (`packages/qiankun/src/types.ts`), plus the `Window` augmentations the runtime relies on. All of these are re-exported from the package root, so you import them directly:
+This page lists the public types and `Window` augmentations exported from the `qiankun` package root. Import them directly from the package:
 
 ```ts
 import type {
@@ -66,7 +66,7 @@ export type HTMLEntry = string;
 The entry of a micro-app is always the URL of its HTML document. qiankun streams that HTML through the [HTML-entry loader](/concepts/html-entry-loading) and executes the scripts it references.
 
 ```ts
-const entry: HTMLEntry = 'http://localhost:7100';
+const entry: HTMLEntry = 'http://localhost:7101';
 ```
 
 ::: danger No object entry
@@ -82,7 +82,7 @@ export type AppMetadata = {
 };
 ```
 
-The minimal descriptor of a micro-app: a unique `name` and its HTML `entry`. `AppMetadata` is the base that `LoadableApp` and `RegistrableApp` extend, and it is the element type accepted by [`prefetchApps`](/api/prefetch-apps).
+The minimal descriptor of a micro-app: a stable `name` and its HTML `entry`. `AppMetadata` is the base that `LoadableApp` and `RegistrableApp` extend, and it is the element type accepted by [`prefetchApps`](/api/prefetch-apps).
 
 ## LoadableApp
 
@@ -97,7 +97,7 @@ The descriptor for an app you mount imperatively with [`loadMicroApp`](/api/load
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `name` | `string` | Unique micro-app name. |
+| `name` | `string` | Application identifier. Separate `loadMicroApp` instances may reuse it when they use different containers. |
 | `entry` | `HTMLEntry` | HTML entry URL. |
 | `container` | `HTMLElement` | The DOM element the app mounts into. Must be an element, not a selector. |
 | `props` | `T` (optional) | Props forwarded to the micro-app's lifecycle exports. |
@@ -108,7 +108,7 @@ import { loadMicroApp } from 'qiankun';
 const container = document.getElementById('subapp')!;
 const app = loadMicroApp<{ userId: number }>({
   name: 'app1',
-  entry: 'http://localhost:7100',
+  entry: 'http://localhost:7101',
   container,
   props: { userId: 42 },
 });
@@ -132,7 +132,7 @@ The descriptor for a route-driven app you hand to [`registerMicroApps`](/api/reg
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `loader` | `(loading: boolean) => void` (optional) | Called with `true` before mount and `false` after, so you can drive a loading indicator. |
+| `loader` | `(loading: boolean) => void` (optional) | Reports route-app loading state. Treat the value as state because `true` may be reported more than once before the final `false`. |
 | `activeRule` | single-spa `Activity` | When the app is active. A path prefix string, an `(location) => boolean` function, or an array mixing both. |
 | `configuration` | `AppConfiguration` (optional) | Per-app runtime configuration, merged over the framework defaults. |
 
@@ -168,14 +168,14 @@ The per-app runtime configuration. It is the second argument to [`loadMicroApp`]
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `fetch` | `typeof window.fetch` | `window.fetch` | Custom fetch for entry and asset requests. qiankun wraps it to be cacheable, retryable, and throw on non-2xx. |
+| `fetch` | `typeof window.fetch` | `window.fetch` | Custom fetch for the entry and loader-managed scripts, modules, and styles. |
 | `streamTransformer` | `() => TransformStream<string, string>` | `undefined` | A transform piped into the HTML stream while it loads. |
-| `nodeTransformer` | `<T extends Node>(node: T, opts) => T` | internal default | Rewrites each script/link/style node before it hits live DOM. The default runs `transpileAssets`. |
+| `nodeTransformer` | `<T extends Node>(node: T, opts) => T` | internal default | Rewrites script / link / style nodes before they enter the container. |
 | `sandbox` | `boolean` | `true` | Enables the [JS sandbox](/concepts/js-sandbox) membrane and, where applicable, the [ESM sandbox](/concepts/esm-sandbox). |
 | `globalContext` | `WindowProxy` | `window` | The base global the sandbox membrane proxies. |
 | `styleIsolation` | `boolean` | `false` | Enables runtime CSS `@scope` [style isolation](/concepts/style-isolation) scoped to the app container. |
 
-The first three fields come from the loader's `LoaderOpts`. Defaults are resolved inside `loadApp`, not in the type. See the dedicated [AppConfiguration](/api/configuration) page for details.
+See [AppConfiguration](/api/configuration) for field behavior and defaults.
 
 ::: danger No sandbox object or FrameworkConfiguration
 `sandbox` is a boolean. The 2.x object form `sandbox: { strictStyleIsolation, experimentalStyleIsolation }` and Shadow DOM isolation are gone. Style isolation is the separate boolean `styleIsolation`, implemented with CSS `@scope`. There is no `FrameworkConfiguration` type, and `start()` accepts no sandbox, prefetch, or singular options.

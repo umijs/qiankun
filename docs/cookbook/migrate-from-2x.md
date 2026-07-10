@@ -1,9 +1,11 @@
 # Migrating from qiankun 2.x
 
-qiankun 3.0 rewrites the runtime end to end: streaming HTML-entry loading, a `Proxy`-membrane JS sandbox, and native ESM execution. These aren't just implementation swaps — moving the loading core to client-side streaming, for example, parses and executes assets edge-to-edge, so rendering is faster and it sidesteps a class of obscure bugs that came from the old approach of manually `eval`-ing scripts (details in [Streaming HTML-entry loading](/concepts/html-entry-loading)). The public API is smaller and stricter than 2.x, and a few 2.x options are simply gone. What follows walks through the breaking changes one by one, each with a before/after pair, so you can port a 2.x integration to v3.
+qiankun 3.0 has a smaller, stricter public contract than 2.x. This guide maps each breaking change to its v3 replacement with before-and-after examples.
+
+Route-registration examples remain route based so existing `registerMicroApps` integrations are easy to compare. For new host-controlled panels, tabs, and components, prefer [`loadMicroApp`](/api/load-micro-app).
 
 ::: info Version
-This page tracks qiankun `3.0.0-rc.21`. The option names and defaults below reflect the v3 source under `packages/`.
+This page is the single source of truth for moving a qiankun 2.x integration to the current v3 API. Individual API pages document only current behavior.
 
 :::
 
@@ -14,12 +16,12 @@ This page tracks qiankun `3.0.0-rc.21`. The option names and defaults below refl
 | `entry` | A string, or a `{ scripts, styles }` object | Only an HTML URL string |
 | `container` | A selector string or an `HTMLElement` | Only an `HTMLElement` instance |
 | `start()` options | `prefetch`, `sandbox`, `singular`, `fetch`, `getPublicPath`, `getTemplate`, `excludeAssetFilter`, etc. | Only single-spa's `StartOpts` (`{ urlRerouteOnly? }`) |
-| Sandbox / style isolation | `sandbox: { strictStyleIsolation \| experimentalStyleIsolation }` (Shadow DOM) | `sandbox: boolean` plus a separate `styleIsolation: boolean` (CSS `@scope`) |
+| Sandbox / style isolation | `strictStyleIsolation` (Shadow DOM) or `experimentalStyleIsolation` (selector rewriting) | `sandbox: boolean` plus a separate `styleIsolation: boolean` (CSS `@scope`) |
 | Per-app config | Mixed into `start()` | A per-app `configuration: AppConfiguration` |
 | Global state store | `initGlobalState` / `onGlobalStateChange` / `setGlobalState` | Removed — pass your own store through props |
 | Micro-app build | Hand-written UMD / `libraryTarget` / `jsonpFunction` / `chunkLoadingGlobal` | `@qiankunjs/bundler-plugin` (webpack) or `qiankun()` (Vite) |
 | Prefetch | `prefetch: 'all' \| string[] \| fn` on `start()` | The streaming loader prefetches automatically; `prefetchApps` is deprecated |
-| Runtime floor | Node 16+, older browsers | Node `>=20.19`; `Proxy` + `TransformStream` + `URL.createObjectURL` |
+| Runtime floor | Older toolchains and browsers | Node `>=20.19`; `Proxy` + `TransformStream` + `URL.createObjectURL` |
 
 Each row is expanded below.
 
@@ -116,22 +118,13 @@ start(); // no qiankun-specific options here
 ```
 :::
 
-v3's `AppConfiguration` has exactly these fields, no more and no less:
+Current per-app fields include `sandbox`, `styleIsolation`, `globalContext`, `fetch`, `streamTransformer`, and `nodeTransformer`. Defaults and advanced contracts are maintained in the [AppConfiguration reference](/api/configuration).
 
-| Field | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `sandbox` | `boolean` | `true` | Enable the Proxy-membrane JS sandbox |
-| `styleIsolation` | `boolean` | `false` | Scope the app's CSS with runtime `@scope` |
-| `globalContext` | `WindowProxy` | `window` | Base global object the sandbox membrane proxies |
-| `fetch` | `typeof window.fetch` | `window.fetch` | Custom fetch (wrapped as cacheable / retryable / throwable) |
-| `streamTransformer` | `() => TransformStream<string, string>` | — | Optional transform over the HTML stream |
-| `nodeTransformer` | `NodeTransformer` | built-in | Advanced: rewrite each asset node |
-
-v3 has no `FrameworkConfiguration` type, no `getPublicPath` / `getTemplate` / `excludeAssetFilter`, and no `singular`. Full reference: [AppConfiguration](/api/configuration).
+v3 has no `FrameworkConfiguration` type, no `getPublicPath` / `getTemplate` / `excludeAssetFilter`, and no `singular`.
 
 ## Sandbox and style isolation: split into two independent booleans
 
-In 2.x, isolation was one nested object and its strategies were all Shadow DOM based. v3 splits it into two unrelated booleans and switches to native CSS `@scope` — there's no Shadow DOM path anymore.
+In 2.x, JavaScript and style-isolation options shared the nested `sandbox` configuration, with Shadow DOM and selector-rewrite style strategies. v3 splits JavaScript and style isolation into two independent booleans and uses native CSS `@scope` for styles — there is no Shadow DOM path anymore.
 
 ::: code-group
 ```ts [2.x]
@@ -160,7 +153,7 @@ A few key differences:
 - The scope selector is derived internally as `[data-name="<appName>"]` and isn't user-configurable.
 
 ::: warning `@scope` browser support
-v3's style isolation relies on native CSS `@scope`, with no Shadow DOM fallback and no polyfill. Browsers without `@scope` support won't get style isolation. For the details and caveats (how font-face and keyframes are handled), see [Style isolation](/concepts/style-isolation) and [Enabling CSS style isolation](/cookbook/enable-style-isolation).
+v3's style isolation relies on native CSS `@scope`, with no Shadow DOM fallback and no polyfill. Treat browsers without `@scope` as unsupported for this capability. For the details and caveats (how font-face and keyframes are handled), see [Style isolation](/concepts/style-isolation) and [Enabling CSS style isolation](/cookbook/enable-style-isolation).
 
 :::
 
@@ -240,7 +233,7 @@ module.exports = {
 ```
 :::
 
-The webpack plugin takes one optional field, `packageName`, defaulting to the `name` in your `package.json`. See [Preparing a webpack app for qiankun](/cookbook/prepare-a-webpack-app) and the [bundler-plugin reference](/ecosystem/bundler-plugin).
+The webpack plugin takes one optional field, `packageName`, defaulting to the `name` in your `package.json`. It identifies the bundle's library output; it is not the host-side app `name`, and the two do not have to match when the entry script is marked correctly. See [Preparing a webpack app for qiankun](/cookbook/prepare-a-webpack-app) and the [bundler-plugin reference](/ecosystem/bundler-plugin).
 
 ### Vite
 
@@ -264,7 +257,7 @@ For a new project, `create-qiankun` wires all of this up for you. See [create-qi
 
 ## Micro-app entry: render into props.container with a modern API
 
-The lifecycle contract is unchanged — still `bootstrap`, `mount`, `unmount` — but render with a modern API and mount into `props.container` (the app's own container subtree), not the global document. In webpack (classic mode), the app still publishes its lifecycles on `window[appName]` when driven by qiankun, and the entry `<script>` carries the `entry` attribute (added by the bundler plugin).
+The lifecycle contract is unchanged — still `bootstrap`, `mount`, `unmount` — but render with a modern API and mount into `props.container` (the app's own container subtree), not the global document. Export the lifecycle functions normally. The bundler plugin exposes a webpack build under its `packageName` and marks the entry script; native ESM builds use the module exports directly.
 
 ::: code-group
 ```tsx [2.x main.tsx]
@@ -305,16 +298,13 @@ export async function unmount() {
   root = undefined;
 }
 
-// classic (webpack) mode: expose lifecycles on the app-name global
-if (window.__POWERED_BY_QIANKUN__) {
-  window['react-app'] = { bootstrap, mount, unmount };
-} else {
+if (!window.__POWERED_BY_QIANKUN__) {
   render();
 }
 ```
 :::
 
-Vue follows the same structure: `createApp(...).mount(...)` in `mount`, `app.unmount()` in `unmount`. Publishing to `window[appName]` and the `entry`-attributed script apply only to the classic (webpack) path; native Vite / ESM apps just export their lifecycles and the ESM engine resolves them. See [Micro-app lifecycles and props](/concepts/lifecycle-and-props).
+Vue follows the same structure: `createApp(...).mount(...)` in `mount`, `app.unmount()` in `unmount`. Export the same three lifecycle functions for both webpack and native ESM builds; their bundler integrations take care of exposing the entry in the form qiankun expects. See [Micro-app lifecycles and props](/concepts/lifecycle-and-props).
 
 ::: danger Exactly one entry script
 An HTML entry may mark at most one script as the `entry`. Two entry scripts make the loader throw a `QiankunError`. The bundler plugin is idempotent and tags a single entry script for you.
@@ -348,12 +338,12 @@ Firefox doesn't support dynamically injected import maps, which natively loaded 
 
 :::
 
-## New v3 exports worth adopting
+## Other v3 APIs worth adopting
 
 - [`isRuntimeCompatible`](/api/is-runtime-compatible) — probe browser support before starting.
 - The per-app [`configuration`](/api/configuration) on `RegistrableApp` (and the second argument of `loadMicroApp`) — `sandbox`, `styleIsolation`, `globalContext`, and `fetch` all live here now.
 
-v3's complete public API is: `registerMicroApps`, `start`, `loadMicroApp`, `setDefaultMountApp`, `runAfterFirstMounted`, `addErrorHandler`, `removeErrorHandler`, `isRuntimeCompatible`, and the deprecated `prefetchApps`. See the [API reference overview](/api/index).
+For new integrations, start with `loadMicroApp`; the [API overview](/api/index) owns the complete current export list.
 
 ::: warning prefetchApps is deprecated
 The streaming loader prefetches assets as it parses the entry HTML, so explicit prefetching is rarely needed. `prefetchApps` still exists but is deprecated in 3.0; the whole `prefetch` strategy from 2.x's `start()` is gone. For loading tuning, see [Optimizing loading and prefetch](/cookbook/optimize-loading).
@@ -370,4 +360,4 @@ The streaming loader prefetches assets as it parses the entry HTML, so explicit 
 6. Delete hand-written UMD / `libraryTarget` / `jsonpFunction` output config; add `@qiankunjs/bundler-plugin` (webpack) or `qiankun()` (Vite).
 7. Change the micro-app entry to render into `props.container` with `createRoot` / `app.mount`.
 8. Drop the `prefetch` strategy and rely on streaming auto-prefetch.
-9. Gate startup with `isRuntimeCompatible()` to confirm your Node / browser floor is met.
+9. Gate browser startup with `isRuntimeCompatible()` to confirm the core runtime capabilities are present.

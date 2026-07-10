@@ -47,8 +47,8 @@ flowchart TD
   H --> H1[Run multiple instances]
 ```
 
-::: tip The two places you configure an app
-Most recipes touch one of these two configuration sites. For a registered app, the config goes on each app's own [`configuration`](/api/configuration) field inside [`registerMicroApps`](/api/register-micro-apps); for a manually loaded app, you pass the same [`AppConfiguration`](/api/configuration) as the second argument to [`loadMicroApp`](/api/load-micro-app). Both accept exactly the same fields: `fetch`, `streamTransformer`, `nodeTransformer`, `sandbox` (default `true`), `globalContext` (default `window`), and `styleIsolation` (default `false`).
+::: tip Use loadMicroApp by default
+Recipes pass [`AppConfiguration`](/api/configuration) as the second argument to [`loadMicroApp`](/api/load-micro-app) by default. Route-driven apps put the same configuration in an app's `configuration` field for `registerMicroApps`; field definitions and defaults are maintained only in the configuration reference.
 :::
 
 ::: warning v3 no longer ships a global-state store
@@ -58,5 +58,5 @@ qiankun 2.x offered `initGlobalState` / `onGlobalStateChange` / `setGlobalState`
 ## Related
 
 - [API reference overview](/api/index) — every export and type.
-- [Architecture overview](/concepts/architecture) — how `loadApp` wires fetch, the sandbox, and the loader together.
+- [Loading a micro-app instance](/concepts/architecture) — the `loadMicroApp` runtime model.
 - [FAQ](/faq/index) — short answers to common questions.

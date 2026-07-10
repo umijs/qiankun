@@ -108,15 +108,9 @@ sequenceDiagram
   App->>App: runAfterFirstMounted → effect()
 ```
 
-## Notes for qiankun 2.x users
+## Migrating from v2
 
-::: info Both helpers still exist in v3
-Unlike some 2.x-era APIs, `setDefaultMountApp` and `runAfterFirstMounted` are still part of the v3 public surface (`packages/qiankun/src/apis/effects.ts`), with unchanged signatures. Both are one-shot.
-:::
-
-::: warning No built-in global-state store in v3
-The 2.x `initGlobalState` companion (and `onGlobalStateChange` / `setGlobalState` / `MicroAppStateActions`) does not exist in qiankun 3.0. There is no built-in cross-app state store. See [Share state and communicate between apps](/cookbook/communicate-between-apps) for the recommended patterns.
-:::
+Both helpers remain public and one-shot in v3. For removed global-state APIs and other breaking changes, use the [v3 migration guide](/cookbook/migrate-from-2x) as the source of truth.
 
 ## Related
 

@@ -1,6 +1,8 @@
 # registerMicroApps
 
-按路由把微应用注册到主应用上。每个注册的应用都绑定一条 `activeRule`,URL 命中时 qiankun 把它挂载起来，不再命中时再卸载掉。v3 里这是接入微应用最主要的方式——如果你想手动、命令式地控制挂载，用 [loadMicroApp](/zh-CN/api/load-micro-app) 而不是它。
+按路由把微应用注册到主应用上。每个应用都绑定一条 `activeRule`，URL 命中时 qiankun 挂载它，不再命中时卸载它。
+
+这是 [`loadMicroApp`](/zh-CN/api/load-micro-app) 之外的路由驱动方案。只有当 URL 应当完全决定应用是否挂载时才使用它；按需加载、组件嵌入和由主应用状态控制的场景优先使用 `loadMicroApp`。
 
 ## 函数签名
 
@@ -43,12 +45,12 @@ type RegistrableApp<T extends ObjectType> = {
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
-| `name` | `string` | 是 | 应用的唯一名字。见 [name 必须和子应用导出的全局变量对上](#name-必须和子应用导出的全局变量对上)——它应当和子应用暴露的全局变量／library 名一致。 |
+| `name` | `string` | 是 | 路由注册应用稳定且唯一的标识。重名应用会被跳过，因此多次注册时应保持一致；它通常不需要等于 packageName 或 Webpack library 名。见 [`name` 是稳定的唯一标识](#name-是稳定的唯一标识)。 |
 | `entry` | `string` | 是 | 微应用 HTML entry 的 URL，比如 `//localhost:7100`。v3 里 `entry` 永远是一个字符串(HTML 地址),2.x 那种 `{ scripts, styles }` 对象写法已经没了。 |
 | `container` | `HTMLElement` | 是 | 微应用挂载进去的 DOM 元素——是一个真实的元素，不是选择器字符串。传一个拿到 ref 的节点，或者 `document.getElementById(...)`。 |
 | `activeRule` | `string \| ActivityFn \| Array<string \| ActivityFn>` | 是 | 应用什么时候激活，会原样转发给 single-spa 的 `activeWhen`。字符串是路径前缀；函数 `(location) => boolean` 让你完全掌控；数组则是任意一项命中即激活。 |
 | `props` | `T` | 否 | 每次生命周期调用(`bootstrap`／`mount`／`unmount`／`update`)时传给微应用的数据。 |
-| `loader` | `(loading: boolean) => void` | 否 | 挂载前立刻以 `true` 调一次、挂载完成后以 `false` 调一次，主应用可以借此驱动一个加载指示。 |
+| `loader` | `(loading: boolean) => void` | 否 | 报告加载状态。资源开始加载或应用开始挂载时收到 `true`，挂载完成后收到 `false`。请把参数当作状态处理，因为可能连续收到多次 `true`。 |
 | `configuration` | `AppConfiguration` | 否 | 单个应用的运行时配置：`sandbox`、`styleIsolation`、`fetch` 等。见 [AppConfiguration](/zh-CN/api/configuration) 和[单应用配置是唯一的配置入口](#单应用配置是唯一的配置入口)。 |
 
 ::: info entry 和 container
@@ -100,8 +102,8 @@ registerMicroApps(apps, {
 - **按 `name` 去重。** 如果某个应用的 `name` 已经注册过了，它会被跳过，所以用两次 `registerMicroApps` 注册有重叠的应用是安全的。
 - **注册到 single-spa。** 每个新应用都会变成一个 single-spa application,`activeWhen` 取 `activeRule`、`customProps` 取 `props`。
 - **激活要等 `start()`。** 内部加载器会一直等到你调用 [start](/zh-CN/api/start) 才去加载和挂载。光注册不会有任何可见的效果。
-- **`loader` 包住挂载过程。** 传了 `loader` 时，每次激活都会在挂载前跑 `loader(true)`、挂载后跑 `loader(false)`。
-- **`lifeCycles` 是全局的。** 作为第二个参数传进去的钩子，会对该次调用里的每个应用都执行；除此之外，还有内置的 addon 负责注入 `__POWERED_BY_QIANKUN__` 和 `__INJECTED_PUBLIC_PATH_BY_QIANKUN__`。
+- **`loader` 报告状态，不保证事件次数。** 加载开始时会收到 `true`，需要时挂载前还会再次收到 `true`，挂载完成后收到 `false`。回调应当可以重复执行。
+- **`lifeCycles` 作用于整次调用。** 第二个参数里的钩子会作用于本次注册的所有应用。
 
 ```mermaid
 flowchart TD
@@ -111,7 +113,7 @@ flowchart TD
   D --> E["等待 start"]
   F["start"] --> E
   E --> G{"activeRule 命中 URL?"}
-  G -- 是 --> H["loader(true) → 加载 entry → mount → loader(false)"]
+  G -- 是 --> H["loading true → 加载并挂载 → loading false"]
   G -- 否 --> I["不再命中时卸载"]
 ```
 
@@ -146,7 +148,7 @@ export function registerAll(
       configuration: { sandbox: true, styleIsolation: true },
     },
     {
-      // registered name matches window['webpack-app'] exposed by the sub-app
+      // 稳定的路由应用标识，不要求等于 output.library.name
       name: 'webpack-app',
       entry: '//localhost:7102',
       container,
@@ -176,24 +178,26 @@ export default function App() {
     // register once; the container must never be unmounted or keyed
   }, []);
 
-  // one shared container element hosts every micro-app
+  // 这些 activeRule 彼此互斥，因此可以安全共用容器。
   return <div ref={containerRef} id="subapp-stage" />;
 }
 ```
 
 :::
 
-::: tip 一个容器装多个应用
-一个 container 元素就能装下所有路由驱动的应用，因为同一时刻只有一个应用是激活的。路由变化时，qiankun 会清空容器再重新填充。不管你传的是哪个元素，它都得在整个会话期间一直留在 DOM 里。
+::: tip 只有互斥路由才能共用容器
+只有当多个路由应用的 `activeRule` 不会同时命中时，它们才能共用一个容器。规则重叠时，多个应用可能并发激活，此时必须使用不同容器。所有已注册容器都应在整个会话期间留在 DOM 中。
 :::
 
 ## 注意事项与坑
 
-### `name` 必须和子应用导出的全局变量对上
+### `name` 是稳定的唯一标识
 
-qiankun 是从子应用暴露的全局变量(或 library)里找到它的生命周期函数的。对经典打包(UMD／window 库)的应用来说，注册用的 `name` 必须等于子应用写到 `window` 上的那个 key——比如某个子应用设置了 `window['webpack-app'] = { bootstrap, mount, unmount }`(或者某个 Webpack 构建的 `output.library.name` 是 `webpack-app`)，就必须注册成 `name: 'webpack-app'`。名字和暴露的全局变量对不上，qiankun 就找不到生命周期，会抛出 `QiankunError`。
+`name` 是 qiankun 和 single-spa 识别路由注册应用的标识，用于注册去重和运行时记录。不同应用不能共用一个名字，同一个应用在多次注册时也应保持名字稳定。
 
-ESM 子应用是用原生 `export` 暴露生命周期的，所以名字在那边没那么关键，但仍然建议让 `name` 和应用本身的标识保持一致。完整的生命周期查找顺序见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
+正确标记 entry 脚本后，qiankun 会从入口执行结果解析生命周期：ESM 应用读取模块导出，经典应用读取入口脚本产生的值。这条主要路径不要求 `name` 等于 packageName 或 Webpack 的 `output.library.name`。
+
+只有入口结果里没有合法的生命周期对象时，qiankun 才会最后尝试从 `globalContext[appName]` 兼容回退。应用如果有意依赖这条回退，全局变量的 key 才必须和 `name` 相同；它不是正常的命名契约。完整查找顺序见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
 
 ### 单应用配置是唯一的配置入口
 

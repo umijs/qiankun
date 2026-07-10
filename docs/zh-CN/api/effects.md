@@ -108,15 +108,9 @@ sequenceDiagram
   App->>App: runAfterFirstMounted → effect()
 ```
 
-## 给 qiankun 2.x 用户的说明
+## 从 v2 迁移
 
-::: info 这两个函数在 v3 里仍然保留
-不像某些 2.x 时代的 API,`setDefaultMountApp` 和 `runAfterFirstMounted` 依旧是 v3 公开 API 的一部分(`packages/qiankun/src/apis/effects.ts`)，签名没变，也仍然是一次性的。
-:::
-
-::: warning v3 不再内置全局状态管理
-2.x 里配套的 `initGlobalState`(以及 `onGlobalStateChange` / `setGlobalState` / `MicroAppStateActions`)在 qiankun 3.0 里已经没有了，不再提供内置的跨应用状态存储。推荐的替代方案见[应用间共享状态与通信](/zh-CN/cookbook/communicate-between-apps)。
-:::
+这两个函数在 v3 中仍然公开，并且都是一次性行为。被移除的全局状态 API 和其他破坏性变化，请以 [v3 迁移指南](/zh-CN/cookbook/migrate-from-2x)为唯一参考。
 
 ## 相关
 

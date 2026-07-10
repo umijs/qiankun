@@ -1,18 +1,20 @@
-# Wire a Vite app into qiankun
+# Prepare a Vite micro-app
 
-This page covers turning an existing Vite app into a qiankun micro-app. qiankun v3 loads Vite apps natively through the [ESM sandbox](/concepts/esm-sandbox) — development and production run the same native `<script type="module">` dependency graph, with no SystemJS and no legacy transform. There are only a few things to do: install the Vite plugin, export the lifecycles, adjust `index.html` and the dev server, and account for a handful of behavioral differences under the ESM sandbox.
+qiankun v3 loads Vite applications as native ESM. The integration has one path: install the Vite plugin, export the micro-app lifecycles from the entry module, and load the app from the host with [`loadMicroApp`](/api/load-micro-app). No UMD wrapper, SystemJS transform, or global lifecycle object is needed.
 
-::: tip Starting fresh is easier
-If you're creating a new app rather than converting an existing one, [create-qiankun](/ecosystem/create-qiankun) generates this wiring for you. For Webpack apps, see [Wire a Webpack app into qiankun](/cookbook/prepare-a-webpack-app).
+::: tip Starting a new app?
+[create-qiankun](/ecosystem/create-qiankun) generates this setup for you. This guide is for adapting an existing React or Vue application.
 :::
 
-## Install the Vite plugin
+## 1. Install and configure the plugin
 
-Install the bundler plugin as a dev dependency, then register the Vite plugin alongside your framework plugin.
+Install the bundler plugin in the Vite application:
 
 ```bash
 pnpm add -D @qiankunjs/bundler-plugin
 ```
+
+Add `qiankun()` alongside the framework plugin and use a fixed development port:
 
 ::: code-group
 
@@ -24,7 +26,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [react(), qiankun()],
   server: {
-    port: 7100,
+    port: 7101,
     strictPort: true,
   },
 });
@@ -46,18 +48,16 @@ export default defineConfig({
 
 :::
 
-`qiankun()` takes no arguments and does only two things:
+The plugin takes no options. It provides the two pieces Vite needs for qiankun:
 
-- **Enables CORS for dev and preview.** It sets `server.cors` / `preview.cors` to `true` and adds `Access-Control-Allow-Origin: *`, so the host app can fetch the entry HTML and the full module graph across origins. You don't have to add CORS headers yourself.
-- **Marks the entry at build time.** When you run `vite build`, it stamps an `entry` attribute onto the entry `<script type="module">` in the emitted `index.html` (see below). During dev serve it does nothing — the ESM engine identifies the entry by its lifecycle exports, and Vite strips unknown HTML attributes during dev anyway.
+- Development and preview servers return permissive CORS headers, allowing the host to fetch the HTML entry and module graph.
+- Production builds mark the entry module script with the single `entry` attribute expected by qiankun.
 
-::: warning Get the import path right
-The Vite plugin lives only under the `/vite` subpath: `import { qiankun } from '@qiankunjs/bundler-plugin/vite'`. Importing the bare `@qiankunjs/bundler-plugin` gives you the Webpack plugin. This plugin takes no options — don't pass `entry`, `libraryName`, or anything like that.
-:::
+Import from `@qiankunjs/bundler-plugin/vite`; the package's bare import is the Webpack plugin.
 
-## Export the lifecycles from the entry
+## 2. Export native ESM lifecycles
 
-qiankun drives every micro-app through three lifecycle functions. Under the ESM sandbox, your native `export`s **are** the lifecycles — there's no UMD or window-library wrapper. Render into `props.container` (the element qiankun provides at mount) and keep a standalone branch so the app can still run on its own dev server.
+Export `bootstrap`, `mount`, and `unmount` directly from the module referenced by `index.html`. Create the framework instance in `mount`, render inside `props.container`, and destroy it in `unmount`.
 
 ::: code-group
 
@@ -69,236 +69,145 @@ import App from './App';
 declare global {
   interface Window {
     __POWERED_BY_QIANKUN__?: boolean;
-    [key: string]: unknown;
   }
 }
 
+type MountProps = { container: HTMLElement };
 let root: ReactDOM.Root | undefined;
 
-function render(props: { container?: Element } = {}) {
-  // Resolve the mount node inside the qiankun-provided container,
-  // falling back to the global document when running standalone.
-  const container = props.container?.querySelector('#root') ?? document.getElementById('root');
-  if (!container) return;
+function render(scope: ParentNode) {
+  const node = scope.querySelector('#root');
+  if (!node) throw new Error('#root not found');
 
-  root = ReactDOM.createRoot(container);
-  root.render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>,
-  );
+  root = ReactDOM.createRoot(node);
+  root.render(<App />);
 }
 
 export async function bootstrap() {}
 
-export async function mount(props: { container?: Element }) {
-  render(props);
+export async function mount({ container }: MountProps) {
+  render(container);
 }
 
-export async function unmount(_props: { container?: Element }) {
+export async function unmount() {
   root?.unmount();
   root = undefined;
 }
 
-if (window.__POWERED_BY_QIANKUN__) {
-  // classic-mode fallback: expose lifecycles on window under the registered app name
-  window['react'] = { bootstrap, mount, unmount };
-} else {
-  render();
+if (!window.__POWERED_BY_QIANKUN__) {
+  render(document);
 }
 ```
 
 ```ts [src/main.ts (Vue)]
-import { createApp } from 'vue';
+import { createApp, type App as VueApp } from 'vue';
 import App from './App.vue';
 
 declare global {
   interface Window {
     __POWERED_BY_QIANKUN__?: boolean;
-    [key: string]: unknown;
   }
 }
 
-let app: ReturnType<typeof createApp> | undefined;
+type MountProps = { container: HTMLElement };
+let app: VueApp<Element> | undefined;
 
-function render(props: { container?: Element } = {}) {
-  const container = props.container?.querySelector('#app') ?? document.getElementById('app');
-  if (!container) return;
+function render(scope: ParentNode) {
+  const node = scope.querySelector('#app');
+  if (!node) throw new Error('#app not found');
 
   app = createApp(App);
-  app.mount(container);
+  app.mount(node);
 }
 
 export async function bootstrap() {}
 
-export async function mount(props: { container?: Element }) {
-  render(props);
+export async function mount({ container }: MountProps) {
+  render(container);
 }
 
-export async function unmount(_props: { container?: Element }) {
-  app?.unmount();
-  app = undefined;
-}
-
-if (window.__POWERED_BY_QIANKUN__) {
-  window['vue'] = { bootstrap, mount, unmount };
-} else {
-  render();
-}
-```
-
-:::
-
-A few things worth spelling out about this pattern:
-
-- **`props.container`** is the element qiankun mounts into. Look up your mount node inside it (`container.querySelector('#root')`) so the same code works both when hosted and when running standalone. The React/Webpack examples use `#root`, Vue uses `#app` — target whichever id you declare in your `index.html`.
-- **`window.__POWERED_BY_QIANKUN__`** is injected by qiankun when the app runs inside the sandbox. Use it to decide whether to run the standalone `render()`, so a hosted app doesn't mount itself twice.
-- **The `window[name] = { bootstrap, mount, unmount }` assignment is an optional classic-mode fallback.** Under the ESM sandbox the native exports are the primary source of the lifecycles; you can keep this line as a safety net, but it isn't what the ESM engine actually reads. If you keep it, the qiankun `name` you register with must match this window key.
-- **`unmount` must tear everything down completely** (`root.unmount()` / `app.unmount()`, and null out the reference). Leaked instances break remount and multi-instance scenarios. See [Run multiple micro-app instances](/cookbook/run-multiple-instances).
-
-For the full lifecycle contract and the shape of `props`, see [Micro-app lifecycles and props](/concepts/lifecycle-and-props).
-
-## Configure index.html
-
-Declare a mount node and one entry module script. In your source `index.html`, stamp the `entry` attribute onto the entry `<script>`.
-
-```html
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>React micro app · qiankun</title>
-    <style>
-      /* standalone-only page background; inside qiankun the host owns the page */
-      body {
-        margin: 0;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx" entry></script>
-  </body>
-</html>
-```
-
-Two things to understand about the `entry` attribute:
-
-- `type="module"` routes the script through the **ESM sandbox**. A classic `<script>` (without `type="module"`) takes a different `with(proxy)` path.
-- The `entry` attribute marks the single script that carries the lifecycles. During **dev**, Vite strips this attribute it doesn't recognize — that's fine, because the ESM engine picks the entry by its lifecycle exports. In **production**, `qiankun()` adds `entry` back onto the built script. Marking it in source keeps the two paths symmetric.
-
-::: danger Only one entry allowed
-There can be only one script with the `entry` attribute. The loader throws `QiankunError` the moment it finds more than one. Non-entry scripts load as usual.
-:::
-
-You also need to pin the dev server port with `strictPort: true` (already set in the configs above). The host references your app by a fixed URL, and the port can't drift:
-
-```ts
-// examples/main/src/apps.ts — how the host references this app
-{ name: 'react', path: '/react', entry: '//localhost:7100' }
-```
-
-The `entry` in `registerMicroApps` is the string URL of your app's `index.html` (here, the dev server root). For the host-side setup, see [registerMicroApps](/api/register-micro-apps).
-
-## Vue: declare feature flags in two places
-
-Vue's esm-bundler build reads compile-time feature flags like `__VUE_OPTIONS_API__`. Because Vite 8 prebundles dependencies with **rolldown** (not esbuild), and `config.define` doesn't reach that prebundling step, you have to declare these flags in **both** `define` and `optimizeDeps.rolldownOptions.transform.define`.
-
-```ts [vite.config.ts (Vue)]
-import { qiankun } from '@qiankunjs/bundler-plugin/vite';
-import vue from '@vitejs/plugin-vue';
-import { defineConfig } from 'vite';
-
-// Vue's recommended esm-bundler feature flags: https://link.vuejs.org/feature-flags
-const vueFeatureFlags = {
-  __VUE_OPTIONS_API__: 'true',
-  __VUE_PROD_DEVTOOLS__: 'false',
-  __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
-};
-
-export default defineConfig({
-  define: vueFeatureFlags,
-  // config.define does not reach dep prebundling; pass the flags to rolldown too
-  // (Vite 8 prebundles with rolldown; esbuildOptions is deprecated).
-  optimizeDeps: {
-    rolldownOptions: {
-      transform: {
-        define: vueFeatureFlags,
-      },
-    },
-  },
-  plugins: [vue(), qiankun()],
-  server: { port: 7101, strictPort: true },
-});
-```
-
-This is Vue esm-bundler best practice in its own right, unrelated to qiankun. As a safety net, qiankun's ESM sandbox also binds these double-underscore feature flags dynamically at runtime, so flags written to the real global stay visible to modules inside the sandbox. But declaring them at build time is still the right way to do it.
-
-## ESM-sandbox behaviors to account for
-
-The ESM sandbox faithfully runs your native module graph, but a few semantics differ from a classic bundled micro-app. Design around them.
-
-### Build app state in mount(), not at module top level
-
-On remount, qiankun reruns `mount(props)` but does **not** rerun the module's top-level code. Each module's blob URL is reused, so `import(sameBlobUrl)` returns the same namespace — top-level statements execute only once. This lines up with how modern frameworks are written anyway: build the app instance in `mount()`, tear it down in `unmount()`.
-
-```ts
-// Do this — the app is created per mount, torn down per unmount.
-let app: ReturnType<typeof createApp> | undefined;
-export async function mount(props) {
-  app = createApp(App);
-  app.mount(resolveContainer(props));
-}
 export async function unmount() {
   app?.unmount();
   app = undefined;
 }
-```
 
-```ts
-// Avoid this — the instance is created once at module load and cannot
-// be recreated on the second mount.
-const app = createApp(App); // runs only on the first load
-export async function mount(props) {
-  app.mount(resolveContainer(props));
+if (!window.__POWERED_BY_QIANKUN__) {
+  render(document);
 }
 ```
 
-::: warning Remount differs between classic and ESM
-This differs from the classic sandbox, which reruns the entire entry script on every remount. Code that relied on top-level side effects re-executing on each mount needs that logic moved into `mount()`.
 :::
 
-### HMR is off under qiankun
+The important parts of this pattern are:
 
-When your Vite app runs inside qiankun, Vite's HMR client (`/@vite/client`) is stubbed out. `import.meta.hot` is a callable noop, so `accept()` calls don't throw, but no HMR WebSocket is actually opened. This is deliberate: the real client's socket would connect from inside the sandbox and could trigger a destructive full-page `location.reload()`. During development, just refresh the page manually after changing code. Running standalone (outside qiankun), HMR works as usual.
+- Native ESM exports are the lifecycle contract. Do not assign the lifecycle object to `window`.
+- `props.container` belongs to this micro-app instance. Query `#root` or `#app` inside it instead of using a page-global selector.
+- `__POWERED_BY_QIANKUN__` prevents the entry from rendering itself when qiankun will call `mount`; the standalone development server still renders immediately.
+- Every `mount` must create a usable application, and every `unmount` must completely reverse it. Top-level module code does not run again on remount.
 
-### Bare specifiers must be resolvable
+See [Micro-app lifecycle and props](/concepts/lifecycle-and-props) for the complete contract.
 
-The ESM engine resolves every `import` specifier itself. A bare specifier like `import x from 'lodash-es'` must be resolvable through **your app's own `<script type="importmap">`**, or written as a URL-form specifier (`./`, `../`, `/`, or an absolute URL). If neither holds, resolution throws `QiankunError` ("failed to resolve the bare specifier … no import map entry found"). A normal Vite build already bundles every dependency into a relative or absolute URL, so this mainly affects apps with a hand-written import map.
+## 3. Keep index.html as a native module entry
 
-::: info Import maps are isolated per app
-qiankun resolves your app's import map on its own and never merges it into the host document. Only the `imports` field is honored; `scopes` is parsed, warned about, and then ignored in v1.
-:::
+Keep the normal Vite HTML structure with one module entry. The mount-node id must match the selector used by your lifecycle code:
 
-### Typed imports are pass-through in v1
+```html
+<div id="root"></div>
+<script type="module" src="/src/main.tsx"></script>
+```
 
-Import attributes — `import data from './x.json' with { type: 'json' }`, CSS module imports, WASM — are native pass-through in v1: they map straight back to the original URL for the browser to load, with **no instance isolation**, plus a one-time `console.warn`. This requires the sub-app server to return the correct MIME type and CORS headers. For typed **dynamic** imports, relative specifiers resolve against the internal blob URL — a known v1 limitation, so use absolute URLs in that case.
+You do not need to add `entry` to the source file. During production builds, the Vite plugin adds it to the generated entry script. The built HTML must contain no more than one script carrying that attribute.
 
-## Verify
+If the application is deployed below a path or on a separate asset origin, configure Vite's `base` so the URLs emitted into `dist/index.html` are reachable from the browser.
 
-1. Run the app standalone (`vite`) and confirm it renders on its own port. The `__POWERED_BY_QIANKUN__` branch takes the standalone `render()` path.
-2. Register it in the host with an `entry` pointing at the dev server URL, then `start()`. For the host-side wiring, see [Getting started](/guide/getting-started) and the [tutorial](/tutorial/index).
-3. Navigate to the app's route and confirm `mount` runs and the content renders into the host container; then navigate away and confirm `unmount` tears it down cleanly.
+## 4. Load it from the host
 
-::: warning Firefox and dynamically injected import maps
-The ESM sandbox injects the import map at runtime, and Firefox doesn't enable that by default (`dom.multiple_import_maps.enabled` is off through the Firefox 150 line). Chrome/Edge 133+ and Safari 18.4+ support it natively. To make it work on Firefox, you need es-module-shims as a supported base layer. See [ESM sandbox](/concepts/esm-sandbox) for details.
-:::
+Pass the Vite server or deployment URL to `loadMicroApp`, keep the returned handle, and unmount it before removing the container:
+
+```ts
+import { loadMicroApp } from 'qiankun';
+
+const container = document.getElementById('micro-app-slot');
+if (!container) throw new Error('micro-app-slot not found');
+
+const microApp = loadMicroApp({
+  name: 'account-app',
+  entry: 'http://localhost:7101/',
+  container,
+  props: { accountId: '42' },
+});
+
+await microApp.mountPromise;
+
+// When the host view is disposed:
+await microApp.unmount();
+```
+
+`loadMicroApp` does not require `registerMicroApps` or an explicit `start()` call. React and Vue hosts may instead use their [`<MicroApp>` integrations](/ecosystem/index), which manage the same handle with the component lifecycle.
+
+## 5. Configure cross-origin deployment
+
+The plugin enables CORS only for Vite's development and preview servers. In production, the server or CDN must allow the host origin to fetch:
+
+- the HTML entry;
+- JavaScript modules and dynamically imported chunks;
+- CSS, images, and other assets referenced by the app.
+
+Test the final asset URLs, redirects, MIME types, and CORS headers from the host page. If the app requires cookies, a wildcard `Access-Control-Allow-Origin` is not sufficient; configure an explicit origin, credential-aware headers, and the host's custom [`fetch`](/api/configuration) together.
+
+## 6. Verify development and production
+
+1. Run the Vite app by itself and confirm the standalone branch renders.
+2. Run the host, call `loadMicroApp` with `http://localhost:7101/`, and confirm the app renders inside the supplied container.
+3. Call `await microApp.unmount()` and then `await microApp.mount()`; confirm there are no duplicated roots, listeners, or stale views.
+4. Run `pnpm run build` in the Vite app and inspect `dist/index.html`: exactly one generated module script should have the `entry` attribute.
+5. Run `pnpm run preview`, point the host at the preview URL, and repeat the mount/unmount check.
+6. Before release, test the deployed entry from every supported browser and host origin. See [Native ESM support](/concepts/esm-sandbox) for browser constraints.
 
 ## Related
 
-- [ESM sandbox](/concepts/esm-sandbox) — how native modules run through the isolation membrane
-- [@qiankunjs/bundler-plugin](/ecosystem/bundler-plugin) — full reference for the Vite and Webpack plugins
-- [Micro-app lifecycles and props](/concepts/lifecycle-and-props) — the lifecycle contract
-- [Wire a Webpack app into qiankun](/cookbook/prepare-a-webpack-app) — the classic-path equivalent
-- [Enable CSS style isolation](/cookbook/enable-style-isolation) — scope styles per app
+- [HTML entry](/concepts/html-entry-loading) — the entry contract and CORS boundaries
+- [Native ESM support](/concepts/esm-sandbox) — observable ESM behavior and compatibility
+- [`@qiankunjs/bundler-plugin`](/ecosystem/bundler-plugin) — plugin reference
+- [Run multiple instances](/cookbook/run-multiple-instances) — remounting and cleanup patterns
+- [Prepare a Webpack app](/cookbook/prepare-a-webpack-app) — the Classic-build alternative

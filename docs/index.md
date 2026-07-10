@@ -3,7 +3,7 @@ layout: home
 
 hero:
   name: qiankun
-  tagline: Probably the most complete micro-frontends solution you'll ever meet🧐
+  tagline: Load and manage independently delivered micro-apps in one page
   image:
     src: /logo.png
     alt: qiankun
@@ -21,59 +21,62 @@ hero:
 features:
   - icon: 🚀
     title: Simple
-    details: Works with any JavaScript framework. Building a micro-frontend system is as simple as using iframes, except it isn't iframes.
+    details: Works with any JavaScript framework. Load a micro-app into an HTMLElement and control its lifetime with a small API.
   - icon: 🛡️
     title: Complete
-    details: Ships almost everything a micro-frontend system needs — style isolation, a JS sandbox, preloading, and more.
+    details: Ships the essentials for a micro-frontend system, including JavaScript isolation, optional style isolation, and preloading.
   - icon: 🔧
     title: Production ready
-    details: Battle-tested and hardened across a large number of production apps inside and outside Ant Group.
+    details: Battle-tested across a large number of production apps inside and outside Ant Group.
   - icon: ⚡
     title: High performance
-    details: Streams the HTML entry and preloads assets as they are parsed, so switching between apps stays fast.
+    details: Streams HTML entries and preloads assets as they are discovered, keeping application loading responsive.
   - icon: 🎯
     title: Framework agnostic
-    details: The main app puts no constraints on a micro-app's stack; each micro-app keeps full autonomy.
+    details: The main app does not constrain a micro-app's framework or release process.
   - icon: 🧬
-    title: State isolation
-    details: A complete JS sandbox, plus native ESM-sandbox support, keeps apps from affecting one another.
+    title: Runtime isolation
+    details: JavaScript sandboxes and native ESM support help independently developed apps coexist on one page.
 ---
 
-## Quick start
+## Load your first micro-app
 
-Install qiankun:
+Install qiankun in the main app:
 
-::: code-group
-
-```bash [npm]
-npm install qiankun
-```
-
-```bash [pnpm]
+```bash
 pnpm add qiankun
 ```
 
-```bash [yarn]
-yarn add qiankun
+Mount the micro-app after its container exists, and keep the returned handle so it can be unmounted:
+
+```tsx
+import { loadMicroApp } from 'qiankun';
+import { useEffect, useRef } from 'react';
+
+export function MicroAppSlot() {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const microApp = loadMicroApp({
+      name: 'sub-app',
+      entry: '//localhost:7101',
+      container,
+    });
+
+    return () => {
+      void microApp.unmount().catch((error: unknown) => {
+        console.error('Failed to unmount sub-app:', error);
+      });
+    };
+  }, []);
+
+  return <div ref={containerRef} />;
+}
 ```
 
-:::
+The micro-app exports `bootstrap`, `mount`, and `unmount`; qiankun loads it into the `HTMLElement` and drives those lifecycles. Follow [Getting started](/guide/getting-started) to run a main app on port `7099` and a micro-app on port `7101`.
 
-Register your micro-apps in the main app, then start:
-
-```ts
-import { registerMicroApps, start } from 'qiankun';
-
-registerMicroApps([
-  {
-    name: 'react-app',
-    entry: '//localhost:7100',
-    container: document.getElementById('subapp-container')!,
-    activeRule: '/react',
-  },
-]);
-
-start();
-```
-
-On the micro-app side you only export three lifecycle functions — `bootstrap`, `mount`, `unmount` — with no change to your build output. See [Getting started](/guide/getting-started) for the full flow.
+For applications whose lifetime should be driven entirely by the URL, see the route-based [`registerMicroApps`](/api/register-micro-apps) and [`start`](/api/start) alternative.

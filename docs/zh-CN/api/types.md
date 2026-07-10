@@ -1,6 +1,6 @@
 # 类型参考
 
-qiankun 从公共出口(`packages/qiankun/src/types.ts`)导出的全部类型，再加上运行时依赖的那几处 `Window` 扩展。这些类型都从包根重新导出，直接引入即可：
+本页列出从 `qiankun` 包根导出的公共类型和 `Window` 扩展，可以直接从包中引入：
 
 ```ts
 import type {
@@ -66,7 +66,7 @@ export type HTMLEntry = string;
 微应用的入口永远是它 HTML 文档的地址。qiankun 会把这份 HTML 通过 [HTML 入口加载器](/zh-CN/concepts/html-entry-loading)流式解析，并执行其中引用的脚本。
 
 ```ts
-const entry: HTMLEntry = 'http://localhost:7100';
+const entry: HTMLEntry = 'http://localhost:7101';
 ```
 
 ::: danger 没有对象形式的入口
@@ -82,7 +82,7 @@ export type AppMetadata = {
 };
 ```
 
-微应用的最小描述：一个唯一的 `name` 和它的 HTML `entry`。`AppMetadata` 是 `LoadableApp` 和 `RegistrableApp` 继承的基类，也是 [`prefetchApps`](/zh-CN/api/prefetch-apps) 接收的元素类型。
+微应用的最小描述：一个稳定的 `name` 和它的 HTML `entry`。`AppMetadata` 是 `LoadableApp` 和 `RegistrableApp` 继承的基类，也是 [`prefetchApps`](/zh-CN/api/prefetch-apps) 接收的元素类型。
 
 ## LoadableApp
 
@@ -97,7 +97,7 @@ export type LoadableApp<T extends ObjectType> = AppMetadata & {
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
-| `name` | `string` | 微应用的唯一名称。 |
+| `name` | `string` | 应用标识。不同容器中的多个 `loadMicroApp` 实例可以复用同一个名称。 |
 | `entry` | `HTMLEntry` | HTML 入口地址。 |
 | `container` | `HTMLElement` | 应用挂载进去的 DOM 元素。必须是元素本身，不能是选择器。 |
 | `props` | `T`(可选) | 转发给微应用生命周期导出函数的 props。 |
@@ -108,7 +108,7 @@ import { loadMicroApp } from 'qiankun';
 const container = document.getElementById('subapp')!;
 const app = loadMicroApp<{ userId: number }>({
   name: 'app1',
-  entry: 'http://localhost:7100',
+  entry: 'http://localhost:7101',
   container,
   props: { userId: 42 },
 });
@@ -132,7 +132,7 @@ export type RegistrableApp<T extends ObjectType> = LoadableApp<T> & {
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
-| `loader` | `(loading: boolean) => void`(可选) | 挂载前以 `true` 调用，挂载后以 `false` 调用，方便你驱动一个加载指示器。 |
+| `loader` | `(loading: boolean) => void`(可选) | 报告路由应用的加载状态。`false` 之前可能连续收到多次 `true`，因此应把参数当作状态处理。 |
 | `activeRule` | single-spa `Activity` | 应用何时激活。可以是路径前缀字符串、`(location) => boolean` 函数，或两者混在一起的数组。 |
 | `configuration` | `AppConfiguration`(可选) | 单个应用的运行时配置，叠加在框架默认值之上。 |
 
@@ -168,14 +168,14 @@ export type AppConfiguration = Partial<
 
 | 字段 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `fetch` | `typeof window.fetch` | `window.fetch` | 用于入口和资源请求的自定义 fetch。qiankun 会给它套上缓存、重试，以及遇到非 2xx 就抛错的能力。 |
+| `fetch` | `typeof window.fetch` | `window.fetch` | 用于入口以及 loader 接管的脚本、模块和样式请求的自定义 fetch。 |
 | `streamTransformer` | `() => TransformStream<string, string>` | `undefined` | 加载 HTML 时接入这条流的一个 transform。 |
-| `nodeTransformer` | `<T extends Node>(node: T, opts) => T` | 内置默认值 | 在每个 script / link / style 节点进入真实 DOM 之前改写它。默认实现会跑 `transpileAssets`。 |
+| `nodeTransformer` | `<T extends Node>(node: T, opts) => T` | 内置默认值 | 在 script / link / style 节点进入容器前改写它。 |
 | `sandbox` | `boolean` | `true` | 开启 [JS 沙箱](/zh-CN/concepts/js-sandbox)隔离膜，以及在适用场景下的 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)。 |
 | `globalContext` | `WindowProxy` | `window` | 沙箱隔离膜所代理的那个基础全局对象。 |
 | `styleIsolation` | `boolean` | `false` | 开启运行时的 CSS `@scope` [样式隔离](/zh-CN/concepts/style-isolation)，范围限定在应用容器内。 |
 
-前三个字段来自加载器的 `LoaderOpts`。默认值是在 `loadApp` 内部解析的，不在类型里。细节见 [AppConfiguration](/zh-CN/api/configuration) 专页。
+字段行为和默认值见 [AppConfiguration](/zh-CN/api/configuration)。
 
 ::: danger 没有 sandbox 对象，也没有 FrameworkConfiguration
 `sandbox` 是个布尔值。2.x 的对象写法 `sandbox: { strictStyleIsolation, experimentalStyleIsolation }` 和 Shadow DOM 隔离都没了。样式隔离是单独的布尔值 `styleIsolation`，用 CSS `@scope` 实现。没有 `FrameworkConfiguration` 类型，`start()` 也不再接收任何 sandbox、prefetch 或单例相关的选项。

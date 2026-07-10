@@ -47,8 +47,8 @@ flowchart TD
   H --> H1[跑多个实例]
 ```
 
-::: tip 配置一个应用的两处入口
-大多数菜谱动的都是这两处配置之一。注册进来的应用，配置写在 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 里每个应用各自的 [`configuration`](/zh-CN/api/configuration) 字段上；手动加载的应用，则把同一份 [`AppConfiguration`](/zh-CN/api/configuration) 作为 [`loadMicroApp`](/zh-CN/api/load-micro-app) 的第二个参数传进去。两者接受的字段一模一样：`fetch`、`streamTransformer`、`nodeTransformer`、`sandbox`(默认 `true`)、`globalContext`(默认 `window`)和 `styleIsolation`(默认 `false`)。
+::: tip 默认使用 loadMicroApp
+菜谱默认把 [`AppConfiguration`](/zh-CN/api/configuration) 作为 [`loadMicroApp`](/zh-CN/api/load-micro-app) 的第二个参数传入。路由驱动应用则把同一份配置放在 `registerMicroApps` 的应用 `configuration` 字段中；具体字段和默认值只在配置参考中维护。
 :::
 
 ::: warning v3 不再自带全局状态 store
@@ -58,5 +58,5 @@ qiankun 2.x 提供过 `initGlobalState` / `onGlobalStateChange` / `setGlobalStat
 ## 相关
 
 - [API 参考总览](/zh-CN/api/index)——每一个导出和类型。
-- [架构概览](/zh-CN/concepts/architecture)——`loadApp` 是怎么把 fetch、沙箱和加载器串起来的。
+- [加载一个微应用实例](/zh-CN/concepts/architecture)——`loadMicroApp` 的运行模型。
 - [FAQ](/zh-CN/faq/index)——常见问题的简短回答。

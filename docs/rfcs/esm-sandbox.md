@@ -513,14 +513,15 @@ ESM 管线是「并行 fetch 整个模块图 → 生成 blob → 注入 import m
 
 qiankun 用全局单变量 `nativeGlobal.__currentLockingSandbox__` 把 `document.createElement` 产物归属到「当前正在执行的 sandbox」（`forStandardSandbox`：proxy.createElement 同步置位、同一同步调用内 `delete`）。该机制建立在「脚本同步执行、同一时刻只有一个 sandbox 在跑」之上——classic `with(this)` 满足。但 ESM 求值深度异步（`await import` 触发的模块求值、TLA、动态 import 跨 microtask/task），**同名 app 多实例并发加载时模块求值会在事件循环里交错**：若 `createElement` 发生在某次 `await` 之后，`__currentLockingSandbox__` 可能恰被另一实例置换或已 `delete`，导致元素**错配/漏归属**，unmount 时清理到错误容器。需评估把元素归属从「全局单锁」改为「从 proxy document 身份直接拿所属 sandbox」。多实例隔离不能只靠 §11 的 specifier 前缀。
 
-**与 classic script remount 的语义差异（重要）**
+**remount 语义（重要）**
 
-- Classic script：每次 remount 重新执行整段代码，顶层副作用重跑。
-- ESM remount：因复用同一 blob URL，浏览器原生 ESM loader 保证 `import(sameBlobUrl)` 返回**同一个 module namespace**，**顶层代码不会重跑**，只有 `mount(props)` 函数被重复调用。
+- Classic 与 ESM 都会复用首次加载时发现的生命周期，不在 remount 时重新执行入口顶层代码。
+- remount 会重建不含 `<script>` 的入口 DOM，然后重复调用 `mount(props)`。
+- ESM 另外复用同一 blob URL，因此浏览器原生 loader 返回同一个 module namespace。
 
-这对现代框架是正确行为（Vue/React 的应用实例本就应该在 `mount()` 里创建）。但对老写法（在 module 顶层创建全局状态）需要迁移到 `mount()` 内。
+这符合现代框架的生命周期模型：Vue/React 应用实例和每次挂载所需的状态应在 `mount()` 中创建，并在 `unmount()` 中销毁。不要依赖任何入口格式的顶层副作用在 remount 时重跑。
 
-**文档化要求**：在 ESM 子应用迁移指南中明确说明此差异。
+**文档化要求**：在子应用接入指南中明确说明这一统一语义。
 
 ### 9. classic 与 ESM 混合
 

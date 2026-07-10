@@ -1,40 +1,22 @@
 # 让 Webpack 应用接入 qiankun
 
-这篇讲的是怎么把一个现成的 Webpack 应用改造成走**经典路径**加载的 qiankun 微应用：构建时把生命周期函数挂到 `window` 上的某个全局(也就是打成 window-library 的产物),qiankun 再从那里把它们读出来。Webpack 4 和 Webpack 5 都适用。
+本指南介绍如何把现有 Webpack 应用接入 qiankun 的经典脚本执行路径。应用仍然拥有独立的构建和开发服务器，同时导出 qiankun 生命周期，并由主应用通过 `loadMicroApp` 显式挂载。bundler plugin 同时支持 Webpack 4 和 Webpack 5。
 
-如果你用的是 Vite，请看[让 Vite 应用接入 qiankun](/zh-CN/cookbook/prepare-a-vite-app)——Vite 应用走的是 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)，不需要 window library 这一套。
-
-## 要改哪些地方
-
-一共四处改动，都不碰你的业务代码：
-
-1. 往 Webpack 配置里加上 `QiankunWebpackPlugin` 和 `html-webpack-plugin`。
-2. 从入口模块导出 `bootstrap` / `mount` / `unmount`。
-3. 给 dev server 放开 CORS。
-4. 保证注册进 qiankun 的 `name` 和 library 名(`packageName`)一致。
-
-```mermaid
-flowchart TD
-  A["QiankunWebpackPlugin"] -->|"output.library { name: packageName, type: 'window' }"| B["产物把 exports 挂到 window[packageName]"]
-  A -->|"给入口 &lt;script&gt; 打上 entry 属性"| C["index.html"]
-  B --> D["qiankun 沙箱从 window[packageName] 读生命周期"]
-  E["注册的 name === packageName"] --> D
-```
+如果使用 Vite，请参阅[让 Vite 应用接入 qiankun](/zh-CN/cookbook/prepare-a-vite-app)。
 
 ## 安装插件
 
-Webpack 插件是 `@qiankunjs/bundler-plugin` 的默认导出。另外还得装 `html-webpack-plugin`，插件要靠它定位并标记入口脚本。
+安装 qiankun bundler plugin 和 `html-webpack-plugin`：
 
 ```bash
-npm install @qiankunjs/bundler-plugin html-webpack-plugin --save-dev
+pnpm add -D @qiankunjs/bundler-plugin html-webpack-plugin
 ```
+
+`html-webpack-plugin` 生成 HTML 入口，并让 qiankun 插件能够识别其中的入口脚本。
 
 ## 配置 Webpack
 
-把两个插件都加进配置。`QiankunWebpackPlugin` 干两件事：
-
-- **修正 output library。** Webpack 5 上它会设成 `output.library = { name: packageName, type: 'window' }`;Webpack 4 上则是 `output.library = packageName`、`output.libraryTarget = 'window'`、`output.globalObject = 'window'`，外加一个唯一的 `output.jsonpFunction`。无论哪种，产物都会把入口模块的 exports 挂到 `window[packageName]` 上——这个全局正是 qiankun 沙箱要读的地方。
-- **标记入口脚本。** 它挂到 `html-webpack-plugin` 上，给注入到 `index.html` 里那个 bundle `<script>` 加上 `entry` 属性。qiankun 的 loader 就靠这个属性确定性地挑出入口。
+添加两个插件，使用稳定的 `packageName`，并允许开发服务器被跨域加载：
 
 ```js [webpack.config.js]
 const HtmlWebpackPlugin = require('html-webpack-plugin');
@@ -42,119 +24,111 @@ const { QiankunWebpackPlugin } = require('@qiankunjs/bundler-plugin');
 
 module.exports = {
   entry: './src/index.tsx',
-  output: {
-    // 让 qiankun 从子应用自己的 origin 提供 chunk。
-    publicPath: 'auto',
-    clean: true,
-  },
   plugins: [
     new HtmlWebpackPlugin({ template: './src/index.html' }),
-    new QiankunWebpackPlugin({ packageName: 'my-app' }),
+    new QiankunWebpackPlugin({ packageName: 'my-webpack-app' }),
   ],
   devServer: {
     port: 7102,
-    // qiankun 会跨域拉取你的入口 HTML 和资源 —— 允许它。
     headers: { 'Access-Control-Allow-Origin': '*' },
     allowedHosts: 'all',
-    hot: true,
   },
 };
 ```
 
-### `packageName` 选项
+插件会把 bundle 配置为浏览器全局 library，并在 `html-webpack-plugin` 生成的 HTML 中标记入口脚本。请把 `output.library`、`output.libraryTarget`、`output.globalObject`，以及 Webpack 4 的 JSONP 函数交给插件管理。
 
-`packageName` 是插件唯一接受的选项，也就是产物要挂上去的那个 `window` 全局的名字。
+### 选择稳定的 `packageName`
 
-| 选项 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `packageName` | `string` | `./package.json` 的 `name` 字段 | 输出 library 全局的名字。构建时把生命周期 exports 挂到 `window[packageName]`。 |
+`packageName` 是经典 bundle 的全局 library 名称，默认取当前项目 `package.json` 中的 `name`。如果这个字段缺失、由工具动态生成或可能变化，请显式提供 `packageName`。
 
-不传 `packageName`，插件会去读项目 `package.json` 的 `name` 字段。要是这个文件不存在、或者没有 `name`,library 名会悄悄变成空字符串，全局也就成了 `window['']`，生命周期一律解析不到。所以要么显式写上 `packageName`，要么确保 `package.json` 里有 `name`。
+这个值必须非空，并且在不同构建之间保持稳定。它**不需要**等于传给 `loadMicroApp` 的 `name`：
 
-::: warning 别跟插件的 library 配置对着干
-`QiankunWebpackPlugin` 会**覆盖** `output.library`、`output.libraryTarget`、`output.globalObject`，以及(Webpack 4 上的)`output.jsonpFunction`。你自己设的任何冲突的 library 配置都会被替换掉。这几个字段交给插件就行。
-:::
+- `packageName` 命名 Webpack 输出的 library。
+- `loadMicroApp({ name })` 是 qiankun 中的应用标识。
 
-::: info 标记入口脚本要靠 html-webpack-plugin
-只有当 `plugins` 数组里有 `html-webpack-plugin` 时，标记入口脚本这一步才会执行。没有它，`entry` 属性加不上，qiankun 也就没法确定性地找到入口。
-:::
+qiankun 会优先从入口脚本的导出，或该脚本写入的全局对象中解析生命周期。查找 `window[name]` 只是最终的兼容回退，不是主要契约。两个名称使用相同的值没有问题，但并非强制要求。
 
-## 导出生命周期函数
+### 设置运行时 public path
 
-从入口模块导出 async 的 `bootstrap`、`mount`、`unmount`。用了 `window` library target 之后，Webpack 会自动把这些 exports 挂到 `window[packageName]` 上——Webpack 构建下**别自己去手动写 `window[packageName] = { ... }`**,library target 已经替你做了。
+入口脚本执行时，qiankun 会提供微应用入口的基地址。把它接入 Webpack 的运行时 public path，使懒加载 chunk 从微应用自己的 origin 获取：
 
-`mount` 会拿到 qiankun 为你的应用创建的 DOM 节点，就在 `props.container` 上。往里渲染，独立运行时则回退到整个 document。所谓独立模式，是指直接在浏览器里打开、而不是被 qiankun 托管——这种情况下生命周期得你自己调。
-
-```tsx [src/index.tsx]
-import React from 'react';
-import { createRoot } from 'react-dom/client';
-import type { Root } from 'react-dom/client';
-import App from './App';
-import './index.css';
+```ts [src/public-path.ts]
+declare let __webpack_public_path__: string;
 
 declare global {
   interface Window {
     __POWERED_BY_QIANKUN__?: boolean;
+    __INJECTED_PUBLIC_PATH_BY_QIANKUN__?: string;
   }
 }
 
-interface LifecycleProps {
-  container?: Element;
+if (window.__POWERED_BY_QIANKUN__ && window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__) {
+  __webpack_public_path__ = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
 }
+
+export {};
+```
+
+请在应用入口的其他内容之前导入这个模块。这种方式同时适用于 Webpack 4 和 Webpack 5；应用独立运行时，Webpack 继续使用原有的 public path。
+
+## 导出生命周期函数
+
+从 Webpack 入口导出 `bootstrap`、`mount` 和 `unmount`。下面的 React 示例在 qiankun 提供的 `HTMLElement` 内渲染，同时保留独立运行能力：
+
+```tsx [src/index.tsx]
+import './public-path';
+import { StrictMode } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import App from './App';
+import './index.css';
+
+type LifecycleProps = {
+  container?: HTMLElement;
+};
 
 let root: Root | undefined;
 
 function render(props: LifecycleProps = {}) {
-  // 在 qiankun 容器内解析 #root；独立运行时回退到 document。
-  const container = props.container?.querySelector('#root') ?? document.getElementById('root');
-  if (!container) return;
+  const element = props.container?.querySelector('#root') ?? document.getElementById('root');
+  if (!element) return;
 
-  root = createRoot(container);
+  root = createRoot(element);
   root.render(
-    <React.StrictMode>
+    <StrictMode>
       <App />
-    </React.StrictMode>,
+    </StrictMode>,
   );
 }
 
-// QiankunWebpackPlugin 设置了 output.library { name: 'my-app', type: 'window' }，
-// 所以这些 exports 会成为 window['my-app'] —— 无需手动赋值。
 export async function bootstrap() {
-  console.log('[my-app] bootstrap');
+  return Promise.resolve();
 }
 
 export async function mount(props: LifecycleProps) {
   render(props);
 }
 
-export async function unmount(_props: LifecycleProps) {
+export async function unmount() {
   root?.unmount();
   root = undefined;
 }
 
-// 独立模式：自己运行 lifecycles。
 if (!window.__POWERED_BY_QIANKUN__) {
   void bootstrap().then(() => mount({}));
 }
 ```
 
-`window.__POWERED_BY_QIANKUN__` 是 qiankun 在挂载前于沙箱里设的一个标志，你的入口靠它区分自己是被托管运行还是独立运行。完整的生命周期约定、每个 hook 收到哪些 props，见[微应用的生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
+Webpack 会通过 `QiankunWebpackPlugin` 配置的全局 library 发布这些入口导出；不要再手动赋值同一个 library 全局变量。`unmount` 必须完整释放框架根节点，以及应用自己创建的副作用。
 
-### HTML 模板
-
-给 `html-webpack-plugin` 用的模板里，只要一个挂载节点就够了。别自己往里加入口 `<script>`——bundle 由 `html-webpack-plugin` 注入，`entry` 属性由 `QiankunWebpackPlugin` 补上。
+`html-webpack-plugin` 模板只需要应用挂载节点，脚本的注入和标记交给插件：
 
 ```html [src/index.html]
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My micro app</title>
-    <style>
-      /* 仅用于独立页面背景；在 qiankun 内页面由主应用掌控。 */
-      body { margin: 0; }
-    </style>
+    <title>My Webpack micro-app</title>
   </head>
   <body>
     <div id="root"></div>
@@ -162,57 +136,52 @@ if (!window.__POWERED_BY_QIANKUN__) {
 </html>
 ```
 
-## 在主应用里注册
+## 从主应用加载
 
-在主应用里，注册的 `name` **必须等于**你给插件的那个 `packageName`，因为 qiankun 走经典路径时是从 `window[name]` 解析生命周期的。`entry` 是微应用 dev server 或线上站点的 URL(一个字符串，不是配置对象)。
+主应用把 HTML 入口加载进一个已经存在的 `HTMLElement`。请保存返回的 `MicroApp` 句柄，并在所属视图移除时卸载它：
 
-```ts [main/src/register.ts]
-import { registerMicroApps, start } from 'qiankun';
+```ts [main-app/src/micro-app.ts]
+import { loadMicroApp, type MicroApp } from 'qiankun';
 
-registerMicroApps([
-  {
-    // 必须与 packageName 匹配 → 解析 window['my-app']。
-    name: 'my-app',
+let microApp: MicroApp | undefined;
+
+export function showWebpackApp() {
+  if (microApp) return;
+
+  const container = document.getElementById('subapp-container');
+  if (!container) throw new Error('Missing #subapp-container');
+
+  microApp = loadMicroApp({
+    name: 'orders-panel',
     entry: '//localhost:7102',
-    container: document.getElementById('subapp-container')!,
-    activeRule: '/my-app',
-  },
-]);
+    container,
+  });
+}
 
-start();
+export async function hideWebpackApp() {
+  await microApp?.unmount();
+  microApp = undefined;
+}
 ```
 
-::: danger name 和 packageName 必须一致
-qiankun 从你产物挂出去的那个全局读取经典路径的生命周期。要是注册的 `name` 是 `'my-app'`、`packageName` 却是 `'myApp'`,qiankun 会去查 `window['my-app']`，查不到，发现生命周期这一步就抛错。两者保持完全一致。
-:::
+这里特意使用了不同的 `orders-panel` 和 `my-webpack-app`：应用标识与 Webpack library 名称是两个概念。props、配置项和句柄方法请参阅 [`loadMicroApp`](/zh-CN/api/load-micro-app)。
 
-完整的选项说明见 [registerMicroApps](/zh-CN/api/register-micro-apps) 和 [start](/zh-CN/api/start)；逐应用维度的 `configuration`(比如 [`styleIsolation`](/zh-CN/cookbook/enable-style-isolation))见 [AppConfiguration](/zh-CN/api/configuration)。
+如果应用完全由 URL 规则激活，[`registerMicroApps`](/zh-CN/api/register-micro-apps) 和 [`start`](/zh-CN/api/start) 是对应的路由驱动方案。
 
-## 为什么 dev server 需要 CORS
+## CORS 与资源地址
 
-和 Vite 插件不一样，`QiankunWebpackPlugin` **不会**替你配置 dev server。qiankun 是从主应用所在的 origin 去抓你的入口 HTML 和资源的，所以微应用的服务器必须允许跨域读取。两个 header 都得自己加上：
+qiankun 从主应用所在的 origin 请求入口 HTML 及其资源。`QiankunWebpackPlugin` 不会配置 webpack-dev-server，因此微应用服务器必须自行返回 `Access-Control-Allow-Origin`。外部脚本和样式也需要提供适当的 CORS header。
 
-- `headers: { 'Access-Control-Allow-Origin': '*' }`——让主应用能抓到你的入口和 chunk。
-- `allowedHosts: 'all'`——让 webpack-dev-server 应答经由主应用转发过来的请求。
+上面的 `public-path.ts` 会让懒加载 chunk 与微应用的部署 origin 对齐。如果部署使用 CDN 或其他资源基地址，请确认注入或显式配置的 URL 与当前环境一致。
 
-另外把 `output.publicPath: 'auto'` 保持住，这样运行时请求 chunk 时会以微应用自己的 origin 为准，而不是主应用的。
+## 生产检查
 
-::: warning 第三方脚本也必须带 CORS 提供
-你入口 HTML 里引用的任何外部脚本(内置进来的库、以脚本形式加载的字体等)，同样得带 `Access-Control-Allow-Origin` 提供。那些省略 CORS header 的公共 CDN 会让 qiankun 的 fetch 挂掉。把这类资源本地化(vendor)，从你开了 CORS 的 dev server 上提供。
-:::
+部署接入前请完成以下检查：
 
-## 陷阱
+1. 执行微应用的生产构建，并从预期 origin 提供构建产物。
+2. 直接打开部署后的 HTML 入口，确认独立运行仍然正常。
+3. 通过 `loadMicroApp` 加载这个入口，然后各执行一次卸载和重新挂载。
+4. 确认入口 HTML、JavaScript chunk、CSS 和外部资源来自预期 URL，并带有需要的 CORS header。
+5. 在不同版本之间保持 `packageName` 稳定，并确认构建产物仍然只有一个被标记的入口脚本。
 
-- **`window['']` 会破坏解析。** 既没写 `packageName`、`package.json` 里又没有 `name`,library 名就是空的。写上 `packageName`，或者给 `package.json` 补上 `name`。
-- **注册的 `name` 必须等于 `packageName`。** 两者对不上，qiankun 就会去查一个根本不存在的全局。
-- **别覆盖插件的 library 配置。** `output.library` / `libraryTarget` / `globalObject` / `jsonpFunction` 归 `QiankunWebpackPlugin` 管。你自己设要么被忽略，要么起冲突。
-- **Webpack 下别手动挂 window 全局。** `window` library target 会自动把 exports 挂出去，再手写一遍 `window[packageName] = { ... }` 是多余的。
-- **入口脚本只能有一个。** 一旦有不止一个 `<script>` 带着 `entry` 属性，qiankun 的 loader 会抛 `QiankunError`。让插件恰好标记一个，别自己在模板里再塞一个 `entry` 脚本。
-- **卸载一定要干净。** 在 `unmount` 里把应用拆干净(这里是 `root.unmount()` 再把 ref 置空)，重新挂载和多实例才不会泄漏。见[运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)。
-
-## 相关
-
-- [@qiankunjs/bundler-plugin(Webpack 与 Vite)](/zh-CN/ecosystem/bundler-plugin)——插件完整参考。
-- [让 Vite 应用接入 qiankun](/zh-CN/cookbook/prepare-a-vite-app)——ESM 沙箱的对应版本。
-- [JS 沙箱](/zh-CN/concepts/js-sandbox)——经典产物是怎么被隔离的，`window[packageName]` 又是怎么被读出来的。
-- [从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)——和 2.x 那套基于配置的接入方式有哪些不同。
+插件的全部选项和 Webpack 版本差异请参阅 [@qiankunjs/bundler-plugin](/zh-CN/ecosystem/bundler-plugin)。应用在清理阶段的责任请参阅[生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。

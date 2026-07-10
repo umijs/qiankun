@@ -3,7 +3,7 @@ layout: home
 
 hero:
   name: qiankun
-  tagline: 可能是你见过的最完善的微前端解决方案🧐
+  tagline: 在一个页面中，按需加载并管理独立交付的微应用
   image:
     src: /logo.png
     alt: qiankun
@@ -21,59 +21,62 @@ hero:
 features:
   - icon: 🚀
     title: 简单
-    details: 兼容任何 JavaScript 框架。构建微前端系统就像使用 iframe 一样简单，但实际上不是 iframe。
+    details: 兼容任何 JavaScript 框架。把微应用加载进一个 HTMLElement，再用一组精简的 API 管理它的生命周期。
   - icon: 🛡️
     title: 完整
-    details: 包含构建微前端系统所需的几乎所有基本功能，如样式隔离、JS 沙箱、预加载等。
+    details: 提供微前端系统所需的核心能力，包括 JavaScript 隔离、可选的样式隔离和预加载。
   - icon: 🔧
     title: 生产就绪
-    details: 已经过蚂蚁集团内外大量线上应用的广泛测试和打磨，健壮性值得信赖。
+    details: 已经过蚂蚁集团内外大量线上应用的长期验证和打磨。
   - icon: ⚡
     title: 高性能
-    details: 采用 HTML Entry 流式加载，资源边解析边预载，应用切换更快。
+    details: 采用 HTML Entry 流式加载，并在解析时预加载资源，让应用加载保持流畅。
   - icon: 🎯
     title: 技术栈无关
-    details: 主应用不限制接入应用的技术栈，微应用具备完全自主权。
+    details: 主应用不限制微应用的框架和发布流程。
   - icon: 🧬
-    title: 状态隔离
-    details: 提供完整的 JS 沙箱机制，并原生支持 ESM 沙箱，确保应用之间互不影响。
+    title: 运行时隔离
+    details: JavaScript 沙箱与原生 ESM 支持，帮助独立开发的应用共存于同一个页面。
 ---
 
-## 快速开始
+## 加载第一个微应用
 
-安装 qiankun：
+在主应用中安装 qiankun：
 
-::: code-group
-
-```bash [npm]
-npm install qiankun
-```
-
-```bash [pnpm]
+```bash
 pnpm add qiankun
 ```
 
-```bash [yarn]
-yarn add qiankun
+等容器就绪后加载微应用，并保存返回的句柄，以便在不再需要时卸载：
+
+```tsx
+import { loadMicroApp } from 'qiankun';
+import { useEffect, useRef } from 'react';
+
+export function MicroAppSlot() {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const microApp = loadMicroApp({
+      name: 'sub-app',
+      entry: '//localhost:7101',
+      container,
+    });
+
+    return () => {
+      void microApp.unmount().catch((error: unknown) => {
+        console.error('sub-app 卸载失败：', error);
+      });
+    };
+  }, []);
+
+  return <div ref={containerRef} />;
+}
 ```
 
-:::
+微应用导出 `bootstrap`、`mount` 和 `unmount`；qiankun 将它加载到这个 `HTMLElement`，并驱动相应生命周期。跟随[快速上手](/zh-CN/guide/getting-started)，运行端口为 `7099` 的主应用和端口为 `7101` 的微应用。
 
-在主应用里注册微应用，然后启动：
-
-```ts
-import { registerMicroApps, start } from 'qiankun';
-
-registerMicroApps([
-  {
-    name: 'react-app',
-    entry: '//localhost:7100',
-    container: document.getElementById('subapp-container')!,
-    activeRule: '/react',
-  },
-]);
-
-start();
-```
-
-微应用侧只需导出 `bootstrap`、`mount`、`unmount` 三个生命周期函数，不用改造构建产物的格式。完整流程见 [快速上手](/zh-CN/guide/getting-started)。
+如果应用完全由 URL 决定何时激活，可以改用路由驱动的 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 和 [`start`](/zh-CN/api/start)。

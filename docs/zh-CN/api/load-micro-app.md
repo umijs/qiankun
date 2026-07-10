@@ -1,6 +1,8 @@
 # loadMicroApp
 
-手动把一个微应用加载并挂载到你自己指定的 DOM 元素里，和路由无关。当你想把微应用嵌到页面的某个具体位置——一个弹窗、一个标签页、一块面板——并且自己管它的生命周期时，用这个。如果是路由驱动的激活，改用 [registerMicroApps](/zh-CN/api/register-micro-apps)。
+`loadMicroApp` 是 qiankun 推荐的基础加载方式：把一个微应用挂载到指定的 DOM 元素，并返回管理这个实例的句柄。页面区域、标签页、弹窗和由主应用状态控制的微应用都可以用同一套模型。
+
+只有当应用必须完全跟随 URL 自动激活时，才需要改用 [registerMicroApps](/zh-CN/api/register-micro-apps) 和 [`start`](/zh-CN/api/start)。
 
 框架封装的 [React 版 `<MicroApp>`](/zh-CN/ecosystem/react) 和 [Vue 版 `<MicroApp>`](/zh-CN/ecosystem/vue)，底层用的就是这个原语。
 
@@ -24,7 +26,7 @@ function loadMicroApp<T extends ObjectType>(
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
-| `name` | `string` | 是 | 微应用实例的唯一标识。它和 container 一起构成缓存的键(见 [行为](#behavior))。 |
+| `name` | `string` | 是 | 微应用名称。多个实例可以复用名称；只有并发挂载的实例需要使用不同容器。 |
 | `entry` | `string` | 是 | 微应用 HTML 入口的 URL。只能是字符串——2.x 里的对象写法(`{ scripts, styles }`)在 v3 中已经没有了。 |
 | `container` | `HTMLElement` | 是 | 用来渲染的 DOM 元素。必须是真实的元素，不能是 CSS 选择器字符串。 |
 | `props` | `T` | 否 | 透传给微应用生命周期函数的数据。 |
@@ -53,7 +55,7 @@ type LoadableApp<T extends ObjectType> = {
 | `sandbox` | `boolean` | `true` | 开启基于 Proxy 隔离膜的 [JS 沙箱](/zh-CN/concepts/js-sandbox)和 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)。只有那些必须跑在真实全局上的老应用，才设成 `false`。 |
 | `globalContext` | `WindowProxy` | `window` | 沙箱隔离膜所代理的基础全局对象。 |
 | `styleIsolation` | `boolean` | `false` | 按需开启运行时的 CSS `@scope` [样式隔离](/zh-CN/concepts/style-isolation)，作用域限定在 `[data-name="<name>"]`。 |
-| `fetch` | `typeof window.fetch` | `window.fetch` | 加载入口和资源时用的自定义 fetch。qiankun 会给它套上缓存、重试、抛错的能力。 |
+| `fetch` | `typeof window.fetch` | `window.fetch` | 用于入口以及 loader 接管的脚本、模块和样式请求的自定义 fetch。 |
 | `streamTransformer` | `() => TransformStream<string, string>` | — | 可选，接到 HTML 流上的转换流。 |
 | `nodeTransformer` | `NodeTransformer` | 内部默认值 | 在每个 script/link/style 节点进入真实 DOM 之前改写它。只有高级场景才需要覆盖。 |
 
@@ -67,10 +69,6 @@ type AppConfiguration =
 ```
 
 完整的配置参考见 [AppConfiguration](/zh-CN/api/configuration)。
-
-::: info 没有 `strict`/`experimentalStyleIsolation`，也没有 `sandbox` 对象
-v3 把 2.x 里的 `sandbox: { strictStyleIsolation, experimentalStyleIsolation }` 和 Shadow DOM 那套模型，换成了一个普通布尔值 `sandbox`，外加一个单独的、用 CSS `@scope` 实现的布尔值 `styleIsolation`。那些对象写法都不存在了。
-:::
 
 ### `lifeCycles?: LifeCycles<T>`
 
@@ -138,27 +136,14 @@ type Parcel = {
 
 ## 行为 {#behavior}
 
-有几个 v3 特有的行为值得先了解。
+几个调用方可观察的行为：
 
-- **自动启动框架。** 如果框架还没启动，`loadMicroApp` 会在内部帮你调 [`start()`](/zh-CN/api/start)，这样主应用的 `pushState`/`replaceState` 才能正确派发 `popstate`。手动加载时，你不需要先自己调一遍 `start()`。
-- **实例键取自 container 的 XPath。** 每个实例的键是 `${name}-${containerXPath}`，这个 XPath 根据 container 元素算一次。
-- **按实例键做缓存。** 如果你把同名(`name` 相同)的应用再次加载到同一个 DOM 节点，会复用缓存的 loader:源码不会重新拉，生命周期不会重新求值，重新挂载时 `bootstrap` 变成空操作。只有 mount/unmount 会再跑一遍。
-- **同一 container 上串行执行。** 多个微应用共用一个 container 时，新的挂载会先等上一个实例的 `unmountPromise`，再开始挂载，所以它们永远不会重叠。
-- **卸载时清理。** `unmountPromise` 触发时，实例会把自己从该 container 的注册表里移除，container 的 DOM 也会被清空。ESM realm 和 blob URL 的彻底拆除，发生在 single-spa 的 `unload` 阶段。
+- **调用后立即开始加载和挂载。** 不需要先调用 `start()`；要等待上屏，请 await `mountPromise`。
+- **一个容器同一时间只承载一个应用。** 如果连续向同一容器加载应用，后一个实例会等待前一个实例卸载。
+- **相同名称和容器可能复用已加载内容。** 不要依赖模块顶层代码在重新挂载时再次执行；把每次挂载所需的状态放进 `mount()`。
+- **调用方负责卸载。** 不再展示应用时调用 `unmount()`，让 qiankun 清空容器并释放它能够追踪的副作用。
 
-```mermaid
-flowchart TD
-  A[loadMicroApp app, config] --> B{已启动?}
-  B -- 否 --> C[start]
-  B -- 是 --> D
-  C --> D[计算 name-containerXPath 键]
-  D --> E{该键已缓存?}
-  E -- 是 --> F[复用 loader, bootstrap 变为空操作]
-  E -- 否 --> G[加载 entry, 求值生命周期]
-  F --> H[挂载到 container]
-  G --> H
-  H --> I[MicroApp 句柄]
-```
+多实例、复用和重新挂载的完整建议见[运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)。
 
 ## 示例
 
@@ -173,7 +158,7 @@ if (!container) throw new Error('container not found');
 const microApp = loadMicroApp(
   {
     name: 'app1',
-    entry: 'http://localhost:7100',
+    entry: 'http://localhost:7101',
     container,
     props: { userId: 42 },
   },
@@ -197,8 +182,8 @@ const microApp = loadMicroApp(
 );
 ```
 
-::: tip 能用框架封装就优先用
-如果你的主应用是 React 或 Vue,[`<MicroApp>`](/zh-CN/ecosystem/react) 会替你管好 container ref、挂载、props 更新和卸载——它封装的正是这套 API。只有当你需要完全手动控制、或者不在受支持的框架里时，才直接上 `loadMicroApp`。
+::: tip React 和 Vue 封装
+如果主应用使用 React 或 Vue，也可以使用对应的 [`<MicroApp>`](/zh-CN/ecosystem/react) 组件管理 container ref、props 更新和卸载。它们封装的仍然是 `loadMicroApp` 这套实例模型。
 :::
 
 ## 相关内容

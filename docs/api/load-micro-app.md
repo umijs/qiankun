@@ -1,6 +1,8 @@
 # loadMicroApp
 
-Load and mount a micro-app imperatively into a DOM element you control, independent of routing. Use this when you want to embed a micro-app at a specific place in the page (a dialog, a tab, a panel) and manage its lifecycle yourself. For route-driven activation, use [registerMicroApps](/api/register-micro-apps) instead.
+`loadMicroApp` is qiankun's recommended loading primitive. It mounts a micro-app into a DOM element and returns a handle for managing that instance. The same model works for page regions, tabs, dialogs, and apps controlled by host state.
+
+Use [registerMicroApps](/api/register-micro-apps) with [`start`](/api/start) only when an app must activate automatically from the URL.
 
 This is the same primitive the framework wrappers [`<MicroApp>` for React](/ecosystem/react) and [`<MicroApp>` for Vue](/ecosystem/vue) build on.
 
@@ -24,7 +26,7 @@ Describes which micro-app to load and where to mount it.
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `name` | `string` | yes | Unique identifier for the micro-app instance. Combined with the container to form the memoization key (see [Behavior](#behavior)). |
+| `name` | `string` | yes | Micro-app name. Multiple instances may reuse it; concurrently mounted instances still need separate containers. |
 | `entry` | `string` | yes | URL of the micro-app's HTML entry. Always a string — the 2.x object form (`{ scripts, styles }`) does not exist in v3. |
 | `container` | `HTMLElement` | yes | The DOM element to render into. Must be an actual element, not a CSS-selector string. |
 | `props` | `T` | no | Data passed through to the micro-app's lifecycle functions. |
@@ -53,7 +55,7 @@ Per-app options. All fields are optional; the defaults below are resolved intern
 | `sandbox` | `boolean` | `true` | Enables the Proxy-membrane [JS sandbox](/concepts/js-sandbox) and the [ESM sandbox](/concepts/esm-sandbox). Set `false` only for legacy apps that must run against the real global. |
 | `globalContext` | `WindowProxy` | `window` | The base global the sandbox membrane proxies. |
 | `styleIsolation` | `boolean` | `false` | Opt in to runtime CSS `@scope` [style isolation](/concepts/style-isolation), scoped to `[data-name="<name>"]`. |
-| `fetch` | `typeof window.fetch` | `window.fetch` | Custom fetch for entry and asset requests. qiankun wraps it to be cacheable, retryable, and throwable. |
+| `fetch` | `typeof window.fetch` | `window.fetch` | Custom fetch for the entry and loader-managed scripts, modules, and styles. |
 | `streamTransformer` | `() => TransformStream<string, string>` | — | Optional transform piped into the HTML stream. |
 | `nodeTransformer` | `NodeTransformer` | internal default | Rewrites each script/link/style node before it hits live DOM. Override only for advanced cases. |
 
@@ -67,10 +69,6 @@ type AppConfiguration =
 ```
 
 See [AppConfiguration](/api/configuration) for the full reference.
-
-::: info No `strict`/`experimentalStyleIsolation`, no `sandbox` object
-v3 replaces the 2.x `sandbox: { strictStyleIsolation, experimentalStyleIsolation }` and Shadow DOM model with a plain boolean `sandbox` plus a separate boolean `styleIsolation` implemented via CSS `@scope`. The object forms do not exist.
-:::
 
 ### `lifeCycles?: LifeCycles<T>`
 
@@ -138,27 +136,14 @@ The promises reject if loading or mounting fails. Attach a `.catch` (or wrap in 
 
 ## Behavior {#behavior}
 
-A few v3-specific behaviors are worth knowing.
+Observable behavior for callers:
 
-- **Auto-starts the framework.** `loadMicroApp` calls [`start()`](/api/start) internally if it has not been started yet, so the main app's `pushState`/`replaceState` correctly dispatch `popstate`. You do not need to call `start()` first for imperative loading.
-- **Instance key from container XPath.** Each instance is keyed by `${name}-${containerXPath}`, where the XPath is computed once from the container element.
-- **Memoization per instance key.** If you load an app with the same `name` into the same DOM node again, the cached loader is reused: the source is not re-fetched, lifecycles are not re-evaluated, and `bootstrap` becomes a no-op on remount. Only mount/unmount run again.
-- **Serialized on one container.** When multiple micro-apps share a container, a new mount waits on the previous instance's `unmountPromise` before mounting, so they never overlap.
-- **Cleanup on unmount.** On `unmountPromise`, the instance removes itself from the per-container registry and the container DOM is cleared. Full teardown of the ESM realm and blob URLs happens on single-spa `unload`.
+- **Loading and mounting start immediately.** You do not call `start()` first; await `mountPromise` when you need to know the app is visible.
+- **One container hosts one app at a time.** When apps are loaded into the same container in succession, the next instance waits for the previous one to unmount.
+- **The same name and container may reuse loaded work.** Do not rely on module top-level code running again on remount. Create per-mount state inside `mount()`.
+- **The caller owns teardown.** Call `unmount()` when the app is no longer shown so qiankun can clear the container and release side effects it tracks.
 
-```mermaid
-flowchart TD
-  A[loadMicroApp app, config] --> B{started?}
-  B -- no --> C[start]
-  B -- yes --> D
-  C --> D[compute name-containerXPath key]
-  D --> E{cached for key?}
-  E -- yes --> F[reuse loader, bootstrap becomes no-op]
-  E -- no --> G[load entry, evaluate lifecycles]
-  F --> H[mount into container]
-  G --> H
-  H --> I[MicroApp handle]
-```
+See [Run multiple micro-app instances](/cookbook/run-multiple-instances) for the complete guidance on reuse and remounting.
 
 ## Example
 
@@ -173,7 +158,7 @@ if (!container) throw new Error('container not found');
 const microApp = loadMicroApp(
   {
     name: 'app1',
-    entry: 'http://localhost:7100',
+    entry: 'http://localhost:7101',
     container,
     props: { userId: 42 },
   },
@@ -197,8 +182,8 @@ const microApp = loadMicroApp(
 );
 ```
 
-::: tip Prefer the framework wrappers when you can
-If your main app is React or Vue, [`<MicroApp>`](/ecosystem/react) manages the container ref, mount, prop updates, and unmount for you — it wraps this exact API. Reach for `loadMicroApp` directly when you need full manual control or you are not in a supported framework.
+::: tip React and Vue wrappers
+If the host uses React or Vue, the corresponding [`<MicroApp>`](/ecosystem/react) component can manage the container ref, prop updates, and unmount. These wrappers use the same `loadMicroApp` instance model.
 :::
 
 ## Related

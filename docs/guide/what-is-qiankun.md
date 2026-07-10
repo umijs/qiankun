@@ -1,86 +1,69 @@
 # What is qiankun
 
-qiankun is a micro-frontend framework built on [single-spa](https://github.com/single-spa/single-spa). It lets several independently developed and independently deployed front-end applications coexist on one page, mounting and unmounting at runtime — without bundling them into one bundle, and without losing the isolation that keeps them apart.
+qiankun is a micro-frontend framework built on [single-spa](https://github.com/single-spa/single-spa). It lets independently developed and deployed front-end applications share one page while keeping control of their own technology and release cycles.
 
-In one sentence: qiankun assembles a handful of front-end applications into a single whole, inside the browser.
+In practice, a main app gives qiankun a micro-app's HTML entry and an `HTMLElement`. qiankun loads the application, mounts it into that container, and gives the main app a handle for controlling its lifetime.
 
-## What is a micro-frontend
+## What problem does it solve?
 
-Micro-frontends bring the microservices idea to the front end: a large front-end application is split into several small ones that can be developed and deployed independently, then composed into a complete product at runtime.
+Micro-frontends are useful when the boundaries of a large product also need to become development and deployment boundaries. A team can own one micro-app, release it independently, and migrate its technology without requiring every other team to move at the same time.
 
-Most front-end projects start as one repo, one stack, one team, because that is the least hassle. The problems grow in later. The codebase keeps swelling until newcomers take forever to find their way around. More people means everyone crowds onto the same release train and queues to ship. The stack gets frozen on the day the project started — the framework you picked three years ago is now painful to replace. And sometimes you have to live with legacy: an AngularJS system you want to move to React screen by screen, without stopping to rewrite.
+A useful micro-frontend setup usually has these properties:
 
-These are organizational and collaboration problems more than technical ones. The micro-frontend answer is to split the application by team and by domain into independent parts, so each part gets the final say over itself. In practice that comes down to a few points:
+- **Independent delivery.** Each micro-app can be built and deployed on its own schedule.
+- **Framework independence.** React, Vue, Angular, and plain JavaScript applications can coexist.
+- **Runtime composition.** Applications are combined in the browser instead of one shared build.
+- **Practical isolation.** JavaScript and, when enabled, styles are kept within useful boundaries.
 
-- **Independent development and deployment.** Each micro-app has its own repo, build, and release cadence. Changing one app does not require rebuilding or redeploying the others.
-- **Framework agnostic.** The main app should not dictate which framework a micro-app uses. React, Vue, Angular, even plain HTML can coexist.
-- **Runtime integration.** The apps are composed in the browser, not stitched into one bundle at build time — that is what makes independent deployment possible.
-- **Mutual isolation.** One app's styles, globals, or runtime errors should not affect another.
+This architecture adds operational and runtime complexity. If one team can comfortably maintain and release a single application, a router with code splitting is usually simpler.
 
-Micro-frontends solve a problem of **scale**, and the price is extra complexity. If one team can comfortably maintain your app on a single stack, you probably do not need them. The split pays off only when the boundaries between apps line up with **team and deployment boundaries**.
+## The two roles
 
-## Why not iframes
+- The **main app** owns the page shell and decides when a micro-app should be present.
+- A **micro-app** is a normal front-end application that also exposes `bootstrap`, `mount`, and `unmount` lifecycle functions.
 
-When people think "isolate several apps on one page", the first idea is almost always an iframe. It comes with the most thorough isolation there is — a separate `window`, `document`, styles, and script environment, with no way for a sub-app to escape.
-
-If iframes were enough, qiankun would have no reason to exist. The catch is that this thorough isolation is also its biggest problem: it isolates so hard that "many apps behaving like one product" stops working.
-
-- **URL state is out of sync.** Routing inside an iframe never reaches the address bar: a refresh loses the sub-app's current location, the browser's back/forward buttons cannot see the iframe's history, and there is no way to share a link to a specific inner page.
-- **UI cannot cross the boundary.** A dialog or overlay that should center on the whole page can only center inside the little iframe box; a sub-app's dropdowns and tooltips get clipped the moment they extend past the visible area.
-- **Slow, and prone to blank screens.** Every iframe makes the browser rebuild a whole context and re-download, parse, and execute its resources; shared dependencies cannot be reused, so switching often blanks out first.
-- **Over-isolated, so communication gets harder.** An iframe splits the `document` too. Cross-iframe communication has to go through `postMessage` — even passing an object means serializing it; sharing cookies or `localStorage` takes extra work; and a trivial interaction like closing an inner popup from the outside has to be wired up by hand.
-
-qiankun's approach is to isolate where isolation is needed and stay connected everywhere else. A micro-app is **not** put in an iframe; it mounts directly into a container element on the main app's page and shares the same `document`. That makes all the problems caused by a split `document` — URL desync, UI that can't cross the boundary, hard communication — simply go away. Isolation is left to the runtime: the [JS sandbox](/concepts/js-sandbox) gives each micro-app its own `window` view through a `Proxy` membrane, and [style isolation](/concepts/style-isolation) scopes styles to each container using the native CSS `@scope` rule. You get the isolation you need without giving up any of the convenience of the apps actually being on one page.
-
-## Two roles
-
-There are only two roles in a qiankun system:
-
-- The **main app** (also called the host or shell) owns the page shell — top-level layout, navigation, routing. qiankun runs inside it and decides which micro-app should be active for a given URL or interaction.
-- A **micro-app** is a normal front-end app that additionally exports three lifecycle functions — `bootstrap`, `mount`, `unmount` — so qiankun can drive it.
-
-The main app references a micro-app by two things: its **HTML entry URL** and a **container** element on the page. qiankun fetches that HTML, runs the micro-app's scripts inside a sandbox, and calls `mount(props)` to render it into the container. When the micro-app is no longer needed, qiankun calls `unmount(props)` and reverses the side effects it introduced.
-
-```mermaid
-flowchart TD
-  A["Main app / host shell"] -->|"register name + entry + activeRule"| Q["qiankun runtime"]
-  Q -->|"fetch and stream the HTML entry"| L["Loader"]
-  L -->|"run scripts inside the sandbox"| S["JS sandbox"]
-  S -->|"bootstrap / mount / unmount"| M["Micro-app in its container"]
-```
-
-There are two ways to wire it up: register route-driven apps with [`registerMicroApps`](/api/register-micro-apps), load manually controlled ones with [`loadMicroApp`](/api/load-micro-app), then call [`start`](/api/start). For the end-to-end flow, see [Getting started](/guide/getting-started) and the [hand-built tutorial](/tutorial/).
-
-## When to use it
-
-qiankun fits when several independently owned front-ends need to share one page:
-
-- **Incremental migration.** Move a jQuery or AngularJS app to React screen by screen, while both halves stay live in production.
-- **Multiple teams, one product.** Separate teams own separate areas of a large app and need to build, test, and deploy independently, without being tied to a shared release train.
-- **Mixed frameworks or build tools.** Parts are React, parts are Vue, parts are plain HTML — qiankun runs them side by side.
-
-If it is one team, one stack, one app, a plain router with code splitting is simpler and imposes no isolation cost.
-
-## What's different in v3
-
-qiankun 3.0 keeps the same public model — register or load micro-apps by HTML entry and let them export lifecycles — but rewrites the runtime underneath: a streaming HTML loader, a `Proxy`-membrane JS sandbox, style isolation built on the native CSS `@scope` rule, and native ESM execution. Each of these is covered in depth under [Core Concepts](/concepts/architecture).
-
-If you are coming from 2.x, the shape of the API is familiar, but several defaults and types changed. For the exact differences and upgrade steps, see [Migrate from qiankun 2.x](/cookbook/migrate-from-2x).
-
-## Runtime requirements
-
-The 3.0 runtime relies on some newer browser primitives (`Proxy`, `TransformStream`, `URL.createObjectURL`, and so on), so it needs a reasonably modern browser. qiankun exposes [`isRuntimeCompatible`](/api/is-runtime-compatible) to probe the current browser before you start:
+The recommended starting point is [`loadMicroApp`](/api/load-micro-app). It works for page regions, dialogs, tabs, and other cases where application code controls the lifetime directly:
 
 ```ts
-import { isRuntimeCompatible } from 'qiankun';
+const microApp = loadMicroApp({
+  name: 'sub-app',
+  entry: '//localhost:7101',
+  container,
+});
 
-if (isRuntimeCompatible()) {
-  // safe to registerMicroApps / start
-}
+// When this part of the page is removed:
+await microApp.unmount();
 ```
 
-::: info The ESM sandbox and Firefox
-The native ESM-sandbox path relies on dynamically injected import maps. Chromium 133+ and Safari 18.4+ support them natively; Firefox does not enable multiple dynamic import maps by default yet, so micro-apps loaded through the ESM path (such as Vite apps) do not run there. Classic (UMD) micro-apps are unaffected. See [the ESM sandbox](/concepts/esm-sandbox) for details.
-:::
+Here, `container` is an `HTMLElement`. The returned `MicroApp` handle is the main app's way to observe or end this particular instance.
 
-Ready to build something? Head to [Getting started](/guide/getting-started), or work through the [tutorial](/tutorial/) to build a main app and a micro-app from scratch.
+```mermaid
+flowchart LR
+  A["Main app"] -->|"loadMicroApp(name, entry, HTMLElement)"| Q["qiankun"]
+  Q -->|"bootstrap + mount"| M["Micro-app instance"]
+  A -->|"handle.unmount()"| Q
+  Q -->|"unmount"| M
+```
+
+If URL matching should completely determine activation, qiankun also provides the route-driven [`registerMicroApps`](/api/register-micro-apps) and [`start`](/api/start) APIs. They are an alternative orchestration model, not a prerequisite for `loadMicroApp`.
+
+## Why not an iframe?
+
+An iframe provides a separate document and strong isolation, but that boundary also makes integrated experiences harder: routing, overlays, shared page layout, and direct communication all need extra coordination.
+
+qiankun mounts a micro-app into the main page instead. The applications share the page's document, while qiankun provides a [JavaScript sandbox](/concepts/js-sandbox) and optional [style isolation](/concepts/style-isolation). This favors applications that should behave like parts of one product. An iframe can still be the better choice when strict document or security boundaries matter most.
+
+## When qiankun is a good fit
+
+- Several teams own distinct areas of one product and need independent releases.
+- A large application is being migrated incrementally.
+- Applications built with different frameworks need to appear in one page.
+- The main app needs to mount more than one instance or place an app outside route-level pages.
+
+## qiankun 3
+
+qiankun 3 keeps the HTML-entry and lifecycle model while adding a rewritten runtime with native ESM support. If you are upgrading from 2.x, read [Migrate from qiankun 2.x](/cookbook/migrate-from-2x) for the changed defaults and types.
+
+The runtime requires a modern browser. ESM-sandbox applications currently need a browser that supports dynamically injected import maps; see [The ESM sandbox](/concepts/esm-sandbox) before choosing browser targets.
+
+Ready to try it? Follow [Getting started](/guide/getting-started), or use the [manual tutorial](/tutorial/) to build both applications yourself.

@@ -1,6 +1,8 @@
 # registerMicroApps
 
-Register micro-apps against the main app by route. Every registered app is bound to an `activeRule`; qiankun mounts it when the URL matches and unmounts it when it no longer does. This is the primary way to integrate micro-apps in v3 — if you want to control mounting manually and imperatively, use [loadMicroApp](/api/load-micro-app) instead.
+Register micro-apps against the host by route. Every app is bound to an `activeRule`; qiankun mounts it when the URL matches and unmounts it when the URL stops matching.
+
+This is the route-driven alternative to [`loadMicroApp`](/api/load-micro-app). Use it only when the URL should completely determine whether an app is mounted. Prefer `loadMicroApp` for on-demand loading, component embedding, and apps controlled by host state.
 
 ## Signature
 
@@ -43,12 +45,12 @@ type RegistrableApp<T extends ObjectType> = {
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `name` | `string` | Yes | The app's unique name. See [`name` must match the global the sub-app exposes](#name-must-match-the-global-the-sub-app-exposes) — it should equal the global variable / library name the sub-app exposes. |
+| `name` | `string` | Yes | A stable, unique identifier for this route-registered app. Duplicate names are skipped, so keep it consistent across registrations. It does not normally need to match a package or Webpack library name. See [Choose a stable, unique `name`](#choose-a-stable-unique-name). |
 | `entry` | `string` | Yes | The URL of the micro-app's HTML entry, e.g. `//localhost:7100`. In v3 `entry` is always a string (an HTML address); the 2.x `{ scripts, styles }` object form is gone. |
 | `container` | `HTMLElement` | Yes | The DOM element the micro-app mounts into — a real element, not a selector string. Pass a node obtained from a ref, or `document.getElementById(...)`. |
 | `activeRule` | `string \| ActivityFn \| Array<string \| ActivityFn>` | Yes | When the app activates; forwarded as-is to single-spa's `activeWhen`. A string is a path prefix; a function `(location) => boolean` gives you full control; an array activates when any entry matches. |
 | `props` | `T` | No | Data passed to the micro-app on every lifecycle call (`bootstrap` / `mount` / `unmount` / `update`). |
-| `loader` | `(loading: boolean) => void` | No | Called once with `true` right before mount and once with `false` after mount completes, so the main app can drive a loading indicator. |
+| `loader` | `(loading: boolean) => void` | No | Reports loading state. It receives `true` while source loading or mounting begins and `false` after mounting completes. Treat the value as state: consecutive `true` notifications are possible. |
 | `configuration` | `AppConfiguration` | No | Per-app runtime configuration: `sandbox`, `styleIsolation`, `fetch`, and so on. See [AppConfiguration](/api/configuration) and [Per-app configuration is the only configuration entry point](#per-app-configuration-is-the-only-configuration-entry-point). |
 
 ::: info entry and container
@@ -100,8 +102,8 @@ The second argument, `global`, is the micro-app's sandbox-isolated `window` view
 - **Deduplicated by `name`.** If an app's `name` is already registered, it is skipped, so calling `registerMicroApps` twice with overlapping apps is safe.
 - **Registered with single-spa.** Each new app becomes a single-spa application, with `activeWhen` taken from `activeRule` and `customProps` from `props`.
 - **Activation waits for `start()`.** The internal loader waits until you call [start](/api/start) before loading and mounting. Registration alone has no visible effect.
-- **`loader` wraps the mount.** When a `loader` is provided, every activation runs `loader(true)` before mount and `loader(false)` after.
-- **`lifeCycles` is global.** Hooks passed as the second argument run for every app in that call; on top of that, built-in addons inject `__POWERED_BY_QIANKUN__` and `__INJECTED_PUBLIC_PATH_BY_QIANKUN__`.
+- **`loader` reports a state, not an event count.** It receives `true` when loading begins and again before a mount when needed, then `false` after mounting. Make the callback idempotent.
+- **`lifeCycles` applies to the whole call.** Hooks passed as the second argument run for every app registered by that call.
 
 ```mermaid
 flowchart TD
@@ -111,7 +113,7 @@ flowchart TD
   D --> E["Wait for start"]
   F["start"] --> E
   E --> G{"activeRule matches URL?"}
-  G -- Yes --> H["loader(true) → load entry → mount → loader(false)"]
+  G -- Yes --> H["loading true → load and mount → loading false"]
   G -- No --> I["Unmount when it no longer matches"]
 ```
 
@@ -146,7 +148,7 @@ export function registerAll(
       configuration: { sandbox: true, styleIsolation: true },
     },
     {
-      // registered name matches window['webpack-app'] exposed by the sub-app
+      // stable route-app id; it does not have to match output.library.name
       name: 'webpack-app',
       entry: '//localhost:7102',
       container,
@@ -176,24 +178,26 @@ export default function App() {
     // register once; the container must never be unmounted or keyed
   }, []);
 
-  // one shared container element hosts every micro-app
+  // Safe to share here because these activeRule values are mutually exclusive.
   return <div ref={containerRef} id="subapp-stage" />;
 }
 ```
 
 :::
 
-::: tip One container for many apps
-A single container element can host every route-driven app, because only one app is active at a time. On route changes qiankun clears the container and refills it. Whichever element you pass, it must stay in the DOM for the entire session.
+::: tip Share a container only for mutually exclusive routes
+Several route-driven apps may share a container only when their `activeRule` values cannot match at the same time. Overlapping rules can activate several apps concurrently; give those apps separate containers. Every registered container must remain in the DOM for the whole session.
 :::
 
 ## Notes and pitfalls
 
-### `name` must match the global the sub-app exposes
+### Choose a stable, unique `name`
 
-qiankun finds a sub-app's lifecycle functions through the global variable (or library) it exposes. For classically bundled apps (UMD / window library), the `name` you register must equal the key the sub-app writes onto `window` — for example, if a sub-app sets `window['webpack-app'] = { bootstrap, mount, unmount }` (or a Webpack build's `output.library.name` is `webpack-app`), you must register it as `name: 'webpack-app'`. If the name and the exposed global don't line up, qiankun can't find the lifecycles and throws a `QiankunError`.
+`name` identifies a route-registered application to qiankun and single-spa. It is used for registration deduplication and runtime bookkeeping, so different apps must not share a name and the same app should keep its name across registrations.
 
-ESM sub-apps expose their lifecycles via native `export`, so the name matters less there, but it's still recommended to keep `name` consistent with the app's own identifier. For the full lifecycle lookup order, see [Micro-app lifecycle and props](/concepts/lifecycle-and-props).
+When the entry script is correctly marked, qiankun resolves lifecycle functions from that entry's execution result: the module exports for ESM, or the value produced by the classic entry script. This primary path does not require `name` to equal a package name or Webpack's `output.library.name`.
+
+Only when the entry result does not contain a valid lifecycle object does qiankun make a final compatibility attempt at `globalContext[appName]`. The global key must match `name` if an app deliberately relies on that fallback, but the fallback is not the normal naming contract. For the full lookup order, see [Micro-app lifecycle and props](/concepts/lifecycle-and-props).
 
 ### Per-app configuration is the only configuration entry point
 
