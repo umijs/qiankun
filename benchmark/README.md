@@ -14,13 +14,28 @@ pnpm benchmark:check
 pnpm benchmark:smoke
 ```
 
+To compare a performance change against an interleaved baseline, snapshot the fully bundled host before editing package code, then run the comparison after the change:
+
+```bash
+# On the clean baseline revision. Fails instead of overwriting an existing snapshot.
+pnpm benchmark:baseline
+
+# After making and building the candidate change. Runs 100 paired samples per revision.
+pnpm benchmark:compare
+
+# Five paired samples for plumbing only; the improvement gate is disabled.
+pnpm benchmark:compare:check
+```
+
+The baseline snapshot contains the complete Vite host bundle, so its qiankun, loader, sandbox, and shared dependency graph cannot mix with candidate packages. Revision samples use different host origins, fresh BrowserContexts, a balanced alternating order, and the same streamed fixture. A formal comparison passes only when every sample is valid and the paired bootstrap 95% confidence interval is entirely below 0%.
+
 Install the pinned Chromium revision once if Playwright reports that it is missing:
 
 ```bash
 pnpm --filter @qiankunjs/benchmark exec playwright install chromium
 ```
 
-Local artifacts are written to `benchmark/results/<timestamp>-<commit>/` and are gitignored.
+Local snapshots are written to `benchmark/artifacts/`; run results are written to `benchmark/results/<timestamp>-<commit>/`. Both are gitignored.
 
 ## Matrix
 

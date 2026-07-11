@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 
@@ -11,10 +11,19 @@ import { runBrowserSample } from './src/browser.mjs';
 import { collectSamples } from './src/collect.mjs';
 import { parseRunnerOptions } from './src/options.mjs';
 import { buildReport, renderSummaryMarkdown } from './src/report.mjs';
+import { evaluateRevisionComparison, resolveVariantHostOrigin } from './src/revisions.mjs';
 import { createFixtureServer } from './src/server.mjs';
+import { readBaselineSnapshot } from './src/snapshot.mjs';
 import { createStaticServer } from './src/static-server.mjs';
 import { evaluateCalibration } from './src/stats.mjs';
-import { CALIBRATION_VARIANTS, PRODUCT_COMPARISONS, PRODUCT_VARIANTS } from './scenarios.mjs';
+import {
+  CALIBRATION_VARIANTS,
+  PRODUCT_COMPARISONS,
+  PRODUCT_VARIANTS,
+  REVISION_CALIBRATION_VARIANTS,
+  REVISION_COMPARISONS,
+  REVISION_VARIANTS,
+} from './scenarios.mjs';
 
 const execFileAsync = promisify(execFile);
 const benchmarkRoot = dirname(fileURLToPath(import.meta.url));
@@ -24,18 +33,38 @@ async function readJson(path) {
   return JSON.parse(await readFile(path, 'utf8'));
 }
 
-async function getCommit() {
-  const { stdout } = await execFileAsync('git', ['rev-parse', 'HEAD'], { cwd: repositoryRoot });
-  return stdout.trim();
+async function getGitState() {
+  const [commitResult, statusResult] = await Promise.all([
+    execFileAsync('git', ['rev-parse', 'HEAD'], { cwd: repositoryRoot }),
+    execFileAsync('git', ['status', '--porcelain'], { cwd: repositoryRoot }),
+  ]);
+  return { commit: commitResult.stdout.trim(), dirty: statusResult.stdout.trim().length > 0 };
 }
 
-function materializeCalibrationVariants() {
-  const productById = new Map(PRODUCT_VARIANTS.map((variant) => [variant.id, variant]));
-  return CALIBRATION_VARIANTS.map((alias) => {
+function materializeCalibrationVariants(productVariants, aliases) {
+  const productById = new Map(productVariants.map((variant) => [variant.id, variant]));
+  return aliases.map((alias) => {
     const source = productById.get(alias.sourceVariant);
     if (!source) throw new Error(`unknown calibration source: ${alias.sourceVariant}`);
     return { ...source, id: alias.id, label: alias.label };
   });
+}
+
+function createRunDefinition(mode) {
+  if (mode === 'revision') {
+    return {
+      calibrationAliases: REVISION_CALIBRATION_VARIANTS,
+      comparisons: REVISION_COMPARISONS,
+      productTitle: 'Revision comparison',
+      variants: REVISION_VARIANTS,
+    };
+  }
+  return {
+    calibrationAliases: CALIBRATION_VARIANTS,
+    comparisons: PRODUCT_COMPARISONS,
+    productTitle: 'Product matrix',
+    variants: PRODUCT_VARIANTS,
+  };
 }
 
 function ensureAllValid(samples, phase) {
@@ -45,7 +74,7 @@ function ensureAllValid(samples, phase) {
   }
 }
 
-async function collectPhase({ browser, fixtureOrigin, hostOrigin, phase, rounds, seed, timeoutMs, variants }) {
+async function collectPhase({ browser, fixtureOrigin, hostOrigins, phase, rounds, seed, timeoutMs, variants }) {
   let completed = 0;
   const total = rounds * variants.length;
   return collectSamples({
@@ -58,7 +87,7 @@ async function collectPhase({ browser, fixtureOrigin, hostOrigin, phase, rounds,
         const measurement = await runBrowserSample({
           browser,
           fixtureOrigin,
-          hostOrigin,
+          hostOrigin: resolveVariantHostOrigin(variant, hostOrigins),
           timeoutMs,
           variant,
         });
@@ -74,12 +103,20 @@ async function collectPhase({ browser, fixtureOrigin, hostOrigin, phase, rounds,
   });
 }
 
-function renderRunSummary({ calibrationEvaluation, calibrationReport, fatalError, metadata, productReport }) {
+function renderRunSummary({
+  calibrationEvaluation,
+  calibrationReport,
+  fatalError,
+  metadata,
+  productReport,
+  productTitle,
+  revisionEvaluation,
+}) {
   const lines = [
-    '# qiankun vs Wujie benchmark',
+    metadata.options.mode === 'revision' ? '# qiankun revision benchmark' : '# qiankun vs Wujie benchmark',
     '',
     `- Run: ${metadata.runId}`,
-    `- Commit: ${metadata.commit}`,
+    `${metadata.options.mode === 'revision' ? '- Candidate commit' : '- Commit'}: ${metadata.commit}${metadata.dirty ? ' (dirty)' : ''}`,
     `- Chromium: ${metadata.browserVersion}`,
     `- Samples: ${metadata.options.samples} per product cell`,
     `- Warmup: ${metadata.options.warmup} per cell`,
@@ -88,6 +125,15 @@ function renderRunSummary({ calibrationEvaluation, calibrationReport, fatalError
     '> Positive comparison deltas mean the candidate is slower than the reference.',
     '',
   ];
+
+  if (metadata.baseline) {
+    lines.splice(
+      4,
+      0,
+      `- Baseline commit: ${metadata.baseline.git.commit}${metadata.baseline.git.dirty ? ' (dirty)' : ''}`,
+      `- Baseline bundle: ${metadata.baseline.bundleHash}`,
+    );
+  }
 
   if (fatalError) lines.push('## Fatal error', '', `\`${fatalError}\``, '');
   if (calibrationReport) {
@@ -103,7 +149,16 @@ function renderRunSummary({ calibrationEvaluation, calibrationReport, fatalError
     }
   }
   if (productReport) {
-    lines.push(renderSummaryMarkdown(productReport, { headingLevel: 2, title: 'Product matrix' }));
+    lines.push(renderSummaryMarkdown(productReport, { headingLevel: 2, title: productTitle }));
+  }
+  if (revisionEvaluation) {
+    lines.push(
+      `Improvement diagnostic: **${revisionEvaluation.passed ? 'passed' : 'failed'}**`,
+      `Improvement gate: **${metadata.options.comparisonGate ? 'enforced' : 'disabled for plumbing check'}**`,
+      '',
+    );
+    revisionEvaluation.failures.forEach((failure) => lines.push(`- ${failure}`));
+    if (revisionEvaluation.failures.length > 0) lines.push('');
   }
   return lines.join('\n');
 }
@@ -111,12 +166,21 @@ function renderRunSummary({ calibrationEvaluation, calibrationReport, fatalError
 async function main() {
   const options = parseRunnerOptions(process.argv.slice(2));
   const startedAt = new Date();
-  const commit = await getCommit();
+  const git = await getGitState();
+  const { commit } = git;
   const runId = `${startedAt.toISOString().replace(/[:.]/gu, '-')}-${commit.slice(0, 8)}`;
   const resultDirectory = join(benchmarkRoot, 'results', runId);
-  const host = createStaticServer({ port: 7600, root: join(benchmarkRoot, 'fixtures/host/dist') });
+  const runDefinition = createRunDefinition(options.mode);
+  const hostServers = {
+    candidate: createStaticServer({ port: 7600, root: join(benchmarkRoot, 'fixtures/host/dist') }),
+  };
+  const baselineDirectory = options.baselineDir ? resolve(benchmarkRoot, options.baselineDir) : null;
+  if (baselineDirectory) {
+    hostServers.baseline = createStaticServer({ port: 7602, root: join(baselineDirectory, 'host') });
+  }
   const fixture = createFixtureServer({ chunkIntervalMs: options.chunkIntervalMs, port: 7601 });
-  const calibrationVariants = materializeCalibrationVariants();
+  const calibrationVariants = materializeCalibrationVariants(runDefinition.variants, runDefinition.calibrationAliases);
+  let baselineMetadata;
   let browser;
   let calibrationEvaluation;
   let calibrationReport;
@@ -125,16 +189,19 @@ async function main() {
   let productReport;
   let productSamples = [];
   let productWarmupSamples = [];
+  let revisionEvaluation;
   let fatalError;
 
   try {
-    await Promise.all([host.start(), fixture.start()]);
+    if (baselineDirectory) baselineMetadata = await readBaselineSnapshot(baselineDirectory);
+    await Promise.all([...Object.values(hostServers).map((host) => host.start()), fixture.start()]);
+    const hostOrigins = Object.fromEntries(Object.entries(hostServers).map(([role, host]) => [role, host.origin]));
     browser = await chromium.launch({ headless: true });
 
     calibrationWarmupSamples = await collectPhase({
       browser,
       fixtureOrigin: fixture.origin,
-      hostOrigin: host.origin,
+      hostOrigins,
       phase: 'calibration-warmup',
       rounds: options.warmup,
       seed: options.seed - 2,
@@ -146,7 +213,7 @@ async function main() {
     calibrationSamples = await collectPhase({
       browser,
       fixtureOrigin: fixture.origin,
-      hostOrigin: host.origin,
+      hostOrigins,
       phase: 'calibration',
       rounds: options.calibrationSamples,
       seed: options.seed - 1,
@@ -173,36 +240,39 @@ async function main() {
       productWarmupSamples = await collectPhase({
         browser,
         fixtureOrigin: fixture.origin,
-        hostOrigin: host.origin,
+        hostOrigins,
         phase: 'product-warmup',
         rounds: options.warmup,
         seed: options.seed + 1,
         timeoutMs: options.timeoutMs,
-        variants: PRODUCT_VARIANTS,
+        variants: runDefinition.variants,
       });
       ensureAllValid(productWarmupSamples, 'product warmup');
 
       productSamples = await collectPhase({
         browser,
         fixtureOrigin: fixture.origin,
-        hostOrigin: host.origin,
+        hostOrigins,
         phase: 'product',
         rounds: options.samples,
         seed: options.seed,
         timeoutMs: options.timeoutMs,
-        variants: PRODUCT_VARIANTS,
+        variants: runDefinition.variants,
       });
       productReport = buildReport({
-        comparisons: PRODUCT_COMPARISONS,
+        comparisons: runDefinition.comparisons,
         samples: productSamples,
         seed: options.seed,
-        variants: PRODUCT_VARIANTS,
+        variants: runDefinition.variants,
       });
+      if (options.mode === 'revision') {
+        revisionEvaluation = evaluateRevisionComparison(productReport.comparisons['candidate-vs-baseline']);
+      }
     }
   } catch (error) {
     fatalError = error instanceof Error ? (error.stack ?? error.message) : String(error);
   } finally {
-    const cleanupTasks = [host.close(), fixture.close()];
+    const cleanupTasks = [...Object.values(hostServers).map((host) => host.close()), fixture.close()];
     if (browser) cleanupTasks.push(browser.close());
     const cleanupResults = await Promise.allSettled(cleanupTasks);
     const cleanupFailures = cleanupResults
@@ -217,17 +287,19 @@ async function main() {
   const qiankunPackage = await readJson(join(repositoryRoot, 'packages/qiankun/package.json'));
   const metadata = {
     arch: os.arch(),
+    baseline: baselineMetadata,
     browserVersion: browser?.version() ?? 'unavailable',
     commit,
     cpu: os.cpus()[0]?.model ?? 'unknown',
     cpuCount: os.cpus().length,
+    dirty: git.dirty,
     nodeVersion: process.version,
     options,
     platform: os.platform(),
     platformRelease: os.release(),
     qiankunVersion: qiankunPackage.version,
     runId,
-    schemaVersion: 1,
+    schemaVersion: 2,
     startedAt: startedAt.toISOString(),
     wujieVersion: benchmarkPackage.dependencies.wujie,
   };
@@ -235,8 +307,9 @@ async function main() {
   const passed =
     !fatalError &&
     (!options.calibrationGate || calibrationEvaluation?.passed === true) &&
+    (options.mode !== 'revision' || !options.comparisonGate || revisionEvaluation?.passed === true) &&
     !hasInvalidProductSample &&
-    productSamples.length === options.samples * PRODUCT_VARIANTS.length;
+    productSamples.length === options.samples * runDefinition.variants.length;
   const result = {
     calibration: {
       evaluation: calibrationEvaluation,
@@ -248,6 +321,7 @@ async function main() {
     metadata,
     passed,
     product: { report: productReport, samples: productSamples, warmupSamples: productWarmupSamples },
+    revision: { evaluation: revisionEvaluation },
   };
   const summary = renderRunSummary({
     calibrationEvaluation,
@@ -255,6 +329,8 @@ async function main() {
     fatalError,
     metadata,
     productReport,
+    productTitle: runDefinition.productTitle,
+    revisionEvaluation,
   });
 
   await mkdir(resultDirectory, { recursive: true });

@@ -81,3 +81,38 @@ export const PRODUCT_COMPARISONS = [
     reference: 'qk-streamed',
   },
 ];
+
+const REVISION_FRAMEWORK_OPTIONS = { sandbox: true, styleIsolation: true };
+
+export const REVISION_VARIANTS = [
+  {
+    delivery: 'streamed',
+    framework: 'qiankun',
+    frameworkOptions: REVISION_FRAMEWORK_OPTIONS,
+    hostRole: 'baseline',
+    id: 'revision-baseline',
+    label: 'baseline · qiankun streamed',
+  },
+  {
+    delivery: 'streamed',
+    framework: 'qiankun',
+    frameworkOptions: REVISION_FRAMEWORK_OPTIONS,
+    hostRole: 'candidate',
+    id: 'revision-candidate',
+    label: 'candidate · qiankun streamed',
+  },
+];
+
+export const REVISION_CALIBRATION_VARIANTS = [
+  { id: 'calibration-a', label: 'A/A · A', sourceVariant: 'revision-candidate' },
+  { id: 'calibration-b', label: 'A/A · B', sourceVariant: 'revision-candidate' },
+];
+
+export const REVISION_COMPARISONS = [
+  {
+    candidate: 'revision-candidate',
+    id: 'candidate-vs-baseline',
+    label: 'candidate vs baseline',
+    reference: 'revision-baseline',
+  },
+];
