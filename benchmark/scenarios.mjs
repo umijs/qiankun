@@ -82,26 +82,44 @@ export const PRODUCT_COMPARISONS = [
   },
 ];
 
-const REVISION_FRAMEWORK_OPTIONS = { sandbox: true, styleIsolation: true };
+const REVISION_SCENARIOS = {
+  sandbox: {
+    delivery: 'buffered',
+    frameworkOptions: { sandbox: true, styleIsolation: false },
+    label: 'qiankun sandbox',
+  },
+  streaming: {
+    delivery: 'streamed',
+    frameworkOptions: { sandbox: true, styleIsolation: true },
+    label: 'qiankun streamed',
+  },
+};
 
-export const REVISION_VARIANTS = [
-  {
-    delivery: 'streamed',
-    framework: 'qiankun',
-    frameworkOptions: REVISION_FRAMEWORK_OPTIONS,
-    hostRole: 'baseline',
-    id: 'revision-baseline',
-    label: 'baseline · qiankun streamed',
-  },
-  {
-    delivery: 'streamed',
-    framework: 'qiankun',
-    frameworkOptions: REVISION_FRAMEWORK_OPTIONS,
-    hostRole: 'candidate',
-    id: 'revision-candidate',
-    label: 'candidate · qiankun streamed',
-  },
-];
+export function createRevisionVariants(scenario = 'streaming') {
+  const config = REVISION_SCENARIOS[scenario];
+  if (!config) throw new Error(`unknown revision scenario: ${scenario}`);
+
+  return [
+    {
+      delivery: config.delivery,
+      framework: 'qiankun',
+      frameworkOptions: config.frameworkOptions,
+      hostRole: 'baseline',
+      id: 'revision-baseline',
+      label: `baseline · ${config.label}`,
+    },
+    {
+      delivery: config.delivery,
+      framework: 'qiankun',
+      frameworkOptions: config.frameworkOptions,
+      hostRole: 'candidate',
+      id: 'revision-candidate',
+      label: `candidate · ${config.label}`,
+    },
+  ];
+}
+
+export const REVISION_VARIANTS = createRevisionVariants();
 
 export const REVISION_CALIBRATION_VARIANTS = [
   { id: 'calibration-a', label: 'A/A · A', sourceVariant: 'revision-candidate' },

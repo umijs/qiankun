@@ -49,17 +49,18 @@ test('A/A calibration aliases the exact same qiankun variant', () => {
 });
 
 test('revision comparison variants differ only by revision host role', () => {
-  const { REVISION_CALIBRATION_VARIANTS, REVISION_COMPARISONS, REVISION_VARIANTS } = scenarios;
+  const { REVISION_CALIBRATION_VARIANTS, REVISION_COMPARISONS, createRevisionVariants } = scenarios;
+  const revisionVariants = createRevisionVariants('streaming');
 
   assert.deepEqual(
-    REVISION_VARIANTS.map(({ hostRole, id }) => ({ hostRole, id })),
+    revisionVariants.map(({ hostRole, id }) => ({ hostRole, id })),
     [
       { hostRole: 'baseline', id: 'revision-baseline' },
       { hostRole: 'candidate', id: 'revision-candidate' },
     ],
   );
   assert.deepEqual(
-    REVISION_VARIANTS.map(({ delivery, framework, frameworkOptions }) => ({
+    revisionVariants.map(({ delivery, framework, frameworkOptions }) => ({
       delivery,
       framework,
       frameworkOptions,
@@ -89,4 +90,32 @@ test('revision comparison variants differ only by revision host role', () => {
     REVISION_CALIBRATION_VARIANTS.map(({ sourceVariant }) => sourceVariant),
     ['revision-candidate', 'revision-candidate'],
   );
+});
+
+test('sandbox revision scenario isolates sandbox work from streaming and style isolation', () => {
+  const revisionVariants = scenarios.createRevisionVariants('sandbox');
+
+  assert.deepEqual(
+    revisionVariants.map(({ delivery, framework, frameworkOptions }) => ({
+      delivery,
+      framework,
+      frameworkOptions,
+    })),
+    [
+      {
+        delivery: 'buffered',
+        framework: 'qiankun',
+        frameworkOptions: { sandbox: true, styleIsolation: false },
+      },
+      {
+        delivery: 'buffered',
+        framework: 'qiankun',
+        frameworkOptions: { sandbox: true, styleIsolation: false },
+      },
+    ],
+  );
+});
+
+test('revision scenarios reject unknown names', () => {
+  assert.throws(() => scenarios.createRevisionVariants('unknown'), /unknown revision scenario: unknown/u);
 });

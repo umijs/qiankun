@@ -10,7 +10,7 @@ Run from the repository root:
 # Five samples per product cell. Validates plumbing only; not performance data.
 pnpm benchmark:check
 
-# Five warmups, 100 valid attempts per product cell, and 50 samples per A/A arm.
+# Five warmups, 100 valid attempts per product cell, and 100 samples per A/A arm.
 pnpm benchmark:smoke
 ```
 
@@ -27,7 +27,15 @@ pnpm benchmark:compare
 pnpm benchmark:compare:check
 ```
 
-The baseline snapshot contains the complete Vite host bundle, so its qiankun, loader, sandbox, and shared dependency graph cannot mix with candidate packages. Revision samples use different host origins, fresh BrowserContexts, a balanced alternating order, and the same streamed fixture. A formal comparison passes only when every sample is valid and the paired bootstrap 95% confidence interval is entirely below 0%.
+The baseline snapshot contains the complete Vite host bundle, so its qiankun, loader, sandbox, and shared dependency graph cannot mix with candidate packages. Revision samples use different host origins, fresh BrowserContexts, and a balanced alternating order. The default `streaming` scenario uses the streamed fixture with full isolation. Use `--scenario=sandbox` with a named baseline snapshot to compare buffered, sandbox-only loads without style-isolation or streaming costs. A formal comparison passes only when every sample is valid and the paired bootstrap 95% confidence interval is entirely below 0%.
+
+```bash
+pnpm --filter @qiankunjs/benchmark run build:fixture
+node benchmark/snapshot.mjs --name=sandbox-baseline
+
+pnpm --filter @qiankunjs/benchmark run build:fixture
+node benchmark/runner.mjs --mode=revision --scenario=sandbox --baseline-dir=artifacts/sandbox-baseline --samples=100 --warmup=5 --calibration-samples=100
+```
 
 Install the pinned Chromium revision once if Playwright reports that it is missing:
 

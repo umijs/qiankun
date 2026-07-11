@@ -22,7 +22,7 @@ import {
   PRODUCT_VARIANTS,
   REVISION_CALIBRATION_VARIANTS,
   REVISION_COMPARISONS,
-  REVISION_VARIANTS,
+  createRevisionVariants,
 } from './scenarios.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -50,13 +50,13 @@ function materializeCalibrationVariants(productVariants, aliases) {
   });
 }
 
-function createRunDefinition(mode) {
-  if (mode === 'revision') {
+function createRunDefinition(options) {
+  if (options.mode === 'revision') {
     return {
       calibrationAliases: REVISION_CALIBRATION_VARIANTS,
       comparisons: REVISION_COMPARISONS,
-      productTitle: 'Revision comparison',
-      variants: REVISION_VARIANTS,
+      productTitle: `Revision comparison · ${options.scenario}`,
+      variants: createRevisionVariants(options.scenario),
     };
   }
   return {
@@ -170,7 +170,7 @@ async function main() {
   const { commit } = git;
   const runId = `${startedAt.toISOString().replace(/[:.]/gu, '-')}-${commit.slice(0, 8)}`;
   const resultDirectory = join(benchmarkRoot, 'results', runId);
-  const runDefinition = createRunDefinition(options.mode);
+  const runDefinition = createRunDefinition(options);
   const hostServers = {
     candidate: createStaticServer({ port: 7600, root: join(benchmarkRoot, 'fixtures/host/dist') }),
   };

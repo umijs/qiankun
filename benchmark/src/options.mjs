@@ -1,11 +1,12 @@
 const DEFAULT_OPTIONS = {
   baselineDir: null,
   calibrationGate: true,
-  calibrationSamples: 50,
+  calibrationSamples: 100,
   chunkIntervalMs: 50,
   comparisonGate: true,
   mode: 'framework',
   samples: 100,
+  scenario: null,
   seed: 20260711,
   timeoutMs: 10_000,
   warmup: 5,
@@ -49,6 +50,14 @@ export function parseRunnerOptions(args) {
       continue;
     }
 
+    if (name === 'scenario') {
+      if (rawValue !== 'streaming' && rawValue !== 'sandbox') {
+        throw new Error('scenario must be streaming or sandbox');
+      }
+      options.scenario = rawValue;
+      continue;
+    }
+
     if (name === 'baseline-dir') {
       options.baselineDir = rawValue;
       continue;
@@ -66,6 +75,12 @@ export function parseRunnerOptions(args) {
   }
   if (options.mode === 'framework' && options.baselineDir) {
     throw new Error('baseline-dir requires revision mode');
+  }
+  if (options.mode === 'framework' && options.scenario) {
+    throw new Error('scenario requires revision mode');
+  }
+  if (options.mode === 'revision' && !options.scenario) {
+    options.scenario = 'streaming';
   }
 
   return options;

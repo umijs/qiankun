@@ -7,11 +7,12 @@ test('parseRunnerOptions provides the formal smoke defaults', () => {
   assert.deepEqual(parseRunnerOptions([]), {
     baselineDir: null,
     calibrationGate: true,
-    calibrationSamples: 50,
+    calibrationSamples: 100,
     chunkIntervalMs: 50,
     comparisonGate: true,
     mode: 'framework',
     samples: 100,
+    scenario: null,
     seed: 20260711,
     timeoutMs: 10_000,
     warmup: 5,
@@ -37,11 +38,16 @@ test('parseRunnerOptions accepts explicit check-run overrides', () => {
       comparisonGate: true,
       mode: 'framework',
       samples: 5,
+      scenario: null,
       seed: 9,
       timeoutMs: 2_000,
       warmup: 2,
     },
   );
+});
+
+test('parseRunnerOptions defaults revision comparisons to the streaming scenario', () => {
+  assert.equal(parseRunnerOptions(['--mode=revision', '--baseline-dir=artifacts/baseline']).scenario, 'streaming');
 });
 
 test('parseRunnerOptions accepts revision comparison options', () => {
@@ -50,16 +56,18 @@ test('parseRunnerOptions accepts revision comparison options', () => {
       '--mode=revision',
       '--baseline-dir=artifacts/baseline',
       '--comparison-gate=false',
+      '--scenario=sandbox',
       '--samples=5',
     ]),
     {
       baselineDir: 'artifacts/baseline',
       calibrationGate: true,
-      calibrationSamples: 50,
+      calibrationSamples: 100,
       chunkIntervalMs: 50,
       comparisonGate: false,
       mode: 'revision',
       samples: 5,
+      scenario: 'sandbox',
       seed: 20260711,
       timeoutMs: 10_000,
       warmup: 5,
@@ -74,4 +82,9 @@ test('parseRunnerOptions rejects unknown, non-integer, and non-positive values',
   assert.throws(() => parseRunnerOptions(['--calibration-gate=maybe']), /calibration-gate must be true or false/);
   assert.throws(() => parseRunnerOptions(['--mode=revision']), /baseline-dir is required/u);
   assert.throws(() => parseRunnerOptions(['--mode=unknown']), /mode must be framework or revision/u);
+  assert.throws(
+    () => parseRunnerOptions(['--mode=revision', '--baseline-dir=artifacts/baseline', '--scenario=unknown']),
+    /scenario must be streaming or sandbox/u,
+  );
+  assert.throws(() => parseRunnerOptions(['--scenario=sandbox']), /scenario requires revision mode/u);
 });
