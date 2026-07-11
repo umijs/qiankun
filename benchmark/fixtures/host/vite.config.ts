@@ -8,6 +8,7 @@ export default defineConfig({
     outDir: 'dist',
     rollupOptions: {
       input: {
+        native: fileURLToPath(new URL('native.html', import.meta.url)),
         qiankun: fileURLToPath(new URL('qiankun.html', import.meta.url)),
         wujie: fileURLToPath(new URL('wujie.html', import.meta.url)),
       },

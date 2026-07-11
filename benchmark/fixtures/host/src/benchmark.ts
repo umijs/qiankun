@@ -13,6 +13,11 @@ export interface BenchmarkMeasurement {
 
 type StartMicroApp = (options: BenchmarkOptions) => Promise<void>;
 
+export interface BenchmarkPaintObserver {
+  assertMounted(): void;
+  waitForPaint(t0: number, options: BenchmarkOptions): Promise<number>;
+}
+
 function findCoreElement(): HTMLElement | null {
   const direct = document.querySelector<HTMLElement>('#benchmark-core');
   if (direct) return direct;
@@ -33,7 +38,7 @@ function isPaintable(element: HTMLElement): boolean {
   );
 }
 
-function waitForPaint(t0: number, timeoutMs: number): Promise<number> {
+function waitForDomPaint(t0: number, timeoutMs: number): Promise<number> {
   return new Promise((resolve, reject) => {
     const timeout = window.setTimeout(() => reject(new Error('core element paint timed out')), timeoutMs);
 
@@ -60,7 +65,22 @@ function waitForPaint(t0: number, timeoutMs: number): Promise<number> {
   });
 }
 
-export function installBenchmark(startMicroApp: StartMicroApp): void {
+const domPaintObserver: BenchmarkPaintObserver = {
+  assertMounted() {
+    const mountedCore = findCoreElement();
+    if (mountedCore?.dataset.mounted !== 'true') {
+      throw new Error('micro app settled without mounting its core element');
+    }
+  },
+  waitForPaint(t0, options) {
+    return waitForDomPaint(t0, options.timeoutMs);
+  },
+};
+
+export function installBenchmark(
+  startMicroApp: StartMicroApp,
+  paintObserver: BenchmarkPaintObserver = domPaintObserver,
+): void {
   window.__BENCHMARK__ = {
     async run(options) {
       const container = document.querySelector<HTMLElement>('#micro-app-container');
@@ -68,13 +88,10 @@ export function installBenchmark(startMicroApp: StartMicroApp): void {
       container.replaceChildren();
 
       const t0 = performance.now();
-      const paintPromise = waitForPaint(t0, options.timeoutMs);
+      const paintPromise = paintObserver.waitForPaint(t0, options);
       const settlePromise = startMicroApp(options);
       const [duration] = await Promise.all([paintPromise, settlePromise]);
-      const mountedCore = findCoreElement();
-      if (mountedCore?.dataset.mounted !== 'true') {
-        throw new Error('micro app settled without mounting its core element');
-      }
+      paintObserver.assertMounted();
       return { duration, settled: true, t0, t1: t0 + duration };
     },
   };

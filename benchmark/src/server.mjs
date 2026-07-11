@@ -40,6 +40,16 @@ const ENTRY = `
   };
   global.__WUJIE_MOUNT = mountedRoot;
   global.__WUJIE_UNMOUNT = unmount;
+
+  if (global.location.search.indexOf('benchmark=native-iframe') !== -1) {
+    var benchmarkParams = new URLSearchParams(global.location.search);
+    var parentOrigin = benchmarkParams.get('benchmark-parent-origin');
+    var token = benchmarkParams.get('benchmark-token');
+    if (parentOrigin && token) {
+      mountedRoot();
+      global.parent.postMessage({ type: 'native-app-mounted', version: 1, token: token }, parentOrigin);
+    }
+  }
 })(window);
 `.trim();
 
@@ -61,6 +71,50 @@ const HTML_CHUNKS = [
           rows += '<div class="benchmark-row"><b>' + index + '</b><span>deterministic benchmark row</span></div>';
         }
         root.innerHTML = '<section id="benchmark-core" data-mounted="false"><h1>micro app core</h1>' + rows + '</section>';
+
+        if (window.location.search.indexOf('benchmark=native-iframe') !== -1) {
+          var benchmarkParams = new URLSearchParams(window.location.search);
+          var parentOrigin = benchmarkParams.get('benchmark-parent-origin');
+          var token = benchmarkParams.get('benchmark-token');
+          if (parentOrigin && token) {
+            var isPaintable = function isPaintable(element) {
+              var rect = element.getBoundingClientRect();
+              var style = getComputedStyle(element);
+              return rect.width > 0 &&
+                rect.height > 0 &&
+                style.display !== 'none' &&
+                style.visibility !== 'hidden' &&
+                style.opacity !== '0' &&
+                style.getPropertyValue('--benchmark-style-ready').trim() === '1';
+            };
+
+            var waitForPaint = function waitForPaint() {
+              var core = document.querySelector('#benchmark-core');
+              if (!core || !isPaintable(core)) {
+                requestAnimationFrame(waitForPaint);
+                return;
+              }
+
+              requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                  var paintedCore = document.querySelector('#benchmark-core');
+                  if (!paintedCore || !isPaintable(paintedCore)) {
+                    requestAnimationFrame(waitForPaint);
+                    return;
+                  }
+                  window.parent.postMessage({
+                    paintedAt: performance.timeOrigin + performance.now(),
+                    token: token,
+                    type: 'native-core-painted',
+                    version: 1
+                  }, parentOrigin);
+                });
+              });
+            };
+
+            requestAnimationFrame(waitForPaint);
+          }
+        }
       })();
     </script>`,
   `<script src="./entry.js" entry></script>

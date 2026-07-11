@@ -29,10 +29,24 @@ export const PRODUCT_VARIANTS = [
   },
   {
     delivery: 'buffered',
+    framework: 'native',
+    frameworkOptions: {},
+    id: 'native-iframe',
+    label: 'Native iframe · buffered',
+  },
+  {
+    delivery: 'buffered',
     framework: 'wujie',
     frameworkOptions: WUJIE_OPTIONS,
     id: 'wujie-isolated',
     label: 'Wujie · iframe + Shadow DOM',
+  },
+  {
+    delivery: 'streamed',
+    framework: 'native',
+    frameworkOptions: {},
+    id: 'native-iframe-streamed',
+    label: 'Native iframe · streamed',
   },
   {
     delivery: 'streamed',
@@ -69,10 +83,34 @@ export const PRODUCT_COMPARISONS = [
     reference: 'qk-sandbox',
   },
   {
+    candidate: 'qk-full-isolation',
+    id: 'qiankun-native-isolated',
+    label: 'qiankun vs native iframe under isolation',
+    reference: 'native-iframe',
+  },
+  {
+    candidate: 'wujie-isolated',
+    id: 'wujie-native-isolated',
+    label: 'Wujie vs native iframe under isolation',
+    reference: 'native-iframe',
+  },
+  {
     candidate: 'wujie-isolated',
     id: 'isolated-framework',
     label: 'Wujie vs qiankun under isolation',
     reference: 'qk-full-isolation',
+  },
+  {
+    candidate: 'qk-streamed',
+    id: 'qiankun-native-streamed',
+    label: 'qiankun vs native iframe with streamed HTML',
+    reference: 'native-iframe-streamed',
+  },
+  {
+    candidate: 'wujie-streamed',
+    id: 'wujie-native-streamed',
+    label: 'Wujie vs native iframe with streamed HTML',
+    reference: 'native-iframe-streamed',
   },
   {
     candidate: 'wujie-streamed',

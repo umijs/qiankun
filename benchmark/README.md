@@ -1,6 +1,6 @@
 # qiankun benchmark
 
-This workspace compares the cold-load path of the locally built qiankun package with a pinned Wujie release. It is intentionally separate from `e2e/`: Playwright Library only drives the browser boundaries, while all timing and core-element detection run inside the page.
+This workspace compares the cold-load path of the locally built qiankun package with a pinned Wujie release and a cross-origin native iframe baseline. It is intentionally separate from `e2e/`: Playwright Library only drives the browser boundaries, while all timing and core-element detection run inside the page.
 
 ## Commands
 
@@ -52,21 +52,25 @@ The matrix is explicit rather than a cartesian product:
 1. qiankun without sandbox or style isolation
 2. qiankun with sandbox only
 3. qiankun with sandbox and style isolation
-4. Wujie with its intrinsic iframe and Shadow DOM isolation
-5. qiankun with full isolation and a three-chunk HTML response
-6. Wujie with the same three-chunk HTML response
+4. a cross-origin native iframe with a buffered HTML response
+5. Wujie with its intrinsic iframe and Shadow DOM isolation
+6. a cross-origin native iframe with a three-chunk HTML response
+7. qiankun with full isolation and the same three-chunk HTML response
+8. Wujie with the same three-chunk HTML response
 
-Wujie does not expose switches that disable its JavaScript or CSS isolation. Its off-cases are therefore marked N/A instead of being compared against a semantically different configuration.
+Wujie does not expose switches that disable its JavaScript or CSS isolation. Its off-cases are therefore marked N/A instead of being compared against a semantically different configuration. The native iframe is a browser-platform reference, not a zero-cost lower bound: it owns a separate document and browsing context, while qiankun renders in the host document and Wujie combines an iframe JavaScript realm with Shadow DOM rendering.
 
 ## Measurement contract
 
 - `t0`: immediately before `loadMicroApp` or `startApp` is called in the host page.
 - `t1`: the core marker exists, has non-zero geometry, is visible, has the expected CSS sentinel, and survives two `requestAnimationFrame` callbacks.
 - The framework must still finish mounting successfully; settlement is awaited outside the measured duration.
+- The cross-origin native iframe checks the same paint conditions inside the child document and reports its absolute high-resolution timestamp through an origin-, source-, version-, and token-validated `postMessage`. Its final entry execution and iframe `load` are awaited as settlement, outside the measured duration.
 - Buffered and streamed entry responses contain identical bytes. Streamed HTML is emitted at 0/50/100 ms by default.
 - The browser process is reused, but every attempt receives a fresh BrowserContext and page.
 - No trace, video, screenshot, HAR, route interception, retry, or parallel execution is enabled.
 - Raw warmup and measured samples are retained; none are silently replaced or filtered as outliers.
+- Host bundles are loaded before `t0`, so package download and top-level initialization are outside this benchmark's scope.
 
 The primary statistic is the paired median relative delta with a 10,000-resample bootstrap 95% confidence interval. Median, mean, p75, p95, MAD, standard deviation, and CV are also retained. Positive comparison deltas mean the candidate is slower than the reference.
 

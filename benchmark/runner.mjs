@@ -113,7 +113,9 @@ function renderRunSummary({
   revisionEvaluation,
 }) {
   const lines = [
-    metadata.options.mode === 'revision' ? '# qiankun revision benchmark' : '# qiankun vs Wujie benchmark',
+    metadata.options.mode === 'revision'
+      ? '# qiankun revision benchmark'
+      : '# qiankun, Wujie, and native iframe benchmark',
     '',
     `- Run: ${metadata.runId}`,
     `${metadata.options.mode === 'revision' ? '- Candidate commit' : '- Commit'}: ${metadata.commit}${metadata.dirty ? ' (dirty)' : ''}`,

@@ -5,10 +5,19 @@ import * as scenarios from '../scenarios.mjs';
 
 const { CALIBRATION_VARIANTS, PRODUCT_COMPARISONS, PRODUCT_VARIANTS } = scenarios;
 
-test('the product matrix contains six explicit variants instead of a cartesian product', () => {
+test('the product matrix contains eight explicit variants instead of a cartesian product', () => {
   assert.deepEqual(
     PRODUCT_VARIANTS.map((variant) => variant.id),
-    ['qk-no-isolation', 'qk-sandbox', 'qk-full-isolation', 'wujie-isolated', 'qk-streamed', 'wujie-streamed'],
+    [
+      'qk-no-isolation',
+      'qk-sandbox',
+      'qk-full-isolation',
+      'native-iframe',
+      'wujie-isolated',
+      'native-iframe-streamed',
+      'qk-streamed',
+      'wujie-streamed',
+    ],
   );
 });
 
@@ -33,10 +42,63 @@ test('wujie variants use its fastest cold-load isolated configuration', () => {
   }
 });
 
-test('the matrix defines the four comparisons used to diagnose optimization directions', () => {
+test('native iframe variants cover buffered and streamed browser baselines', () => {
+  assert.deepEqual(
+    PRODUCT_VARIANTS.filter(({ framework }) => framework === 'native').map(({ delivery, frameworkOptions, id }) => ({
+      delivery,
+      frameworkOptions,
+      id,
+    })),
+    [
+      { delivery: 'buffered', frameworkOptions: {}, id: 'native-iframe' },
+      { delivery: 'streamed', frameworkOptions: {}, id: 'native-iframe-streamed' },
+    ],
+  );
+});
+
+test('the matrix defines framework and native-baseline comparisons', () => {
   assert.deepEqual(
     PRODUCT_COMPARISONS.map((comparison) => comparison.id),
-    ['sandbox-cost', 'style-isolation-cost', 'isolated-framework', 'streaming-framework'],
+    [
+      'sandbox-cost',
+      'style-isolation-cost',
+      'qiankun-native-isolated',
+      'wujie-native-isolated',
+      'isolated-framework',
+      'qiankun-native-streamed',
+      'wujie-native-streamed',
+      'streaming-framework',
+    ],
+  );
+
+  assert.deepEqual(
+    PRODUCT_COMPARISONS.filter(({ id }) => id.includes('native')).map(({ candidate, id, reference }) => ({
+      candidate,
+      id,
+      reference,
+    })),
+    [
+      {
+        candidate: 'qk-full-isolation',
+        id: 'qiankun-native-isolated',
+        reference: 'native-iframe',
+      },
+      {
+        candidate: 'wujie-isolated',
+        id: 'wujie-native-isolated',
+        reference: 'native-iframe',
+      },
+      {
+        candidate: 'qk-streamed',
+        id: 'qiankun-native-streamed',
+        reference: 'native-iframe-streamed',
+      },
+      {
+        candidate: 'wujie-streamed',
+        id: 'wujie-native-streamed',
+        reference: 'native-iframe-streamed',
+      },
+    ],
   );
 });
 

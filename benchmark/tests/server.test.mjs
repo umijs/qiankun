@@ -54,12 +54,21 @@ test('fixture assets are deterministic and missing paths return 404', async () =
   try {
     const style = await request(`${fixture.origin}/style.css`);
     const entry = await request(`${fixture.origin}/entry.js`);
+    const app = await request(`${fixture.origin}/app?delivery=buffered`);
     const missing = await request(`${fixture.origin}/missing.js`);
 
     assert.equal(style.statusCode, 200);
     assert.match(style.body, /--benchmark-style-ready:\s*1/);
     assert.equal(entry.statusCode, 200);
     assert.match(entry.body, /__WUJIE_MOUNT/);
+    assert.match(entry.body, /native-app-mounted/);
+    assert.equal(app.statusCode, 200);
+    assert.match(app.body, /benchmark=native-iframe/);
+    assert.match(app.body, /benchmark-parent-origin/);
+    assert.match(app.body, /benchmark-token/);
+    assert.match(app.body, /native-core-painted/);
+    assert.match(app.body, /paintedAt: performance\.timeOrigin \+ performance\.now\(\)/);
+    assert.ok(app.body.indexOf('native-core-painted') < app.body.indexOf('<script src="./entry.js" entry>'));
     assert.equal(missing.statusCode, 404);
   } finally {
     await fixture.close();
