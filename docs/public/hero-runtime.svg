@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 500" role="img" aria-labelledby="title desc">
+  <title id="title">qiankun runtime canvas</title>
+  <desc id="desc">A host application mounting several independently delivered micro-apps into isolated page regions.</desc>
+  <defs>
+    <filter id="stage-shadow" x="-15%" y="-15%" width="130%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#211b43" flood-opacity=".12" />
+    </filter>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M1 1l5 3-5 3" fill="none" stroke="#E6A02C" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" />
+    </marker>
+  </defs>
+  <style>
+    text { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .mono { font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; }
+    .shell { fill: #FCFCFF; }
+    .surface { fill: #FFFFFF; }
+    .surface-soft { fill: #F5F4FA; }
+    .line { stroke: #DEDBE9; }
+    .ink { fill: #211E32; }
+    .muted { fill: #706B80; }
+  </style>
+
+  <path d="M574 34a89 89 0 0 1 72 34" fill="none" stroke="#5848A8" stroke-linecap="round" stroke-width="10" opacity=".12" />
+  <path d="M598 18a119 119 0 0 1 66 30" fill="none" stroke="#5848A8" stroke-linecap="round" stroke-width="5" opacity=".24" />
+  <circle cx="646" cy="75" r="5" fill="#E6A02C" />
+
+  <g filter="url(#stage-shadow)">
+    <rect class="shell" x="28" y="48" width="624" height="390" rx="22" />
+    <rect x="28.5" y="48.5" width="623" height="389" rx="21.5" fill="none" class="line" />
+  </g>
+
+  <path d="M50 48h580a22 22 0 0 1 22 22v35H28V70a22 22 0 0 1 22-22z" class="surface-soft" />
+  <path d="M28 105h624" class="line" fill="none" />
+  <circle cx="58" cy="77" r="4" fill="#B7B1C9" />
+  <circle cx="74" cy="77" r="4" fill="#B7B1C9" opacity=".72" />
+  <circle cx="90" cy="77" r="4" fill="#B7B1C9" opacity=".44" />
+  <rect x="116" y="66" width="160" height="23" rx="6" class="surface" />
+  <rect x="116.5" y="66.5" width="159" height="22" rx="5.5" fill="none" class="line" />
+  <circle cx="132" cy="77.5" r="3" fill="#5848A8" />
+  <text x="143" y="81" class="mono muted" font-size="10.5">host / workspace</text>
+  <rect x="558" y="66" width="68" height="23" rx="11.5" fill="#E9E6F5" />
+  <circle cx="572" cy="77.5" r="3" fill="#5848A8" />
+  <text x="581" y="81" fill="#5848A8" font-size="10" font-weight="600">READY</text>
+
+  <path d="M28 105h82v333H50a22 22 0 0 1-22-22V105z" fill="#403583" />
+  <g transform="translate(49 128)">
+    <path d="M0 12a12 12 0 0 1 12-12h28a12 12 0 0 1 12 12v26a12 12 0 0 1-12 12H12A12 12 0 0 1 0 38z" fill="#FFFFFF" opacity=".12" />
+    <path d="M15 12h22M15 20h13M15 28h18" fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-width="2" />
+  </g>
+  <g fill="none" stroke="#D5CFEE" stroke-linecap="round" stroke-width="2" opacity=".62">
+    <path d="M63 205h14M70 198v14" />
+    <rect x="62" y="239" width="16" height="13" rx="3" />
+    <path d="M62 292h16M62 299h11" />
+  </g>
+  <text x="69" y="412" fill="#D5CFEE" font-size="9" letter-spacing="1.2" text-anchor="middle">HOST</text>
+
+  <text x="140" y="134" class="ink" font-size="15" font-weight="600">Customer workspace</text>
+  <text x="140" y="151" class="muted" font-size="10.5">Composed by the host at runtime</text>
+
+  <rect x="140" y="168" width="302" height="188" rx="16" fill="none" stroke="#AAA2CB" stroke-dasharray="5 5" />
+  <rect x="154" y="157" width="86" height="22" rx="11" class="surface" />
+  <text x="197" y="171" fill="#5848A8" font-size="9.5" font-weight="600" letter-spacing="1" text-anchor="middle">MOUNT POINT</text>
+
+  <rect x="154" y="184" width="274" height="158" rx="12" class="surface" />
+  <rect x="154.5" y="184.5" width="273" height="157" rx="11.5" fill="none" class="line" />
+  <rect x="154" y="184" width="5" height="158" rx="2.5" fill="#5848A8" />
+  <rect x="174" y="204" width="34" height="34" rx="8" fill="#E9E6F5" />
+  <path d="M183 216h16M183 222h10" fill="none" stroke="#5848A8" stroke-linecap="round" stroke-width="2" />
+  <text x="220" y="217" class="ink" font-size="13" font-weight="600">Orders</text>
+  <text x="220" y="232" class="muted" font-size="10">React · independently released</text>
+  <rect x="345" y="204" width="63" height="22" rx="11" fill="#FFF3D9" />
+  <circle cx="358" cy="215" r="3" fill="#E6A02C" />
+  <text x="368" y="218.5" fill="#9C6410" font-size="9" font-weight="600">MOUNTED</text>
+  <path d="M174 255h234" class="line" fill="none" />
+  <rect x="174" y="273" width="46" height="8" rx="4" fill="#DDD9EB" />
+  <rect x="174" y="288" width="88" height="7" rx="3.5" fill="#ECEAF3" />
+  <rect x="277" y="271" width="131" height="28" rx="6" fill="#F3F1F8" />
+  <path d="M291 281h44M291 289h67" stroke="#B4AEC5" stroke-linecap="round" stroke-width="3" />
+  <rect x="174" y="314" width="234" height="8" rx="4" fill="#F1EFF6" />
+
+  <rect x="462" y="168" width="164" height="82" rx="13" class="surface" />
+  <rect x="462.5" y="168.5" width="163" height="81" rx="12.5" fill="none" class="line" />
+  <rect x="478" y="185" width="28" height="28" rx="7" fill="#E9E6F5" />
+  <circle cx="492" cy="199" r="6" fill="none" stroke="#5848A8" stroke-width="2" />
+  <path d="M488 199h8M492 195v8" stroke="#5848A8" stroke-linecap="round" stroke-width="1.5" />
+  <text x="517" y="197" class="ink" font-size="12" font-weight="600">Account</text>
+  <text x="517" y="213" class="muted" font-size="9.5">Vue · isolated</text>
+  <rect x="478" y="229" width="65" height="5" rx="2.5" fill="#E7E4EF" />
+
+  <rect x="462" y="265" width="164" height="91" rx="13" class="surface" />
+  <rect x="462.5" y="265.5" width="163" height="90" rx="12.5" fill="none" class="line" />
+  <text x="478" y="288" class="ink" font-size="12" font-weight="600">Insights</text>
+  <text x="478" y="303" class="muted" font-size="9.5">ESM · on demand</text>
+  <path d="M480 334v-13M495 334v-22M510 334v-15M525 334v-29M540 334v-20M555 334v-27M570 334v-17M585 334v-25M600 334v-11" stroke="#5848A8" stroke-linecap="round" stroke-width="5" opacity=".72" />
+  <path d="M478 340h130" class="line" fill="none" />
+
+  <g>
+    <rect x="140" y="378" width="342" height="44" rx="10" fill="#211B43" />
+    <circle cx="160" cy="400" r="4" fill="#E6A02C" />
+    <text x="174" y="404" fill="#F7F5FC" class="mono" font-size="11.5">loadMicroApp({ container })</text>
+    <text x="455" y="404" fill="#B8B1D3" class="mono" font-size="9" text-anchor="end">instance</text>
+  </g>
+  <path d="M482 400h35c14 0 20-8 20-20v-8" fill="none" stroke="#E6A02C" stroke-linecap="round" stroke-width="1.7" marker-end="url(#arrow)" />
+
+  <g transform="translate(584 382)">
+    <path d="M0 18A18 18 0 0 1 18 0h20a18 18 0 0 1 18 18v20" fill="none" stroke="#5848A8" stroke-linecap="round" stroke-width="8" />
+    <path d="M12 18a6 6 0 0 1 6-6h20a6 6 0 0 1 6 6v20" fill="none" stroke="#8E82C7" stroke-linecap="round" stroke-width="5" />
+    <path d="M44 38h12v12" fill="none" stroke="#E6A02C" stroke-linecap="square" stroke-width="8" />
+  </g>
+</svg>

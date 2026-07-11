@@ -1,9 +1,8 @@
 /* =============================================================================
    qiankun docs — 袖里乾坤 design language
-   Brand primary: geekblue #2F54EB · seal/danger: cinnabar #D93026
-   Flat, hairline-driven, one stage shadow, no gradients except the hero name.
-   Light tokens are verbatim from examples/main/src/index.css @theme.
-   Dark tokens are derived for the docs (no dark palette exists in source).
+   Brand primary: qiankun violet #5848A8 · runtime accent: amber #E6A02C
+   Flat, hairline-driven, one stage shadow, and no decorative gradients.
+   The homepage expresses composition through a runtime canvas, not a logo wall.
    ============================================================================= */
 
 :root {
@@ -14,32 +13,32 @@
   --vp-font-family-base: 'IBM Plex Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', -apple-system, sans-serif;
   --vp-font-family-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
-  /* ---- brand color (geekblue) ---- */
-  --vp-c-brand-1: #2f54eb;
-  --vp-c-brand-2: #1d39c4;
-  --vp-c-brand-3: #2f54eb;
-  --vp-c-brand-soft: rgba(47, 84, 235, 0.10);
-  --vp-c-brand-softer: rgba(47, 84, 235, 0.05);
+  /* ---- brand color ---- */
+  --vp-c-brand-1: #5848a8;
+  --vp-c-brand-2: #493b91;
+  --vp-c-brand-3: #6758b5;
+  --vp-c-brand-soft: rgba(88, 72, 168, 0.12);
+  --vp-c-brand-softer: rgba(88, 72, 168, 0.06);
 
   /* ---- surfaces & ink (light) ---- */
-  --vp-c-bg: #ffffff;
-  --vp-c-bg-alt: #f7f8fa;
-  --vp-c-bg-soft: #f7f8fa;
+  --vp-c-bg: #fbfcff;
+  --vp-c-bg-alt: #f4f4f8;
+  --vp-c-bg-soft: #f4f4f8;
   --vp-c-bg-elv: #ffffff;
-  --vp-c-divider: #e4e7ec;
-  --vp-c-border: #e4e7ec;
-  --vp-c-gutter: #e4e7ec;
-  --vp-c-text-1: #1b1f26;
-  --vp-c-text-2: #5c6470;
-  --vp-c-text-3: #8b93a1;
+  --vp-c-divider: #e4e3eb;
+  --vp-c-border: #e4e3eb;
+  --vp-c-gutter: #e4e3eb;
+  --vp-c-text-1: #171a2b;
+  --vp-c-text-2: #5e6070;
+  --vp-c-text-3: #8b8d9a;
 
   /* ---- semantic roles ---- */
   --vp-c-success-1: #16a34a;
   --vp-c-success-2: #15903f;
   --vp-c-success-3: #16a34a;
-  --vp-c-warning-1: #b8860b;
-  --vp-c-warning-2: #a2760a;
-  --vp-c-warning-3: #b8860b;
+  --vp-c-warning-1: #b97816;
+  --vp-c-warning-2: #9c6410;
+  --vp-c-warning-3: #e6a02c;
   --vp-c-danger-1: #d93026; /* cinnabar — reserved for danger + the seal */
   --vp-c-danger-2: #bf2820;
   --vp-c-danger-3: #d93026;
@@ -48,20 +47,20 @@
   --qk-radius-card: 10px;
   --qk-radius-control: 6px;
   --qk-hairline: 1px solid var(--vp-c-divider);
-  --qk-shadow-stage: 0 1px 2px rgb(27 31 38 / 4%), 0 8px 24px rgb(27 31 38 / 6%);
+  --qk-shadow-stage: 0 1px 2px rgb(33 27 67 / 4%), 0 12px 32px rgb(33 27 67 / 8%);
 
   --vp-shadow-1: 0 1px 2px rgb(27 31 38 / 4%);
   --vp-shadow-2: var(--qk-shadow-stage);
   --vp-shadow-3: var(--qk-shadow-stage);
 }
 
-/* ---- dark (author-derived; keep geekblue, lift for contrast) ---- */
+/* ---- dark (author-derived; lift violet for contrast) ---- */
 .dark {
-  --vp-c-brand-1: #6a8bff;
-  --vp-c-brand-2: #8aa4ff;
-  --vp-c-brand-3: #4f74ff;
-  --vp-c-brand-soft: rgba(106, 139, 255, 0.14);
-  --vp-c-brand-softer: rgba(106, 139, 255, 0.07);
+  --vp-c-brand-1: #a99ce0;
+  --vp-c-brand-2: #c0b5eb;
+  --vp-c-brand-3: #8f80d1;
+  --vp-c-brand-soft: rgba(169, 156, 224, 0.16);
+  --vp-c-brand-softer: rgba(169, 156, 224, 0.08);
 
   --vp-c-bg: #121419;
   --vp-c-bg-alt: #0d0f13;
@@ -77,7 +76,7 @@
   --vp-c-danger-1: #f26158;
   --vp-c-danger-2: #e8493f;
   --vp-c-success-1: #35c46a;
-  --vp-c-warning-1: #d4a72c;
+  --vp-c-warning-1: #efb64e;
 
   --qk-shadow-stage: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 36%);
 }
@@ -87,90 +86,215 @@
    ============================================================================= */
 
 :root {
-  --vp-home-hero-name-color: transparent;
-  /* the single sanctioned gradient: geekblue #2F54EB → deep #1D39C4 */
-  --vp-home-hero-name-background: linear-gradient(120deg, #2f54eb 20%, #1d39c4);
-}
-.dark {
-  --vp-home-hero-name-background: linear-gradient(120deg, #8aa4ff 20%, #6a8bff);
+  --vp-home-hero-name-color: var(--vp-c-brand-1);
+  --vp-home-hero-name-background: none;
 }
 
+.VPHome {
+  background: var(--vp-c-bg);
+}
+.VPHero {
+  padding-bottom: 64px;
+}
+.VPHero .container {
+  max-width: 1200px;
+}
+.VPHero .main {
+  order: 1;
+}
+.VPHero .heading {
+  gap: 20px;
+}
 .VPHero .name {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  width: fit-content;
+  max-width: none;
+  border: 1px solid var(--vp-c-brand-soft);
+  border-radius: 6px;
+  background: var(--vp-c-brand-softer);
+  background-clip: border-box;
+  color: var(--vp-c-brand-1);
+  -webkit-background-clip: border-box;
+  -webkit-text-fill-color: var(--vp-c-brand-1);
   font-family: var(--qk-font-display);
-  letter-spacing: -0.02em;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 .VPHero .text {
+  max-width: 620px;
   font-family: var(--qk-font-display);
-  letter-spacing: -0.01em;
+  font-size: clamp(42px, 5vw, 64px);
+  font-weight: 600;
+  line-height: 1.04;
+  letter-spacing: -0.04em;
   color: var(--vp-c-text-1);
 }
 .VPHero .tagline {
+  padding-top: 20px;
+  max-width: 610px;
   color: var(--vp-c-text-2);
-  max-width: 34rem;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.7;
 }
-
-/* Hero logo — the qiankun mark is a full-bleed square, so cap it and give it
-   breathing room so it never crowds the fixed navbar. */
+.VPHero.has-image .container {
+  text-align: left;
+}
+.VPHero.has-image .name,
+.VPHero.has-image .text,
+.VPHero.has-image .tagline {
+  margin: 0;
+}
+.VPHero.has-image .actions {
+  justify-content: flex-start;
+}
 .VPHero .image {
-  padding: 8px 0;
+  order: 2;
+  margin: 40px auto 0;
+  padding: 0;
+  width: 100%;
 }
 .VPHero .image-container {
-  max-width: 100%;
+  width: min(100%, 620px);
+  height: auto;
+  aspect-ratio: 680 / 500;
+  transform: none;
+}
+.VPHero .image-bg {
+  display: none;
 }
 .VPHero .image-container .image-src {
-  max-width: 240px;
-  max-height: 240px;
-}
-@media (min-width: 960px) {
-  .VPHero .image-container .image-src {
-    max-width: 264px;
-    max-height: 264px;
-  }
+  width: 100%;
+  max-width: 620px;
+  max-height: none;
 }
 
-/* hero action buttons — flat, hairline secondary */
+/* hero action buttons — clear primary, quiet secondary */
 .VPButton.brand {
+  border-color: var(--vp-c-brand-1);
   border-radius: var(--qk-radius-control);
+  background: var(--vp-c-brand-1);
   font-weight: 600;
+}
+.VPButton.brand:hover {
+  border-color: var(--vp-c-brand-2);
+  background: var(--vp-c-brand-2);
+}
+.dark .VPButton.brand,
+.dark .VPButton.brand:hover {
+  color: #211b43;
 }
 .VPButton.alt {
   border-radius: var(--qk-radius-control);
   border: var(--qk-hairline);
   background: transparent;
 }
+.VPButton.alt:hover {
+  border-color: var(--vp-c-brand-1);
+  background: var(--vp-c-brand-softer);
+  color: var(--vp-c-brand-1);
+}
+
+@media (min-width: 640px) {
+  .VPHero {
+    padding-bottom: 72px;
+  }
+}
+
+@media (min-width: 960px) {
+  .VPHero {
+    padding-top: calc(var(--vp-nav-height) + var(--vp-layout-top-height, 0px) + 88px);
+    padding-bottom: 72px;
+  }
+  .VPHero .container {
+    align-items: center;
+    gap: 44px;
+  }
+  .VPHero.has-image .main {
+    max-width: 620px;
+  }
+  .VPHero .image {
+    margin: 0;
+    min-width: 0;
+  }
+  .VPHero .image-container {
+    width: 100%;
+  }
+}
 
 /* =============================================================================
-   Feature cards — hairline, flat, 160ms hover lift
+   Home value strip — three proofs, not a marketing-card wall
    ============================================================================= */
 
-.VPFeature {
-  border: var(--qk-hairline);
-  border-radius: var(--qk-radius-card);
-  background: var(--vp-c-bg);
-  transition: transform 160ms ease-out, border-color 160ms ease-out, box-shadow 160ms ease-out;
+.VPHomeFeatures {
+  padding-bottom: 88px;
 }
-.VPFeature:hover {
-  transform: translateY(-2px);
-  border-color: var(--vp-c-brand-1);
-  box-shadow: var(--qk-shadow-stage);
+.VPHomeFeatures .container {
+  max-width: 1200px;
 }
-.VPFeature .title {
+.VPHomeFeatures .items {
+  margin: 0;
+  border-top: var(--qk-hairline);
+  border-bottom: var(--qk-hairline);
+}
+.VPHomeFeatures .item {
+  padding: 0;
+}
+.VPHomeFeatures .item + .item {
+  border-top: var(--qk-hairline);
+}
+.VPHomeFeatures .VPFeature {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  transition: none;
+}
+.VPHomeFeatures .VPFeature .box {
+  padding: 28px 8px;
+}
+.VPHomeFeatures .VPFeature .title {
   font-family: var(--qk-font-display);
   font-weight: 600;
   letter-spacing: -0.01em;
 }
-.VPFeature .icon {
-  border-radius: var(--qk-radius-control);
+.VPHomeFeatures .VPFeature .details {
+  max-width: 33rem;
+  font-weight: 400;
+}
+.VPHomeFeatures .VPFeature .icon {
+  margin-bottom: 18px;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--vp-c-brand-soft);
+  border-radius: 8px;
   background: var(--vp-c-brand-soft) !important;
-  font-size: 22px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .VPFeature,
-  .VPFeature:hover {
-    transition: none;
-    transform: none;
+@media (min-width: 768px) {
+  .VPHomeFeatures .item + .item {
+    border-top: 0;
+    border-left: var(--qk-hairline);
   }
+  .VPHomeFeatures .VPFeature .box {
+    padding: 32px;
+  }
+}
+
+/* Keep the implementation sample editorial and secondary to the cover. */
+.VPHome .vp-doc.container {
+  max-width: 1152px;
+}
+.VPHome .vp-doc.container > h2,
+.VPHome .vp-doc.container > p,
+.VPHome .vp-doc.container > div[class*='language-'] {
+  margin-right: auto;
+  margin-left: auto;
+  max-width: 760px;
 }
 
 /* =============================================================================

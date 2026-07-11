@@ -2,44 +2,48 @@
 layout: home
 
 hero:
-  name: qiankun
-  tagline: Load and manage independently delivered micro-apps in one page
+  name: Micro-frontend runtime
+  text: Ship independently. Compose on demand.
+  tagline: Use loadMicroApp to mount front-end apps from different teams and frameworks wherever your product needs them. Each app keeps its own development and release cadence.
   image:
-    src: /logo.png
-    alt: qiankun
+    src: /hero-runtime.svg
+    alt: A host application composing independently delivered micro-apps at runtime
   actions:
     - theme: brand
-      text: Get started
+      text: Load your first micro-app
       link: /guide/getting-started
     - theme: alt
-      text: What is qiankun
+      text: See when qiankun fits
       link: /guide/what-is-qiankun
-    - theme: alt
-      text: GitHub
-      link: https://github.com/umijs/qiankun
 
 features:
-  - icon: 🚀
-    title: Simple
-    details: Works with any JavaScript framework. Load a micro-app into an HTMLElement and control its lifetime with a small API.
-  - icon: 🛡️
-    title: Complete
-    details: Ships the essentials for a micro-frontend system, including JavaScript isolation, optional style isolation, and preloading.
-  - icon: 🔧
-    title: Production ready
-    details: Battle-tested across a large number of production apps inside and outside Ant Group.
-  - icon: ⚡
-    title: High performance
-    details: Streams HTML entries and preloads assets as they are discovered, keeping application loading responsive.
-  - icon: 🎯
-    title: Framework agnostic
-    details: The main app does not constrain a micro-app's framework or release process.
-  - icon: 🧬
-    title: Runtime isolation
-    details: JavaScript sandboxes and native ESM support help independently developed apps coexist on one page.
+  - icon:
+      src: /icons/agnostic.svg
+      alt: Independent application boundaries
+      width: 22
+      height: 22
+      wrap: true
+    title: Release without lockstep
+    details: Each micro-app keeps its stack, repository, and release cadence. The host composes them at runtime.
+  - icon:
+      src: /icons/scope.svg
+      alt: An application mounted into a page region
+      width: 22
+      height: 22
+      wrap: true
+    title: Control each instance
+    details: Mount into any HTMLElement with loadMicroApp, then update or unmount the returned instance when needed.
+  - icon:
+      src: /icons/sandbox.svg
+      alt: Isolated runtime boundary
+      width: 22
+      height: 22
+      wrap: true
+    title: Coexist with fewer conflicts
+    details: JavaScript sandboxing, optional style isolation, and native ESM support help different stacks share one page.
 ---
 
-## Load your first micro-app
+## Control one micro-app instance
 
 Install qiankun in the main app:
 
@@ -47,36 +51,26 @@ Install qiankun in the main app:
 pnpm add qiankun
 ```
 
-Mount the micro-app after its container exists, and keep the returned handle so it can be unmounted:
+Mount after the container exists, then keep the returned handle for status and teardown:
 
-```tsx
+```ts
 import { loadMicroApp } from 'qiankun';
-import { useEffect, useRef } from 'react';
 
-export function MicroAppSlot() {
-  const containerRef = useRef<HTMLDivElement>(null);
+const container = document.getElementById('micro-app-slot');
+if (!container) throw new Error('micro-app-slot not found');
 
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+const microApp = loadMicroApp({
+  name: 'orders',
+  entry: '//localhost:7101',
+  container,
+});
 
-    const microApp = loadMicroApp({
-      name: 'sub-app',
-      entry: '//localhost:7101',
-      container,
-    });
+await microApp.mountPromise;
 
-    return () => {
-      void microApp.unmount().catch((error: unknown) => {
-        console.error('Failed to unmount sub-app:', error);
-      });
-    };
-  }, []);
-
-  return <div ref={containerRef} />;
-}
+// When this part of the page is removed:
+await microApp.unmount();
 ```
 
-The micro-app exports `bootstrap`, `mount`, and `unmount`; qiankun loads it into the `HTMLElement` and drives those lifecycles. Follow [Getting started](/guide/getting-started) to run a main app on port `7099` and a micro-app on port `7101`.
+The micro-app exports `bootstrap`, `mount`, and `unmount`; qiankun loads it into the `HTMLElement` and drives those lifecycles. Follow [Getting started](/guide/getting-started) for a complete runnable setup.
 
 For applications whose lifetime should be driven entirely by the URL, see the route-based [`registerMicroApps`](/api/register-micro-apps) and [`start`](/api/start) alternative.
