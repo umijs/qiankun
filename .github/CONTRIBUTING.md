@@ -316,28 +316,23 @@ When submitting feature requests, please:
 
 ## Release Process
 
-This project uses [Changesets](https://github.com/changesets/changesets) for version management and publishing:
+This project uses commit-driven release automation built on [Changesets](https://github.com/changesets/changesets). Ordinary pull requests do **not** add a `.changeset/*.md` file. Release metadata is derived from the Conventional Commits merged into `next`.
+
+See [`.changeset/README.md`](../.changeset/README.md) for the bump rules and full release flow.
+
+### For Contributors
+
+- Use a well-formed Conventional Commit title. `feat` creates a minor bump; `fix`, `perf`, `refactor`, and `revert` create a patch bump; a breaking change creates a major bump.
+- Documentation, test, CI, build, style, and chore-only commits do not create a release.
+- Add a hand-written changeset only when you intentionally need to override the inferred bump or package attribution.
 
 ### For Maintainers
 
-1. **Creating a changeset**: After merging PR, create a changeset:
+1. Merge the pull request into `next`. The `Changesets` workflow scans the unreleased commits and creates or updates the `chore: update versions` pull request.
+2. Review the package versions and changelog entries in that release pull request.
+3. Merge the release pull request. The workflow publishes the changed packages and creates one aggregated GitHub Release.
 
-   ```bash
-   npx changeset
-   ```
-
-2. **Release process**:
-
-   ```bash
-   # Alpha release (for testing)
-   pnpm run prerelease:alpha  # Enter pre-release mode and create changeset
-   pnpm run release:alpha     # Build and publish alpha version
-
-   # Production release
-   npx changeset version      # Update package versions
-   pnpm run build            # Build all packages
-   pnpm run ci:publish       # Publish to npm
-   ```
+Do not run `changeset` manually after merging a normal pull request. The latest reachable `v*` tag is the release boundary used by the generator, so verify that it identifies the current published release before resetting or migrating the release workflow.
 
 ### Build System
 

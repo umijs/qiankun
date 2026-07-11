@@ -13,8 +13,9 @@
  *
  *   --since <ref>   Exclusive lower bound of the commit range (default: the
  *                   most recent `v*` tag reachable from HEAD, else all history).
- *                   In CI, pass the push's "before" SHA so only newly-pushed
- *                   commits are considered.
+ *                   Release CI intentionally uses the default so each run can
+ *                   reconstruct every change still waiting in the release PR.
+ *                   Pass an explicit ref only for diagnostics or migrations.
  *   --dry           Print the changesets that would be written, write nothing.
  *
  * Idempotent: a changeset is named `auto-<short-sha>.md`, so re-running (or an

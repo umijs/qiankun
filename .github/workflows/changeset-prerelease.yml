@@ -39,8 +39,8 @@ jobs:
         run: pnpm run build
 
       # Replaces the manual "write a .changeset/*.md per PR" step: derive the
-      # pending changesets from Conventional Commits since the last release, so
-      # the changesets action below picks them up like hand-written ones.
+      # pending changesets from the complete unreleased commit range, so the
+      # changesets action below can rebuild its release PR from the base branch.
       # Idempotent (files named auto-<sha>); over-wide ranges never duplicate.
       - name: Generate changesets from commits
         run: node scripts/generate-changesets.mjs
