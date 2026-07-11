@@ -1,6 +1,6 @@
 # isRuntimeCompatible
 
-检查当前浏览器是否具备 qiankun v3 运行时所需的最低能力。主应用需要为不受支持的浏览器展示降级内容时，可以在加载应用前调用它。
+检查当前浏览器是否满足 qiankun v3 的最低运行条件。主应用需要在不受支持的浏览器中显示替代内容时，可在加载微应用前调用该函数。
 
 ## 函数签名
 
@@ -8,7 +8,7 @@
 function isRuntimeCompatible(): boolean;
 ```
 
-这项检查同步执行、不接收参数，也不会修改运行时状态。
+该检查同步执行，不接收参数，也不会修改运行时状态。
 
 ## 检查范围
 
@@ -17,10 +17,10 @@ function isRuntimeCompatible(): boolean;
 | 能力 | qiankun 的用途 |
 | --- | --- |
 | `Proxy` | JavaScript 隔离 |
-| `TransformStream` | 流式加载 HTML Entry |
+| `TransformStream` | 流式加载 HTML 入口 |
 | `URL.createObjectURL` | 隔离执行脚本 |
 
-应用代码应优先使用这项能力检测，而不是自行维护浏览器版本表。
+应用应优先使用该函数检测运行时能力，无需自行维护浏览器版本列表。
 
 ## 使用方式
 
@@ -51,15 +51,15 @@ if (!isRuntimeCompatible()) {
 
 ## 不在检查范围内的能力
 
-返回值只覆盖上面的三项核心运行时 API，并不会验证：
+返回值仅表示上述三项核心运行时 API 是否可用，不会验证：
 
 - [原生 ESM 应用](/zh-CN/concepts/esm-sandbox)额外依赖的浏览器行为；
 - 可选[样式隔离](/zh-CN/concepts/style-isolation)所需的 CSS `@scope`；
 - Content Security Policy、CORS 响应头、入口地址或资源是否可用。
 
-特别是，原生 ESM 路径需要动态注入多份 import map。即使 `isRuntimeCompatible()` 返回 `true`，Firefox 默认也没有开启这项能力；需要支持 Firefox 时，请使用 Classic/Webpack 交付路径。
+原生 ESM 执行路径需要动态注入多个 import map。即使 `isRuntimeCompatible()` 返回 `true`，Firefox 默认也不支持该能力。需要支持 Firefox 时，应采用 Classic/Webpack 交付方式。
 
-## 相关链接
+## 相关内容
 
 - [`loadMicroApp`](/zh-CN/api/load-micro-app)
 - [原生 ESM 支持](/zh-CN/concepts/esm-sandbox)

@@ -7,7 +7,7 @@ The component is built on [`vue-demi`](https://github.com/vueuse/vue-demi), so a
 ## Installation
 
 ```bash
-npm i @qiankunjs/vue
+pnpm add @qiankunjs/vue qiankun
 ```
 
 `vue` is a peer dependency with the range `^2.0.0 || >=3.0.0`. Under Vue 2 you also need `@vue/composition-api` installed (the component uses the Composition API through `vue-demi`).
@@ -28,7 +28,7 @@ import { MicroApp } from '@qiankunjs/vue';
 </template>
 ```
 
-`name` and `entry` are the only required props. `name` must be unique across mounted micro-apps; `entry` is the HTML URL of the micro-app. When either is missing the component logs an error and does nothing — it will not throw.
+`name` and `entry` are the only required props. `name` identifies the current instance, and `entry` is the micro-app's HTML entry URL. When either is missing, the component logs an error and does nothing; it does not throw.
 
 The component renders a single container `<div>` (class `qiankun-micro-app-container`) into which the micro-app is streamed. No wrapper element is added unless a loader or error boundary is active — see [Loading and error UI](#loading-and-error-ui).
 
@@ -36,10 +36,10 @@ The component renders a single container `<div>` (class `qiankun-micro-app-conta
 
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
-| `name` | `string` | — | **Required.** Unique micro-app name. |
+| `name` | `string` | — | **Required.** The name of this micro-app instance; changing it remounts the component. |
 | `entry` | `string` | — | **Required.** HTML entry URL of the micro-app. |
 | `settings` | `AppConfiguration` | `{ sandbox: true }` | Loader/sandbox configuration forwarded to `loadMicroApp`. See [AppConfiguration](/api/configuration). |
-| `lifeCycles` | `LifeCycles` | `undefined` | Global lifecycle hooks (`beforeLoad`, `beforeMount`, `afterMount`, `beforeUnmount`, `afterUnmount`). Merged into arrays, so your hooks are appended, not replaced. See [Lifecycle hooks](/api/lifecycles). |
+| `lifeCycles` | `LifeCycles` | `undefined` | Host-provided lifecycle hooks for this instance: `beforeLoad`, `beforeMount`, `afterMount`, `beforeUnmount`, and `afterUnmount`. Each field accepts a function or an array of functions. See [Lifecycle hooks](/api/lifecycles). |
 | `autoSetLoading` | `boolean` | `false` | Render the built-in loading indicator while the micro-app loads. |
 | `autoCaptureError` | `boolean` | `false` | Render the built-in error boundary when loading fails. |
 | `wrapperClassName` | `string` | `undefined` | Extra class on the wrapper element. Only takes effect when a loader or error boundary is active. |
@@ -47,11 +47,11 @@ The component renders a single container `<div>` (class `qiankun-micro-app-conta
 | `appProps` | `object` | `undefined` | Props passed through to the micro-app. This is the only channel for passing data to the sub-app in the Vue binding. |
 
 ::: info `settings` default differs from React
-The Vue binding defaults `settings` to `{ sandbox: true }`. The [React binding](/ecosystem/react) has no `settings` default. In both bindings the effective configuration is `{ globalContext: window, ...settings }`, so `window` is always the global context. The `sandbox` field defaults to `true` at the facade level regardless.
+The Vue binding defaults `settings` to `{ sandbox: true }`. The [React binding](/ecosystem/react) has no `settings` default. In both bindings the effective configuration is `{ globalContext: window, ...settings }`, so `window` is the default and `settings.globalContext` can override it. The `sandbox` field defaults to `true` at the facade level regardless.
 :::
 
-::: warning `appProps` is the only passthrough
-Unlike the React binding — where any extra prop on `<MicroApp>` is forwarded to the sub-app — the Vue binding does **not** forward arbitrary attributes. You must place everything the sub-app should receive inside the `appProps` object. Anything outside the declared props is ignored.
+::: warning Pass application data through `appProps`
+Unlike the React binding, the Vue binding does not forward arbitrary attributes to the micro-app. Put application data inside `appProps`. The current implementation also forwards `autoSetLoading`, `autoCaptureError`, and the `appProps` object itself; application code should not depend on these component-control fields.
 :::
 
 ### `settings` (AppConfiguration)
@@ -99,7 +99,7 @@ export async function mount(props) {
 `appProps` is **deep-watched**. Mutating a nested value (for example `appProps.theme = 'light'`) triggers `microApp.update(props)` on the running instance, provided the micro-app exposes an `update` lifecycle, its status is `MOUNTED`, and it is not being unmounted. See [Share state and communicate between apps](/cookbook/communicate-between-apps).
 
 ::: tip Updates only fire after mount
-`update` is serialized after the mount promise resolves, and only when the parcel status is `MOUNTED`. Prop mutations made before the micro-app finishes mounting are folded into the initial mount rather than producing a separate update.
+`update` is serialized after the mount promise resolves, and only when the parcel status is `MOUNTED`. Intermediate prop changes during mounting are not guaranteed to produce a separate update for every change.
 :::
 
 ## Loading and error UI
@@ -108,11 +108,11 @@ Both the loading indicator and the error boundary are opt-in. When neither is en
 
 ```mermaid
 flowchart TD
-  A[name changes / first mount] --> B[loading = false]
+  A[name changes / first mount] --> B[loading = true]
   B --> C[mountMicroApp -> loadMicroApp]
   C -->|mountPromise resolves| D{autoSetLoading?}
   D -->|yes| E[loading = false, loader hidden]
-  D -->|no| F[no loader rendered]
+  D -->|no| F[loading is not cleared automatically]
   C -->|load/bootstrap/mount rejects| G{error UI configured?}
   G -->|yes| H[error set, boundary shown]
   G -->|no| I[error re-thrown]
@@ -145,7 +145,7 @@ The Vue binding initializes `loading` to `false` (the React binding starts at `t
 
 ### Custom loader slot
 
-Provide a `#loader` scoped slot to render your own indicator. The slot receives `{ loading }`, a boolean that is `true` while loading and `false` once loading ends.
+Provide a `#loader` scoped slot to render your own indicator. The component passes the `loading` boolean directly to the slot; it is `true` while loading and `false` once loading ends.
 
 ```vue
 <script setup>
@@ -154,19 +154,19 @@ import { MicroApp } from '@qiankunjs/vue';
 </script>
 
 <template>
-  <micro-app name="app1" entry="http://localhost:8000">
-    <template #loader="{ loading }">
+  <micro-app name="app1" entry="http://localhost:8000" autoSetLoading>
+    <template #loader="loading">
       <custom-loader :loading="loading" />
     </template>
   </micro-app>
 </template>
 ```
 
-A `#loader` slot takes precedence over `autoSetLoading` — if the slot is present, the default loader is never used, and you do not need to pass `autoSetLoading`.
+A `#loader` slot takes precedence over the built-in loader. Keep `autoSetLoading` enabled if the component should automatically set `loading` to `false` when `mountPromise` resolves.
 
 ### Custom error boundary slot
 
-Provide an `#error-boundary` scoped slot to render your own error UI. The slot receives `{ error }`, an `Error` instance, and is only rendered once an error has actually occurred.
+Provide an `#error-boundary` scoped slot to render your own error UI. The component passes the `Error` instance directly to the slot, which is rendered only after an error occurs.
 
 ```vue
 <script setup>
@@ -176,7 +176,7 @@ import { MicroApp } from '@qiankunjs/vue';
 
 <template>
   <micro-app name="app1" entry="http://localhost:8000">
-    <template #error-boundary="{ error }">
+    <template #error-boundary="error">
       <custom-error-boundary :error="error" />
     </template>
   </micro-app>
@@ -185,18 +185,7 @@ import { MicroApp } from '@qiankunjs/vue';
 
 ### Uncaptured errors are re-thrown
 
-If you do **not** enable `autoCaptureError` and do **not** provide an `#error-boundary` slot, load, bootstrap, and mount errors are re-thrown rather than swallowed. In Vue, catch them with a component `errorCaptured` hook or a global error handler:
-
-```ts
-// main app entry
-import { createApp } from 'vue';
-
-const app = createApp(App);
-app.config.errorHandler = (err, instance, info) => {
-  console.error('micro-app error:', err, info);
-};
-app.mount('#root');
-```
+If you do **not** enable `autoCaptureError` and do **not** provide an `#error-boundary` slot, load, bootstrap, and mount errors are re-thrown from the asynchronous loading flow. Configure the built-in or custom error UI to prevent an unhandled promise rejection.
 
 ::: warning
 Enabling `autoCaptureError` or supplying an `#error-boundary` slot switches error handling from "throw" to "render". Choose one strategy per micro-app; do not rely on an outer `errorCaptured` for errors you have already routed into a boundary. See [Handle load and runtime errors](/cookbook/handle-errors).
@@ -204,7 +193,7 @@ Enabling `autoCaptureError` or supplying an `#error-boundary` slot switches erro
 
 ## Remounting and the exposed handle
 
-Changing the `name` prop tears down the current micro-app and mounts a fresh one — `name` is the watch key for (re)mounting. Unmount is automatic when the component is destroyed (`onBeforeUnmount`), and it awaits the in-flight mount promise before unmounting so concurrent mount/unmount cycles stay ordered.
+The component watches `name` to trigger remounting: changing it unmounts the current micro-app and creates a new instance. Changing `entry`, `settings`, or `lifeCycles` alone does not create a new instance. Unmount is automatic when the component is destroyed (`onBeforeUnmount`), and it awaits the in-flight mount promise before unmounting so concurrent mount/unmount cycles stay ordered.
 
 The running micro-app instance is exposed on the component instance under two names, `microApp` and `microAppRef` (both point at the same [`MicroApp`](/api/types) parcel handle). Reach it through a template ref:
 
@@ -273,13 +262,14 @@ const appProps = reactive({ userId: 42 });
     entry="http://localhost:8000"
     :settings="{ sandbox: true, styleIsolation: true }"
     :appProps="appProps"
+    autoSetLoading
     wrapperClassName="my-wrapper"
     className="my-container"
   >
-    <template #loader="{ loading }">
+    <template #loader="loading">
       <spinner v-if="loading" />
     </template>
-    <template #error-boundary="{ error }">
+    <template #error-boundary="error">
       <error-panel :message="error.message" />
     </template>
   </micro-app>

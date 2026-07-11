@@ -42,7 +42,7 @@ The `fetch` you pass in [`AppConfiguration`](/api/configuration) (default `windo
 const enhancedFetch = makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)));
 ```
 
-Read from the inside out: `makeFetchThrowable` turns a non-2xx response into a thrown error, `makeFetchRetryable` retries transient failures, and `makeFetchCacheable` (outermost) dedupes and caches. This single `enhancedFetch` is reused everywhere the app touches the network — the entry HTML fetch, the sandbox, the ESM engine, and the script-stripped HTML reload on remount — so every request benefits from the same caching and retry behaviour.
+Read from the inside out: `makeFetchThrowable` throws when the response status is outside `200–399`, `makeFetchRetryable` provides a limited retry budget shared by that wrapped fetch instance when the inner fetch throws, and `makeFetchCacheable` (outermost) dedupes and caches. The retry layer does not classify errors as transient, so both network errors and invalid HTTP responses can consume the budget; it does not guarantee a retry for every failed request. This `enhancedFetch` is used for the entry HTML, resources that qiankun actively fetches for transformation—such as sandboxed Classic scripts, ESM modules, and isolated styles—and the script-stripped HTML reload on remount. Browser-native requests such as images and non-isolated stylesheets do not pass through it.
 
 ### 2. Sandbox container
 
@@ -106,7 +106,7 @@ Only the `qiankun` package (and the `@qiankunjs/react` / `@qiankunjs/vue` bindin
 Putting the stages together, here is what `loadApp` does for a single micro-app from configuration to teardown.
 
 1. **Resolve config defaults.** `fetch = window.fetch` (then decorated), `sandbox = true`, `globalContext = window`, `nodeTransformer = defaultNodeTransformer`, `styleIsolation` off. See [AppConfiguration](/api/configuration) for the full field list.
-2. **Initialize the container.** The container is emptied and stamped with datasets: `data-name`, `data-version`, `data-sandbox-cfg`, and — for the second and later instances of the same app name — `data-mount-times` and `data-instance-id`. The `instanceId` comes from a per-name counter, and is what keeps [multiple instances](/cookbook/run-multiple-instances) of the same app isolated.
+2. **Initialize the container.** The container is emptied and stamped with `data-name`, `data-version`, and `data-sandbox-cfg`. `data-mount-times` is added after the same loaded app is mounted again, while `data-instance-id` is added to the second and later `loadApp` instances with the same app name. The `instanceId` comes from a per-name counter and distinguishes [multiple instances](/cookbook/run-multiple-instances) of the same app.
 3. **Create the sandbox and ESM engine.** When `sandbox` is on, the Proxy membrane is built and the `EsmSandboxEngine` is constructed with the app name, instance id, entry URL, and the enhanced fetch.
 4. **Stream the entry.** `loadEntry` runs the HTML through the streaming pipeline and transpilers; classic and module scripts are dispatched to their respective paths. Module scripts are collected during streaming and executed in document order once the stream seals.
 5. **Discover lifecycles.** `getLifecyclesFromExports` resolves `{ bootstrap, mount, unmount, update }` with a fallback chain: the exports object itself, then its `default`, then `global[latestSetProp]` (classic), then `window[appName]`. If none is a valid lifecycle object it throws. `update` is optional. See [Micro-app lifecycle and props](/concepts/lifecycle-and-props).

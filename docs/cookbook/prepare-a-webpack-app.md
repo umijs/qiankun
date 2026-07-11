@@ -42,12 +42,12 @@ The plugin configures the bundle as a browser global library and marks the entry
 
 `packageName` is the global library name of the classic bundle. It defaults to the current project's `package.json` `name`. Pass it explicitly when that value is missing, generated, or likely to change.
 
-The value must be non-empty and stable between builds. It does **not** have to equal the `name` passed to `loadMicroApp`:
+The value must be non-empty and stable between builds. With the default `sandbox: true`, it does **not** have to equal the `name` passed to `loadMicroApp`:
 
 - `packageName` names the Webpack output library.
 - `loadMicroApp({ name })` identifies the application to qiankun.
 
-qiankun first resolves lifecycles from the entry script's exports or the global written by that script. Looking up `window[name]` is a final compatibility fallback, not the primary contract. Using the same value for both names is valid, but it is not required.
+qiankun first resolves lifecycles from the entry script's exports or the global captured by the sandbox. Looking up `window[name]` is a final compatibility fallback, not the primary contract. If you set `sandbox: false`, the sandbox can no longer capture the entry export; unless the bundle assigns the lifecycles to `window[name]` itself, its global library key (normally `packageName`) must match the host-side `name` for that fallback to work.
 
 ### Set the runtime public path
 

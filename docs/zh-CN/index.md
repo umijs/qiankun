@@ -4,7 +4,7 @@ layout: home
 hero:
   name: 微前端运行时
   text: 独立交付，按需组合
-  tagline: 用 loadMicroApp 将不同团队、不同技术栈的前端应用挂载到任意页面区域。每个应用保留自己的开发与发布节奏。
+  tagline: 使用 loadMicroApp，可将不同团队、不同技术栈的前端应用挂载到页面中的指定区域；各应用均可独立开发和发布。
   image:
     src: /hero-runtime.svg
     alt: 主应用在运行时组合多个独立交付的微应用
@@ -23,27 +23,27 @@ features:
       width: 22
       height: 22
       wrap: true
-    title: 发布无需齐步走
-    details: 每个微应用保留自己的技术栈、仓库和发布节奏；主应用只在运行时组合它们。
+    title: 独立开发与发布
+    details: 每个微应用可独立选择技术栈、管理代码仓库并安排发布，主应用仅在运行时进行组合。
   - icon:
       src: /icons/scope.svg
       alt: 挂载到页面区域的应用
       width: 22
       height: 22
       wrap: true
-    title: 生命周期由业务控制
-    details: 用 loadMicroApp 挂载到任意 HTMLElement，再通过返回的实例句柄按需更新或卸载。
+    title: 按需管理实例
+    details: 使用 loadMicroApp 将应用挂载到指定的 HTMLElement，并通过返回的实例句柄执行更新或卸载。
   - icon:
       src: /icons/sandbox.svg
       alt: 隔离的运行边界
       width: 22
       height: 22
       wrap: true
-    title: 不同应用减少干扰
-    details: JavaScript 沙箱、可选样式隔离和原生 ESM 支持，帮助不同技术栈共存于同一页面。
+    title: 隔离不同技术栈
+    details: JavaScript 沙箱、可选的样式隔离和原生 ESM 支持，可减少多个应用在同一页面中运行时的相互影响。
 ---
 
-## 控制一个微应用实例
+## 管理单个微应用实例
 
 在主应用中安装 qiankun：
 
@@ -51,7 +51,7 @@ features:
 pnpm add qiankun
 ```
 
-等容器就绪后加载微应用，并保存返回的句柄，用于观察状态和完成卸载：
+容器创建后即可加载微应用。应保存返回的实例句柄，以便查询状态并执行卸载：
 
 ```ts
 import { loadMicroApp } from 'qiankun';
@@ -67,10 +67,10 @@ const microApp = loadMicroApp({
 
 await microApp.mountPromise;
 
-// 当前页面区域移除时：
+// 页面区域销毁前卸载微应用
 await microApp.unmount();
 ```
 
-微应用导出 `bootstrap`、`mount` 和 `unmount`；qiankun 将它加载到这个 `HTMLElement`，并驱动相应生命周期。跟随[快速上手](/zh-CN/guide/getting-started)完成一套可运行的接入。
+微应用需要导出 `bootstrap`、`mount` 和 `unmount`。qiankun 会将其加载到指定的 `HTMLElement` 中，并调用相应的生命周期函数。[快速上手](/zh-CN/guide/getting-started)提供了完整的可运行示例。
 
-如果应用完全由 URL 决定何时激活，可以改用路由驱动的 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 和 [`start`](/zh-CN/api/start)。
+如果微应用的激活状态完全取决于当前 URL，可使用基于路由的 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 和 [`start`](/zh-CN/api/start)。

@@ -233,7 +233,7 @@ module.exports = {
 ```
 :::
 
-The webpack plugin takes one optional field, `packageName`, defaulting to the `name` in your `package.json`. It identifies the bundle's library output; it is not the host-side app `name`, and the two do not have to match when the entry script is marked correctly. See [Preparing a webpack app for qiankun](/cookbook/prepare-a-webpack-app) and the [bundler-plugin reference](/ecosystem/bundler-plugin).
+The webpack plugin takes one optional field, `packageName`, defaulting to the `name` in your `package.json`. It identifies the bundle's library output rather than the host-side app `name`; with the default sandbox enabled, the two do not have to match when the entry script is marked correctly. If `sandbox: false` forces lifecycle discovery through `window[appName]`, the global library key must match the host-side name unless the bundle creates that property explicitly. See [Preparing a webpack app for qiankun](/cookbook/prepare-a-webpack-app) and the [bundler-plugin reference](/ecosystem/bundler-plugin).
 
 ### Vite
 

@@ -1,6 +1,6 @@
 # API 总览
 
-`qiankun` 推荐通过 [`loadMicroApp`](/zh-CN/api/load-micro-app) 按需加载并管理微应用实例。它会立即挂载应用，并返回一个可用于更新、查询状态和卸载应用的句柄。
+建议优先使用 [`loadMicroApp`](/zh-CN/api/load-micro-app) 按需加载和管理微应用实例。调用后会立即开始挂载应用，并返回用于更新、查询状态和卸载应用的句柄。
 
 ```ts
 import { loadMicroApp } from 'qiankun';
@@ -11,11 +11,11 @@ const microApp = loadMicroApp({
   container: document.getElementById('subapp-container')!,
 });
 
-// 不再需要时释放实例
+// 不再需要时卸载实例
 await microApp.unmount();
 ```
 
-如果应用必须跟随 URL 自动激活，可以使用 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 和 [`start`](/zh-CN/api/start)。这是路由驱动的替代方案，不是使用 `loadMicroApp` 的前置条件。
+如果应用必须根据 URL 自动激活，可使用 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 和 [`start`](/zh-CN/api/start)。这是适用于路由驱动场景的另一种加载方式，不是使用 `loadMicroApp` 的前置条件。
 
 ## 导出一览
 
@@ -27,14 +27,14 @@ await microApp.unmount();
 | [`setDefaultMountApp`](/zh-CN/api/effects) | 没有应用挂载时跳转到默认应用路由。 |
 | [`runAfterFirstMounted`](/zh-CN/api/effects) | 首个微应用挂载后执行一次回调。 |
 | [`addErrorHandler` / `removeErrorHandler`](/zh-CN/api/error-handling) | 注册或移除全局错误处理器。 |
-| [`isRuntimeCompatible`](/zh-CN/api/is-runtime-compatible) | 探测当前浏览器是否支持 qiankun v3 的基础运行时。 |
+| [`isRuntimeCompatible`](/zh-CN/api/is-runtime-compatible) | 检查当前浏览器是否满足 qiankun v3 的基础运行条件。 |
 | [`prefetchApps`](/zh-CN/api/prefetch-apps) | 已废弃的手动预取 API。 |
 
 ## 两种加载方式
 
 ### 按需加载：`loadMicroApp`
 
-适合页面区域、组件、弹窗以及由主应用状态控制的微应用。主应用负责决定何时创建和卸载实例。
+适用于页面区域、组件、弹窗，以及由主应用状态控制的微应用。主应用负责决定实例的创建和卸载时机。
 
 ```ts
 function loadMicroApp<T extends ObjectType>(
@@ -44,18 +44,18 @@ function loadMicroApp<T extends ObjectType>(
 ): MicroApp;
 ```
 
-返回值暴露 `mount`、`unmount`、`getStatus` 和生命周期 promise；只有微应用导出可选的 `update` 生命周期时，句柄上才会有 `update`。每个不再使用的实例都应调用 `unmount()`。
+返回值提供 `mount`、`unmount`、`getStatus` 和各阶段的 Promise。只有微应用导出可选的 `update` 生命周期时，句柄才提供 `update` 方法。不再使用实例时，应调用 `unmount()`。
 
 ### 路由驱动：`registerMicroApps` + `start`
 
-适合应用是否挂载完全由 URL 决定的场景。先注册应用及其 `activeRule`，再调用 `start()` 交给 single-spa 自动激活和卸载。
+适用于完全由 URL 决定应用挂载状态的场景。应先注册应用及其 `activeRule`，再调用 `start()`，由 single-spa 根据路由自动激活和卸载应用。
 
 ```ts
 registerMicroApps(apps, lifeCycles?);
 start(opts?);
 ```
 
-如何选择见[加载一个微应用实例](/zh-CN/concepts/architecture)。
+两种方式的选择原则见[加载一个微应用实例](/zh-CN/concepts/architecture)。
 
 ## 配置、生命周期与类型
 
@@ -66,6 +66,6 @@ start(opts?);
 
 ## 迁移与废弃项
 
-从 qiankun 2.x 升级时，请以[迁移指南](/zh-CN/cookbook/migrate-from-2x)为唯一参考。各 API 页面只描述当前版本的行为。
+从 qiankun 2.x 升级时，请参阅[迁移指南](/zh-CN/cookbook/migrate-from-2x)。各 API 页面仅描述当前版本的行为。
 
-`prefetchApps` 已废弃；流式 HTML Entry 加载会在解析过程中自动发现并预加载资源。替代建议见[优化加载](/zh-CN/cookbook/optimize-loading)。
+`prefetchApps` 已废弃；流式 HTML 入口加载会在解析过程中自动发现并预加载资源。替代建议见[优化加载](/zh-CN/cookbook/optimize-loading)。

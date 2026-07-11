@@ -8,7 +8,7 @@ You do not need to produce a UMD library or expose lifecycles on `window` for th
 
 A `<script type="module">` in the micro-app entry uses the native ESM path when `sandbox` is enabled. Inline and external module scripts are supported, and classic scripts in the same HTML continue to use the classic path.
 
-The official Vite plugin marks the application entry and configures the surrounding development and build output. In normal projects, prefer the plugin over editing generated HTML by hand.
+The official Vite plugin configures the development server and marks the entry module in production builds. Vite development HTML may omit an explicit `entry` marker; in that case, the ESM engine selects the entry from lifecycle exports. In normal projects, prefer the plugin over editing generated HTML by hand.
 
 Turning off `sandbox` also turns off this isolated ESM path; it is not an ESM compatibility fallback.
 
@@ -39,7 +39,7 @@ Create per-mount framework instances, routers, and stores in `mount`, then relea
 - Native module behavior is preserved, including top-level `await`, circular dependencies, live bindings, and module evaluation order.
 - ESM is strict mode. An implicit global assignment such as `feature = true` throws `ReferenceError`; use an explicit declaration or `window.feature`.
 - A module's top-level code runs once for an app instance. After `unmount`, a remount calls `mount` again but does not recreate module-scope state.
-- Module evaluation errors and rejected top-level `await` values are forwarded to the normal single-spa error channel.
+- A failure in the selected entry module rejects application loading. Route-registered applications report that failure through single-spa's global handler; `loadMicroApp` reports it through the instance lifecycle promises. An unrelated non-entry module script can be logged and skipped instead of failing the application.
 
 Do not use module-scope initialization as a substitute for `mount`. The lifecycle boundary is what makes cleanup and remounting predictable.
 

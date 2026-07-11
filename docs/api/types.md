@@ -276,7 +276,7 @@ type MicroAppLifeCycles = {
 };
 ```
 
-Each function receives the mount props, which include `container: HTMLElement` (the node to render into) alongside anything you passed as `props`. A micro-app's entry exports these:
+Every lifecycle receives the data passed through `props`. qiankun additionally injects `container: HTMLElement` only when it calls `mount` and `unmount`; `bootstrap` and `update` should not rely on that field. A micro-app's entry exports these:
 
 ```ts
 export async function bootstrap() {}

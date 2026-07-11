@@ -45,10 +45,10 @@ That trailing `Record<string, unknown>` is deliberate: **any prop that isn't one
 
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
-| `name` * | `string` | — | The unique name of the micro-app. Changing it remounts a brand-new micro-app. |
+| `name` * | `string` | — | The name of this micro-app instance. Changing it unmounts the current instance and creates a new one. |
 | `entry` * | `string` | — | The micro-app's HTML entry URL. |
 | `settings` | [`AppConfiguration`](/api/configuration) | — | Loader / sandbox configuration passed through to `loadMicroApp`. |
-| `lifeCycles` | [`LifeCycles`](/api/lifecycles) | — | Global lifecycle hooks (`beforeLoad`, `beforeMount`, etc.) for this micro-app. |
+| `lifeCycles` | [`LifeCycles`](/api/lifecycles) | — | Host-provided lifecycle hooks for this instance, such as `beforeLoad` and `beforeMount`. |
 | `autoSetLoading` | `boolean` | `false` | Render the built-in loader and clear it automatically once the app is mounted. |
 | `autoCaptureError` | `boolean` | `false` | Render the built-in error boundary instead of throwing loading errors outward. |
 | `wrapperClassName` | `string` | — | Class prepended to the wrapper element. Only takes effect when a loader or error boundary is active. |
@@ -61,7 +61,7 @@ That trailing `Record<string, unknown>` is deliberate: **any prop that isn't one
 Every other prop is deep-compared on each render and then forwarded to the micro-app. See [Passing props to the micro-app](#passing-props-to-the-micro-app).
 
 ::: info Reserved fields are not forwarded
-`name`, `entry`, `settings`, `lifeCycles`, `wrapperClassName`, and `className` are consumed by the component itself and stripped off before the props reach the micro-app. Don't expect to receive them inside the sub-app.
+`name`, `entry`, `settings`, `lifeCycles`, `wrapperClassName`, and `className` are consumed by the component itself and stripped off before the props reach the micro-app. The current implementation still forwards `autoSetLoading`, `autoCaptureError`, `loader`, and `errorBoundary` with the other extra props; application code should not depend on these component-control fields.
 :::
 
 ## Passing props to the micro-app {#passing-props-to-the-micro-app}
@@ -90,7 +90,7 @@ export async function mount(props) {
 When these props change, the component deep-compares them with lodash's `isEqual` and calls `microApp.update(props)` on the running app — the micro-app is not remounted. And the update only actually runs when the app's status is `MOUNTED`.
 
 ::: tip Remount vs update
-Changing `name` mounts a brand-new micro-app; changing any forwarded prop triggers a single in-place `update`. To reset completely, change `name` (or give it a `key`).
+Changing `name` unmounts the current instance and creates a new one. Changing another forwarded prop only attempts an in-place `update`. Changing `entry`, `settings`, or `lifeCycles` alone does not create a new instance. To reset completely, change `name` or give the component a new `key`.
 :::
 
 ## Loading state
@@ -111,18 +111,19 @@ The built-in loader is just a placeholder that renders the literal text `loading
 <MicroApp
   name="app1"
   entry="http://localhost:8000"
+  autoSetLoading
   loader={(loading) => <Spinner spinning={loading} />}
 />
 ```
 
-If you pass a `loader` you don't also need `autoSetLoading` — the loading UI is activated as soon as the slot is present. `wrapperClassName` only takes effect when a loader or error boundary is active, because that's the only time the component renders the positioned wrapper element.
+Passing `loader` enables the custom loading UI. Keep `autoSetLoading` enabled if the component should automatically set `loading` to `false` when `mountPromise` resolves. `wrapperClassName` only takes effect when a loader or error boundary is active, because that is when the component renders the positioned wrapper element.
 
 ## Error handling
 
-By default, errors from loading, bootstrap, and mount are **thrown outward** — the component doesn't swallow them for you. You have to catch them with an outer React error boundary, or opt into the built-in / custom error UI.
+By default, errors from loading, bootstrap, and mount are re-thrown from the asynchronous loading flow. Configure the built-in or custom error UI to prevent an unhandled promise rejection.
 
-::: danger Uncaught errors propagate upward
-With neither `autoCaptureError` nor `errorBoundary` set, a failed load throws during render and takes down the whole subtree — unless a React error boundary higher up catches it.
+::: danger Handle asynchronous loading errors
+With neither `autoCaptureError` nor `errorBoundary` set, the component re-throws asynchronous loading errors. A React error boundary cannot catch an error thrown from a promise callback, so configure this component's own error UI.
 :::
 
 ### Built-in error boundary
@@ -161,19 +162,28 @@ For a more systematic treatment of error handling, see [Handling loading and run
 The component is a `forwardRef`. The forwarded ref points at the running micro-app handle — a single-spa Parcel (the `MicroApp` type from `qiankun`) — so you can read its status and await its lifecycle promises.
 
 ```tsx
-import { useRef, useEffect } from 'react';
+import { useRef } from 'react';
 import { MicroApp } from '@qiankunjs/react';
 import { type MicroApp as MicroAppType } from 'qiankun';
 
 function Page() {
   const microAppRef = useRef<MicroAppType>();
 
-  useEffect(() => {
-    // e.g. 'MOUNTING' | 'MOUNTED' | 'LOAD_ERROR' | ...
+  const logStatus = () => {
     console.log(microAppRef.current?.getStatus());
-  }, []);
+  };
 
-  return <MicroApp name="app1" entry="http://localhost:8000" ref={microAppRef} />;
+  return (
+    <>
+      <button type="button" onClick={logStatus}>Check status</button>
+      <MicroApp
+        name="app1"
+        entry="http://localhost:8000"
+        autoSetLoading
+        ref={microAppRef}
+      />
+    </>
+  );
 }
 ```
 
@@ -210,11 +220,11 @@ Loader- and sandbox-related options all go through `settings`, an [`AppConfigura
 />
 ```
 
-Before calling `loadMicroApp`, the component always forces `globalContext: window`, then merges your `settings` on top. For what `styleIsolation` actually enables, see [Style isolation](/concepts/style-isolation); for `sandbox`, see [The JS sandbox](/concepts/js-sandbox).
+Before calling `loadMicroApp`, the component sets `globalContext: window` and then merges your `settings` on top, so `settings.globalContext` can override that default. For what `styleIsolation` actually enables, see [Style isolation](/concepts/style-isolation); for `sandbox`, see [The JS sandbox](/concepts/js-sandbox).
 
 ## Lifecycle hooks
 
-Framework-level hooks are passed via `lifeCycles`. They're merged with the global hooks (appended, not replaced) and run around this micro-app's load / mount / unmount.
+Host lifecycle hooks are passed via `lifeCycles` and apply only to the instance created by this component. Each hook may be a single function or an array of functions.
 
 ```tsx
 <MicroApp
@@ -260,9 +270,9 @@ flowchart TD
   C --> D["loadMicroApp(app, settings, lifeCycles)"]
   D --> E{mountPromise}
   E -- success --> F["if autoSetLoading: loading = false"]
-  E -- failure --> G{loader / errorBoundary set?}
+  E -- failure --> G{autoCaptureError enabled or errorBoundary set?}
   G -- yes --> H["setError(err)"]
-  G -- no --> I["throw err (caught by outer boundary)"]
+  G -- no --> I["re-throw asynchronous error"]
   J[name changes] --> K[unmount old, mount new]
   L[forwarded props change] --> M["deep compare, microApp.update(props)"]
   N[component unmounts] --> O[unmount micro-app]
@@ -270,7 +280,7 @@ flowchart TD
 
 - Mounting is keyed on `name`; changing it remounts a brand-new app.
 - Prop updates are driven by a deep comparison of the forwarded props and go through `microApp.update`.
-- Before unmounting, the component waits for the app's `mountPromise` and guards against concurrent teardown, so remounting and multiple instances stay consistent.
+- When the instance status is `MOUNTED`, the component marks it as unmounting before teardown so prop updates do not race with unmount.
 
 ## Related
 

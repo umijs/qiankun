@@ -122,7 +122,7 @@ type Parcel = {
 | Member | Description |
 | --- | --- |
 | `mount()` | Mounts the parcel. loadMicroApp already mounts on load, so you rarely call this directly. |
-| `unmount()` | Unmounts the app and triggers sandbox teardown and DOM cleanup. Always call this when you are done. |
+| `unmount()` | Unmounts the app, deactivates the sandbox, cleans up tracked side effects, and clears the container DOM. Always call this when you are done. |
 | `update?(props)` | Present only if the micro-app exports an `update` lifecycle. Pushes new props to the running app. |
 | `getStatus()` | Returns the current lifecycle status from the union above. |
 | `loadPromise` | Resolves when the source has finished loading. |

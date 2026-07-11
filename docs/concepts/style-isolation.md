@@ -24,7 +24,7 @@ The app remains in the host document; it is not moved into Shadow DOM. Existing 
 | External `<link rel="stylesheet">` | qiankun reads and scopes the stylesheet before it is applied. |
 | Runtime-inserted rules and common CSS-in-JS output | Rules associated with the app are scoped as they are inserted. |
 
-Relative asset URLs continue to resolve against the stylesheet's source. If a stylesheet cannot be safely scoped, qiankun does not fall back to applying the unscoped CSS globally.
+Relative asset URLs in external stylesheets are resolved against that stylesheet's URL. Inline `<style>` content is not rewritten against the micro-app entry, so use absolute URLs when the host and micro-app documents have different base URLs. If a stylesheet cannot be safely scoped, qiankun does not fall back to applying the unscoped CSS globally.
 
 ## A one-way boundary
 

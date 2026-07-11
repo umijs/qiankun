@@ -38,8 +38,8 @@ For an inline `<style>` element, qiankun reads its `textContent`, transforms it,
 
 - **`@font-face` and `@namespace` are hoisted out** of the `@scope` block and kept global. Scoping a `@font-face` breaks font loading, and `@namespace` must be document-level, so both are lifted back to the top of the sheet.
 - **`@keyframes` are renamed** with a per-app prefix — `__qk_<appName>_<name>` — and every `animation` / `animation-name` reference is rewritten to match. This stops two apps that both define a `spin` keyframe from clobbering each other, since `@scope` scopes selectors but not the global keyframe namespace.
-- **Relative `url(...)` values are resolved** against the stylesheet's base URL, so background images and other assets still point at the micro-app's origin after the CSS is relocated. `data:`, `blob:`, and absolute `http(s):` URLs are left alone.
-- **`@import` is recursively inlined.** Each imported sheet is fetched through the app's decorated `fetch`, transformed the same way, and spliced in, deduplicated against a visited set. This is what makes the transform asynchronous when imports are present.
+- **Relative `url(...)` values are not rebased for inline styles.** The current inline-style path does not pass a stylesheet base URL to the transformer. Use absolute, `data:`, or `blob:` URLs when the host and micro-app do not share the same document base.
+- **`@import` is recursively inlined.** Each imported sheet is fetched through the app's decorated `fetch`, transformed the same way, and spliced in, deduplicated against a visited set. Use absolute import URLs in inline styles because this path does not resolve them against the micro-app entry.
 
 Because inlining `@import` can require network round-trips, qiankun clears the `<style>`'s `textContent` synchronously first, then fills in the scoped CSS once everything resolves. That prevents the unscoped source from applying globally during the fetch window.
 
@@ -50,6 +50,8 @@ Native `@scope` can only wrap CSS text you control, but the browser loads an ext
 1. Resolve the `href` against the base URL, then **remove the `href` attribute** and stash the original under `data-href`. With no `href`, the browser never loads the unscoped stylesheet.
 2. **Fetch the CSS** through the app's decorated `fetch`, then run it through the same `@scope` wrapping transform used for inline styles.
 3. **Serve it as a `blob:` URL** on the *same* `<link>` element: the wrapped CSS becomes a `Blob`, and its object URL is set back as the element's `href`.
+
+Unlike the inline-style path, the external stylesheet transform receives the resolved stylesheet URL as its base. Relative `url(...)` and `@import` references are therefore resolved against the external stylesheet URL before the scoped CSS is applied.
 
 Node identity is preserved deliberately — qiankun swaps only the `href`, never the element. That keeps every native `<link>` semantic intact for free: `media`, `disabled`, `title`, and the entry in `document.styleSheets` stay live; the streaming loader's "a pending stylesheet blocks later scripts" bookkeeping still sees a normal pending link whose `load` fires when the blob href lands; and any `onload` / `onerror` handlers an app attaches to a dynamically injected `<link>` keep working.
 
@@ -65,9 +67,9 @@ This synchronous path skips rules that are already `@scope`-wrapped and keeps `@
 
 ## Preload rewrites
 
-A `<link rel="preload" as="style">` (or a `rel="modulepreload">` under the [ESM sandbox](/concepts/esm-sandbox)) tells the browser to warm up a resource for a *native* load. But under style isolation the stylesheet is consumed by the transpiler's `fetch()`, not by a native link load — so a native `as=style` preload would sit in the wrong cache partition and never match the actual request.
+With style isolation enabled, a `<link rel="preload" as="style">` targets a native stylesheet load even though the transpiler later consumes the stylesheet through `fetch()`. qiankun rewrites it to `as="fetch"` and adds `crossorigin="anonymous"` unless the link already uses `use-credentials`, allowing the later fetch to reuse the warm-up response.
 
-To keep the warm-up useful, qiankun rewrites these preloads to `as="fetch"` and adds `crossorigin="anonymous"` (unless the link already opts into `use-credentials`). The `fetch`-mode preload lands in the same cache partition the pipeline's `fetch()` reads from, so the warm-up request is still matched and reused. Modulepreload links are additionally rewritten from `rel="modulepreload"` to `rel="preload"` for the same reason.
+Separately, whenever the [ESM sandbox](/concepts/esm-sandbox) is active, qiankun rewrites `rel="modulepreload"` to `rel="preload" as="fetch"` because the engine imports rewritten blob URLs instead of the original module URL. This rewrite does not depend on style isolation. The original modulepreload credentials behavior is preserved through the `crossorigin` setting.
 
 ## Requirements and limits
 

@@ -1,100 +1,102 @@
 # 样式隔离实现
 
-> 本页面向维护者，记录样式改写的实现细节。用户可观察的行为与限制见 [样式隔离](/zh-CN/concepts/style-isolation)。
+> 本页面向维护者说明样式改写的实现细节。面向使用者的行为与限制见[样式隔离](/zh-CN/concepts/style-isolation)。
 
-样式隔离要解决的是：别让一个微应用的 CSS 漏出去，污染到主应用或者旁边的其他微应用。qiankun v3 里这是一套按需开启的运行时机制，底层用的是浏览器原生的 CSS [`@scope`](https://developer.mozilla.org/en-US/docs/Web/CSS/@scope) 规则，而不是 Shadow DOM。开启之后，微应用带进来的每一张样式表都会被改写，让它的规则只在这个应用自己的容器内部生效。
+样式隔离用于限制微应用 CSS 的作用范围，防止其影响主应用或其他微应用。qiankun v3 提供按应用启用的运行时隔离机制，底层使用浏览器原生的 CSS [`@scope`](https://developer.mozilla.org/en-US/docs/Web/CSS/@scope) 规则，而非 Shadow DOM。启用后，qiankun 会改写微应用引入的样式表，使其中的规则仅在当前应用容器内生效。
 
-这一页讲清楚它做了什么、为什么是这个形态、边界在哪。想知道怎么打开，看 [AppConfiguration](/zh-CN/api/configuration)，以及操作向导[开启 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation)。
+配置方式见 [AppConfiguration](/zh-CN/api/configuration) 和[开启 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation)。
 
-## 它是什么
+## 基本机制
 
-在某个应用的配置里设上 `styleIsolation: true`,qiankun 就会把这个应用的 CSS 裹进一个绑定到应用容器的 `@scope` 块里：
+为应用设置 `styleIsolation: true` 后，qiankun 会将该应用的 CSS 包装在与应用容器绑定的 `@scope` 块中：
 
 ```css
 @scope ([data-name="your-app"]) {
-  /* the app's rules, rewritten */
+  /* 经过改写的应用样式规则 */
 }
 ```
 
-scope 根节点永远是 `[data-name="<appName>"]`。qiankun 会给每个应用容器打上一个 `data-name` 属性，值就是注册时的应用名，选择器由此推导出来。这个不能自定义——没有选项让你传自己的 scope 根。因为包裹发生在 CSS 这一层，而不是把应用挂进一棵 shadow 树里，微应用的 DOM 还留在主文档中：全局库、portal、`document` 层面的查询，都还按 [JS 沙箱](/zh-CN/concepts/js-sandbox)预期的那样工作。
+作用域根节点固定为 `[data-name="<appName>"]`。qiankun 会在应用容器上设置 `data-name` 属性，并根据应用名生成选择器；当前不支持自定义作用域根节点。
 
-隔离在设计上是单向的：它拦的是微应用自己声明的规则跑到容器外面去，但不负责挡住主应用或者浏览器默认样式表往微应用**里面**推的样式。
+隔离发生在 CSS 转换阶段，应用 DOM 仍位于主文档中，而不是 Shadow DOM。全局库、Portal 和 `document` 查询仍按 [JavaScript 隔离](/zh-CN/concepts/js-sandbox)中的规则运行。该机制仅限制微应用 CSS 向容器外部生效，不阻止主应用样式或浏览器默认样式影响微应用。
 
 ```mermaid
 flowchart TD
   A["微应用 CSS"] --> B{"styleIsolation?"}
-  B -- 关闭 --> C["全局生效,原样不动"]
-  B -- 开启 --> D["裹进 @scope<br/>data-name=appName"]
-  D --> E["内联 style:改写 textContent"]
-  D --> F["外链 link:换成 blob URL"]
-  D --> G["运行时 insertRule:规则加 scope"]
+  B -- 关闭 --> C["保持原样，全局生效"]
+  B -- 开启 --> D["使用 @scope 包装<br/>data-name=appName"]
+  D --> E["内联 style：改写 textContent"]
+  D --> F["外链 link：替换为 blob URL"]
+  D --> G["运行时 insertRule：为规则添加 scope"]
 ```
 
-样式隔离默认关闭。只要你不设 `styleIsolation`,`<style>` 和 `<link>` 节点就原封不动地穿过 loader。
+样式隔离默认关闭。未设置 `styleIsolation` 时，`<style>` 和 `<link>` 节点不经过作用域改写。
 
 ## 内联 `<style>`
 
-对一个内联 `<style>` 元素，qiankun 读它的 `textContent`，做转换，再把加了 scope 的结果写回同一个节点。除了外面那层 `@scope` 包裹，这次转换还得处理几件光靠包裹会搞错的事：
+处理内联 `<style>` 时，qiankun 读取元素的 `textContent`，完成转换后再将结果写回原节点。除添加 `@scope` 外，转换还会执行以下处理：
 
-- **`@font-face` 和 `@namespace` 会被提出来**，移出 `@scope` 块保持全局。给 `@font-face` 加 scope 会让字体加载失败，`@namespace` 又必须是文档级的，所以这两个都被拎回样式表顶部。
-- **`@keyframes` 会被重命名**，加上一个按应用区分的前缀——`__qk_<appName>_<name>`——每一处 `animation` / `animation-name` 引用也跟着改。这样两个都定义了 `spin` keyframe 的应用就不会互相顶掉，因为 `@scope` 只给选择器加作用域，管不到全局的 keyframe 命名空间。
-- **相对路径的 `url(...)` 会被解析**，以样式表的 base URL 为基准解析，这样 CSS 被搬走之后，背景图之类的资源还是指向微应用自己的源。`data:`、`blob:` 和绝对的 `http(s):` URL 则保持不动。
-- **`@import` 会被递归内联进来。** 每一张被导入的样式表都通过应用那份装饰过的 `fetch` 拉回来，以同样的方式转换后拼进去，并基于一个已访问集合去重。有 `@import` 的时候，转换之所以变成异步的，就是因为这个。
+- **将 `@font-face` 和 `@namespace` 移到 `@scope` 外部。** `@font-face` 位于作用域内时会导致字体加载失败，`@namespace` 则必须在文档级声明，因此两者保留在样式表顶部并全局生效。
+- **重命名 `@keyframes`。** qiankun 为关键帧名称添加应用级前缀 `__qk_<appName>_<name>`，并同步改写 `animation` 和 `animation-name` 中的引用，避免不同应用使用同名关键帧。CSS `@scope` 只能限制选择器，无法隔离全局关键帧名称。
+- **不重新解析 `url(...)` 中的相对路径。** 当前内联样式处理不会向转换器传入样式表的基准 URL。主应用与微应用的文档基准不同时，应使用绝对 URL、`data:` URL 或 `blob:` URL。
+- **递归内联 `@import`。** 导入的样式表通过应用增强后的 `fetch` 获取，执行相同转换后内联，并使用已访问集合避免重复处理。内联样式中的导入地址不会相对微应用入口解析，因此应使用绝对 URL。
 
-因为内联 `@import` 可能要走网络往返，qiankun 会先同步把 `<style>` 的 `textContent` 清空，等一切解析完成再填入加了 scope 的 CSS。这样在拉取的那段时间窗口里，没加 scope 的源码就不会全局生效。
+由于内联 `@import` 可能产生网络请求，qiankun 会先同步清空 `<style>` 的 `textContent`，等待转换完成后再写入已限定作用域的 CSS，避免未隔离的原始样式在请求期间短暂生效。
 
 ## 外部 `<link rel="stylesheet">`
 
-原生 `@scope` 只能包裹你能控制的 CSS 文本，可浏览器加载外部样式表是不透明的——它到达的时候没有任何钩子能把它包起来。所以在样式隔离下，qiankun 会阻止浏览器原生加载 `<link>`，转而自己接管拉取，采用代码库里称作 blob-link 的方式：
+浏览器原生加载外部样式表时，无法在收到响应后添加 `@scope`。因此，启用样式隔离后，qiankun 会阻止 `<link>` 发起原生请求，并改用 blob URL 加载样式：
 
-1. 以 base URL 为基准解析 `href`，然后**移除 `href` 属性**，把原始值暂存到 `data-href` 下。没了 `href`，浏览器就永远不会加载那张未加 scope 的样式表。
-2. 通过应用那份装饰过的 `fetch` **拉取 CSS**，再让它经过与内联样式相同的 `@scope` 包裹转换。
-3. 在**同一个** `<link>` 元素上以 `blob:` URL 的形式**提供它**:包裹后的 CSS 变成一个 `Blob`，它的 object URL 被设回元素的 `href`。
+1. 以基准 URL 解析 `href`，移除 `href` 属性，并将原始值保存在 `data-href` 中。浏览器因此不会加载未经隔离的样式表。
+2. 使用应用增强后的 `fetch` 获取 CSS，并执行与内联样式相同的 `@scope` 转换。
+3. 根据转换结果创建 `Blob`，再将对应的对象 URL 设置为原 `<link>` 元素的 `href`。
 
-节点标识是被刻意保留的——qiankun 只替换 `href`，从不替换元素本身。这样每个原生 `<link>` 的语义就白捡着保住了：`media`、`disabled`、`title` 以及 `document.styleSheets` 里的条目都还有效；流式 loader 里"一张待加载样式表会阻塞后续脚本"的记账逻辑，看到的仍然是一个正常的待加载 link，它的 `load` 会在 blob href 落地时触发；应用附加在动态注入的 `<link>` 上的 `onload` / `onerror` 处理器也照常有效。
+与内联样式不同，外链样式转换会将解析后的样式表 URL 作为基准地址传入。因此，`url(...)` 和 `@import` 中的相对地址会先相对外链样式表 URL 解析，再写入限定作用域后的 CSS。
 
-如果拉取或转换失败，就永远不会设置 blob `href`——于是这个元素自己不会发出任何事件。这时 qiankun 会在这个 link 上手动派发一个 `error` 事件，并**丢弃这张样式表**，而不是退回去以未加 scope 的方式加载它。丢弃是刻意为之的选择：一张无法被加作用域的样式表，不允许它全局泄漏。
+该过程只替换 `href`，不会替换 `<link>` 节点，因此 `media`、`disabled`、`title`、`document.styleSheets` 条目以及 `onload`、`onerror` 等原生行为仍然有效。流式加载器也会继续将该节点视为待加载样式表，并在 blob URL 设置完成后接收 `load` 事件。
 
-转换后的样式表先按 URL、再按 app-scope key 缓存，对同一 URL 的并发拉取也会去重。所以一张被多个应用共享的外部样式表，有几个不同的 scope 根，就只会被拉取和转换那么多次。
+如果 CSS 获取或转换失败，qiankun 不会设置 blob `href`，而是在当前 `<link>` 上主动派发 `error` 事件并丢弃该样式表。此策略可以避免无法转换的 CSS 以全局样式形式加载。
+
+转换结果先按 URL、再按应用作用域键缓存；对同一 URL 的并发请求也会去重。因此，多个应用共享同一外部样式表时，每个作用域根节点只需执行一次获取和转换。
 
 ## 运行时 CSSOM
 
-运行时通过 JS 插进来的样式，永远不会经过 loader，所以 qiankun 在 CSSOM 这一层拦截它们。样式隔离激活时，`CSSStyleSheet.prototype.insertRule` 会被 monkey-patch(带引用计数，只要有任意一个样式隔离应用存活就装上，最后一个卸载时移除)。如果样式表的所属节点带着样式隔离配置，进来的规则文本会先被加作用域——包裹进 `@scope`，做同样的 keyframe 重命名——然后才到达原生的 `insertRule`。
+通过 JavaScript 在运行时插入的样式不会经过 HTML 加载器，因此 qiankun 会在 CSSOM 层进行拦截。存在已启用样式隔离的应用时，`CSSStyleSheet.prototype.insertRule` 会安装带引用计数的补丁；最后一个此类应用卸载后，补丁会被移除。
 
-这条同步路径会跳过已经被 `@scope` 包裹的规则，并让 `@font-face` / `@namespace` 保持全局，和静态转换保持一致。正是它让那些在运行时构建样式表的 CSS-in-JS 库和框架，也跟其他一切一起被加作用域。
+如果样式表所属节点启用了隔离，传入 `insertRule` 的规则会先经过作用域包装和关键帧重命名，再交给原生实现。同步转换会跳过已经包含 `@scope` 的规则，并保持 `@font-face` 和 `@namespace` 全局生效。该机制适用于在运行时构造样式表的 CSS-in-JS 库和框架。
 
-## Preload 改写
+## 预加载改写
 
-`<link rel="preload" as="style">`(或在 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)下是 `rel="modulepreload">`)是告诉浏览器为一次**原生**加载预热某个资源。但在样式隔离下，这张样式表是被 transpiler 的 `fetch()` 消费的，而不是被原生的 link 加载消费——于是一个原生的 `as=style` preload 会落在错误的缓存分区里，永远匹配不到真正的请求。
+启用样式隔离后，`<link rel="preload" as="style">` 面向浏览器原生样式加载，而转译器随后通过 `fetch()` 获取样式表。qiankun 会将其改写为 `as="fetch"`，并在未使用 `use-credentials` 时设置 `crossorigin="anonymous"`，使后续请求可以复用预加载响应。
 
-为了让预热还有用，qiankun 会把这些 preload 改写成 `as="fetch"`，并加上 `crossorigin="anonymous"`(除非这个 link 已经声明使用 `use-credentials`)。`fetch` 模式的 preload 会落到流水线里 `fetch()` 读取的那同一个缓存分区，预热请求于是还能被匹配和复用。出于同样的原因，modulepreload link 还会额外从 `rel="modulepreload"` 改写成 `rel="preload"`。
+启用 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)后，还会执行另一个独立流程：qiankun 将 `rel="modulepreload"` 改写为 `rel="preload" as="fetch"`。ESM 引擎执行改写后的 blob URL，而不是原始模块 URL，因此该转换与样式隔离无关；节点的 `crossorigin` 设置会保留原有的模块预加载凭据语义。
 
 ## 要求与限制
 
-::: warning 需要原生 CSS `@scope`
-这套实现不带任何 polyfill，也没有任何回退方案，完全依赖浏览器对 CSS `@scope` 规则的支持。在不支持 `@scope` 的浏览器里，那条包裹规则是惰性的，样式不会被隔离。`@scope` 是浏览器里较新才加的特性，依赖它之前先对照你的目标浏览器矩阵核实一下支持情况。
+::: warning 依赖原生 CSS `@scope`
+该实现不包含兼容实现（polyfill）或降级方案，完全依赖浏览器对 CSS `@scope` 的原生支持。不支持 `@scope` 的浏览器无法实现样式隔离。启用前应确认目标浏览器范围。
 :::
 
-::: warning 外部样式表必须可通过 CORS 拉取
-因为外部样式表会被通过 `fetch` 重新拉取、再以 `blob:` URL 提供，一张跨域样式表必须返回正确的 CORS 头。如果拉取不到，qiankun 会丢弃它——样式表会静默消失(并附带一条控制台警告)，而不是以未加 scope 的方式加载。请为微应用样式表启用 CORS，否则被隔离的应用会渲染成没样式的裸页面。
+::: warning 外部样式表必须支持 CORS
+外部样式表需要通过 `fetch` 获取并以 blob URL 加载，因此跨域样式表必须返回正确的 CORS 响应头。如果请求失败，qiankun 会丢弃样式表并输出控制台警告，不会以未隔离形式加载。微应用服务器必须为相关样式资源配置 CORS。
 :::
 
-::: info 已知的边缘情况
-- **`@font-face` 冲突。** font-face 规则被刻意保持全局，好让字体正常加载。于是两个声明了相同 `font-family` 名称的应用可能会撞车。请给每个应用用不同的 font-family 名称。
-- **动态拼接的 keyframe 名称。** keyframe 重命名是一次静态文本转换。如果你的 JS 在运行时靠字符串拼接来构造动画名(而不是在 CSS 里字面写出)，这个引用不会被改写，动画可能就找不到了。
+::: info 已知限制
+- **`@font-face` 冲突。** `@font-face` 需要保持全局生效，因此不同应用使用相同 `font-family` 名称时仍可能冲突。建议为每个应用使用不同的字体名称。
+- **动态生成的关键帧名称。** 关键帧重命名属于静态文本转换。通过 JavaScript 字符串动态生成的动画名称不会同步改写，可能无法匹配转换后的关键帧。
 :::
 
 ::: tip 与 qiankun 2.x 的区别
-v3 的样式隔离就是本页描述的 `@scope` + blob-link 机制，由单个布尔值开关控制。2.x 里那套基于 Shadow DOM 的 `sandbox.strictStyleIsolation` 和 `sandbox.experimentalStyleIsolation` 选项在 v3 中不存在了。唯一的旋钮是 `styleIsolation`。参见[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
+v3 使用本页所述的 `@scope` 与 blob URL 机制，并由单个布尔选项控制。2.x 中基于 Shadow DOM 的 `sandbox.strictStyleIsolation` 和 `sandbox.experimentalStyleIsolation` 已被移除，v3 仅提供 `styleIsolation`。详见[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
 :::
 
-## 对外的旋钮
+## 公开配置
 
 | 选项 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `styleIsolation` | `boolean` | `false` | 通过 `@scope` 包裹开启运行时 CSS 隔离。开启后，微应用的所有样式都会被限定在它的容器(`[data-name="<appName>"]`)内。 |
+| `styleIsolation` | `boolean` | `false` | 使用 `@scope` 开启运行时 CSS 隔离，将微应用样式限定在其容器（`[data-name="<appName>"]`）内 |
 
-`styleIsolation` 是按应用设置的配置字段。使用 [loadMicroApp](/zh-CN/api/load-micro-app) 时，将它作为第二个参数传入：
+`styleIsolation` 按应用设置。使用 [`loadMicroApp`](/zh-CN/api/load-micro-app) 时，将其作为第二个参数传入：
 
 ```ts
 import { loadMicroApp } from 'qiankun';
@@ -114,4 +116,4 @@ const microApp = loadMicroApp(
 );
 ```
 
-完整的字段列表参见 [AppConfiguration](/zh-CN/api/configuration)；面向具体任务的操作演示参见[开启 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation)。
+完整字段见 [AppConfiguration](/zh-CN/api/configuration)，操作步骤见[开启 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation)。

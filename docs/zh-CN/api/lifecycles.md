@@ -1,10 +1,10 @@
 # 生命周期钩子（`LifeCycles`）
 
-`LifeCycles` 是主应用提供的钩子，用于观察一个微应用的准备、挂载和卸载过程。它们不负责实现微应用；应用自己导出的 `bootstrap`、`mount`、`unmount` 和可选 `update` 属于另一份契约。
+`LifeCycles` 是由主应用提供的钩子，用于观察微应用的准备、挂载和卸载过程。这些钩子不负责实现微应用本身；微应用导出的 `bootstrap`、`mount`、`unmount` 和可选的 `update` 属于另一项生命周期契约。
 
-## 与 loadMicroApp 一起使用
+## 在 loadMicroApp 中使用
 
-把钩子作为 [`loadMicroApp`](/zh-CN/api/load-micro-app) 的第三个参数传入，它们只作用于返回的这个实例：
+将钩子作为 [`loadMicroApp`](/zh-CN/api/load-micro-app) 的第三个参数传入。钩子仅作用于本次调用创建的实例：
 
 ```ts
 import { loadMicroApp } from 'qiankun';
@@ -33,11 +33,11 @@ const microApp = loadMicroApp(
 
 await microApp.mountPromise;
 
-// 之后，主应用不再需要这个实例时：
+// 主应用不再需要该实例时：
 await microApp.unmount();
 ```
 
-空的第二个参数是单应用配置的位置；需要设置时参见 [`AppConfiguration`](/zh-CN/api/configuration)。
+第二个参数用于传入应用配置。示例中未设置配置项，因此传入空对象；具体配置见 [`AppConfiguration`](/zh-CN/api/configuration)。
 
 ## 类型
 
@@ -60,47 +60,47 @@ type LifeCycles<T extends ObjectType> = {
 
 `app` 是主应用传入的 [`LoadableApp`](/zh-CN/api/types) 描述对象：`{ name, entry, container, props? }`。
 
-每个字段可以接收一个函数或一个数组。数组成员按声明顺序运行；qiankun 会等待前一个函数返回的 Promise，再启动下一个。如果某个钩子 reject，链中剩余钩子不会运行，当前生命周期转换也会失败。
+每个字段可接收一个函数或函数数组。数组中的函数按声明顺序执行；qiankun 会等待前一个函数返回的 Promise 完成，再执行下一个函数。如果某个钩子的 Promise 被拒绝，后续钩子不会执行，当前生命周期转换也会失败。
 
 ## 五个钩子
 
 | 钩子 | 时机保证 | 主应用中的常见用途 |
 | --- | --- | --- |
-| `beforeLoad` | 在入口准备期间执行，qiankun 继续使用解析出的应用生命周期之前完成；不保证早于网络请求 | 开启主应用侧 loading 或记录耗时 |
-| `beforeMount` | 紧接在微应用自己的 `mount` 被调用之前 | 准备本次挂载所需的主应用上下文 |
-| `afterMount` | 微应用的 `mount` Promise resolve 之后 | 关闭 loading 或记录成功挂载 |
-| `beforeUnmount` | 紧接在微应用自己的 `unmount` 被调用之前 | 持久化主应用持有的状态或停止主应用订阅 |
-| `afterUnmount` | 微应用的 `unmount` Promise resolve 后，在拆卸阶段执行 | 完成主应用清理或记录一次会话结束 |
+| `beforeLoad` | 在入口准备阶段执行，并在 qiankun 调用解析出的微应用生命周期前完成；网络请求可能更早开始 | 显示主应用侧加载状态或记录耗时 |
+| `beforeMount` | 在微应用自身的 `mount` 调用前执行 | 准备本次挂载所需的主应用上下文 |
+| `afterMount` | 微应用的 `mount` Promise 完成之后 | 隐藏加载状态或记录挂载成功事件 |
+| `beforeUnmount` | 在微应用自身的 `unmount` 调用前执行 | 持久化主应用持有的状态或停止主应用订阅 |
+| `afterUnmount` | 微应用的 `unmount` Promise 完成后，在卸载阶段执行 | 完成主应用清理或记录会话结束事件 |
 
-`beforeMount` / `afterMount` 只围绕应用的 `mount`，不围绕入口加载或 `bootstrap`；`beforeUnmount` / `afterUnmount` 同样围绕应用的 `unmount` 阶段。
+`beforeMount` 和 `afterMount` 分别在应用 `mount` 的前后执行，不包含入口加载或 `bootstrap` 阶段；`beforeUnmount` 和 `afterUnmount` 则分别在应用 `unmount` 的前后执行。
 
-重新挂载时，每次状态转换都会运行对应的挂载和卸载钩子。`beforeLoad` 属于入口准备，不是每次挂载都会执行的钩子。
+应用重新挂载时，每次状态转换都会执行对应的挂载和卸载钩子。`beforeLoad` 属于入口准备阶段，不会在每次挂载时执行。
 
 ### `beforeLoad` 与网络时机
 
-入口准备可能在 `beforeLoad` 被等待之前就开始，因此钩子可能与入口请求重叠。不要用它注入认证信息、改写 URL，也不要假设它会在 fetch 开始前运行。请通过 [`AppConfiguration.fetch`](/zh-CN/api/configuration) 配置请求行为。
+入口准备可能在 qiankun 等待 `beforeLoad` 之前开始，因此该钩子的执行可能与入口请求重叠。请勿通过该钩子注入认证信息或修改 URL，也不应假定它一定在 fetch 开始前执行。请求行为应通过 [`AppConfiguration.fetch`](/zh-CN/api/configuration) 配置。
 
-qiankun 会等待 `beforeLoad`，再继续使用从入口解析出的生命周期对象。因此它适合主应用侧的观察工作，但不适合改变入口的加载方式。
+qiankun 会等待 `beforeLoad` 完成，再使用从入口解析出的生命周期对象。因此，该钩子适合执行主应用侧的观察逻辑，不适合修改入口加载方式。
 
 ## `global` 参数
 
-默认沙箱开启时，`global` 是当前微应用实例看到的隔离 `WindowProxy` 视图。它既不是微应用导出的生命周期对象，也不是主应用页面真实的 `window`。
+启用默认沙箱时，`global` 是当前微应用实例对应的隔离 `WindowProxy` 视图。它既不是微应用导出的生命周期对象，也不是主应用页面中的真实 `window`。
 
-只有在微应用明确需要从自身 window 视图读取某个值时才使用它；应用数据和回调应优先通过 `props` 传递。关闭沙箱后，这些隔离保证不再成立。公开边界见 [JavaScript 隔离](/zh-CN/concepts/js-sandbox)。
+仅当微应用需要从自身隔离的 `window` 视图读取特定值时才应使用该参数。应用数据和回调应优先通过 `props` 传递。关闭沙箱后，上述隔离保证不再成立。相关限制参见 [JavaScript 隔离](/zh-CN/concepts/js-sandbox)。
 
 ## 路由驱动应用
 
-选择路由驱动方式时，把一个 `LifeCycles` 对象作为 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 的第二个参数传入。它会作用于这次调用注册的所有应用，因此上报或按应用分支时应使用 `app` 参数。除此之外，钩子的含义和时机保证相同。
+使用路由驱动方式时，将 `LifeCycles` 对象作为 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 的第二个参数传入。该对象作用于本次调用注册的所有应用，因此在上报数据或区分应用时，应根据 `app` 参数进行处理。钩子的含义和执行时机与 `loadMicroApp` 相同。
 
 ## 主应用钩子与微应用生命周期
 
-主应用的 `LifeCycles` 接收 `(app, global)`，观察实例周围的状态转换；微应用自己的 `bootstrap`、`mount`、`unmount` 和可选 `update` 接收 props，负责渲染应用并完成清理。主应用钩子不能替代这些导出。
+主应用的 `LifeCycles` 接收 `(app, global)`，用于观察实例的状态转换。微应用导出的 `bootstrap`、`mount`、`unmount` 和可选的 `update` 接收 props，负责渲染应用并完成清理。主应用钩子不能替代微应用导出的生命周期函数。
 
 应用侧契约见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
 
 ## 相关内容
 
-- [`loadMicroApp`](/zh-CN/api/load-micro-app)——按实例加载与句柄所有权
+- [`loadMicroApp`](/zh-CN/api/load-micro-app)——按需加载和管理微应用实例
 - [`registerMicroApps`](/zh-CN/api/register-micro-apps)——路由驱动激活
 - [`AppConfiguration`](/zh-CN/api/configuration)——请求与沙箱配置
 - [类型参考](/zh-CN/api/types)——`LoadableApp`、`MicroApp` 及相关类型

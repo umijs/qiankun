@@ -10,7 +10,8 @@ This page is about the model itself — what it isolates, where it deliberately 
 
 Every micro-app gets its own virtual `window` (`globalThis` and `self` point at the same object). It behaves like the real thing, with one deliberate asymmetry that is the whole point of the design:
 
-- **Writes are local.** When an app runs `window.foo = 1`, or declares a top-level `var foo`, the value lands on that app's own local object. The real `window` never sees it, and neither does any other micro-app.
+- **Explicit global writes are local.** When an app runs `window.foo = 1`, the value lands on that app's own local object. The real `window` never sees it, and neither does another micro-app.
+- **Classic top-level declarations stay in the wrapper.** A top-level `var foo` is scoped to the Compartment's wrapper function; it does not become a property of either the proxied or real `window`.
 - **Reads fall through.** When an app reads a global it never set — `window.localStorage`, `window.crypto`, `document` — the lookup checks its local object first, then the handful of built-in values (endowments) qiankun injects, then falls through to the real main-app `window`. So the app still sees the real browser environment.
 
 The result: each app has a namespace that looks complete but can't pollute anything outside it.
@@ -35,7 +36,7 @@ The membrane (`core/membrane`) is a `Proxy` wrapping the main-app `window` — i
 
 ### The compartment
 
-The membrane controls where `window.x` resolves, but a classic UMD script also writes **bare** globals — a top-level `var foo = …`, or a reference to an undeclared `React`. Syntactically these never go through `window`, so a Proxy alone can't catch them. The compartment (`core/compartment`) closes that gap for classic scripts by wrapping the source before it runs, roughly like this:
+The membrane controls explicit `window.x` access, but a Classic UMD script also contains bare global references such as `React` and top-level declarations such as `var foo`. A Proxy alone cannot control lexical name resolution, so the Compartment (`core/compartment`) wraps the source before it runs, roughly like this:
 
 ```js
 ;(function () {
@@ -46,7 +47,7 @@ The membrane controls where `window.x` resolves, but a classic UMD script also w
 }).bind(window.__compartment_globalThis__<N>__)();
 ```
 
-`with (this)` binds every bare global reference in the script to the app's proxied `window`, and `this` is that membrane view. qiankun runs the wrapped source through a **blob URL** so the browser executes it as an ordinary external script, while it stays fenced inside the sandbox. The `<N>` suffix is a per-instance counter, so two instances of the same app don't fight over the same compartment slot.
+`with (this)` routes a bare reference through the proxied `window` when that name already exists on the sandbox target or host global; top-level declarations remain local to the wrapper function. A completely new undeclared assignment such as `foo = 1` does not match the membrane's `has` trap and can escape to the real global in a sloppy-mode Classic script. Applications must avoid implicit globals and use declarations or explicit `window.foo` writes instead. qiankun runs the wrapped source through a **blob URL**, and the `<N>` suffix gives each instance a separate Compartment slot.
 
 Only classic scripts take this path. `<script type="module">` is handled by the [ESM sandbox](/concepts/esm-sandbox), a separate engine that reads the **same** membrane view (via `sandbox.getEsmGlobalsView()`) but rewrites modules with a lexer instead of wrapping them in `with`. Both paths share the one global namespace for a given app.
 
@@ -96,7 +97,7 @@ These names really are written to the real `window` and shared across apps. Trea
 
 Some browser APIs must keep their original `this`. Calling `fetch` through the Proxy detaches it from `window` and throws `Illegal invocation`. The sandbox handles this by rebinding such native functions to the real window before the app ever touches them (its `useNativeWindowForBindingsProps` set), so `window.fetch(...)` inside the sandbox works as usual.
 
-Separately, `requestAnimationFrame` and `cancelAnimationFrame` pass straight through to the main app (the `whitelistBOMAPIs` set) — they're frame-scheduling primitives with nothing per-app to clean up, and isolating them would only add overhead for no benefit.
+Separately, `requestAnimationFrame` and `cancelAnimationFrame` pass straight through to the main app through the `whitelistBOMAPIs` set. The sandbox does not track or cancel pending callbacks, so a micro-app that owns an animation loop must call `cancelAnimationFrame` during `unmount`.
 
 ## Multiple instances
 

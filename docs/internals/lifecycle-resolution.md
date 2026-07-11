@@ -107,15 +107,16 @@ Each hook may be a single function or an array; qiankun runs them sequentially w
 
 ## When each hook runs
 
-`beforeLoad` and the rest do not all run at the same phase. `beforeLoad` runs early in the `loadApp` body — synchronously, before the entry lifecycles are even awaited. The other four run inside the parcel's single-spa mount and unmount arrays, around the sub-app's own `mount` / `unmount`:
+`beforeLoad` and the rest do not all run at the same phase. `loadApp` starts loading the entry, then runs and awaits `beforeLoad` before it awaits the parsed entry lifecycles; entry loading can therefore overlap the hook. The other four run inside the parcel's single-spa mount and unmount arrays, around the sub-app's own `mount` / `unmount`:
 
 ```mermaid
 sequenceDiagram
   participant SS as single-spa
   participant Q as qiankun (loadApp)
   participant A as sub-app
-  Q->>Q: beforeLoad(app, global)
-  Q->>A: load & execute entry, discover lifecycles
+  Q->>A: start loading & executing entry
+  Q->>Q: await beforeLoad(app, global)
+  Q->>A: await parsed lifecycles
   Q->>A: bootstrap()
   Note over SS,A: mount phase
   Q->>Q: init container, (re)load entry

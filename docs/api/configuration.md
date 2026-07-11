@@ -51,7 +51,7 @@ See [Style isolation](/concepts/style-isolation) for boundaries, [Enable style i
 
 ### fetch
 
-Defaults to `window.fetch`. qiankun adds non-success response validation, transient-failure retries, and request deduplication and caching around the fetch implementation you provide.
+Defaults to `window.fetch`. qiankun validates that response status is in the `200–399` range, adds a limited retry budget for request failures, and deduplicates and caches requests around the fetch implementation you provide.
 
 Use a custom `fetch` to inject credentials, headers, or a proxy. It must preserve standard Fetch API response and streaming semantics; the outer validation, retry, and cache behavior still applies.
 

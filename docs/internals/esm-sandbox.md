@@ -13,8 +13,8 @@ The classic path and the ESM path solve fundamentally different problems:
 | | Classic | ESM |
 | --- | --- | --- |
 | Source wrapping | `with (this) { … }` blob | top-of-module `const/let { … } = __qk_view` destructuring |
-| Global coverage | every bare identifier | only names in the per-module destructuring set (base = `esmDestructurableGlobals`) |
-| Implicit global write `foo = 1` | writes to the proxy | strict-mode `ReferenceError` — never reaches the set trap |
+| Global coverage | explicit `window` access and bare names already present on the sandbox or host global | only names in the per-module destructuring set (base = `esmDestructurableGlobals`) |
+| Implicit global write `foo = 1` | an existing global name resolves through the Proxy; a completely new undeclared name can escape to the real global | strict-mode `ReferenceError` — never reaches the set trap |
 | Lifecycle discovery | `sandbox.latestSetProp` (a `window` write) | the entry module's `export`s / `export default { … }` |
 | Remount | top level does not re-run; retained lifecycle functions are called again | top level does not re-run; `import(sameBlob)` returns the same namespace |
 | Module identity | direct blob URL | synthetic specifier → import map → blob URL |
@@ -79,7 +79,7 @@ Once all modules have run, the engine selects which module namespace carries the
 2. Otherwise the first executed namespace that looks like a lifecycle object (or whose `.default` does) wins — matching a Vite entry that does `export default { bootstrap, mount, unmount }`.
 3. Otherwise the **last** executed namespace is used, matching a single `<script type="module">` HTML.
 
-A non-entry module that throws only logs to `console.error`; it does not fail the app, because a classic app may incidentally carry a stray module script. `loadApp` then re-validates the selected namespace through `getLifecyclesFromExports`, which can still fall back to `window[appName]`. Any module-graph throw or rejected top-level `await` is plumbed back so it reaches single-spa's error handler rather than surfacing as an `unhandledrejection`.
+A non-entry module that throws, including through rejected top-level `await`, is logged to `console.error` and skipped; it does not immediately fail the app because a Classic application may incidentally contain an unrelated module script. A failure in an explicitly marked entry rejects entry loading. Without an explicit entry, `loadApp` validates the selected successful namespace and fails later if no valid lifecycle object remains. That load failure enters single-spa's global handler for a route-registered application, while `loadMicroApp` exposes it through the instance lifecycle promises instead.
 
 ## Import maps
 

@@ -1,140 +1,146 @@
 # ESM 沙箱实现
 
-> 本页面向维护者，记录 ESM 执行引擎的实现细节。用户可观察的行为见 [原生 ESM 支持](/zh-CN/concepts/esm-sandbox)，设计取舍见 [ESM 沙箱 RFC](../../rfcs/esm-sandbox.md)。
+> 本页面向维护者说明 ESM 执行引擎的实现细节。面向使用者的行为见[原生 ESM 支持](/zh-CN/concepts/esm-sandbox)，设计取舍见 [ESM 沙箱 RFC](../../rfcs/esm-sandbox.md)。
 
-现在的微应用越来越多地直接产出原生 ES 模块。Vite 的 dev server 会给每个源文件单独发一个 `<script type="module">`，靠 `import`/`export` 把它们串起来，剩下的交给浏览器原生的模块加载器。这种代码在 qiankun 的经典沙箱里根本跑不起来——经典沙箱把源码包进 `with (this) { … }`，再从脚本最后写入的那个全局变量里读出应用的导出；可 ESM 强制严格模式，`with` 直接是个 `SyntaxError`，而生命周期函数来自 `export`，压根不写 `window`。
+现代构建工具可以直接输出原生 ES 模块。以 Vite 开发服务器为例，每个源文件都作为独立模块提供，并由浏览器通过 `import` 和 `export` 加载模块图。此类代码无法使用 Classic 沙箱的执行方式：Classic 沙箱通过 `with (this) { … }` 包装源码，并从入口脚本最后写入的全局变量中读取导出；ESM 强制采用严格模式，禁止使用 `with`，生命周期函数也来自模块导出，而非 `window` 属性。
 
-ESM 沙箱就是 qiankun v3 给出的答案。`EsmSandboxEngine` 让微应用的原生 ES 模块图，走的还是那层 [JS 沙箱](/zh-CN/concepts/js-sandbox)隔离膜——不用打包器，不用 iframe，也不用构建期插件。实例化和求值仍然归原生 ESM 加载器管，所以顶层 `await`、循环依赖、live binding、变量提升这些，行为和没有 qiankun 时一模一样。
+qiankun v3 使用 `EsmSandboxEngine` 处理原生模块图。该引擎复用 [JavaScript 隔离](/zh-CN/concepts/js-sandbox)中的 Proxy 隔离膜，不依赖 iframe，也不要求将模块打包为 UMD。模块实例化和求值仍由浏览器原生 ESM 加载器负责，因此顶层 `await`、循环依赖、实时绑定（live binding）和变量提升等语义保持不变。
 
-## 为什么要单独一套引擎
+## 与 Classic 执行方式的区别
 
-经典路径和 ESM 路径解决的根本不是同一类问题：
-
-| | 经典 | ESM |
+| | Classic | ESM |
 | --- | --- | --- |
-| 源码包裹 | `with (this) { … }` blob | 模块顶部 `const/let { … } = __qk_view` 解构 |
-| 全局覆盖范围 | 每一个裸标识符 | 只有出现在该模块解构集合里的名字（基准集 = `esmDestructurableGlobals`） |
-| 隐式全局写 `foo = 1` | 写进 proxy | 严格模式 `ReferenceError`——根本走不到 set trap |
-| 生命周期发现 | `sandbox.latestSetProp`（一次 `window` 写入） | 入口模块的 `export` / `export default { … }` |
-| 重新挂载 | 顶层代码不重跑；再次调用已保留的生命周期函数 | 顶层代码不重跑；`import(sameBlob)` 返回同一个 namespace |
-| 模块标识 | 直接 blob URL | 合成 specifier → import map → blob URL |
+| 源码处理 | 使用 `with (this) { … }` 包装并生成 blob | 在模块顶部通过 `const`／`let` 从 `__qk_view` 解构全局属性 |
+| 全局覆盖范围 | 显式 `window` 访问，以及沙箱或主应用全局对象中已存在的裸标识符 | 当前模块解构集合中的名称，基准集为 `esmDestructurableGlobals` |
+| 隐式全局写入 `foo = 1` | 已存在的全局名称会经过 Proxy；全新且未声明的名称可能写入真实全局对象 | 严格模式抛出 `ReferenceError`，不会进入 `set` trap |
+| 生命周期发现 | `sandbox.latestSetProp`，即一次 `window` 写入 | 入口模块的具名导出或默认导出 |
+| 重新挂载 | 顶层代码不重新执行，复用已解析的生命周期函数 | 顶层代码不重新执行，`import(sameBlob)` 返回相同的模块命名空间对象 |
+| 模块标识 | 直接使用 blob URL | 合成模块说明符 → import map → blob URL |
 
-引擎没有另起炉灶去重写一套模块解析，而是复用了三样现成的东西：流式 [HTML 入口加载器](/zh-CN/concepts/html-entry-loading)、`Proxy` 隔离膜、以及浏览器自己的模块加载器。它只是把自己插在 fetch 和求值之间。
+ESM 引擎不重新实现模块解析，而是组合现有的 [HTML 入口加载器](/zh-CN/concepts/html-entry-loading)、Proxy 隔离膜和浏览器原生模块加载器。其职责集中在资源获取与模块求值之间的源码转换和地址映射。
 
-## 什么时候会触发
+## 启用条件与脚本分发
 
-只有开启 `sandbox`（默认就是开）时，这个引擎才存在。它在 `loadApp` 里随每个微应用实例连同隔离膜一起构造出来。一旦 `sandbox: false`，ESM 沙箱和隔离膜就全都没有了。
+只有在 `sandbox` 开启时才会创建 ESM 引擎。`loadApp` 为每个微应用实例同时构造隔离膜和引擎；设置 `sandbox: false` 后，两者均不会创建。
 
-分发是在加载器的流式管线里按 DOM 节点类型来做的（`packages/shared/src/assets-transpilers/module.ts`）：
+流式加载器根据 DOM 节点类型分发脚本（`packages/shared/src/assets-transpilers/module.ts`）：
 
-- **`<script type="module">`**（带 `src` 或内联）被路由到引擎。transpiler 会把 `src` 属性摘掉、存到 `data-src` 上，再打上 `data-esm="true"` 标记，这样浏览器原生的加载器就永远不会去 fetch 或执行原始 URL——否则那次加载会彻底绕过沙箱。
-- **`<script type="importmap">`** 由 qiankun 自己解析。元素的 `type` 会被改写成 `qiankun-importmap`，免得浏览器把子应用的 map 合进宿主文档的 import map。
-- **经典 `<script>` / `text/javascript`** 继续走经典 transpiler（也就是 `with (this)` blob 那条路）。同一个 HTML 入口里经典脚本和 ESM 脚本混用是支持的。
+- **`<script type="module">`**：无论包含 `src` 还是内联源码，均交给 ESM 引擎。转译器移除 `src`，将原地址保存在 `data-src`，并添加 `data-esm="true"`，以阻止浏览器直接获取或执行原始 URL，从而避免绕过沙箱。
+- **`<script type="importmap">`**：由 qiankun 解析。元素类型会改写为 `qiankun-importmap`，防止浏览器将微应用 import map 合并到主应用文档。
+- **Classic `<script>` 或 `text/javascript`**：继续由 Classic 转译器处理，即通过 `with (this)` 包装后生成 blob。同一份 HTML 入口可以同时包含 Classic 和 ESM 脚本。
 
-## 具体怎么做
+## 模块处理流程
 
-对每个模块，引擎先用一个 WASM lexer 驱动一次运行时源码改写，再把结果交给原生加载器：
+引擎先使用 WASM 词法分析器扫描并改写模块源码，再交给浏览器原生加载器：
 
 ```mermaid
 flowchart TD
-  A[fetch 模块源码] --> B[es-module-lexer 扫描]
-  B --> C[改写：全局走隔离膜视图 + 合成 specifier]
+  A[获取模块源码] --> B[es-module-lexer 扫描]
+  B --> C[改写全局访问与模块说明符]
   C --> D[创建 blob URL]
-  D --> E[在 import map 里登记 instanceKey/url 到 blob]
-  E --> F["按文档顺序原生 import(blobUrl)"]
+  D --> E[在 import map 中登记 instanceKey/url 到 blob]
+  E --> F["按文档顺序执行 import(blobUrl)"]
 ```
 
-1. **Fetch**——通过装饰过的 `fetch`（cacheable → retryable → throwable）把模块拿回来。
-2. **扫描**——用 [`es-module-lexer`](https://github.com/guybedford/es-module-lexer) 扫一遍，这是个 WASM lexer，在 `start()` 时通过 `prepareEsmLexer()` 预热一次。
-3. **改写**源码，使得：
-   - 对被沙箱管辖的全局的引用，在模块顶部从隔离膜视图里解构出来（`const { window, document, … } = __qk_view`）；
-   - 每个静态 import specifier 被替换成形如 `` `${instanceKey}/${resolvedUrl}` `` 的合成 specifier；
-   - `import.meta` 变成一个保留了真实 `url` 的本地对象，`import()` 变成沙箱感知的 `__qk_dynamic_import(...)`。
-4. **映射**——通过一份动态注入的、文档级的 `<script type="importmap">`，把每个合成 specifier 映射到对应的 blob URL。
-5. **求值**——按文档顺序用原生 `import(blobUrl)` 执行。
+处理步骤如下：
 
-因为实例化始终留在原生加载器手里，引擎从头到尾都没有去重新实现一遍模块语义——它只是重定向了每个模块的源码和全局到底从哪儿来。
+1. **获取源码**：通过增强后的 fetch 获取模块。装饰器顺序为 cacheable → retryable → throwable。
+2. **扫描模块**：使用 [`es-module-lexer`](https://github.com/guybedford/es-module-lexer) 分析源码。该 WASM 词法分析器会在 `start()` 期间通过 `prepareEsmLexer()` 预初始化。
+3. **改写源码**：
+   - 将受沙箱管理的全局属性在模块顶部从隔离膜视图中解构，例如 `const { window, document, … } = __qk_view`；
+   - 将静态 import 的模块说明符改写为 `` `${instanceKey}/${resolvedUrl}` `` 形式的合成说明符；
+   - 将 `import.meta` 替换为保留真实 `url` 的本地对象，并将 `import()` 替换为支持沙箱解析的 `__qk_dynamic_import(...)`。
+4. **建立映射**：动态向文档注入 `<script type="importmap">`，将合成模块说明符映射到相应 blob URL。
+5. **执行模块**：按照 HTML 文档顺序调用原生 `import(blobUrl)`。
 
-### 全局是怎么改写的
+模块实例化始终由浏览器负责，qiankun 仅改写模块源码、依赖地址和全局属性来源。
 
-改写并没有把模块塞进一个 proxy 作用域里。它扫描源码，挑出那些出现在基准全局集里的标识符，只把这些从隔离膜视图里解构出来：
+### 全局属性改写
 
-- 稳定对象（`window`、`document` 以及基准集里其余的那些）用 `const { … } = __qk_view` 绑定。对它们的属性访问始终是活的，因为对象本身就是那份被代理的视图。
-- 可 live binding 的双下划线标志位（`__X__`，比如 `__VUE_OPTIONS_API__`）用 `let` 绑定并被跟踪，这样当沙箱之后记录到对某个这类全局的写入时，已经求值过的模块也能看到新值。
+模块不会运行在 Proxy 词法作用域内。引擎扫描源码，找出属于基准全局集合的标识符，并从隔离膜视图中解构这些属性：
 
-这段头部是靠 import 一个每实例独立的 runtime 模块来引导的——`import { __qk_view, __qk_resolve, __qk_dynamic_import, __qk_track } from "<instanceKey>/__runtime__"`——而不是去读 `globalThis` 或调 `eval`。用 import binding 可以避开 temporal-dead-zone 的 `ReferenceError`，也让沙箱和 CSP 兼容：唯一多出来的要求是 `script-src blob:`，从不需要 `'unsafe-eval'`。
+- 稳定对象，例如 `window`、`document` 及基准集合中的其他对象，通过 `const { … } = __qk_view` 绑定。对象本身是代理视图，因此后续属性访问仍可反映实时状态。
+- 需要实时绑定的双下划线标记（如 `__VUE_OPTIONS_API__`）通过 `let` 绑定并持续追踪。当沙箱观察到后续全局写入时，已完成求值的模块也能读取新值。
 
-## 执行顺序
+每个实例都通过独立的运行时模块提供这些能力：
 
-加载和求值是特意围绕 HTML 流拆开的：
-
-- **流式过程中**，每个模块脚本按文档顺序同步调一次 `loadModuleScript(...)`。这会立刻把异步 transpile 启动起来（fetch → lexer → 改写 → 并行递归预取依赖），但把求值推迟。每个任务都排进队列。
-- **流结束之后**，加载器调 `sealAndExecute()`。当存在模块脚本时它返回 `true`——这是个信号，告诉加载器该去 await ESM 入口的 namespace，而不是经典的 `latestSetProp`。接着它按顺序 await 每条排队的记录，刷新新的 import-map 条目，再对每个模块依次调原生 `import(blobUrl)`。
-
-### 选出入口 namespace
-
-所有模块都跑完之后，引擎要挑出哪个模块的 namespace 才带着生命周期函数：
-
-1. 如果某个模块显式带了 `entry` 属性，那这个模块的 namespace 就是入口，它一旦失败整个应用都失败。
-2. 否则，第一个看起来像生命周期对象（或者它的 `.default` 像）的已执行 namespace 胜出——对应一个 Vite 入口写的 `export default { bootstrap, mount, unmount }`。
-3. 再否则，用**最后一个**执行的 namespace，对应只有一个 `<script type="module">` 的 HTML。
-
-一个非入口模块抛错只会 `console.error` 一下，并不会让应用失败——因为一个经典应用可能顺带夹了个多余的模块脚本进来。之后 `loadApp` 会再通过 `getLifecyclesFromExports` 重新校验选中的 namespace，它还能回退到 `window[appName]`。任何模块图里的抛错、或被 reject 的顶层 `await`，都会被接回来送到 single-spa 的错误处理器，而不是冒成一个 `unhandledrejection`。
-
-## import map
-
-引擎会用到两层 import map，而且这两层从不混在一起：
-
-- **子应用自己的 map**（`<script type="importmap">`）被解析成一张内部表（`bareSpecifier → absolute URL`），只用来解析子应用的 bare specifier。只认 `imports` 字段——`scopes` 会被解析、给出告警、然后在 v1 里忽略掉。
-- **注入的 runtime map** 把 `<instanceKey>/<absoluteUrl>` 映射到浏览器真正 import 的那个 blob URL。
-
-原生 import map 是文档级的、只增不减、冲突时以先到者为准。所以实例之间的隔离完全押在 instance key 上：
-
-```
-instanceKey = `__qk_${appName}_${instanceId}_${++instanceSeq}__`
+```js
+import { __qk_view, __qk_resolve, __qk_dynamic_import, __qk_track } from '<instanceKey>/__runtime__';
 ```
 
-`instanceSeq` 是个全局单调计数器，**从不复用**，所以一个已经退役的 key 绝不会跟一个活着的条目撞上。只有新条目会被追加进去；真要在同一个 specifier 上撞出一个不同的目标，会打一条 `console.error`（浏览器则会不声不响地保留第一个）。
+使用导入绑定可以避免暂时性死区（temporal dead zone）导致的 `ReferenceError`，也无需读取真实 `globalThis` 或调用 `eval`。CSP 只需允许 `script-src blob:`，不要求 `'unsafe-eval'`。
 
-::: info 长期存活的基座会攒下条目
-在真实文档里 import-map 条目是不可撤销的，所以一个反复加载、卸载微应用的基座会攒下一堆死条目——在页面的整个生命周期里，字符串会无上限地增长。这是 v1 已知的一个限制。
+## 加载与执行顺序
+
+HTML 流处理阶段与模块求值阶段相互分离：
+
+- **流式处理阶段**：每个模块脚本按文档顺序同步调用一次 `loadModuleScript(...)`。该调用立即启动异步转换，包括 `fetch` 请求、词法分析、源码改写和依赖递归预取，但暂不执行模块。任务会按顺序加入队列。
+- **输入流结束后**：加载器调用 `sealAndExecute()`。存在模块脚本时，该方法返回 `true`，用于指示加载器等待 ESM 入口模块的命名空间对象，而不是读取 Classic `latestSetProp`。随后，引擎按顺序等待队列中的记录，更新 import map，并依次调用原生 `import(blobUrl)`。
+
+### 选择入口模块的命名空间对象
+
+所有模块执行完成后，引擎按以下顺序确定生命周期入口：
+
+1. 如果某个模块显式包含 `entry` 属性，则使用该模块的命名空间对象。该模块执行失败会导致整个应用加载失败。
+2. 如果未标记 `entry`，则使用第一个包含生命周期对象的已执行模块命名空间；其 `.default` 也会参与判断。这适用于 `export default { bootstrap, mount, unmount }` 形式的 Vite 入口。
+3. 如果仍未找到生命周期对象，则使用最后执行的模块命名空间。这适用于 HTML 中仅包含一个 `<script type="module">` 的常见情况。
+
+非入口模块发生异常（包括顶层 `await` 导致的 Promise 拒绝）时，只会输出 `console.error` 并跳过该模块，不会立即使应用加载失败，以兼容 Classic 应用包含非关键模块脚本的情况。显式标记的入口模块执行失败时，入口加载将失败；未显式标记入口时，`loadApp` 会校验已选择的成功模块，如果最终没有有效生命周期，再使应用加载失败。对于路由注册应用，该加载错误会进入 single-spa 全局处理器；对于 `loadMicroApp`，错误会通过实例的生命周期 Promise 返回。
+
+## `import map` 管理
+
+引擎使用两类互不合并的 import map：
+
+- **微应用 import map**：解析 `<script type="importmap">`，建立 `bareSpecifier → 绝对 URL` 的内部映射，仅用于解析当前微应用的裸模块说明符。当前仅支持 `imports`；`scopes` 会被解析并输出警告，但在 v1 中不会生效。
+- **运行时 import map**：将 `<instanceKey>/<absoluteUrl>` 映射到浏览器实际加载的 blob URL。
+
+浏览器的原生 import map 作用于整个文档，只能追加，且发生冲突时保留先注册的映射。因此，引擎通过实例键隔离不同实例：
+
+```ts
+instanceKey = `__qk_${appName}_${instanceId}_${++instanceSeq}__`;
+```
+
+`instanceSeq` 是全局单调递增计数器，且不会复用。因此，已销毁实例使用的键不会与新实例冲突。引擎只向 import map 追加新映射；如果同一模块说明符对应不同目标，会输出 `console.error`，浏览器则继续使用首个映射。
+
+::: info 长期运行页面中的 import map 条目
+原生 import map 条目无法从文档中删除。主应用反复加载和卸载微应用时，已失效的映射仍会保留，相关字符串会随页面生命周期持续增长。这是 v1 的已知限制。
 :::
 
-## realm 桥接与重声明探测
+## Realm 桥接与重声明检测
 
-改写后的 blob 跑在真实的全局作用域里，所以一个放错位置的裸 `__qk_*` 引用会碰到真实全局、从隔离膜里逃出去。有两道防线守着这座桥：
+改写后的 blob 在真实全局作用域中运行，因此未正确处理的裸 `__qk_*` 标识符可能访问真实全局对象。引擎通过以下机制限制此类访问：
 
-- **realm accessor**——它负责返回某个模块的隔离膜视图，被挂在 `globalThis` 上一个每副本、密码学随机的 key 下，再进一步用一个无法猜测的每实例 token 做索引，而这个 token 只内联在该实例自己的 runtime 模块 blob 里。隔离膜还把 `__qk_*` 这类名字拉进黑名单，作为纵深防御。用户代码若试图 import 任何 `__qk_` 前缀的合成 specifier，会被一个 `QiankunError` 拒掉。（像 `(0, eval)('globalThis')` 这类间接逃逸依然可能，这跟经典沙箱里的情况完全一样，而且明确不在防护范围内。）
-- **重声明探测**——处理这么个情况：注入的 `const { window, … }` 头部，跟模块自己顶层的 `const window = …` 撞了名，这在解析期就是个 `SyntaxError`。因为 import-map 条目一旦刷进去就不可撤销，引擎必须在刷进去*之前*把它抓住。它会去 import 一个探测 blob，这个 blob 的 runtime specifier 被换成一个从未注册过的目标：解析会把重声明错误暴露出来，而随后的解析注定会失败，所以这个模块实际上永远不会求值。引擎从中提取出闯祸的那个标识符，把它加进一个排除集合，再把模块重新改写一遍。
+- **Realm 访问器**：Realm 访问器用于返回模块对应的隔离膜视图。访问器以当前 qiankun 运行时随机生成的键挂载到 `globalThis`，再通过不可预测的实例令牌索引；该令牌仅写入当前实例的运行时模块 blob。隔离膜还会将 `__qk_*` 属性列入黑名单。用户模块导入以 `__qk_` 开头的合成模块说明符时，引擎会抛出 `QiankunError`。间接访问真实全局对象的表达式（如 `(0, eval)('globalThis')`）仍可能绕过隔离，这与 Classic 沙箱相同，不属于安全保证范围。
+- **重声明检测**：注入的 `const { window, … }` 可能与模块顶层已有的 `const window = …` 冲突，并在解析阶段抛出 `SyntaxError`。由于 import map 条目一经注册便无法撤销，引擎会在更新 import map 前先导入探测 blob。探测 blob 将运行时模块说明符替换为未注册目标，用于暴露重声明错误，同时确保模块不会真正求值。引擎提取发生冲突的标识符，加入排除集合后重新改写模块。
 
-## Vite dev 的特殊处理
+## Vite 开发环境处理
 
-引擎的设计目标之一，就是直接跑 Vite dev server 产出的原生 ESM。子应用怎么配，见 [让 Vite 应用接入 qiankun](/zh-CN/cookbook/prepare-a-vite-app)。
+ESM 引擎支持直接运行 Vite 开发服务器提供的模块图。微应用配置见 [Vite 接入指南](/zh-CN/cookbook/prepare-a-vite-app)。
 
-- **`/@vite/client` 被打了桩。** 桩保留了 `updateStyle`/`removeStyle`（经由被代理的 `document` 路由到虚拟 head），但返回一个空操作的 hot context，也从不去开 HMR 的 WebSocket。
-- **HMR 是被主动关掉的，不是被动降级。** 真实 Vite client 里 HMR 的 host 是个 serve 期写死的字面量，所以它的 WebSocket *会*从沙箱内部连上，然后触发一次破坏性的整页 `location.reload()`。关掉它是有意为之——开发时，手动改代码、手动刷新。
-- **React Fast Refresh** 要求它的 preamble 先于组件模块运行；顺序不对它就没法正确初始化。
+- **替换 `/@vite/client`。** 替代实现保留 `updateStyle` 和 `removeStyle`，并通过代理 `document` 将样式写入虚拟 `<head>`；同时返回无操作的热更新上下文，不建立 HMR WebSocket。
+- **主动关闭 HMR。** Vite 客户端会在开发服务器启动时将 HMR 服务地址写入代码。若直接执行，它会从沙箱内部建立 WebSocket，并可能触发整页 `location.reload()`。因此 qiankun 主动停用该连接，开发时需要手动刷新页面。
+- **React Fast Refresh 依赖执行顺序。** Fast Refresh 要求预引导脚本（preamble）在组件模块之前执行，顺序不正确时无法完成初始化。
 
-::: warning 重新挂载时 CSS-as-JS 可能丢失
-Vite 把 CSS 当成 JS 模块来发，在模块顶层注入样式。因为重新挂载不会重跑顶层代码（见下），而卸载又清空了虚拟 head，这类样式在第二次挂载时可能就消失了。这是个已知冲突，记录在 ESM-sandbox RFC 里。
+::: warning 重新挂载时可能丢失 JavaScript 注入的 CSS
+Vite 将 CSS 作为 JavaScript 模块加载，并在模块顶层注入样式。重新挂载不会再次执行模块顶层代码，而卸载会清空虚拟 `<head>`，因此第二次挂载时可能缺少此类样式。该限制已记录在 ESM 沙箱 RFC 中。
 :::
 
 ## 生命周期与缓存
 
-ESM 沙箱在挂载/卸载之间保留自己的模块图，这跟经典沙箱比，变了一条很重要的前提：
+ESM 沙箱会在挂载和卸载之间保留模块图：
 
-- **重新挂载不会重跑顶层代码。** `import(sameBlobUrl)` 返回的是*同一个*模块 namespace，所以一个模块的顶层只执行一次——只有 `mount(props)` 会再跑。任何每次挂载需要的状态（应用实例、store、router）都必须在 `mount()` 里创建，不能放在模块作用域。经典应用也应遵循同样的生命周期纪律：qiankun 重挂时同样会复用已发现的生命周期函数，而不会重新执行入口脚本。
-- **`dispose()` 挂在 single-spa 的 `unload` 上，而不是 `unmount`。** 彻底拆除——撤销引擎创建过的每一个 blob URL、注销 realm——只在 `unload` 时发生。因为 `loadMicroApp` 出来的 parcel 没有 `unload` 语义，它们的引擎会一直赖着，直到调用方把引用丢掉为止，这跟经典沙箱没有显式销毁钩子是同一个缺口。
+- **重新挂载不会执行模块顶层代码。** `import(sameBlobUrl)` 返回相同的模块命名空间对象，因此模块顶层只执行一次，重新挂载仅再次调用 `mount(props)`。每次挂载所需的应用实例、状态仓库和路由实例都应在 `mount()` 中创建，不应放在模块作用域。Classic 应用也应遵守相同的生命周期约定，因为重新挂载同样会复用已解析的生命周期函数。
+- **`dispose()` 绑定到 single-spa `unload`，而非 `unmount`。** 只有 `unload` 才会撤销引擎创建的所有 blob URL 并注销 Realm。`loadMicroApp` 创建的 Parcel 不提供 `unload` 语义，因此 Realm 与模块图会保留到调用方释放相关引用为止。这与 Classic 沙箱缺少显式销毁钩子的限制一致。
 
 ```js [micro-app/src/index.js]
 let app;
 
 export async function bootstrap() {
-  // 只跑一次。只适合放一次性的初始化。
+  // 仅执行一次，只用于一次性初始化。
 }
 
 export async function mount(props) {
-  // 每次（重新）挂载都会跑——每实例的状态在这里创建。
+  // 每次挂载和重新挂载都会执行，在此创建实例状态。
   app = createApp(props.container);
   app.render();
 }
@@ -145,21 +151,22 @@ export async function unmount(props) {
 }
 ```
 
-完整的生命周期约定见 [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
+完整生命周期约定见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
 
 ## 限制
 
-ESM 沙箱拿一部分经典沙箱的行为，换来了原生模块语义。这些要跟你的子应用作者交代清楚：
+原生模块语义与 Classic 沙箱行为存在以下差异：
 
-- **隐式全局写会抛错。** 在严格模式的 ESM 模块里，`foo = 1` 这种没有 `var`/`window.` 的写法是个 `ReferenceError`——根本走不到隔离膜的 set trap。以前指望隐式全局被沙箱接住的代码，现在会直接坏掉。
-- **只有基准集里的全局被隔离膜管。** 只有落在每个模块解构集合里的名字——`esmDestructurableGlobals` 的一个子集——才走隔离膜。那些一次性快照表达不了的、值类型或 getter 类型的全局（`innerWidth`、`devicePixelRatio`、`length`、`name`、`status`、`event` 等）会回退到真实全局，卸载时也清理不掉。
-- **带类型的 import 在 v1 里是直通的。** `import x from '...' with { type: 'json' | 'css' }`、WASM 之类，会被直接映射到原始 URL 并原生加载，没有实例隔离，只给一次 `console.warn`。它们要求子应用服务器给出正确的 MIME 类型和 CORS。*带类型的动态* import 里的相对 specifier 会相对 blob URL 去解析——请用绝对 URL。
-- **Firefox 需要开个开关。** 多份动态注入的 import map 需要 `dom.multiple_import_maps.enabled`，而它在 Firefox 里默认是关的。当前运行时没有提供 shim 执行路径，因此需要默认支持 Firefox 的应用必须改用 Classic 交付路径。
-- **没有 source map，可观测性会退化。** 未捕获错误的 `error.stack` 指向的是 `blob:<host-origin>/<uuid>`；`//# sourceURL` 只改 DevTools 里显示的名字，改不了 stack 里的 URL 和行号。生产的错误上报没法直接把 ESM 子应用的栈帧对回真实文件，所以 source map 在这里就从「锦上添花」变成了「生产必备」。
+- **隐式全局写入会抛出异常。** ESM 严格模式下，未通过 `var` 声明或 `window.` 访问的 `foo = 1` 会抛出 `ReferenceError`，不会进入隔离膜的 `set` trap。
+- **只有基准集合中的全局属性经过隔离膜。** 仅 `esmDestructurableGlobals` 子集中、出现在模块解构集合内的名称会由隔离膜提供。无法通过一次快照表示的值类型或访问器属性，例如 `innerWidth`、`devicePixelRatio`、`length`、`name`、`status` 和 `event`，会访问真实全局对象，卸载时也无法由沙箱清理。
+- **v1 对带类型的 import 采用原生加载。** `import x from '...' with { type: 'json' | 'css' }` 和 WASM 等资源会直接映射到原始 URL，不提供实例隔离，并输出一次 `console.warn`。这些资源需要正确的 MIME 类型和 CORS。对于带类型的动态 import，相对模块说明符会以 blob URL 为基准进行解析，因此应使用绝对 URL。
+- **Firefox 需要额外启用能力。** 多份动态注入的 import map 依赖 `dom.multiple_import_maps.enabled`，而 Firefox 默认关闭该选项。当前运行时不提供兼容实现（shim），需要默认支持 Firefox 的应用应采用 Classic 构建。
+- **错误栈需要源码映射还原。** 未捕获错误的 `error.stack` 指向 `blob:<host-origin>/<uuid>`。`//# sourceURL` 只能修改 DevTools 显示名称，不能修改错误栈中的 URL 和行号。生产环境的错误上报需要源码映射（source map），才能将 ESM 微应用栈帧还原到源文件。
 
 ## 延伸阅读
 
-- [JS 沙箱](/zh-CN/concepts/js-sandbox)——ESM 引擎复用的那层 `Proxy` 隔离膜
-- [HTML 入口流式加载](/zh-CN/concepts/html-entry-loading)——分发模块脚本的那条管线
-- [架构概览](/zh-CN/concepts/architecture)——这些零件是怎么拼到一起的
-- [让 Vite 应用接入 qiankun](/zh-CN/cookbook/prepare-a-vite-app)——原生 ESM 的子应用配置
+- [加载一个微应用实例](/zh-CN/concepts/architecture)：面向使用者的整体运行模型。
+- [JavaScript 沙箱实现](/zh-CN/internals/js-sandbox)：ESM 引擎复用的 Proxy 隔离膜。
+- [HTML 入口流式加载原理](/zh-CN/internals/streaming-html-entry)：模块脚本的分发流程。
+- [运行时编排原理](/zh-CN/internals/runtime-orchestration)：ESM 引擎在完整加载流程中的位置。
+- [Vite 接入指南](/zh-CN/cookbook/prepare-a-vite-app)：原生 ESM 微应用的配置。

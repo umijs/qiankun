@@ -14,7 +14,7 @@ function start(opts?: StartOpts): void;
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `urlRerouteOnly` | `boolean` | `false` | When `true`, reroute only after the URL actually changes. |
+| `urlRerouteOnly` | `boolean` | `true` | When `true`, reroute only after the URL actually changes. |
 
 ## Usage
 

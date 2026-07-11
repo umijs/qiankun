@@ -35,8 +35,8 @@ An instance moves through a small, predictable sequence:
 
 ```mermaid
 flowchart LR
-  A[loadMicroApp] --> B[Load HTML entry and assets]
-  B --> C[Prepare isolation]
+  A[loadMicroApp] --> B[Prepare the container and isolation]
+  B --> C[Load the HTML entry and assets]
   C --> D[bootstrap once]
   D --> E[mount into container]
   A --> F[MicroApp handle]

@@ -12,7 +12,7 @@ This model also preserves independent deployment: the same application can have 
 
 ## The entry contract
 
-Serve a valid, non-empty HTML document. A supported build marks one external script as the lifecycle entry:
+Serve a valid, non-empty HTML document. A supported production build marks one external script as the lifecycle entry:
 
 ```html
 <!doctype html>
@@ -27,7 +27,7 @@ Serve a valid, non-empty HTML document. A supported build marks one external scr
 </html>
 ```
 
-An HTML document must never contain more than one script with the `entry` attribute. The entry script must be external (`src` or `data-src`); inline scripts cannot be the lifecycle entry. [`@qiankunjs/bundler-plugin`](/ecosystem/bundler-plugin) applies the marker for supported Vite and Webpack builds, so prefer the plugin over editing generated HTML by hand.
+An HTML document must never contain more than one script with the `entry` attribute. The entry script must be external (`src` or `data-src`); inline scripts cannot be the lifecycle entry. [`@qiankunjs/bundler-plugin`](/ecosystem/bundler-plugin) marks entries in Vite production builds and Webpack builds. Vite development HTML may omit an explicit marker, in which case the ESM engine selects the entry from lifecycle exports. Prefer the plugin over editing generated HTML by hand.
 
 Other scripts may still appear in the document. The `entry` marker identifies the one whose exports satisfy the [micro-app lifecycle contract](/concepts/lifecycle-and-props).
 

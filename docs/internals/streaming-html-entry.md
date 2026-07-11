@@ -23,7 +23,7 @@ const microApp = loadMicroApp(
 );
 ```
 
-That one URL is the entire integration. qiankun treats the HTML document as the single source of truth: whatever `<script>`, `<link>` and `<style>` the document declares is what the micro-app runs. You don't keep a separate list of JS/CSS bundles in sync with your build output — rebuild the micro-app, let `index.html` reference the new hashed filenames, and qiankun picks them up on the next load.
+That one URL is the entire integration. qiankun treats the HTML document as the single source of truth: whatever `<script>`, `<link>` and `<style>` the document declares is what the micro-app runs. You don't keep a separate list of JS/CSS bundles in sync with your build output. A fresh page session, or another load after the runtime cache misses, reads the new hashed filenames from the latest `index.html`; a same-page remount may reuse the cached entry and lifecycles and is not a deployment-refresh mechanism.
 
 That's the HTML-entry model: qiankun consumes the same HTML the browser would have consumed, except it routes the resources inside into the sandbox and transpilers rather than dropping them straight into the real document. The whole flow is driven by `loadEntry(entry, container, opts)` in `packages/loader/src/index.ts`.
 
@@ -165,7 +165,7 @@ Once execution finishes, qiankun has to read the micro-app's lifecycle object ou
 
 If the stream ends with **no explicit `entry` script found**, qiankun falls back:
 
-- If there are ESM module scripts, it treats the **last** module as the entry (which lines up with a typical Vite `index.html` — just a single `<script type="module" src="/src/main.ts">`).
+- If there are ESM module scripts, the engine first selects the first executed namespace that contains valid lifecycles. If none does, it falls back to the **last** successfully executed module, which covers a typical Vite `index.html` with one `<script type="module" src="/src/main.ts">`.
 - Otherwise it falls back to the classic path's `latestSetProp`.
 
 The resolved value is then handed to `getLifecyclesFromExports`, which accepts, in order: the object itself, its `.default`, the `latestSetProp` global, and `window[appName]`. For the full resolution order and what the exported object should look like, see [Micro-app lifecycle and props](/concepts/lifecycle-and-props).
@@ -182,7 +182,7 @@ The entry — and every resource the transpilers re-fetch — goes through a dec
 makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)));
 ```
 
-Cacheable is outermost (so repeated requests to the same URL are deduplicated), retryable is inside it, and throwable is innermost (it turns a non-2xx response into a thrown error). You can replace the underlying `fetch` via the `fetch` option on [AppConfiguration](/api/configuration); whatever you pass in, qiankun still wraps it with these three decorators.
+Cacheable is outermost, so repeated requests to the same URL are deduplicated. Retryable is inside it and maintains a limited retry budget for the wrapped fetch instance. Throwable is innermost and throws when response status is outside `200–399`. You can replace the underlying `fetch` via the `fetch` option on [AppConfiguration](/api/configuration); whatever you pass in, qiankun still wraps it with these three decorators.
 
 ## Known rough edges
 
@@ -190,7 +190,7 @@ The streaming loader is an ambitious idea shipped as a pragmatic implementation,
 
 - **Head replacement is a plain first-occurrence string replace.** The `<head>` → `<qiankun-head>` rewrite is a plain `String.prototype.replace` against the first occurrence. A `FIXME` in the source notes that non-standard HTML chunks without a `<head>` tag aren't handled. Standard documents emitted by real bundlers are fine; hand-written or unusual HTML may fail to virtualize its head.
 - **Body virtualization isn't implemented.** The matching `<body>` → `<qiankun-body>` replacement exists in the source but is commented out, and head/body auto-completion is off. Only the head is virtualized; body content is committed straight into the container.
-- **`sandbox: false` disables the classic export mechanism.** It's the sandbox membrane that records `latestSetProp`, and the ESM engine only exists when the sandbox is on. Under `sandbox: false` there's neither `latestSetProp` nor ESM sandbox execution — lifecycle discovery is left to the `window[appName]` / default-export fallbacks. See [JS sandbox](/concepts/js-sandbox).
+- **`sandbox: false` disables the classic export mechanism.** It's the sandbox membrane that records `latestSetProp`, and the ESM engine only exists when the sandbox is on. Under `sandbox: false` there's neither `latestSetProp` nor ESM sandbox execution, so lifecycle discovery is left to the `window[appName]` compatibility fallback. See [JS sandbox](/concepts/js-sandbox).
 
 ## Further reading
 

@@ -1,8 +1,8 @@
 # addErrorHandler / removeErrorHandler
 
-注册一个全局观察器来接收微应用加载和生命周期失败，再用同一个函数引用注销它。qiankun 从 single-spa 原样导出这两个函数，没有改变其行为。
+这两个函数用于注册和移除 single-spa 的全局错误处理器，主要接收由 `registerMicroApps` 注册的路由驱动应用在加载和生命周期执行过程中产生的错误。移除处理器时必须传入注册时使用的同一函数引用。qiankun 直接导出 single-spa 的对应函数，不改变其行为。
 
-这个 API 适合集中记录日志和上报监控。面向用户的恢复界面应由受影响 UI 对应的 `loadMicroApp` 实例或 `<MicroApp>` 组件负责。
+该 API 适合用于集中记录路由驱动应用的日志和上报监控数据。通过 `loadMicroApp` 创建的实例不会在首次加载或生命周期失败时调用该全局处理器，应通过实例句柄中的 Promise 处理相应错误。面向用户的错误恢复界面应由负责该区域的 `loadMicroApp` 调用方或 `<MicroApp>` 组件处理。
 
 ## 函数签名
 
@@ -19,7 +19,7 @@ function removeErrorHandler(handler: (error: AppError) => void): void;
 
 ## 使用方式
 
-在主应用启动阶段注册一次观察器：
+在主应用启动阶段注册一次错误处理器：
 
 ```ts
 import { addErrorHandler, removeErrorHandler } from 'qiankun';
@@ -38,9 +38,9 @@ addErrorHandler(reportMicroAppError);
 removeErrorHandler(reportMicroAppError);
 ```
 
-通过 [`loadMicroApp`](/zh-CN/api/load-micro-app) 加载的应用，以及路由驱动的 `registerMicroApps` 流程，产生的错误都会进入这个观察器。其中包括入口加载失败和微应用生命周期函数被拒绝。
+由 `registerMicroApps` 注册的路由驱动应用会将入口加载失败和生命周期 Promise 被拒绝的错误传递给该处理器。`loadMicroApp` 使用 single-spa 的 Parcel 加载流程，其首次加载和生命周期错误只会反映在实例句柄对应的 Promise 中，不会传递给全局处理器。
 
-这个处理器是全局的，不负责渲染。实例级界面应单独观察返回句柄：
+该处理器作用于全局，不负责界面渲染。实例级界面应单独监听返回句柄中的 Promise：
 
 ```ts
 import { loadMicroApp } from 'qiankun';
@@ -52,19 +52,19 @@ void microApp.mountPromise.catch((error: unknown) => {
 });
 ```
 
-请继续保留 `MicroApp` 句柄，并在成功挂载的视图移除时调用 `unmount()`。
+应保留 `MicroApp` 句柄，并在移除已挂载的视图时调用 `unmount()`。
 
 ## 处理器职责
 
-- 处理器应保持防御性：上报错误后直接返回，不要继续抛错；
-- 不要从全局通道启动无上限重试；
-- 不要向用户展示原始调用栈或含敏感信息的响应；
-- 为生产构建保留 source map，让监控系统能够还原转换后的应用调用栈。
+- 处理器在上报错误后应正常返回，避免再次抛出错误；
+- 不应通过全局错误处理器启动无限重试；
+- 不应向用户显示原始调用栈或包含敏感信息的响应；
+- 生产构建应保留源码映射（source map），以便监控系统还原转换后的应用调用栈。
 
-React 和 Vue 的 `<MicroApp>` 组件通过各自的错误边界选项提供组件级兜底界面。组件边界和全局观察器可能同时收到同一次失败；前者用于就近恢复，后者用于遥测上报。
+React 和 Vue 的 `<MicroApp>` 组件可通过各自的错误边界选项提供组件级错误界面。这些组件基于 `loadMicroApp`，因此应由组件自身处理实例错误，不能依赖全局处理器接收同一错误。
 
-## 相关链接
+## 相关内容
 
-- [处理微应用错误](/zh-CN/cookbook/handle-errors)——兜底界面、诊断与重试建议
+- [处理微应用错误](/zh-CN/cookbook/handle-errors)——错误界面、诊断与重试建议
 - [`loadMicroApp`](/zh-CN/api/load-micro-app)——实例 Promise 与清理
 - [React `<MicroApp>`](/zh-CN/ecosystem/react)和 [Vue `<MicroApp>`](/zh-CN/ecosystem/vue)——组件错误边界

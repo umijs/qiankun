@@ -1,8 +1,8 @@
 # addErrorHandler / removeErrorHandler
 
-Register a global observer for micro-app load and lifecycle failures, then remove it with the same function reference. qiankun re-exports both functions from single-spa without changing their behavior.
+Register a global single-spa error observer, primarily for load and lifecycle failures from route-driven applications registered with `registerMicroApps`, then remove it with the same function reference. qiankun re-exports both functions from single-spa without changing their behavior.
 
-Use this API for centralized logging and monitoring. Handle visible recovery near the `loadMicroApp` instance or `<MicroApp>` component that owns the affected UI.
+Use this API for centralized logging and monitoring of route-driven applications. Initial load and lifecycle failures from `loadMicroApp` parcels reject their handle promises instead of entering this global channel. Handle those failures, and visible recovery, near the `loadMicroApp` instance or `<MicroApp>` component that owns the affected UI.
 
 ## Signatures
 
@@ -38,7 +38,7 @@ addErrorHandler(reportMicroAppError);
 removeErrorHandler(reportMicroAppError);
 ```
 
-The observer receives failures from apps loaded with [`loadMicroApp`](/api/load-micro-app) and from the route-driven `registerMicroApps` flow. This includes entry-loading failures and rejected micro-app lifecycle functions.
+The observer receives entry-loading and lifecycle failures from the route-driven `registerMicroApps` flow. Because `loadMicroApp` uses single-spa's root-parcel flow, its initial load and lifecycle failures reject the corresponding handle promises and are not sent to this observer.
 
 The handler is global and renders nothing. For instance-level UI, observe the returned handle separately:
 
@@ -61,7 +61,7 @@ Keep the `MicroApp` handle and call `unmount()` when a successfully mounted view
 - Do not show raw stack traces or sensitive response data to users.
 - Use production source maps so monitoring can resolve transformed application stacks.
 
-React and Vue `<MicroApp>` components provide component-level error UI through their own boundary options. A component boundary and the global observer can both receive the same failure; use the former for nearby recovery and the latter for telemetry.
+React and Vue `<MicroApp>` components provide component-level error UI through their own boundary options. They are built on `loadMicroApp`, so handle and report their instance failures through the component rather than relying on the global observer.
 
 ## Related
 

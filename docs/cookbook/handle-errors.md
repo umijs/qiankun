@@ -1,6 +1,6 @@
 # Handle micro-app errors
 
-Handle failures at the same level where recovery is possible. For [`loadMicroApp`](/api/load-micro-app), the host that owns the instance should render its fallback UI and retain the handle for cleanup. Use the global error channel separately for centralized logging and monitoring.
+Handle failures at the same level where recovery is possible. For [`loadMicroApp`](/api/load-micro-app), the host that owns the instance should render its fallback UI, report the failure from the instance promise, and retain the handle for cleanup. The global single-spa error channel is available separately for route-driven applications registered with `registerMicroApps`.
 
 This page covers entry and lifecycle failures. Errors from ordinary UI events or application code after a successful mount still belong to the micro-app's own framework boundary and monitoring setup.
 
@@ -40,11 +40,11 @@ export async function disposeMicroApp() {
 
 The same pattern can be written with `try` / `await`. The important part is that catching `mountPromise` does not transfer lifecycle ownership: do not discard a successfully mounted handle or remove its container without awaiting `unmount()`.
 
-An `unmount()` rejection should also be handled by the host operation that initiated teardown. Keep the visible message generic; let the global handler below send the original error to monitoring.
+An `unmount()` rejection should also be handled by the host operation that initiated teardown. Keep the visible message generic and report the original error from the same instance-level error path.
 
-## Use the global channel for reporting
+## Report route-driven application errors globally
 
-Register one global handler near host startup to enrich and report errors across applications. Keep the same function reference so it can be removed in tests or during host teardown:
+When using `registerMicroApps`, register one global handler near host startup to enrich and report route-driven application errors. Keep the same function reference so it can be removed in tests or during host teardown:
 
 ```ts
 import { addErrorHandler, removeErrorHandler } from 'qiankun';
@@ -59,7 +59,7 @@ addErrorHandler(reportMicroAppError);
 removeErrorHandler(reportMicroAppError);
 ```
 
-This channel observes load and lifecycle failures from all `loadMicroApp` instances. Apps activated with [`registerMicroApps`](/api/register-micro-apps) enter the same global channel. Use it for telemetry, not for choosing or rendering an instance's fallback UI.
+This channel observes load and lifecycle failures from applications activated with [`registerMicroApps`](/api/register-micro-apps). Initial load and lifecycle failures from `loadMicroApp` instances only reject their handle promises and do not enter the global channel. Use the global handler for route-driven telemetry, not for choosing or rendering an instance's fallback UI.
 
 Do not throw, reload the page, or start an unbounded retry loop inside a global handler. See the [`addErrorHandler` / `removeErrorHandler` reference](/api/error-handling) for the error shape and lifecycle coverage.
 
@@ -70,7 +70,7 @@ The React and Vue `<MicroApp>` components wrap the same instance-level promise h
 - React supports `autoCaptureError` or a custom `errorBoundary`; see the [React integration](/ecosystem/react).
 - Vue supports `autoCaptureError` or the `#error-boundary` slot; see the [Vue integration](/ecosystem/vue).
 
-Use a component boundary for nearby fallback UI and the global handler for centralized reporting. They are complementary and may both observe the same failure.
+Use a component boundary for nearby fallback UI and report the captured error from the same component-level path. Since these components use `loadMicroApp`, their initial load and lifecycle failures do not also enter the single-spa global error handler.
 
 ## Diagnose by symptom
 
@@ -80,7 +80,7 @@ Start with the browser Network panel and the micro-app's standalone build, then 
 | --- | --- | --- |
 | Entry or asset request fails, redirects unexpectedly, or returns an empty response | Status, final URL, authentication, and CORS for the HTML entry and every fetched asset | Fix the deployment URL and allow the host origin; configure a custom [`fetch`](/api/configuration) when credentials are required |
 | Entry loads but the app never reaches `mount` | The entry exports `bootstrap`, `mount`, and `unmount` in the format expected by its build | Follow the [Vite](/cookbook/prepare-a-vite-app) or [Webpack](/cookbook/prepare-a-webpack-app) preparation guide |
-| The HTML entry is rejected because more than one entry is present | Generated `index.html` and bundler-plugin output | Ensure exactly one external script has the `entry` attribute |
+| The HTML entry is rejected because more than one entry is present | Generated `index.html` and bundler-plugin output | Keep at most one external script with the `entry` attribute; Vite development HTML may have no explicit marker |
 | The app has no valid mount target or renders in the wrong place | The value passed as `container` and selectors used inside `props.container` | Pass a live `HTMLElement`, not a selector string, and query only inside that element |
 | An ESM app fails before mounting | Failed module requests, unresolved bare imports, import-map entries, MIME types, and CORS | Let Vite emit URL-based imports, or provide valid app-owned mappings; fix failed module responses |
 | The app renders without styles after style isolation is enabled | External stylesheet requests in the Network panel | Enable CORS for CSS and verify the stylesheet URL; see [Style isolation](/cookbook/enable-style-isolation) |
@@ -89,9 +89,9 @@ Avoid matching private runtime error strings in application logic. Messages may 
 
 ## Retry only transient failures
 
-qiankun performs limited retries for transient network failures before rejecting the instance promise and notifying global handlers. Do not add a recursive or unlimited retry loop around `loadMicroApp`.
+qiankun's enhanced fetch has a limited automatic retry budget shared by that fetch wrapper. It does not classify failures as transient, so either a network error or an invalid HTTP response can consume the budget; callers must not assume that every failed request receives a retry. When a request ultimately fails, the corresponding instance promise is rejected. Route-driven application failures also enter the global handler; `loadMicroApp` callers should handle the instance promise directly. Do not add a recursive or unlimited retry loop around `loadMicroApp`.
 
-If retry is useful, make it an explicit user action after the previous `mountPromise` has settled. Configuration errors—invalid exports, multiple entry scripts, an invalid container, or unresolved ESM dependencies—must be fixed rather than retried. Authentication and gateway requirements belong in a custom [`fetch`](/api/configuration).
+Offer an additional, user-triggered retry only when the failure may be transient, and wait for the previous `mountPromise` to settle first. Configuration errors—invalid exports, multiple entry scripts, an invalid container, or unresolved ESM dependencies—must be fixed rather than retried. Authentication and gateway requirements belong in a custom [`fetch`](/api/configuration).
 
 ## Preserve production diagnostics
 

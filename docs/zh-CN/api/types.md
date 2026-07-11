@@ -1,6 +1,6 @@
 # 类型参考
 
-本页列出从 `qiankun` 包根导出的公共类型和 `Window` 扩展，可以直接从包中引入：
+本页列出 `qiankun` 包的根入口导出的公共类型和 `Window` 接口扩展。可按以下方式导入：
 
 ```ts
 import type {
@@ -18,31 +18,31 @@ import type {
 } from 'qiankun';
 ```
 
-::: warning 从 qiankun 2.x 过来的注意
-有三处形状变了，2.x 的代码原样搬过来会报类型错误：
+::: warning 从 qiankun 2.x 迁移时的类型变化
+以下三项类型定义已经变更，直接使用 2.x 代码会产生类型错误：
 
-- `entry` 是纯字符串(`HTMLEntry = string`)。没有对象形式的入口(`{ scripts, styles }`)，也没有 `EntryOpts`。
-- `container` 是 `HTMLElement`。像 `'#subapp-viewport'` 这样的选择器字符串不再接受。
-- 没有 `FrameworkConfiguration` 这个类型了。单个应用的配置是 `AppConfiguration`，而 `start()` 只接收 single-spa 的 `StartOpts`。
+- `entry` 的类型为字符串（`HTMLEntry = string`），不再支持对象形式的入口（`{ scripts, styles }`），`EntryOpts` 也已移除。
+- `container` 的类型为 `HTMLElement`，不再接受 `'#subapp-viewport'` 等选择器字符串。
+- `FrameworkConfiguration` 类型已移除。单个应用使用 `AppConfiguration` 配置，`start()` 仅接收 single-spa 的 `StartOpts`。
 
 完整清单见[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
 :::
 
 ## 类型总览
 
-| 类型 | 形状 | 说明 |
+| 类型 | 定义 | 说明 |
 | --- | --- | --- |
 | `ObjectType` | `Record<string, unknown>` | props 泛型 `T` 的基础约束。 |
-| `HTMLEntry` | `string` | 微应用的 HTML 入口地址。只能是字符串。 |
-| `AppMetadata` | `{ name; entry }` | 微应用的最小身份标识。 |
+| `HTMLEntry` | `string` | 微应用的 HTML 入口地址，仅支持字符串。 |
+| `AppMetadata` | `{ name; entry }` | 微应用的基本描述信息。 |
 | `LoadableApp<T>` | `AppMetadata & { container; props? }` | 配合 [`loadMicroApp`](/zh-CN/api/load-micro-app) 使用，`container` 是 `HTMLElement`。 |
 | `RegistrableApp<T>` | `LoadableApp<T> & { loader?; activeRule; configuration? }` | 配合 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 使用。 |
-| `AppConfiguration` | loader 选项 `& { sandbox?; globalContext?; styleIsolation? }` | 单个应用的运行时配置，见 [AppConfiguration](/zh-CN/api/configuration)。 |
+| `AppConfiguration` | 加载器选项 `& { sandbox?; globalContext?; styleIsolation? }` | 单个应用的运行时配置，见 [AppConfiguration](/zh-CN/api/configuration)。 |
 | `LifeCycleFn<T>` | `(app, global) => Promise<void>` | 单个框架级生命周期钩子。 |
 | `LifeCycles<T>` | `{ beforeLoad?; beforeMount?; afterMount?; beforeUnmount?; afterUnmount? }` | 框架级钩子，见[生命周期钩子](/zh-CN/api/lifecycles)。 |
 | `MicroApp` | single-spa `Parcel` | `loadMicroApp` 返回的句柄。 |
 | `MicroAppLifeCycles` | `{ bootstrap; mount; unmount; update? }` | 微应用自身导出的生命周期。 |
-| `PrefetchStrategy` | `boolean \| 'all' \| string[] \| fn` | 为向后兼容而导出，v3 的任何 API 都不用它。 |
+| `PrefetchStrategy` | `boolean \| 'all' \| string[] \| fn` | 为向后兼容而导出，v3 的公共 API 不使用该类型。 |
 
 ## ObjectType
 
@@ -50,11 +50,11 @@ import type {
 export type ObjectType = Record<string, unknown>;
 ```
 
-凡是 qiankun 接收 props 泛型 `T` 的地方，都用这个约束。你给自己的 props 对象定类型时，它必须能满足 `ObjectType`:
+qiankun 所有以 `T` 表示 props 类型的 API 均使用此约束。自定义 props 类型必须满足 `ObjectType`：
 
 ```ts
 type Props = { userId: number; theme: 'light' | 'dark' };
-// Props satisfies Record<string, unknown>, so it is a valid T
+// Props 满足 Record<string, unknown> 约束，可作为泛型 T。
 ```
 
 ## HTMLEntry
@@ -63,14 +63,14 @@ type Props = { userId: number; theme: 'light' | 'dark' };
 export type HTMLEntry = string;
 ```
 
-微应用的入口永远是它 HTML 文档的地址。qiankun 会把这份 HTML 通过 [HTML 入口加载器](/zh-CN/concepts/html-entry-loading)流式解析，并执行其中引用的脚本。
+微应用入口始终是 HTML 文档的地址。qiankun 通过 [HTML 入口加载器](/zh-CN/concepts/html-entry-loading)流式解析该文档，并执行其中引用的脚本。
 
 ```ts
 const entry: HTMLEntry = 'http://localhost:7101';
 ```
 
-::: danger 没有对象形式的入口
-qiankun 2.x 的 `entry: { scripts: [...], styles: [...] }` 写法在 v3 里不存在了。把 `entry` 指向一个 HTML 页面，让加载器自己去发现它引用的资源。
+::: danger 不支持对象形式的入口
+qiankun v3 不再支持 2.x 的 `entry: { scripts: [...], styles: [...] }` 写法。`entry` 应指向 HTML 页面，由加载器自动发现页面引用的资源。
 :::
 
 ## AppMetadata
@@ -82,7 +82,7 @@ export type AppMetadata = {
 };
 ```
 
-微应用的最小描述：一个稳定的 `name` 和它的 HTML `entry`。`AppMetadata` 是 `LoadableApp` 和 `RegistrableApp` 继承的基类，也是 [`prefetchApps`](/zh-CN/api/prefetch-apps) 接收的元素类型。
+微应用的最小描述，包含稳定的 `name` 和 HTML `entry`。`AppMetadata` 是 `LoadableApp` 与 `RegistrableApp` 的基础类型，也是 [`prefetchApps`](/zh-CN/api/prefetch-apps) 接收的元素类型。
 
 ## LoadableApp
 
@@ -93,14 +93,14 @@ export type LoadableApp<T extends ObjectType> = AppMetadata & {
 };
 ```
 
-用 [`loadMicroApp`](/zh-CN/api/load-micro-app) 命令式挂载一个应用时，传给它的描述对象。
+调用 [`loadMicroApp`](/zh-CN/api/load-micro-app) 按需挂载应用时，应传入该类型的描述对象。
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
 | `name` | `string` | 应用标识。不同容器中的多个 `loadMicroApp` 实例可以复用同一个名称。 |
 | `entry` | `HTMLEntry` | HTML 入口地址。 |
-| `container` | `HTMLElement` | 应用挂载进去的 DOM 元素。必须是元素本身，不能是选择器。 |
-| `props` | `T`(可选) | 转发给微应用生命周期导出函数的 props。 |
+| `container` | `HTMLElement` | 用于挂载应用的实际 DOM 元素，不能使用选择器字符串。 |
+| `props` | `T`（可选） | 传递给微应用生命周期导出函数的 props。 |
 
 ```ts
 import { loadMicroApp } from 'qiankun';
@@ -114,8 +114,8 @@ const app = loadMicroApp<{ userId: number }>({
 });
 ```
 
-::: warning container 是 HTMLElement
-`container: '#subapp'` 在 2.x 里能编译过，在 v3 里是类型错误。你得自己把元素取出来，比如用 `document.getElementById(...)` 或框架的 ref。
+::: warning container 的类型为 HTMLElement
+`container: '#subapp'` 在 v3 中会产生类型错误。应通过 `document.getElementById(...)` 或框架提供的 ref 获取实际元素。
 :::
 
 ## RegistrableApp
@@ -128,15 +128,15 @@ export type RegistrableApp<T extends ObjectType> = LoadableApp<T> & {
 };
 ```
 
-交给 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 的、由路由驱动的应用描述对象。它在 `LoadableApp` 之上多了三个和路由 / 加载相关的字段。
+传递给 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 的路由驱动应用描述对象。该类型在 `LoadableApp` 的基础上增加了三个与路由和加载相关的字段。
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
-| `loader` | `(loading: boolean) => void`(可选) | 报告路由应用的加载状态。`false` 之前可能连续收到多次 `true`，因此应把参数当作状态处理。 |
-| `activeRule` | single-spa `Activity` | 应用何时激活。可以是路径前缀字符串、`(location) => boolean` 函数，或两者混在一起的数组。 |
-| `configuration` | `AppConfiguration`(可选) | 单个应用的运行时配置，叠加在框架默认值之上。 |
+| `loader` | `(loading: boolean) => void`（可选） | 报告路由应用的加载状态。在收到 `false` 前可能连续收到多次 `true`，调用方应根据参数值更新当前状态。 |
+| `activeRule` | single-spa `Activity` | 应用的激活条件。可以是路径前缀字符串、`(location) => boolean` 函数，或由二者组成的数组。 |
+| `configuration` | `AppConfiguration`（可选） | 单个应用的运行时配置；未指定的字段使用框架默认值。 |
 
-`activeRule` 就是 single-spa 的 `activeWhen` 类型——`string | ((location: Location) => boolean) | Array<string | ((location: Location) => boolean)>`:
+`activeRule` 对应 single-spa 的 `activeWhen` 类型，即 `string | ((location: Location) => boolean) | Array<string | ((location: Location) => boolean)>`：
 
 ```ts
 import { registerMicroApps } from 'qiankun';
@@ -168,17 +168,17 @@ export type AppConfiguration = Partial<
 
 | 字段 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `fetch` | `typeof window.fetch` | `window.fetch` | 用于入口以及 loader 接管的脚本、模块和样式请求的自定义 fetch。 |
-| `streamTransformer` | `() => TransformStream<string, string>` | `undefined` | 加载 HTML 时接入这条流的一个 transform。 |
-| `nodeTransformer` | `<T extends Node>(node: T, opts) => T` | 内置默认值 | 在 script / link / style 节点进入容器前改写它。 |
-| `sandbox` | `boolean` | `true` | 开启 [JS 沙箱](/zh-CN/concepts/js-sandbox)隔离膜，以及在适用场景下的 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)。 |
-| `globalContext` | `WindowProxy` | `window` | 沙箱隔离膜所代理的那个基础全局对象。 |
-| `styleIsolation` | `boolean` | `false` | 开启运行时的 CSS `@scope` [样式隔离](/zh-CN/concepts/style-isolation)，范围限定在应用容器内。 |
+| `fetch` | `typeof window.fetch` | `window.fetch` | 用于请求入口，以及由加载器处理的脚本、模块和样式的自定义 fetch。 |
+| `streamTransformer` | `() => TransformStream<string, string>` | `undefined` | 用于自定义 HTML 流式处理过程的转换器。 |
+| `nodeTransformer` | `<T extends Node>(node: T, opts) => T` | 内置默认值 | 在 `<script>`、`<link>` 和 `<style>` 节点进入容器前进行转换。 |
+| `sandbox` | `boolean` | `true` | 启用 [JavaScript 沙箱](/zh-CN/concepts/js-sandbox)隔离膜，以及适用场景下的 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)。 |
+| `globalContext` | `WindowProxy` | `window` | 沙箱隔离膜所代理的基础全局对象。 |
+| `styleIsolation` | `boolean` | `false` | 启用基于 CSS `@scope` 的运行时[样式隔离](/zh-CN/concepts/style-isolation)，作用域限制在应用容器内。 |
 
 字段行为和默认值见 [AppConfiguration](/zh-CN/api/configuration)。
 
-::: danger 没有 sandbox 对象，也没有 FrameworkConfiguration
-`sandbox` 是个布尔值。2.x 的对象写法 `sandbox: { strictStyleIsolation, experimentalStyleIsolation }` 和 Shadow DOM 隔离都没了。样式隔离是单独的布尔值 `styleIsolation`，用 CSS `@scope` 实现。没有 `FrameworkConfiguration` 类型，`start()` 也不再接收任何 sandbox、prefetch 或单例相关的选项。
+::: danger 不支持 sandbox 对象和 FrameworkConfiguration
+`sandbox` 的类型为布尔值。v3 不再支持 2.x 的对象形式 `sandbox: { strictStyleIsolation, experimentalStyleIsolation }`，也不再提供 Shadow DOM 隔离。样式隔离通过独立的布尔配置 `styleIsolation` 启用，并基于 CSS `@scope` 实现。`FrameworkConfiguration` 类型已移除，`start()` 也不再接收 sandbox、prefetch 或单例相关选项。
 :::
 
 ## LifeCycleFn 与 LifeCycles
@@ -198,7 +198,7 @@ export type LifeCycles<T extends ObjectType> = {
 };
 ```
 
-作为可选的最后一个参数传给 `registerMicroApps` 和 `loadMicroApp` 的框架级钩子。每个钩子是一个函数或一组函数，按顺序执行。第二个参数 `global` 是这个应用被沙箱代理过的 `window`，不是真实的 `window`。
+这组框架级钩子作为可选参数传递给 `registerMicroApps` 和 `loadMicroApp`。每个钩子可以是一个函数或函数数组，并按声明顺序执行。第二个参数 `global` 是该应用经过沙箱代理的 `window` 视图，不是真实的 `window`。
 
 ```ts
 const lifeCycles: LifeCycles<Record<string, unknown>> = {
@@ -209,8 +209,8 @@ const lifeCycles: LifeCycles<Record<string, unknown>> = {
 };
 ```
 
-::: info 两种不同的生命周期类型
-`LifeCycles`(上面这五个框架级钩子)和 `MicroAppLifeCycles`(微应用自己导出的 `bootstrap` / `mount` / `unmount` / `update`)是两回事。见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
+::: info 两类生命周期类型
+`LifeCycles` 表示上述五个框架级钩子；`MicroAppLifeCycles` 表示微应用导出的 `bootstrap`、`mount`、`unmount` 和 `update`。两者用途不同，详见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
 :::
 
 ## MicroApp
@@ -220,18 +220,18 @@ import type { Parcel } from 'single-spa';
 export type MicroApp = Parcel;
 ```
 
-[`loadMicroApp`](/zh-CN/api/load-micro-app) 返回的句柄。它就是 single-spa 的 `Parcel`，给你命令式的控制能力，外加每个阶段各自的 promise。
+[`loadMicroApp`](/zh-CN/api/load-micro-app) 返回的句柄，其类型为 single-spa 的 `Parcel`。该句柄提供实例控制方法和各生命周期阶段对应的 Promise。
 
 | 成员 | 类型 | 说明 |
 | --- | --- | --- |
 | `mount()` | `() => Promise<null>` | 挂载应用。 |
 | `unmount()` | `() => Promise<null>` | 卸载应用。 |
-| `update?(props)` | `(props) => Promise<any>` | 推送新的 props，前提是应用导出了 `update` 钩子。 |
-| `getStatus()` | `() => Status` | 当前生命周期状态(下面的联合类型)。 |
-| `loadPromise` | `Promise<null>` | 源码加载完成时 resolve。 |
-| `bootstrapPromise` | `Promise<null>` | bootstrap 完成时 resolve。 |
-| `mountPromise` | `Promise<null>` | 挂载完成时 resolve。 |
-| `unmountPromise` | `Promise<null>` | 卸载完成时 resolve。 |
+| `update?(props)` | `(props) => Promise<any>` | 传递新的 props，仅在应用导出 `update` 钩子时可用。 |
+| `getStatus()` | `() => Status` | 返回当前生命周期状态，取值为下方的联合类型。 |
+| `loadPromise` | `Promise<null>` | 表示源码加载阶段完成的 Promise。 |
+| `bootstrapPromise` | `Promise<null>` | 表示 bootstrap 阶段完成的 Promise。 |
+| `mountPromise` | `Promise<null>` | 表示挂载阶段完成的 Promise。 |
+| `unmountPromise` | `Promise<null>` | 表示卸载阶段完成的 Promise。 |
 
 `getStatus()` 返回 single-spa 的状态字符串之一：
 
@@ -265,7 +265,7 @@ type ExtraProps = { container: HTMLElement };
 export type MicroAppLifeCycles = FlattenArrayValue<ParcelLifeCycles<ExtraProps>>;
 ```
 
-微应用为了让 qiankun 驱动它，而导出的那个生命周期对象的形状。把 single-spa 的数组形式拍平之后，它等于：
+微应用需要导出该生命周期对象，以便 qiankun 驱动应用。将 single-spa 支持的生命周期函数数组归一化为单个函数后，其结构如下：
 
 ```ts
 type MicroAppLifeCycles = {
@@ -276,7 +276,7 @@ type MicroAppLifeCycles = {
 };
 ```
 
-每个函数都会收到挂载 props，里面既有 `container: HTMLElement`(要渲染进去的节点)，也有你通过 `props` 传进来的一切。微应用的入口这样导出它们：
+各生命周期函数都会接收主应用通过 `props` 传入的数据。qiankun 只会在调用 `mount` 和 `unmount` 时额外注入用于渲染的 `container: HTMLElement`；`bootstrap` 和 `update` 不应依赖该字段。微应用可按以下方式导出生命周期函数：
 
 ```ts
 export async function bootstrap() {}
@@ -301,13 +301,13 @@ export type PrefetchStrategy =
     });
 ```
 
-::: warning 导出了，但没人用
-`PrefetchStrategy` 是为源码兼容保留的历史类型。v3 没有任何公共 API 消费它——流式加载器会自动预加载，而 [`prefetchApps`](/zh-CN/api/prefetch-apps) 已废弃。它出现在这里，只是因为它还在被导出。
+::: warning 仅为兼容性保留
+`PrefetchStrategy` 是为源码兼容保留的历史类型。v3 没有公共 API 使用该类型：流式加载器会自动预加载资源，而 [`prefetchApps`](/zh-CN/api/prefetch-apps) 已废弃。文档保留此项，是因为该类型仍从包中导出。
 :::
 
 ## Window 扩展
 
-qiankun 会扩展全局的 `Window` 接口。这些属性，一方面是微应用判断自己是否跑在 qiankun 里的依据，另一方面是运行时和基于 zone 的框架协作的接口。
+qiankun 会扩展全局 `Window` 接口。这些属性用于判断微应用是否由 qiankun 运行，也用于运行时与使用 Zone.js 的框架进行协作。
 
 ```ts
 declare global {
@@ -323,38 +323,38 @@ declare global {
 
 | 属性 | 类型 | 说明 |
 | --- | --- | --- |
-| `__POWERED_BY_QIANKUN__` | `boolean` | 应用跑在 qiankun 里时，会被设到沙箱化的全局对象上。读它就能区分是独立运行还是被嵌入运行。 |
-| `__INJECTED_PUBLIC_PATH_BY_QIANKUN__` | `string` | qiankun 注入的运行时 public path，让应用从正确的源解析自己的资源。 |
-| `__QIANKUN_DEVELOPMENT__` | `boolean` | qiankun 以开发模式运行时被设置，用来开启一些开发期的额外诊断。 |
-| `Zone` | `CallableFunction` | 加载了 zone.js(比如 Angular)时存在。qiankun 会把它考虑进去，让被 patch 过的定时器行为正确。 |
-| `__zone_symbol__setTimeout` | `Window['setTimeout']` | zone.js 保存的原始 `setTimeout` 引用，在 zone.js 生效时用它拿到未被 patch 的定时器。 |
+| `__POWERED_BY_QIANKUN__` | `boolean` | 应用由 qiankun 运行时，该属性会设置在沙箱全局对象上，可用于区分独立运行和嵌入运行。 |
+| `__INJECTED_PUBLIC_PATH_BY_QIANKUN__` | `string` | qiankun 注入的运行时公共路径（public path），用于从正确的来源解析应用资源。 |
+| `__QIANKUN_DEVELOPMENT__` | `boolean` | qiankun 以开发模式运行时设置，用于启用开发阶段的附加诊断。 |
+| `Zone` | `CallableFunction` | 加载 Zone.js 的应用（例如 Angular 应用）会提供该属性。qiankun 使用该属性处理经过补丁修改的定时器。 |
+| `__zone_symbol__setTimeout` | `Window['setTimeout']` | zone.js 保存的原始 `setTimeout` 引用。zone.js 生效时，qiankun 通过该属性访问未经补丁修改的定时器。 |
 
-微应用一般读前两个来在运行时做适配：
+微应用通常读取前两个属性以进行运行时适配：
 
 ```ts
-// Inside the micro-app
+// 微应用入口
 if (window.__POWERED_BY_QIANKUN__) {
-  // running under qiankun: export bootstrap/mount/unmount
+  // 由 qiankun 运行：导出 bootstrap、mount 和 unmount
 } else {
-  // running standalone
+  // 独立运行
   render(document.getElementById('root'));
 }
 
-// Align the module public path with qiankun's injected value (webpack)
+// 将模块公共路径设置为 qiankun 注入的值（Webpack）
 if (window.__POWERED_BY_QIANKUN__) {
   // eslint-disable-next-line no-undef, camelcase
   __webpack_public_path__ = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
 }
 ```
 
-::: tip 全局扩展是自动生效的
-只要从 `qiankun` 里引入任何东西，就会把这段 `declare global` 一并带进来，所以 `window.__POWERED_BY_QIANKUN__` 在你的项目里天然就有类型，不用额外配置。如果某个微应用并不依赖 `qiankun`，那就自己写一段带相同属性的 `declare global`。
+::: tip 全局类型会自动扩展
+从 `qiankun` 导入任意成员时，上述 `declare global` 会同时生效，因此 `window.__POWERED_BY_QIANKUN__` 无需额外配置即可获得类型定义。如果微应用不依赖 `qiankun`，则需要自行声明包含相同属性的 `Window` 接口扩展。
 :::
 
-## 延伸阅读
+## 相关内容
 
-- [AppConfiguration](/zh-CN/api/configuration) —— 逐个字段讲清每一项配置
-- [生命周期钩子(LifeCycles)](/zh-CN/api/lifecycles) —— 框架级钩子参考
-- [registerMicroApps](/zh-CN/api/register-micro-apps) 和 [loadMicroApp](/zh-CN/api/load-micro-app) —— 这些类型被消费的地方
-- [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props) —— 挂载 props 如何流向微应用
-- [从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x) —— 破坏性类型改动一览
+- [AppConfiguration](/zh-CN/api/configuration)——各配置项的完整说明
+- [生命周期钩子（LifeCycles）](/zh-CN/api/lifecycles)——框架级钩子参考
+- [registerMicroApps](/zh-CN/api/register-micro-apps) 和 [loadMicroApp](/zh-CN/api/load-micro-app)——使用这些类型的 API
+- [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)——生命周期参数的传递方式
+- [从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)——不兼容类型变更
