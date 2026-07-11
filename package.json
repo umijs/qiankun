@@ -6,6 +6,8 @@
   },
   "scripts": {
     "start:example": "pnpm run build:packages && pnpm --parallel --filter './examples/*' run dev",
+    "benchmark:check": "pnpm run build:packages && pnpm --filter @qiankunjs/benchmark run run:check",
+    "benchmark:smoke": "pnpm run build:packages && pnpm --filter @qiankunjs/benchmark run smoke",
     "build": "pnpm -r run build",
     "build:packages": "pnpm --filter './packages/**' run build",
     "prerelease:alpha": "changeset pre enter alpha && changeset && changeset version",
