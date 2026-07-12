@@ -29,6 +29,42 @@ test.describe('runtime style isolation (@scope)', () => {
     await expect(page.locator('#main-title')).toHaveCSS('color', BLUE);
   });
 
+  test('a body-less entry keeps static and dynamically appended styles in the app container', async ({ page }) => {
+    const STATIC = 'rgb(11, 12, 13)';
+    const DYNAMIC_HEAD = 'rgb(21, 22, 23)';
+    const DYNAMIC_BODY = 'rgb(31, 32, 33)';
+
+    await loadApp(page, 'sub-classic-bodyless', { sandbox: true, styleIsolation: true });
+
+    const container = page.locator('[data-name="sub-classic-bodyless"]');
+    const virtualHead = container.locator(':scope > qiankun-head');
+
+    // WritableDOM accepts a source entry without an explicit <body>; the sandbox exposes the app
+    // container itself as document.body rather than inserting a body element into the live DOM.
+    await expect(container.locator('body')).toHaveCount(0);
+    await expect(virtualHead).toHaveCount(1);
+
+    const staticStyle = virtualHead.locator(':scope > style[data-testid="bodyless-static-style"]');
+    const dynamicHeadStyle = virtualHead.locator(':scope > style[data-testid="bodyless-dynamic-head-style"]');
+    const dynamicBodyStyle = container.locator(':scope > style[data-testid="bodyless-dynamic-body-style"]');
+
+    // Static head content and document.head insertions stay in the virtual head; document.body
+    // insertions land directly in the app container. All three still pass through @scope isolation.
+    await expect(staticStyle).toHaveCount(1);
+    await expect(dynamicHeadStyle).toHaveCount(1);
+    await expect(dynamicBodyStyle).toHaveCount(1);
+    const scopedStyles = await Promise.all(
+      [staticStyle, dynamicHeadStyle, dynamicBodyStyle].map((style) =>
+        style.evaluate((element) => (element.textContent ?? '').trim().startsWith('@scope')),
+      ),
+    );
+    expect(scopedStyles).toEqual([true, true, true]);
+
+    await expect(page.getByTestId('bodyless-static-target')).toHaveCSS('color', STATIC);
+    await expect(page.getByTestId('bodyless-dynamic-head-target')).toHaveCSS('color', DYNAMIC_HEAD);
+    await expect(page.getByTestId('bodyless-dynamic-body-target')).toHaveCSS('color', DYNAMIC_BODY);
+  });
+
   test('a fragment-wrapped innerHTML style (jQuery-style injection) is scoped too', async ({ page }) => {
     const INJECTED = 'rgb(1, 2, 3)';
 

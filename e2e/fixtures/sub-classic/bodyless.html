@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>sub-classic-bodyless</title>
+    <style data-testid="bodyless-static-style">
+      .bodyless-static-target {
+        color: rgb(11, 12, 13);
+      }
+    </style>
+  </head>
+
+  <!-- Intentionally no explicit <body>: WritableDOM parses this content as an entry fragment. -->
+  <main id="bodyless-root">
+    <p class="bodyless-static-target" data-testid="bodyless-static-target">static head style</p>
+    <p class="bodyless-dynamic-head-target" data-testid="bodyless-dynamic-head-target">dynamic document.head style</p>
+    <p class="bodyless-dynamic-body-target" data-testid="bodyless-dynamic-body-target">dynamic document.body style</p>
+  </main>
+  <script src="./entry-bodyless.js" entry></script>
+</html>
