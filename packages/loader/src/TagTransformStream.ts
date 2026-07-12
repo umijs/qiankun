@@ -5,11 +5,6 @@ type TagReplacement = {
   alt: string;
 };
 
-type AutoCompleteTags = {
-  head?: boolean;
-  body?: boolean;
-};
-
 type TransformedBuffer = {
   output: string;
   pending: string;
@@ -112,37 +107,20 @@ function transformAvailable(input: string, replacements: TagReplacement[], final
  * for "no match" when its replacement text was identical to the original tag.
  *
  * The normal loader path now emits safe HTML incrementally and carries only a
- * possible split-tag suffix into the next transform. Auto-completion deliberately
- * keeps the legacy tail-buffering behavior because it must inspect unmatched bytes
- * at EOF before synthesizing a missing wrapper.
+ * possible split-tag suffix into the next transform. Entries without an explicit
+ * `<body>` remain supported by WritableDOM's downstream HTML parser, which is
+ * rooted in `<body><template>` and does not require this transform to buffer until
+ * EOF to synthesize a wrapper.
  */
-export function createTagTransformStream(
-  tagReplacements: TagReplacement[],
-  autoCompleteTags: AutoCompleteTags,
-): TransformStream<string, string> {
+export function createTagTransformStream(tagReplacements: TagReplacement[]): TransformStream<string, string> {
   validateReplacements(tagReplacements);
   class TagTransformStream extends TransformStream {
-    constructor(replacements: TagReplacement[], completion: AutoCompleteTags) {
+    constructor(replacements: TagReplacement[]) {
       let buffer = '';
       let remainingReplacements = [...replacements];
-      const usesLegacyAutoCompletion = completion.body || completion.head;
       super({
         transform(chunk: string, controller: TransformStreamDefaultController<string>) {
           buffer += chunk;
-
-          // Preserve legacy auto-completion semantics: a match may emit and clear the
-          // buffer, but the unmatched tail since that match stays buffered for the EOF
-          // wrapper check. The loader's regular path disables this mode.
-          if (usesLegacyAutoCompletion) {
-            const data = replacements.reduce(
-              (acc, replacement) => acc.replace(replacement.tag, replacement.alt),
-              buffer,
-            );
-            if (buffer === data) return;
-            controller.enqueue(data);
-            buffer = '';
-            return;
-          }
 
           const transformed = transformAvailable(buffer, remainingReplacements, false);
           buffer = transformed.pending;
@@ -152,17 +130,7 @@ export function createTagTransformStream(
 
         flush(controller: TransformStreamDefaultController<string>) {
           if (buffer) {
-            // FIXME It may be a non-standard HTML chunk that does not contain the head tag, in which case you need to manually fill in a head element
-            if (buffer.indexOf(`<body>`) === -1 && completion.body) {
-              buffer = `<body>${buffer}</body>`;
-            }
-            // if (buffer.indexOf(`<head>`) === -1) {
-            //   buffer = `<head></head>${buffer}`;
-            // }
-
-            const data = usesLegacyAutoCompletion
-              ? replacements.reduce((acc, replacement) => acc.replace(replacement.tag, replacement.alt), buffer)
-              : transformAvailable(buffer, remainingReplacements, true).output;
+            const data = transformAvailable(buffer, remainingReplacements, true).output;
             if (data) controller.enqueue(data);
 
             buffer = '';
@@ -172,5 +140,5 @@ export function createTagTransformStream(
     }
   }
 
-  return new TagTransformStream(tagReplacements, autoCompleteTags);
+  return new TagTransformStream(tagReplacements);
 }

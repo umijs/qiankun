@@ -98,16 +98,12 @@ export async function loadEntry<T>(
 
     void readableStream
       .pipeThrough(
-        createTagTransformStream(
-          [
-            { tag: '<head>', alt: `<${qiankunHeadTagName}>` },
-            { tag: '</head>', alt: `</${qiankunHeadTagName}>` },
-            // TODO support body replacement
-            // { tag: 'body', alt: 'qiankun-body' },
-          ],
-          // { head: true },
-          {},
-        ),
+        createTagTransformStream([
+          { tag: '<head>', alt: `<${qiankunHeadTagName}>` },
+          { tag: '</head>', alt: `</${qiankunHeadTagName}>` },
+          // TODO support body replacement
+          // { tag: 'body', alt: 'qiankun-body' },
+        ]),
       )
       .pipeTo(
         new WritableDOMStream(container, null, (clone) => {

@@ -7,7 +7,7 @@ const HEAD_REPLACEMENTS = [
 ];
 
 async function transformChunks(chunks: string[], replacements = HEAD_REPLACEMENTS): Promise<string[]> {
-  const stream = createTagTransformStream(replacements, {});
+  const stream = createTagTransformStream(replacements);
   const reader = stream.readable.getReader();
   const writer = stream.writable.getWriter();
   const output: string[] = [];
@@ -56,6 +56,12 @@ describe('createTagTransformStream', () => {
     await expect(transformChunks(['before<he'])).resolves.toEqual(['before', '<he']);
   });
 
+  it('passes through entries without an explicit body for downstream parser completion', async () => {
+    await expect(
+      transformChunks(['<head><title>app</title></head>', '<main id="root">body-less entry</main>']),
+    ).resolves.toEqual(['<qiankun-head><title>app</title></qiankun-head>', '<main id="root">body-less entry</main>']);
+  });
+
   it('replaces each structural tag once independently of chunk boundaries', async () => {
     const input = '<head>one</head><head>two</head>';
     const expected = '<qiankun-head>one</qiankun-head><head>two</head>';
@@ -84,24 +90,18 @@ describe('createTagTransformStream', () => {
   });
 
   it('rejects empty or containment-ambiguous replacement tags', () => {
-    expect(() => createTagTransformStream([{ alt: 'x', tag: '' }], {})).toThrow(/must not be empty/);
+    expect(() => createTagTransformStream([{ alt: 'x', tag: '' }])).toThrow(/must not be empty/);
     expect(() =>
-      createTagTransformStream(
-        [
-          { alt: 'long', tag: 'abc' },
-          { alt: 'short', tag: 'ab' },
-        ],
-        {},
-      ),
+      createTagTransformStream([
+        { alt: 'long', tag: 'abc' },
+        { alt: 'short', tag: 'ab' },
+      ]),
     ).toThrow(/must not contain one another/);
     expect(() =>
-      createTagTransformStream(
-        [
-          { alt: 'long', tag: 'abcd' },
-          { alt: 'inner', tag: 'bc' },
-        ],
-        {},
-      ),
+      createTagTransformStream([
+        { alt: 'long', tag: 'abcd' },
+        { alt: 'inner', tag: 'bc' },
+      ]),
     ).toThrow(/must not contain one another/);
   });
 });
