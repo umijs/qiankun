@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 
+import { createRevisionHarnessRecord } from './src/harness.mjs';
 import { assertCleanBaselineGitState, createBaselineSnapshot } from './src/snapshot.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -28,12 +29,15 @@ const name = parseName(process.argv.slice(2));
 const targetDirectory = join(benchmarkRoot, 'artifacts', name);
 const git = await getGitState();
 assertCleanBaselineGitState(git);
+const harness = await createRevisionHarnessRecord(benchmarkRoot);
 const metadata = await createBaselineSnapshot({
   createdAt: new Date().toISOString(),
   git,
+  harness,
   sourceDirectory: join(benchmarkRoot, 'fixtures/host/dist'),
   targetDirectory,
 });
 
 console.log(`[benchmark] snapshot: ${targetDirectory}`);
 console.log(`[benchmark] bundle: ${metadata.bundleHash}`);
+console.log(`[benchmark] harness: ${metadata.harness.fingerprint}`);

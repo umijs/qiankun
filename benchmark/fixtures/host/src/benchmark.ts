@@ -5,25 +5,31 @@ export interface BenchmarkOptions {
 }
 
 export interface BenchmarkMeasurement {
+  cleaned: boolean;
   duration: number;
+  entryResponseEndDuration: number | null;
   settled: boolean;
+  settledDuration: number;
   t0: number;
   t1: number;
 }
 
-type StartMicroApp = (options: BenchmarkOptions) => Promise<void>;
+export interface BenchmarkMountHandle {
+  cleanup(): Promise<void>;
+  settled: Promise<void>;
+}
+
+type MountMicroApp = (options: BenchmarkOptions, container: HTMLElement) => BenchmarkMountHandle;
 
 export interface BenchmarkPaintObserver {
   assertMounted(): void;
+  prepare?(options: BenchmarkOptions): void;
   waitForPaint(t0: number, options: BenchmarkOptions): Promise<number>;
 }
 
-function findCoreElement(): HTMLElement | null {
-  const direct = document.querySelector<HTMLElement>('#benchmark-core');
-  if (direct) return direct;
-  const wujieApp = document.querySelector('wujie-app');
-  return wujieApp?.shadowRoot?.querySelector<HTMLElement>('#benchmark-core') ?? null;
-}
+export type FindCoreElement = () => HTMLElement | null;
+
+const findDirectCoreElement: FindCoreElement = () => document.querySelector<HTMLElement>('#benchmark-core');
 
 function isPaintable(element: HTMLElement): boolean {
   const rect = element.getBoundingClientRect();
@@ -31,6 +37,7 @@ function isPaintable(element: HTMLElement): boolean {
   return (
     rect.width > 0 &&
     rect.height > 0 &&
+    element.querySelector('[data-benchmark-critical]') !== null &&
     style.display !== 'none' &&
     style.visibility !== 'hidden' &&
     style.opacity !== '0' &&
@@ -38,7 +45,14 @@ function isPaintable(element: HTMLElement): boolean {
   );
 }
 
-function waitForDomPaint(t0: number, timeoutMs: number): Promise<number> {
+function getEntryResponseEndDuration(entry: string, t0: number): number | null {
+  const timing = performance.getEntriesByName(entry, 'resource').at(-1);
+  if (!(timing instanceof PerformanceResourceTiming)) return null;
+  const duration = timing.responseEnd - t0;
+  return Number.isFinite(duration) && duration >= 0 ? duration : null;
+}
+
+function waitForDomPaint(t0: number, timeoutMs: number, findCoreElement: FindCoreElement): Promise<number> {
   return new Promise((resolve, reject) => {
     const timeout = window.setTimeout(() => reject(new Error('core element paint timed out')), timeoutMs);
 
@@ -65,21 +79,25 @@ function waitForDomPaint(t0: number, timeoutMs: number): Promise<number> {
   });
 }
 
-const domPaintObserver: BenchmarkPaintObserver = {
-  assertMounted() {
-    const mountedCore = findCoreElement();
-    if (mountedCore?.dataset.mounted !== 'true') {
-      throw new Error('micro app settled without mounting its core element');
-    }
-  },
-  waitForPaint(t0, options) {
-    return waitForDomPaint(t0, options.timeoutMs);
-  },
-};
+export function createDomPaintObserver(
+  findCoreElement: FindCoreElement = findDirectCoreElement,
+): BenchmarkPaintObserver {
+  return {
+    assertMounted() {
+      const mountedCore = findCoreElement();
+      if (mountedCore?.dataset.mounted !== 'true') {
+        throw new Error('micro app settled without mounting its core element');
+      }
+    },
+    waitForPaint(t0, options) {
+      return waitForDomPaint(t0, options.timeoutMs, findCoreElement);
+    },
+  };
+}
 
 export function installBenchmark(
-  startMicroApp: StartMicroApp,
-  paintObserver: BenchmarkPaintObserver = domPaintObserver,
+  mountMicroApp: MountMicroApp,
+  paintObserver: BenchmarkPaintObserver = createDomPaintObserver(),
 ): void {
   window.__BENCHMARK__ = {
     async run(options) {
@@ -87,12 +105,31 @@ export function installBenchmark(
       if (!container) throw new Error('micro app container is missing');
       container.replaceChildren();
 
+      paintObserver.prepare?.(options);
       const t0 = performance.now();
+      const handle = mountMicroApp(options, container);
       const paintPromise = paintObserver.waitForPaint(t0, options);
-      const settlePromise = startMicroApp(options);
-      const [duration] = await Promise.all([paintPromise, settlePromise]);
-      paintObserver.assertMounted();
-      return { duration, settled: true, t0, t1: t0 + duration };
+      const settledPromise = handle.settled.then(() => performance.now() - t0);
+      let duration: number;
+      let settledDuration: number;
+      try {
+        [duration, settledDuration] = await Promise.all([paintPromise, settledPromise]);
+        paintObserver.assertMounted();
+      } finally {
+        await handle.cleanup();
+        if (container.childNodes.length > 0) {
+          throw new Error('framework adapter cleanup left nodes in the micro app container');
+        }
+      }
+      return {
+        cleaned: true,
+        duration,
+        entryResponseEndDuration: getEntryResponseEndDuration(options.entry, t0),
+        settled: true,
+        settledDuration,
+        t0,
+        t1: t0 + duration,
+      };
     },
   };
 }

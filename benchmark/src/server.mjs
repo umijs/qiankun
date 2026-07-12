@@ -33,6 +33,9 @@ const ENTRY = `
     return Promise.resolve();
   }
 
+  global.mount = mountedRoot;
+  global.unmount = unmount;
+
   global['benchmark-app'] = {
     bootstrap: function () { return Promise.resolve(); },
     mount: function () { mountedRoot(); return Promise.resolve(); },
@@ -40,6 +43,15 @@ const ENTRY = `
   };
   global.__WUJIE_MOUNT = mountedRoot;
   global.__WUJIE_UNMOUNT = unmount;
+
+  if (typeof __GARFISH_EXPORTS__ !== 'undefined') {
+    __GARFISH_EXPORTS__.provider = function () {
+      return {
+        destroy: unmount,
+        render: mountedRoot,
+      };
+    };
+  }
 
   if (global.location.search.indexOf('benchmark=native-iframe') !== -1) {
     var benchmarkParams = new URLSearchParams(global.location.search);
@@ -70,7 +82,7 @@ const HTML_CHUNKS = [
         for (var index = 0; index < 100; index++) {
           rows += '<div class="benchmark-row"><b>' + index + '</b><span>deterministic benchmark row</span></div>';
         }
-        root.innerHTML = '<section id="benchmark-core" data-mounted="false"><h1>micro app core</h1>' + rows + '</section>';
+        root.innerHTML = '<section id="benchmark-core" data-mounted="false"><h1 data-benchmark-critical>micro app core</h1>' + rows + '</section>';
 
         if (window.location.search.indexOf('benchmark=native-iframe') !== -1) {
           var benchmarkParams = new URLSearchParams(window.location.search);
@@ -82,6 +94,7 @@ const HTML_CHUNKS = [
               var style = getComputedStyle(element);
               return rect.width > 0 &&
                 rect.height > 0 &&
+                element.querySelector('[data-benchmark-critical]') !== null &&
                 style.display !== 'none' &&
                 style.visibility !== 'hidden' &&
                 style.opacity !== '0' &&
@@ -124,13 +137,106 @@ const HTML_CHUNKS = [
 
 const FULL_HTML = HTML_CHUNKS.join('');
 
-function setSharedHeaders(response) {
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Cache-Control', 'no-store');
+function renderSsrRows(start, count, label) {
+  return Array.from(
+    { length: count },
+    (_, offset) => `<div class="benchmark-row"><b>${start + offset}</b><span>${label} ${start + offset}</span></div>`,
+  ).join('');
 }
 
-function sendText(response, statusCode, contentType, body) {
-  setSharedHeaders(response);
+const SSR_NATIVE_PAINT_REPORTER = `<script>
+  (function () {
+    if (window.location.search.indexOf('benchmark=native-iframe') === -1) return;
+    var benchmarkParams = new URLSearchParams(window.location.search);
+    var parentOrigin = benchmarkParams.get('benchmark-parent-origin');
+    var token = benchmarkParams.get('benchmark-token');
+    if (!parentOrigin || !token) return;
+
+    var isPaintable = function isPaintable(element) {
+      var rect = element.getBoundingClientRect();
+      var style = getComputedStyle(element);
+      return rect.width > 0 &&
+        rect.height > 0 &&
+        element.querySelector('[data-benchmark-critical]') !== null &&
+        style.display !== 'none' &&
+        style.visibility !== 'hidden' &&
+        style.opacity !== '0' &&
+        style.getPropertyValue('--benchmark-style-ready').trim() === '1';
+    };
+
+    var waitForPaint = function waitForPaint() {
+      var core = document.querySelector('#benchmark-core');
+      if (!core || !isPaintable(core)) {
+        requestAnimationFrame(waitForPaint);
+        return;
+      }
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          var paintedCore = document.querySelector('#benchmark-core');
+          if (!paintedCore || !isPaintable(paintedCore)) {
+            requestAnimationFrame(waitForPaint);
+            return;
+          }
+          window.parent.postMessage({
+            paintedAt: performance.timeOrigin + performance.now(),
+            token: token,
+            type: 'native-core-painted',
+            version: 1
+          }, parentOrigin);
+        });
+      });
+    };
+
+    requestAnimationFrame(waitForPaint);
+  })();
+</script>`;
+
+const SSR_HTML_CHUNKS = [
+  `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>benchmark SSR dashboard</title>
+    <link rel="stylesheet" href="./style.css">
+  </head>
+  <body>
+    <main id="benchmark-root">
+      <section id="benchmark-core" data-mounted="false">
+        <header class="benchmark-hero">
+          <h1 data-benchmark-critical>Account overview</h1>
+          <p>Server-rendered critical account content</p>
+        </header>
+        ${renderSsrRows(0, 12, 'critical transaction')}
+      </section>
+      ${SSR_NATIVE_PAINT_REPORTER}`,
+  `<section data-ssr-boundary="recommendations">
+        <h2>Recommended actions</h2>
+        ${renderSsrRows(12, 44, 'deferred recommendation')}
+      </section>`,
+  `<section data-ssr-boundary="activity">
+        <h2>Recent activity</h2>
+        ${renderSsrRows(56, 44, 'deferred activity')}
+      </section>
+      <div id="benchmark-stream-tail" data-stream-complete="true"></div>
+    </main>
+    <script type="application/json" id="__SSR_DATA__">{"stream":"complete"}</script>
+    <script src="./entry.js" entry></script>
+  </body>
+</html>`,
+];
+
+const SSR_FULL_HTML = SSR_HTML_CHUNKS.join('');
+const ASSET_CACHE_CONTROL = 'public, max-age=31536000, immutable';
+const HTML_CACHE_CONTROL = 'no-store';
+
+function setSharedHeaders(response, cacheControl = HTML_CACHE_CONTROL) {
+  response.setHeader('Access-Control-Allow-Origin', '*');
+  response.setHeader('Cache-Control', cacheControl);
+  response.setHeader('Timing-Allow-Origin', '*');
+}
+
+function sendText(response, statusCode, contentType, body, cacheControl = HTML_CACHE_CONTROL) {
+  setSharedHeaders(response, cacheControl);
   response.writeHead(statusCode, {
     'Content-Length': Buffer.byteLength(body),
     'Content-Type': contentType,
@@ -157,9 +263,15 @@ function close(server) {
 
 export function createFixtureServer({ chunkIntervalMs = 50, host = '127.0.0.1', port = 7601 } = {}) {
   let origin;
+  const requestCounts = new Map();
   const server = createServer((request, response) => {
-    setSharedHeaders(response);
+    const url = new URL(request.url ?? '/', origin ?? `http://${host}:${port}`);
+    if (request.method !== 'OPTIONS') {
+      requestCounts.set(url.pathname, (requestCounts.get(url.pathname) ?? 0) + 1);
+    }
+
     if (request.method === 'OPTIONS') {
+      setSharedHeaders(response);
       response.writeHead(204, {
         'Access-Control-Allow-Headers': '*',
         'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
@@ -168,23 +280,36 @@ export function createFixtureServer({ chunkIntervalMs = 50, host = '127.0.0.1', 
       return;
     }
 
-    const url = new URL(request.url ?? '/', origin ?? `http://${host}:${port}`);
-    if (url.pathname === '/style.css') {
-      sendText(response, 200, 'text/css; charset=utf-8', FIXTURE_STYLE);
+    if (url.pathname === '/app/style.css') {
+      sendText(response, 200, 'text/css; charset=utf-8', FIXTURE_STYLE, ASSET_CACHE_CONTROL);
       return;
     }
-    if (url.pathname === '/entry.js') {
-      sendText(response, 200, 'text/javascript; charset=utf-8', ENTRY);
+    if (url.pathname === '/app/entry.js') {
+      sendText(response, 200, 'text/javascript; charset=utf-8', ENTRY, ASSET_CACHE_CONTROL);
       return;
     }
-    if (url.pathname !== '/app') {
+    if (url.pathname !== '/app/index.html') {
       sendText(response, 404, 'text/plain; charset=utf-8', 'Not Found');
       return;
     }
 
+    const fixtureName = url.searchParams.get('fixture') ?? 'client-rendered';
+    const chunks = fixtureName === 'ssr' ? SSR_HTML_CHUNKS : fixtureName === 'client-rendered' ? HTML_CHUNKS : null;
+    if (!chunks) {
+      sendText(response, 400, 'text/plain; charset=utf-8', 'Unknown HTML fixture');
+      return;
+    }
+
+    const fullHtml = fixtureName === 'ssr' ? SSR_FULL_HTML : FULL_HTML;
     const delivery = url.searchParams.get('delivery') ?? 'buffered';
     if (delivery === 'buffered') {
-      sendText(response, 200, 'text/html; charset=utf-8', FULL_HTML);
+      sendText(response, 200, 'text/html; charset=utf-8', fullHtml);
+      return;
+    }
+    if (delivery === 'delayed-buffered') {
+      const delay = chunkIntervalMs * (chunks.length - 1);
+      const timer = setTimeout(() => sendText(response, 200, 'text/html; charset=utf-8', fullHtml), delay);
+      response.once('close', () => clearTimeout(timer));
       return;
     }
     if (delivery !== 'streamed') {
@@ -192,13 +317,19 @@ export function createFixtureServer({ chunkIntervalMs = 50, host = '127.0.0.1', 
       return;
     }
 
+    setSharedHeaders(response);
     response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    response.write(HTML_CHUNKS[0]);
-    const secondTimer = setTimeout(() => response.write(HTML_CHUNKS[1]), chunkIntervalMs);
-    const finalTimer = setTimeout(() => response.end(HTML_CHUNKS[2]), chunkIntervalMs * 2);
+    response.write(chunks[0]);
+    const timers = chunks
+      .slice(1)
+      .map((chunk, index) =>
+        setTimeout(
+          () => (index === chunks.length - 2 ? response.end(chunk) : response.write(chunk)),
+          chunkIntervalMs * (index + 1),
+        ),
+      );
     response.once('close', () => {
-      clearTimeout(secondTimer);
-      clearTimeout(finalTimer);
+      timers.forEach((timer) => clearTimeout(timer));
     });
   });
 
@@ -209,6 +340,12 @@ export function createFixtureServer({ chunkIntervalMs = 50, host = '127.0.0.1', 
     get origin() {
       if (!origin) throw new Error('fixture server has not started');
       return origin;
+    },
+    getRequestCount(pathname) {
+      return requestCounts.get(pathname) ?? 0;
+    },
+    resetRequestCounts() {
+      requestCounts.clear();
     },
     async start() {
       await listen(server, port, host);

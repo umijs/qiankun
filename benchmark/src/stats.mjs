@@ -80,6 +80,50 @@ export function comparePairedSamples(reference, candidate, { iterations = 10_000
   };
 }
 
+export function comparePairedTrials(trials, { iterations = 10_000, seed = 20260711 } = {}) {
+  if (trials.length === 0) throw new Error('at least one trial is required');
+  if (!Number.isInteger(iterations) || iterations <= 0) {
+    throw new Error('bootstrap iterations must be a positive integer');
+  }
+
+  const logRatiosByTrial = trials.map(({ candidate, reference }) => {
+    if (reference.length !== candidate.length) throw new Error('paired sample arrays must have the same length');
+    validateSamples(reference, { positive: true });
+    validateSamples(candidate, { positive: true });
+    return reference.map((sample, index) => Math.log(candidate[index] / sample));
+  });
+  const trialMedianLogRatios = logRatiosByTrial.map((logRatios) =>
+    medianSorted([...logRatios].sort((left, right) => left - right)),
+  );
+  const estimate = medianSorted([...trialMedianLogRatios].sort((left, right) => left - right));
+  const random = createSeededRandom(seed);
+  const bootstrap = [];
+
+  for (let iteration = 0; iteration < iterations; iteration += 1) {
+    const resampledTrialMedians = [];
+    for (let trialIndex = 0; trialIndex < logRatiosByTrial.length; trialIndex += 1) {
+      const selectedTrial = logRatiosByTrial[Math.floor(random() * logRatiosByTrial.length)];
+      const resampled = [];
+      for (let index = 0; index < selectedTrial.length; index += 1) {
+        resampled.push(selectedTrial[Math.floor(random() * selectedTrial.length)]);
+      }
+      resampled.sort((left, right) => left - right);
+      resampledTrialMedians.push(medianSorted(resampled));
+    }
+    resampledTrialMedians.sort((left, right) => left - right);
+    bootstrap.push(Math.expm1(medianSorted(resampledTrialMedians)) * 100);
+  }
+  bootstrap.sort((left, right) => left - right);
+
+  return {
+    confidenceInterval95: [quantileSorted(bootstrap, 0.025), quantileSorted(bootstrap, 0.975)],
+    pairedCount: logRatiosByTrial.reduce((total, logRatios) => total + logRatios.length, 0),
+    relativeDeltaPercent: Math.expm1(estimate) * 100,
+    trialCount: trials.length,
+    trialRelativeDeltas: trialMedianLogRatios.map((value) => Math.expm1(value) * 100),
+  };
+}
+
 export function evaluateCalibration(
   comparison,
   { maxAbsoluteDeltaPercent = 3, maxIntervalWidthPercentPoints = 10 } = {},

@@ -7,5 +7,6 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
+  "exclude": [],
   "include": ["fixtures/host/src/**/*.ts", "fixtures/host/vite.config.ts"]
 }

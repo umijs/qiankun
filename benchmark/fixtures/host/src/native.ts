@@ -9,6 +9,7 @@ interface ActiveRun {
   expectedOrigin: string;
   iframe?: HTMLIFrameElement;
   mounted: boolean;
+  paintMessage?: Promise<Record<string, unknown>>;
   token: string;
 }
 
@@ -75,16 +76,21 @@ const nativePaintObserver: BenchmarkPaintObserver = {
   assertMounted() {
     if (!activeRun?.mounted) throw new Error('native iframe settled without mounting its core element');
   },
-  async waitForPaint(t0, options) {
-    const startEpoch = performance.timeOrigin + t0;
-    const run = {
+  prepare(options) {
+    const run: ActiveRun = {
       expectedOrigin: new URL(options.entry).origin,
       mounted: false,
       token: crypto.randomUUID(),
     };
+    run.paintMessage = waitForIframeMessage(NATIVE_CORE_PAINTED, run, options.timeoutMs);
     activeRun = run;
+  },
+  async waitForPaint(t0, options) {
+    const startEpoch = performance.timeOrigin + t0;
+    const run = activeRun;
+    if (!run?.paintMessage) throw new Error('native iframe paint observer is not prepared');
 
-    const message = await waitForIframeMessage(NATIVE_CORE_PAINTED, run, options.timeoutMs);
+    const message = await run.paintMessage;
     const paintedAt = message.paintedAt;
     const receivedAt = performance.timeOrigin + performance.now();
     if (
@@ -100,9 +106,7 @@ const nativePaintObserver: BenchmarkPaintObserver = {
   },
 };
 
-installBenchmark(async ({ entry, timeoutMs }) => {
-  const container = document.querySelector<HTMLElement>('#micro-app-container');
-  if (!container) throw new Error('micro app container is missing');
+installBenchmark(({ entry, timeoutMs }, container) => {
   if (!activeRun) throw new Error('native iframe paint observer is not ready');
 
   const run = activeRun;
@@ -125,5 +129,13 @@ installBenchmark(async ({ entry, timeoutMs }) => {
 
   iframe.src = entryUrl.href;
   container.appendChild(iframe);
-  await Promise.all([loadPromise, mountPromise]);
+  const settled = Promise.all([loadPromise, mountPromise]).then(() => {});
+  return {
+    async cleanup() {
+      await settled.catch(() => {});
+      iframe.remove();
+      activeRun = undefined;
+    },
+    settled,
+  };
 }, nativePaintObserver);

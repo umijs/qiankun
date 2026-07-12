@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { comparePairedSamples, evaluateCalibration, summarize } from '../src/stats.mjs';
+import { comparePairedSamples, comparePairedTrials, evaluateCalibration, summarize } from '../src/stats.mjs';
 
 test('summarize reports robust and tail statistics without removing samples', () => {
   const summary = summarize([1, 2, 3, 4, 5]);
@@ -35,6 +35,22 @@ test('comparePairedSamples reports a deterministic 100 percent regression', () =
   assert.ok(Math.abs(comparison.relativeDeltaPercent - 100) < 1e-10);
   assert.ok(Math.abs(comparison.confidenceInterval95[0] - 100) < 1e-10);
   assert.ok(Math.abs(comparison.confidenceInterval95[1] - 100) < 1e-10);
+});
+
+test('comparePairedTrials aggregates independent browser trials with equal trial weight', () => {
+  const neutralReference = Array.from({ length: 101 }, () => 10);
+  const neutralCandidate = Array.from({ length: 101 }, () => 10);
+  const trials = [
+    { candidate: [20], reference: [10] },
+    { candidate: [20], reference: [10] },
+    { candidate: neutralCandidate, reference: neutralReference },
+  ];
+  const comparison = comparePairedTrials(trials, { iterations: 1_000, seed: 7 });
+
+  assert.equal(comparison.trialCount, 3);
+  assert.deepEqual(comparison.trialRelativeDeltas, [100, 100, 0]);
+  assert.ok(Math.abs(comparison.relativeDeltaPercent - 100) < 1e-10);
+  assert.deepEqual(comparePairedTrials(trials, { iterations: 1_000, seed: 7 }), comparison);
 });
 
 test('evaluateCalibration enforces delta, zero coverage, and interval width', () => {

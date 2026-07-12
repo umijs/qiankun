@@ -29,5 +29,5 @@
       "@qiankunjs/*": ["packages/*/src"]
     }
   },
-  "exclude": ["node_modules", "examples", "packages/**/dist"]
+  "exclude": ["node_modules", "examples", "benchmark", "packages/**/dist"]
 }

@@ -1,31 +1,8 @@
-import { createHash } from 'node:crypto';
-import { access, cp, mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
-import { dirname, join, relative } from 'node:path';
+import { access, cp, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 
-async function listFiles(directory) {
-  const files = [];
-  const entries = await readdir(directory, { withFileTypes: true });
-  for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
-    const path = join(directory, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...(await listFiles(path)));
-    } else if (entry.isFile()) {
-      files.push(path);
-    }
-  }
-  return files;
-}
-
-async function hashDirectory(directory) {
-  const hash = createHash('sha256');
-  for (const file of await listFiles(directory)) {
-    hash.update(relative(directory, file));
-    hash.update('\0');
-    hash.update(await readFile(file));
-    hash.update('\0');
-  }
-  return hash.digest('hex');
-}
+import { assertComparableHarness } from './fingerprint.mjs';
+import { hashDirectory } from './hash.mjs';
 
 async function assertMissing(path) {
   try {
@@ -37,7 +14,8 @@ async function assertMissing(path) {
   throw new Error(`baseline snapshot already exists: ${path}`);
 }
 
-export async function createBaselineSnapshot({ createdAt, git, sourceDirectory, targetDirectory }) {
+export async function createBaselineSnapshot({ createdAt, git, harness, sourceDirectory, targetDirectory }) {
+  assertComparableHarness(harness, harness);
   await assertMissing(targetDirectory);
   const stagingDirectory = `${targetDirectory}.tmp-${process.pid}`;
   await assertMissing(stagingDirectory);
@@ -47,7 +25,7 @@ export async function createBaselineSnapshot({ createdAt, git, sourceDirectory, 
     await mkdir(stagingDirectory);
     await cp(sourceDirectory, join(stagingDirectory, 'host'), { recursive: true });
     const bundleHash = await hashDirectory(join(stagingDirectory, 'host'));
-    const metadata = { bundleHash, createdAt, git, schemaVersion: 1 };
+    const metadata = { bundleHash, createdAt, git, harness, schemaVersion: 2 };
     await writeFile(join(stagingDirectory, 'metadata.json'), `${JSON.stringify(metadata, null, 2)}\n`);
     await rename(stagingDirectory, targetDirectory);
     return metadata;
@@ -62,21 +40,34 @@ export function assertCleanBaselineGitState(git) {
 }
 
 function validateMetadata(metadata) {
+  if (metadata?.schemaVersion !== 2) {
+    throw new Error('baseline snapshot metadata is incompatible; recreate the snapshot');
+  }
   if (
     !metadata ||
     typeof metadata !== 'object' ||
-    metadata.schemaVersion !== 1 ||
     typeof metadata.bundleHash !== 'string' ||
     !/^[a-f\d]{64}$/u.test(metadata.bundleHash) ||
     typeof metadata.createdAt !== 'string' ||
     !metadata.git ||
     typeof metadata.git !== 'object' ||
     typeof metadata.git.commit !== 'string' ||
-    typeof metadata.git.dirty !== 'boolean'
+    typeof metadata.git.dirty !== 'boolean' ||
+    !metadata.harness ||
+    typeof metadata.harness !== 'object'
   ) {
     throw new Error('baseline snapshot metadata is invalid');
   }
+  try {
+    assertComparableHarness(metadata.harness, metadata.harness);
+  } catch {
+    throw new Error('baseline snapshot metadata is invalid');
+  }
   return metadata;
+}
+
+export function assertBaselineHarnessCompatible(metadata, currentHarness) {
+  assertComparableHarness(metadata.harness, currentHarness);
 }
 
 export async function readBaselineSnapshot(directory) {
