@@ -167,8 +167,8 @@
 }
 .VPHero .image-container::after {
   position: absolute;
-  right: 5.9%;
-  bottom: 12.4%;
+  right: 7.9%;
+  bottom: 15.6%;
   width: 8.25%;
   aspect-ratio: 1;
   background: url('/logo.png') center / contain no-repeat;

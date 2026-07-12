@@ -68,9 +68,9 @@
   <path d="M183 216h16M183 222h10" fill="none" stroke="#5848A8" stroke-linecap="round" stroke-width="2" />
   <text x="220" y="217" class="ink" font-size="13" font-weight="600">Orders</text>
   <text x="220" y="232" class="muted" font-size="10">React · independently released</text>
-  <rect x="345" y="204" width="63" height="22" rx="11" fill="#FFF3D9" />
-  <circle cx="358" cy="215" r="3" fill="#E6A02C" />
-  <text x="368" y="218.5" fill="#9C6410" font-size="9" font-weight="600">MOUNTED</text>
+  <rect x="337" y="204" width="81" height="22" rx="11" fill="#FFF3D9" />
+  <circle cx="350" cy="215" r="3" fill="#E6A02C" />
+  <text x="360" y="218.5" fill="#9C6410" font-size="9" font-weight="600">MOUNTED</text>
   <path d="M174 255h234" class="line" fill="none" />
   <rect x="174" y="273" width="46" height="8" rx="4" fill="#DDD9EB" />
   <rect x="174" y="288" width="88" height="7" rx="3.5" fill="#ECEAF3" />
