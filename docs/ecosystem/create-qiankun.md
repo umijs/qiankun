@@ -14,12 +14,12 @@ With no arguments, the CLI asks for the app type, name, and micro-app template:
 
 ::: code-group
 
-```bash [pnpm]
-pnpm dlx create-qiankun@latest
-```
-
 ```bash [npm]
 npx create-qiankun@latest
+```
+
+```bash [pnpm]
+pnpm dlx create-qiankun@latest
 ```
 
 ```bash [Yarn]
@@ -32,10 +32,10 @@ You can also provide every choice in one command:
 
 ```bash
 # React + TypeScript micro-app
-pnpm dlx create-qiankun@latest sub-app --type sub --template react-ts
+npx create-qiankun@latest sub-app --type sub --template react-ts
 
 # Host application
-pnpm dlx create-qiankun@latest main-app --type main
+npx create-qiankun@latest main-app --type main
 ```
 
 ## CLI options
@@ -85,14 +85,14 @@ Install and start each generated project in its own terminal:
 
 ```bash
 cd sub-app
-pnpm install
-pnpm dev
+npm install
+npm run dev
 ```
 
 ```bash
 cd main-app
-pnpm install
-pnpm dev
+npm install
+npm run dev
 ```
 
 Open `http://localhost:7099` for the composed page, or `http://localhost:7101` to develop the micro-app independently. See [Getting started](/guide/getting-started) for the complete flow.

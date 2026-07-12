@@ -7,7 +7,7 @@
 ## 安装
 
 ```bash
-pnpm add @qiankunjs/react qiankun
+npm install @qiankunjs/react qiankun
 ```
 
 主应用必须安装 `react` 和 `react-dom`，两者的版本均需满足 `>=16.9.0`。

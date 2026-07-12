@@ -9,10 +9,10 @@ Keep the micro-app from [Step 1](/tutorial/build-the-micro-app) running at `http
 Return to the `qiankun-tutorial` directory, next to `sub-app`:
 
 ```bash
-pnpm create vite@latest main-app --template react-ts
+npm create vite@latest main-app -- --template react-ts
 cd main-app
-pnpm install
-pnpm add qiankun
+npm install
+npm install qiankun
 ```
 
 ## Fix the main-app port

@@ -11,7 +11,7 @@ qiankun v3 loads Vite applications as native ESM. The integration has one path: 
 Install the bundler plugin in the Vite application:
 
 ```bash
-pnpm add -D @qiankunjs/bundler-plugin
+npm install --save-dev @qiankunjs/bundler-plugin
 ```
 
 Add `qiankun()` alongside the framework plugin and use a fixed development port:
@@ -200,8 +200,8 @@ Test the final asset URLs, redirects, MIME types, and CORS headers from the host
 1. Run the Vite app by itself and confirm the standalone branch renders.
 2. Run the host, call `loadMicroApp` with `http://localhost:7101/`, and confirm the app renders inside the supplied container.
 3. Call `await microApp.unmount()` and then `await microApp.mount()`; confirm there are no duplicated roots, listeners, or stale views.
-4. Run `pnpm run build` in the Vite app and inspect `dist/index.html`: exactly one generated module script should have the `entry` attribute.
-5. Run `pnpm run preview`, point the host at the preview URL, and repeat the mount/unmount check.
+4. Run `npm run build` in the Vite app and inspect `dist/index.html`: exactly one generated module script should have the `entry` attribute.
+5. Run `npm run preview`, point the host at the preview URL, and repeat the mount/unmount check.
 6. Before release, test the deployed entry from every supported browser and host origin. See [Native ESM support](/concepts/esm-sandbox) for browser constraints.
 
 ## Related

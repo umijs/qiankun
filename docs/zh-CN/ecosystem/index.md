@@ -27,7 +27,7 @@ qiankun 核心运行时通过 `loadMicroApp` 加载和管理微应用实例。�
 创建新项目时，可使用官方脚手架：
 
 ```bash
-pnpm dlx create-qiankun@latest
+npx create-qiankun@latest
 ```
 
 该命令可生成默认使用 `loadMicroApp` 的 React 主应用，以及 React 或 Vue 微应用。完整参数参见 [create-qiankun](/zh-CN/ecosystem/create-qiankun)。

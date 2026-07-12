@@ -48,7 +48,7 @@ features:
 Install qiankun in the main app:
 
 ```bash
-pnpm add qiankun
+npm install qiankun
 ```
 
 Mount after the container exists, then keep the returned handle for status and teardown:

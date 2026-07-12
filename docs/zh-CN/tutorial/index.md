@@ -20,7 +20,7 @@ flowchart LR
 
 ## 前置要求
 
-- Node.js `>=20.19` 和 pnpm。
+- Node.js `>=20.19` 和 npm。
 - 现代 Chromium 浏览器或 Safari。
 - 两个空闲端口：`7099` 和 `7101`。
 

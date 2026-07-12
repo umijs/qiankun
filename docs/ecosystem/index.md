@@ -27,7 +27,7 @@ All three host styles use the same micro-app HTML Entry, lifecycle, and isolatio
 The fastest path is the official scaffolder:
 
 ```bash
-pnpm dlx create-qiankun@latest
+npx create-qiankun@latest
 ```
 
 It can generate a React host that uses `loadMicroApp` by default and a React or Vue micro-app. See [create-qiankun](/ecosystem/create-qiankun) for all options.

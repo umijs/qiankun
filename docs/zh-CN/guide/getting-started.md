@@ -2,7 +2,7 @@
 
 本指南使用官方脚手架 `create-qiankun` 创建并运行一个主应用和一个微应用。主应用通过 `loadMicroApp` 管理微应用实例。
 
-开始前，请安装 Node.js `>=20.19` 和 pnpm，并准备现代 Chromium 浏览器或 Safari。
+开始前，请安装 Node.js `>=20.19` 和 npm，并准备现代 Chromium 浏览器或 Safari。
 
 ## 创建并运行应用
 
@@ -11,8 +11,8 @@
 ```bash
 mkdir qiankun-demo
 cd qiankun-demo
-pnpm dlx create-qiankun@latest main-app --type main
-pnpm dlx create-qiankun@latest sub-app --template react-ts
+npx create-qiankun@latest main-app --type main
+npx create-qiankun@latest sub-app --template react-ts
 ```
 
 打开两个终端，在 `qiankun-demo` 目录下分别启动两个应用：
@@ -21,15 +21,15 @@ pnpm dlx create-qiankun@latest sub-app --template react-ts
 
 ```bash [微应用]
 cd sub-app
-pnpm install
-pnpm dev
+npm install
+npm run dev
 # http://localhost:7101
 ```
 
 ```bash [主应用]
 cd main-app
-pnpm install
-pnpm dev
+npm install
+npm run dev
 # http://localhost:7099
 ```
 
@@ -37,7 +37,7 @@ pnpm dev
 
 访问 **http://localhost:7099**，可查看主应用中挂载的微应用。直接访问 **http://localhost:7101**，可确认微应用能够独立运行。
 
-交互式命令、Vue 模板、npm 或 Yarn 用法，以及生成文件的完整说明，请查看 [`create-qiankun` 参考](/zh-CN/ecosystem/create-qiankun)。
+交互式命令、Vue 模板、pnpm 或 Yarn 备选用法，以及生成文件的完整说明，请查看 [`create-qiankun` 参考](/zh-CN/ecosystem/create-qiankun)。
 
 ::: warning Firefox 与 ESM 应用
 ESM 沙箱依赖动态注入 import map，而 Firefox 目前还不支持这项能力。请使用 Chromium 浏览器或 Safari 完成本指南。Classic 模式的微应用不受影响。

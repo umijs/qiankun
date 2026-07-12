@@ -10,13 +10,13 @@ Open two terminals from the `qiankun-tutorial` directory:
 
 ```bash [micro-app]
 cd sub-app
-pnpm dev
+npm run dev
 # http://localhost:7101
 ```
 
 ```bash [main app]
 cd main-app
-pnpm dev
+npm run dev
 # http://localhost:7099
 ```
 
@@ -41,12 +41,12 @@ Before moving the setup into a larger project, confirm both production builds su
 
 ```bash [micro-app]
 cd sub-app
-pnpm build
+npm run build
 ```
 
 ```bash [main app]
 cd main-app
-pnpm build
+npm run build
 ```
 
 :::

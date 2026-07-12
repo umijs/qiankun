@@ -10,13 +10,13 @@
 
 ```bash [微应用]
 cd sub-app
-pnpm dev
+npm run dev
 # http://localhost:7101
 ```
 
 ```bash [主应用]
 cd main-app
-pnpm dev
+npm run dev
 # http://localhost:7099
 ```
 
@@ -41,12 +41,12 @@ pnpm dev
 
 ```bash [微应用]
 cd sub-app
-pnpm build
+npm run build
 ```
 
 ```bash [主应用]
 cd main-app
-pnpm build
+npm run build
 ```
 
 :::

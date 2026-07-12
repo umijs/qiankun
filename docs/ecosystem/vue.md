@@ -7,7 +7,7 @@ The component is built on [`vue-demi`](https://github.com/vueuse/vue-demi), so a
 ## Installation
 
 ```bash
-pnpm add @qiankunjs/vue qiankun
+npm install @qiankunjs/vue qiankun
 ```
 
 `vue` is a peer dependency with the range `^2.0.0 || >=3.0.0`. Under Vue 2 you also need `@vue/composition-api` installed (the component uses the Composition API through `vue-demi`).

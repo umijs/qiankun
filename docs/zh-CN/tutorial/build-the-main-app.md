@@ -9,10 +9,10 @@
 回到 `qiankun-tutorial` 目录，在 `sub-app` 旁边创建主应用：
 
 ```bash
-pnpm create vite@latest main-app --template react-ts
+npm create vite@latest main-app -- --template react-ts
 cd main-app
-pnpm install
-pnpm add qiankun
+npm install
+npm install qiankun
 ```
 
 ## 固定主应用端口

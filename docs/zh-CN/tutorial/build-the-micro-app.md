@@ -9,10 +9,10 @@ qiankun 微应用仍是标准的前端应用，但入口模块需要额外导出
 在 `qiankun-tutorial` 目录中执行：
 
 ```bash
-pnpm create vite@latest sub-app --template react-ts
+npm create vite@latest sub-app -- --template react-ts
 cd sub-app
-pnpm install
-pnpm add -D @qiankunjs/bundler-plugin
+npm install
+npm install --save-dev @qiankunjs/bundler-plugin
 ```
 
 ## 配置 Vite
@@ -108,7 +108,7 @@ Vite 默认的 `index.html` 已经包含 `<div id="root"></div>`，无需修改�
 启动服务器：
 
 ```bash
-pnpm dev
+npm run dev
 ```
 
 访问 **http://localhost:7101**，确认应用可以正常渲染。保持开发服务器运行，然后继续[第 2 步：搭建主应用](/zh-CN/tutorial/build-the-main-app)。

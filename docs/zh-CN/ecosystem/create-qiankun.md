@@ -14,12 +14,12 @@
 
 ::: code-group
 
-```bash [pnpm]
-pnpm dlx create-qiankun@latest
-```
-
 ```bash [npm]
 npx create-qiankun@latest
+```
+
+```bash [pnpm]
+pnpm dlx create-qiankun@latest
 ```
 
 ```bash [Yarn]
@@ -32,10 +32,10 @@ yarn create qiankun@latest
 
 ```bash
 # React + TypeScript 微应用
-pnpm dlx create-qiankun@latest sub-app --type sub --template react-ts
+npx create-qiankun@latest sub-app --type sub --template react-ts
 
 # 主应用
-pnpm dlx create-qiankun@latest main-app --type main
+npx create-qiankun@latest main-app --type main
 ```
 
 ## 命令行选项
@@ -85,14 +85,14 @@ pnpm dlx create-qiankun@latest main-app --type main
 
 ```bash
 cd sub-app
-pnpm install
-pnpm dev
+npm install
+npm run dev
 ```
 
 ```bash
 cd main-app
-pnpm install
-pnpm dev
+npm install
+npm run dev
 ```
 
 访问 `http://localhost:7099` 可查看组合后的页面；访问 `http://localhost:7101` 可独立开发微应用。完整过程参见[快速上手](/zh-CN/guide/getting-started)。

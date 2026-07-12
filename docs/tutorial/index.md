@@ -20,7 +20,7 @@ The projects have separate dependencies, development servers, and builds. The on
 
 ## Prerequisites
 
-- Node.js `>=20.19` and pnpm.
+- Node.js `>=20.19` and npm.
 - A modern Chromium-based browser or Safari.
 - Two free ports: `7099` and `7101`.
 

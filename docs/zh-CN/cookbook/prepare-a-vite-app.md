@@ -11,7 +11,7 @@ qiankun v3 以原生 ESM 方式加载 Vite 应用。接入时需要安装 Vite �
 在 Vite 应用中安装构建插件：
 
 ```bash
-pnpm add -D @qiankunjs/bundler-plugin
+npm install --save-dev @qiankunjs/bundler-plugin
 ```
 
 将 `qiankun()` 与框架插件一同加入配置，并指定固定的开发服务器端口：
@@ -200,8 +200,8 @@ await microApp.unmount();
 1. 单独运行 Vite 应用，确认应用在独立运行模式下能够正常渲染；
 2. 运行主应用，以 `http://localhost:7101/` 为入口调用 `loadMicroApp`，确认应用渲染在传入的容器内；
 3. 依次调用 `await microApp.unmount()` 和 `await microApp.mount()`，确认没有重复的根节点、监听器或残留界面；
-4. 在 Vite 应用中执行 `pnpm run build`，检查 `dist/index.html`：应当恰好有一个生成的模块脚本带有 `entry` 属性；
-5. 执行 `pnpm run preview`，将主应用入口指向预览服务器地址，并重复检查挂载与卸载过程；
+4. 在 Vite 应用中执行 `npm run build`，检查 `dist/index.html`：应当恰好有一个生成的模块脚本带有 `entry` 属性；
+5. 执行 `npm run preview`，将主应用入口指向预览服务器地址，并重复检查挂载与卸载过程；
 6. 发布前，应分别在所有受支持的浏览器中，使用各主应用的实际源访问生产入口，确认应用能够正常加载。浏览器限制见[原生 ESM 支持](/zh-CN/concepts/esm-sandbox)。
 
 ## 相关内容

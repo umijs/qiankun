@@ -7,7 +7,7 @@
 ## 安装
 
 ```bash
-pnpm add @qiankunjs/vue qiankun
+npm install @qiankunjs/vue qiankun
 ```
 
 主应用必须安装 `vue`，版本范围为 `^2.0.0 || >=3.0.0`。Vue 2 项目还需要安装 `@vue/composition-api`，因为组件通过 `vue-demi` 使用组合式 API。

@@ -9,10 +9,10 @@ This tutorial uses React and Vite. For Vue or Webpack integration, see [Prepare 
 From your `qiankun-tutorial` directory:
 
 ```bash
-pnpm create vite@latest sub-app --template react-ts
+npm create vite@latest sub-app -- --template react-ts
 cd sub-app
-pnpm install
-pnpm add -D @qiankunjs/bundler-plugin
+npm install
+npm install --save-dev @qiankunjs/bundler-plugin
 ```
 
 ## Configure Vite
@@ -108,7 +108,7 @@ The default Vite `index.html` already contains `<div id="root"></div>`, so no ot
 Start the server:
 
 ```bash
-pnpm dev
+npm run dev
 ```
 
 Open **http://localhost:7101** and confirm the application renders normally. Leave this server running, then continue with [Step 2 — Build the main app](/tutorial/build-the-main-app).

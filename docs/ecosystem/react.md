@@ -7,7 +7,7 @@ Use it when the host is a React SPA and you want to drop a micro-app in as an or
 ## Installation
 
 ```bash
-pnpm add @qiankunjs/react qiankun
+npm install @qiankunjs/react qiankun
 ```
 
 The peer dependencies are `react` and `react-dom`, both required at `>=16.9.0`.

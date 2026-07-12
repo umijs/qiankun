@@ -2,7 +2,7 @@
 
 This guide uses the official `create-qiankun` scaffolder to run a main app and a micro-app. The main app controls the micro-app directly with `loadMicroApp`.
 
-You need Node.js `>=20.19`, pnpm, and a modern Chromium-based browser or Safari.
+You need Node.js `>=20.19`, npm, and a modern Chromium-based browser or Safari.
 
 ## Create and run the applications
 
@@ -11,8 +11,8 @@ From an empty working directory, create the two projects:
 ```bash
 mkdir qiankun-demo
 cd qiankun-demo
-pnpm dlx create-qiankun@latest main-app --type main
-pnpm dlx create-qiankun@latest sub-app --template react-ts
+npx create-qiankun@latest main-app --type main
+npx create-qiankun@latest sub-app --template react-ts
 ```
 
 Start them in two terminals, both opened from `qiankun-demo`:
@@ -21,15 +21,15 @@ Start them in two terminals, both opened from `qiankun-demo`:
 
 ```bash [micro-app]
 cd sub-app
-pnpm install
-pnpm dev
+npm install
+npm run dev
 # http://localhost:7101
 ```
 
 ```bash [main app]
 cd main-app
-pnpm install
-pnpm dev
+npm install
+npm run dev
 # http://localhost:7099
 ```
 
@@ -37,7 +37,7 @@ pnpm dev
 
 Open **http://localhost:7099**. The page now contains the independently served micro-app. You can also open **http://localhost:7101** to confirm that the micro-app still runs by itself.
 
-For interactive prompts, Vue templates, npm or Yarn commands, and generated-file details, see the [`create-qiankun` reference](/ecosystem/create-qiankun).
+For interactive prompts, Vue templates, pnpm or Yarn alternatives, and generated-file details, see the [`create-qiankun` reference](/ecosystem/create-qiankun).
 
 ::: warning Firefox and ESM applications
 The ESM sandbox depends on dynamically injected import maps, which Firefox does not currently support. Use a Chromium-based browser or Safari for this guide. Classic micro-apps are unaffected.

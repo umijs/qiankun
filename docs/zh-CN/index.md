@@ -48,7 +48,7 @@ features:
 在主应用中安装 qiankun：
 
 ```bash
-pnpm add qiankun
+npm install qiankun
 ```
 
 容器创建后即可加载微应用。应保存返回的实例句柄，以便查询状态并执行卸载：

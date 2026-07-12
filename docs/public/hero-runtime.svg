@@ -102,9 +102,4 @@
   </g>
   <path d="M482 400h35c14 0 20-8 20-20v-8" fill="none" stroke="#E6A02C" stroke-linecap="round" stroke-width="1.7" marker-end="url(#arrow)" />
 
-  <g transform="translate(584 382)">
-    <path d="M0 18A18 18 0 0 1 18 0h20a18 18 0 0 1 18 18v20" fill="none" stroke="#5848A8" stroke-linecap="round" stroke-width="8" />
-    <path d="M12 18a6 6 0 0 1 6-6h20a6 6 0 0 1 6 6v20" fill="none" stroke="#8E82C7" stroke-linecap="round" stroke-width="5" />
-    <path d="M44 38h12v12" fill="none" stroke="#E6A02C" stroke-linecap="square" stroke-width="8" />
-  </g>
 </svg>
