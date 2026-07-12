@@ -51,6 +51,7 @@ jobs:
         with:
           commit: "chore: update versions"
           title: "chore: update versions"
+          version: pnpm ci:version
           publish: pnpm ci:publish
           createGithubReleases: false
         env:
