@@ -72,6 +72,9 @@ function writableDOM(
   const nextSibling = previousSibling ? previousSibling.nextSibling : null;
   const owner = target.ownerDocument!;
   const doc = createDocument(target, nextSibling);
+  // Seed the streaming parse root with a body and template. Besides keeping parsed
+  // nodes detached, the browser parser can place entry fragments that omit an
+  // explicit <body> into this template without TagTransformStream buffering to EOF.
   doc.write('<!DOCTYPE html><body><template>');
   const root = (doc.body.firstChild as HTMLTemplateElement).content;
   const walker = doc.createTreeWalker(root);

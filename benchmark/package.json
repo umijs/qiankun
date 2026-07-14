@@ -1,0 +1,26 @@
+{
+  "name": "@qiankunjs/benchmark",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build:fixture": "vite build fixtures/host",
+    "check": "pnpm run test:unit && pnpm run typecheck && pnpm run build:fixture && node --test tests/browser.integration.test.mjs",
+    "compare": "pnpm run build:fixture && node runner.mjs --mode=revision --baseline-dir=artifacts/baseline --samples=100 --warmup=5 --calibration-samples=50",
+    "compare:check": "pnpm run build:fixture && node runner.mjs --mode=revision --baseline-dir=artifacts/baseline --samples=5 --warmup=2 --calibration-samples=5 --calibration-gate=false --comparison-gate=false",
+    "run:check": "pnpm run build:fixture && node runner.mjs --samples=5 --warmup=2 --calibration-samples=5 --calibration-gate=false",
+    "snapshot:baseline": "pnpm run build:fixture && node snapshot.mjs --name=baseline",
+    "smoke": "pnpm run build:fixture && node runner.mjs --samples=100 --warmup=5 --calibration-samples=50",
+    "test:unit": "node --test tests/browser.test.mjs tests/collect.test.mjs tests/options.test.mjs tests/report.test.mjs tests/revisions.test.mjs tests/scenarios.test.mjs tests/schedule.test.mjs tests/server.test.mjs tests/snapshot.test.mjs tests/stats.test.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "qiankun": "workspace:*",
+    "wujie": "2.1.0"
+  },
+  "devDependencies": {
+    "playwright": "1.61.1",
+    "typescript": "5.9.3",
+    "vite": "5.4.21"
+  }
+}

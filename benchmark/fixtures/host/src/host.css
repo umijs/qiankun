@@ -1,0 +1,11 @@
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+#micro-app-container {
+  display: block;
+  min-height: 480px;
+  width: 960px;
+}

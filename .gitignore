@@ -34,5 +34,9 @@ e2e/test-results/
 e2e/playwright-report/
 e2e/blob-report/
 
+# local benchmark artifacts
+benchmark/artifacts/
+benchmark/results/
+
 # typescript incremental build info
 *.tsbuildinfo
