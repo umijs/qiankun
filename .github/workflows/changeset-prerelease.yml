@@ -23,7 +23,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup PNPM
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -56,7 +56,7 @@ jobs:
           createGithubReleases: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_CONFIG_PROVENANCE: true
+          PNPM_CONFIG_PROVENANCE: true
 
       - name: Create Unified GitHub Release
         if: steps.changesets.outputs.published == 'true'

@@ -24,15 +24,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v6
 
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
           cache: "pnpm"
-
-      - run: corepack enable # https://nodejs.org/api/corepack.html
 
       - run: pnpm install
 

@@ -23,9 +23,11 @@ const HARNESS_SOURCE_FILES = [
   'src/stats.mjs',
 ];
 
-const REVISION_HARNESS_SOURCE_FILES = [
+export const REVISION_HARNESS_SOURCE_FILES = [
   ...HARNESS_SOURCE_FILES,
+  '../package.json',
   '../pnpm-lock.yaml',
+  '../pnpm-workspace.yaml',
   'fixtures/host/qiankun.html',
   'fixtures/host/src/benchmark.ts',
   'fixtures/host/src/host.css',

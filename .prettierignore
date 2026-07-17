@@ -6,6 +6,7 @@
 /lib
 /coverage
 .cache
+.claude/worktrees
 examples
 .umi
 .dumi

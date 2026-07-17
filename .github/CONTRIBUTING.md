@@ -21,8 +21,8 @@ Before you begin contributing, please:
 
 ### Requirements
 
-- Node.js >= 16.0.0
-- pnpm@9.15.0 (we use pnpm as the package manager, exact version specified in package.json)
+- Node.js >= 22.12
+- pnpm@11.13.1 (we use pnpm as the package manager, exact version specified in package.json)
 
 ### Local Development
 
@@ -290,8 +290,8 @@ When submitting bug reports, please include:
 
 - **Clear Title**: Briefly describe the issue
 - **Environment Information**:
-  - Node.js version (>= 16.0.0)
-- pnpm version (should be 9.15.0)
+  - Node.js version (>= 22.12)
+  - pnpm version (should be 11.13.1)
   - qiankun version
   - Browser version
   - Operating system

@@ -4,7 +4,7 @@
 
 Qiankun is a micro-frontend framework built on [single-spa](https://github.com/single-spa/single-spa). v3 rewrites the runtime around **streaming HTML-entry loading**, a **Proxy-membrane JS sandbox**, and native **ESM-sandbox** execution. pnpm monorepo, built with `father` (UmiJS).
 
-> Requires Node `>=20.19`, `pnpm@10.28.2` (see `packageManager`). Never use npm/yarn at the root.
+> Requires Node `>=22.12`, `pnpm@11.13.1` (see `packageManager`). Never use npm/yarn at the root.
 
 ## STRUCTURE
 

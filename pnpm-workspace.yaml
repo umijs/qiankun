@@ -4,3 +4,10 @@ packages:
   - "benchmark"
   - "e2e"
   - "examples/*"
+allowBuilds:
+  "@swc/core": true
+  core-js: true
+  core-js-pure: true
+  esbuild: true
+  less: true
+  vue-demi: true

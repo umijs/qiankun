@@ -2,7 +2,7 @@
   "name": "qiankun-monorepo",
   "private": true,
   "engines": {
-    "node": ">=20.19"
+    "node": ">=22.12"
   },
   "scripts": {
     "start:example": "pnpm run build:packages && pnpm --parallel --filter './examples/*' run dev",
@@ -74,7 +74,7 @@
     "packages/*/{src,types}/**/*.ts": ["eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty --fix"],
     "packages/**/*.d.ts": ["eslint --ext .ts"]
   },
-  "packageManager": "pnpm@10.28.2",
+  "packageManager": "pnpm@11.13.1+sha512.b2fc7683b8a6525414e7d13e1ba28caaddde96bf66ec540bfaeb7e702b81f3e0be4d1f295edf7f9fe0396740a8dce4509c582ddf79891f4543fea32d37645f25",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   }
