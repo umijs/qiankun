@@ -11,7 +11,7 @@
   "types": "./dist/esm/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "build": "father build",
+    "build": "rimraf dist && vite build --config ../../vite.library.config.ts && tsc -p tsconfig.build.json && node ../../scripts/copy-declarations.mjs src dist/esm && node ../../scripts/copy-declarations.mjs dist/esm dist/cjs",
     "test": "vitest --run"
   },
   "files": [
@@ -20,12 +20,8 @@
   "author": "Kuitos",
   "license": "MIT",
   "dependencies": {
-    "@babel/runtime": "^7.26.10",
     "@qiankunjs/shared": "workspace:^",
-    "lodash": "^4.17.11"
-  },
-  "devDependencies": {
-    "globals": "^13.20.0"
+    "lodash": "^4.18.1"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"

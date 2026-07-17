@@ -1,12 +1,12 @@
 import path from 'node:path';
-import fse from 'fs-extra';
 import type { ViteTemplate } from '../types';
 import { isReactTemplate } from '../types';
+import { readJsonFile, writeJsonFile } from '../utils/fs';
 import { BUNDLER_PLUGIN_VERSION, QIANKUN_VERSION, QIANKUN_REACT_VERSION, QIANKUN_VUE_VERSION } from '../versions';
 
 export async function patchPackageJson(appRoot: string, appName: string, template: ViteTemplate): Promise<void> {
   const pkgPath = path.join(appRoot, 'package.json');
-  const pkg = (await fse.readJson(pkgPath)) as Record<string, unknown>;
+  const pkg = await readJsonFile<Record<string, unknown>>(pkgPath);
 
   pkg.name = appName;
 
@@ -28,5 +28,5 @@ export async function patchPackageJson(appRoot: string, appName: string, templat
     ...qiankunBinding,
   };
 
-  await fse.writeJson(pkgPath, pkg, { spaces: 2 });
+  await writeJsonFile(pkgPath, pkg);
 }

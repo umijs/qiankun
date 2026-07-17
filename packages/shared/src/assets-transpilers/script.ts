@@ -110,7 +110,7 @@ export default function transpileScript(
         script.dataset.src = src;
 
         const syncMode = !script.hasAttribute('async');
-        const priority: Priority = syncMode ? 'high' : 'low';
+        const priority: RequestPriority = syncMode ? 'high' : 'low';
         const credentials = getCredentials(script.crossOrigin);
 
         void fetch(src, { credentials, priority })

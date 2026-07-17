@@ -4,7 +4,7 @@
  * Per-instance ESM sandbox engine: module graph orchestration (parallel fetch + memoization),
  * redeclaration probing, in-order module script evaluation and the dynamic import pipeline.
  */
-import { noop } from 'lodash';
+import noop from 'lodash/noop';
 import type { Fetch } from '../fetch-utils/utils';
 import { QiankunError } from '../reporter/QiankunError';
 import { Deferred, keys } from '../utils';

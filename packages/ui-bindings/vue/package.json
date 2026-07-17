@@ -4,26 +4,25 @@
   "description": "vue binding for qiankun",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
-  "types": "./src/index.ts",
+  "types": "./dist/esm/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "build": "father build",
-    "dev": "father dev"
+    "build": "rimraf dist && vite build --config ../../../vite.library.config.ts && tsc -p tsconfig.build.json && node ../../../scripts/copy-declarations.mjs src dist/esm && node ../../../scripts/copy-declarations.mjs dist/esm dist/cjs",
+    "dev": "vite build --watch --config ../../../vite.library.config.ts"
   },
   "author": "linghaoSu",
   "license": "MIT",
   "dependencies": {
     "@qiankunjs/ui-shared": "workspace:^",
-    "lodash": "^4.17.11",
-    "vue-demi": "^0.14.6"
+    "vue-demi": "^0.14.10"
   },
   "devDependencies": {
-    "eslint-plugin-vue": "^9.18.1",
-    "vue": "^3.3.9",
-    "vue2": "npm:vue@2.6.11"
+    "qiankun": "workspace:^",
+    "vue": "^3.5.40"
   },
   "peerDependencies": {
     "@vue/composition-api": "^1.7.2",
+    "qiankun": "^3.0.0-rc.15",
     "vue": "^2.0.0 || >=3.0.0"
   },
   "peerDependenciesMeta": {

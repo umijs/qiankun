@@ -24,6 +24,7 @@ export class Deferred<T> {
       };
       this.reject = (reason) => {
         this.#status = 'rejected';
+        // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- Match the native Promise reject contract, which permits consumers to propagate arbitrary reasons unchanged.
         reject(reason);
       };
     });

@@ -1,4 +1,5 @@
-import { isEqual, noop } from 'lodash';
+import isEqual from 'lodash/isEqual';
+import noop from 'lodash/noop';
 import {
   type SharedProps,
   type MicroAppType,
@@ -8,7 +9,7 @@ import {
   updateMicroApp,
   omitSharedProps,
 } from '@qiankunjs/ui-shared';
-import React, { type Ref, forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import ErrorBoundary from './ErrorBoundary';
 import MicroAppLoader from './MicroAppLoader';
 
@@ -23,7 +24,9 @@ function useDeepCompare<T>(value: T): T {
   return ref.current;
 }
 
-export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<MicroAppType | undefined>) => {
+export const MicroApp = forwardRef<MicroAppType | undefined, Props>((forwardedProps, componentRef) => {
+  // React's PropsWithoutRef mapped type drops named fields when Props also has a string index signature.
+  const componentProps = forwardedProps as Props;
   const { name, autoSetLoading, autoCaptureError, wrapperClassName, className, loader, errorBoundary } = componentProps;
 
   const [loading, setLoading] = useState(true);
@@ -79,18 +82,23 @@ export const MicroApp = forwardRef((componentProps: Props, componentRef: Ref<Mic
         });
       }
     };
+    // `name` defines the mounted app identity; changing other props must update the existing app instead of remounting it.
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
   }, [name]);
 
+  const microAppProps = useDeepCompare(omitSharedProps(componentProps));
   useEffect(() => {
     updateMicroApp({
       name,
       microApp: microAppRef.current,
-      microAppProps: omitSharedProps(componentProps),
+      microAppProps,
       setLoading,
     });
 
     return noop;
-  }, [useDeepCompare(omitSharedProps(componentProps))]);
+    // A name-only change is handled by the mount effect above; updating the previous app here would race its unmount.
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
+  }, [microAppProps]);
 
   // 未配置自定义 loader 且开启了 autoSetLoading 场景下，使用插件默认的 loader，否则使用自定义 loader
   const microAppLoader =

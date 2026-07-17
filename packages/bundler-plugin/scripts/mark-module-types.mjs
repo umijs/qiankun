@@ -1,5 +1,5 @@
-// father emits dist/esm and dist/cjs without module-type markers; node (which loads the
-// vite plugin from vite.config) would otherwise sniff-reparse every esm file with a warning
+// The Vite library build emits dist/esm and dist/cjs without module-type markers; Node (which loads
+// the Vite plugin from vite.config) would otherwise sniff-reparse every ESM file with a warning.
 import { writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';

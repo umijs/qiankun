@@ -1,5 +1,5 @@
+import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import fse from 'fs-extra';
 
 export async function writeMainAppComponent(appRoot: string): Promise<void> {
   const appPath = path.join(appRoot, 'src/App.tsx');
@@ -71,5 +71,5 @@ function App() {
 export default App;
 `;
 
-  await fse.writeFile(appPath, content, 'utf-8');
+  await writeFile(appPath, content, 'utf8');
 }

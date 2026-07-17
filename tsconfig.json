@@ -1,12 +1,10 @@
 {
   "compilerOptions": {
-    "baseUrl": "./",
     "target": "esnext",
     "module": "esnext",
     "lib": ["es2018", "dom"],
     "declaration": true,
     "importHelpers": false,
-    "downlevelIteration": true,
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
@@ -19,14 +17,13 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "typeRoots": ["typings", "node_modules/@types", "node_modules"],
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "types": ["vitest/globals", "node"],
     "paths": {
-      "@@/*": ["./.dumi/tmp/*"],
-      "@qiankunjs/*": ["packages/*/src"]
+      "@qiankunjs/*": ["./packages/*/src"]
     }
   },
   "exclude": ["node_modules", "examples", "benchmark", "packages/**/dist"]

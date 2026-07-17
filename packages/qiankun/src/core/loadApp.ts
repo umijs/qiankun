@@ -18,7 +18,9 @@ import {
   warn,
 } from '@qiankunjs/shared';
 import type { StyleIsolationOpts } from '@qiankunjs/shared';
-import { concat, isFunction, mergeWith } from 'lodash';
+import concat from 'lodash/concat';
+import isFunction from 'lodash/isFunction';
+import mergeWith from 'lodash/mergeWith';
 import type { ParcelConfigObject } from 'single-spa';
 import getAddOns from '../addons';
 import { QiankunError } from '../error';
@@ -184,7 +186,9 @@ export default async function loadApp<T extends ObjectType>(
         },
         // exec the chain after rendering to keep the behavior with beforeLoad
         async () => execHooksChain(toArray(beforeMount), app, global),
-        async (props) => mount({ ...props, container: mountContainer }),
+        async (props) => {
+          await mount({ ...props, container: mountContainer });
+        },
         // finish loading after app mounted
         async () => execHooksChain(toArray(afterMount), app, global),
         async () => {
@@ -200,7 +204,9 @@ export default async function loadApp<T extends ObjectType>(
 
       unmount: [
         async () => execHooksChain(toArray(beforeUnmount), app, global),
-        async (props) => unmount({ ...props, container: mountContainer }),
+        async (props) => {
+          await unmount({ ...props, container: mountContainer });
+        },
         unmountSandbox,
         async () => execHooksChain(toArray(afterUnmount), app, global),
         async () => {

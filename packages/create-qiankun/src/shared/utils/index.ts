@@ -1,9 +1,9 @@
-import fse from 'fs-extra';
+import { lstatSync } from 'node:fs';
 import path from 'node:path';
 
 export function isDirectory(targetPath: string): boolean {
   try {
-    return fse.lstatSync(targetPath).isDirectory();
+    return lstatSync(targetPath).isDirectory();
   } catch {
     return false;
   }
@@ -11,7 +11,7 @@ export function isDirectory(targetPath: string): boolean {
 
 export function isFile(targetPath: string): boolean {
   try {
-    return fse.lstatSync(targetPath).isFile();
+    return lstatSync(targetPath).isFile();
   } catch {
     return false;
   }

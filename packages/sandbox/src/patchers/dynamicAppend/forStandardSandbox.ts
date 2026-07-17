@@ -5,7 +5,6 @@
  */
 
 import { Deferred, QiankunError, transpileStyleRule } from '@qiankunjs/shared';
-import type { noop } from 'lodash';
 import { nativeDocument, nativeGlobal, qiankunHeadTagName } from '../../consts';
 import { rebindTarget2Fn } from '../../core/membrane/utils';
 import type { Sandbox } from '../../core/sandbox';
@@ -25,6 +24,7 @@ import {
 import type { SandboxConfig } from './types';
 
 const elementAttachedSymbol = Symbol('attachedApp');
+type Unpatch = () => void;
 declare global {
   interface HTMLElement {
     [elementAttachedSymbol]: string;
@@ -179,7 +179,7 @@ function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): Calla
   };
 }
 
-function patchDocumentHeadAndBodyMethods(container: HTMLElement, sandbox: Sandbox): typeof noop {
+function patchDocumentHeadAndBodyMethods(container: HTMLElement, sandbox: Sandbox): Unpatch {
   // tag the mount points with the owning app config, so fragment-wrapped children (parsed via
   // innerHTML rather than the sandboxed createElement) can inherit it during decomposition
   const tagMountPoint = (mountPoint: HTMLElement) => {
@@ -253,7 +253,7 @@ function patchDocumentHeadAndBodyMethods(container: HTMLElement, sandbox: Sandbo
   };
 }
 
-function patchDOMPrototypeFns(): typeof noop {
+function patchDOMPrototypeFns(): Unpatch {
   // patch MutationObserver.prototype.observe to avoid type error
   // https://github.com/umijs/qiankun/issues/2406
   const nativeMutationObserverObserveFn = MutationObserver.prototype.observe;
@@ -325,7 +325,7 @@ const rawHeadAppendChild = HTMLHeadElement.prototype.appendChild;
 const nativeInsertRule = CSSStyleSheet.prototype.insertRule;
 let cssomPatchRefCount = 0;
 
-function patchCSSOM(): typeof noop {
+function patchCSSOM(): Unpatch {
   cssomPatchRefCount++;
   if (cssomPatchRefCount > 1) {
     return () => {

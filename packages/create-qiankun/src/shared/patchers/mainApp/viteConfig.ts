@@ -1,5 +1,5 @@
+import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import fse from 'fs-extra';
 
 export async function writeMainViteConfig(appRoot: string): Promise<void> {
   const configPath = path.join(appRoot, 'vite.config.ts');
@@ -15,5 +15,5 @@ export default defineConfig({
 });
 `;
 
-  await fse.writeFile(configPath, content, 'utf-8');
+  await writeFile(configPath, content, 'utf8');
 }

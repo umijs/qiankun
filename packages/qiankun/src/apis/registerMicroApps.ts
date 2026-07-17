@@ -1,5 +1,5 @@
 import { Deferred, prepareEsmLexer } from '@qiankunjs/shared';
-import { noop } from 'lodash';
+import noop from 'lodash/noop';
 import type { StartOpts } from 'single-spa';
 import { registerApplication, start as startSingleSpa } from 'single-spa';
 import loadApp from '../core/loadApp';

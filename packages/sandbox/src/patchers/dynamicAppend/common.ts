@@ -141,7 +141,7 @@ export function getOverwrittenAppendChildOrInsertBefore(
     // sandboxed createElement, so they inherit the config attached to the patched mount point.
     if (element.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
       const fragment = newChild as unknown as DocumentFragment;
-      const ownerConfig = getSandboxConfig(this as unknown as HTMLElement);
+      const ownerConfig = getSandboxConfig(this);
       // nodes streamed by the loader's walk are already transpiled and batched into fragments for
       // insertion performance — they must pass through natively, never through the pipeline again
       const shouldDecompose = Array.from(fragment.children).some(
@@ -173,8 +173,7 @@ export function getOverwrittenAppendChildOrInsertBefore(
     // mount point, except for nodes inserted by the loader's streaming walk, which are already
     // transpiled and must pass through untouched
     const sandboxConfig =
-      getSandboxConfig(element) ??
-      (isLoaderStreamedNode(element) ? undefined : getSandboxConfig(this as unknown as HTMLElement));
+      getSandboxConfig(element) ?? (isLoaderStreamedNode(element) ? undefined : getSandboxConfig(this));
 
     // no attached sandbox config means the element is not created from the sandbox environment
     if (!isHijackingTag(element.tagName) || !sandboxConfig) {

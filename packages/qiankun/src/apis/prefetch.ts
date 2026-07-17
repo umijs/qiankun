@@ -101,10 +101,7 @@ async function prefetch(entry: string, fetch: typeof window.fetch = window.fetch
 }
 
 export type PrefetchStrategy =
-  | boolean
-  | 'all'
-  | string[]
-  | ((apps: AppMetadata[]) => { criticalAppNames: string[]; minorAppsName: string[] });
+  boolean | 'all' | string[] | ((apps: AppMetadata[]) => { criticalAppNames: string[]; minorAppsName: string[] });
 
 /**
  * Prefetch micro apps immediately

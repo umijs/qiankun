@@ -11,8 +11,8 @@
   },
   "main": "./dist/index.js",
   "scripts": {
-    "dev": "father dev",
-    "build": "father build",
+    "dev": "vite build --watch --config ../../vite.library.config.ts",
+    "build": "rimraf dist && vite build --config ../../vite.library.config.ts && tsc -p tsconfig.build.json && node ../../scripts/copy-declarations.mjs src dist",
     "test": "vitest run",
     "test:e2e": "vitest run --config vitest.e2e.config.ts"
   },
@@ -29,16 +29,10 @@
   "license": "ISC",
   "dependencies": {
     "create-vite": "^9.1.1",
-    "execa": "^5.1.1",
-    "fs-extra": "^10.1.0",
     "kolorist": "^1.8.0",
-    "minimist": "^1.2.6",
     "prompts": "^2.4.2"
   },
   "devDependencies": {
-    "@types/fs-extra": "^11.0.2",
-    "@types/minimist": "^1.2.3",
-    "@types/prompts": "^2.4.4",
-    "vitest": "^0.34.6"
+    "@types/prompts": "^2.4.9"
   }
 }

@@ -3,7 +3,7 @@
  * @since 2023-11-06
  * wrap fetch with lru cache
  */
-import { once } from 'lodash';
+import once from 'lodash/once';
 import { LRUCache } from './miniLruCache';
 import { type Fetch, isValidResponse } from './utils';
 

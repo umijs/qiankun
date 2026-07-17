@@ -6,6 +6,7 @@ export function getGlobalProp(global: WindowProxy, useFirstGlobalProp = false) {
   let cnt = 0;
   let foundLastProp, result;
   let hasIframe = false;
+  // eslint-disable-next-line @typescript-eslint/no-for-in-array -- WindowProxy enumeration intentionally avoids materializing Object.keys; shouldSkipProperty filters non-own and indexed frame properties.
   for (const p in global) {
     // do not check frames because it could be removed during import
     if (shouldSkipProperty(global, p)) continue;
@@ -35,6 +36,7 @@ export function noteGlobalProps(global: WindowProxy) {
   // alternatively Object.keys(global).pop()
   // but this may be faster (pending benchmarks)
   firstGlobalProp = secondGlobalProp = undefined;
+  // eslint-disable-next-line @typescript-eslint/no-for-in-array -- WindowProxy enumeration intentionally avoids materializing Object.keys; shouldSkipProperty filters non-own and indexed frame properties.
   for (const p in global) {
     // do not check frames because it could be removed during import
     if (shouldSkipProperty(global, p)) continue;
@@ -54,7 +56,7 @@ function shouldSkipProperty(global: WindowProxy, p: string | number): boolean {
     // https://github.com/kuitos/import-html-entry/pull/32，最小化 try 范围
     try {
       return !!global[p as keyof WindowProxy] && typeof window !== 'undefined' && global[p as number].parent === window;
-    } catch (err) {
+    } catch {
       return true;
     }
   } else {

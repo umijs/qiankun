@@ -1,5 +1,5 @@
+import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import fse from 'fs-extra';
 import type { ViteTemplate } from '../types';
 import { isReactTemplate, isTypeScriptTemplate } from '../types';
 
@@ -27,5 +27,5 @@ export default defineConfig({
 });
 `;
 
-  await fse.writeFile(configPath, content, 'utf-8');
+  await writeFile(configPath, content, 'utf8');
 }

@@ -2,7 +2,7 @@
  * @author Kuitos
  * @since 2023-10-09
  */
-import { memoize } from 'lodash';
+import memoize from 'lodash/memoize';
 
 export const createReusingObjectUrl = memoize(
   (src: string, url: string, type: 'text/javascript' | 'text/css'): string => {

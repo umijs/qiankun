@@ -1,6 +1,8 @@
 // .vitepress/theme/index.js
-import DefaultTheme from 'vitepress/theme'
-import { onMounted, nextTick } from 'vue'
+import DefaultTheme from 'vitepress/theme';
+import { onMounted, nextTick } from 'vue';
+
+let mermaidPromise;
 
 export default {
   extends: DefaultTheme,
@@ -9,67 +11,73 @@ export default {
     if (typeof window !== 'undefined') {
       router.onAfterRouteChanged = () => {
         nextTick(() => {
-          renderMermaidCharts()
-        })
-      }
+          void renderMermaidCharts();
+        });
+      };
     }
   },
   setup() {
     onMounted(() => {
       // 初始加载时渲染 Mermaid
       setTimeout(() => {
-        renderMermaidCharts()
-      }, 100)
-    })
-  }
-}
+        void renderMermaidCharts();
+      }, 100);
+    });
+  },
+};
 
-function renderMermaidCharts() {
-  if (typeof window === 'undefined' || !window.mermaid) {
-    return
+async function renderMermaidCharts() {
+  if (typeof window === 'undefined') {
+    return;
   }
 
   try {
+    mermaidPromise ??= import('mermaid').then(({ default: mermaid }) => mermaid);
+    const mermaid = await mermaidPromise;
+
     // 初始化 mermaid
-    window.mermaid.initialize({ 
+    mermaid.initialize({
       startOnLoad: false,
-      theme: 'default'
-    })
+      theme: 'default',
+    });
 
     // 查找所有 mermaid 代码块
-    const mermaidElements = document.querySelectorAll('pre code.language-mermaid')
-    
+    const mermaidElements = document.querySelectorAll('.language-mermaid > pre > code');
+
     mermaidElements.forEach((element, index) => {
       // 如果已经渲染过，跳过
       if (element.getAttribute('data-processed') === 'true') {
-        return
+        return;
       }
-      
-      const code = element.textContent || element.innerText
-      const uniqueId = `mermaid-${Date.now()}-${index}`
-      
+
+      const code = element.textContent || element.innerText;
+      const uniqueId = `mermaid-${Date.now()}-${index}`;
+
       // 创建容器
-      const container = document.createElement('div')
-      container.className = 'mermaid-container'
-      container.id = uniqueId
-      
+      const container = document.createElement('div');
+      container.className = 'mermaid-container';
+      container.id = uniqueId;
+
       // 渲染图表
-      window.mermaid.render(uniqueId + '-svg', code).then(({ svg }) => {
-        container.innerHTML = svg
-        
-        // 替换原来的代码块
-        const parent = element.closest('pre')
-        if (parent && parent.parentNode) {
-          parent.parentNode.replaceChild(container, parent)
-        }
-      }).catch(error => {
-        console.warn('Mermaid 渲染错误:', error)
-      })
-      
+      mermaid
+        .render(uniqueId + '-svg', code)
+        .then(({ svg }) => {
+          container.innerHTML = svg;
+
+          // 替换原来的代码块
+          const codeBlock = element.closest('.language-mermaid');
+          if (codeBlock?.parentNode) {
+            codeBlock.parentNode.replaceChild(container, codeBlock);
+          }
+        })
+        .catch((error) => {
+          console.warn('Mermaid 渲染错误:', error);
+        });
+
       // 标记为已处理
-      element.setAttribute('data-processed', 'true')
-    })
+      element.setAttribute('data-processed', 'true');
+    });
   } catch (error) {
-    console.warn('Mermaid 初始化错误:', error)
+    console.warn('Mermaid 初始化错误:', error);
   }
-} 
+}

@@ -1,5 +1,5 @@
+import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import fse from 'fs-extra';
 
 export async function writeMainAppStyles(appRoot: string): Promise<void> {
   const cssPath = path.join(appRoot, 'src/App.css');
@@ -45,5 +45,5 @@ export async function writeMainAppStyles(appRoot: string): Promise<void> {
 }
 `;
 
-  await fse.writeFile(cssPath, content, 'utf-8');
+  await writeFile(cssPath, content, 'utf8');
 }

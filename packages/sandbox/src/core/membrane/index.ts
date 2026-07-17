@@ -347,8 +347,7 @@ export class Membrane {
 
   addIntrinsics(
     intrinsics:
-      | Record<string, PropertyDescriptor>
-      | ((rawTarget: MembraneTarget) => Record<string, PropertyDescriptor>),
+      Record<string, PropertyDescriptor> | ((rawTarget: MembraneTarget) => Record<string, PropertyDescriptor>),
   ): void {
     const intrinsicsObj = typeof intrinsics === 'function' ? intrinsics(this.target) : intrinsics;
     keys(intrinsicsObj).forEach((key) => {

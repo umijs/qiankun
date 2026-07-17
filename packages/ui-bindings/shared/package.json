@@ -4,16 +4,16 @@
   "description": "ui binding shared for qiankun",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
-  "types": "./src/index.ts",
+  "types": "./dist/esm/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "build": "father build",
-    "dev": "father dev"
+    "build": "rimraf dist && vite build --config ../../../vite.library.config.ts && tsc -p tsconfig.build.json && node ../../../scripts/copy-declarations.mjs src dist/esm && node ../../../scripts/copy-declarations.mjs dist/esm dist/cjs",
+    "dev": "vite build --watch --config ../../../vite.library.config.ts"
   },
   "author": "linghaoSu",
   "license": "MIT",
   "dependencies": {
-    "lodash": "^4.17.11"
+    "lodash": "^4.18.1"
   },
   "devDependencies": {
     "qiankun": "workspace:^"

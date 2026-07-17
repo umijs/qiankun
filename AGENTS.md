@@ -2,9 +2,9 @@
 
 **Updated:** 2026-07-06 · **Commit:** dcc42ae4 · **Branch:** next (qiankun 3.0, active dev)
 
-Qiankun is a micro-frontend framework built on [single-spa](https://github.com/single-spa/single-spa). v3 rewrites the runtime around **streaming HTML-entry loading**, a **Proxy-membrane JS sandbox**, and native **ESM-sandbox** execution. pnpm monorepo, built with `father` (UmiJS).
+Qiankun is a micro-frontend framework built on [single-spa](https://github.com/single-spa/single-spa). v3 rewrites the runtime around **streaming HTML-entry loading**, a **Proxy-membrane JS sandbox**, and native **ESM-sandbox** execution. It is a pnpm monorepo built with Vite 8; `tsc` emits package declarations.
 
-> Requires Node `>=22.12`, `pnpm@11.13.1` (see `packageManager`). Never use npm/yarn at the root.
+> Requires Node `>=22.15`, `pnpm@11.13.1` (see `packageManager`). Never use npm/yarn at the root.
 
 ## STRUCTURE
 
@@ -61,7 +61,7 @@ ui-bindings/{react,vue} → ui-bindings/shared → qiankun
 ```bash
 pnpm install                 # install all workspace deps
 
-# build (father → dual ESM+CJS in each package's dist/)
+# build (Vite 8 → package JavaScript; tsc → declarations)
 pnpm run build               # build everything (packages + examples)
 pnpm run build:packages      # build only packages/** (prereq for e2e & examples)
 
@@ -84,9 +84,9 @@ pnpm run start:example       # build packages + run all example apps in parallel
 pnpm run docs:dev            # VitePress docs
 ```
 
-## CONVENTIONS (enforced by eslint — `pnpm run eslint` will reject violations)
+## CONVENTIONS (enforced by ESLint flat config — `pnpm run eslint` will reject violations)
 
-TypeScript is strict + type-checked (`@typescript-eslint/recommended-requiring-type-checking`):
+TypeScript is strict + type-checked (`typescript-eslint`'s type-checked flat config):
 
 - **No `any`** — `no-explicit-any` auto-fixes to `unknown`. No `as any`, `@ts-ignore`, `@ts-expect-error`.
 - **Inline type imports** — `import { type Foo, bar }`, not `import type { Foo }` on its own line (`consistent-type-imports`/`consistent-type-exports` with `fixStyle: inline-type-imports`).
@@ -98,7 +98,8 @@ TypeScript is strict + type-checked (`@typescript-eslint/recommended-requiring-t
 
 Build/release:
 
-- `father` build, dual ESM+CJS; packages use `main`/`module`/`types` (no `exports` field).
+- Vite 8 builds browser package JavaScript as ESM+CJS, while `tsc` emits declarations; the `create-qiankun` Node CLI is CJS-only. Package entry fields and subpath exports must point at the corresponding `dist` outputs.
+- TypeScript 7 is installed as `@typescript/native` and owns the `tsc` binary. The `typescript` dependency intentionally aliases `@typescript/typescript6` because TypeScript 7.0 has no programmatic API yet and tools such as `typescript-eslint` and `vue-tsc` still require that compatibility API.
 - Versioning via **changesets**, but changesets are **auto-derived from Conventional Commits** in CI (`scripts/generate-changesets.mjs`) — do **not** hand-write `.changeset/*.md`. Just land a well-formed conventional commit (`feat`/`fix`/`feat!`…); the release job maps changed files → packages and infers the bump. Each sub-package keeps its own `CHANGELOG.md` (changeset default, visible on npm); on publish `scripts/generate-release-notes.mjs` aggregates them into **one GitHub Release**, which can be polished after the fact via the `/release-changelog` skill (`gh release edit`). Full flow: `.changeset/README.md`.
 - Conventional commits enforced by commitlint (`feat:`, `fix:`, `feat(esm-sandbox):`, …).
 

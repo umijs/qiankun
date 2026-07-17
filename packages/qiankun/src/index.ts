@@ -4,4 +4,4 @@ export * from './apis/isRuntimeCompatible';
 export * from './apis/prefetch';
 export * from './apis/effects';
 export * from './apis/errorHandler';
-export * from './types';
+export type * from './types';

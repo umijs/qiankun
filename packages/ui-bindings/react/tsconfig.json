@@ -3,7 +3,7 @@
   "compilerOptions": {
     "jsx": "react",
     "paths": {
-      "qiankun": ["packages/qiankun/src"]
+      "qiankun": ["../../qiankun/src"]
     }
   }
 }

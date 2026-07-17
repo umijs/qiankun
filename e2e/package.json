@@ -10,9 +10,10 @@
     "test:e2e:ui": "pnpm run build:fixtures && playwright test --ui"
   },
   "devDependencies": {
-    "@playwright/test": "^1.55.1",
+    "@playwright/test": "^1.61.1",
+    "@typescript/native": "npm:typescript@~7.0.2",
     "qiankun": "workspace:*",
-    "typescript": "^5.9.3",
-    "vite": "^5.4.20"
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "vite": "^8.1.5"
   }
 }
