@@ -7,6 +7,14 @@ This workspace measures cold micro-app loading from the instant an adapter invok
 Run from the repository root:
 
 ```bash
+# Unified entry: run every suite sequentially and print one aggregated
+# console report (tachometer-style tables) at the end.
+pnpm bench                       # standard profile: 1 trial × 50 samples, A/A gate on (~20-30 min)
+pnpm bench --profile=check       # plumbing only: 5 samples, A/A gate off (~2 min)
+pnpm bench --profile=full        # formal profile: 3 trials × 100 samples (hours)
+pnpm bench --suites=core,ssr-streaming   # limit the suite list
+pnpm bench --samples=30 --seed=42        # any other flag is forwarded to runner.mjs
+
 # Fast plumbing checks: one browser trial and five samples per cell.
 pnpm benchmark:check
 pnpm benchmark:ecosystem:check

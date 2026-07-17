@@ -6,6 +6,7 @@
   },
   "scripts": {
     "start:example": "pnpm run build:packages && pnpm --parallel --filter './examples/*' run dev",
+    "bench": "pnpm run build:packages && pnpm --filter @qiankunjs/benchmark run bench",
     "benchmark:baseline": "pnpm run build:packages && pnpm --filter @qiankunjs/benchmark run snapshot:baseline",
     "benchmark:check": "pnpm run build:packages && pnpm --filter @qiankunjs/benchmark run run:check",
     "benchmark:compare": "pnpm run build:packages && pnpm --filter @qiankunjs/benchmark run compare",
