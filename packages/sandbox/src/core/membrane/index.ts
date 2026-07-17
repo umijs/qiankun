@@ -152,7 +152,16 @@ export class Membrane {
           } else {
             // We must keep its description while the property existed in incubatorContext before
             if (!hasOwnProperty(membraneTarget, p)) {
-              const descriptor = getOwnPropertyDescriptor(incubatorContext, p);
+              /*
+               * never consult the host descriptor for shielded internal keys (e.g. the ESM realm
+               * accessor): materializing it would turn the key into an own prop and permanently
+               * unshield the real accessor for this app. As the app cannot observe the host key
+               * (get/has/getOwnPropertyDescriptor all shield it), the write falls through to the
+               * brand-new-own-global branch below instead.
+               */
+              const descriptor = isShieldedInternalGlobal(membraneTarget, p)
+                ? undefined
+                : getOwnPropertyDescriptor(incubatorContext, p);
               if (descriptor && !descriptor.configurable) {
                 materializeNonConfigurableProperty(membraneTarget, propertiesWithGetter, p, descriptor);
                 membraneTarget[p] = value;

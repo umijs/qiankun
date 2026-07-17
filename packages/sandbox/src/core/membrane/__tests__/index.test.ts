@@ -100,6 +100,31 @@ describe('non-configurable global properties', () => {
     });
   });
 
+  it('never materializes a shielded internal key on set, keeping the host accessor unreachable', () => {
+    const rawGlobal: Record<string, unknown> = {};
+    const hostAccessor = () => 'host-realm-accessor';
+    Object.defineProperty(rawGlobal, '__qk_r_test', {
+      configurable: false,
+      enumerable: false,
+      value: hostAccessor,
+      writable: false,
+    });
+    const membrane = new Membrane(rawGlobal as unknown as WindowProxy, {});
+    const proxy = membrane.realmGlobal as unknown as Record<string, unknown>;
+
+    // shielded before any write
+    expect(proxy.__qk_r_test).toBeUndefined();
+    expect('__qk_r_test' in proxy).toBe(false);
+
+    // a write behaves like defining a brand-new app-own global rather than
+    // copying the non-configurable host descriptor onto the target
+    proxy.__qk_r_test = 'sandbox-own';
+
+    expect(proxy.__qk_r_test).toBe('sandbox-own');
+    expect(Object.getOwnPropertyDescriptor(membrane.target, '__qk_r_test')?.configurable).toBe(true);
+    expect(rawGlobal.__qk_r_test).toBe(hostAccessor);
+  });
+
   it('keeps endowments ahead of the host global without scanning host descriptors', () => {
     const { getDescriptorReads, globalContext } = createCountedGlobal();
     const membrane = new Membrane(
