@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { SUITES } from '../scenarios.mjs';
+import { DEFAULT_SUITE_IDS, SUITES } from '../scenarios.mjs';
 import { createHarnessFingerprint } from '../src/fingerprint.mjs';
 import { createBalancedSchedule } from '../src/schedule.mjs';
 
@@ -57,6 +57,17 @@ test('suite memberships stay explicit while the core fingerprint remains frozen'
     ],
   );
   assert.equal(SUITES['ssr-streaming'].calibrationSourceVariant, 'qk-v3-ssr-streamed');
+  assert.deepEqual(
+    SUITES['ci-basic'].variants.map(({ id }) => id),
+    ['qk-no-isolation', 'qk-sandbox', 'native-iframe', 'qk-v3-ssr-delayed-buffered', 'qk-v3-ssr-streamed'],
+  );
+  assert.equal(SUITES['ci-basic'].calibrationSourceVariant, 'qk-sandbox');
+  assert.equal(SUITES['ci-basic'].ciOnly, true);
+  assert.deepEqual(SUITES['ci-basic'].comparisonGates, [
+    { comparison: 'sandbox-cost', maxUpperBoundPercent: 25 },
+    { comparison: 'qiankun-sandbox-native', maxUpperBoundPercent: 30 },
+    { comparison: 'qiankun-v3-ssr-streaming-gain', maxUpperBoundPercent: -30 },
+  ]);
 });
 
 test('adding an ecosystem variant cannot change the core balanced schedule', () => {
@@ -68,12 +79,20 @@ test('adding an ecosystem variant cannot change the core balanced schedule', () 
   assert.deepEqual(createBalancedSchedule(coreIds, 24, 20260711), before);
 });
 
+test('the unified benchmark defaults exclude the CI-only duplicate suite', () => {
+  assert.deepEqual(DEFAULT_SUITE_IDS, ['core', 'site-isolation', 'ssr-streaming', 'ecosystem-html']);
+});
+
 test('each suite owns comparisons whose variants exist in that suite', () => {
   for (const suite of Object.values(SUITES)) {
     const variantIds = new Set(suite.variants.map(({ id }) => id));
+    const comparisonIds = new Set(suite.comparisons.map(({ id }) => id));
     for (const comparison of suite.comparisons) {
       assert.ok(variantIds.has(comparison.reference), `${suite.id}:${comparison.id}:reference`);
       assert.ok(variantIds.has(comparison.candidate), `${suite.id}:${comparison.id}:candidate`);
+    }
+    for (const gate of suite.comparisonGates ?? []) {
+      assert.ok(comparisonIds.has(gate.comparison), `${suite.id}:${gate.comparison}:gate`);
     }
   }
 });

@@ -191,6 +191,20 @@ const WUJIE_STREAMED = {
   label: 'Wujie · streamed response',
 };
 
+const SANDBOX_COST_COMPARISON = {
+  candidate: 'qk-sandbox',
+  id: 'sandbox-cost',
+  label: 'qiankun sandbox cost',
+  reference: 'qk-no-isolation',
+};
+
+const SSR_STREAMING_GAIN_COMPARISON = {
+  candidate: 'qk-v3-ssr-streamed',
+  id: 'qiankun-v3-ssr-streaming-gain',
+  label: 'qiankun v3 streamed vs delayed-buffered SSR',
+  reference: 'qk-v3-ssr-delayed-buffered',
+};
+
 const SAME_SITE_COMPARISONS = [
   {
     candidate: 'qk-full-isolation',
@@ -213,12 +227,7 @@ const SAME_SITE_COMPARISONS = [
 ];
 
 const CORE_COMPARISONS = [
-  {
-    candidate: 'qk-sandbox',
-    id: 'sandbox-cost',
-    label: 'qiankun sandbox cost',
-    reference: 'qk-no-isolation',
-  },
+  SANDBOX_COST_COMPARISON,
   {
     candidate: 'qk-full-isolation',
     id: 'style-isolation-cost',
@@ -333,12 +342,7 @@ const SITE_ISOLATION_COMPARISONS = [
 ];
 
 const SSR_STREAMING_COMPARISONS = [
-  {
-    candidate: 'qk-v3-ssr-streamed',
-    id: 'qiankun-v3-ssr-streaming-gain',
-    label: 'qiankun v3 streamed vs delayed-buffered SSR',
-    reference: 'qk-v3-ssr-delayed-buffered',
-  },
+  SSR_STREAMING_GAIN_COMPARISON,
   {
     candidate: 'qk-v3-ssr-streamed',
     id: 'qiankun-v3-native-ssr-streamed',
@@ -421,7 +425,33 @@ export const SUITES = {
       GARFISH_STRICT_ISOLATION,
     ],
   },
+  'ci-basic': {
+    calibrationSourceVariant: 'qk-sandbox',
+    ciOnly: true,
+    comparisonGates: [
+      { comparison: 'sandbox-cost', maxUpperBoundPercent: 25 },
+      { comparison: 'qiankun-sandbox-native', maxUpperBoundPercent: 30 },
+      { comparison: 'qiankun-v3-ssr-streaming-gain', maxUpperBoundPercent: -30 },
+    ],
+    comparisons: [
+      SANDBOX_COST_COMPARISON,
+      {
+        candidate: 'qk-sandbox',
+        id: 'qiankun-sandbox-native',
+        label: 'qiankun sandbox vs native iframe',
+        reference: 'native-iframe',
+      },
+      SSR_STREAMING_GAIN_COMPARISON,
+    ],
+    id: 'ci-basic',
+    title: 'Basic performance gate',
+    variants: [QK_NO_ISOLATION, QK_SANDBOX, NATIVE_IFRAME, QK_V3_SSR_DELAYED_BUFFERED, QK_V3_SSR_STREAMED],
+  },
 };
+
+export const DEFAULT_SUITE_IDS = Object.values(SUITES)
+  .filter((suite) => suite.ciOnly !== true)
+  .map((suite) => suite.id);
 
 export const PRODUCT_VARIANTS = SUITES.core.variants;
 export const PRODUCT_COMPARISONS = SUITES.core.comparisons;

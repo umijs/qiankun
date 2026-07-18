@@ -56,6 +56,10 @@ test('parseRunnerOptions accepts the dedicated SSR streaming suite', () => {
   assert.equal(parseRunnerOptions(['--suite=ssr-streaming']).suite, 'ssr-streaming');
 });
 
+test('parseRunnerOptions accepts the CI basic performance suite', () => {
+  assert.equal(parseRunnerOptions(['--suite=ci-basic']).suite, 'ci-basic');
+});
+
 test('parseRunnerOptions defaults revision comparisons to the streaming scenario', () => {
   assert.equal(parseRunnerOptions(['--mode=revision', '--baseline-dir=artifacts/baseline']).scenario, 'streaming');
 });

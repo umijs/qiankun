@@ -6,16 +6,18 @@ import { createHarnessFingerprint } from './fingerprint.mjs';
 import { hashFiles, hashViteEntries } from './hash.mjs';
 import { CHROMIUM_LAUNCH_ARGS } from './origins.mjs';
 
-const HARNESS_SOURCE_FILES = [
+export const HARNESS_SOURCE_FILES = [
   'runner.mjs',
   'src/browser.mjs',
   'src/collect.mjs',
+  'src/comparison-gates.mjs',
   'src/fingerprint.mjs',
   'src/harness.mjs',
   'src/hash.mjs',
   'src/origins.mjs',
   'src/report.mjs',
   'src/revisions.mjs',
+  'src/run-verdict.mjs',
   'src/schedule.mjs',
   'src/server.mjs',
   'src/site-isolation.mjs',
@@ -95,6 +97,8 @@ export async function createHarnessRecord({
       warmup: options.warmup,
     },
     suite: {
+      calibrationAliases: runDefinition.calibrationAliases,
+      comparisonGates: runDefinition.comparisonGates,
       comparisons: runDefinition.comparisons,
       id: options.mode === 'revision' ? `revision:${options.scenario}` : options.suite,
       variants: runDefinition.variants,

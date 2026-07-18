@@ -1,0 +1,151 @@
+name: Basic Performance Gate
+
+on:
+  pull_request:
+    branches:
+      - next
+  push:
+    branches:
+      - next
+  merge_group:
+    types:
+      - checks_requested
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: basic-performance-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    name: Basic performance gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect benchmark-relevant changes
+        id: changes
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          MERGE_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          MERGE_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          PUSH_HEAD_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          case "$EVENT_NAME" in
+            pull_request)
+              base_sha="$PR_BASE_SHA"
+              head_sha="$PR_HEAD_SHA"
+              ;;
+            merge_group)
+              base_sha="$MERGE_BASE_SHA"
+              head_sha="$MERGE_HEAD_SHA"
+              ;;
+            *)
+              base_sha="$PUSH_BASE_SHA"
+              head_sha="$PUSH_HEAD_SHA"
+              ;;
+          esac
+
+          if ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null ||
+             ! git cat-file -e "${head_sha}^{commit}" 2>/dev/null; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          should_run=false
+          while IFS= read -r file; do
+            case "$file" in
+              benchmark/*|\
+              packages/loader/*|\
+              packages/qiankun/*|\
+              packages/sandbox/*|\
+              packages/shared/*|\
+              package.json|\
+              pnpm-lock.yaml|\
+              pnpm-workspace.yaml|\
+              tsconfig.build.json|\
+              tsconfig.json|\
+              vite.library.config.ts|\
+              .github/workflows/benchmark-basic.yml)
+                should_run=true
+                break
+                ;;
+            esac
+          done < <(git diff --name-only "$base_sha" "$head_sha")
+
+          echo "run=$should_run" >> "$GITHUB_OUTPUT"
+
+          if [[ "$should_run" == "false" ]]; then
+            echo "No benchmark-relevant changes; performance gate skipped." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Install pnpm
+        if: ${{ steps.changes.outputs.run == 'true' }}
+        uses: pnpm/action-setup@v6
+
+      - name: Use Node.js 24
+        if: ${{ steps.changes.outputs.run == 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        if: ${{ steps.changes.outputs.run == 'true' }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        if: ${{ steps.changes.outputs.run == 'true' }}
+        run: pnpm --filter @qiankunjs/benchmark exec playwright install --with-deps chromium
+
+      - name: Run basic performance gate
+        if: ${{ steps.changes.outputs.run == 'true' }}
+        env:
+          CI: "true"
+        run: pnpm run benchmark:ci-basic
+
+      - name: Publish benchmark summary
+        if: ${{ always() && steps.changes.outputs.run == 'true' }}
+        shell: bash
+        run: |
+          shopt -s nullglob
+          summaries=(benchmark/results/*/summary.md)
+
+          if (( ${#summaries[@]} == 0 )); then
+            printf '%s\n' \
+              '## Basic performance gate' \
+              'No benchmark summary was generated.' \
+              >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          for summary in "${summaries[@]}"; do
+            cat "$summary" >> "$GITHUB_STEP_SUMMARY"
+            printf '\n\n---\n\n' >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      - name: Upload benchmark results
+        if: ${{ always() && steps.changes.outputs.run == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: basic-performance-${{ github.run_id }}-${{ github.run_attempt }}
+          path: benchmark/results/
+          if-no-files-found: warn
+          retention-days: 14

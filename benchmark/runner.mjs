@@ -10,11 +10,13 @@ import { chromium } from 'playwright';
 import { assertFrameworkVariantSupported, getFrameworkAdapter } from './frameworks.mjs';
 import { runBrowserSample } from './src/browser.mjs';
 import { collectSamples } from './src/collect.mjs';
+import { evaluateComparisonGates, renderComparisonGateSummary } from './src/comparison-gates.mjs';
 import { createHarnessRecord, createRevisionHarnessRecord } from './src/harness.mjs';
 import { CHROMIUM_LAUNCH_ARGS, createBenchmarkOrigins } from './src/origins.mjs';
 import { parseRunnerOptions } from './src/options.mjs';
 import { buildReport, renderSummaryMarkdown } from './src/report.mjs';
 import { evaluateRevisionComparison, resolveVariantHostOrigin } from './src/revisions.mjs';
+import { evaluateRunVerdict } from './src/run-verdict.mjs';
 import { createFixtureServer } from './src/server.mjs';
 import { inspectCrossSiteIsolation } from './src/site-isolation.mjs';
 import { assertBaselineHarnessCompatible, readBaselineSnapshot } from './src/snapshot.mjs';
@@ -57,6 +59,7 @@ function createRunDefinition(options) {
   if (options.mode === 'revision') {
     return {
       calibrationAliases: REVISION_CALIBRATION_VARIANTS,
+      comparisonGates: [],
       comparisons: REVISION_COMPARISONS,
       productTitle: `Revision comparison · ${options.scenario}`,
       variants: createRevisionVariants(options.scenario),
@@ -70,6 +73,7 @@ function createRunDefinition(options) {
       ...variant,
       sourceVariant: calibrationSourceVariant,
     })),
+    comparisonGates: suite.comparisonGates ?? [],
     comparisons: suite.comparisons,
     productTitle: suite.title,
     variants: suite.variants,
@@ -151,6 +155,7 @@ function combineCalibrationEvaluations(aggregate, trialEvaluations) {
 function renderRunSummary({
   calibrationEvaluation,
   calibrationReport,
+  comparisonEvaluation,
   fatalError,
   metadata,
   productReport,
@@ -212,6 +217,16 @@ function renderRunSummary({
   if (productReport) {
     lines.push(renderSummaryMarkdown(productReport, { headingLevel: 2, title: productTitle }));
   }
+  if (comparisonEvaluation) {
+    lines.push(
+      renderComparisonGateSummary(comparisonEvaluation),
+      `Performance diagnostic: **${comparisonEvaluation.passed ? 'passed' : 'failed'}**`,
+      `Performance gate: **${metadata.options.comparisonGate ? 'enforced' : 'disabled for plumbing check'}**`,
+      '',
+    );
+    comparisonEvaluation.failures.forEach((failure) => lines.push(`- ${failure}`));
+    if (comparisonEvaluation.failures.length > 0) lines.push('');
+  }
   if (revisionEvaluation) {
     lines.push(
       `Improvement diagnostic: **${revisionEvaluation.passed ? 'passed' : 'failed'}**`,
@@ -251,6 +266,7 @@ async function main() {
   let browserVersion = 'unavailable';
   let calibrationEvaluation;
   let calibrationReport;
+  let comparisonEvaluation;
   let fatalError;
   let productReport;
   let revisionEvaluation;
@@ -394,6 +410,8 @@ async function main() {
       });
       if (options.mode === 'revision') {
         revisionEvaluation = evaluateRevisionComparison(productReport.comparisons['candidate-vs-baseline']);
+      } else if (runDefinition.comparisonGates.length > 0) {
+        comparisonEvaluation = evaluateComparisonGates(productReport.comparisons, runDefinition.comparisonGates);
       }
     }
   } catch (error) {
@@ -461,18 +479,24 @@ async function main() {
     platformRelease: environment.platformRelease,
     qiankunVersion: qiankunPackage.version,
     runId,
-    schemaVersion: 4,
+    schemaVersion: 5,
     siteIsolation,
     startedAt: startedAt.toISOString(),
     wujieVersion: frameworkVersions.wujie,
   };
   const hasInvalidProductSample = productSamples.some((sample) => !sample.valid);
-  const passed =
-    !fatalError &&
-    (!options.calibrationGate || calibrationEvaluation?.passed === true) &&
-    (options.mode !== 'revision' || !options.comparisonGate || revisionEvaluation?.passed === true) &&
-    !hasInvalidProductSample &&
-    productSamples.length === options.samples * options.trials * runDefinition.variants.length;
+  const expectedProductSamples = options.samples * options.trials * runDefinition.variants.length;
+  const passed = evaluateRunVerdict({
+    calibrationEvaluation,
+    comparisonEvaluation,
+    expectedProductSamples,
+    fatalError,
+    hasComparisonGates: runDefinition.comparisonGates.length > 0,
+    hasInvalidProductSample,
+    options,
+    productSampleCount: productSamples.length,
+    revisionEvaluation,
+  });
   const result = {
     calibration: {
       evaluation: calibrationEvaluation,
@@ -483,12 +507,18 @@ async function main() {
     fatalError,
     metadata,
     passed,
-    product: { report: productReport, samples: productSamples, warmupSamples: productWarmupSamples },
+    product: {
+      evaluation: comparisonEvaluation,
+      report: productReport,
+      samples: productSamples,
+      warmupSamples: productWarmupSamples,
+    },
     revision: { evaluation: revisionEvaluation },
   };
   const summary = renderRunSummary({
     calibrationEvaluation,
     calibrationReport,
+    comparisonEvaluation,
     fatalError,
     metadata,
     productReport,

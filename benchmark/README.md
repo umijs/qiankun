@@ -10,7 +10,7 @@ Run from the repository root:
 # Unified entry: run every suite sequentially and print one aggregated
 # console report (tachometer-style tables) at the end.
 pnpm bench                       # standard profile: 1 trial × 50 samples, A/A gate on (~20-30 min)
-pnpm bench --profile=check       # plumbing only: 5 samples, A/A gate off (~2 min)
+pnpm bench --profile=check       # plumbing only: 5 samples, performance gates off (~2 min)
 pnpm bench --profile=full        # formal profile: 3 trials × 100 samples (hours)
 pnpm bench --suites=core,ssr-streaming   # limit the suite list
 pnpm bench --samples=30 --seed=42        # any other flag is forwarded to runner.mjs
@@ -26,9 +26,13 @@ pnpm benchmark:smoke
 pnpm benchmark:ecosystem
 pnpm benchmark:site-isolation
 pnpm benchmark:ssr-streaming
+
+# PR-CI-sized performance floor: one trial, 100 samples per cell,
+# and enforced A/A plus suite comparison gates.
+pnpm benchmark:ci-basic
 ```
 
-The check commands disable the A/A gate and are not performance evidence. Formal run results are written to `benchmark/results/<timestamp>-<commit>/`; raw warmups and measurements are retained.
+The check commands disable the A/A and suite comparison gates and are not performance evidence. Formal run results are written to `benchmark/results/<timestamp>-<commit>/`; raw warmups and measurements are retained.
 
 To compare two repeated runs by absolute median, use the guarded comparison command:
 
@@ -52,11 +56,14 @@ Suites are explicit and independent; adding an ecosystem framework does not alte
 | Suite | Cells | Purpose |
 | --- | --: | --- |
 | `core` | 8 | qiankun isolation cost plus buffered and streamed comparisons with native iframe and Wujie |
+| `ci-basic` | 5 | CI-only floor for the buffered sandbox path and progressive SSR streaming |
 | `site-isolation` | 6 | same-site anchors and cross-site entries for qiankun, native iframe, and Wujie |
 | `ecosystem-html` | 6 | one canonical same-site, buffered, isolated cell for each framework/version |
 | `ssr-streaming` | 6 | literal SSR progressive reveal compared with an identical delayed buffer, native iframe, qiankun v2, Wujie, and Garfish |
 
 The core suite contains qiankun with no isolation, sandbox only, and sandbox plus style isolation; same-site buffered native iframe and Wujie; and streamed native iframe, qiankun, and Wujie cells.
+
+The CI-only basic suite reuses five canonical cells: buffered qiankun without isolation, buffered qiankun with its default sandbox, a buffered native iframe, and the identical-byte qiankun v3 SSR fixture under delayed-buffered and streamed delivery. It is excluded from the unified `pnpm bench` suite list because those cells already belong to the formal core and SSR suites.
 
 The ecosystem suite intentionally adds only these canonical cells:
 
@@ -96,11 +103,21 @@ Rounds are paired within each independent browser trial. The primary estimate is
 
 ## A/A calibration
 
-Each trial first interleaves two aliases of the exact same selected qiankun cell. The SSR suite uses its streamed qiankun v3 cell; the other suites use the canonical fully isolated cell. Both every trial and the aggregate must satisfy:
+Each trial first interleaves two aliases of the exact same selected qiankun cell. This A/A run checks whether the harness can correctly report no difference when there is no implementation difference; it is not a product or revision comparison. The SSR suite uses its streamed qiankun v3 cell, the CI basic suite uses its sandbox cell, and the other suites use the canonical fully isolated cell. Both every trial and the aggregate must satisfy:
 
 - absolute paired median delta no greater than 3%;
 - the bootstrap 95% interval includes 0%;
 - interval width no greater than 10 percentage points.
+
+## Basic CI performance gate
+
+The `ci-basic` suite uses one browser trial, five warmups, 100 paired samples per product cell, and 100 samples per A/A arm. Every sample must still satisfy the complete measurement contract, including visible styled content, lifecycle settlement, error-free loading, and cleanup. Its paired-bootstrap 95% confidence-interval upper bounds must also satisfy:
+
+- sandbox versus no isolation: no greater than `+25%`;
+- sandbox versus native iframe: no greater than `+30%`;
+- streamed versus delayed-buffered SSR: no greater than `-30%`, proving the progressive path is at least 30% faster with 95% confidence.
+
+These are deliberately broad regression floors, not optimization targets. Relative, within-run comparisons avoid absolute millisecond thresholds that would vary with CI runner hardware. The suite comparison gate can be disabled with `--comparison-gate=false` for plumbing diagnostics, but such a run is not performance evidence.
 
 ## Revision comparison
 
@@ -121,4 +138,4 @@ The snapshot contains the complete Vite host bundle, preventing baseline and can
 
 Revision mode remains a single browser trial with balanced baseline/candidate rounds and fresh BrowserContexts; it passes only when every sample is valid and the paired-bootstrap 95% confidence interval is entirely below 0%. Use `--scenario=sandbox` with a named snapshot to isolate the buffered sandbox-only path.
 
-Local snapshots are written to `benchmark/artifacts/`. Snapshots and results are gitignored, and the benchmark remains a manual gate rather than part of regular PR CI.
+Local snapshots are written to `benchmark/artifacts/`, and benchmark results are written to `benchmark/results/`; both are gitignored. The full framework suites and revision comparisons remain manual performance evidence, while `ci-basic` is sized for regular PR CI.

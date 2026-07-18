@@ -4,15 +4,36 @@ import { dirname, join } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
 
-import { SUITES } from './scenarios.mjs';
+import { DEFAULT_SUITE_IDS, SUITES } from './scenarios.mjs';
 import { renderBenchReport } from './src/console-report.mjs';
 
 const benchmarkRoot = dirname(fileURLToPath(import.meta.url));
 
 const PROFILES = {
-  check: { calibrationGate: false, calibrationSamples: 5, samples: 5, trials: 1, warmup: 2 },
-  full: { calibrationGate: true, calibrationSamples: 100, samples: 100, trials: 3, warmup: 5 },
-  standard: { calibrationGate: true, calibrationSamples: 50, samples: 50, trials: 1, warmup: 5 },
+  check: {
+    calibrationGate: false,
+    calibrationSamples: 5,
+    comparisonGate: false,
+    samples: 5,
+    trials: 1,
+    warmup: 2,
+  },
+  full: {
+    calibrationGate: true,
+    calibrationSamples: 100,
+    comparisonGate: true,
+    samples: 100,
+    trials: 3,
+    warmup: 5,
+  },
+  standard: {
+    calibrationGate: true,
+    calibrationSamples: 50,
+    comparisonGate: true,
+    samples: 50,
+    trials: 1,
+    warmup: 5,
+  },
 };
 
 // Forwarding these would silently override the per-suite/per-mode arguments this script injects,
@@ -21,7 +42,7 @@ const RESERVED_RUNNER_FLAGS = new Set(['suite', 'mode', 'baseline-dir']);
 
 function parseBenchArgs(argv) {
   let profile = 'standard';
-  let suites = Object.keys(SUITES);
+  let suites = DEFAULT_SUITE_IDS;
   const passthrough = [];
   for (const argument of argv) {
     const match = /^--([^=]+)=(.+)$/u.exec(argument);
@@ -54,6 +75,7 @@ function profileRunnerArgs(profile) {
     `--calibration-samples=${settings.calibrationSamples}`,
     `--trials=${settings.trials}`,
     `--calibration-gate=${settings.calibrationGate}`,
+    `--comparison-gate=${settings.comparisonGate}`,
   ];
 }
 
@@ -115,7 +137,7 @@ async function main() {
   const results = [];
   console.log(`[bench] profile ${profile} · suites: ${suites.join(', ')}`);
   if (profile === 'check') {
-    console.log('[bench] check profile disables the A/A gate; results are plumbing evidence only');
+    console.log('[bench] check profile disables performance gates; results are plumbing evidence only');
   }
 
   for (const suite of suites) {

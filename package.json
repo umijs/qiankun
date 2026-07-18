@@ -9,6 +9,7 @@
     "bench": "pnpm run build:packages && pnpm --filter @qiankunjs/benchmark run bench",
     "benchmark:baseline": "pnpm run build:packages && pnpm --filter @qiankunjs/benchmark run snapshot:baseline",
     "benchmark:check": "pnpm run build:packages && pnpm --filter @qiankunjs/benchmark run run:check",
+    "benchmark:ci-basic": "pnpm run build:packages && pnpm --filter @qiankunjs/benchmark run ci-basic",
     "benchmark:compare": "pnpm run build:packages && pnpm --filter @qiankunjs/benchmark run compare",
     "benchmark:compare:check": "pnpm run build:packages && pnpm --filter @qiankunjs/benchmark run compare:check",
     "benchmark:ecosystem": "pnpm run build:packages && pnpm --filter @qiankunjs/benchmark run ecosystem",
