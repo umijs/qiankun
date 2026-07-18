@@ -91,6 +91,7 @@ export default defineConfig({
               items: [
                 { text: 'Overview', link: '/cookbook/' },
                 { text: 'Style Isolation', link: '/cookbook/style-isolation' },
+                { text: 'Standalone Sandbox', link: '/cookbook/standalone-sandbox' },
                 { text: 'Sandbox Plugins', link: '/cookbook/sandbox-plugins' },
                 { text: 'Performance', link: '/cookbook/performance' },
                 { text: 'Error Handling', link: '/cookbook/error-handling' },
@@ -159,6 +160,7 @@ export default defineConfig({
               text: '最佳实践',
               items: [
                 { text: '概览', link: '/zh-CN/cookbook/' },
+                { text: '独立使用沙箱', link: '/zh-CN/cookbook/standalone-sandbox' },
                 { text: '扩展沙箱隔离能力', link: '/zh-CN/cookbook/sandbox-plugins' },
                 { text: '常见问题', link: '/zh-CN/cookbook/error-handling' },
               ]

@@ -8,6 +8,10 @@ Building micro-frontends requires careful consideration of various aspects inclu
 
 ## 📚 Available Guides
 
+### 🧩 [Standalone Sandbox](/cookbook/standalone-sandbox)
+
+Use `@qiankunjs/sandbox` directly to isolate classic scripts, ESM modules, dynamic DOM, styles, and browser side effects without loading qiankun itself.
+
 ### 🎨 [Style Isolation](/cookbook/style-isolation)
 
 Learn how to prevent CSS conflicts between micro applications and implement effective style isolation strategies.
@@ -272,4 +276,4 @@ Have a pattern or practice you'd like to share? Contributions to the cookbook ar
 
 - [API Reference](/api/) - Complete API documentation
 - [Quick Start Guide](/guide/quick-start) - Get started with qiankun
-- [Ecosystem](/ecosystem/) - UI bindings and tools 
+- [Ecosystem](/ecosystem/) - UI bindings and tools

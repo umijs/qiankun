@@ -1,8 +1,9 @@
 # RFC: Standalone Sandbox — 沙箱能力独立开放
 
-- **Status**: Draft
+- **Status**: Accepted
 - **Author**: qiankun maintainers
 - **Created**: 2026-07-18
+- **Last Revision**: 2026-07-18（实现与验收完成）
 - **Target Release**: `@qiankunjs/sandbox` v3.x
 - **Tracking Issue**: TBD
 - **Depends on**: [Compartment Alignment RFC](./compartment-alignment.md)（Accepted，本 RFC 是其延伸阶段⑤）
@@ -118,6 +119,23 @@ function createSandbox(
 - **不把 `shared/assets-transpilers` 提升为公开 API**——默认 nodeTransformer 是内部实现细节，覆盖点是 `nodeTransformer` 本身。
 - **不支持 Node/SSR 环境**——浏览器专用（blob script、DOM、import map）。
 - **不做独立品牌化**——包名维持 `@qiankunjs/sandbox`，独立命名留待生态验证后再议。
+
+## Implementation Verification（2026-07-18）
+
+阶段⑤已完成，并按上述 Acceptance Criteria 验收：
+
+- `@qiankunjs/sandbox` 单元测试 60/60 通过；workspace 全量单元测试通过；`loadApp` 定向回归 6/6 通过。
+- `pnpm run ci` 通过；文档构建通过。
+- Chromium 全量 e2e 38/38 通过，其中 standalone fixture 在不允许 `unsafe-eval` 的 CSP 下覆盖 classic、动态 append、样式隔离、真实 ESM module graph 与 dispose 清理。
+- standalone 测试与示例均不依赖 qiankun/loader；依赖方向另由 ESLint 规则守卫。
+- 性能闸门以变更前源码提交 `491b16c8` 为 baseline，使用 400 组配对样本；为满足 benchmark harness 的输入指纹要求，baseline 临时工作树仅同步了新增 example importer 对应的 lockfile 形状，运行时与包源码保持未变。四项指标均满足“回归不超过 5%，且 95% CI 宽度小于 10 个百分点”：
+
+| 指标 | Baseline | Current | 变化 | 95% CI | 结论 |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Membrane get | 23.26 Mops/s | 23.26 Mops/s | +0.00% | +0.00%～+0.47% | 通过 |
+| Membrane set | 42.74 Mops/s | 42.74 Mops/s | -0.00% | -0.85%～+0.00% | 通过 |
+| Module rewrite | 69.74 MiB/s | 69.74 MiB/s | +0.00% | +0.00%～+0.00% | 通过 |
+| Load chain | 40.00 ms | 39.90 ms | -1.72% | -6.14%～+2.48% | 通过 |
 
 ## Risks and Mitigations
 

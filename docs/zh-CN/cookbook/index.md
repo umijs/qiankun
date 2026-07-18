@@ -8,6 +8,10 @@
 
 ## 📚 可用指南
 
+### 🧩 [独立使用沙箱](/zh-CN/cookbook/standalone-sandbox)
+
+无需引入 qiankun，即可直接使用 `@qiankunjs/sandbox` 隔离传统脚本、ESM 模块、动态 DOM、样式与浏览器副作用。
+
 ### 🎨 [样式隔离](/zh-CN/cookbook/style-isolation)
 
 学习如何防止微应用之间的 CSS 冲突并实施有效的样式隔离策略。
@@ -272,4 +276,4 @@ graph LR
 
 - [API 参考](/zh-CN/api/) - 完整的 API 文档
 - [快速开始指南](/zh-CN/guide/quick-start) - qiankun 入门
-- [生态系统](/zh-CN/ecosystem/) - UI 绑定和工具 
+- [生态系统](/zh-CN/ecosystem/) - UI 绑定和工具
