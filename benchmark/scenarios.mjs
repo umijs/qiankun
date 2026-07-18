@@ -205,6 +205,8 @@ const SSR_STREAMING_GAIN_COMPARISON = {
   reference: 'qk-v3-ssr-delayed-buffered',
 };
 
+const BASIC_OVERHEAD_BUDGET_PERCENT = 10;
+
 const SAME_SITE_COMPARISONS = [
   {
     candidate: 'qk-full-isolation',
@@ -429,8 +431,8 @@ export const SUITES = {
     calibrationSourceVariant: 'qk-sandbox',
     ciOnly: true,
     comparisonGates: [
-      { comparison: 'sandbox-cost', maxUpperBoundPercent: 25 },
-      { comparison: 'qiankun-sandbox-native', maxUpperBoundPercent: 30 },
+      { comparison: 'sandbox-cost', maxUpperBoundPercent: BASIC_OVERHEAD_BUDGET_PERCENT },
+      { comparison: 'qiankun-sandbox-native', maxUpperBoundPercent: BASIC_OVERHEAD_BUDGET_PERCENT },
       { comparison: 'qiankun-v3-ssr-streaming-gain', maxUpperBoundPercent: -30 },
     ],
     comparisons: [

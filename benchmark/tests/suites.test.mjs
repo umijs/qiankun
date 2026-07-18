@@ -64,8 +64,8 @@ test('suite memberships stay explicit while the core fingerprint remains frozen'
   assert.equal(SUITES['ci-basic'].calibrationSourceVariant, 'qk-sandbox');
   assert.equal(SUITES['ci-basic'].ciOnly, true);
   assert.deepEqual(SUITES['ci-basic'].comparisonGates, [
-    { comparison: 'sandbox-cost', maxUpperBoundPercent: 25 },
-    { comparison: 'qiankun-sandbox-native', maxUpperBoundPercent: 30 },
+    { comparison: 'sandbox-cost', maxUpperBoundPercent: 10 },
+    { comparison: 'qiankun-sandbox-native', maxUpperBoundPercent: 10 },
     { comparison: 'qiankun-v3-ssr-streaming-gain', maxUpperBoundPercent: -30 },
   ]);
 });

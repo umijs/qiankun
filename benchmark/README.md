@@ -113,11 +113,11 @@ Each trial first interleaves two aliases of the exact same selected qiankun cell
 
 The `ci-basic` suite uses one browser trial, five warmups, 100 paired samples per product cell, and 100 samples per A/A arm. Every sample must still satisfy the complete measurement contract, including visible styled content, lifecycle settlement, error-free loading, and cleanup. Its paired-bootstrap 95% confidence-interval upper bounds must also satisfy:
 
-- sandbox versus no isolation: no greater than `+25%`;
-- sandbox versus native iframe: no greater than `+30%`;
+- sandbox versus no isolation: no greater than `+10%`;
+- sandbox versus native iframe: no greater than `+10%`;
 - streamed versus delayed-buffered SSR: no greater than `-30%`, proving the progressive path is at least 30% faster with 95% confidence.
 
-These are deliberately broad regression floors, not optimization targets. Relative, within-run comparisons avoid absolute millisecond thresholds that would vary with CI runner hardware. The suite comparison gate can be disabled with `--comparison-gate=false` for plumbing diagnostics, but such a run is not performance evidence.
+These are regression floors, not optimization targets. Both basic overhead comparisons are capped at 10%. Relative, within-run comparisons avoid absolute millisecond thresholds that would vary with CI runner hardware. The suite comparison gate can be disabled with `--comparison-gate=false` for plumbing diagnostics, but such a run is not performance evidence.
 
 ## Revision comparison
 
