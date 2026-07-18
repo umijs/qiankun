@@ -29,6 +29,7 @@ interface RegistrableApp<T extends ObjectType> {
   activeRule: string | (location: Location) => boolean; // 激活规则
   props?: T;                       // 传递给微应用的数据
   loader?: (loading: boolean) => void; // 加载状态回调
+  configuration?: AppConfiguration; // 覆盖当前应用的加载配置
 }
 ```
 
@@ -40,6 +41,7 @@ interface RegistrableApp<T extends ObjectType> {
 | `activeRule` | `string \| Function` | ✅ | 微应用的激活规则 |
 | `props` | `T` | ❌ | 传递给微应用的自定义数据 |
 | `loader` | `Function` | ❌ | 微应用加载状态改变时的回调函数 |
+| `configuration` | `AppConfiguration` | ❌ | 当前应用的加载配置，覆盖框架级默认值 |
 
 ### lifeCycles
 
@@ -106,6 +108,11 @@ registerMicroApps([
     loader: (loading) => {
       console.log('Dashboard app loading:', loading);
       // 显示/隐藏 loading 状态
+    },
+    configuration: {
+      sandbox: {
+        styleIsolation: true, // 为该应用开启样式隔离
+      },
     }
   }
 ], {
@@ -347,4 +354,4 @@ registerMicroApps(microApps, {
 
 - [start](/zh-CN/api/start) - 启动 qiankun
 - [loadMicroApp](/zh-CN/api/load-micro-app) - 手动加载微应用
-- [生命周期](/zh-CN/api/lifecycles) - 详细的生命周期说明 
+- [生命周期](/zh-CN/api/lifecycles) - 详细的生命周期说明

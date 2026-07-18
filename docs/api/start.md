@@ -19,7 +19,7 @@ function start(opts?: StartOpts): void
 ```typescript
 interface StartOpts {
   prefetch?: boolean | 'all' | string[] | ((apps: RegistrableApp[]) => { criticalAppNames: string[]; minorAppsName: string[] });
-  sandbox?: boolean | { strictStyleIsolation?: boolean; experimentalStyleIsolation?: boolean; };
+  sandbox?: boolean | SandboxConfiguration;
   singular?: boolean;
   urlRerouteOnly?: boolean;
   // ... other single-spa start options
@@ -29,7 +29,7 @@ interface StartOpts {
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `prefetch` | `boolean \| 'all' \| string[] \| Function` | `true` | Resource prefetch strategy |
-| `sandbox` | `boolean \| SandboxOpts` | `true` | Sandbox isolation configuration |
+| `sandbox` | `boolean \| SandboxConfiguration` | `true` | Sandbox isolation configuration |
 | `singular` | `boolean` | `true` | Whether only one micro app can be mounted at a time |
 | `urlRerouteOnly` | `boolean` | `true` | Whether to trigger routing only on URL changes |
 
@@ -76,8 +76,7 @@ start({
 ```typescript
 start({
   sandbox: {
-    strictStyleIsolation: true,      // Enable strict style isolation
-    experimentalStyleIsolation: true, // Enable experimental style isolation
+    styleIsolation: true, // Scope every micro-app style to its container via CSS @scope
   }
 });
 ```
@@ -172,8 +171,7 @@ start({ sandbox: false });
 ```typescript
 start({
   sandbox: {
-    strictStyleIsolation: true,       // Shadow DOM based style isolation
-    experimentalStyleIsolation: true, // Scoped CSS based style isolation
+    styleIsolation: true, // CSS @scope based style isolation
   }
 });
 ```
@@ -207,7 +205,7 @@ registerMicroApps([...]); // This won't work properly
 const startOpts = {
   prefetch: process.env.NODE_ENV === 'production' ? 'all' : false,
   sandbox: {
-    strictStyleIsolation: process.env.NODE_ENV === 'production',
+    styleIsolation: process.env.NODE_ENV === 'production',
   },
 };
 
@@ -225,8 +223,7 @@ start({
   }),
   singular: true, // Prevent memory issues
   sandbox: {
-    strictStyleIsolation: false, // Use lightweight style isolation
-    experimentalStyleIsolation: true,
+    styleIsolation: true, // Lightweight @scope-based style isolation
   },
 });
 ```
@@ -382,7 +379,7 @@ start({
 start({
   prefetch: false,  // Don't prefetch - admin tools are used on demand
   sandbox: {
-    strictStyleIsolation: true, // Prevent style conflicts between admin tools
+    styleIsolation: true, // Prevent style conflicts between admin tools
   },
   singular: false,  // Allow multiple admin tools open simultaneously
 });

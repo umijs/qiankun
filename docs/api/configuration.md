@@ -10,11 +10,24 @@ Configuration for individual micro applications used with `loadMicroApp`.
 
 ```typescript
 type AppConfiguration = {
-  sandbox?: boolean;
-  globalContext?: WindowProxy;
+  sandbox?: boolean | SandboxConfiguration;
   fetch?: Function;
   streamTransformer?: Function;
   nodeTransformer?: Function;
+};
+```
+
+### SandboxConfiguration
+
+The umbrella configuration for the JS sandbox. Structurally it is a public projection of `CompartmentOptions` plus two qiankun host extensions (`plugins` and `styleIsolation`).
+
+```typescript
+type SandboxConfiguration = Pick<
+  CompartmentOptions,
+  'globals' | 'incubatorContext' | 'modules' | 'resolveHook' | 'importHook' | 'loadHook'
+> & {
+  plugins?: readonly IsolationPlugin[];
+  styleIsolation?: boolean;
 };
 ```
 
@@ -25,7 +38,7 @@ Configuration for starting the qiankun framework used with `start()`.
 ```typescript
 interface StartOpts {
   prefetch?: boolean | 'all' | string[] | ((apps: RegistrableApp[]) => { criticalAppNames: string[]; minorAppsName: string[] });
-  sandbox?: boolean | { strictStyleIsolation?: boolean; experimentalStyleIsolation?: boolean; };
+  sandbox?: boolean | SandboxConfiguration;
   singular?: boolean;
   urlRerouteOnly?: boolean;
   // ... other single-spa options
@@ -36,9 +49,11 @@ interface StartOpts {
 
 ### sandbox
 
-**Type**: `boolean`  
-**Default**: `true`  
-**Description**: Enable sandbox isolation for the micro application.
+**Type**: `boolean | SandboxConfiguration`
+
+**Default**: `true`
+
+**Description**: The single umbrella switch for the JS sandbox. `false` disables isolation entirely; `true` (the default) enables it with defaults; an object enables it and configures the underlying Compartment.
 
 #### Basic Usage
 
@@ -59,6 +74,18 @@ loadMicroApp({
   container: '#container',
 }, {
   sandbox: false
+});
+
+// Enable and configure sandbox
+loadMicroApp({
+  name: 'configured-app',
+  entry: '//localhost:8080',
+  container: '#container',
+}, {
+  sandbox: {
+    styleIsolation: true,
+    globals: { FEATURE_FLAG: true },
+  }
 });
 ```
 
@@ -83,14 +110,14 @@ loadMicroApp({
 });
 ```
 
-### globalContext
+### sandbox.incubatorContext
 
 **Type**: `WindowProxy`  
 **Default**: `window`  
-**Description**: Custom global context for the micro application.
+**Description**: The host context that incubates the sandbox — the global the sandbox reads through for properties it has not shadowed. Named after the "incubator realm" of the ShadowRealm proposal; the Compartment spec has no equivalent because Compartments isolate by absence, while qiankun isolates by projection of a host context.
 
 ```typescript
-// Create a custom global context
+// Create a custom incubator context
 const customGlobal = new Proxy(window, {
   get(target, prop) {
     // Custom logic for property access
@@ -106,9 +133,70 @@ loadMicroApp({
   entry: '//localhost:8080',
   container: '#container',
 }, {
-  globalContext: customGlobal
+  sandbox: {
+    incubatorContext: customGlobal
+  }
 });
 ```
+
+### sandbox.globals
+
+**Type**: `Record<string, unknown | PropertyDescriptor>`
+
+**Default**: `{}`
+
+**Description**: Values and descriptors installed on this application's compartment global without modifying the host `window`. The name follows the `globals` endowments of the Compartment spec.
+
+```typescript
+loadMicroApp(app, {
+  sandbox: {
+    globals: {
+      tenantId: 'acme',
+      featureClient: { value: createFeatureClient(), writable: false },
+    },
+  },
+});
+```
+
+Configured keys are available to both classic and ESM applications. See [Extending sandbox isolation](/cookbook/sandbox-plugins) for descriptor rules.
+
+### sandbox.plugins
+
+**Type**: `IsolationPlugin[]`
+
+**Default**: `[]`
+
+**Description**: Application isolation plugins appended after qiankun's built-in plugins.
+
+`bootstrap` plugins run before application scripts. `mount` plugins run on every mount, and their returned `Free` functions participate in unmount cleanup and remount recovery. See [Extending sandbox isolation](/cookbook/sandbox-plugins) for the complete protocol and an external plugin example.
+
+### sandbox.styleIsolation
+
+**Type**: `boolean`
+
+**Default**: `false`
+
+**Description**: Enable runtime CSS isolation: every micro-app style is scoped to the app container via CSS `@scope`.
+
+```typescript
+loadMicroApp(app, {
+  sandbox: {
+    styleIsolation: true,
+  },
+});
+```
+
+Static entry styles are scoped by the loader transpiler, while dynamically injected styles ride on the sandbox's DOM interception — which is why CSS isolation lives inside the `sandbox` object and is only configurable while the JS sandbox is enabled. An isolated-CSS-without-sandbox combination would silently leak dynamic styles.
+
+### Module hooks (`sandbox.modules` / `resolveHook` / `importHook` / `loadHook`)
+
+**Type**: module-related `CompartmentOptions`
+
+**Default**: `{}`
+
+**Description**: Advanced module resolution and loading hooks for this application's Compartment, set directly on the `sandbox` object.
+
+Use `modules`, `resolveHook`, `importHook`, or its `loadHook` alias to provide redirects, private protocols, or precompiled module sources. These hooks affect sandboxed ESM loading only.
 
 ### fetch
 
@@ -334,9 +422,11 @@ start({
 
 ### sandbox
 
-**Type**: `boolean | SandboxConfig`  
-**Default**: `true`  
-**Description**: Global sandbox configuration for all micro applications.
+**Type**: `boolean | SandboxConfiguration`
+
+**Default**: `true`
+
+**Description**: Framework-level sandbox configuration for all micro applications.
 
 #### Basic Sandbox
 
@@ -353,39 +443,18 @@ start({ sandbox: false });
 ```typescript
 start({
   sandbox: {
-    strictStyleIsolation: true,        // Enable Shadow DOM style isolation
-    experimentalStyleIsolation: true,  // Enable scoped CSS style isolation
+    styleIsolation: true,  // Scope every micro-app style to its container via CSS @scope
   }
 });
 ```
 
-#### Style Isolation Options
+#### Style Isolation
 
-**strictStyleIsolation**: Uses Shadow DOM to completely isolate styles
+**styleIsolation**: Scopes all micro-app styles to the app container via CSS `@scope`
 ```typescript
 start({
   sandbox: {
-    strictStyleIsolation: true,  // Strongest isolation but may break some UI libraries
-  }
-});
-```
-
-**experimentalStyleIsolation**: Uses scoped CSS to isolate styles
-```typescript
-start({
-  sandbox: {
-    experimentalStyleIsolation: true,  // Good balance of isolation and compatibility
-  }
-});
-```
-
-#### Combined Style Isolation
-
-```typescript
-start({
-  sandbox: {
-    strictStyleIsolation: false,       // Disable Shadow DOM
-    experimentalStyleIsolation: true,  // Enable scoped CSS
+    styleIsolation: true,  // Good balance of isolation and compatibility
   }
 });
 ```
@@ -447,8 +516,7 @@ start({
 const developmentConfig = {
   prefetch: false,                    // Faster rebuilds
   sandbox: {
-    strictStyleIsolation: false,      // Easier debugging
-    experimentalStyleIsolation: true,
+    styleIsolation: false,            // Unscoped styles are easier to debug
   },
   singular: false,                    // More flexible development
   urlRerouteOnly: false,             // More responsive navigation
@@ -465,8 +533,7 @@ if (process.env.NODE_ENV === 'development') {
 const productionConfig = {
   prefetch: 'all',                    // Better user experience
   sandbox: {
-    strictStyleIsolation: true,       // Better isolation
-    experimentalStyleIsolation: false,
+    styleIsolation: true,             // Scope styles to each app container
   },
   singular: true,                     // Stable performance
   urlRerouteOnly: true,              // Optimized routing
@@ -487,9 +554,8 @@ const mobileConfig = {
     minorAppsName: []
   }),
   sandbox: {
-    // Lighter sandbox for mobile performance
-    strictStyleIsolation: false,
-    experimentalStyleIsolation: true,
+    // @scope-based style isolation stays lightweight on mobile
+    styleIsolation: true,
   },
   singular: true,                     // Better for mobile UX
 };
@@ -511,8 +577,7 @@ const getConfigWithFeatureFlags = async () => {
   return {
     prefetch: featureFlags.enablePrefetch ? 'all' : false,
     sandbox: {
-      strictStyleIsolation: featureFlags.strictIsolation,
-      experimentalStyleIsolation: !featureFlags.strictIsolation,
+      styleIsolation: featureFlags.styleIsolation,
     },
     singular: featureFlags.allowMultipleApps ? false : true,
   };
@@ -531,10 +596,7 @@ const getPerformanceConfig = () => {
   if (isSlowConnection) {
     return {
       prefetch: false,              // No prefetch on slow connections
-      sandbox: {
-        strictStyleIsolation: false,
-        experimentalStyleIsolation: true,
-      },
+      sandbox: true,                // Default isolation, no extra work
       singular: true,
     };
   }
@@ -542,8 +604,7 @@ const getPerformanceConfig = () => {
   return {
     prefetch: 'all',
     sandbox: {
-      strictStyleIsolation: true,
-      experimentalStyleIsolation: false,
+      styleIsolation: true,
     },
     singular: false,
   };
@@ -592,9 +653,9 @@ start(getRoleBasedConfig(userRole));
 ### 1. Configuration Precedence
 
 ```typescript
-// App-level configuration overrides global configuration
+// App-level configuration overrides framework-level configuration
 start({
-  sandbox: true,  // Global setting
+  sandbox: true,  // Framework-level setting
 });
 
 loadMicroApp({
@@ -602,9 +663,11 @@ loadMicroApp({
   entry: '//localhost:8080',
   container: '#container',
 }, {
-  sandbox: false  // This overrides the global setting for this app
+  sandbox: false  // This overrides the framework-level setting for this app
 });
 ```
+
+The merge is a shallow spread (`{ ...frameworkConfiguration, ...appConfiguration }`): a per-app `sandbox` object replaces the framework-level one entirely — there is no deep merge of individual sandbox fields.
 
 ### 2. Performance Considerations
 
@@ -612,9 +675,6 @@ loadMicroApp({
 // ❌ Bad: Heavy configuration that impacts performance
 start({
   prefetch: 'all',                 // Might slow down initial load
-  sandbox: {
-    strictStyleIsolation: true,    // More overhead
-  },
   singular: false,                 // More memory usage
   urlRerouteOnly: false,          // More frequent route checks
 });
@@ -623,7 +683,7 @@ start({
 start({
   prefetch: ['critical-app'],      // Only prefetch what's needed
   sandbox: {
-    experimentalStyleIsolation: true, // Good balance
+    styleIsolation: true,          // Lightweight @scope-based CSS isolation
   },
   singular: true,                  // Stable performance
   urlRerouteOnly: true,           // Optimized routing
@@ -635,8 +695,7 @@ start({
 ```typescript
 const debugConfig = {
   sandbox: {
-    strictStyleIsolation: false,   // Easier to inspect styles
-    experimentalStyleIsolation: true,
+    styleIsolation: false,         // Unscoped styles are easier to inspect
   },
   // Custom fetch for logging
   fetch: async (url, options) => {
@@ -659,4 +718,4 @@ const debugConfig = {
 
 - [start](/api/start) - Start qiankun with configuration
 - [loadMicroApp](/api/load-micro-app) - Load app with configuration
-- [registerMicroApps](/api/register-micro-apps) - Register apps 
+- [registerMicroApps](/api/register-micro-apps) - Register apps

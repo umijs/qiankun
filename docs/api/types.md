@@ -92,6 +92,7 @@ const appWithProps: LoadableApp<MyAppProps> = {
 export type RegistrableApp<T extends ObjectType> = LoadableApp<T> & {
   loader?: (loading: boolean) => void;                    // Loading state callback
   activeRule: RegisterApplicationConfig['activeWhen'];    // Routing activation rule
+  configuration?: AppConfiguration;                       // Per-app loading configuration
 };
 ```
 
@@ -129,12 +130,25 @@ registerMicroApps(apps);
 
 ### AppConfiguration
 
-**Description**: Configuration options for individual micro applications.
+**Description**: Configuration options for individual micro applications. The `sandbox` key is the single umbrella for JS isolation: `false` disables it entirely, `true` (the default) enables it with defaults, and an object enables it and configures the underlying Compartment.
 
 ```typescript
 export type AppConfiguration = Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
-  sandbox?: boolean;        // Enable sandbox isolation
-  globalContext?: WindowProxy; // Custom global context
+  sandbox?: boolean | SandboxConfiguration; // JS sandbox switch and configuration
+};
+```
+
+### SandboxConfiguration
+
+**Description**: The umbrella configuration for the JS sandbox — structurally a public projection of `CompartmentOptions` plus two qiankun host extensions (`plugins`, `styleIsolation`).
+
+```typescript
+export type SandboxConfiguration = Pick<
+  CompartmentOptions,
+  'globals' | 'incubatorContext' | 'modules' | 'resolveHook' | 'importHook' | 'loadHook'
+> & {
+  plugins?: readonly IsolationPlugin[]; // Isolation plugins appended after qiankun's built-in plugins
+  styleIsolation?: boolean;             // Scope all micro-app styles to the app container via CSS @scope
 };
 ```
 
@@ -143,8 +157,10 @@ export type AppConfiguration = Partial<Pick<LoaderOpts, 'fetch' | 'streamTransfo
 import { loadMicroApp } from 'qiankun';
 
 const customConfig: AppConfiguration = {
-  sandbox: true,
-  globalContext: window,
+  sandbox: {
+    styleIsolation: true,
+    globals: { FEATURE_FLAG: true },
+  },
   fetch: async (url, options) => {
     // Custom fetch implementation
     return fetch(url, {
@@ -430,12 +446,10 @@ type EnvironmentConfig<T extends 'development' | 'production'> = T extends 'deve
   ? {
       sandbox: false;
       prefetch: false;
-      strictStyleIsolation: false;
     }
   : {
-      sandbox: true;
+      sandbox: { styleIsolation: true };
       prefetch: 'all';
-      strictStyleIsolation: true;
     };
 
 // Usage with environment detection
@@ -622,4 +636,4 @@ function createApp<T extends BaseAppProps>(
 
 - [API Reference](/api/) - Main API documentation
 - [Lifecycles](/api/lifecycles) - Detailed lifecycle documentation
-- [Configuration](/api/configuration) - Configuration options 
+- [Configuration](/api/configuration) - Configuration options

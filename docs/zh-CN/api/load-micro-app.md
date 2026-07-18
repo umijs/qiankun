@@ -46,13 +46,14 @@ interface LoadableApp<T extends ObjectType> {
 
 ```typescript
 interface AppConfiguration {
-  sandbox?: boolean;               // Enable sandbox isolation
-  globalContext?: WindowProxy;     // Global context for the micro app
+  sandbox?: boolean | SandboxConfiguration; // JS 沙箱开关与配置
   fetch?: Function;                // Custom fetch function
   streamTransformer?: Function;    // Stream transformer
   nodeTransformer?: Function;      // Node transformer
 }
 ```
+
+`sandbox` 是 JS 隔离的唯一伞形入口：`false` 完全关闭隔离，`true`（默认值）以默认配置开启，传入 `SandboxConfiguration` 对象则在开启的同时配置底层 Compartment（`globals`、`incubatorContext`、模块 hook），以及 qiankun 宿主扩展 `plugins` 与 `styleIsolation`。完整形状见[配置](/zh-CN/api/configuration)。
 
 ### lifeCycles
 
@@ -117,6 +118,18 @@ const microApp = loadMicroApp({
 }, {
   sandbox: false, // Disable sandbox for legacy apps
   fetch: customFetch, // Use custom fetch
+});
+
+// 也可以在开启沙箱的同时进行配置
+const configuredApp = loadMicroApp({
+  name: 'configured-app',
+  entry: '//localhost:8080',
+  container: '#configured-container',
+}, {
+  sandbox: {
+    styleIsolation: true,             // 样式收敛到应用容器内
+    globals: { FEATURE_FLAG: true },  // 应用专属全局变量
+  },
 });
 ```
 

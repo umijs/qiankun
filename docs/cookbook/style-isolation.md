@@ -31,64 +31,54 @@ When multiple micro applications are loaded into the same page, they share the s
 
 ## 🛡️ qiankun's Built-in Style Isolation
 
-qiankun provides several built-in style isolation mechanisms that you can enable through configuration.
+qiankun provides a built-in style isolation mechanism that you can enable through the `sandbox` configuration.
 
-### Strict Style Isolation
+### styleIsolation
 
-The most robust isolation method using Shadow DOM:
+Runtime CSS isolation based on the native CSS `@scope` rule:
 
 ```javascript
-import { start } from 'qiankun';
+import { loadMicroApp } from 'qiankun';
 
-start({
+loadMicroApp(app, {
   sandbox: {
-    strictStyleIsolation: true
+    styleIsolation: true
   }
 });
 ```
 
-**How it works:**
-- Creates a Shadow DOM for each micro application
-- Completely isolates styles between applications
-- Prevents any style leakage
-
-**Pros:**
-- Complete style isolation
-- No CSS conflicts possible
-- Easy to implement
-
-**Cons:**
-- Some third-party libraries may not work properly
-- Debugging can be more complex
-- Performance overhead for large applications
-
-### Experimental Style Isolation
-
-A less intrusive approach using CSS scoping:
+Or per registered application:
 
 ```javascript
-import { start } from 'qiankun';
+import { registerMicroApps } from 'qiankun';
 
-start({
-  sandbox: {
-    experimentalStyleIsolation: true
+registerMicroApps([
+  {
+    name: 'scoped-app',
+    entry: '//localhost:8080',
+    container: '#container',
+    activeRule: '/scoped-app',
+    configuration: {
+      sandbox: {
+        styleIsolation: true
+      }
+    }
   }
-});
+]);
 ```
 
 **How it works:**
-- Adds unique prefixes to CSS selectors
-- Scopes styles to micro application containers
+- Wraps every micro-app stylesheet in a CSS `@scope` rule bound to the app container
+- Static entry styles are scoped by the loader while streaming the HTML entry
+- Dynamically injected styles are caught by the sandbox's DOM interception and scoped the same way
 - Maintains DOM structure
 
 **Pros:**
-- Better third-party library compatibility
-- Easier debugging
-- Less performance overhead
+- Native browser scoping — no selector rewriting
+- Good third-party library compatibility
+- Easy debugging, low performance overhead
 
-**Cons:**
-- Not as robust as strict isolation
-- Some edge cases may still cause conflicts
+**Note:** `styleIsolation` lives inside the `sandbox` configuration because dynamically injected styles ride on the sandbox's DOM interception — CSS isolation is only available while the JS sandbox is enabled. Without the sandbox, dynamic styles would silently leak.
 
 ## 🎨 CSS-in-JS Solutions
 

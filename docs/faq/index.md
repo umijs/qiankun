@@ -246,27 +246,35 @@ const handleDataChange = (data) => {
 
 **A:** Use qiankun's built-in style isolation:
 
-**1. Strict style isolation (Shadow DOM):**
+**1. Built-in style isolation (CSS `@scope`):**
 ```javascript
-import { start } from 'qiankun';
+import { loadMicroApp } from 'qiankun';
 
-start({
+loadMicroApp(app, {
   sandbox: {
-    strictStyleIsolation: true
+    styleIsolation: true
   }
 });
 ```
 
-**2. Experimental style isolation (CSS scoping):**
+Or per registered application:
 ```javascript
-start({
-  sandbox: {
-    experimentalStyleIsolation: true
+registerMicroApps([
+  {
+    name: 'my-app',
+    entry: '//localhost:8080',
+    container: '#container',
+    activeRule: '/my-app',
+    configuration: {
+      sandbox: {
+        styleIsolation: true
+      }
+    }
   }
-});
+]);
 ```
 
-**3. Manual CSS scoping:**
+**2. Manual CSS scoping:**
 ```css
 /* Prefix all your styles */
 .my-micro-app .button {

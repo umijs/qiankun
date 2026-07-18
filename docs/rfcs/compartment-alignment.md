@@ -1,11 +1,11 @@
 # RFC: Compartment Alignment for qiankun Sandbox
 
-- **Status**: Draft
+- **Status**: Accepted
 - **Author**: qiankun maintainers
 - **Created**: 2026-07-18
 - **Target Release**: qiankun v3.x
-- **Tracking Issue**: TBD
-- **Last Revision**: 2026-07-18（首轮 review 修订：确立「只对齐 API 形状、不复制 ses 行为，隔离分寸不动」原则并贯穿 §5/成功标准；修正 `moduleResolver` 的规范映射（redirect → `modules` 表而非 `resolveHook`）；`evaluateScript` 返回值改 `Promise<void>`（blob script 无 completion value）；补 globals 两段式自引用姿势、入口发现门面 `importDocumentModules`、hook memoize/重建幂等契约、插件协议时序与跨实例状态承诺、Snapshot 预设数据化；新增 Risks and Mitigations 与分阶段成功标准）
+- **Tracking Issue**: [PR #3155](https://github.com/umijs/qiankun/pull/3155)
+- **Last Revision**: 2026-07-18（实现与验收完成：13 项成功标准全部满足；补齐终态生命周期与并发竞态保护、ESM dispose fail-closed、凭据上下文传播、预编译 source 结构化重定位、嵌套动态导入改写及跨 qiankun 副本状态隔离；全量单测、CI、Chromium e2e、文档构建、浏览器 examples 与正式性能门禁通过）
 
 ## Summary
 
@@ -80,6 +80,10 @@ Compartment 提案自身的状态（须如实纳入决策）：
 Layer 4 草案已将 `importHook` 更名为 `loadHook`（草案原文承认与 ses 及旧版提案不一致），`moduleMap`/`moduleMapHook` 被 `modules` 描述符表取代。ses 未跟进改名，且 Stage 1 草案命名仍可能再变。
 
 **决策：以 ses 形状为准实现（`importHook`），`loadHook` 做别名。** ses 是最稳定、有真实用户压舱的形状参照；草案若最终定稿，别名切换是零成本的。
+
+**`incubatorContext` 的命名出处与规范空白。** Compartment 规范（Layer 4：`{globals, resolveHook, modules, loadHook}`）与 ses 实现均没有「宿主 global 兜底」参数——规范模型以「缺席」隔离（未赋予的全局即 `undefined`），而 qiankun 以「投影」隔离（视图读穿到宿主 window、写时复制），「读穿到哪个宿主」这一概念在规范中不存在，因此该参数注定归入 `COMPARTMENT_HOST_EXTENSIONS`。命名借自 TC39 ShadowRealm 提案的官方术语「incubator realm」（创建 ShadowRealm 的外围 realm），语义吻合且不与任何 Compartment 规范词冲突；Evaluators 层（Layer 3）的 `globalThis` 选项是规范中语义最近的参数，但它是求值 global 本体而非兜底目标，不可混同。
+
+**Membrane 的机制定位（non-transitive by design）。** 规范/ses 的 Compartment global 是普通对象 + 共享 intrinsics，其隔离机制（ses 为 `lockdown` 冻结）不在 API 面上；qiankun 的对应机制即 Membrane——Compartment 是策略与规范形状，Membrane 是宿主机制，保持为 Compartment 私有。与膜模式正统定义（es-membrane / Salesforce near-membrane：传递性身份翻译、wrapper cache、distortions）不同，qiankun 的 Membrane 是**单侧、非传递**的 global 视图膜：只代理 global（及 document 视图）这一个入口，跨界对象裸身通过、身份原样共享。这是刻意的隔离分寸（只隔离写入、不隔离身份，换取 DOM 兼容性与性能），不是待补的缺陷；请勿按全膜预期给跨界对象加包裹。
 
 ### 近中期真实可依赖的原生原语
 
@@ -174,8 +178,8 @@ class Compartment {
 
 | 现名 | 新名 | 说明 |
 | --- | --- | --- |
-| `Endowments`（类型） | `globals` | 对齐 ses/草案；类型导出保留 deprecated 别名一个 minor 周期 |
-| `addIntrinsics()` | `defineUnshadowableGlobals()` | 语义是「不可被子应用 shadow 的固定 globals」，与 TC39 intrinsic 无关；标注为 qiankun 扩展 |
+| `Endowments`（类型） | `globals` | 对齐 ses/草案；旧名已彻底移除（包无外部用户，无兼容负担） |
+| `addIntrinsics()` | `defineUnshadowableGlobals()` | 语义是「不可被子应用 shadow 的固定 globals」，与 TC39 intrinsic 无关；标注为 qiankun 扩展，旧名已彻底移除 |
 | `realm-registry` 的 "realm" | `instance` / `view` | 避免与 TC39 Realm 混淆（`__qk_` 内部前缀机制不变） |
 | `makeEvaluateFactory()` | 收入 `evaluateScript` 私有实现 | 不再作为公开 API |
 
@@ -193,6 +197,7 @@ class Compartment {
 
 - **不实现**规范签名的同步 `evaluate()`。
 - 现有 `with(this)` + blob 机制收敛为 **`evaluateScript(source, { sourceURL }): Promise<void>`**，作为显式标注的 qiankun host 扩展——它对应「classic script 语义 + 规范异步入口的执行模型」。resolve 仅表示执行完成：blob script 以原生 `<script>` 执行，**没有可捕获的 completion value**（这正是 `latestSetProp` 导出发现机制存在的原因），结果发现仍走 `latestSetProp`——这也是不提供 sync `evaluate` 的又一实证。文档明确：qiankun 有意不提供 sync `evaluate`，与 ShadowRealm「CSP 下用 `importValue` 而非 `evaluate`」的规范态度一致。
+- streaming loader 还有一个不同的 host 约束：节点进入 live DOM 前，`nodeTransformer` 必须同步把原 classic script 改写到同一节点上，异步且会自行调度新 `<script>` 的 `evaluateScript()` 无法替代这一步。因此 Compartment 另提供稳定的 **`transformClassicScript(source, sourceURL?): string`** host adapter，并通过结构化 `CompartmentLoaderFacade` 暴露给 loader。该 adapter 与 `evaluateScript()` 共享同一私有包装实现，但不负责调度执行；未来替换 evaluator 时由新的 sandbox 机制实现同一 adapter，loader 无需感知具体 Compartment 类，也不再依赖私有 WeakMap bridge。
 - 对齐验证（§5）中 `evaluate` 相关用例归入「有意不实现」清单，而非失败项。
 
 ### 3. 模块子系统收编（阶段二）
@@ -227,7 +232,7 @@ externals / 共享依赖改用 `modules` 表表达（module descriptor：namespa
 - `compartment.import(specifier)` 是「已知 specifier」的通用入口：内部驱动现有 `collectGraph → probe → flush import map → native import` 管线。
 - **入口发现需要独立门面**。现有入口选取是「显式 `entry` 属性 → lifecycle namespace 命中 → 最后执行者」（Vite 会丢 entry 属性），即 loader 在执行前并不知道 entry specifier，`import()` 无法独自承担入口路径。补充 `compartment.importDocumentModules(): Promise<EntryNamespace>`，严格承接现 `sealAndExecute` 的文档序执行与入口选取语义。
 - **hook 契约需写明 memoize 与失效语义**。redeclaration probe 重试会以 `excludedNames` 重建 module record，契约定义为「`importHook` 的结果可能被引擎重建替换，自定义 hook 必须幂等」，并有单测钉死（成功标准 8）。
-- loader 不再直接消费 `esmEngine.entryNamespacePromise`，改为消费 compartment 门面；classic 入口的 `latestSetProp` 发现机制不变，同样从门面取值。
+- loader 不再直接消费 `esmEngine.entryNamespacePromise`，改为消费结构化 `CompartmentLoaderFacade`；classic 入口经其同步 `transformClassicScript` adapter 改写，`latestSetProp` 发现机制不变，同样从门面取值。
 - `EsmSandboxEngine` 保留为 shared 包内的机制层实现，不再出现在跨包接口上（loader 的 `LoaderOpts.esmEngine` 收敛为 `LoaderOpts.compartment`）。
 
 **可替换性的实质兑现**：未来原生 `new Module(source, { importHook })` 落地时，被替换的是 rewrite + synthetic specifier + import map 这套*机制*；`resolveHook` / `importHook` / `modules` 这层*接口*原样保留，上层零改动。
@@ -249,7 +254,7 @@ interface IsolationPluginContext {
 interface IsolationPlugin {
   name: string;
   bootstrap?: (ctx: IsolationPluginContext) => Free;  // 应用首次加载时
-  mount?: (ctx: IsolationPluginContext) => Free;      // 每次 mount 时
+  mount?: (ctx: IsolationPluginContext) => Free | Promise<Free>; // 每次 mount 时；可等待首挂载恢复
 }
 // Free = () => Rebuild;  Rebuild = (container) => Promise<void>;  —— 语义不变
 ```
@@ -257,7 +262,9 @@ interface IsolationPlugin {
 协议附带两条明确承诺（由 dynamicAppend 的真实依赖倒推）：
 
 1. **时序**：`bootstrap` 插件在任何子应用脚本求值前完成安装——现实现里 document intrinsic 先占位、后被 dynamicAppend 覆写（`StandardSandbox.ts` 中 "Temporarily occupy the document" 注释）的隐式时序，升级为协议保证。
-2. **跨实例共享状态**：原型级 patch（`MutationObserver.prototype.observe`、`Node.prototype.compareDocumentPosition` 等）需要跨 compartment 乃至跨 qiankun 副本的协调（refcount、`nativeGlobal.__currentLockingSandbox__`）。协议不把这类状态塞进 per-app ctx；官方模式是「插件模块级共享状态 + refcount，全部实例卸载时还原」，作为插件作者指引文档化。
+2. **跨实例共享状态**：原型级 patch（`MutationObserver.prototype.observe`、`Node.prototype.compareDocumentPosition` 等）需要跨 compartment 乃至跨 qiankun 副本的协调。协议不把这类状态塞进 per-app ctx；官方模式是在 `nativeGlobal` 上用稳定的 `Symbol.for(...)` 键保存浏览器 realm 级共享状态与 refcount，全部实例卸载时才还原，并作为插件作者指引文档化。
+
+`mount` 允许异步返回 `Free`，是为了让插件在挂载完成前等待自身的恢复工作。内置 dynamicAppend 会用它重挂载加载阶段记录、但曾被共享容器清空的样式；若这一步仍由容器层特判，dynamicAppend 就不是真正只依赖协议的普通插件。
 
 #### 4.2 注册与默认插件
 
@@ -272,6 +279,8 @@ dynamicAppend 目前通过 `sandbox.addIntrinsics({ document: proxyDocument })` 
 #### 4.4 `extraGlobals` 接线
 
 `loadApp.ts` 中写死的 `extraGlobals: {}` 接通到用户配置（ESM Sandbox RFC 的 v1.1 计划项），成为外部扩展 globals 的最短路径；ESM 侧经现有 `esmDestructurableGlobals` 基集机制同步生效。
+
+**落地形态（配置收敛）**：最终公开配置以 `sandbox?: boolean | SandboxConfiguration` 伞形收敛为唯一沙箱入口——本文所述 `extraGlobals` 对应最终实现的 `sandbox.globals`（直接采用 Compartment 规范词），`compartmentOptions` 的 hook 键（`modules`/`resolveHook`/`importHook`/`loadHook`）拍平进同一对象，`globalContext` 更名 `incubatorContext` 归入其中；`styleIsolation` 因动态样式依赖沙箱的 DOM 拦截（静态样式走 loader 转译、动态样式走 dynamicAppend 插件），同样收入 sandbox 对象以杜绝「半隔离」组合。`SandboxConfiguration` 在结构上即「`CompartmentOptions` 公开投影 + `plugins`/`styleIsolation` 两个宿主扩展」。
 
 ### 5. 对齐验证：API 形状兼容 + qiankun 语义回归（阶段四）
 
@@ -297,7 +306,7 @@ feature-detect（`typeof Compartment === 'function'` 时优先原生）留骨架
 | 包 | 变更 |
 | --- | --- |
 | `packages/sandbox` | `core/compartment/` 重写（options-bag、Membrane 所有权移入、`evaluateScript`）；`StandardSandbox` 降为预设；术语清洗；`patchers/index.ts` 分派逻辑替换为插件注册；形状断言与 hook 契约测试 |
-| `packages/shared` | `esm-sandbox/` 内部抽象更名（ModuleSource/Module）、hook 化改造；`module-resolver` → 默认 `resolveHook`；`realm-registry` 术语调整 |
+| `packages/shared` | `esm-sandbox/` 内部抽象更名（ModuleSource/Module）、hook 化改造；既有 `module-resolver` 结果建模为 `modules` redirect descriptor；`realm-registry` 术语调整 |
 | `packages/loader` | `LoaderOpts.sandbox/esmEngine` 收敛为 compartment 门面；入口 namespace 消费路径切换 |
 | `packages/qiankun` | `loadApp` 接线 `plugins` / `extraGlobals` 配置；对外类型导出 |
 | `docs` | 本 RFC；`packages/sandbox/AGENTS.md` 更新替换边界与插件协议 |
@@ -319,7 +328,7 @@ feature-detect（`typeof Compartment === 'function'` 时优先原生）留骨架
 **阶段①（接口重塑）**
 
 6. options-bag `Compartment` 落地；globals 两段式自引用姿势（§1.1）有单测覆盖。
-7. 术语清洗完成后，旧名（`Endowments` / `addIntrinsics`）仅存在于带 `@deprecated` 的别名导出，仓库内部零使用（grep 可验证）。
+7. 术语清洗完成后，旧名（`Endowments` / `addIntrinsics`）彻底移除、全仓库零残留（grep 可验证；包无外部用户，无需兼容别名）。唯一豁免：`benchmark/fixtures/host/src/rfc-performance.ts` 保留一处明文 `realmGlobal` 回退读取——同一 fixture 产物需要同时运行在改名前的 baseline 快照与 candidate 两侧，该处有注释标注且不构成运行时依赖。
 
 **阶段②（模块收编）**
 
@@ -328,7 +337,7 @@ feature-detect（`typeof Compartment === 'function'` 时优先原生）留骨架
 
 **阶段③（扩展开放）**
 
-10. dynamicAppend 以插件身份、零内部 import 实现，并以 eslint `no-restricted-imports` 把「插件目录禁止 import membrane 内部模块」固化为 CI 规则。
+10. dynamicAppend 以插件身份、零 membrane 内部 import 实现，并以 eslint `no-restricted-imports` 把「插件目录禁止 import membrane 内部模块」固化为 CI 规则。
 11. 提供一个**仓库外视角**的示例插件（如 localStorage 前缀隔离），只用公开 API 与公开类型实现并进 e2e；`plugins` / `extraGlobals` 有用户文档。
 
 **阶段④（对齐验证）**
@@ -337,6 +346,26 @@ feature-detect（`typeof Compartment === 'function'` 时优先原生）留骨架
 13. 可替换性演练：至少一个测试用自定义 `importHook` 直供预编译 source（不走 fetch + rewrite）跑通完整 mount 流程——证明接口缝真实存在。
 
 **总验收**：以上全部满足后，RFC 转 `Status: Accepted`，替换边界与插件协议同步进 `packages/sandbox/AGENTS.md`。
+
+## Implementation Verification（2026-07-18）
+
+13 项成功标准已逐项完成并经两轮独立源码/安全复核；最终源码对应的验证证据如下：
+
+- `pnpm run test`：全部 workspace 单测通过（其中 shared 192、sandbox 39、loader 8）。
+- `ESLINT_USE_FLAT_CONFIG=false pnpm run ci`：全包构建、ESLint 与 Prettier 检查通过；`git diff --check` 通过。
+- `pnpm --filter @qiankunjs/e2e run test:e2e`：Chromium 37/37，通过 classic、ESM、无 `unsafe-eval` CSP、真实预编译 `importHook`、多实例、插件、样式隔离与卸载清理路径。
+- `pnpm run docs:build`：VitePress 客户端/服务端 bundle、页面渲染与 sitemap 生成通过。
+- examples 浏览器实测：React ESM 与 Webpack classic 均完整挂载；React 写入 `window.__SANDBOX_PROBE__` 后宿主仍为 `undefined`，注入 body 样式前后宿主背景不变；切换 classic 后隔离仍成立，控制台 error 为 0。多实例与样式隔离的并行场景由上述 e2e 覆盖。
+- 静态验收：loader/qiankun/插件边界不泄漏 `EsmSandboxEngine`/Membrane 内部类型；旧术语仅保留带 `@deprecated` 的兼容导出；依赖方向与公开导出均符合本 RFC。
+
+性能门禁使用 baseline `6a6c2168e6df55f20f9ce6b7b6c66491650d78ef`，每项 5 轮预热后执行 100 轮 baseline/candidate 配对采样；判定依据为配对延迟中位数回归不超过 +5%，且 bootstrap 95% 置信区间宽度须小于 10pp（区间过宽时判定为 inconclusive 失败，防止噪声机器上靠点估计侥幸通过）。生成报告位于 `benchmark/results/2026-07-18T00-03-39-370Z-82d181a8-rfc-hard-metric-2/summary.md`。运行来源说明：该报告的 candidate 提交号对应 RFC 文档提交（实现代码以 dirty 工作区形式参与测量），且 `benchmark/results/` 不入库，下表数字不可从仓库直接复现；下表各区间宽度均远小于 10pp，按上述守卫同样判定通过。
+
+| 指标 | Baseline 中位数 | Candidate 中位数 | 延迟变化 | 95% CI | 结果 |
+| --- | ---: | ---: | ---: | ---: | --- |
+| membrane get | 23.04 Mops/s | 23.92 Mops/s | -3.72% | -4.18% ～ -3.24% | pass |
+| membrane set | 43.86 Mops/s | 43.86 Mops/s | +0.00% | +0.00% ～ +0.88% | pass |
+| ESM module rewrite | 73.06 MiB/s | 70.81 MiB/s | +1.59% | +0.00% ～ +3.15% | pass |
+| sandbox load chain | 49.45 ms | 48.60 ms | +0.46% | -3.28% ～ +3.95% | pass |
 
 ## Risks and Mitigations
 
@@ -357,16 +386,16 @@ feature-detect（`typeof Compartment === 'function'` 时优先原生）留骨架
 
 ## Migration Path
 
-- 阶段①②为纯内部重构：`Sandbox` 接口保留兼容委托，`Endowments` 等类型导出保留 deprecated 别名一个 minor 周期后移除。
+- 阶段①②为纯内部重构：`Sandbox` 接口保留兼容委托；旧类型名（`Endowments` 等）因包无外部用户直接移除，未保留别名。
 - 阶段③只增不改：`plugins` / `extraGlobals` 是新增可选配置，默认行为与现状一致。
 - 子应用零感知；主应用仅在使用新扩展 API 时需要了解插件协议。
 
-## Open Questions
+## Resolved Decisions
 
-1. `evaluateScript` 是否应该进入公开导出，还是仅供 loader 内部使用？（公开则成为承诺面，需与 transpiler 的 blob 管线约定错误语义。）
-2. `modules` 描述符表与未来共享依赖方案（ESM Sandbox RFC v2 议题）的衔接细节——namespace 直供跨 compartment 的对象身份语义需要单独 RFC。
-3. 插件协议是否需要 `unmount` 独立钩子，还是维持 `Free` 返回值语义即可？（现状 `Free → Rebuild` 已覆盖，但对第三方作者的心智成本待验证。）
-4. 形状断言所依据的「规范形状」接口类型的维护节奏：跟踪 ses README 与草案变化到什么频率？（类型是手写快照，不自动同步。）
+1. `evaluateScript` 作为 `@qiankunjs/sandbox` 的公开 qiankun host 扩展保留，错误通过 `Promise<void>` 传播；流式 loader 不直接依赖它，而是消费结构化 `CompartmentLoaderFacade` 上的同步 `transformClassicScript` 适配器。
+2. `modules` 描述符表确定为未来共享依赖方案的稳定承载形状；namespace 跨 compartment 的对象身份、共享 blob 的引用计数等行为仍需 ESM Sandbox v2 的独立 RFC，不阻塞本次对齐。
+3. 插件协议不新增 `unmount` 钩子，继续使用 `Patch → Free → Rebuild`：`Free` 同时表达卸载清理与下一次挂载所需的恢复信息，避免两套生命周期来源失配。
+4. 规范形状类型维持显式快照，不自动追随 Stage 1 草案；当 ses 的公开接口、proposal-compartments 层级文档或 qiankun 的公开 Compartment 面发生变化时，在对应 release review 中更新断言、差异清单与本 RFC。
 
 ## References
 

@@ -246,27 +246,35 @@ const handleDataChange = (data) => {
 
 **答：** 使用 qiankun 的内置样式隔离：
 
-**1. 严格样式隔离（Shadow DOM）：**
+**1. 内置样式隔离（CSS `@scope`）：**
 ```javascript
-import { start } from 'qiankun';
+import { loadMicroApp } from 'qiankun';
 
-start({
+loadMicroApp(app, {
   sandbox: {
-    strictStyleIsolation: true
+    styleIsolation: true
   }
 });
 ```
 
-**2. 实验性样式隔离（CSS 作用域）：**
+或者在注册应用时按应用配置：
 ```javascript
-start({
-  sandbox: {
-    experimentalStyleIsolation: true
+registerMicroApps([
+  {
+    name: 'my-app',
+    entry: '//localhost:8080',
+    container: '#container',
+    activeRule: '/my-app',
+    configuration: {
+      sandbox: {
+        styleIsolation: true
+      }
+    }
   }
-});
+]);
 ```
 
-**3. 手动 CSS 作用域：**
+**2. 手动 CSS 作用域：**
 ```css
 /* 为所有样式添加前缀 */
 .my-micro-app .button {

@@ -19,8 +19,7 @@ export function registerAll(container: HTMLElement, onLoading: (name: string, lo
       activeRule: app.path,
       loader: (loading: boolean) => onLoading(app.name, loading),
       configuration: {
-        sandbox: true,
-        styleIsolation: true,
+        sandbox: { styleIsolation: true },
       },
     })),
   );

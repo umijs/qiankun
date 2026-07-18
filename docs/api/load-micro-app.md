@@ -46,13 +46,14 @@ interface LoadableApp<T extends ObjectType> {
 
 ```typescript
 interface AppConfiguration {
-  sandbox?: boolean;               // Enable sandbox isolation
-  globalContext?: WindowProxy;     // Global context for the micro app
+  sandbox?: boolean | SandboxConfiguration; // JS sandbox switch and configuration
   fetch?: Function;                // Custom fetch function
   streamTransformer?: Function;    // Stream transformer
   nodeTransformer?: Function;      // Node transformer
 }
 ```
+
+`sandbox` is the single umbrella for JS isolation: `false` disables it entirely, `true` (the default) enables it with defaults, and a `SandboxConfiguration` object enables it and configures the underlying Compartment (`globals`, `incubatorContext`, module hooks) plus the qiankun host extensions `plugins` and `styleIsolation`. See [Configuration](/api/configuration) for the full shape.
 
 ### lifeCycles
 
@@ -117,6 +118,18 @@ const microApp = loadMicroApp({
 }, {
   sandbox: false, // Disable sandbox for legacy apps
   fetch: customFetch, // Use custom fetch
+});
+
+// Or configure the sandbox instead of just switching it
+const configuredApp = loadMicroApp({
+  name: 'configured-app',
+  entry: '//localhost:8080',
+  container: '#configured-container',
+}, {
+  sandbox: {
+    styleIsolation: true,             // Scope styles to the app container
+    globals: { FEATURE_FLAG: true },  // App-specific globals
+  },
 });
 ```
 

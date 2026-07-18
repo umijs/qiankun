@@ -19,7 +19,7 @@ function start(opts?: StartOpts): void
 ```typescript
 interface StartOpts {
   prefetch?: boolean | 'all' | string[] | ((apps: RegistrableApp[]) => { criticalAppNames: string[]; minorAppsName: string[] });
-  sandbox?: boolean | { strictStyleIsolation?: boolean; experimentalStyleIsolation?: boolean; };
+  sandbox?: boolean | SandboxConfiguration;
   singular?: boolean;
   urlRerouteOnly?: boolean;
   // ... 其他 single-spa 启动选项
@@ -29,7 +29,7 @@ interface StartOpts {
 | 选项 | 类型 | 默认值 | 描述 |
 |------|------|--------|------|
 | `prefetch` | `boolean \| 'all' \| string[] \| Function` | `true` | 资源预取策略 |
-| `sandbox` | `boolean \| SandboxOpts` | `true` | 沙箱隔离配置 |
+| `sandbox` | `boolean \| SandboxConfiguration` | `true` | 沙箱隔离配置 |
 | `singular` | `boolean` | `true` | 是否同时只能挂载一个微应用 |
 | `urlRerouteOnly` | `boolean` | `true` | 是否仅在 URL 变化时触发路由 |
 
@@ -76,8 +76,7 @@ start({
 ```typescript
 start({
   sandbox: {
-    strictStyleIsolation: true,      // 启用严格样式隔离
-    experimentalStyleIsolation: true, // 启用实验性样式隔离
+    styleIsolation: true, // 通过 CSS @scope 把每个微应用的样式收敛到其容器内
   }
 });
 ```
@@ -172,8 +171,7 @@ start({ sandbox: false });
 ```typescript
 start({
   sandbox: {
-    strictStyleIsolation: true,       // 基于 Shadow DOM 的样式隔离
-    experimentalStyleIsolation: true, // 基于作用域 CSS 的样式隔离
+    styleIsolation: true, // 基于 CSS @scope 的样式隔离
   }
 });
 ```
@@ -207,7 +205,7 @@ registerMicroApps([...]); // 这样不会正常工作
 const startOpts = {
   prefetch: process.env.NODE_ENV === 'production' ? 'all' : false,
   sandbox: {
-    strictStyleIsolation: process.env.NODE_ENV === 'production',
+    styleIsolation: process.env.NODE_ENV === 'production',
   },
 };
 
@@ -225,8 +223,7 @@ start({
   }),
   singular: true, // 防止内存问题
   sandbox: {
-    strictStyleIsolation: false, // 使用轻量级样式隔离
-    experimentalStyleIsolation: true,
+    styleIsolation: true, // 基于 @scope 的轻量级样式隔离
   },
 });
 ```
@@ -382,7 +379,7 @@ start({
 start({
   prefetch: false,  // 不预取 - 管理工具按需使用
   sandbox: {
-    strictStyleIsolation: true, // 防止管理工具间的样式冲突
+    styleIsolation: true, // 防止管理工具间的样式冲突
   },
   singular: false,  // 允许多个管理工具同时打开
 });

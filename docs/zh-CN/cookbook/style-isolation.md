@@ -31,64 +31,54 @@
 
 ## 🛡️ qiankun 的内置样式隔离
 
-qiankun 提供了几种内置的样式隔离机制，您可以通过配置启用。
+qiankun 提供了内置的样式隔离机制，您可以通过 `sandbox` 配置启用。
 
-### 严格样式隔离
+### styleIsolation
 
-使用 Shadow DOM 的最强大隔离方法：
+基于原生 CSS `@scope` 规则的运行时样式隔离：
 
 ```javascript
-import { start } from 'qiankun';
+import { loadMicroApp } from 'qiankun';
 
-start({
+loadMicroApp(app, {
   sandbox: {
-    strictStyleIsolation: true
+    styleIsolation: true
   }
 });
 ```
 
-**工作原理：**
-- 为每个微应用创建 Shadow DOM
-- 完全隔离应用之间的样式
-- 防止任何样式泄漏
-
-**优点：**
-- 完全样式隔离
-- 不可能发生 CSS 冲突
-- 易于实现
-
-**缺点：**
-- 一些第三方库可能无法正常工作
-- 调试可能更复杂
-- 大型应用的性能开销
-
-### 实验性样式隔离
-
-使用 CSS 作用域的侵入性较小的方法：
+或者在注册应用时按应用配置：
 
 ```javascript
-import { start } from 'qiankun';
+import { registerMicroApps } from 'qiankun';
 
-start({
-  sandbox: {
-    experimentalStyleIsolation: true
+registerMicroApps([
+  {
+    name: 'scoped-app',
+    entry: '//localhost:8080',
+    container: '#container',
+    activeRule: '/scoped-app',
+    configuration: {
+      sandbox: {
+        styleIsolation: true
+      }
+    }
   }
-});
+]);
 ```
 
 **工作原理：**
-- 为 CSS 选择器添加唯一前缀
-- 将样式作用域限定为微应用容器
+- 把每个微应用样式表包进绑定到应用容器的 CSS `@scope` 规则
+- 入口 HTML 中的静态样式在流式加载时由 loader 完成 scope 包裹
+- 运行时动态注入的样式由沙箱的 DOM 拦截捕获并做同样处理
 - 保持 DOM 结构
 
 **优点：**
-- 更好的第三方库兼容性
-- 更容易调试
-- 较少的性能开销
+- 原生浏览器作用域能力——无需改写选择器
+- 良好的第三方库兼容性
+- 易于调试，性能开销低
 
-**缺点：**
-- 不如严格隔离强大
-- 一些边缘情况可能仍会导致冲突
+**注意：** `styleIsolation` 位于 `sandbox` 配置内，因为动态注入的样式依赖沙箱的 DOM 拦截——CSS 隔离只在 JS 沙箱开启时可用。若没有沙箱，动态样式会静默泄漏。
 
 ## 🎨 CSS-in-JS 解决方案
 

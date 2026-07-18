@@ -92,6 +92,7 @@ const appWithProps: LoadableApp<MyAppProps> = {
 export type RegistrableApp<T extends ObjectType> = LoadableApp<T> & {
   loader?: (loading: boolean) => void;                    // 加载状态回调
   activeRule: RegisterApplicationConfig['activeWhen'];    // 路由激活规则
+  configuration?: AppConfiguration;                       // 当前应用的加载配置
 };
 ```
 
@@ -129,12 +130,25 @@ registerMicroApps(apps);
 
 ### AppConfiguration
 
-**描述**：单个微应用的配置选项。
+**描述**：单个微应用的配置选项。`sandbox` 是 JS 隔离的唯一伞形入口：`false` 完全关闭隔离，`true`（默认值）以默认配置开启，传入对象则在开启的同时配置底层 Compartment。
 
 ```typescript
 export type AppConfiguration = Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
-  sandbox?: boolean;        // 启用沙箱隔离
-  globalContext?: WindowProxy; // 自定义全局上下文
+  sandbox?: boolean | SandboxConfiguration; // JS 沙箱开关与配置
+};
+```
+
+### SandboxConfiguration
+
+**描述**：JS 沙箱的总配置——在结构上是 `CompartmentOptions` 的公开投影，再加上两个 qiankun 宿主扩展（`plugins`、`styleIsolation`）。
+
+```typescript
+export type SandboxConfiguration = Pick<
+  CompartmentOptions,
+  'globals' | 'incubatorContext' | 'modules' | 'resolveHook' | 'importHook' | 'loadHook'
+> & {
+  plugins?: readonly IsolationPlugin[]; // 追加在 qiankun 内置插件之后的隔离插件
+  styleIsolation?: boolean;             // 通过 CSS @scope 把微应用样式收敛到应用容器内
 };
 ```
 
@@ -143,8 +157,10 @@ export type AppConfiguration = Partial<Pick<LoaderOpts, 'fetch' | 'streamTransfo
 import { loadMicroApp } from 'qiankun';
 
 const customConfig: AppConfiguration = {
-  sandbox: true,
-  globalContext: window,
+  sandbox: {
+    styleIsolation: true,
+    globals: { FEATURE_FLAG: true },
+  },
   fetch: async (url, options) => {
     // 自定义 fetch 实现
     return fetch(url, {
@@ -430,12 +446,10 @@ type EnvironmentConfig<T extends 'development' | 'production'> = T extends 'deve
   ? {
       sandbox: false;
       prefetch: false;
-      strictStyleIsolation: false;
     }
   : {
-      sandbox: true;
+      sandbox: { styleIsolation: true };
       prefetch: 'all';
-      strictStyleIsolation: true;
     };
 
 // 与环境检测一起使用
@@ -622,4 +636,4 @@ function createApp<T extends BaseAppProps>(
 
 - [API 参考](/zh-CN/api/) - 主要 API 文档
 - [生命周期](/zh-CN/api/lifecycles) - 详细的生命周期文档
-- [配置选项](/zh-CN/api/configuration) - 配置选项 
+- [配置选项](/zh-CN/api/configuration) - 配置选项

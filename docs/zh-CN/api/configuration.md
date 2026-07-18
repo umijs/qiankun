@@ -10,11 +10,24 @@ qiankun 提供灵活的配置选项来自定义微前端应用的行为。本文
 
 ```typescript
 type AppConfiguration = {
-  sandbox?: boolean;
-  globalContext?: WindowProxy;
+  sandbox?: boolean | SandboxConfiguration;
   fetch?: Function;
   streamTransformer?: Function;
   nodeTransformer?: Function;
+};
+```
+
+### SandboxConfiguration
+
+JS 沙箱的总配置。它在结构上是 `CompartmentOptions` 的公开投影，再加上两个 qiankun 宿主扩展（`plugins` 和 `styleIsolation`）。
+
+```typescript
+type SandboxConfiguration = Pick<
+  CompartmentOptions,
+  'globals' | 'incubatorContext' | 'modules' | 'resolveHook' | 'importHook' | 'loadHook'
+> & {
+  plugins?: readonly IsolationPlugin[];
+  styleIsolation?: boolean;
 };
 ```
 
@@ -25,7 +38,7 @@ type AppConfiguration = {
 ```typescript
 interface StartOpts {
   prefetch?: boolean | 'all' | string[] | ((apps: RegistrableApp[]) => { criticalAppNames: string[]; minorAppsName: string[] });
-  sandbox?: boolean | { strictStyleIsolation?: boolean; experimentalStyleIsolation?: boolean; };
+  sandbox?: boolean | SandboxConfiguration;
   singular?: boolean;
   urlRerouteOnly?: boolean;
   // ... other single-spa options
@@ -36,9 +49,11 @@ interface StartOpts {
 
 ### sandbox
 
-**类型**: `boolean`  
-**默认值**: `true`  
-**描述**: 为微应用启用沙箱隔离。
+**类型**: `boolean | SandboxConfiguration`
+
+**默认值**: `true`
+
+**描述**: JS 沙箱的总开关：`false` 完全关闭隔离；`true`（默认值）以默认配置启用；传入对象则在启用的同时配置底层 Compartment。
 
 #### 基础用法
 
@@ -59,6 +74,18 @@ loadMicroApp({
   container: '#container',
 }, {
   sandbox: false
+});
+
+// Enable and configure sandbox
+loadMicroApp({
+  name: 'configured-app',
+  entry: '//localhost:8080',
+  container: '#container',
+}, {
+  sandbox: {
+    styleIsolation: true,
+    globals: { FEATURE_FLAG: true },
+  }
 });
 ```
 
@@ -83,14 +110,14 @@ loadMicroApp({
 });
 ```
 
-### globalContext
+### sandbox.incubatorContext
 
 **类型**: `WindowProxy`  
 **默认值**: `window`  
-**描述**: 微应用的自定义全局上下文。
+**描述**: 孵化沙箱的宿主上下文——沙箱中未被遮蔽的属性都会透过它读取。命名取自 ShadowRealm 提案中的「incubator realm」；Compartment 规范没有对应概念，因为 Compartment 靠「默认没有」实现隔离，而 qiankun 靠对宿主上下文的投影实现隔离。
 
 ```typescript
-// Create a custom global context
+// Create a custom incubator context
 const customGlobal = new Proxy(window, {
   get(target, prop) {
     // Custom logic for property access
@@ -106,9 +133,70 @@ loadMicroApp({
   entry: '//localhost:8080',
   container: '#container',
 }, {
-  globalContext: customGlobal
+  sandbox: {
+    incubatorContext: customGlobal
+  }
 });
 ```
+
+### sandbox.globals
+
+**类型**：`Record<string, unknown | PropertyDescriptor>`
+
+**默认值**：`{}`
+
+**说明**：向当前应用的全局对象补充值或属性描述符，不会改动主应用的 `window`。命名沿用 Compartment 规范中的 `globals` endowments。
+
+```typescript
+loadMicroApp(app, {
+  sandbox: {
+    globals: {
+      tenantId: 'acme',
+      featureClient: { value: createFeatureClient(), writable: false },
+    },
+  },
+});
+```
+
+经典脚本和 ESM 脚本都能读取这些变量。属性描述符的判定规则见[扩展沙箱隔离能力](/zh-CN/cookbook/sandbox-plugins)。
+
+### sandbox.plugins
+
+**类型**：`IsolationPlugin[]`
+
+**默认值**：`[]`
+
+**说明**：为当前应用注册隔离插件。用户插件排在 qiankun 内置插件之后。
+
+`bootstrap` 插件一定早于子应用脚本；`mount` 插件每次挂载都会执行。插件返回的 `Free` 会参与卸载清理和再次挂载时的副作用恢复。完整协议及独立插件示例见[扩展沙箱隔离能力](/zh-CN/cookbook/sandbox-plugins)。
+
+### sandbox.styleIsolation
+
+**类型**：`boolean`
+
+**默认值**：`false`
+
+**说明**：启用运行时 CSS 隔离：所有微应用样式都会通过 CSS `@scope` 被限定在应用容器内。
+
+```typescript
+loadMicroApp(app, {
+  sandbox: {
+    styleIsolation: true,
+  },
+});
+```
+
+入口 HTML 中的静态样式由加载器转译时完成 scoped，而动态注入的样式依赖沙箱的 DOM 拦截——这正是 CSS 隔离归属于 `sandbox` 配置、只有 JS 沙箱开启时才可配置的原因。如果允许「只隔离 CSS 而不开沙箱」，动态样式会悄无声息地泄漏。
+
+### 模块 hook（`sandbox.modules` / `resolveHook` / `importHook` / `loadHook`）
+
+**类型**：`CompartmentOptions` 中与模块相关的配置
+
+**默认值**：`{}`
+
+**说明**：为当前应用的 Compartment 自定义 ESM 解析和加载流程，直接写在 `sandbox` 对象上。
+
+可通过 `modules`、`resolveHook`、`importHook` 或其别名 `loadHook` 提供模块重定向、私有协议或预编译源码。这些配置只影响沙箱内的 ESM 加载。
 
 ### fetch
 
@@ -334,9 +422,11 @@ start({
 
 ### sandbox
 
-**类型**: `boolean | SandboxConfig`  
-**默认值**: `true`  
-**描述**: 所有微应用的全局沙箱配置。
+**类型**: `boolean | SandboxConfiguration`
+
+**默认值**: `true`
+
+**描述**: 所有微应用的框架级沙箱配置。
 
 #### 基础沙箱
 
@@ -353,39 +443,18 @@ start({ sandbox: false });
 ```typescript
 start({
   sandbox: {
-    strictStyleIsolation: true,        // Enable Shadow DOM style isolation
-    experimentalStyleIsolation: true,  // Enable scoped CSS style isolation
+    styleIsolation: true,  // Scope every micro-app style to its container via CSS @scope
   }
 });
 ```
 
-#### 样式隔离选项
+#### 样式隔离
 
-**strictStyleIsolation**: 使用 Shadow DOM 来完全隔离样式
+**styleIsolation**: 通过 CSS `@scope` 把所有微应用样式限定在应用容器内
 ```typescript
 start({
   sandbox: {
-    strictStyleIsolation: true,  // Strongest isolation but may break some UI libraries
-  }
-});
-```
-
-**experimentalStyleIsolation**: 使用作用域 CSS 来隔离样式
-```typescript
-start({
-  sandbox: {
-    experimentalStyleIsolation: true,  // Good balance of isolation and compatibility
-  }
-});
-```
-
-#### 组合样式隔离
-
-```typescript
-start({
-  sandbox: {
-    strictStyleIsolation: false,       // Disable Shadow DOM
-    experimentalStyleIsolation: true,  // Enable scoped CSS
+    styleIsolation: true,  // Good balance of isolation and compatibility
   }
 });
 ```
@@ -447,8 +516,7 @@ start({
 const developmentConfig = {
   prefetch: false,                    // Faster rebuilds
   sandbox: {
-    strictStyleIsolation: false,      // Easier debugging
-    experimentalStyleIsolation: true,
+    styleIsolation: false,            // Unscoped styles are easier to debug
   },
   singular: false,                    // More flexible development
   urlRerouteOnly: false,             // More responsive navigation
@@ -465,8 +533,7 @@ if (process.env.NODE_ENV === 'development') {
 const productionConfig = {
   prefetch: 'all',                    // Better user experience
   sandbox: {
-    strictStyleIsolation: true,       // Better isolation
-    experimentalStyleIsolation: false,
+    styleIsolation: true,             // Scope styles to each app container
   },
   singular: true,                     // Stable performance
   urlRerouteOnly: true,              // Optimized routing
@@ -487,9 +554,8 @@ const mobileConfig = {
     minorAppsName: []
   }),
   sandbox: {
-    // Lighter sandbox for mobile performance
-    strictStyleIsolation: false,
-    experimentalStyleIsolation: true,
+    // @scope-based style isolation stays lightweight on mobile
+    styleIsolation: true,
   },
   singular: true,                     // Better for mobile UX
 };
@@ -511,8 +577,7 @@ const getConfigWithFeatureFlags = async () => {
   return {
     prefetch: featureFlags.enablePrefetch ? 'all' : false,
     sandbox: {
-      strictStyleIsolation: featureFlags.strictIsolation,
-      experimentalStyleIsolation: !featureFlags.strictIsolation,
+      styleIsolation: featureFlags.styleIsolation,
     },
     singular: featureFlags.allowMultipleApps ? false : true,
   };
@@ -531,10 +596,7 @@ const getPerformanceConfig = () => {
   if (isSlowConnection) {
     return {
       prefetch: false,              // No prefetch on slow connections
-      sandbox: {
-        strictStyleIsolation: false,
-        experimentalStyleIsolation: true,
-      },
+      sandbox: true,                // Default isolation, no extra work
       singular: true,
     };
   }
@@ -542,8 +604,7 @@ const getPerformanceConfig = () => {
   return {
     prefetch: 'all',
     sandbox: {
-      strictStyleIsolation: true,
-      experimentalStyleIsolation: false,
+      styleIsolation: true,
     },
     singular: false,
   };
@@ -612,9 +673,6 @@ loadMicroApp({
 // ❌ 错误：影响性能的重配置
 start({
   prefetch: 'all',                 // Might slow down initial load
-  sandbox: {
-    strictStyleIsolation: true,    // More overhead
-  },
   singular: false,                 // More memory usage
   urlRerouteOnly: false,          // More frequent route checks
 });
@@ -623,7 +681,7 @@ start({
 start({
   prefetch: ['critical-app'],      // Only prefetch what's needed
   sandbox: {
-    experimentalStyleIsolation: true, // Good balance
+    styleIsolation: true,          // Lightweight @scope-based CSS isolation
   },
   singular: true,                  // Stable performance
   urlRerouteOnly: true,           // Optimized routing
@@ -635,8 +693,7 @@ start({
 ```typescript
 const debugConfig = {
   sandbox: {
-    strictStyleIsolation: false,   // Easier to inspect styles
-    experimentalStyleIsolation: true,
+    styleIsolation: false,         // Unscoped styles are easier to inspect
   },
   // Custom fetch for logging
   fetch: async (url, options) => {
@@ -659,4 +716,4 @@ const debugConfig = {
 
 - [start](/zh-CN/api/start) - 使用配置启动 qiankun
 - [loadMicroApp](/zh-CN/api/load-micro-app) - 使用配置加载应用
-- [registerMicroApps](/zh-CN/api/register-micro-apps) - 注册应用 
+- [registerMicroApps](/zh-CN/api/register-micro-apps) - 注册应用
