@@ -37,7 +37,7 @@ qiankun/
 `loadApp` (`packages/qiankun/src/core/loadApp.ts`) is the orchestrator. Per micro-app it wires:
 
 1. **fetch** — decorated `window.fetch`: `makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)))`.
-2. **sandbox** — `createSandboxContainer()` builds a Proxy-membrane `window`/`document` view; patchers (dynamicAppend, timers, listeners, history) each return a `free()` cleanup called on unmount.
+2. **sandbox** — `createSandbox()` builds a Proxy-membrane `window`/`document` view; patchers (dynamicAppend, timers, listeners, history) each return a `free()` cleanup called on unmount. Without a container it uses the JS-only preset; a container enables DOM containment.
 3. **loader** — `loadEntry(entry, container, opts)` streams the HTML entry through `writable-dom`, virtualizing `<head>` → `<qiankun-head>` and running each node through a `nodeTransformer`.
 4. **transpilers** (`shared/assets-transpilers`) rewrite each script/link/style node before it hits live DOM.
 

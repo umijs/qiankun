@@ -23,6 +23,14 @@ import type { SandboxConfig } from './types';
 type PluginCompartment = IsolationPluginContext['compartment'];
 type Unpatch = () => void;
 
+function getRequiredContainer(getContainer: IsolationPluginContext['getContainer'], appName: string): HTMLElement {
+  const container = getContainer();
+  if (!container) {
+    throw new QiankunError(`${appName} requires a container for DOM isolation`);
+  }
+  return container;
+}
+
 declare global {
   interface Window {
     __currentLockingSandbox__?: PluginCompartment;
@@ -90,8 +98,12 @@ const { containerOwners, elementConfigs, sandboxConfigs } = sharedState;
 const getSandboxConfig = (element: HTMLElement) => elementConfigs.get(element);
 const setSandboxConfig = (element: HTMLElement, config: SandboxConfig) => elementConfigs.set(element, config);
 
-function patchDocument(compartment: PluginCompartment, appName: string, getContainer: () => HTMLElement): Unpatch {
-  const container = getContainer();
+function patchDocument(
+  compartment: PluginCompartment,
+  appName: string,
+  getContainer: IsolationPluginContext['getContainer'],
+): Unpatch {
+  const container = getRequiredContainer(getContainer, appName);
   // dom container might be reused by multiple apps,
   // thus we check its attached sandbox is same with current to avoid duplicate patch
   if (containerOwners.get(container) === compartment) {
@@ -107,7 +119,7 @@ function patchDocument(compartment: PluginCompartment, appName: string, getConta
     }
   };
   const getDocumentHeadElement = () => {
-    const currentContainer = getContainer();
+    const currentContainer = getRequiredContainer(getContainer, appName);
     const containerHeadElement = getContainerHeadElement(currentContainer);
     if (!containerHeadElement) {
       throw new QiankunError(`${appName} head element not existed while accessing document.head!`);
@@ -115,7 +127,7 @@ function patchDocument(compartment: PluginCompartment, appName: string, getConta
     return containerHeadElement;
   };
   const getDocumentBodyElement = () => {
-    const currentContainer = getContainer();
+    const currentContainer = getRequiredContainer(getContainer, appName);
     return getContainerBodyElement(currentContainer);
   };
   const modificationFns: {
@@ -478,7 +490,12 @@ export function patchStandardSandbox(context: IsolationPluginContext): Free {
 
     // As now the sub app content all wrapped with a special id container,
     // the dynamic style sheet could be removed automatically while unmounting
-    return (container: HTMLElement) => attachRecordedStylesheets(appName, dynamicStyleSheetElements, container);
+    return (container?: HTMLElement) => {
+      if (!container) {
+        return Promise.reject(new QiankunError(`${appName} requires a container while rebuilding DOM side effects`));
+      }
+      return attachRecordedStylesheets(appName, dynamicStyleSheetElements, container);
+    };
   };
 }
 

@@ -6,6 +6,7 @@ import {
   type DocumentModule,
   type ModuleNamespace,
   type Sandbox,
+  StandardSandbox,
 } from '../../../index';
 import { type MembraneTarget } from '../../membrane';
 
@@ -289,6 +290,77 @@ describe('classic script evaluation', () => {
     const generatedSource = await generatedBlob!.text();
     expect(generatedSource).toContain('original();\ntransformed();');
     expect(generatedSource).not.toMatch(/\beval\s*\(|new Function/);
+  });
+
+  it('warns once per bare Compartment in development and points classic users to StandardSandbox', async () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'development';
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:compartment-warning');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    vi.spyOn(document.head, 'appendChild').mockImplementation((node) => {
+      queueMicrotask(() => node.dispatchEvent(new Event('load')));
+      return node;
+    });
+
+    try {
+      const compartment = new Compartment({ name: 'unsafe-classic' });
+      await compartment.evaluateScript('void window;');
+      await compartment.evaluateScript('void window;');
+
+      expect(warning).toHaveBeenCalledOnce();
+      expect(warning).toHaveBeenCalledWith(expect.stringContaining('Use StandardSandbox'));
+      compartment.dispose();
+    } finally {
+      process.env.NODE_ENV = previousNodeEnv;
+    }
+  });
+
+  it('does not warn when StandardSandbox installs the window self-reference', async () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'development';
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:standard-sandbox-warning');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    vi.spyOn(document.head, 'appendChild').mockImplementation((node) => {
+      queueMicrotask(() => node.dispatchEvent(new Event('load')));
+      return node;
+    });
+
+    try {
+      const sandbox = new StandardSandbox('safe-classic');
+      await sandbox.evaluateScript('void window;');
+
+      expect(warning).not.toHaveBeenCalled();
+      sandbox.dispose();
+    } finally {
+      process.env.NODE_ENV = previousNodeEnv;
+    }
+  });
+
+  it('does not warn when a Compartment host installs its own window self-reference', async () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'development';
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:custom-self-reference-warning');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    vi.spyOn(document.head, 'appendChild').mockImplementation((node) => {
+      queueMicrotask(() => node.dispatchEvent(new Event('load')));
+      return node;
+    });
+
+    try {
+      const compartment = new Compartment({ name: 'custom-self-reference' });
+      compartment.defineUnshadowableGlobals({
+        window: { get: () => compartment.globalThis, configurable: true },
+      });
+      await compartment.evaluateScript('void window;');
+
+      expect(warning).not.toHaveBeenCalled();
+      compartment.dispose();
+    } finally {
+      process.env.NODE_ENV = previousNodeEnv;
+    }
   });
 
   it('cancels a queued classic evaluation when the compartment is disposed', async () => {

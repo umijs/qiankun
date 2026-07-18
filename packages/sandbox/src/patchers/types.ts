@@ -5,7 +5,7 @@
 import type { BaseLoaderOpts, NodeTransformer, StyleIsolationOpts } from '@qiankunjs/shared';
 import type { Compartment } from '../core/compartment';
 
-export type Rebuild = (container: HTMLElement) => Promise<void>;
+export type Rebuild = (container?: HTMLElement) => Promise<void>;
 export type Free = () => Rebuild;
 export type Patch = () => Free;
 
@@ -19,7 +19,7 @@ export interface IsolationPluginContext {
   compartment: Compartment;
   appName: string;
   /** Always resolve the current container lazily so remounts can replace it. */
-  getContainer: () => HTMLElement;
+  getContainer: () => HTMLElement | undefined;
   config: IsolationPluginConfig;
 }
 

@@ -1,13 +1,14 @@
 import type { IsolationPluginConfig } from '../../types';
-import { createSandboxContainer } from '../../../core/sandbox';
+import { createSandbox } from '../../../core/sandbox';
 import { styleElementTargetSymbol } from '../common';
 import type { SandboxConfig } from '../types';
+import { markLoaderStreamedNode } from '@qiankunjs/shared';
 import { afterEach, describe, expect, it } from 'vitest';
 
 const identityNodeTransformer: IsolationPluginConfig['nodeTransformer'] = (node) => node;
 
 let appSequence = 0;
-const controllers: Array<ReturnType<typeof createSandboxContainer>> = [];
+const controllers: Array<ReturnType<typeof createSandbox>> = [];
 const containers: HTMLElement[] = [];
 
 function createController() {
@@ -17,10 +18,11 @@ function createController() {
   document.body.appendChild(container);
   containers.push(container);
 
-  const controller = createSandboxContainer(appName, () => container, {
+  const controller = createSandbox(appName, {
+    container: () => container,
     fetch: window.fetch,
     nodeTransformer: identityNodeTransformer,
-    styleIsolation: { appName, scopeRoot: `[data-qiankun="${appName}"]` },
+    styleIsolation: true,
   });
   controllers.push(controller);
   return { container, controller };
@@ -94,6 +96,9 @@ describe.sequential('dynamic append patch lifecycle', () => {
     headStyle[styleElementTargetSymbol] = 'head';
     sandboxConfig.dynamicStyleSheetElements.push(headStyle);
     container.querySelector('qiankun-head')?.remove();
+    const streamedNode = document.createElement('div');
+    markLoaderStreamedNode(streamedNode);
+    container.appendChild(streamedNode);
 
     await expect(controller.mount(container)).rejects.toThrow(/not ready while rebuilding/);
 

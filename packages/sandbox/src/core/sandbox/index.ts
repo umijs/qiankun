@@ -2,17 +2,72 @@
  * @author Kuitos
  * @since 2019-04-11
  */
+import { nativeDocument, nativeGlobal } from '../../consts';
 import { getDefaultIsolationPlugins } from '../../patchers';
-import type { SandboxConfig } from '../../patchers/dynamicAppend/types';
 import type { Free, IsolationPlugin, IsolationPluginContext, Rebuild } from '../../patchers/types';
+import {
+  QiankunError,
+  transpileAssets,
+  type ImportHook,
+  type Modules,
+  type NodeTransformer,
+  type ResolveHook,
+  type StyleIsolationOpts,
+} from '@qiankunjs/shared';
 import type { CompartmentGlobals, CompartmentOptions } from '../compartment';
 import { StandardSandbox } from './StandardSandbox';
+import {
+  containsLoaderStreamedNode,
+  createStyleIsolationOpts,
+  ensureSandboxContainerHead,
+  prepareSandboxContainerName,
+} from './container';
 import type { Sandbox } from './types';
 
 export type { Sandbox };
+export { StandardSandbox } from './StandardSandbox';
+export { prepareSandboxContainer, type SandboxContainerPreparation } from './container';
+
+export interface CreateSandboxOptions {
+  /** Providing a container enables DOM containment and dynamic asset interception. */
+  container?: HTMLElement | (() => HTMLElement);
+  /** The host context that incubates this sandbox (see the ShadowRealm proposal's "incubator realm"). */
+  incubatorContext?: WindowProxy;
+  globals?: CompartmentGlobals;
+  modules?: Modules;
+  resolveHook?: ResolveHook;
+  importHook?: ImportHook;
+  loadHook?: ImportHook;
+  plugins?: readonly IsolationPlugin[];
+  styleIsolation?: boolean;
+  fetch?: typeof window.fetch;
+  nodeTransformer?: NodeTransformer;
+  /**
+   * Lower-level Compartment host configuration. Promoted top-level options take
+   * precedence when the same field is supplied in both places.
+   */
+  compartmentOptions?: Omit<CompartmentOptions, 'globals' | 'incubatorContext' | 'name'>;
+}
+
+export interface SandboxController {
+  instance: Sandbox;
+  /** The fully configured transformer shared by loaders and dynamic DOM interception. */
+  nodeTransformer: NodeTransformer;
+  styleIsolation?: StyleIsolationOpts;
+  mount(container?: HTMLElement): Promise<void>;
+  unmount(): Promise<void>;
+  dispose(): Promise<void>;
+}
 
 interface CapturedError {
   value: unknown;
+}
+
+function normalizeModuleHook(importHook?: ImportHook, loadHook?: ImportHook): ImportHook | undefined {
+  if (importHook && loadHook && importHook !== loadHook) {
+    throw new QiankunError('importHook and loadHook must reference the same hook when both are provided');
+  }
+  return importHook ?? loadHook;
 }
 
 function releaseSideEffects(frees: readonly Free[]): {
@@ -33,7 +88,11 @@ function releaseSideEffects(frees: readonly Free[]): {
   return { rebuilds, error: firstError };
 }
 
-async function rebuildSideEffects(rebuilds: Rebuild[], container: HTMLElement, afterEach?: () => void): Promise<void> {
+async function rebuildSideEffects(
+  rebuilds: Rebuild[],
+  container: HTMLElement | undefined,
+  afterEach?: () => void,
+): Promise<void> {
   while (rebuilds.length) {
     await rebuilds[0](container);
     rebuilds.shift();
@@ -41,50 +100,121 @@ async function rebuildSideEffects(rebuilds: Rebuild[], container: HTMLElement, a
   }
 }
 
-/**
- * @param appName
- * @param getContainer
- * @param opts
- */
-export function createSandboxContainer(
-  appName: string,
-  getContainer: () => HTMLElement,
-  opts: {
-    /** The host context that incubates this sandbox (see the ShadowRealm proposal's "incubator realm"). */
-    incubatorContext?: WindowProxy;
-    globals?: CompartmentGlobals;
-    plugins?: readonly IsolationPlugin[];
-    compartmentOptions?: Omit<CompartmentOptions, 'globals' | 'incubatorContext' | 'name'>;
-  } & Pick<SandboxConfig, 'fetch' | 'nodeTransformer' | 'styleIsolation'>,
-) {
-  const { compartmentOptions, incubatorContext, globals = {}, plugins = [], ...sandboxCfg } = opts;
+/** Create a lifecycle controller around the standard browser sandbox preset. */
+export function createSandbox(appName: string, opts: CreateSandboxOptions = {}): SandboxController {
+  const {
+    compartmentOptions = {},
+    container: containerOption,
+    fetch: configuredFetch,
+    globals = {},
+    importHook: topLevelImportHook,
+    incubatorContext = nativeGlobal,
+    loadHook: topLevelLoadHook,
+    modules = compartmentOptions.modules,
+    nodeTransformer: configuredNodeTransformer,
+    plugins = [],
+    resolveHook = compartmentOptions.resolveHook,
+    styleIsolation: styleIsolationEnabled = false,
+  } = opts;
+  const hasContainer = containerOption !== undefined;
+  if (styleIsolationEnabled && !hasContainer) {
+    throw new TypeError(`Sandbox ${appName} requires a container when style isolation is enabled`);
+  }
+
+  const hasTopLevelModuleHook = topLevelImportHook !== undefined || topLevelLoadHook !== undefined;
+  const moduleHook = normalizeModuleHook(
+    hasTopLevelModuleHook ? topLevelImportHook : compartmentOptions.importHook,
+    hasTopLevelModuleHook ? topLevelLoadHook : compartmentOptions.loadHook,
+  );
+  const fetch = configuredFetch ?? compartmentOptions.moduleHost?.fetch ?? nativeGlobal.fetch.bind(nativeGlobal);
+  const styleIsolation = styleIsolationEnabled ? createStyleIsolationOpts(appName) : undefined;
+  const containerNameCleanups = new Map<HTMLElement, () => void>();
+  const containerHeadCleanups = new Map<HTMLElement, Array<() => void>>();
+  let mountedContainer: HTMLElement | undefined;
+  const getConfiguredContainer = (): HTMLElement | undefined => {
+    if (mountedContainer) return mountedContainer;
+    if (typeof containerOption === 'function') return containerOption();
+    return containerOption;
+  };
+  const prepareContainerName = (container: HTMLElement): void => {
+    if (!containerNameCleanups.has(container)) {
+      containerNameCleanups.set(container, prepareSandboxContainerName(container, appName));
+    } else {
+      container.dataset.name = appName;
+    }
+  };
+  const prepareContainerForMount = (container: HTMLElement): void => {
+    prepareContainerName(container);
+    if (!container.querySelector('qiankun-head') && !containsLoaderStreamedNode(container)) {
+      const { cleanup } = ensureSandboxContainerHead(container);
+      const cleanups = containerHeadCleanups.get(container) ?? [];
+      cleanups.push(cleanup);
+      containerHeadCleanups.set(container, cleanups);
+    }
+  };
+  const cleanupPreparedContainers = (): void => {
+    containerHeadCleanups.forEach((cleanups) => {
+      cleanups
+        .slice()
+        .reverse()
+        .forEach((cleanup) => cleanup());
+    });
+    containerHeadCleanups.clear();
+    containerNameCleanups.forEach((cleanup) => cleanup());
+    containerNameCleanups.clear();
+  };
+
+  const initialContainer = getConfiguredContainer();
+  if (initialContainer) prepareContainerName(initialContainer);
+
+  const standardSandboxOptions = {
+    ...compartmentOptions,
+    importHook: moduleHook,
+    loadHook: moduleHook,
+    modules,
+    resolveHook,
+    moduleHost: {
+      ...compartmentOptions.moduleHost,
+      fetch,
+    },
+  };
+
   let sandbox: Sandbox;
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (window.Proxy) {
-    sandbox = new StandardSandbox(appName, globals, incubatorContext, compartmentOptions);
+    sandbox = new StandardSandbox(appName, globals, incubatorContext, standardSandboxOptions);
   } else {
     // TODO snapshot sandbox
-    sandbox = new StandardSandbox(appName, globals, incubatorContext, compartmentOptions);
+    sandbox = new StandardSandbox(appName, globals, incubatorContext, standardSandboxOptions);
   }
 
   const classicScriptTransformer = (source: string, sourceURL?: string) =>
     sandbox.transformClassicScript(source, sourceURL);
-  const pluginNodeTransformer: SandboxConfig['nodeTransformer'] = (node, transformerOpts) =>
-    sandboxCfg.nodeTransformer(node, {
+  const baseNodeTransformer: NodeTransformer =
+    configuredNodeTransformer ??
+    ((node, transformerOpts) => transpileAssets(node, nativeDocument.baseURI, transformerOpts));
+  const nodeTransformer: NodeTransformer = (node, transformerOpts) => {
+    const container = getConfiguredContainer();
+    if (container) prepareContainerName(container);
+    return baseNodeTransformer(node, {
       ...transformerOpts,
       classicScriptTransformer,
       compartment: sandbox,
+      fetch,
+      styleIsolation,
     });
+  };
   const pluginContext: IsolationPluginContext = {
     compartment: sandbox,
     appName,
-    getContainer,
+    getContainer: getConfiguredContainer,
     config: {
-      ...sandboxCfg,
-      nodeTransformer: pluginNodeTransformer,
+      fetch,
+      nodeTransformer,
+      styleIsolation,
     },
   };
-  const isolationPlugins = [...getDefaultIsolationPlugins(sandbox.type), ...plugins];
+  const isolationPlugins = [...getDefaultIsolationPlugins(sandbox.type, hasContainer), ...plugins];
 
   // Bootstrap plugins are installed before loadEntry starts evaluating application scripts.
   const bootstrappingFrees: Free[] = [];
@@ -98,6 +228,7 @@ export function createSandboxContainer(
     releaseSideEffects(bootstrappingFrees);
     sandbox.inactive();
     sandbox.dispose();
+    cleanupPreparedContainers();
     throw error;
   }
 
@@ -107,8 +238,10 @@ export function createSandboxContainer(
   let mountingRebuilds: Rebuild[] = [];
   let bootstrappingEffectsActive = bootstrappingFrees.length > 0;
   let mountingEffectsActive = false;
+  let mounted = false;
   let disposed = false;
   let mountingPromise: Promise<void> | undefined;
+  let unmountingPromise: Promise<void> | undefined;
   let disposePromise: Promise<void> | undefined;
 
   const disposedError = () => new TypeError(`Sandbox container for ${appName} has been disposed`);
@@ -122,6 +255,7 @@ export function createSandboxContainer(
     disposed = true;
 
     const pendingMount = mountingPromise;
+    const pendingUnmount = unmountingPromise;
     const pendingDispose = (async () => {
       // A mount hook can install effects before its promise yields the matching Free.
       // Wait for that operation to observe `disposed`, roll back its local frees, and
@@ -130,6 +264,11 @@ export function createSandboxContainer(
         await pendingMount;
       } catch {
         // The mount caller retains its own failure; disposal still has to finish.
+      }
+      try {
+        await pendingUnmount;
+      } catch {
+        // The unmount caller retains its own failure; disposal still has to finish.
       }
 
       const bootstrappingRelease = bootstrappingEffectsActive
@@ -148,6 +287,9 @@ export function createSandboxContainer(
 
       sandbox.inactive();
       sandbox.dispose();
+      cleanupPreparedContainers();
+      mountedContainer = undefined;
+      mounted = false;
 
       const firstError = bootstrappingRelease.error ?? mountingRelease.error;
       if (firstError) {
@@ -163,8 +305,9 @@ export function createSandboxContainer(
     }
   };
 
-  const mount = async (container: HTMLElement): Promise<void> => {
+  const mount = async (container: HTMLElement | undefined): Promise<void> => {
     assertNotDisposed();
+    if (container) prepareContainerForMount(container);
     /* ------------------------------------------ 因为有上下文依赖（window），以下代码执行顺序不能变 ------------------------------------------ */
 
     /* ------------------------------------------ 1. 启动/恢复 沙箱------------------------------------------ */
@@ -214,8 +357,50 @@ export function createSandboxContainer(
     }
   };
 
+  const unmount = async (): Promise<void> => {
+    if (disposed) return;
+
+    try {
+      await mountingPromise;
+    } catch {
+      // A failed mount already rolled back every effect it managed to install.
+    }
+    // `dispose()` can flip this flag while the mount promise above is pending.
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (disposed) return;
+
+    // record the rebuilds of window side effects (event listeners or timers)
+    // note that the frees of mounting phase are one-off as it will be re-init at next mounting
+    // Only overwrite the captured rebuilds when this call actually released live effects.
+    // With inactive effects (a repeated unmount, or an unmount after a failed mount that
+    // already rolled back), the rebuilds captured earlier must survive for the next mount.
+    const bootstrappingRelease = bootstrappingEffectsActive ? releaseSideEffects(bootstrappingFrees) : undefined;
+    const mountingRelease = mountingEffectsActive ? releaseSideEffects(mountingFrees) : undefined;
+
+    if (bootstrappingRelease) {
+      bootstrappingRebuilds = bootstrappingRelease.rebuilds;
+      bootstrappingEffectsActive = false;
+    }
+    if (mountingRelease) {
+      mountingRebuilds = mountingRelease.rebuilds;
+      mountingFrees = [];
+      mountingEffectsActive = false;
+    }
+
+    sandbox.inactive();
+    mountedContainer = undefined;
+    mounted = false;
+
+    const firstError = bootstrappingRelease?.error ?? mountingRelease?.error;
+    if (firstError) {
+      throw firstError.value;
+    }
+  };
+
   return {
     instance: sandbox,
+    nodeTransformer,
+    styleIsolation,
 
     /** Permanently release plugin side effects and the underlying Compartment. */
     dispose,
@@ -225,14 +410,33 @@ export function createSandboxContainer(
      * 可能是从 bootstrap 状态进入的 mount
      * 也可能是从 unmount 之后再次唤醒进入 mount
      */
-    mount(container: HTMLElement) {
+    mount(container?: HTMLElement) {
+      if (disposed) {
+        return Promise.reject(disposedError());
+      }
       if (mountingPromise) {
         return Promise.reject(new TypeError(`Sandbox container for ${appName} is already mounting`));
       }
+      if (unmountingPromise) {
+        return Promise.reject(new TypeError(`Sandbox container for ${appName} is currently unmounting`));
+      }
+      if (mounted) {
+        return Promise.reject(new TypeError(`Sandbox container for ${appName} is already mounted`));
+      }
 
-      const trackedMount = mount(container).finally(() => {
-        if (mountingPromise === trackedMount) mountingPromise = undefined;
-      });
+      mountedContainer = container ?? getConfiguredContainer();
+      const trackedMount = mount(mountedContainer)
+        .then(() => {
+          mounted = true;
+        })
+        .catch((error: unknown) => {
+          mountedContainer = undefined;
+          mounted = false;
+          throw error;
+        })
+        .finally(() => {
+          if (mountingPromise === trackedMount) mountingPromise = undefined;
+        });
       mountingPromise = trackedMount;
       return trackedMount;
     },
@@ -240,42 +444,14 @@ export function createSandboxContainer(
     /**
      * 恢复 global 状态，使其能回到应用加载之前的状态
      */
-    async unmount() {
-      if (disposed) return;
+    unmount() {
+      if (unmountingPromise) return unmountingPromise;
 
-      try {
-        await mountingPromise;
-      } catch {
-        // A failed mount already rolled back every effect it managed to install.
-      }
-      // `dispose()` can flip this flag while the mount promise above is pending.
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      if (disposed) return;
-
-      // record the rebuilds of window side effects (event listeners or timers)
-      // note that the frees of mounting phase are one-off as it will be re-init at next mounting
-      // Only overwrite the captured rebuilds when this call actually released live effects.
-      // With inactive effects (a repeated unmount, or an unmount after a failed mount that
-      // already rolled back), the rebuilds captured earlier must survive for the next mount.
-      const bootstrappingRelease = bootstrappingEffectsActive ? releaseSideEffects(bootstrappingFrees) : undefined;
-      const mountingRelease = mountingEffectsActive ? releaseSideEffects(mountingFrees) : undefined;
-
-      if (bootstrappingRelease) {
-        bootstrappingRebuilds = bootstrappingRelease.rebuilds;
-        bootstrappingEffectsActive = false;
-      }
-      if (mountingRelease) {
-        mountingRebuilds = mountingRelease.rebuilds;
-        mountingFrees = [];
-        mountingEffectsActive = false;
-      }
-
-      sandbox.inactive();
-
-      const firstError = bootstrappingRelease?.error ?? mountingRelease?.error;
-      if (firstError) {
-        throw firstError.value;
-      }
+      const trackedUnmount = unmount().finally(() => {
+        if (unmountingPromise === trackedUnmount) unmountingPromise = undefined;
+      });
+      unmountingPromise = trackedUnmount;
+      return trackedUnmount;
     },
   };
 }

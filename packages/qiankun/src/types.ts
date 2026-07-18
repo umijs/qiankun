@@ -3,13 +3,14 @@
  * @since 2023-04-25
  */
 import type { LoaderOpts } from '@qiankunjs/loader';
-import type { CompartmentOptions, IsolationPlugin } from '@qiankunjs/sandbox';
+import type { CreateSandboxOptions } from '@qiankunjs/sandbox';
 import type { LifeCycles as ParcelLifeCycles, Parcel, RegisterApplicationConfig } from 'single-spa';
 
 export type {
   Compartment,
   CompartmentGlobals,
   CompartmentOptions,
+  CreateSandboxOptions,
   Free,
   ImportHook,
   IsolationPlugin,
@@ -22,6 +23,8 @@ export type {
   PrecompileModuleSourceOpts,
   ResolveHook,
   Rebuild,
+  SandboxContainerPreparation,
+  SandboxController,
   UnshadowableGlobals,
 } from '@qiankunjs/sandbox';
 
@@ -68,18 +71,9 @@ export type RegistrableApp<T extends ObjectType> = LoadableApp<T> & {
  * `CompartmentOptions` plus two qiankun host extensions (`plugins`, `styleIsolation`).
  */
 export type SandboxConfiguration = Pick<
-  CompartmentOptions,
-  'globals' | 'incubatorContext' | 'modules' | 'resolveHook' | 'importHook' | 'loadHook'
-> & {
-  /** Isolation plugins appended after qiankun's built-in plugins. */
-  plugins?: readonly IsolationPlugin[];
-  /**
-   * Enable runtime CSS isolation via @scope wrapping: all micro-app styles are scoped to the
-   * app container. Dynamically injected styles ride on the sandbox's DOM interception, which
-   * is why CSS isolation is only configurable while the sandbox is enabled.
-   */
-  styleIsolation?: boolean;
-};
+  CreateSandboxOptions,
+  'globals' | 'incubatorContext' | 'modules' | 'resolveHook' | 'importHook' | 'loadHook' | 'plugins' | 'styleIsolation'
+>;
 
 export type AppConfiguration = Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
   /**

@@ -68,6 +68,8 @@ export class Compartment implements CompartmentLoaderFacade {
 
   private disposed = false;
 
+  private unsafeClassicEvaluationWarned = false;
+
   private readonly pendingClassicEvaluations = new Set<PendingClassicEvaluation>();
 
   private unshadowableGlobalNames = defaultUnshadowableGlobalNames.slice();
@@ -172,6 +174,7 @@ export class Compartment implements CompartmentLoaderFacade {
    */
   async evaluateScript(source: string, options: EvaluateScriptOptions = {}): Promise<void> {
     const code = this.transformClassicScript(source, options.sourceURL);
+    this.warnAboutUnsafeClassicSelfReference();
     const script = nativeDocument.createElement('script');
     const blobUrl = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
 
@@ -303,6 +306,21 @@ export class Compartment implements CompartmentLoaderFacade {
     this.assertAlive();
     this.moduleEngine ??= new EsmSandboxEngine(this.moduleEngineOptions);
     return this.moduleEngine;
+  }
+
+  private warnAboutUnsafeClassicSelfReference(): void {
+    if (process.env.NODE_ENV !== 'development' || this.unsafeClassicEvaluationWarned) return;
+
+    const hasWindowSelfReference =
+      this.definedUnshadowableGlobalNames.has('window') && this.globalThis.window === this.globalThis;
+    if (!hasWindowSelfReference) {
+      this.unsafeClassicEvaluationWarned = true;
+      console.warn(
+        `[qiankun:sandbox] Compartment ${
+          this.name || '(anonymous)'
+        } evaluates classic scripts without an isolated window self-reference. Use StandardSandbox for classic script evaluation.`,
+      );
+    }
   }
 
   private assertAlive(): void {

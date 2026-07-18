@@ -3,7 +3,7 @@ import { nativeGlobal } from '../../../consts';
 import { Compartment } from '../../compartment';
 import { defaultIsolationPlugins } from '../../../patchers';
 import type { Free, IsolationPlugin, IsolationPluginConfig, Rebuild } from '../../../patchers/types';
-import { createSandboxContainer } from '..';
+import { createSandbox } from '..';
 import { SandboxType } from '../types';
 
 const standardDefaultPlugins = defaultIsolationPlugins[SandboxType.Standard];
@@ -17,7 +17,8 @@ const createdCompartments: Compartment[] = [];
 
 function createContainer(plugins: readonly IsolationPlugin[] = []) {
   const container = document.createElement('div');
-  const controller = createSandboxContainer(`plugin-lifecycle-${String(appSequence++)}`, () => container, {
+  const controller = createSandbox(`plugin-lifecycle-${String(appSequence++)}`, {
+    container: () => container,
     fetch: window.fetch,
     nodeTransformer: identityNodeTransformer,
     plugins,
@@ -117,6 +118,33 @@ describe('isolation plugin lifecycle', () => {
     await mounting;
     expect(events).toEqual(['mount:async-first', 'mount:sync-second']);
     await controller.unmount();
+  });
+
+  it('rejects a second mount until the active mount has been unmounted', async () => {
+    const mountingFree = vi.fn(() => noopRebuild);
+    const mountHook = vi.fn(() => mountingFree);
+    const { container, controller } = createContainer([{ name: 'single-mount', mount: mountHook }]);
+
+    await controller.mount(container);
+    await expect(controller.mount(container)).rejects.toThrowError('is already mounted');
+    await controller.unmount();
+
+    expect(mountHook).toHaveBeenCalledOnce();
+    expect(mountingFree).toHaveBeenCalledOnce();
+  });
+
+  it('rejects mounting while an unmount is in flight and allows the next mount afterward', async () => {
+    const mountHook = vi.fn(() => noopFree);
+    const { container, controller } = createContainer([{ name: 'serialized-transition', mount: mountHook }]);
+
+    await controller.mount(container);
+    const unmounting = controller.unmount();
+    await expect(controller.mount(container)).rejects.toThrowError('is currently unmounting');
+    await unmounting;
+
+    await controller.mount(container);
+    await controller.unmount();
+    expect(mountHook).toHaveBeenCalledTimes(2);
   });
 
   it('frees and rebuilds bootstrap and mount effects in registration order', async () => {
@@ -394,7 +422,8 @@ describe('isolation plugin lifecycle', () => {
       Object.getOwnPropertyNames(nativeGlobal).filter((key) => key.startsWith('__compartment_globalThis__')),
     );
     const container = document.createElement('div');
-    const controller = createSandboxContainer(`controller-dispose-${String(appSequence++)}`, () => container, {
+    const controller = createSandbox(`controller-dispose-${String(appSequence++)}`, {
+      container: () => container,
       compartmentOptions: {
         moduleHost: {
           createModuleUrl,

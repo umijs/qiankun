@@ -91,6 +91,27 @@ export default defineConfig([
     },
   },
   {
+    name: 'qiankun/sandbox-boundaries',
+    files: ['packages/sandbox/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['lodash/*'],
+              message: "Import named methods from 'lodash'; the library build rewrites them to method subpaths.",
+            },
+            {
+              group: ['@qiankunjs/loader', '@qiankunjs/loader/**'],
+              message: 'The standalone sandbox must not depend on the qiankun HTML loader.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     name: 'qiankun/sandbox-patcher-boundaries',
     files: ['packages/sandbox/src/patchers/**/*.ts'],
     rules: {
@@ -110,6 +131,10 @@ export default defineConfig([
                 '@qiankunjs/sandbox/**/membrane/**',
               ],
               message: 'Isolation plugins must only use the public Compartment API.',
+            },
+            {
+              group: ['@qiankunjs/loader', '@qiankunjs/loader/**'],
+              message: 'The standalone sandbox must not depend on the qiankun HTML loader.',
             },
           ],
         },

@@ -7,7 +7,7 @@ JS isolation engine: a Compartment-shaped facade owns the Proxy **Membrane**, cl
 ```
 sandbox/
 ├── core/
-│   ├── sandbox/          # createSandboxContainer() + StandardSandbox preset (mount/unmount)
+│   ├── sandbox/          # createSandbox() + StandardSandbox preset + container protocol
 │   ├── membrane/         # Proxy wrapper for global (window/document) isolation
 │   ├── compartment/      # globals + module hooks + blob classic evaluation facade
 │   ├── globals.ts        # global property definitions
@@ -24,7 +24,8 @@ sandbox/
 
 | Task | File | Notes |
 | --- | --- | --- |
-| Create sandbox | `core/sandbox/index.ts` | Builds a `StandardSandbox`, installs built-in then user plugins, and returns mount/unmount |
+| Create sandbox | `core/sandbox/index.ts` | Builds a `StandardSandbox`, installs the JS-only or DOM preset, and returns mount/unmount/dispose |
+| Prepare container | `core/sandbox/container.ts` | Owns `<qiankun-head>`, `data-name`, style scope, and cleanup contracts |
 | Proxy logic | `core/membrane/index.ts` | Write → local target; Read → local → configured globals → host window |
 | Compartment facade | `core/compartment/index.ts` | Owns the membrane, module facade, and CSP-safe blob classic evaluation |
 | Plugin protocol | `patchers/types.ts` | Public `IsolationPlugin`, context, `Free`, and `Rebuild` contracts |
@@ -56,7 +57,9 @@ sandbox/
 
 The module engine in `@qiankunjs/shared` is an implementation detail behind `Compartment.import()`, `load()`, and `importDocumentModules()`. Cross-package consumers must depend on the structural Compartment facade, never `EsmSandboxEngine`.
 
-`createSandboxContainer().dispose()` is the terminal owner cleanup: it frees active plugin effects, deactivates the sandbox, and idempotently disposes the Compartment. Initial load failures must call it without replacing the original loading error.
+`createSandbox().dispose()` is the terminal owner cleanup: it frees active plugin effects, restores container protocol state, deactivates the sandbox, and idempotently disposes the Compartment. Initial load failures must call it without replacing the original loading error.
+
+`createSandbox(appName)` is the JS-only preset: interval, window-listener, and history cleanup are available without a container. Providing `container` enables dynamic DOM interception; `mount()` prepares standalone containers lazily so qiankun's streaming loader never gets a duplicate `<qiankun-head>`. The controller's public `nodeTransformer` is the single configured transformer for both streaming and dynamic assets.
 
 ### IsolationPlugin / Free pattern
 
@@ -102,7 +105,7 @@ If a native Compartment becomes available, it may replace only globalThis virtua
 ## EXPORTS (`src/index.ts`)
 
 ```typescript
-export * from './core/sandbox'; // createSandboxContainer, type Sandbox, StandardSandbox
+export * from './core/sandbox'; // createSandbox, prepareSandboxContainer, StandardSandbox, controller/options types
 export * from './core/compartment'; // Compartment, options, compatibility lists
 export * from './consts'; // qiankunHeadTagName, qiankunBodyTagName, nativeGlobal, nativeDocument
 export { esmDestructurableGlobals } from './core/esm-globals';

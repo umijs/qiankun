@@ -4,10 +4,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LoaderOpts } from '@qiankunjs/loader';
 import { nativeGlobal } from '@qiankunjs/sandbox';
-import { createSandboxContainer as createRealSandboxContainer } from '../../../../sandbox/src/core/sandbox';
+import { createSandbox as createRealSandbox } from '../../../../sandbox/src/core/sandbox';
 
 const mocks = vi.hoisted(() => ({
-  createSandboxContainer: vi.fn(),
+  createSandbox: vi.fn(),
   dispose: vi.fn(async () => {}),
   loadEntry: vi.fn(),
   mount: vi.fn(async () => {}),
@@ -21,7 +21,7 @@ vi.mock('@qiankunjs/loader', async (importOriginal) => ({
 
 vi.mock('@qiankunjs/sandbox', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  createSandboxContainer: mocks.createSandboxContainer,
+  createSandbox: mocks.createSandbox,
 }));
 
 import type { MicroAppLifeCycles } from '../../types';
@@ -36,12 +36,13 @@ const validLifecycles: MicroAppLifeCycles = {
 
 describe('loadApp sandbox cleanup', () => {
   beforeEach(() => {
-    mocks.createSandboxContainer.mockReturnValue({
+    mocks.createSandbox.mockReturnValue({
       dispose: mocks.dispose,
       instance: {
         globalThis: window,
         latestSetProp: undefined,
       },
+      nodeTransformer: (node: Node) => node,
       mount: mocks.mount,
       unmount: mocks.unmount,
     });
@@ -70,7 +71,7 @@ describe('loadApp sandbox cleanup', () => {
       Object.getOwnPropertyNames(nativeGlobal).filter((key) => key.startsWith('__compartment_globalThis__'));
     const accessorsBeforeLoad = listAccessors();
 
-    mocks.createSandboxContainer.mockImplementationOnce(createRealSandboxContainer);
+    mocks.createSandbox.mockImplementationOnce(createRealSandbox);
     mocks.loadEntry.mockImplementationOnce((_entry: unknown, _container: HTMLElement, opts: LoaderOpts) => {
       opts.compartment?.registerImportMap('{"imports":{}}', document.baseURI);
       return Promise.reject(loadError);
@@ -124,6 +125,64 @@ describe('loadApp sandbox cleanup', () => {
     await parcelConfig.unload[0]();
 
     expect(mocks.dispose).toHaveBeenCalledOnce();
+  });
+
+  it('uses the public sandbox controller and shares its configured transformer with the loader', async () => {
+    const controllerNodeTransformer = vi.fn(<T extends Node>(node: T) => node);
+    const configuredNodeTransformer = vi.fn(<T extends Node>(node: T) => node);
+    const resolveHook = (specifier: string) => specifier;
+    const importHook = async () => ({ namespace: { ready: true } });
+    const modules = { preset: { namespace: { preset: true } } };
+    const container = document.createElement('div');
+    mocks.createSandbox.mockReturnValueOnce({
+      dispose: mocks.dispose,
+      instance: {
+        globalThis: window,
+        latestSetProp: undefined,
+      },
+      mount: mocks.mount,
+      nodeTransformer: controllerNodeTransformer,
+      unmount: mocks.unmount,
+    });
+    mocks.loadEntry.mockResolvedValue(validLifecycles);
+
+    await loadApp(createApp(container), {
+      nodeTransformer: configuredNodeTransformer,
+      sandbox: {
+        globals: { tenant: 'acme' },
+        importHook,
+        modules,
+        resolveHook,
+        styleIsolation: true,
+      },
+    });
+
+    expect(mocks.createSandbox).toHaveBeenCalledWith(
+      'sandbox-cleanup-test',
+      expect.objectContaining({
+        globals: { tenant: 'acme' },
+        importHook,
+        modules,
+        nodeTransformer: configuredNodeTransformer,
+        resolveHook,
+        styleIsolation: true,
+      }),
+    );
+    const createOptions = mocks.createSandbox.mock.calls[0][1];
+    expect(createOptions.container()).toBe(container);
+    expect(createOptions.compartmentOptions.moduleHost).toEqual(
+      expect.objectContaining({
+        entryUrl: 'https://sandbox-cleanup.test/index.html',
+        instanceId: expect.any(Number),
+        isLifecycleNamespace: expect.any(Function),
+        materializeRedirect: expect.any(Function),
+      }),
+    );
+    expect(mocks.loadEntry).toHaveBeenCalledWith(
+      'https://sandbox-cleanup.test/index.html',
+      container,
+      expect.objectContaining({ nodeTransformer: controllerNodeTransformer }),
+    );
   });
 });
 

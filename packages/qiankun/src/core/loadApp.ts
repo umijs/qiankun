@@ -4,8 +4,8 @@
  */
 import type { LoaderOpts } from '@qiankunjs/loader';
 import { loadEntry } from '@qiankunjs/loader';
-import type { Sandbox } from '@qiankunjs/sandbox';
-import { createSandboxContainer, esmDestructurableGlobals, nativeGlobal } from '@qiankunjs/sandbox';
+import type { Sandbox, SandboxController } from '@qiankunjs/sandbox';
+import { createSandbox, nativeGlobal } from '@qiankunjs/sandbox';
 import {
   defineProperty,
   hasOwnProperty,
@@ -16,7 +16,6 @@ import {
   transpileAssets,
   warn,
 } from '@qiankunjs/shared';
-import type { StyleIsolationOpts } from '@qiankunjs/shared';
 import { concat, isFunction, mergeWith } from 'lodash';
 import type { ParcelConfigObject } from 'single-spa';
 import getAddOns from '../addons';
@@ -59,7 +58,7 @@ export default async function loadApp<T extends ObjectType>(
   const { name: appName, entry, container } = app;
   const defaultNodeTransformer: AppConfiguration['nodeTransformer'] = (node, opts) => {
     const moduleResolver = (url: string) => defaultModuleResolver(url, microAppDOMContainer, document.head);
-    return transpileAssets(node, entry, { ...opts, moduleResolver, styleIsolation: styleIsolationOpts });
+    return transpileAssets(node, entry, { ...opts, moduleResolver });
   };
   const {
     fetch = window.fetch,
@@ -80,10 +79,6 @@ export default async function loadApp<T extends ObjectType>(
 
   const enhancedFetch = makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)));
 
-  const styleIsolationOpts: StyleIsolationOpts | undefined = styleIsolationEnabled
-    ? { appName, scopeRoot: `[data-name="${appName}"]` }
-    : undefined;
-
   const markName = `[qiankun] App ${appName} Loading`;
   if (process.env.NODE_ENV === 'development') {
     performanceMark(markName);
@@ -93,21 +88,21 @@ export default async function loadApp<T extends ObjectType>(
   let mountSandbox: (container: HTMLElement) => Promise<void> = () => Promise.resolve();
   let unmountSandbox = () => Promise.resolve();
   let sandboxInstance: Sandbox | undefined;
-  let sandboxController: ReturnType<typeof createSandboxContainer> | undefined;
+  let sandboxController: SandboxController | undefined;
+  let resolvedNodeTransformer = nodeTransformer;
   const instanceId = genInstanceId(appName);
   let mountTimes = 1;
 
   let microAppDOMContainer: HTMLElement = container;
-  initContainer(microAppDOMContainer, appName, { sandboxCfg: sandbox, mountTimes, instanceId });
+  initContainer(microAppDOMContainer, { sandboxCfg: sandbox, mountTimes, instanceId });
+  if (!sandboxEnabled) microAppDOMContainer.dataset.name = appName;
 
   if (sandboxEnabled) {
-    sandboxController = createSandboxContainer(appName, () => microAppDOMContainer, {
+    sandboxController = createSandbox(appName, {
+      container: () => microAppDOMContainer,
       compartmentOptions: {
-        ...compartmentHooks,
         moduleHost: {
           entryUrl: entry,
-          fetch: enhancedFetch,
-          globalsBaseSet: [...esmDestructurableGlobals, ...Object.keys(globals)],
           instanceId,
           materializeRedirect: (url) => defaultModuleResolver(url, microAppDOMContainer, document.head)?.url,
           isLifecycleNamespace: (namespace) =>
@@ -119,10 +114,12 @@ export default async function loadApp<T extends ObjectType>(
       fetch: enhancedFetch,
       nodeTransformer,
       plugins,
-      styleIsolation: styleIsolationOpts,
+      styleIsolation: styleIsolationEnabled,
+      ...compartmentHooks,
     });
 
     sandboxInstance = sandboxController.instance;
+    resolvedNodeTransformer = sandboxController.nodeTransformer;
     global = sandboxInstance.globalThis;
 
     mountSandbox = (domContainer) => sandboxController!.mount(domContainer);
@@ -136,7 +133,7 @@ export default async function loadApp<T extends ObjectType>(
   const containerOpts: LoaderOpts = {
     compartment: sandboxInstance,
     fetch: enhancedFetch,
-    nodeTransformer,
+    nodeTransformer: resolvedNodeTransformer,
     ...restConfiguration,
   };
   const lifecycleSetup = await (async () => {
@@ -207,7 +204,8 @@ export default async function loadApp<T extends ObjectType>(
           // explicitly rather than inferred from the DOM, since markup noise (whitespace text nodes,
           // framework placeholder comments) would fool an emptiness check
           if (mountTimes > 1 || !initializedContainers.has(mountContainer)) {
-            initContainer(mountContainer, appName, { sandboxCfg: sandbox, mountTimes, instanceId });
+            initContainer(mountContainer, { sandboxCfg: sandbox, mountTimes, instanceId });
+            if (!sandboxEnabled) mountContainer.dataset.name = appName;
             // html scripts should be removed to avoid repeatedly execute
             const htmlString = await getPureHTMLStringWithoutScripts(entry, enhancedFetch);
             await loadEntry(
@@ -279,7 +277,6 @@ const initializedContainers = new WeakSet<HTMLElement>();
 
 function initContainer(
   container: HTMLElement,
-  appName: string,
   opts: { sandboxCfg: AppConfiguration['sandbox']; mountTimes: number; instanceId: number },
 ): void {
   const { sandboxCfg, mountTimes, instanceId } = opts;
@@ -288,7 +285,6 @@ function initContainer(
   }
   initializedContainers.add(container);
 
-  container.dataset.name = appName;
   container.dataset.version = __QIANKUN_VERSION__;
   // The sandbox configuration object may carry functions and large globals — store a
   // debug-friendly summary instead of serializing it verbatim.

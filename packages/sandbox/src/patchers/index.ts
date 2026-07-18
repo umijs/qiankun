@@ -4,6 +4,8 @@
  */
 
 import { SandboxType } from '../core/sandbox/types';
+import { containsLoaderStreamedNode, ensureSandboxContainerHead } from '../core/sandbox/container';
+import { QiankunError } from '@qiankunjs/shared';
 import { patchStandardSandbox, reattachDynamicStylesheets } from './dynamicAppend';
 import patchHistoryListener from './historyListener';
 import patchInterval from './interval';
@@ -29,9 +31,16 @@ const dynamicAppendPlugin: IsolationPlugin = {
   name: 'dynamicAppend',
   bootstrap: (context) => patchStandardSandbox(context),
   mount: async (context) => {
+    const container = context.getContainer();
+    if (!container) {
+      throw new QiankunError(`${context.appName} requires a container for DOM isolation`);
+    }
+    if (!container.querySelector('qiankun-head') && !containsLoaderStreamedNode(container)) {
+      ensureSandboxContainerHead(container);
+    }
     const free = patchStandardSandbox(context);
     try {
-      await reattachDynamicStylesheets(context.compartment, context.getContainer());
+      await reattachDynamicStylesheets(context.compartment, container);
     } catch (error) {
       // The patch above is already live but its Free has not been handed to the
       // container yet — undo it here, otherwise a reattach failure would strand
@@ -54,8 +63,11 @@ export const defaultIsolationPlugins = {
   [SandboxType.Snapshot]: baseIsolationPlugins,
 } satisfies Record<SandboxType, readonly IsolationPlugin[]>;
 
-export function getDefaultIsolationPlugins(sandboxType: SandboxType): readonly IsolationPlugin[] {
-  return defaultIsolationPlugins[sandboxType];
+export function getDefaultIsolationPlugins(
+  sandboxType: SandboxType,
+  includeDomIsolation = true,
+): readonly IsolationPlugin[] {
+  return includeDomIsolation ? defaultIsolationPlugins[sandboxType] : baseIsolationPlugins;
 }
 
 export type { Free, IsolationPlugin, IsolationPluginConfig, IsolationPluginContext, Patch, Rebuild } from './types';
