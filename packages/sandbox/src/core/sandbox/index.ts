@@ -6,7 +6,7 @@ import { patchAtBootstrapping, patchAtMounting } from '../../patchers';
 import { reattachDynamicStylesheets } from '../../patchers/dynamicAppend';
 import type { SandboxConfig } from '../../patchers/dynamicAppend/types';
 import type { Free, Rebuild } from '../../patchers/types';
-import type { Endowments } from '../membrane';
+import type { CompartmentGlobals, CompartmentOptions } from '../compartment';
 import { StandardSandbox } from './StandardSandbox';
 import type { Sandbox } from './types';
 
@@ -23,17 +23,18 @@ export function createSandboxContainer(
   getContainer: () => HTMLElement,
   opts: {
     globalContext?: WindowProxy;
-    extraGlobals?: Endowments;
+    extraGlobals?: CompartmentGlobals;
+    compartmentOptions?: Omit<CompartmentOptions, 'globals' | 'incubatorContext' | 'name'>;
   } & Pick<SandboxConfig, 'fetch' | 'nodeTransformer' | 'styleIsolation'>,
 ) {
-  const { globalContext, extraGlobals = {}, ...sandboxCfg } = opts;
+  const { compartmentOptions, globalContext, extraGlobals = {}, ...sandboxCfg } = opts;
   let sandbox: Sandbox;
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (window.Proxy) {
-    sandbox = new StandardSandbox(appName, extraGlobals, globalContext);
+    sandbox = new StandardSandbox(appName, extraGlobals, globalContext, compartmentOptions);
   } else {
     // TODO snapshot sandbox
-    sandbox = new StandardSandbox(appName, extraGlobals, globalContext);
+    sandbox = new StandardSandbox(appName, extraGlobals, globalContext, compartmentOptions);
   }
 
   // some side effect could be invoked while bootstrapping, such as dynamic stylesheet injection with style-loader, especially during the development phase
@@ -42,9 +43,25 @@ export function createSandboxContainer(
   let mountingFrees: Free[] = [];
 
   let sideEffectsRebuilds: Rebuild[] = [];
+  let effectsActive = true;
+  let disposed = false;
 
   return {
     instance: sandbox,
+
+    /** Permanently release side effects and the Compartment module host. */
+    async dispose() {
+      if (disposed) return;
+      disposed = true;
+      if (effectsActive) {
+        [...bootstrappingFrees, ...mountingFrees].forEach((free) => free());
+        effectsActive = false;
+      }
+      sideEffectsRebuilds = [];
+      mountingFrees = [];
+      sandbox.inactive();
+      sandbox.dispose();
+    },
 
     /**
      * 沙箱被 mount
@@ -52,6 +69,7 @@ export function createSandboxContainer(
      * 也可能是从 unmount 之后再次唤醒进入 mount
      */
     async mount(container: HTMLElement) {
+      if (disposed) throw new TypeError(`Sandbox container for ${appName} has been disposed`);
       /* ------------------------------------------ 因为有上下文依赖（window），以下代码执行顺序不能变 ------------------------------------------ */
 
       /* ------------------------------------------ 1. 启动/恢复 沙箱------------------------------------------ */
@@ -81,6 +99,7 @@ export function createSandboxContainer(
 
       // clean up rebuilds
       sideEffectsRebuilds = [];
+      effectsActive = true;
 
       /* ------------------------------------------ 4. 重挂载遗漏的动态样式 ------------------------------------*/
       // the app's loading-phase DOM (including dynamically injected stylesheets) may have been wiped
@@ -93,9 +112,11 @@ export function createSandboxContainer(
      * 恢复 global 状态，使其能回到应用加载之前的状态
      */
     async unmount() {
+      if (disposed || !effectsActive) return;
       // record the rebuilds of window side effects (event listeners or timers)
       // note that the frees of mounting phase are one-off as it will be re-init at next mounting
       sideEffectsRebuilds = [...bootstrappingFrees, ...mountingFrees].map((free) => free());
+      effectsActive = false;
 
       sandbox.inactive();
     },

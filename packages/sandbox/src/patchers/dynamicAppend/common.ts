@@ -199,8 +199,9 @@ export function getOverwrittenAppendChildOrInsertBefore(
 
           const { sandbox, nodeTransformer, fetch, styleIsolation } = sandboxConfig;
           const transpiledStyleSheetElement = nodeTransformer(stylesheetElement, {
+            classicScriptTransformer: (source, sourceURL) => sandbox.transformClassicScript(source, sourceURL),
+            compartment: sandbox,
             fetch,
-            sandbox,
             styleIsolation,
           });
 
@@ -239,8 +240,9 @@ export function getOverwrittenAppendChildOrInsertBefore(
           const externalSyncMode = scriptElement.hasAttribute('src') && !scriptElement.hasAttribute('async');
 
           let transformerOpts: AssetsTranspilerOpts = {
+            classicScriptTransformer: (source, sourceURL) => sandbox.transformClassicScript(source, sourceURL),
+            compartment: sandbox,
             fetch,
-            sandbox,
           };
 
           let queueSyncScript: () => void;

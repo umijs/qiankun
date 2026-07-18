@@ -1,16 +1,30 @@
-import { markLoaderStreamedNode, QiankunError } from '@qiankunjs/shared';
+import {
+  EsmSandboxEngine,
+  markLoaderStreamedNode,
+  QiankunError,
+  type DocumentModule,
+  type ModuleNamespace,
+} from '@qiankunjs/shared';
 import { nativeDocument, nativeGlobal } from '../../consts';
+import { esmDestructurableGlobals } from '../esm-globals';
 import { globalsInES2015 } from '../globals';
 import { Membrane, type MembraneTarget } from '../membrane';
 import { array2TruthyObject } from '../utils';
-import { type CompartmentOptions, type CompartmentTransform, type EvaluateScriptOptions } from './types';
+import {
+  type CompartmentLoaderFacade,
+  type CompartmentOptions,
+  type CompartmentTransform,
+  type EvaluateScriptOptions,
+} from './types';
 
 export {
   type CompartmentOptions,
+  type CompartmentLoaderFacade,
+  type CompartmentModuleHostOptions,
   type EvaluateScriptOptions,
   type CompartmentGlobals,
-  type Endowments,
   type CompartmentTransform,
+  type Endowments,
 } from './types';
 
 const compartmentGlobalIdPrefix = '__compartment_globalThis__';
@@ -36,7 +50,7 @@ export type UnshadowableGlobals =
 
 let compartmentCounter = 0;
 
-export class Compartment {
+export class Compartment implements CompartmentLoaderFacade {
   /**
    * Since browser script execution is scheduled by the host, every compartment
    * needs a stable, unique global accessor for its generated classic scripts.
@@ -49,9 +63,11 @@ export class Compartment {
 
   private readonly unscopables: Record<string, true>;
 
-  private disposed = false;
+  private readonly moduleEngineOptions: ConstructorParameters<typeof EsmSandboxEngine>[0];
 
-  private unsafeClassicEvaluationWarned = false;
+  private moduleEngine: EsmSandboxEngine | undefined;
+
+  private disposed = false;
 
   private readonly pendingClassicEvaluations = new Set<PendingClassicEvaluation>();
 
@@ -62,7 +78,17 @@ export class Compartment {
   readonly name: string;
 
   constructor(options: CompartmentOptions = {}) {
-    const { name = '', globals = {}, transforms = [], incubatorContext = window } = options;
+    const {
+      name = '',
+      globals = {},
+      modules,
+      resolveHook,
+      importHook,
+      loadHook,
+      transforms = [],
+      incubatorContext = window,
+      moduleHost = {},
+    } = options;
     this.name = name;
     this.transforms = transforms.slice();
     this.unscopables = array2TruthyObject(defaultUnshadowableGlobalNames);
@@ -72,8 +98,40 @@ export class Compartment {
     while (nativeGlobal[getCompartmentGlobalId(compartmentCounter)]) {
       compartmentCounter++;
     }
-    this.id = getCompartmentGlobalId(compartmentCounter++);
+    const compartmentId = compartmentCounter++;
+    this.id = getCompartmentGlobalId(compartmentId);
     nativeGlobal[this.id] = this.membrane.globalThisView;
+
+    const defaultFetch = nativeGlobal.fetch.bind(nativeGlobal);
+    const {
+      entryUrl = nativeDocument.baseURI,
+      fetch = defaultFetch,
+      globalsBaseSet = esmDestructurableGlobals,
+      instanceId = compartmentId + 1,
+      materializeRedirect,
+      isLifecycleNamespace,
+      moduleImporter,
+      createModuleUrl,
+      revokeModuleUrl,
+    } = moduleHost;
+    this.moduleEngineOptions = {
+      appName: name || `compartment-${String(compartmentId)}`,
+      instanceId,
+      entryUrl,
+      fetch,
+      getGlobalsView: () => this.getEsmGlobalsView(),
+      globalsBaseSet: Array.from(new Set([...globalsBaseSet, ...Object.keys(globals)])),
+      modules,
+      resolveHook,
+      importHook,
+      loadHook,
+      materializeRedirect,
+      isLifecycleNamespace,
+      moduleImporter,
+      createModuleUrl,
+      revokeModuleUrl,
+      subscribeGlobalSets: (listener) => this.onGlobalSet(listener),
+    };
   }
 
   get globalThis(): WindowProxy {
@@ -99,7 +157,9 @@ export class Compartment {
     );
   }
 
-  /** @deprecated Use defineUnshadowableGlobals instead. */
+  /**
+   * @deprecated Use {@link defineUnshadowableGlobals} instead.
+   */
   addIntrinsics(globals: UnshadowableGlobals): void {
     this.defineUnshadowableGlobals(globals);
   }
@@ -120,7 +180,6 @@ export class Compartment {
    */
   async evaluateScript(source: string, options: EvaluateScriptOptions = {}): Promise<void> {
     const code = this.transformClassicScript(source, options.sourceURL);
-    this.warnAboutUnsafeClassicSelfReference();
     const script = nativeDocument.createElement('script');
     const blobUrl = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
 
@@ -178,7 +237,28 @@ export class Compartment {
     });
   }
 
-  /** Release this compartment and its host-global bridge. */
+  import(specifier: string): Promise<ModuleNamespace> {
+    return this.getModuleEngine().import(specifier);
+  }
+
+  load(specifier: string): Promise<void> {
+    return this.getModuleEngine().load(specifier);
+  }
+
+  importDocumentModules(): Promise<ModuleNamespace | undefined> {
+    this.assertAlive();
+    return this.moduleEngine?.importDocumentModules() ?? Promise.resolve(undefined);
+  }
+
+  registerDocumentModule(module: DocumentModule): void {
+    this.getModuleEngine().registerDocumentModule(module);
+  }
+
+  registerImportMap(mapText: string, baseUrl: string): void {
+    this.getModuleEngine().registerImportMap(mapText, baseUrl);
+  }
+
+  /** Release the module mechanism and its host-global bridges. */
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
@@ -187,6 +267,8 @@ export class Compartment {
     delete nativeGlobal[this.id];
     Array.from(this.pendingClassicEvaluations).forEach(({ cancel }) => cancel());
     this.pendingClassicEvaluations.clear();
+    this.moduleEngine?.dispose();
+    this.moduleEngine = undefined;
   }
 
   /**
@@ -197,11 +279,6 @@ export class Compartment {
   transformClassicScript(source: string, sourceURL?: string): string {
     this.assertAlive();
     return this.prepareClassicScript(source, sourceURL);
-  }
-
-  /** @deprecated Use transformClassicScript instead. */
-  makeEvaluateFactory(source: string, sourceURL?: string): string {
-    return this.transformClassicScript(source, sourceURL);
   }
 
   protected lockGlobalThis(): void {
@@ -230,19 +307,10 @@ export class Compartment {
     return `;(function(compartmentGlobalThis){if(!compartmentGlobalThis){return;}(function(){with(this){${globalObjectOptimizer}${transformedSource}\n${sourceMapURL}}}).call(compartmentGlobalThis);})(window.${this.id});`;
   }
 
-  private warnAboutUnsafeClassicSelfReference(): void {
-    if (process.env.NODE_ENV !== 'development' || this.unsafeClassicEvaluationWarned) return;
-
-    const hasWindowSelfReference =
-      this.definedUnshadowableGlobalNames.has('window') && this.globalThis.window === this.globalThis;
-    if (!hasWindowSelfReference) {
-      this.unsafeClassicEvaluationWarned = true;
-      console.warn(
-        `[qiankun:sandbox] Compartment ${
-          this.name || '(anonymous)'
-        } evaluates classic scripts without an isolated window self-reference. Use StandardSandbox for classic script evaluation.`,
-      );
-    }
+  private getModuleEngine(): EsmSandboxEngine {
+    this.assertAlive();
+    this.moduleEngine ??= new EsmSandboxEngine(this.moduleEngineOptions);
+    return this.moduleEngine;
   }
 
   private assertAlive(): void {

@@ -28,7 +28,7 @@ export class StandardSandbox extends Compartment implements Sandbox {
 
   constructor(
     name: string,
-    globals: CompartmentGlobals = {},
+    globals: CompartmentGlobals,
     incubatorContext: WindowProxy = window,
     options: Omit<CompartmentOptions, 'globals' | 'incubatorContext' | 'name'> = {},
   ) {

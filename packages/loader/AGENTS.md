@@ -17,7 +17,7 @@ loader/
 
 | Task | File | Notes |
 | --- | --- | --- |
-| Load micro-app | `index.ts` | `loadEntry(entry, container, opts)`; `opts` carries `sandbox` and/or `esmEngine` |
+| Load micro-app | `index.ts` | `loadEntry(entry, container, opts)`; `opts.compartment` is the single sandbox/module facade |
 | Head virtualization | `TagTransformStream.ts` | rewrites `<head>` tags at the string level before DOM insertion |
 | Streaming DOM | `writable-dom/index.ts` | incremental parsing, blocks on sync scripts/styles, preloads the rest |
 
@@ -29,10 +29,10 @@ loader/
 3. TagTransformStream                        <head> → <qiankun-head>
 4. WritableDOMStream                         stream → live DOM
    ├─ nodeTransformer(node) per node         → shared/assets-transpilers rewrites script/link/style
-   ├─ classic <script entry> → blob-URL execution in the sandbox membrane
-   ├─ <script type="module"> → handed to opts.esmEngine (EsmSandboxEngine)
+   ├─ classic <script entry> → synchronous Compartment host-adapter rewrite, then blob-URL execution
+   ├─ <script type="module"> → registered through the compartment module facade
    └─ blocks on sync scripts; preloads other assets while blocked
-5. resolve app export                        classic: sandbox.latestSetProp · esm: engine lifecycle namespace
+5. resolve app export                        classic: compartment.latestSetProp · esm: compartment.importDocumentModules()
 ```
 
 ## KEY PATTERNS
@@ -46,6 +46,8 @@ isDeferScript; // external + [defer]  → ordered via shared prepareDeferredQueu
 ```
 
 - Exactly **one** `entry` script is allowed per HTML entry; a second one throws `QiankunError`.
+- Loader and asset-transpiler interfaces must not mention `EsmSandboxEngine` or the concrete `Sandbox` class; consume structural `CompartmentLoaderFacade`.
+- `transformClassicScript()` is a stable sandbox-owned host adapter because detached node transformation is synchronous. `evaluateScript()` schedules a separate script asynchronously and cannot replace it in the streaming pipeline.
 
 ### Detached parsing
 
@@ -60,5 +62,5 @@ Nodes are parsed/transformed in a detached document first, then moved to live DO
 
 ```typescript
 export { loadEntry, type LoaderOpts } from './index';
-// LoaderOpts = { fetch, sandbox?, esmEngine?, nodeTransformer?, streamTransformer? } & BaseTranspilerOpts
+// LoaderOpts = { fetch, compartment?, nodeTransformer?, streamTransformer? } & BaseTranspilerOpts
 ```

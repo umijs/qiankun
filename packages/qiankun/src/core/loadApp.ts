@@ -8,7 +8,6 @@ import type { Sandbox } from '@qiankunjs/sandbox';
 import { createSandboxContainer, esmDestructurableGlobals, nativeGlobal } from '@qiankunjs/sandbox';
 import {
   defineProperty,
-  EsmSandboxEngine,
   hasOwnProperty,
   makeFetchCacheable,
   makeFetchRetryable,
@@ -33,7 +32,16 @@ import {
 
 declare const __QIANKUN_VERSION__: string;
 
-export type ParcelConfigObjectGetter = (remountContainer: HTMLElement) => ParcelConfigObject;
+type ApplicationConfigObject = ParcelConfigObject & {
+  /**
+   * single-spa reads this lifecycle from registered application source objects, even though its
+   * ParcelConfigObject type omits it. Root parcels ignore the extra field and retain their
+   * existing remount cache semantics.
+   */
+  unload: Array<() => Promise<void>>;
+};
+
+export type ParcelConfigObjectGetter = (remountContainer: HTMLElement) => ApplicationConfigObject;
 
 export default async function loadApp<T extends ObjectType>(
   app: LoadableApp<T>,
@@ -51,6 +59,8 @@ export default async function loadApp<T extends ObjectType>(
     globalContext = window,
     nodeTransformer = defaultNodeTransformer,
     styleIsolation: styleIsolationEnabled,
+    extraGlobals = {},
+    compartmentOptions = {},
     ...restConfiguration
   } = configuration || {};
 
@@ -69,44 +79,39 @@ export default async function loadApp<T extends ObjectType>(
   let mountSandbox: (container: HTMLElement) => Promise<void> = () => Promise.resolve();
   let unmountSandbox = () => Promise.resolve();
   let sandboxInstance: Sandbox | undefined;
+  let sandboxController: ReturnType<typeof createSandboxContainer> | undefined;
   const instanceId = genInstanceId(appName);
   let mountTimes = 1;
 
   let microAppDOMContainer: HTMLElement = container;
   initContainer(microAppDOMContainer, appName, { sandboxCfg: sandbox, mountTimes, instanceId });
 
-  let esmEngine: EsmSandboxEngine | undefined;
   if (sandbox) {
-    const sandboxContainer = createSandboxContainer(appName, () => microAppDOMContainer, {
+    sandboxController = createSandboxContainer(appName, () => microAppDOMContainer, {
+      compartmentOptions: {
+        ...compartmentOptions,
+        moduleHost: {
+          entryUrl: entry,
+          fetch: enhancedFetch,
+          globalsBaseSet: [...esmDestructurableGlobals, ...Object.keys(extraGlobals)],
+          instanceId,
+          materializeRedirect: (url) => defaultModuleResolver(url, microAppDOMContainer, document.head)?.url,
+          isLifecycleNamespace: (namespace) =>
+            isLifecycleObject(namespace) || isLifecycleObject(namespace.default as ObjectType),
+        },
+      },
+      extraGlobals,
       globalContext,
-      extraGlobals: {},
       fetch: enhancedFetch,
       nodeTransformer,
       styleIsolation: styleIsolationOpts,
     });
 
-    sandboxInstance = sandboxContainer.instance;
+    sandboxInstance = sandboxController.instance;
     global = sandboxInstance.globalThis;
 
-    mountSandbox = (domContainer) => sandboxContainer.mount(domContainer);
-    unmountSandbox = () => sandboxContainer.unmount();
-
-    // ESM sandbox engine: takes over <script type="module"> of the sub app (ESM sandbox RFC)
-    esmEngine = new EsmSandboxEngine({
-      appName,
-      instanceId,
-      entryUrl: entry,
-      fetch: enhancedFetch,
-      getGlobalsView: () => sandboxInstance!.getEsmGlobalsView(),
-      globalsBaseSet: esmDestructurableGlobals,
-      // keeps the live dunder-global bindings (e.g. runtime-created feature flags) in sync
-      subscribeGlobalSets: (listener) => sandboxInstance!.onGlobalSet(listener),
-      moduleResolver: (url) => defaultModuleResolver(url, microAppDOMContainer, document.head),
-      // pick the entry module by its lifecycle exports when no `entry` attribute is present (Vite drops
-      // it during transformIndexHtml); a classic app's stray module script thus never hijacks the entry
-      isLifecycleNamespace: (ns) =>
-        isLifecycleObject(ns) || isLifecycleObject((ns as ObjectType).default as ObjectType),
-    });
+    mountSandbox = (domContainer) => sandboxController!.mount(domContainer);
+    unmountSandbox = () => sandboxController!.unmount();
   }
 
   if (instanceId > 1) {
@@ -114,37 +119,54 @@ export default async function loadApp<T extends ObjectType>(
   }
 
   const containerOpts: LoaderOpts = {
+    compartment: sandboxInstance,
     fetch: enhancedFetch,
-    sandbox: sandboxInstance,
-    esmEngine,
     nodeTransformer,
     ...restConfiguration,
   };
-  const lifecyclesPromise = loadEntry<MicroAppLifeCycles>(entry, microAppDOMContainer, containerOpts);
+  const lifecycleSetup = await (async () => {
+    let lifecyclesPromise: Promise<MicroAppLifeCycles | undefined> | undefined;
+    try {
+      lifecyclesPromise = loadEntry<MicroAppLifeCycles>(entry, microAppDOMContainer, containerOpts);
 
-  const assetPublicPath = calcPublicPath(entry);
-  const {
-    beforeUnmount = [],
-    afterUnmount = [],
-    afterMount = [],
-    beforeMount = [],
-    beforeLoad = [],
-  } = mergeWith({}, getAddOns(global, assetPublicPath), lifeCycles, (v1, v2) =>
-    concat((v1 ?? []) as LifeCycleFn<T>, (v2 ?? []) as LifeCycleFn<T>),
-  );
-  // FIXME Due to the asynchronous execution of loadEntry, the DOM of the sub-app is inserted synchronously through appendChild, and inline scripts are also executed synchronously. Therefore, the beforeLoad may need to rely on transformer configuration to coordinate and ensure the order of asynchronous operations.
-  await execHooksChain(toArray(beforeLoad), app, global);
+      const assetPublicPath = calcPublicPath(entry);
+      const {
+        beforeUnmount = [],
+        afterUnmount = [],
+        afterMount = [],
+        beforeMount = [],
+        beforeLoad = [],
+      } = mergeWith({}, getAddOns(global, assetPublicPath), lifeCycles, (v1, v2) =>
+        concat((v1 ?? []) as LifeCycleFn<T>, (v2 ?? []) as LifeCycleFn<T>),
+      );
+      // FIXME Due to the asynchronous execution of loadEntry, the DOM of the sub-app is inserted synchronously through appendChild, and inline scripts are also executed synchronously. Therefore, the beforeLoad may need to rely on transformer configuration to coordinate and ensure the order of asynchronous operations.
+      await execHooksChain(toArray(beforeLoad), app, global);
 
-  const lifecycles = await lifecyclesPromise;
-  const { bootstrap, mount, unmount, update } = getLifecyclesFromExports(
-    lifecycles,
-    appName,
-    global,
-    sandboxInstance?.latestSetProp,
-  );
+      const lifecycles = await lifecyclesPromise;
+      return {
+        afterMount,
+        afterUnmount,
+        beforeMount,
+        beforeUnmount,
+        ...getLifecyclesFromExports(lifecycles, appName, global, sandboxInstance?.latestSetProp),
+      };
+    } catch (error) {
+      // beforeLoad may fail while the concurrently started entry pipeline is still pending.
+      // Observe its eventual rejection, then permanently abort the sandbox without masking
+      // the load/lifecycle error that caused this path.
+      void lifecyclesPromise?.catch(() => undefined);
+      try {
+        await sandboxController?.dispose();
+      } catch {
+        // The original load error is the actionable failure and must retain precedence.
+      }
+      throw error;
+    }
+  })();
+  const { bootstrap, mount, unmount, update, beforeUnmount, afterUnmount, afterMount, beforeMount } = lifecycleSetup;
 
   return (mountContainer) => {
-    const parcelConfig: ParcelConfigObject = {
+    const parcelConfig: ApplicationConfigObject = {
       name: appName,
 
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -213,12 +235,12 @@ export default async function loadApp<T extends ObjectType>(
         },
       ],
 
-      // single-spa unload = the app is fully torn down (not just deactivated), the right time to release
-      // the ESM engine's realm + blob URLs. Remount only unmounts/mounts, so it keeps reusing the engine
-      // and its module namespaces; unload → next activation re-runs loadApp with a fresh engine (RFC §8).
+      // Registered-application unload = the app is fully torn down (not just deactivated), the
+      // right time to release the Compartment module mechanism and blob URLs. Root parcels ignore
+      // this extra lifecycle and keep the same module namespaces across their remount cache.
       unload: [
         async () => {
-          esmEngine?.dispose();
+          await sandboxController?.dispose();
         },
       ],
     };

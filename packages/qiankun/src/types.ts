@@ -3,7 +3,22 @@
  * @since 2023-04-25
  */
 import type { LoaderOpts } from '@qiankunjs/loader';
+import type { CompartmentGlobals, CompartmentOptions } from '@qiankunjs/sandbox';
 import type { LifeCycles as ParcelLifeCycles, Parcel, RegisterApplicationConfig } from 'single-spa';
+
+export type {
+  Compartment,
+  CompartmentGlobals,
+  CompartmentOptions,
+  ImportHook,
+  ModuleDescriptor,
+  ModuleNamespace,
+  Modules,
+  ModuleSource,
+  PrecompileModuleSourceOpts,
+  ResolveHook,
+  UnshadowableGlobals,
+} from '@qiankunjs/sandbox';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
@@ -51,6 +66,10 @@ export type AppConfiguration = Partial<Pick<LoaderOpts, 'fetch' | 'streamTransfo
    * When enabled, all micro-app styles are scoped to the app container.
    */
   styleIsolation?: boolean;
+  /** Additional values or descriptors installed on this application's compartment global. */
+  extraGlobals?: CompartmentGlobals;
+  /** Advanced module hook configuration for this application's compartment. */
+  compartmentOptions?: Pick<CompartmentOptions, 'modules' | 'resolveHook' | 'importHook' | 'loadHook'>;
 };
 
 export type LifeCycleFn<T extends ObjectType> = (app: LoadableApp<T>, global: WindowProxy) => Promise<void>;

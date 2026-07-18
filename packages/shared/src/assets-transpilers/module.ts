@@ -3,11 +3,11 @@
  * @since 2026-07-04
  * DOM-level entry of the ESM transpiler pipeline (RFC §9/§12):
  * `<script type="module">` elements are neutralized in place and their execution is taken over by
- * the EsmSandboxEngine (evaluated via dynamic import in document order once the HTML stream ends),
+ * the Compartment module facade (evaluated in document order once the HTML stream ends),
  * since a module script with a src attribute would immediately trigger the native loader and bypass
  * the sandbox completely.
  */
-import type { EsmSandboxEngine } from '../esm-sandbox';
+import type { CompartmentModuleFacade } from '../esm-sandbox';
 import { resolveUrl } from '../utils';
 import type { ScriptTranspilerOpts } from './types';
 
@@ -29,7 +29,7 @@ const getCredentials = (crossOrigin: string | null): RequestInit['credentials'] 
 export function transpileModuleScript(
   script: HTMLScriptElement,
   baseURI: string,
-  esmEngine: EsmSandboxEngine,
+  compartment: CompartmentModuleFacade,
   opts: ScriptTranspilerOpts,
 ): HTMLScriptElement {
   const { scriptTranspiledDeferred } = opts;
@@ -42,11 +42,11 @@ export function transpileModuleScript(
     script.dataset.src = entireUrl;
     script.dataset.esm = 'true';
 
-    esmEngine.setFetchCredentials(getCredentials(script.crossOrigin));
-    esmEngine.loadModuleScript({
+    compartment.registerDocumentModule({
       url: entireUrl,
       baseUrl: baseURI,
       isEntry: script.hasAttribute('entry'),
+      credentials: getCredentials(script.crossOrigin),
     });
 
     // module scripts never join the classic defer script chain, they are implicitly deferred
@@ -62,7 +62,11 @@ export function transpileModuleScript(
     script.dataset.esm = 'true';
     script.dataset.consumed = 'true';
 
-    esmEngine.loadModuleScript({ code, baseUrl: baseURI });
+    compartment.registerDocumentModule({
+      code,
+      baseUrl: baseURI,
+      credentials: getCredentials(script.crossOrigin),
+    });
 
     scriptTranspiledDeferred?.resolve();
     return script;
@@ -75,7 +79,7 @@ export function transpileModuleScript(
 export function consumeImportMapScript(
   script: HTMLScriptElement,
   baseURI: string,
-  esmEngine: EsmSandboxEngine,
+  compartment: CompartmentModuleFacade,
 ): HTMLScriptElement {
   // idempotent: writable-dom re-transforms inline hosts, so a re-visit must not re-parse the leftover
   // comment (which would throw a spurious '[qiankun] failed to parse the import map')
@@ -86,7 +90,7 @@ export function consumeImportMapScript(
   const mapText = script.text;
   if (mapText.trim()) {
     // qiankun parses the sub app import map itself, it must never reach the host document (RFC §5)
-    esmEngine.registerAppImportMap(mapText, baseURI);
+    compartment.registerImportMap(mapText, baseURI);
     script.textContent = '/* qiankun: importmap consumed */';
     script.dataset.consumed = 'true';
   }

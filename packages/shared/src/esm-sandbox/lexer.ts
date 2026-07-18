@@ -1,16 +1,15 @@
 /**
  * @author Kuitos
  * @since 2026-07-04
- * thin wrapper around es-module-lexer to make the wasm initialization preloadable
+ * CSP-safe wrapper around es-module-lexer's pure-JS parser.
  */
-import { init, parse } from 'es-module-lexer';
-import { once } from 'lodash';
+import { parse } from 'es-module-lexer/js';
 
 /**
- * Preload the wasm lexer. Safe to call multiple times, the initialization only happens once.
- * Called ahead of time in qiankun start() so the first micro app loading does not pay the wasm
- * instantiation cost, while the transpiler pipeline always awaits it as the final safety net.
+ * Keep the asynchronous preparation contract used by the loading pipeline. The pure-JS entry is
+ * ready synchronously and, unlike the default WASM entry's string decoder, does not rely on eval.
  */
-export const prepareEsmLexer: () => Promise<void> = once(() => Promise.resolve(init).then(() => undefined));
+const lexerReady = Promise.resolve();
+export const prepareEsmLexer = (): Promise<void> => lexerReady;
 
 export { parse as parseModuleSyntax };

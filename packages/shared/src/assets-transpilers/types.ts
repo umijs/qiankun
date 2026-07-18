@@ -3,7 +3,7 @@
  * @since 2023-08-26
  */
 import type { BaseLoaderOpts } from '../common';
-import type { EsmSandboxEngine } from '../esm-sandbox';
+import type { CompartmentModuleFacade } from '../esm-sandbox';
 import type { MatchResult } from '../module-resolver';
 import type { Deferred } from '../utils';
 
@@ -14,11 +14,10 @@ export type StyleIsolationOpts = {
 
 export type BaseTranspilerOpts = BaseLoaderOpts & {
   moduleResolver?: (url: string) => MatchResult | undefined;
-  sandbox?: {
-    makeEvaluateFactory(source: string, sourceURL?: string): string;
-  };
-  /** present when the ESM sandbox is enabled, routes module scripts through the ESM transpiler pipeline */
-  esmEngine?: EsmSandboxEngine;
+  /** @internal synchronous bridge used by the streaming classic-script transform. */
+  classicScriptTransformer?: (source: string, sourceURL?: string) => string;
+  /** Compartment-shaped module facade; the ESM mechanism stays private to the sandbox package. */
+  compartment?: CompartmentModuleFacade;
   styleIsolation?: StyleIsolationOpts;
 };
 

@@ -5,3 +5,4 @@ export * from './apis/prefetch';
 export * from './apis/effects';
 export * from './apis/errorHandler';
 export type * from './types';
+export { moduleSourceInstanceKeyPlaceholder, precompileModuleSource } from '@qiankunjs/sandbox';

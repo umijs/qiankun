@@ -32,7 +32,7 @@ export const preTranspile = (
   baseURI: string,
   opts: AssetsTranspilerOpts,
 ): PreTranspileResult => {
-  const { sandbox, moduleResolver } = opts;
+  const { compartment, moduleResolver } = opts;
 
   const { src, type } = script;
 
@@ -41,18 +41,18 @@ export const preTranspile = (
     const matchedScript = moduleResolver?.(entireUrl);
     if (matchedScript) {
       return {
-        mode: sandbox ? Mode.REUSED_DEP_IN_SANDBOX : Mode.REUSED_DEP,
+        mode: compartment ? Mode.REUSED_DEP_IN_SANDBOX : Mode.REUSED_DEP,
         result: { src: entireUrl, ...matchedScript },
       };
     }
 
     return {
-      mode: sandbox ? Mode.REMOTE_ASSETS_IN_SANDBOX : Mode.REMOTE_ASSETS,
+      mode: compartment ? Mode.REMOTE_ASSETS_IN_SANDBOX : Mode.REMOTE_ASSETS,
       result: { src: entireUrl },
     };
   }
 
-  if (isValidJavaScriptType(type) && sandbox) {
+  if (isValidJavaScriptType(type) && compartment) {
     const code = script.textContent;
     if (code) {
       return {
@@ -75,16 +75,16 @@ export default function transpileScript(
   // Can't use script.src directly, because it will be resolved to absolute path by browser with Node.baseURI
   // Such as <script src="./foo.js"></script> will be resolved to http://localhost:8000/foo.js while read script.src
   const srcAttribute = script.getAttribute('src');
-  const { sandbox, scriptTranspiledDeferred, esmEngine } = opts;
+  const { classicScriptTransformer, compartment, scriptTranspiledDeferred } = opts;
 
   try {
     // ESM sandbox branch: module scripts and sub app import maps are taken over by the engine
-    if (esmEngine && sandbox) {
+    if (compartment) {
       if (script.type === 'module') {
-        return transpileModuleScript(script, baseURI, esmEngine, opts);
+        return transpileModuleScript(script, baseURI, compartment, opts);
       }
       if (isImportMapScriptType(script.type)) {
-        const transformed = consumeImportMapScript(script, baseURI, esmEngine);
+        const transformed = consumeImportMapScript(script, baseURI, compartment);
         scriptTranspiledDeferred?.resolve();
         return transformed;
       }
@@ -122,7 +122,7 @@ export default function transpileScript(
             const beforeScriptExecuteEvent = 'q:bse';
             const beforeExecutedListenerScript = `;(function(){var s=document.currentScript;var e=new CustomEvent('${beforeScriptExecuteEvent}',{detail:{s:s}});window.dispatchEvent(e);})();`;
 
-            const codeFactory = beforeExecutedListenerScript + sandbox!.makeEvaluateFactory(code, src);
+            const codeFactory = beforeExecutedListenerScript + classicScriptTransformer!(code, src);
 
             if (syncMode) {
               // if it's a sync script and there is a previous sync script(mainly there are multiple defer scripts), we should wait it until loaded to consistent with the browser behavior
@@ -168,7 +168,7 @@ export default function transpileScript(
 
       case Mode.INLINE_CODE_IN_SANDBOX: {
         const { code } = result;
-        script.textContent = sandbox!.makeEvaluateFactory(code);
+        script.textContent = classicScriptTransformer!(code);
         // mark the script have consumed
         script.dataset.consumed = 'true';
 

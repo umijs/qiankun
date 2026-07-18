@@ -25,17 +25,18 @@ shared/
 
 ## ESM-SANDBOX (`esm-sandbox/`, the largest subsystem here)
 
-`EsmSandboxEngine` runs a micro-app's `<script type="module">` graph inside the sandbox membrane without a bundler. See the RFC in `docs/rfcs/`. Pipeline: fetch modules in parallel (memoized) → lexer-scan imports/globals → rewrite source to route referenced globals through the membrane and give each module a synthetic specifier → inject an **import map** so the browser resolves those specifiers → evaluate in dependency order → keep dunder-globals (`__qk_track`) live on later global writes.
+`EsmSandboxEngine` is the replaceable mechanism behind the sandbox package's Compartment module facade; it must not leak into loader or qiankun interfaces. It runs a micro-app's `<script type="module">` graph inside the sandbox membrane without a bundler. Pipeline: resolve through `resolveHook` → obtain and memoize a descriptor from `modules` or `importHook` / `loadHook` → fetch/lexer-rewrite source when needed → give modules synthetic specifiers → inject an **import map** → evaluate in dependency order → keep dunder-globals (`__qk_track`) live on later global writes.
 
 | File | Responsibility |
 | --- | --- |
 | `engine.ts` | `EsmSandboxEngine` — module-graph orchestration, redeclaration probing, in-order eval, dynamic `import()` |
-| `lexer.ts` | `prepareEsmLexer` — wraps es-module-lexer (async init) |
+| `types.ts` | Public structural module contracts: hooks, descriptors, `ModuleSource`, Compartment facade |
+| `lexer.ts` | CSP-safe `es-module-lexer/js` wrapper; preparation Promise is already resolved |
 | `rewrite.ts` | `rewriteModule`, `buildSyntheticSpecifier`, `esmInternalPrefix`, `runtimeModuleSubpath` |
 | `import-bindings.ts` | import statement binding analysis |
 | `identifier-scan.ts` | `scanReferencedGlobals`, `isLiveBindableDunderName` — which globals a module touches |
 | `import-map-registry.ts` | `injectImportMapEntries`, `resetImportMapRegistry` — the dynamic import map |
-| `realm-registry.ts` | `registerEsmRealm`/`unregisterEsmRealm`, `EsmRealm`, `RealmHandle` — per-instance realm lookup |
+| `instance-registry.ts` | Per-engine instance/view lookup used by generated runtime modules |
 | `vite-client-stub.ts` | `isViteClientUrl`, `viteClientStubSource` — stubs Vite dev-client HMR |
 | `source-map.ts` | rewritten-module source-map fixups |
 
@@ -51,9 +52,20 @@ shared/
 | Fetch enhancements | `fetch-utils/*` | decorator chain (compose with `make*` HOFs) |
 | Shared dependency reuse | `module-resolver/index.ts` | `moduleResolver(url, container, head)` semver match |
 | ESM module execution | `esm-sandbox/engine.ts` | `EsmSandboxEngine` (see section above) |
+| Module facade contracts | `esm-sandbox/types.ts` | The only ESM mechanism types cross-package callers should consume |
 | Promise/util helpers | `utils.ts` | `Deferred`, `keys`, `defineProperty`, `hasOwnProperty` |
 
 ## KEY PATTERNS
+
+### Module hooks and descriptors
+
+- `resolveHook(specifier, referrer)` synchronously returns a canonical full specifier.
+- A `modules` descriptor wins before `importHook`; descriptors may provide precompiled `ModuleSource`, a namespace, or a redirect specifier.
+- `importHook(fullSpecifier)` is Promise-memoized, including failures. Probe-driven rebuilds reuse its result and do not call the hook again, so hooks must be idempotent.
+- A precompiled `ModuleSource` is already linked/re-written and skips the default fetch and rewrite pipeline.
+- Redirect cycles must fail deterministically; namespace descriptors keep their object identity.
+
+The engine may be imported by the sandbox implementation itself, but do not add it to `LoaderOpts`, asset-transpiler options, or other cross-package interfaces. Those use `CompartmentModuleFacade`.
 
 ### Higher-order fetch (decorator composition)
 
@@ -76,4 +88,4 @@ await d.promise;
 
 ## EXPORTS
 
-`src/index.ts` re-exports everything: `./assets-transpilers`, `./utils`, `./common`, `./module-resolver`, `./reporter`, `./esm-sandbox`, the three `fetch-utils/make*`, and `./deferred-queue`. Notable named exports: `transpileAssets`, `EsmSandboxEngine`, `moduleResolver`, `makeFetchCacheable`, `makeFetchRetryable`, `makeFetchThrowable`, `Deferred`, `QiankunError`, `warn`.
+`src/index.ts` re-exports everything: `./assets-transpilers`, `./utils`, `./common`, `./module-resolver`, `./reporter`, `./esm-sandbox`, the three `fetch-utils/make*`, and `./deferred-queue`. Notable named exports: `transpileAssets`, the Compartment-shaped module contracts, the internal `EsmSandboxEngine` mechanism, `moduleResolver`, `makeFetchCacheable`, `makeFetchRetryable`, `makeFetchThrowable`, `Deferred`, `QiankunError`, `warn`.

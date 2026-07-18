@@ -65,7 +65,7 @@ const preTranspileStyleSheetLink = (
   baseURI: string,
   opts: BaseTranspilerOpts,
 ): PreTranspileResult => {
-  const { sandbox, moduleResolver } = opts;
+  const { compartment, moduleResolver } = opts;
   const { href, rel } = link;
 
   // filter preload links
@@ -75,7 +75,7 @@ const preTranspileStyleSheetLink = (
     const matchedAssets = moduleResolver?.(linkHref);
     if (matchedAssets) {
       return {
-        mode: sandbox ? Mode.REUSED_DEP_IN_SANDBOX : Mode.REUSED_DEP,
+        mode: compartment ? Mode.REUSED_DEP_IN_SANDBOX : Mode.REUSED_DEP,
         result: { src: linkHref, ...matchedAssets },
       };
     }
@@ -168,7 +168,7 @@ export default function transpileLink(
    * warm-up request at walk-ahead time, and the rewrite pipeline's fetch() picks the response up
    * from the preload cache regardless of HTTP cacheability (RFC §10.1).
    */
-  if (opts.esmEngine && link.rel === 'modulepreload') {
+  if (opts.compartment && link.rel === 'modulepreload') {
     if (hrefAttribute) {
       link.href = resolveUrl(hrefAttribute, baseURI);
       link.rel = 'preload';

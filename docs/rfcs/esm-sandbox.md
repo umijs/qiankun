@@ -5,7 +5,8 @@
 - **Created**: 2026-04-18
 - **Target Release**: qiankun v3.x
 - **Tracking Issue**: TBD
-- **Last Revision**: 2026-07-04（第三轮修订，随 v1 实现 + code review 落地：realm 访问器改为**每副本随机 key + 不可猜 token** 索引（堵死裸标识符/proxy/`with` 三条越权路径，并顺带解决多 qiankun 副本抢占单例崩溃）；`dispose` 覆盖全部 blob（含 inline/rebuilt）并接入 single-spa `unload`；入口选取改为"显式 entry 优先 → 生命周期 namespace → 最后执行"且非入口模块失败不炸整个 app、支持 `export default` 生命周期；typed import（JSON/CSS）走 §14 passthrough 而非硬崩；probe 去掉 120 字窗口改为"解构集非空 ∧ 含声明关键字"不漏检；动态 import 用 lexer `imp.d` 定位括号并整体覆盖 `[ss,se)` 修正注释击穿/尾逗号；fetch 透传 `crossorigin` credentials；import-bindings/importmap 解析加注释剥离与幂等；membrane 复用 `esmInternalPrefix` 且不拷贝 `__qk_*` 到 target）
+- **Last Revision**: 2026-07-18（随 Compartment Alignment RFC 更新当前接口：ESM 机制收进 `Compartment` 的 module hooks / descriptor 门面；`extraGlobals` 接入应用配置；内部 realm registry 更名为 instance registry；lexer 切至 CSP-safe 的 `es-module-lexer/js` 入口；document credentials 通过上下文专属 runtime bridge 贯穿普通动态 import 图；synthetic key 加入跨 qiankun 副本随机 nonce；dispose 的全部异步边界改为 fail-closed；预编译 `ModuleSource` 只按结构化 import span 重定位。下文保留 v1 设计过程中的 realm 术语，用于解释当时的安全模型。）
+- **Previous Implementation Revision**: 2026-07-04（第三轮修订，随 v1 实现 + code review 落地：realm 访问器改为**每副本随机 key + 不可猜 token** 索引（堵死裸标识符/proxy/`with` 三条越权路径，并顺带解决多 qiankun 副本抢占单例崩溃）；`dispose` 覆盖全部 blob（含 inline/rebuilt）并接入 single-spa `unload`；入口选取改为"显式 entry 优先 → 生命周期 namespace → 最后执行"且非入口模块失败不炸整个 app、支持 `export default` 生命周期；typed import（JSON/CSS）走 §14 passthrough 而非硬崩；probe 去掉 120 字窗口改为"解构集非空 ∧ 含声明关键字"不漏检；动态 import 用 lexer `imp.d` 定位括号并整体覆盖 `[ss,se)` 修正注释击穿/尾逗号；fetch 透传 `crossorigin` credentials；import-bindings/importmap 解析加注释剥离与幂等；membrane 复用 `esmInternalPrefix` 且不拷贝 `__qk_*` 到 target）
 - **Second Revision**: 2026-07-04（注入引导改为 runtime 模块 import（消除 CSP `unsafe-eval` 依赖与 TDZ）、解构白名单按需过滤（标识符扫描 ∩ 基集）、顶层重名 SyntaxError 防护、共享依赖收缩为 source 级、既有 sourceMappingURL 偏移合并）
 - **Previous Revision**: 2026-06-09（依据深度 review 修订：修复注入模板 TDZ blocker、白名单复用现有 `globalsInBrowser`、`__qk_realm` 安全模型、Vite dev 真实性、改写 offset 管理、错误可观测性、生产 ESM 构建产物、Trusted Types、prefetch 等）
 
@@ -13,7 +14,7 @@
 
 为 qiankun 增加对原生 ESM 子应用（尤其是 Vite dev 模式）的沙箱支持，在保持 qiankun JS 沙箱语义的前提下，让子应用开发者视角维持原生 ESM。
 
-技术路径：**运行时改写（runtime rewrite）+ WASM lexer + 复用现有 Membrane**。**不引入 iframe**。
+技术路径：**运行时改写（runtime rewrite）+ CSP-safe 纯 JS lexer + 复用现有 Membrane**。**不引入 iframe**。
 
 ## Motivation
 
@@ -21,7 +22,7 @@
 
 qiankun 当前的 JS 沙箱实现基于 classic script 执行模型：
 
-- 通过 `Compartment.makeEvaluateFactory()` 用 `with(this) { ... }` 包裹脚本源码
+- 通过 `Compartment` 内部的 classic script transformer 用 `with(this) { ... }` 包裹脚本源码，再走 blob `<script>` 执行
 - 通过 `URL.createObjectURL` 生成 Blob URL 以非 module 形式执行
 - 通过监听 `window` 的 `latestSetProp` 来发现子应用导出的生命周期函数
 
@@ -50,16 +51,13 @@ qiankun 当前的 JS 沙箱实现基于 classic script 执行模型：
 - **C2 沙箱语义保留**：JS 全局访问受 Membrane 约束；卸载时副作用可清理；与现有 classic script 沙箱共享同一份 Membrane。
 - **C3 运行时支持**：不依赖子应用构建期插件或编译期改造。
 - **C4 不使用 iframe**。
-- **C5 性能可控**：通过 WASM lexer（首选 [`es-module-lexer`](https://github.com/guybedford/es-module-lexer)）保证改写开销可接受。
+- **C5 性能可控**：通过 [`es-module-lexer`](https://github.com/guybedford/es-module-lexer) 的纯 JS 入口保证改写开销可接受，同时避免默认入口的 specifier 解码依赖 `eval`。
 
 ## Design Overview
 
 ### 核心管线
 
 ```
-qiankun.start()  (packages/qiankun/src/apis/registerMicroApps.ts)
-    └─ await esModuleLexer.init()    // 预加载 WASM lexer（在公共 start 入口完成）
-
 子应用 mount
     │
     ├─ HTML loader (packages/loader/src/index.ts)
@@ -137,7 +135,7 @@ export async function unmount() {}
 **qiankun loader 改写后（浏览器实际执行）：**
 
 ```js
-// 顶部注入 —— WASM lexer 定位首个非注释位置后插入
+// 顶部注入 —— CSP-safe lexer 定位首个非注释位置后插入
 // 引导经 per-instance runtime 模块 import：零 eval（无 CSP 'unsafe-eval' 依赖）、
 // import 绑定先于模块体求值完成初始化（构造上无 TDZ），见 §1
 import { __qk_view, __qk_resolve, __qk_dynamic_import } from '__qk_appA_inst1__/__runtime__';
@@ -208,8 +206,8 @@ const { window, document, location, globalThis, self, /* ...按需过滤，见�
 
 实现要点：
 - 从基集**静态剔除值类型 / getter 语义的属性项**（如 `innerWidth`、`devicePixelRatio`、`length`：解构是求值期快照，无法表达 live 值语义），这类裸引用回落真实全局（多为只读布局值，风险可接受并文档化）；
-- 通过 `rt.view` 返回 `{ [k]: membrane.realmGlobal[k] }` 视图对象（每实例构建一次），解构即拿到对应 proxy；
-- v1.1 提供 `extraGlobals: string[]` 兜底极少数新增 / 属性型全局。
+- 通过 `rt.view` 暴露 `Compartment.globalThis` 的按需视图，解构即拿到对应 proxy；
+- 应用配置通过 `extraGlobals: Record<string, unknown | PropertyDescriptor>` 追加值或描述符，并自动加入 ESM 解构基集。
 
 **按需过滤：解构集按模块生成（必需，非优化）**
 
@@ -489,12 +487,12 @@ blob URL 缓存 key 必须包含 instanceId；fetch LRU 可以继续按原始 UR
 
 **`dispose` 的接入时机（v1 实现）**
 
-engine 的 `dispose()` 追踪**它创建过的每一个 blob URL**（runtime 模块、每个 module record、每次 redeclaration 重建产生的旧 blob、inline module——review 曾漏 inline/rebuilt），dispose 时全部 `revokeObjectURL` 并从 realm registry `unregister`（使退休实例的 realm 不再可达）。
+engine 的 `dispose()` 追踪**它创建过的每一个 blob URL**（runtime 模块、每个 module record、每次 redeclaration 重建产生的旧 blob、inline module——review 曾漏 inline/rebuilt），dispose 时全部 `revokeObjectURL` 并从 instance registry 注销（使退休实例的 globals view 不再可达）。
 
 接入点是 **single-spa 的 `unload` 生命周期**（parcelConfig 新增 `unload` 钩子），而**非 `unmount`**：
 
-- `unmount` 只是失活，remount 要复用同一 engine 与其 module namespace（顶层不重跑），此时 dispose 会把 realm/blob 清掉导致复用断裂——所以 unmount **不** dispose，与 classic sandbox「inactive 不销毁」一致。
-- `unload` 是「彻底卸载」，正是释放 realm + blob 的时机；unload 后再次激活会重新走 loadApp → 全新 engine（新 instanceKey/新条目），与上面的不变量吻合。
+- `unmount` 只是失活，remount 要复用同一 engine 与其 module namespace（顶层不重跑），此时 dispose 会把 instance view/blob 清掉导致复用断裂——所以 unmount **不** dispose，与 classic sandbox「inactive 不销毁」一致。
+- `unload` 是「彻底卸载」，正是释放 instance view + blob 的时机；unload 后再次激活会重新走 loadApp → 全新 engine（新 instanceKey/新条目），与上面的不变量吻合。
 
 **已知限制**：`loadMicroApp` 手动加载的 parcel 没有 `unload` 语义（single-spa parcel 只有 unmount），其 engine 会随 parcel 一同滞留直到调用方释放引用；这与 classic sandbox 至今**没有 `destroy` 钩子**（`Sandbox.destroy` 仍是 TODO）是同一类既有缺口，不是 ESM 引入的新退化。长生命周期 shell 若需在 unmount 后立即回收，需等 sandbox 层引入统一 destroy。
 
@@ -543,13 +541,11 @@ qiankun 用全局单变量 `nativeGlobal.__currentLockingSandbox__` 把 `documen
 
 两者**共享同一份 Membrane**：classic 通过 `with(proxy)` 看到 proxy；ESM 通过顶部注入看到同一个 proxy。理论行为一致。
 
-### 10. WASM lexer 加载时机
+### 10. CSP-safe lexer 入口
 
-`es-module-lexer` 需要 `await init()`。
+`es-module-lexer` 的默认 WASM 入口会用动态 `eval` 解码字符串 specifier。CSP 禁止 `'unsafe-eval'` 时，该调用虽然被依赖内部捕获，却会让 `imp.n` 变成 `undefined`，随后静态依赖被错误跳过。qiankun 因此固定使用 `es-module-lexer/js`：它在纯 JS 中完成字符串解码，不依赖 `eval` 或 WebAssembly，也无需在 `start()` 阶段异步预热。
 
-**方案**：在 qiankun 公共 `start()`（`packages/qiankun/src/apis/registerMicroApps.ts` 的 `start()`）中预加载，第一个子应用加载前 lexer 已就绪。代价：qiankun 启动多 ~20ms（WASM 实例化）。
-
-> 注：`packages/sandbox/src/index.ts` 仅是一个 barrel export 文件，不在公共启动路径上；lexer 初始化不应放在那里。
+`prepareEsmLexer(): Promise<void>` 仅作为加载管线的兼容契约保留，当前返回已 resolve 的 Promise。CSP e2e 必须实际挂载带静态依赖的 ESM 应用，不能只检查响应头。
 
 ### 10.1 与 writable-dom `modulepreload` 的协同
 
@@ -563,7 +559,7 @@ qiankun 用全局单变量 `nativeGlobal.__currentLockingSandbox__` 把 `documen
   - (a) **依赖 HTTP 缓存命中**：保留 modulepreload，寄希望于改写管线的 `fetch()` 与它命中同一条浏览器 HTTP 缓存。依赖响应可缓存、同 URL、同 credentials——dev server 普遍 `no-cache`，命中不可控，**不采用**。
   - (b) **抑制**：直接摘掉 modulepreload、由改写管线统一发起并经 `makeFetchCacheable` 去重。缺点：writable-dom 只在被前序阻塞脚本挡住时才 walk-ahead 生成 modulepreload（「向前预热」），单纯抑制会**丢失这个预热时机**——模块下载被推迟到 walker 正序处理到 module script 时才开始，混合场景出现串行化回退；若要补偿还需在抑制处手动发 `cachedFetch` 预热。
   - (b') **改写为 `rel="preload" as="fetch"`（采用，与 classic 路径对齐）**：classic script 沙箱路径早已用同一手法——`link.ts` 的 `postProcessPreloadLink` 把 `as="script"` 改成 `as="fetch"`，使浏览器 preload 请求的 destination/mode 与后续管线 `fetch()` 对齐、经 **preload cache** 命中（preload cache 匹配不依赖响应可缓存性，对 `no-cache` 的 dev server 同样有效）。modulepreload 照抄：改写为 `rel="preload" as="fetch"`，浏览器仍在 walk-ahead 时机发出预热请求（时机零丢失），管线 `fetch()` 从 preload cache 直取。
-- **(b') 的 credentials 对齐规则**：modulepreload 天然 `mode: 'cors'`，而裸 `as="fetch"` preload 是 no-cors、永远匹配不上 `fetch()`，因此必须显式映射——无 `crossorigin`/`anonymous` → 补 `crossorigin="anonymous"`（cors + same-origin，恰为 `fetch()` 默认值，与 `engine.fetchModuleSource` 一致）；`use-credentials` → 原样保留（要求引擎侧 `fetchCredentials` 同为 `include`，两者都来自子应用自身的 crossorigin 标注，正常情况下天然一致）。实现见 `packages/shared/src/assets-transpilers/link.ts` 对 `rel === 'modulepreload'` 的分支。
+- **(b') 的 credentials 对齐规则**：modulepreload 天然 `mode: 'cors'`，而裸 `as="fetch"` preload 是 no-cors、永远匹配不上 `fetch()`，因此必须显式映射——无 `crossorigin`/`anonymous` → 补 `crossorigin="anonymous"`（cors + same-origin，恰为 `fetch()` 默认值，与 `engine.fetchModuleSource` 一致）；`use-credentials` → 原样保留。每个 `DocumentModule` 都保存自己的 credentials，静态 JS 依赖与普通动态 `import()` 发现的懒加载图沿用该不可变上下文；引擎为每个上下文生成独立 runtime bridge，避免动态 import 回落到默认凭据。`makeFetchCacheable` 也按「规范化 URL + 最终生效 credentials」分区，避免 `include` 响应被默认图复用。实现见 `packages/shared/src/assets-transpilers/link.ts` 对 `rel === 'modulepreload'` 的分支。
 
 ### 11. Import Map 运行时管理（已更新）
 
@@ -738,6 +734,8 @@ v1 采用**主动禁用 / 拦截 HMR** 策略（而非「静默降级」——�
 
 v1 采用 **(a)**：改写器识别带 attributes 的 static import（lexer `imp.a > -1`），**仍把 specifier 改写为合成形式**（`with { type }` 子句紧跟在 specifier span 之后、原样保留），但把该 dep 归入 `typedDeps` 而非 `deps`——engine 对 `typedDeps` **不 fetch/不改写**，只在 import map 里注册「合成 specifier → 原始 URL」。于是浏览器用**原生 JSON/CSS/WASM module 语义**从原始 URL 加载（需子应用 server 提供正确 MIME + CORS）。牺牲这类资源的实例隔离，并 `console.warn`（每 app 一次）。
 
+这条浏览器原生直连路径也无法接收所属 `DocumentModule` 的 credentials：import map 只能映射 URL，不能携带 `RequestInit`。因此 `crossorigin="use-credentials"` 的任务图只保证被引擎 fetch/rewrite 的 JavaScript 模块使用 `include`，typed module 仍按浏览器原生模块请求语义加载。这是当前浏览器机制限制；本 RFC 的 credentials 验收明确不包含 typed module，不为此扩展为另一套 typed-module loader。
+
 - **动态 typed import**（`import('./x.json', { with: { type: 'json' } })`）：v1 **保持原生调用不改写**（改写会引入两参数 `import()` 字面量，触发 babel 的 `importAttributes` 解析限制且需引入语法插件）。绝对 URL 的动态 typed import 可原生工作；**相对 specifier**（相对 blob URL 解析）是 v1 已知限制——请用绝对 URL。改写器用 lexer 的 attributes 位置区分「真 attributes（`{` 开头）」与「尾逗号 `import('x',)`（`imp.a` 也 > -1 但无 `{`）」，后者仍走普通动态 import 改写。
 
 ### 15. Source Map
@@ -794,22 +792,21 @@ qiankun 现有 prefetch（`apis/prefetch.ts`）用 `DOMParser` 解析静态 entr
 | `packages/loader/src/index.ts` | (1) 通过 `nodeTransformer` 把 `<script type="module">` / `<script type="importmap">` 路由到对应 transpiler；(2) 新增 ESM 入口解析分支：`onEntryLoaded` 内当 entry 为 module 时走 `await import(entryBlobUrl)`，绕过 `latestSetProp` |
 | `packages/loader/src/writable-dom/index.ts` | **不修改内部**；接入点改为 loader 的 `nodeTransformer`。仅需协同：为 module script 自动生成的 `modulepreload` 在 link transpiler 中改写为 `rel="preload" as="fetch"`（保留浏览器预热时机、经 preload cache 被管线 `fetch()` 复用，与 classic 路径同一手法，见 §10.1） |
 | `packages/qiankun/src/core/loadApp.ts` | ESM 入口生命周期接入：从 ESM 入口分支拿到 `{bootstrap, mount, unmount}` 接入 single-spa（classic 路径不动） |
-| `packages/qiankun/src/apis/registerMicroApps.ts` | `start()` 中增加 `await esModuleLexer.init()`（公共启动入口） |
+| `packages/qiankun/src/apis/registerMicroApps.ts` | 无需预热 lexer；纯 JS 入口同步可用 |
 | `packages/sandbox/src/core/globals.ts` | **复用**现有 `globalsInBrowser`（725 项）作为 ESM 顶部解构白名单**基集**（实际解构集按模块扫描过滤，见 §1）；静态剔除值类型/getter 语义属性项。**不新建** `membrane/globals.ts`（原 RFC 的 30 项手维护列表是倒退） |
 | `packages/sandbox/src/core/membrane/index.ts` | get/has/getOwnPropertyDescriptor/ownKeys 四 trap 对 `__qk_*` 内部 key 一致黑名单屏蔽（复用 `esmInternalPrefix` 单一常量，纵深防越权）；`createMembraneTarget` **跳过 `__qk_*` 拷贝**，使屏蔽对第 2+ 实例仍生效（见 §1 / Open Q7） |
-| `packages/sandbox/src/core/sandbox/StandardSandbox.ts` | 新增 `getEsmGlobalsView()`：每实例构建一次、以 lazy getter 读 `membrane.realmGlobal[name]` 的 globals 视图（解构注入用，见 §1） |
+| `packages/sandbox/src/core/compartment/index.ts` | `getEsmGlobalsView()` 暴露同一 Membrane-backed `globalThis`，并以 `import()` / `load()` / `importDocumentModules()` 统一承接模块门面 |
 | `packages/sandbox/src/core/esm-globals.ts` | **新增**（独立于生成文件 `globals.ts`）：`esmDestructurableGlobals` = `globalsInBrowser` ∪ sandbox intrinsics − 值类型/getter 语义项（解构快照无法表达）作为解构基集 |
 | `packages/shared/src/module-resolver/index.ts` | 复用现有 URL/dependencymap 匹配（v1 仅复用**网络响应**，不跨实例共享 blob，见 §11）；按 §2 的“先解析为绝对 URL 再询问 module-resolver”衔接（engine 经注入的 `moduleResolver` 调用） |
 | `packages/shared/src/esm-sandbox/import-map-registry.ts` | **新增**：运行时 import map 管理——全局去重注入 `<script type="importmap">` 到主文档、first-wins 冲突显式 `console.error`、追加动态 import 条目（§11） |
-| `packages/shared/src/esm-sandbox/realm-registry.ts` | **新增**：per-copy 随机 accessorKey + `token → realm` 私有 map；`registerEsmRealm` 返回 `{ accessorKey, token }` 供 engine 内联进 runtime blob（§1 安全） |
-| `packages/shared/src/esm-sandbox/engine.ts` | **新增**：`EsmSandboxEngine`——模块图并行 fetch + memoize、redeclaration probe、文档序求值 + 入口选取、动态 import 管线、typed import passthrough、credentials、`dispose` 全 blob 回收（§1–§8/§14） |
-| `packages/shared/src/esm-sandbox/{rewrite,identifier-scan,import-bindings,source-map,lexer,vite-client-stub}.ts` | **新增**：改写、按需过滤扫描、import 绑定解析（含注释剥离）、sourceMappingURL 偏移合并、wasm lexer 预热、`/@vite/client` 桩（§1–§4/§13/§15） |
-| `packages/shared/src/fetch-utils/makeFetchCacheable.ts` | 不修改实现；ESM 流水线复用其全局 LRU 响应缓存（engine 不再自建冗余 source 缓存） |
+| `packages/shared/src/esm-sandbox/instance-registry.ts` | **新增**：per-copy 随机 accessorKey + `token → instance view` 私有 map；返回 `{ accessorKey, token }` 供 engine 内联进 runtime blob（§1 安全） |
+| `packages/shared/src/esm-sandbox/engine.ts` | **新增**：Compartment 背后的机制层——模块图并行 fetch + hook memoize、redeclaration probe、文档序求值 + 入口选取、动态 import 管线、typed import passthrough、credentials、`dispose` 全 blob 回收（§1–§8/§14） |
+| `packages/shared/src/esm-sandbox/{rewrite,identifier-scan,import-bindings,source-map,lexer,vite-client-stub}.ts` | **新增**：改写、按需过滤扫描、import 绑定解析（含注释剥离）、sourceMappingURL 偏移合并、CSP-safe 纯 JS lexer、`/@vite/client` 桩（§1–§4/§10/§13/§15） |
+| `packages/shared/src/fetch-utils/makeFetchCacheable.ts` | 缓存键使用「规范化 Request URL + 最终生效 credentials」；`init.credentials` 优先于 `Request.credentials`，默认值与显式 `same-origin` 共享缓存，`include`/`omit` 分区，避免跨凭据复用响应 |
 
-`packages/sandbox/src/core/compartment/index.ts` **不动** —— classic script 继续 `with(this)`，ESM 分支不经过 Compartment。
-`packages/sandbox/src/index.ts` **不动** —— 仅 barrel export，不在公共启动路径上。
+Compartment Alignment RFC 落地后，classic 与 ESM 共用同一个 Compartment 门面；`EsmSandboxEngine` 仅作为 shared 内部机制存在，不再出现在 loader 跨包接口中。sandbox barrel 同步导出 module hook / descriptor 与 IsolationPlugin 的公开类型。
 
-新增 dependency：[`es-module-lexer`](https://www.npmjs.com/package/es-module-lexer)（~50KB gz, MIT, WASM 模式）。
+新增 dependency：[`es-module-lexer`](https://www.npmjs.com/package/es-module-lexer)（MIT；使用 CSP-safe 的 `/js` 入口）。
 
 ## Acceptance Criteria
 
@@ -846,7 +843,7 @@ qiankun 现有 prefetch（`apis/prefetch.ts`）用 `DOMParser` 解析静态 entr
 
 ### 性能
 
-- [ ] qiankun 启动开销（含 lexer init）增加 ≤ 50ms
+- [ ] qiankun 启动开销增加 ≤ 50ms（纯 JS lexer 无异步初始化）
 - [ ] 单个 module 改写开销 ≤ 5ms（典型业务模块体量；含标识符扫描过滤——实测基线 ~34µs/模块，见 §1）
 - [ ] remount 第二次起，在未 unload 的同一实例内复用 blob URL，mount 耗时 ≤ 首次 50%
 
@@ -860,10 +857,10 @@ qiankun 现有 prefetch（`apis/prefetch.ts`）用 `DOMParser` 解析静态 entr
 
 | 风险 | 缓解 |
 |---|---|
-| Globals 白名单不完整，新 Web API 逃逸 | 文档化限制；提供 `extraGlobals: string[]` 配置（v1.1） |
+| Globals 白名单不完整，新 Web API 逃逸 | 文档化限制；通过应用配置的 `extraGlobals` 提供值或描述符 |
 | 裸全局函数调用（`addEventListener` 等）逃逸，与 classic 沙箱 `with(proxy)` 存在能力差异 | 扩充白名单覆盖 `Window` interface 常用方法；文档化差异；考虑提供 lint 规则 |
 | `(0, eval)('globalThis')` 等间接渠道逃逸 | 已知 JS 沙箱固有问题，与 classic 同病，不解决 |
-| `globalThis.__qk_realm(appId)` 暴露跨应用访问接口 | 恶意子应用可调用 `__qk_realm('other-app')` 访问其他子应用 sandbox。缓解：改用 per-mount 随机 token 或 `Symbol` key，避免全局可枚举 |
+| 固定、可猜的 globals view 访问器会暴露跨应用访问接口 | 已采用每副本随机 key + 每实例不可猜 token，并由 membrane 对内部前缀做纵深屏蔽 |
 | `loadMicroApp` 多实例场景 | **设计修正**：所有模块 specifier 必须强制加入实例唯一前缀（如 `__qk_<appId>_<instanceId>__/...`）以在全局 import map 中实现隔离。 |
 | Worker / Service Worker 不沙箱化 | v1 明确不支持，文档化；后续迭代用 runtime 拦截 `Worker` 构造函数 |
 | 行号偏移影响调试 | `sourceURL` 缓解；v1.x 加完整 source map |
@@ -901,12 +898,12 @@ qiankun 现有 prefetch（`apis/prefetch.ts`）用 `DOMParser` 解析静态 entr
 | **classic app 混入非 entry module script 被 ESM 引擎劫持入口 / 失败炸全 app** | **已修**：无显式 entry 时按生命周期 namespace 选取、非入口失败只 warn、loadApp 二次回落 latestSetProp（§7） |
 | **多 module 入口非末位选错 namespace** | **已修**：优先选含生命周期导出的 namespace，而非「最后一个」（§7） |
 | **`export default { bootstrap, mount, unmount }` 生命周期不识别** | **已修**：`getLifecyclesFromExports` 增加 default 兜底（§7） |
-| **typed import（JSON/CSS/WASM）当 JS 硬崩** | **已修**：static typed import 走 §14 (a) passthrough（合成 specifier → 原始 URL，保留 `with` 子句）；dynamic typed import 保持原生（相对 specifier 为已知限制）（§14） |
+| **typed import（JSON/CSS/WASM）当 JS 硬崩** | **已修**：static typed import 走 §14 (a) passthrough（合成 specifier → 原始 URL，保留 `with` 子句）；dynamic typed import 保持原生（相对 specifier、无法继承 document graph credentials 均为已知限制）（§14） |
 | **动态 import 用 `indexOf('(')` 被注释 `import/*(*/(x)` 击穿 / 尾逗号 `import('x',)` 双逗号 SyntaxError** | **已修**：用 lexer `imp.d` 精确定位括号、整体覆盖 `[ss,se)` 并 trim 尾逗号（§2/§4） |
 | **import 语句内注释里的全局名被误当绑定剔除 → 逃逸** | **已修**：`parseImportBindings` 剥离注释，字符串优先保护 URL 里的 `//`（§1 防护 2） |
 | **importmap sentinel 重入 → `JSON.parse(注释)` 报错** | **已修**：`consumeImportMapScript` 按 `dataset.consumed` 幂等（§5） |
 | **redeclaration probe 120 字窗口漏检 → flush 后不可修的 SyntaxError** | **已修**：改为「解构集非空 ∧ 含声明关键字」不漏检（§1 防护 3/4） |
-| **cross-origin `use-credentials` 子应用 fetch 丢 cookie** | **已修**：`transpileModuleScript` 读 `crossorigin` → engine fetch 透传 credentials（§8）。**SRI `integrity` 逐模块校验**仍为已知限制（动态发现的模块图无法从 HTML 拿到各自 integrity） |
+| **cross-origin `use-credentials` 子应用 fetch 丢 cookie / 并发图串用响应** | **已修**：`transpileModuleScript` 把 `crossorigin` 绑定到每个 document task，JS 静态依赖与普通动态 import 图沿不可变上下文加载；每个上下文使用独立 runtime bridge，engine 模块缓存和 `makeFetchCacheable` 都按 credentials 分区（§8）。typed module 原生直连不在此保证内（§14）；**SRI `integrity` 逐模块校验**仍为已知限制（动态发现的模块图无法从 HTML 拿到各自 integrity） |
 | **动态 import 运行时追加 import map 在非最新浏览器失效** | **仍为已知限制**：Chrome 133+/Safari 18.4+ 支持运行时多 import map；Firefox、Safari<18.4、Chrome<133 需 **es-module-shims** 基座——v1 **未内置**，代码/浏览器兼容表已声明，作为独立工作项（§11） |
 
 ## Alternatives Considered
@@ -952,23 +949,24 @@ Blob URL 继承**创建者**（主应用）的 origin，而非子应用原始 or
 |---|---|---|
 | `script-src` | 包含 `blob:` | 执行改写后的 blob URL 模块 |
 | `script-src` | **无需** `'unsafe-eval'` | 注入引导经 runtime 模块 import 而非间接 eval（§1）；子应用代码自身使用 eval 则另当别论 |
-| `connect-src` | 包含子应用 origin（如 `https://sub-app.example.com`） | 主应用 origin 的代码 fetch 子应用资源；跨域子应用 server 需 CORS 允许主应用 origin。若子应用入口 `<script type="module" crossorigin="use-credentials">` 依赖 cookie，qiankun 会以 `credentials: 'include'` fetch 整个模块图，server 还需 `Access-Control-Allow-Credentials: true`（§8） |
+| `connect-src` | 包含子应用 origin（如 `https://sub-app.example.com`） | 主应用 origin 的代码 fetch 子应用资源；跨域子应用 server 需 CORS 允许主应用 origin。若子应用入口 `<script type="module" crossorigin="use-credentials">` 依赖 cookie，qiankun 会以 `credentials: 'include'` fetch 其 JavaScript 静态依赖与普通动态 import 图，server 还需 `Access-Control-Allow-Credentials: true`（§8）；typed module 为 §14 所述浏览器直连例外 |
 | `style-src` | 包含 `'unsafe-inline'`（如果子应用动态创建 style） | Vite CSS-as-JS 模块通过 `style.textContent` 注入样式 |
 | `worker-src` | 包含 `blob:`（如果子应用创建 Worker） | v1 scope 外，但提前配置可避免未来问题 |
 | `require-trusted-types-for` / `trusted-types` | 若主应用强制 Trusted Types，需为 qiankun 配置专用 `TrustedTypePolicy`（`createScriptURL` 包装 blob URL、`createHTML`/`createScript` 包装注入的 importmap）；或声明 v1 不兼容 TT 强制模式 | ESM 管线「字符串源码 → blob → 当脚本执行」+ 字符串注入 `<script type=importmap>` 正是 TT 设计要管控的 string-to-script sink |
 
 ### 对 qiankun 主应用开发者
 
-无需修改注册代码。`registerMicroApps` / `loadMicroApp` API 不变。可选：
+无需修改既有注册代码。需要补充应用私有 globals 时，可在应用配置中使用新增选项：
 
 ```ts
-start({
-  sandbox: {
-    esm: {
-      extraGlobals: ['MyCustomGlobal'],   // v1.1
+loadMicroApp(
+  { name: 'reporting', entry: '//localhost:7100', container: '#container' },
+  {
+    extraGlobals: {
+      MyCustomGlobal: createCustomGlobal(),
     },
   },
-});
+);
 ```
 
 ### 对现有 classic 子应用
@@ -989,7 +987,7 @@ start({
 
 ## References
 
-- [es-module-lexer](https://github.com/guybedford/es-module-lexer) - Brian Bedford 的 WASM JS module lexer
+- [es-module-lexer](https://github.com/guybedford/es-module-lexer) - Guy Bedford 的 JavaScript module lexer（qiankun 使用 CSP-safe `/js` 入口）
 - [es-module-shims](https://github.com/guybedford/es-module-shims) - 同作者的 module shim，灵感来源
 - [ECMA-262 §16.2.1.6.2 ParseModule](https://tc39.es/ecma262/#sec-parsemodule)
 - [ECMA-262 §11.2.2 Strict Mode Code](https://tc39.es/ecma262/#sec-strict-mode-code)

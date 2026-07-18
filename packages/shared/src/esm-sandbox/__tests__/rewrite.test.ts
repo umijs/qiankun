@@ -130,6 +130,27 @@ describe('rewriteModule', () => {
     expect(code).not.toMatch(/,\s*,/);
   });
 
+  it('rewrites nested dynamic imports and their import.meta expressions from inner to outer', () => {
+    const { code } = rewrite(`
+      const load = async () => import /* outer */ (
+        (await import /* inner */ ('https://cdn.test/selector.js', /* inner trailing */)).default,
+        // outer trailing
+      );
+      const fromMeta = () => import(new URL('./feature.js', import.meta.url).href);
+    `);
+
+    expect(code.match(/__qk_dynamic_import\(/g)).toHaveLength(3);
+    expect(code).toMatch(
+      /__qk_dynamic_import\('https:\/\/cdn\.test\/selector\.js'\s*\/\* inner trailing \*\/\s*,\s*__qk_import_meta\.url\)/,
+    );
+    expect(code).toContain("new URL('./feature.js', __qk_import_meta.url).href");
+    expect(code).not.toMatch(/\bimport\s*(?:\/\*[\s\S]*?\*\/\s*)?\(/);
+    expect(code).not.toMatch(/\bimport\.meta\b/);
+    expect(code).not.toMatch(/,\s*,/);
+    expect(code).not.toMatch(/,\s*\/\*[\s\S]*?\*\/\s*,/);
+    expect(code).not.toMatch(/,\s*\/\/[^\r\n]*(?:\r?\n)\s*,/);
+  });
+
   it('leaves typed static imports rewritten but records them as typed deps', () => {
     const { code, deps, typedDeps } = rewrite(`import data from './data.json' with { type: 'json' };`);
     // specifier rewritten to synthetic, `with { type: 'json' }` clause preserved
