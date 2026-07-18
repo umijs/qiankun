@@ -4,7 +4,6 @@
  */
 
 import { SandboxType } from '../core/sandbox/types';
-import { containsLoaderStreamedNode, ensureSandboxContainerHead } from '../core/sandbox/container';
 import { QiankunError } from '@qiankunjs/shared';
 import { patchStandardSandbox, reattachDynamicStylesheets } from './dynamicAppend';
 import patchHistoryListener from './historyListener';
@@ -34,9 +33,6 @@ const dynamicAppendPlugin: IsolationPlugin = {
     const container = context.getContainer();
     if (!container) {
       throw new QiankunError(`${context.appName} requires a container for DOM isolation`);
-    }
-    if (!container.querySelector('qiankun-head') && !containsLoaderStreamedNode(container)) {
-      ensureSandboxContainerHead(container);
     }
     const free = patchStandardSandbox(context);
     try {

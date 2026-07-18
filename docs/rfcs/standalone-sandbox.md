@@ -76,7 +76,7 @@ function createSandbox(
 ### 3. 容器协议包内化
 
 - 新增公开 helper `prepareSandboxContainer(container, appName)`：确保 `<qiankun-head>` 存在、设置 `data-name`、返回配好的 `StyleIsolationOpts` 与清理函数。`createSandbox({ container })` 自动调用。
-- dynamicAppend 插件在 mount 时若容器缺 `<qiankun-head>` **且不处于 loader 流式管线**（以 loader streamed 标记区分）则自动创建，消除 standalone 用户的 `QiankunError` 硬雷；loader 场景保持现状报错——那里缺失代表真实的时序 bug，不应被静默掩盖。
+- `createSandbox` 在 mount 阶段若容器缺 `<qiankun-head>` **且不处于 loader 流式管线**（以 loader streamed 标记区分）则自动创建，消除 standalone 用户的 `QiankunError` 硬雷；loader 场景保持现状报错——那里缺失代表真实的时序 bug，不应被静默掩盖。容器准备只属于完整沙箱预设：JS-only 预设即使在 `mount(container)` 收到元素也不触碰它。
 - `styleIsolation` 的 `{ appName, scopeRoot }` 构造从 `loadApp` 下沉进包内，qiankun 与 standalone 共享同一份契约代码。
 
 ### 4. qiankun 收编为消费者
