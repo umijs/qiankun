@@ -74,7 +74,7 @@ function renderCalibrationLine(run, colors) {
   const comparison = run.calibration?.report?.comparisons?.['aa-calibration'];
   if (!comparison) return null;
   const evaluation = run.calibration.evaluation;
-  const gate = run.metadata.options.calibrationGate ? 'gate enforced' : 'gate disabled (not performance evidence)';
+  const gate = run.metadata?.options?.calibrationGate ? 'gate enforced' : 'gate disabled (not performance evidence)';
   const status = evaluation?.passed ? colors.green('passed') : colors.red('failed');
   const [lower, upper] = comparison.confidenceInterval95;
   return `A/A calibration: ${formatSignedPercent(comparison.relativeDeltaPercent)} · 95% CI ${formatSignedPercent(lower)} to ${formatSignedPercent(upper)} · ${gate} · ${status}`;
@@ -161,10 +161,11 @@ export function renderBenchReport({ colorize = false, durationMs, profile, resul
   const firstRun = results.find((result) => result.run)?.run;
   const passedCount = results.filter((result) => result.exitCode === 0 && result.run?.passed === true).length;
   const headerLines = [colors.bold('qiankun unified benchmark')];
-  if (firstRun) {
-    const { commit, dirty, browserVersion, options } = firstRun.metadata;
+  const metadata = firstRun?.metadata;
+  if (metadata) {
+    const { commit, dirty, browserVersion, options } = metadata;
     headerLines.push(
-      `commit ${commit.slice(0, 8)}${dirty ? ' (dirty)' : ''} · Chromium ${browserVersion} · profile ${profile} · ${options.trials} trial(s) × ${options.samples} samples per cell`,
+      `commit ${commit?.slice(0, 8) ?? 'unknown'}${dirty ? ' (dirty)' : ''} · Chromium ${browserVersion ?? 'unknown'} · profile ${profile} · ${options?.trials ?? '?'} trial(s) × ${options?.samples ?? '?'} samples per cell`,
     );
   } else {
     headerLines.push(`profile ${profile}`);

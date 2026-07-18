@@ -15,6 +15,10 @@ const PROFILES = {
   standard: { calibrationGate: true, calibrationSamples: 50, samples: 50, trials: 1, warmup: 5 },
 };
 
+// Forwarding these would silently override the per-suite/per-mode arguments this script injects,
+// producing a report whose section titles no longer match what actually ran.
+const RESERVED_RUNNER_FLAGS = new Set(['suite', 'mode', 'baseline-dir']);
+
 function parseBenchArgs(argv) {
   let profile = 'standard';
   let suites = Object.keys(SUITES);
@@ -28,10 +32,12 @@ function parseBenchArgs(argv) {
       profile = value;
     } else if (name === 'suites') {
       suites = value.split(',').map((suite) => suite.trim());
-      const unknown = suites.filter((suite) => !SUITES[suite]);
+      const unknown = suites.filter((suite) => !Object.hasOwn(SUITES, suite));
       if (unknown.length > 0) {
         throw new Error(`unknown suite(s): ${unknown.join(', ')}; valid suites: ${Object.keys(SUITES).join(', ')}`);
       }
+    } else if (RESERVED_RUNNER_FLAGS.has(name)) {
+      throw new Error(`--${name} is managed by bench-all; use --suites=a,b to pick suites`);
     } else {
       // Any other --key=value flag is forwarded verbatim to runner.mjs and overrides the profile defaults.
       passthrough.push(argument);
