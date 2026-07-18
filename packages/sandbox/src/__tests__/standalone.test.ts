@@ -37,6 +37,27 @@ describe('standalone sandbox public journey', () => {
     await controller.dispose();
   });
 
+  it('leaves an explicitly mounted container untouched in the JS-only preset', async () => {
+    const container = appendContainer();
+    const controller = createSandbox('standalone-js-mount-target');
+
+    await controller.mount(container);
+
+    expect(container.hasAttribute('data-name')).toBe(false);
+    expect(container.querySelector('qiankun-head')).toBeNull();
+
+    await controller.unmount();
+    await controller.dispose();
+    expect(container.hasAttribute('data-name')).toBe(false);
+    expect(container.querySelector('qiankun-head')).toBeNull();
+  });
+
+  it('rejects style isolation without a container', () => {
+    expect(() => createSandbox('standalone-style-no-container', { styleIsolation: true })).toThrow(
+      /requires a container when style isolation is enabled/,
+    );
+  });
+
   it('uses an isolation-preserving default transformer for classic scripts', async () => {
     const controller = createSandbox('standalone-transformer');
     const script = document.createElement('script');

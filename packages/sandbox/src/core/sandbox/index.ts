@@ -2,7 +2,7 @@
  * @author Kuitos
  * @since 2019-04-11
  */
-import { nativeDocument, nativeGlobal } from '../../consts';
+import { nativeDocument, nativeGlobal, qiankunHeadTagName } from '../../consts';
 import { getDefaultIsolationPlugins } from '../../patchers';
 import type { Free, IsolationPlugin, IsolationPluginContext, Rebuild } from '../../patchers/types';
 import {
@@ -39,6 +39,11 @@ export interface CreateSandboxOptions {
   importHook?: ImportHook;
   loadHook?: ImportHook;
   plugins?: readonly IsolationPlugin[];
+  /**
+   * Enable runtime CSS isolation via @scope wrapping: all sandboxed styles are scoped to the
+   * container. Dynamically injected styles ride on the sandbox's DOM interception, which is
+   * why style isolation requires a configured container.
+   */
   styleIsolation?: boolean;
   fetch?: typeof window.fetch;
   nodeTransformer?: NodeTransformer;
@@ -118,7 +123,7 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
   } = opts;
   const hasContainer = containerOption !== undefined;
   if (styleIsolationEnabled && !hasContainer) {
-    throw new TypeError(`Sandbox ${appName} requires a container when style isolation is enabled`);
+    throw new QiankunError(`Sandbox ${appName} requires a container when style isolation is enabled`);
   }
 
   const hasTopLevelModuleHook = topLevelImportHook !== undefined || topLevelLoadHook !== undefined;
@@ -145,7 +150,7 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
   };
   const prepareContainerForMount = (container: HTMLElement): void => {
     prepareContainerName(container);
-    if (!container.querySelector('qiankun-head') && !containsLoaderStreamedNode(container)) {
+    if (!container.querySelector(qiankunHeadTagName) && !containsLoaderStreamedNode(container)) {
       const { cleanup } = ensureSandboxContainerHead(container);
       const cleanups = containerHeadCleanups.get(container) ?? [];
       cleanups.push(cleanup);
@@ -194,7 +199,8 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
     configuredNodeTransformer ??
     ((node, transformerOpts) => transpileAssets(node, nativeDocument.baseURI, transformerOpts));
   const nodeTransformer: NodeTransformer = (node, transformerOpts) => {
-    const container = getConfiguredContainer();
+    // The JS-only preset owns no container contract, even when a mount received one.
+    const container = hasContainer ? getConfiguredContainer() : undefined;
     if (container) prepareContainerName(container);
     return baseNodeTransformer(node, {
       ...transformerOpts,
@@ -307,7 +313,7 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
 
   const mount = async (container: HTMLElement | undefined): Promise<void> => {
     assertNotDisposed();
-    if (container) prepareContainerForMount(container);
+    if (hasContainer && container) prepareContainerForMount(container);
     /* ------------------------------------------ 因为有上下文依赖（window），以下代码执行顺序不能变 ------------------------------------------ */
 
     /* ------------------------------------------ 1. 启动/恢复 沙箱------------------------------------------ */

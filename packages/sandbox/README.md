@@ -98,7 +98,7 @@ currentContainer = document.querySelector<HTMLElement>('#second')!;
 await controller.mount();
 ```
 
-Calling `createSandbox('name')` without a container creates the JS-only preset. Its timer, window-listener, and history plugins can be activated with `mount()` without providing an arbitrary DOM element. `styleIsolation: true` requires a configured container.
+Calling `createSandbox('name')` without a container creates the JS-only preset. Its timer, window-listener, and history plugins can be activated with `mount()` without providing an arbitrary DOM element, and an element passed to `mount()` is left untouched — container preparation belongs to the container-backed preset. `styleIsolation: true` requires a configured container.
 
 ### Container preparation
 
