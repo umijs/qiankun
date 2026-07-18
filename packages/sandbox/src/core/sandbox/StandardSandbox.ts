@@ -1,140 +1,122 @@
 import { hasOwnProperty } from '@qiankunjs/shared';
-import { without } from 'lodash';
-import { Compartment } from '../compartment';
-import { globalsInES2015 } from '../globals';
-import type { Endowments } from '../membrane';
-import { Membrane } from '../membrane';
-import { array2TruthyObject } from '../utils';
-import type { Sandbox } from './types';
-import { SandboxType } from './types';
+import { Compartment, type CompartmentGlobals, type CompartmentOptions } from '../compartment';
+import { type MembraneTarget } from '../membrane';
+import { type Sandbox, SandboxType } from './types';
 
-const whitelistBOMAPIs = ['requestAnimationFrame', 'cancelAnimationFrame'];
+const standardUnshadowableGlobalNames = [
+  'window',
+  'self',
+  'globalThis',
+  'hasOwnProperty',
+  'eval',
+  'top',
+  'parent',
+  'document',
+];
+
+const testOnlyUnshadowableGlobalNames = ['mockSafariTop', 'mockTop', 'mockGlobalThis'];
+
+const omitReservedGlobals = (globals: CompartmentGlobals): CompartmentGlobals => {
+  const reservedNames = new Set(
+    standardUnshadowableGlobalNames.concat(process.env.NODE_ENV === 'test' ? testOnlyUnshadowableGlobalNames : []),
+  );
+  return Object.fromEntries(Object.entries(globals).filter(([name]) => !reservedNames.has(name)));
+};
 
 export class StandardSandbox extends Compartment implements Sandbox {
-  private readonly membrane: Membrane;
-
   readonly type = SandboxType.Standard;
 
-  readonly name: string;
+  constructor(
+    name: string,
+    globals: CompartmentGlobals = {},
+    incubatorContext: WindowProxy = window,
+    options: Omit<CompartmentOptions, 'globals' | 'incubatorContext' | 'name'> = {},
+  ) {
+    super({
+      ...options,
+      name,
+      globals: omitReservedGlobals(globals),
+      incubatorContext,
+    });
 
-  constructor(name: string, globals: Endowments, incubatorContext: WindowProxy = window) {
-    const getRealmGlobal = () => realmGlobal;
-    const getTopValue = (p: 'top' | 'parent'): WindowProxy => {
-      // if your master app in an iframe context, allow these props escape the sandbox
+    this.defineUnshadowableGlobals((rawTarget) => this.createStandardGlobals(rawTarget, incubatorContext));
+  }
+
+  active(): void {
+    this.unlockGlobalThis();
+  }
+
+  inactive(): void {
+    if (process.env.NODE_ENV === 'development') {
+      console.info(`[qiankun:sandbox] ${this.name} modified global properties restore...`, [
+        ...this.globalModifications.keys(),
+      ]);
+    }
+
+    this.lockGlobalThis();
+  }
+
+  private createStandardGlobals(
+    rawTarget: MembraneTarget,
+    incubatorContext: WindowProxy,
+  ): Record<string, PropertyDescriptor> {
+    const getCompartmentGlobalThis = () => this.globalThis;
+    const getTopValue = (property: 'top' | 'parent'): WindowProxy => {
+      // if your master app is in an iframe context, allow these props to escape the sandbox
       if (incubatorContext === incubatorContext.parent) {
-        return realmGlobal;
+        return this.globalThis;
       }
-      return incubatorContext[p]!;
+      return incubatorContext[property]!;
     };
 
-    const intrinsics: Record<string, PropertyDescriptor> = {
-      // avoid who using window.window or window.self to escape the sandbox environment to touch the real window
+    const globals: Record<string, PropertyDescriptor> = {
+      // avoid code using window.window or window.self to escape the sandbox
       // see https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js#L13
-      window: { get: getRealmGlobal, enumerable: true, configurable: false },
-      self: { get: getRealmGlobal, enumerable: true, configurable: false },
-      globalThis: { get: getRealmGlobal, enumerable: false, configurable: true },
+      window: { get: getCompartmentGlobalThis, enumerable: true, configurable: false },
+      self: { get: getCompartmentGlobalThis, enumerable: true, configurable: false },
+      globalThis: { get: getCompartmentGlobalThis, enumerable: false, configurable: true },
 
-      // proxy.hasOwnProperty would invoke getter firstly, then its value represented as incubatorContext.hasOwnProperty
+      // proxy.hasOwnProperty would invoke the getter first, then otherwise expose the host implementation
       hasOwnProperty: {
         value: function hasOwnPropertyImpl(this: unknown, key: PropertyKey): boolean {
           // calling from hasOwnProperty.call(obj, key)
-          if (this !== realmGlobal && this !== null && typeof this === 'object') {
+          if (this !== getCompartmentGlobalThis() && this !== null && typeof this === 'object') {
             return hasOwnProperty(this, key);
           }
 
-          return hasOwnProperty(target, key) || hasOwnProperty(incubatorContext, key);
+          return hasOwnProperty(rawTarget, key) || hasOwnProperty(incubatorContext, key);
         },
         writable: true,
         enumerable: false,
         configurable: true,
       },
 
+      // Expose the host's eval binding for compatibility. Compartment evaluation itself never calls it.
       // eslint-disable-next-line no-eval
       eval: { value: eval, writable: true, enumerable: false, configurable: true },
 
       top: {
-        get() {
-          return getTopValue('top');
-        },
+        get: () => getTopValue('top'),
         configurable: false,
         enumerable: true,
       },
       parent: {
-        get() {
-          return getTopValue('parent');
-        },
+        get: () => getTopValue('parent'),
         configurable: false,
         enumerable: true,
       },
 
-      // Temporarily occupy the document as it may be modified later
+      // Temporarily occupy the document as it may be replaced by the DOM isolation plugin later.
       document: { value: document, writable: true, enumerable: true, configurable: true },
     };
+
     if (process.env.NODE_ENV === 'test') {
-      ['mockSafariTop', 'mockTop', 'mockGlobalThis'].forEach((key) => {
-        intrinsics[key] = { get: getRealmGlobal, enumerable: false, configurable: true };
+      testOnlyUnshadowableGlobalNames.forEach((key) => {
+        globals[key] = { get: getCompartmentGlobalThis, enumerable: false, configurable: true };
       });
     }
 
-    const constantNames = Array.from(new Set(Object.keys(intrinsics).concat(globalsInES2015).concat(whitelistBOMAPIs)));
-    // intrinsics should not be escaped from sandbox
-    const unscopables = array2TruthyObject(without(constantNames, ...Object.keys(intrinsics)));
-    const membrane = new Membrane(incubatorContext, unscopables, {
-      whitelist: [],
-      endowments: { ...intrinsics, ...globals },
-    });
-
-    const { realmGlobal, target } = membrane;
-
-    super(realmGlobal);
-
-    this.name = name;
-    this.membrane = membrane;
-
-    this.addConstantIntrinsicNames(constantNames);
-  }
-
-  get latestSetProp() {
-    return this.membrane.latestSetProp;
-  }
-
-  /**
-   * Globals view for the ESM top-of-module destructuring injection (ESM sandbox RFC §1).
-   * The membrane realm global already provides exactly the required semantics for every key —
-   * base-set names, runtime-created dunder flags, and unknown keys all resolve through the same
-   * get trap (shielding, endowments, incubator read-through included) — so the view IS the realm
-   * global; a separate getter/Proxy layer would only duplicate that read path.
-   */
-  getEsmGlobalsView(): Record<string, unknown> {
-    return this.membrane.realmGlobal as unknown as Record<string, unknown>;
-  }
-
-  /**
-   * Subscribe to global modifications inside this sandbox; the ESM engine uses it to keep the
-   * live dunder-global bindings of already-evaluated modules in sync (ESM sandbox RFC §1).
-   * Only membrane-mediated writes are observed: a host app writing directly on the real window
-   * after modules evaluated will not trigger a refresh (known one-way visibility boundary).
-   */
-  onGlobalSet(listener: (p: PropertyKey) => void): () => void {
-    return this.membrane.onModification(listener);
-  }
-
-  addIntrinsics(intrinsics: Record<string, PropertyDescriptor>) {
-    this.membrane.addIntrinsics(intrinsics);
-  }
-
-  active() {
-    this.membrane.unlock();
-  }
-
-  inactive() {
-    if (process.env.NODE_ENV === 'development') {
-      console.info(`[qiankun:sandbox] ${this.name} modified global properties restore...`, [
-        ...this.membrane.modifications.keys(),
-      ]);
-    }
-
-    this.membrane.lock();
+    return globals;
   }
 
   // TODO

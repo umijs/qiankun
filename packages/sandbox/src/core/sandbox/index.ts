@@ -11,6 +11,7 @@ import { StandardSandbox } from './StandardSandbox';
 import type { Sandbox } from './types';
 
 export type { Sandbox };
+export { StandardSandbox } from './StandardSandbox';
 
 /**
  * @param appName

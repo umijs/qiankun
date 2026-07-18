@@ -10,9 +10,9 @@ import {
 } from '@qiankunjs/shared';
 import { nativeGlobal } from '../../consts';
 import { isPropertyFrozen } from '../../utils';
+import { type CompartmentGlobals } from '../compartment/types';
 import { globalsInBrowser } from '../globals';
-import { array2TruthyObject } from '../utils';
-import { rebindTarget2Fn } from './utils';
+import { array2TruthyObject, rebindTarget2Fn } from '../utils';
 
 declare global {
   interface Window {
@@ -21,7 +21,7 @@ declare global {
 }
 
 export type MembraneTarget = Record<string | symbol, unknown>;
-export type Endowments = Record<string, number | string | CallableFunction | PropertyDescriptor>;
+export { type CompartmentGlobals, type Endowments } from '../compartment/types';
 
 type SymbolTarget = 'target' | 'globalContext';
 
@@ -60,18 +60,18 @@ const useNativeWindowForBindingsProps = new Map<PropertyKey, boolean>([
 ]);
 
 /*
- * qiankun internal globals (like the ESM realm accessor __qk_realm) live on the real globalThis and
- * must be unreachable through the membrane proxy, otherwise a sub app could grab another app's realm
+ * qiankun internal globals (like the ESM instance accessor) live on the real globalThis and
+ * must be unreachable through the membrane proxy, otherwise a sub app could grab another app's view
  * and escape its own sandbox (ESM sandbox RFC §1). Reads through the proxy uniformly return undefined,
  * while the per-instance runtime modules access the real globalThis directly and stay unaffected.
  * Own properties of the membrane target (a sub app writing window.__qk_foo itself) are not shielded.
  */
-// reuse the single source of truth for the prefix so a rename can never silently unshield the realm
+// reuse the single source of truth for the prefix so a rename can never silently unshield the instance
 // accessor (the shielded keys are generated from esmInternalPrefix in @qiankunjs/shared)
 const isShieldedInternalGlobal = (target: MembraneTarget, p: PropertyKey): boolean =>
   typeof p === 'string' && p.startsWith(esmInternalPrefix) && !hasOwnProperty(target, p);
 
-const isPropertyDescriptor = (v: unknown): boolean => {
+const isPropertyDescriptor = (v: unknown): v is PropertyDescriptor => {
   return (
     typeof v === 'object' &&
     v !== null &&
@@ -91,11 +91,13 @@ export class Membrane {
 
   private readonly modificationListeners = new Set<(p: PropertyKey) => void>();
 
-  modifications = new Set<PropertyKey>();
+  private readonly directGlobalKeys: Set<string>;
 
-  realmGlobal: WindowProxy;
+  readonly modifications = new Set<PropertyKey>();
 
-  target: MembraneTarget;
+  readonly globalThisView: WindowProxy;
+
+  readonly target: MembraneTarget;
 
   latestSetProp: PropertyKey | undefined;
 
@@ -131,18 +133,19 @@ export class Membrane {
     unscopables: Record<string, true>,
     opts?: {
       whitelist?: string[];
-      endowments?: Endowments;
+      globals?: CompartmentGlobals;
     },
   ) {
-    const { endowments = {} } = opts || {};
+    const { globals = {} } = opts || {};
     const whitelistVars = [...(opts?.whitelist || []), ...globalVariableWhiteList];
     const descriptorTargetMap = new Map<PropertyKey, SymbolTarget>();
     const propertiesWithGetter = new Map<PropertyKey, boolean>();
-    const target = createMembraneTarget(endowments);
+    const target = createMembraneTarget(globals);
 
     this.target = target;
+    this.directGlobalKeys = new Set(keys(globals));
 
-    this.realmGlobal = new Proxy(this.target, {
+    this.globalThisView = new Proxy(this.target, {
       set: (membraneTarget, p, value: never) => {
         if (!this.locking) {
           // sync the property to incubatorContext
@@ -153,7 +156,7 @@ export class Membrane {
             // We must keep its description while the property existed in incubatorContext before
             if (!hasOwnProperty(membraneTarget, p)) {
               /*
-               * never consult the host descriptor for shielded internal keys (e.g. the ESM realm
+               * never consult the host descriptor for shielded internal keys (e.g. the ESM instance
                * accessor): materializing it would turn the key into an own prop and permanently
                * unshield the real accessor for this app. As the app cannot observe the host key
                * (get/has/getOwnPropertyDescriptor all shield it), the write falls through to the
@@ -205,8 +208,8 @@ export class Membrane {
 
         if (isShieldedInternalGlobal(membraneTarget, p)) return undefined;
 
-        // properties in endowments returns directly
-        if (hasOwnProperty(endowments, p)) {
+        // Explicit globals and globals defined after construction return directly.
+        if (typeof p === 'string' && this.directGlobalKeys.has(p)) {
           return membraneTarget[p];
         }
 
@@ -345,14 +348,16 @@ export class Membrane {
     }) as unknown as WindowProxy;
   }
 
-  addIntrinsics(
-    intrinsics:
-      Record<string, PropertyDescriptor> | ((rawTarget: MembraneTarget) => Record<string, PropertyDescriptor>),
-  ): void {
-    const intrinsicsObj = typeof intrinsics === 'function' ? intrinsics(this.target) : intrinsics;
-    keys(intrinsicsObj).forEach((key) => {
-      defineProperty(this.target, key, intrinsicsObj[key]);
+  defineUnshadowableGlobals(
+    globals: Record<string, PropertyDescriptor> | ((rawTarget: MembraneTarget) => Record<string, PropertyDescriptor>),
+  ): string[] {
+    const globalsObject = typeof globals === 'function' ? globals(this.target) : globals;
+    const names = keys(globalsObject);
+    names.forEach((key) => {
+      defineProperty(this.target, key, globalsObject[key]);
+      this.directGlobalKeys.add(key);
     });
+    return names;
   }
 
   lock() {
@@ -364,9 +369,9 @@ export class Membrane {
   }
 }
 
-function createMembraneTarget(endowments: Endowments = {}): MembraneTarget {
-  return keys(endowments).reduce((target, key) => {
-    const value = endowments[key];
+function createMembraneTarget(globals: CompartmentGlobals = {}): MembraneTarget {
+  return keys(globals).reduce((target, key) => {
+    const value = globals[key];
     if (isPropertyDescriptor(value)) {
       defineProperty(target, key, value);
     } else {
