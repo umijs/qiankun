@@ -11,19 +11,34 @@
   "types": "./dist/esm/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/esm/index.d.ts",
-      "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js"
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      }
     },
     "./webpack": {
-      "types": "./dist/esm/webpack/index.d.ts",
-      "import": "./dist/esm/webpack/index.js",
-      "require": "./dist/cjs/webpack/index.js"
+      "import": {
+        "types": "./dist/esm/webpack/index.d.ts",
+        "default": "./dist/esm/webpack/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/webpack/index.d.ts",
+        "default": "./dist/cjs/webpack/index.js"
+      }
     },
     "./vite": {
-      "types": "./dist/esm/vite/index.d.ts",
-      "import": "./dist/esm/vite/index.js",
-      "require": "./dist/cjs/vite/index.js"
+      "import": {
+        "types": "./dist/esm/vite/index.d.ts",
+        "default": "./dist/esm/vite/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/vite/index.d.ts",
+        "default": "./dist/cjs/vite/index.js"
+      }
     }
   },
   "scripts": {
