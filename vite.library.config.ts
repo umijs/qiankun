@@ -48,16 +48,26 @@ function generatePackageSources(packageRoot: string, manifest: PackageManifest):
 
   if (manifest.name === '@qiankunjs/sandbox') {
     const globals = configRequire('globals') as GlobalsPackage;
+    // globals >=14 reclassified Intl from browser to es2015, but qiankun needs it in the browser
+    // list: it must stay routed through the membrane (esm-globals base set / rebind whitelist) and
+    // out of the classic const preamble, where it would collide with `var Intl` polyfills.
+    const es2015Names = Object.keys(globals.es2015).filter((name) => name !== 'Intl');
+    const browserNames = Object.keys(globals.browser);
+    if (!browserNames.includes('Intl')) {
+      // the upstream list is sorted case-insensitively
+      const insertAt = browserNames.findIndex((name) => name.toLowerCase() > 'intl');
+      browserNames.splice(insertAt === -1 ? browserNames.length : insertAt, 0, 'Intl');
+    }
     const globalsFile = `// generated from https://github.com/sindresorhus/globals/blob/main/globals.json es2015 part
 // only init its values while Proxy is supported
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
 export const globalsInES2015 = window.Proxy ? ${JSON.stringify(
-      Object.keys(globals.es2015),
+      es2015Names,
       null,
       2,
     )}.filter(p => /* just keep the available properties in current window context */ p in window) : [];
 
-export const globalsInBrowser = ${JSON.stringify(Object.keys(globals.browser), null, 2)};
+export const globalsInBrowser = ${JSON.stringify(browserNames, null, 2)};
   `;
 
     writeFileIfChanged(join(packageRoot, 'src/core/globals.ts'), globalsFile);
