@@ -42,10 +42,6 @@ function writeFileIfChanged(filePath: string, content: string): void {
 }
 
 function generatePackageSources(packageRoot: string, manifest: PackageManifest): void {
-  if (manifest.name === 'qiankun') {
-    writeFileIfChanged(join(packageRoot, 'src/version.ts'), `export const version = '${manifest.version}';\n`);
-  }
-
   if (manifest.name === '@qiankunjs/sandbox') {
     const globals = configRequire('globals') as GlobalsPackage;
     // globals >=14 reclassified Intl from browser to es2015, but qiankun needs it in the browser
@@ -169,6 +165,12 @@ export default defineConfig(() => {
   return {
     root: packageRoot,
     publicDir: false as const,
+    define:
+      manifest.name === 'qiankun'
+        ? {
+            __QIANKUN_VERSION__: JSON.stringify(manifest.version),
+          }
+        : undefined,
     plugins: [
       optimizeLodashImports({
         parseOptions: (filePath) => ({

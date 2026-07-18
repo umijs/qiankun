@@ -30,7 +30,8 @@ import {
   performanceMeasure,
   toArray,
 } from '../utils';
-import { version } from '../version';
+
+declare const __QIANKUN_VERSION__: string;
 
 export type ParcelConfigObjectGetter = (remountContainer: HTMLElement) => ParcelConfigObject;
 
@@ -251,7 +252,7 @@ function initContainer(
   initializedContainers.add(container);
 
   container.dataset.name = appName;
-  container.dataset.version = version;
+  container.dataset.version = __QIANKUN_VERSION__;
   container.dataset.sandboxCfg = JSON.stringify(sandboxCfg);
 
   if (mountTimes > 1) {

@@ -7,6 +7,9 @@ const repositoryRoot = dirname(fileURLToPath(import.meta.url));
 const isWorkspaceRoot = resolve(process.cwd()) === repositoryRoot;
 
 export default defineConfig({
+  define: {
+    __QIANKUN_VERSION__: JSON.stringify('0.0.0-test'),
+  },
   // Resolve workspace packages to their source so cross-package test imports (e.g. the sandbox tests
   // importing @qiankunjs/shared through the membrane) work without a prior build — the CI unit-test
   // job runs `pnpm run test` without building dist.
