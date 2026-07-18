@@ -9,19 +9,19 @@ registerMicroApps([
     name: 'sub-classic',
     entry: SUB_APP_ENTRIES['sub-classic'],
     container,
-    activeRule: (location) => location.hash.startsWith('#/classic'),
+    activeRule: (location: Location) => location.hash.startsWith('#/classic'),
   },
   {
     name: 'sub-esm',
     entry: SUB_APP_ENTRIES['sub-esm'],
     container,
-    activeRule: (location) => location.hash.startsWith('#/esm'),
+    activeRule: (location: Location) => location.hash.startsWith('#/esm'),
   },
   {
     name: 'sub-classic-multiscript',
     entry: SUB_APP_ENTRIES['sub-classic-multiscript'],
     container,
-    activeRule: (location) => location.hash.startsWith('#/multiscript'),
+    activeRule: (location: Location) => location.hash.startsWith('#/multiscript'),
   },
 ]);
 

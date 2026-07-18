@@ -20,7 +20,7 @@ test.describe('runtime style isolation (@scope)', () => {
   });
 
   test('with styleIsolation the sub app css stays inside its container', async ({ page }) => {
-    await loadApp(page, 'sub-classic', { styleIsolation: true });
+    await loadApp(page, 'sub-classic', { sandbox: { styleIsolation: true } });
     await expect(page.getByTestId('classic-title')).toBeVisible();
 
     // sub app styles still apply to its own DOM...
@@ -34,7 +34,7 @@ test.describe('runtime style isolation (@scope)', () => {
     const DYNAMIC_HEAD = 'rgb(21, 22, 23)';
     const DYNAMIC_BODY = 'rgb(31, 32, 33)';
 
-    await loadApp(page, 'sub-classic-bodyless', { sandbox: true, styleIsolation: true });
+    await loadApp(page, 'sub-classic-bodyless', { sandbox: { styleIsolation: true } });
 
     const container = page.locator('[data-name="sub-classic-bodyless"]');
     const virtualHead = container.locator(':scope > qiankun-head');
@@ -68,7 +68,7 @@ test.describe('runtime style isolation (@scope)', () => {
   test('a fragment-wrapped innerHTML style (jQuery-style injection) is scoped too', async ({ page }) => {
     const INJECTED = 'rgb(1, 2, 3)';
 
-    await loadApp(page, 'sub-classic-multiscript', { styleIsolation: true });
+    await loadApp(page, 'sub-classic-multiscript', { sandbox: { styleIsolation: true } });
     await expect(page.getByTestId('script-order')).toBeVisible();
 
     // the injected style was routed into the app container and @scope-wrapped...
@@ -91,7 +91,7 @@ test.describe('runtime style isolation (@scope)', () => {
   test('a dynamically injected chunk-CSS link fires its load event and stays scoped', async ({ page }) => {
     const LAZY = 'rgb(4, 5, 6)';
 
-    await loadApp(page, 'sub-classic-multiscript', { styleIsolation: true });
+    await loadApp(page, 'sub-classic-multiscript', { sandbox: { styleIsolation: true } });
 
     // the app resolves its "chunk CSS loaded" promise on the link's own load event
     // (the mini-css-extract-plugin pattern) — the transpiled link must keep firing it

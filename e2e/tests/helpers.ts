@@ -17,6 +17,9 @@ type E2EWindow = Window & {
       key?: string,
       props?: Record<string, unknown>,
     ): Promise<string>;
+    loadWithStoragePlugin(prefix: string, key: string, value: string): Promise<string>;
+    loadWithPrecompiledHook(key: string): Promise<string>;
+    hookMetrics(key: string): { hookCalls: number; moduleFetches: number } | undefined;
     unmount(key: string): Promise<string>;
     resetContainer(key: string): void;
     status(key: string): string | undefined;
@@ -61,6 +64,33 @@ export async function loadAppExpectError(
 
 export async function unmountApp(page: Page, key: string): Promise<string> {
   return page.evaluate((instanceKey) => (window as unknown as E2EWindow).__E2E__.unmount(instanceKey), key);
+}
+
+export async function loadAppWithStoragePlugin(
+  page: Page,
+  prefix: string,
+  key: string,
+  value: string,
+): Promise<string> {
+  return page.evaluate(
+    ([storagePrefix, instanceKey, storedValue]) =>
+      (window as unknown as E2EWindow).__E2E__.loadWithStoragePlugin(storagePrefix, instanceKey, storedValue),
+    [prefix, key, value] as const,
+  );
+}
+
+export async function loadAppWithPrecompiledHook(page: Page, key: string): Promise<string> {
+  return page.evaluate(
+    (instanceKey) => (window as unknown as E2EWindow).__E2E__.loadWithPrecompiledHook(instanceKey),
+    key,
+  );
+}
+
+export async function readHookMetrics(
+  page: Page,
+  key: string,
+): Promise<{ hookCalls: number; moduleFetches: number } | undefined> {
+  return page.evaluate((instanceKey) => (window as unknown as E2EWindow).__E2E__.hookMetrics(instanceKey), key);
 }
 
 /** Drop and recreate the app container, the keyed re-render pattern main apps use on retry. */

@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "build:fixtures": "vite build fixtures/main",
+    "build:fixtures": "tsc -p tsconfig.json --noEmit && vite build fixtures/main",
     "test:e2e": "pnpm run build:fixtures && playwright test --project=chromium",
     "test:e2e:all": "pnpm run build:fixtures && playwright test",
     "test:e2e:ui": "pnpm run build:fixtures && playwright test --ui"

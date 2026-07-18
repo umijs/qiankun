@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { FIREFOX_ESM_LIMITATION, loadApp, readMainRealmGlobal, unmountApp } from './helpers';
+import { FIREFOX_ESM_LIMITATION, loadApp, loadAppWithStoragePlugin, readMainRealmGlobal, unmountApp } from './helpers';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
@@ -13,10 +13,71 @@ test.describe('js sandbox isolation', () => {
     expect(await readMainRealmGlobal(page, '__CLASSIC_POLLUTION__')).toBeUndefined();
   });
 
+  test('classic scripts run when CSP omits unsafe-eval', async ({ page }) => {
+    const response = await page.goto('/?csp-no-eval');
+    expect(response?.ok()).toBe(true);
+    const policy = response?.headers()['content-security-policy'];
+    expect(policy).toContain('script-src');
+    expect(policy).toContain('blob:');
+    expect(policy).not.toContain("'unsafe-eval'");
+
+    await loadApp(page, 'sub-classic');
+    await expect(page.getByTestId('classic-title')).toHaveText('classic mounted');
+  });
+
   test('main realm globals stay readable through the sandbox', async ({ page }) => {
     await loadApp(page, 'sub-classic');
 
     await expect(page.getByTestId('classic-main-global')).toHaveText('value-from-main');
+  });
+
+  test('sandbox globals exposes a value without polluting the main realm', async ({ page }) => {
+    await loadApp(page, 'sub-classic', { sandbox: { globals: { __E2E_CLASSIC_EXTRA__: 'classic-extra' } } });
+
+    await expect(page.getByTestId('classic-extra-global')).toHaveText('classic-extra');
+    expect(await readMainRealmGlobal(page, '__E2E_CLASSIC_EXTRA__')).toBeUndefined();
+  });
+
+  test('a public-API-only plugin can prefix localStorage per compartment', async ({ page }) => {
+    await page.evaluate(() => localStorage.clear());
+    await loadAppWithStoragePlugin(page, 'first:', 'storage-first', 'one');
+    await loadAppWithStoragePlugin(page, 'second:', 'storage-second', 'two');
+
+    await expect(page.locator('#container-storage-first').getByTestId('storage-plugin-result')).toHaveText('one');
+    await expect(page.locator('#container-storage-second').getByTestId('storage-plugin-result')).toHaveText('two');
+    await expect(page.locator('#container-storage-first').getByTestId('storage-plugin-named-result')).toHaveText(
+      'one-named',
+    );
+    await expect(page.locator('#container-storage-second').getByTestId('storage-plugin-named-result')).toHaveText(
+      'two-named',
+    );
+    await expect(page.locator('#container-storage-first').getByTestId('storage-plugin-meta-result')).toHaveText(
+      'has:true|keys:namedProbe,probe|descriptor:one-named|length:2|indexed:namedProbe,probe|deleted:true',
+    );
+    await expect(page.locator('#container-storage-second').getByTestId('storage-plugin-meta-result')).toHaveText(
+      'has:true|keys:namedProbe,probe|descriptor:two-named|length:2|indexed:namedProbe,probe|deleted:true',
+    );
+
+    const stored = await page.evaluate(() => ({
+      first: localStorage.getItem('first:probe'),
+      firstNamed: localStorage.getItem('first:namedProbe'),
+      firstDeleted: localStorage.getItem('first:deleteProbe'),
+      second: localStorage.getItem('second:probe'),
+      secondNamed: localStorage.getItem('second:namedProbe'),
+      secondDeleted: localStorage.getItem('second:deleteProbe'),
+      unprefixed: localStorage.getItem('probe'),
+      unprefixedNamed: localStorage.getItem('namedProbe'),
+    }));
+    expect(stored).toEqual({
+      first: 'one',
+      firstNamed: 'one-named',
+      firstDeleted: null,
+      second: 'two',
+      secondNamed: 'two-named',
+      secondDeleted: null,
+      unprefixed: null,
+      unprefixedNamed: null,
+    });
   });
 
   test('main realm stays clean after unmount', async ({ page }) => {
