@@ -83,6 +83,38 @@ test('every benchmark variant reaches a painted core element and a settled app',
   }
 });
 
+test('RFC performance probes execute membrane get/set and ESM rewrite work', async () => {
+  const host = createStaticServer({ port: 0, root: hostRoot });
+  await host.start();
+  const browser = await chromium.launch({ args: CHROMIUM_LAUNCH_ARGS, headless: true });
+
+  try {
+    const page = await browser.newPage();
+    await page.goto(`${host.origin}/rfc-performance.html`, { waitUntil: 'load' });
+    const measurements = await page.evaluate(async () => {
+      if (!window.__RFC_PERFORMANCE__) throw new Error('RFC performance host API is unavailable');
+      return Promise.all([
+        window.__RFC_PERFORMANCE__.run('membrane-get', 50_000),
+        window.__RFC_PERFORMANCE__.run('membrane-set', 50_000),
+        window.__RFC_PERFORMANCE__.run('module-rewrite', 2),
+      ]);
+    });
+
+    assert.deepEqual(
+      measurements.map(({ metric }) => metric),
+      ['membrane-get', 'membrane-set', 'module-rewrite'],
+    );
+    measurements.forEach((measurement) => {
+      assert.ok(measurement.duration > 0, measurement.metric);
+      assert.ok(Number.isFinite(measurement.checksum), measurement.metric);
+    });
+    assert.ok(measurements[2].bytesPerOperation > 0);
+  } finally {
+    await browser.close();
+    await host.close();
+  }
+});
+
 test('SSR phase diagnostics prove progressive paint before the full response', async () => {
   const chunkIntervalMs = 100;
   const fixture = createFixtureServer({ chunkIntervalMs, port: 0 });

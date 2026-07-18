@@ -15,6 +15,7 @@
     "benchmark:ecosystem": "pnpm run build:packages && pnpm --filter @qiankunjs/benchmark run ecosystem",
     "benchmark:ecosystem:check": "pnpm run build:packages && pnpm --filter @qiankunjs/benchmark run ecosystem:check",
     "benchmark:site-isolation": "pnpm run build:packages && pnpm --filter @qiankunjs/benchmark run site-isolation",
+    "benchmark:rfc-performance": "pnpm run build:packages && pnpm --filter @qiankunjs/benchmark run rfc-performance",
     "benchmark:smoke": "pnpm run build:packages && pnpm --filter @qiankunjs/benchmark run smoke",
     "benchmark:ssr-streaming": "pnpm run build:packages && pnpm --filter @qiankunjs/benchmark run ssr-streaming",
     "benchmark:ssr-streaming:check": "pnpm run build:packages && pnpm --filter @qiankunjs/benchmark run ssr-streaming:check",

@@ -14,12 +14,13 @@
     "ecosystem": "pnpm run build:fixture && node runner.mjs --suite=ecosystem-html --samples=100 --warmup=5 --calibration-samples=100",
     "ecosystem:check": "pnpm run build:fixture && node runner.mjs --suite=ecosystem-html --samples=5 --warmup=2 --calibration-samples=5 --calibration-gate=false --trials=1",
     "run:check": "pnpm run build:fixture && node runner.mjs --samples=5 --warmup=2 --calibration-samples=5 --calibration-gate=false --trials=1",
+    "rfc-performance": "pnpm run build:fixture && node rfc-performance.mjs --baseline-dir=artifacts/baseline --samples=100 --warmup=5",
     "snapshot:baseline": "pnpm run build:fixture && node snapshot.mjs --name=baseline",
     "site-isolation": "pnpm run build:fixture && node runner.mjs --suite=site-isolation --samples=100 --warmup=5 --calibration-samples=100",
     "smoke": "pnpm run build:fixture && node runner.mjs --samples=100 --warmup=5 --calibration-samples=100",
     "ssr-streaming": "pnpm run build:fixture && node runner.mjs --suite=ssr-streaming --samples=100 --warmup=5 --calibration-samples=100",
     "ssr-streaming:check": "pnpm run build:fixture && node runner.mjs --suite=ssr-streaming --samples=5 --warmup=2 --calibration-samples=5 --calibration-gate=false --trials=1",
-    "test:unit": "node --test tests/browser.test.mjs tests/collect.test.mjs tests/comparison-gates.test.mjs tests/console-report.test.mjs tests/fingerprint.test.mjs tests/frameworks.test.mjs tests/harness.test.mjs tests/hash.test.mjs tests/options.test.mjs tests/report.test.mjs tests/result-comparison.test.mjs tests/revisions.test.mjs tests/run-verdict.test.mjs tests/scenarios.test.mjs tests/schedule.test.mjs tests/server.test.mjs tests/snapshot.test.mjs tests/stats.test.mjs tests/suites.test.mjs",
+    "test:unit": "node --test tests/browser.test.mjs tests/collect.test.mjs tests/comparison-gates.test.mjs tests/console-report.test.mjs tests/fingerprint.test.mjs tests/frameworks.test.mjs tests/harness.test.mjs tests/hash.test.mjs tests/options.test.mjs tests/regression.test.mjs tests/report.test.mjs tests/result-comparison.test.mjs tests/revisions.test.mjs tests/rfc-performance.test.mjs tests/run-verdict.test.mjs tests/scenarios.test.mjs tests/schedule.test.mjs tests/server.test.mjs tests/snapshot.test.mjs tests/stats.test.mjs tests/suites.test.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

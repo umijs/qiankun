@@ -31,14 +31,19 @@ export const REVISION_HARNESS_SOURCE_FILES = [
   '../pnpm-lock.yaml',
   '../pnpm-workspace.yaml',
   'fixtures/host/qiankun.html',
+  'fixtures/host/rfc-performance.html',
   'fixtures/host/src/benchmark.ts',
   'fixtures/host/src/host.css',
   'fixtures/host/src/qiankun.ts',
+  'fixtures/host/src/rfc-performance.ts',
   'fixtures/host/vite.config.ts',
   'frameworks.mjs',
   'package.json',
+  'rfc-performance.mjs',
   'scenarios.mjs',
   'src/options.mjs',
+  'src/regression.mjs',
+  'src/rfc-performance.mjs',
 ];
 
 export async function createRevisionHarnessRecord(benchmarkRoot) {

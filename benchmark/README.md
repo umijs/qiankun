@@ -30,6 +30,9 @@ pnpm benchmark:ssr-streaming
 # PR-CI-sized performance floor: one trial, 100 samples per cell,
 # and enforced A/A plus suite comparison gates.
 pnpm benchmark:ci-basic
+
+# RFC hard metric 2: baseline/candidate membrane, rewrite, and load-chain gate.
+pnpm benchmark:rfc-performance
 ```
 
 The check commands disable the A/A and suite comparison gates and are not performance evidence. Formal run results are written to `benchmark/results/<timestamp>-<commit>/`; raw warmups and measurements are retained.
@@ -138,4 +141,24 @@ The snapshot contains the complete Vite host bundle, preventing baseline and can
 
 Revision mode remains a single browser trial with balanced baseline/candidate rounds and fresh BrowserContexts; it passes only when every sample is valid and the paired-bootstrap 95% confidence interval is entirely below 0%. Use `--scenario=sandbox` with a named snapshot to isolate the buffered sandbox-only path.
 
-Local snapshots are written to `benchmark/artifacts/`, and benchmark results are written to `benchmark/results/`; both are gitignored. The full framework suites and revision comparisons remain manual performance evidence, while `ci-basic` is sized for regular PR CI.
+## RFC hard metric 2 acceptance
+
+The revision benchmark added in #3148 covers the complete buffered sandbox load chain through `--scenario=sandbox`. It does not time membrane property traps or ESM source rewriting independently, so the load result alone cannot satisfy the RFC's three-part performance criterion.
+
+`pnpm benchmark:rfc-performance` closes those two gaps while retaining the existing load-chain measurement:
+
+| Metric | Timed work | Reported value |
+| --- | --- | --: |
+| membrane get | repeated reads through a `Membrane` proxy view | Mops/s |
+| membrane set | repeated writes through the same membrane view | Mops/s |
+| ESM module rewrite | lexer, global scan, specifier edits, and source assembly for a deterministic module corpus | MiB/s |
+| sandbox load chain | the existing cold buffered `loadMicroApp` path from mount invocation to stable paint | ms |
+
+The browser micro-probes report batch time per operation; throughput is its inverse. Baseline and candidate cells are interleaved in the same Chromium process, while load-chain cells retain a fresh BrowserContext and page per attempt. Every comparison uses paired log ratios and retains the existing 10,000-resample bootstrap confidence interval as uncertainty evidence. A metric passes only when its paired median latency regression is at most **+5%** relative to baseline **and** the bootstrap 95% confidence interval is narrower than **10pp** — a wider interval fails the metric as inconclusive rather than letting a noisy run pass on its point estimate. This is deliberately different from the optimization-only revision gate, which requires the whole interval to be below 0%.
+
+The baseline snapshot and candidate must use the same benchmark harness. The snapshot contains both the normal qiankun host and the RFC micro-probe bundle, so package implementations cannot mix across revisions. Formal results are written to `benchmark/results/<timestamp>-<commit>-rfc-hard-metric-2/` as:
+
+- `result.json`: metadata, snapshot and harness fingerprints, raw warmups/product samples, bootstrap comparisons, and per-metric gate evaluations;
+- `summary.md`: the four metric medians, paired deltas, confidence intervals, and pass/fail decisions.
+
+Local snapshots are written to `benchmark/artifacts/`, and benchmark results are written to `benchmark/results/`; both are gitignored. The full framework suites, revision comparisons, and RFC hard-metric benchmark remain manual performance evidence, while `ci-basic` is sized for regular PR CI.
