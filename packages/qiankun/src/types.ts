@@ -3,20 +3,25 @@
  * @since 2023-04-25
  */
 import type { LoaderOpts } from '@qiankunjs/loader';
-import type { CompartmentGlobals, CompartmentOptions } from '@qiankunjs/sandbox';
+import type { CompartmentOptions, IsolationPlugin } from '@qiankunjs/sandbox';
 import type { LifeCycles as ParcelLifeCycles, Parcel, RegisterApplicationConfig } from 'single-spa';
 
 export type {
   Compartment,
   CompartmentGlobals,
   CompartmentOptions,
+  Free,
   ImportHook,
+  IsolationPlugin,
+  IsolationPluginConfig,
+  IsolationPluginContext,
   ModuleDescriptor,
   ModuleNamespace,
   Modules,
   ModuleSource,
   PrecompileModuleSourceOpts,
   ResolveHook,
+  Rebuild,
   UnshadowableGlobals,
 } from '@qiankunjs/sandbox';
 
@@ -58,18 +63,31 @@ export type RegistrableApp<T extends ObjectType> = LoadableApp<T> & {
   configuration?: AppConfiguration;
 };
 
-export type AppConfiguration = Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
-  sandbox?: boolean;
-  globalContext?: WindowProxy;
+/**
+ * The umbrella configuration for the JS sandbox — structurally a public projection of
+ * `CompartmentOptions` plus two qiankun host extensions (`plugins`, `styleIsolation`).
+ */
+export type SandboxConfiguration = Pick<
+  CompartmentOptions,
+  'globals' | 'incubatorContext' | 'modules' | 'resolveHook' | 'importHook' | 'loadHook'
+> & {
+  /** Isolation plugins appended after qiankun's built-in plugins. */
+  plugins?: readonly IsolationPlugin[];
   /**
-   * Enable runtime CSS isolation via @scope wrapping.
-   * When enabled, all micro-app styles are scoped to the app container.
+   * Enable runtime CSS isolation via @scope wrapping: all micro-app styles are scoped to the
+   * app container. Dynamically injected styles ride on the sandbox's DOM interception, which
+   * is why CSS isolation is only configurable while the sandbox is enabled.
    */
   styleIsolation?: boolean;
-  /** Additional values or descriptors installed on this application's compartment global. */
-  extraGlobals?: CompartmentGlobals;
-  /** Advanced module hook configuration for this application's compartment. */
-  compartmentOptions?: Pick<CompartmentOptions, 'modules' | 'resolveHook' | 'importHook' | 'loadHook'>;
+};
+
+export type AppConfiguration = Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
+  /**
+   * JS sandbox switch and configuration.
+   * `false` disables isolation entirely; `true` (the default) enables it with defaults;
+   * an object enables it and configures the underlying Compartment.
+   */
+  sandbox?: boolean | SandboxConfiguration;
 };
 
 export type LifeCycleFn<T extends ObjectType> = (app: LoadableApp<T>, global: WindowProxy) => Promise<void>;

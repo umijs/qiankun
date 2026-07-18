@@ -60,34 +60,6 @@ export function isStyledComponentsLike(element: HTMLStyleElement): boolean {
   return Boolean(!element.textContent && (element.sheet?.cssRules.length || getStyledElementCSSRules(element)?.length));
 }
 
-const appsCounterMap = new Map<string, { bootstrappingPatchCount: number; mountingPatchCount: number }>();
-
-export function calcAppCount(
-  appName: string,
-  calcType: 'increase' | 'decrease',
-  status: 'bootstrapping' | 'mounting',
-): void {
-  const appCount = appsCounterMap.get(appName) || { bootstrappingPatchCount: 0, mountingPatchCount: 0 };
-  switch (calcType) {
-    case 'increase':
-      appCount[`${status}PatchCount`] += 1;
-      break;
-    case 'decrease':
-      // bootstrap patch just called once but its freer will be called multiple times
-      if (appCount[`${status}PatchCount`] > 0) {
-        appCount[`${status}PatchCount`] -= 1;
-      }
-      break;
-  }
-  appsCounterMap.set(appName, appCount);
-}
-
-export function isAllAppsUnmounted(): boolean {
-  return Array.from(appsCounterMap.entries()).every(
-    ([, { bootstrappingPatchCount: bpc, mountingPatchCount: mpc }]) => bpc === 0 && mpc === 0,
-  );
-}
-
 const defineNonEnumerableProperty = (target: unknown, key: string | symbol, value: unknown) => {
   Object.defineProperty(target, key, {
     configurable: true,
@@ -197,10 +169,9 @@ export function getOverwrittenAppendChildOrInsertBefore(
             refNo = Array.from(this.childNodes).indexOf(referenceNode as ChildNode);
           }
 
-          const { sandbox, nodeTransformer, fetch, styleIsolation } = sandboxConfig;
+          const { compartment, nodeTransformer, fetch, styleIsolation } = sandboxConfig;
           const transpiledStyleSheetElement = nodeTransformer(stylesheetElement, {
-            classicScriptTransformer: (source, sourceURL) => sandbox.transformClassicScript(source, sourceURL),
-            compartment: sandbox,
+            compartment,
             fetch,
             styleIsolation,
           });
@@ -235,13 +206,12 @@ export function getOverwrittenAppendChildOrInsertBefore(
 
         case SCRIPT_TAG_NAME: {
           const scriptElement = element as HTMLScriptElement;
-          const { sandbox, dynamicExternalSyncScriptDeferredList, nodeTransformer, fetch } = sandboxConfig;
+          const { compartment, dynamicExternalSyncScriptDeferredList, nodeTransformer, fetch } = sandboxConfig;
 
           const externalSyncMode = scriptElement.hasAttribute('src') && !scriptElement.hasAttribute('async');
 
           let transformerOpts: AssetsTranspilerOpts = {
-            classicScriptTransformer: (source, sourceURL) => sandbox.transformClassicScript(source, sourceURL),
-            compartment: sandbox,
+            compartment,
             fetch,
           };
 

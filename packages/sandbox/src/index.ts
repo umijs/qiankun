@@ -3,6 +3,7 @@ export * from './core/compartment';
 export * from './consts';
 export { esmDestructurableGlobals } from './core/esm-globals';
 export { moduleSourceInstanceKeyPlaceholder, precompileModuleSource } from '@qiankunjs/shared';
+export type { Free, IsolationPlugin, IsolationPluginConfig, IsolationPluginContext, Rebuild } from './patchers';
 export type {
   CompartmentModuleFacade,
   DocumentModule,

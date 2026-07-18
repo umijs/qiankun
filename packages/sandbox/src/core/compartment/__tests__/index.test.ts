@@ -51,12 +51,8 @@ const HOST_EXTENSIONS = [
 ] as const;
 
 type SpecCompartmentMember = 'globalThis' | 'import' | 'load' | 'name';
-type LegacyCompartmentMember = 'addIntrinsics';
 type ListedCompartmentHostMember = (typeof HOST_EXTENSIONS)[number];
-type UnclassifiedCompartmentMember = Exclude<
-  keyof Compartment,
-  LegacyCompartmentMember | ListedCompartmentHostMember | SpecCompartmentMember
->;
+type UnclassifiedCompartmentMember = Exclude<keyof Compartment, ListedCompartmentHostMember | SpecCompartmentMember>;
 type UnclassifiedSandboxMember = Exclude<keyof Sandbox, keyof Compartment | ListedCompartmentHostMember>;
 
 const allCompartmentMembersAreClassified: [UnclassifiedCompartmentMember] extends [never] ? true : false = true;
@@ -126,7 +122,7 @@ describe('public API shape', () => {
     expect(typeof compartment.defineUnshadowableGlobals).toBe('function');
     expect(allCompartmentMembersAreClassified).toBe(true);
     expect(allSandboxMembersAreClassified).toBe(true);
-    expect('addIntrinsics' in compartment).toBe(true);
+    expect('addIntrinsics' in compartment).toBe(false);
 
     compartment.dispose();
   });

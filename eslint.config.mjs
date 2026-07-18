@@ -91,6 +91,32 @@ export default defineConfig([
     },
   },
   {
+    name: 'qiankun/sandbox-patcher-boundaries',
+    files: ['packages/sandbox/src/patchers/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['lodash/*'],
+              message: "Import named methods from 'lodash'; the library build rewrites them to method subpaths.",
+            },
+            {
+              group: [
+                '**/core/membrane',
+                '**/core/membrane/**',
+                '@qiankunjs/sandbox/**/membrane',
+                '@qiankunjs/sandbox/**/membrane/**',
+              ],
+              message: 'Isolation plugins must only use the public Compartment API.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     name: 'qiankun/commonjs',
     files: ['**/*.cjs', 'packages/bundler-plugin/tests/webpack{4,5}/webpack.config.js'],
     languageOptions: {

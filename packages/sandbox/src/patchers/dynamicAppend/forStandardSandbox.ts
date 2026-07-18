@@ -1,4 +1,4 @@
-/* eslint-disable */
+/* eslint-disable @typescript-eslint/unbound-method */
 /**
  * @author Kuitos
  * @since 2020-10-13
@@ -6,16 +6,13 @@
 
 import { Deferred, QiankunError, transpileStyleRule } from '@qiankunjs/shared';
 import { nativeDocument, nativeGlobal, qiankunHeadTagName } from '../../consts';
-import { rebindTarget2Fn } from '../../core/membrane/utils';
-import type { Sandbox } from '../../core/sandbox';
-import type { Free } from '../types';
+import { rebindTarget2Fn } from '../../core/utils';
+import type { Free, IsolationPluginContext } from '../types';
 import {
-  calcAppCount,
   getContainerBodyElement,
   getContainerHeadElement,
   getNewRemoveChild,
   getOverwrittenAppendChildOrInsertBefore,
-  isAllAppsUnmounted,
   rebuildCSSRules,
   recordStyledComponentsCSSRules,
   styleElementRefNodeNo,
@@ -23,15 +20,12 @@ import {
 } from './common';
 import type { SandboxConfig } from './types';
 
-const elementAttachedSymbol = Symbol('attachedApp');
+type PluginCompartment = IsolationPluginContext['compartment'];
 type Unpatch = () => void;
-declare global {
-  interface HTMLElement {
-    [elementAttachedSymbol]: string;
-  }
 
+declare global {
   interface Window {
-    __currentLockingSandbox__?: Sandbox;
+    __currentLockingSandbox__?: PluginCompartment;
   }
 
   interface Document {
@@ -39,51 +33,90 @@ declare global {
   }
 }
 
-// Get native global window with a sandbox disgusted way, thus we could share it between qiankun instances🤪
-Object.defineProperty(nativeGlobal, '__sandboxConfigWeakMap__', { enumerable: false, writable: true });
-
 Object.defineProperty(nativeGlobal, '__currentLockingSandbox__', {
   enumerable: false,
   writable: true,
   configurable: true,
 });
 
-const sandboxConfigWeakMap = new WeakMap<Sandbox, SandboxConfig>();
+interface DOMPrototypePatchState {
+  refCount: number;
+  nativeMutationObserverObserve: typeof MutationObserver.prototype.observe;
+  patchedMutationObserverObserve: typeof MutationObserver.prototype.observe;
+  nativeCompareDocumentPosition: typeof Node.prototype.compareDocumentPosition;
+  patchedCompareDocumentPosition: typeof Node.prototype.compareDocumentPosition;
+}
 
-const elementAttachSandboxConfigMap = new WeakMap<HTMLElement, SandboxConfig>();
-const patchCacheWeakMap = new WeakMap<object, unknown>();
+interface CSSOMPatchState {
+  refCount: number;
+  nativeInsertRule: typeof CSSStyleSheet.prototype.insertRule;
+  patchedInsertRule: typeof CSSStyleSheet.prototype.insertRule;
+}
 
-const getSandboxConfig = (element: HTMLElement) => elementAttachSandboxConfigMap.get(element);
-const setSandboxConfig = (element: HTMLElement, config: SandboxConfig) =>
-  elementAttachSandboxConfigMap.set(element, config);
+interface DynamicAppendSharedState {
+  sandboxConfigs: WeakMap<object, SandboxConfig>;
+  elementConfigs: WeakMap<HTMLElement, SandboxConfig>;
+  containerOwners: WeakMap<HTMLElement, PluginCompartment>;
+  domPrototypePatch?: DOMPrototypePatchState;
+  cssomPatch?: CSSOMPatchState;
+}
 
-function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): CallableFunction {
+/**
+ * Prototype patches must be coordinated by the browser realm rather than by a
+ * package module. Symbol.for lets independently bundled qiankun copies share
+ * the same ref counts and element ownership metadata.
+ */
+const sharedStateSymbol = Symbol.for('qiankun.dynamicAppend.sharedState');
+const sharedState = (() => {
+  const existingState = Reflect.get(nativeGlobal, sharedStateSymbol) as DynamicAppendSharedState | undefined;
+  if (existingState) return existingState;
+
+  const state: DynamicAppendSharedState = {
+    sandboxConfigs: new WeakMap(),
+    elementConfigs: new WeakMap(),
+    containerOwners: new WeakMap(),
+  };
+  Object.defineProperty(nativeGlobal, sharedStateSymbol, {
+    configurable: true,
+    enumerable: false,
+    value: state,
+    writable: false,
+  });
+  return state;
+})();
+
+const { containerOwners, elementConfigs, sandboxConfigs } = sharedState;
+
+const getSandboxConfig = (element: HTMLElement) => elementConfigs.get(element);
+const setSandboxConfig = (element: HTMLElement, config: SandboxConfig) => elementConfigs.set(element, config);
+
+function patchDocument(compartment: PluginCompartment, appName: string, getContainer: () => HTMLElement): Unpatch {
   const container = getContainer();
   // dom container might be reused by multiple apps,
   // thus we check its attached sandbox is same with current to avoid duplicate patch
-  if (patchCacheWeakMap.get(container) === sandbox) {
+  if (containerOwners.get(container) === compartment) {
     return () => {};
   }
 
-  const unpatch = patchDocumentHeadAndBodyMethods(container, sandbox);
+  const unpatch = patchDocumentHeadAndBodyMethods(container, compartment);
 
   const attachElementToSandbox = (element: HTMLElement) => {
-    const sandboxConfig = sandboxConfigWeakMap.get(sandbox);
+    const sandboxConfig = sandboxConfigs.get(compartment);
     if (sandboxConfig) {
-      elementAttachSandboxConfigMap.set(element, sandboxConfig);
+      elementConfigs.set(element, sandboxConfig);
     }
   };
   const getDocumentHeadElement = () => {
-    const container = getContainer();
-    const containerHeadElement = getContainerHeadElement(container);
+    const currentContainer = getContainer();
+    const containerHeadElement = getContainerHeadElement(currentContainer);
     if (!containerHeadElement) {
-      throw new QiankunError(`${sandbox.name} head element not existed while accessing document.head!`);
+      throw new QiankunError(`${appName} head element not existed while accessing document.head!`);
     }
     return containerHeadElement;
   };
   const getDocumentBodyElement = () => {
-    const container = getContainer();
-    return getContainerBodyElement(container);
+    const currentContainer = getContainer();
+    return getContainerBodyElement(currentContainer);
   };
   const modificationFns: {
     createElement?: typeof document.createElement;
@@ -93,14 +126,14 @@ function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): Calla
     /**
      * Read and write must be paired, otherwise the write operation will leak to the global
      */
-    set: (target, p, value) => {
+    set: (target, p, value: unknown) => {
       switch (p) {
         case 'createElement': {
-          modificationFns.createElement = value;
+          modificationFns.createElement = value as typeof document.createElement;
           break;
         }
         case 'querySelector': {
-          modificationFns.querySelector = value;
+          modificationFns.querySelector = value as typeof document.querySelector;
           break;
         }
         default:
@@ -117,13 +150,13 @@ function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): Calla
           const targetCreateElement = modificationFns.createElement || target.createElement;
           return function createElement(...args: Parameters<typeof document.createElement>) {
             if (!nativeGlobal.__currentLockingSandbox__) {
-              nativeGlobal.__currentLockingSandbox__ = sandbox;
+              nativeGlobal.__currentLockingSandbox__ = compartment;
             }
 
             const element = targetCreateElement.call(target, ...args);
 
             // only record the element which is created by the current sandbox, thus we can avoid the element created by nested sandboxes
-            if (nativeGlobal.__currentLockingSandbox__ === sandbox) {
+            if (nativeGlobal.__currentLockingSandbox__ === compartment) {
               attachElementToSandbox(element);
               delete nativeGlobal.__currentLockingSandbox__;
             }
@@ -168,49 +201,63 @@ function patchDocument(sandbox: Sandbox, getContainer: () => HTMLElement): Calla
     },
   });
 
-  sandbox.addIntrinsics({
+  compartment.defineUnshadowableGlobals({
     document: { value: proxyDocument, writable: false, enumerable: true, configurable: true },
   });
 
-  patchCacheWeakMap.set(container, sandbox);
+  containerOwners.set(container, compartment);
 
   return () => {
     unpatch();
+    if (containerOwners.get(container) === compartment) {
+      containerOwners.delete(container);
+    }
   };
 }
 
-function patchDocumentHeadAndBodyMethods(container: HTMLElement, sandbox: Sandbox): Unpatch {
+function patchDocumentHeadAndBodyMethods(container: HTMLElement, compartment: PluginCompartment): Unpatch {
   // tag the mount points with the owning app config, so fragment-wrapped children (parsed via
   // innerHTML rather than the sandboxed createElement) can inherit it during decomposition
   const tagMountPoint = (mountPoint: HTMLElement) => {
-    const sandboxConfig = sandboxConfigWeakMap.get(sandbox);
+    const sandboxConfig = sandboxConfigs.get(compartment);
     if (sandboxConfig) setSandboxConfig(mountPoint, sandboxConfig);
   };
 
+  let patchedHeadMethods:
+    | {
+        appendChild: typeof document.head.appendChild;
+        insertBefore: typeof document.head.insertBefore;
+        removeChild: typeof document.head.removeChild;
+      }
+    | undefined;
   const patchHeadElementMethod = (headElement: HTMLHeadElement) => {
     tagMountPoint(headElement);
-    headElement.appendChild = getOverwrittenAppendChildOrInsertBefore(
-      document.head.appendChild,
-      getSandboxConfig,
-      'head',
-      setSandboxConfig,
-    );
-    headElement.insertBefore = getOverwrittenAppendChildOrInsertBefore(
-      document.head.insertBefore,
-      getSandboxConfig,
-      'head',
-      setSandboxConfig,
-    );
-    headElement.removeChild = getNewRemoveChild(document.head.removeChild, getSandboxConfig);
+    patchedHeadMethods = {
+      appendChild: getOverwrittenAppendChildOrInsertBefore(
+        document.head.appendChild,
+        getSandboxConfig,
+        'head',
+        setSandboxConfig,
+      ),
+      insertBefore: getOverwrittenAppendChildOrInsertBefore(
+        document.head.insertBefore,
+        getSandboxConfig,
+        'head',
+        setSandboxConfig,
+      ),
+      removeChild: getNewRemoveChild(document.head.removeChild, getSandboxConfig),
+    };
+    Object.assign(headElement, patchedHeadMethods);
   };
   let containerHeadElement = getContainerHeadElement(container);
+  let observer: MutationObserver | undefined;
   if (!containerHeadElement) {
     // patch container head element after it is mounted
-    const observer = new MutationObserver(() => {
+    observer = new MutationObserver(() => {
       containerHeadElement = getContainerHeadElement(container);
       if (containerHeadElement) {
         patchHeadElementMethod(containerHeadElement);
-        observer.disconnect();
+        observer?.disconnect();
       }
     });
     observer.observe(container, { subtree: true, childList: true });
@@ -220,68 +267,90 @@ function patchDocumentHeadAndBodyMethods(container: HTMLElement, sandbox: Sandbo
 
   const containerBodyElement = container;
   tagMountPoint(containerBodyElement);
-  containerBodyElement.appendChild = getOverwrittenAppendChildOrInsertBefore(
-    document.body.appendChild,
-    getSandboxConfig,
-    'body',
-    setSandboxConfig,
-  );
-  containerBodyElement.insertBefore = getOverwrittenAppendChildOrInsertBefore(
-    document.head.insertBefore,
-    getSandboxConfig,
-    'body',
-    setSandboxConfig,
-  );
-  containerBodyElement.removeChild = getNewRemoveChild(document.body.removeChild, getSandboxConfig);
+  const patchedBodyMethods = {
+    appendChild: getOverwrittenAppendChildOrInsertBefore(
+      document.body.appendChild,
+      getSandboxConfig,
+      'body',
+      setSandboxConfig,
+    ),
+    insertBefore: getOverwrittenAppendChildOrInsertBefore(
+      document.head.insertBefore,
+      getSandboxConfig,
+      'body',
+      setSandboxConfig,
+    ),
+    removeChild: getNewRemoveChild(document.body.removeChild, getSandboxConfig),
+  };
+  Object.assign(containerBodyElement, patchedBodyMethods);
 
   return () => {
-    if (containerHeadElement) {
-      // @ts-ignore
-      delete containerHeadElement.appendChild;
-      // @ts-ignore
-      delete containerHeadElement.insertBefore;
-      // @ts-ignore
-      delete containerHeadElement.removeChild;
+    observer?.disconnect();
+    if (containerHeadElement && patchedHeadMethods) {
+      if (containerHeadElement.appendChild === patchedHeadMethods.appendChild) {
+        Reflect.deleteProperty(containerHeadElement, 'appendChild');
+      }
+      if (containerHeadElement.insertBefore === patchedHeadMethods.insertBefore) {
+        Reflect.deleteProperty(containerHeadElement, 'insertBefore');
+      }
+      if (containerHeadElement.removeChild === patchedHeadMethods.removeChild) {
+        Reflect.deleteProperty(containerHeadElement, 'removeChild');
+      }
     }
 
-    // @ts-ignore
-    delete containerBodyElement.appendChild;
-    // @ts-ignore
-    delete containerBodyElement.insertBefore;
-    // @ts-ignore
-    delete containerBodyElement.removeChild;
+    if (containerBodyElement.appendChild === patchedBodyMethods.appendChild) {
+      Reflect.deleteProperty(containerBodyElement, 'appendChild');
+    }
+    if (containerBodyElement.insertBefore === patchedBodyMethods.insertBefore) {
+      Reflect.deleteProperty(containerBodyElement, 'insertBefore');
+    }
+    if (containerBodyElement.removeChild === patchedBodyMethods.removeChild) {
+      Reflect.deleteProperty(containerBodyElement, 'removeChild');
+    }
   };
 }
 
 function patchDOMPrototypeFns(): Unpatch {
-  // patch MutationObserver.prototype.observe to avoid type error
-  // https://github.com/umijs/qiankun/issues/2406
-  const nativeMutationObserverObserveFn = MutationObserver.prototype.observe;
-  if (!patchCacheWeakMap.has(nativeMutationObserverObserveFn)) {
-    const observe = function observe(this: MutationObserver, target: Node, options: MutationObserverInit) {
+  let state = sharedState.domPrototypePatch;
+  if (!state) {
+    // patch MutationObserver.prototype.observe to avoid type error
+    // https://github.com/umijs/qiankun/issues/2406
+    const nativeMutationObserverObserve = MutationObserver.prototype.observe;
+    const patchedMutationObserverObserve = function observe(
+      this: MutationObserver,
+      target: Node,
+      options: MutationObserverInit,
+    ) {
       const realTarget = target instanceof Document ? nativeDocument : target;
-      return nativeMutationObserverObserveFn.call(this, realTarget, options);
+      return nativeMutationObserverObserve.call(this, realTarget, options);
     };
 
-    MutationObserver.prototype.observe = observe;
-    patchCacheWeakMap.set(nativeMutationObserverObserveFn, observe);
-  }
-
-  // patch Node.prototype.compareDocumentPosition to avoid type error
-  const prevCompareDocumentPosition = Node.prototype.compareDocumentPosition;
-  if (!patchCacheWeakMap.has(prevCompareDocumentPosition)) {
-    Node.prototype.compareDocumentPosition = function compareDocumentPosition(this: Node, node) {
+    // patch Node.prototype.compareDocumentPosition to avoid type error
+    const nativeCompareDocumentPosition = Node.prototype.compareDocumentPosition;
+    const patchedCompareDocumentPosition = function compareDocumentPosition(this: Node, node: Node) {
       const realNode = node instanceof Document ? nativeDocument : node;
-      return prevCompareDocumentPosition.call(this, realNode);
+      return nativeCompareDocumentPosition.call(this, realNode);
     };
-    patchCacheWeakMap.set(prevCompareDocumentPosition, Node.prototype.compareDocumentPosition);
+
+    state = {
+      refCount: 0,
+      nativeMutationObserverObserve,
+      patchedMutationObserverObserve,
+      nativeCompareDocumentPosition,
+      patchedCompareDocumentPosition,
+    };
+    sharedState.domPrototypePatch = state;
+    MutationObserver.prototype.observe = patchedMutationObserverObserve;
+    Node.prototype.compareDocumentPosition = patchedCompareDocumentPosition;
   }
+
+  state.refCount += 1;
 
   // TODO https://github.com/umijs/qiankun/pull/2415 Not support yet as getCurrentRunningApp api is not reliable
   // patch parentNode getter to avoid document === html.parentNode
   // https://github.com/umijs/qiankun/issues/2408#issuecomment-1446229105
   // const parentNodeDescriptor = Object.getOwnPropertyDescriptor(Node.prototype, 'parentNode');
-  // if (parentNodeDescriptor && !patchCacheWeakMap.has(parentNodeDescriptor)) {
+  // if (parentNodeDescriptor) {
   //   const { get: parentNodeGetter, configurable } = parentNodeDescriptor;
   //   if (parentNodeGetter && configurable) {
   //     const patchedParentNodeDescriptor = {
@@ -300,20 +369,29 @@ function patchDOMPrototypeFns(): Unpatch {
   //     };
   //     Object.defineProperty(Node.prototype, 'parentNode', patchedParentNodeDescriptor);
   //
-  //     patchCacheWeakMap.set(parentNodeDescriptor, patchedParentNodeDescriptor);
   //   }
   // }
 
+  let released = false;
   return () => {
-    MutationObserver.prototype.observe = nativeMutationObserverObserveFn;
-    patchCacheWeakMap.delete(nativeMutationObserverObserveFn);
+    if (released) return;
+    released = true;
+    state.refCount -= 1;
+    if (state.refCount > 0) return;
 
-    Node.prototype.compareDocumentPosition = prevCompareDocumentPosition;
-    patchCacheWeakMap.delete(prevCompareDocumentPosition);
+    // Do not clobber a host patch installed after qiankun's patch.
+    if (MutationObserver.prototype.observe === state.patchedMutationObserverObserve) {
+      MutationObserver.prototype.observe = state.nativeMutationObserverObserve;
+    }
+    if (Node.prototype.compareDocumentPosition === state.patchedCompareDocumentPosition) {
+      Node.prototype.compareDocumentPosition = state.nativeCompareDocumentPosition;
+    }
+    if (sharedState.domPrototypePatch === state) {
+      delete sharedState.domPrototypePatch;
+    }
 
     // if (parentNodeDescriptor) {
     //   Object.defineProperty(Node.prototype, 'parentNode', parentNodeDescriptor);
-    //   patchCacheWeakMap.delete(parentNodeDescriptor);
     // }
   };
 }
@@ -322,90 +400,81 @@ function patchDOMPrototypeFns(): Unpatch {
 const rawHeadInsertBefore = HTMLHeadElement.prototype.insertBefore;
 const rawHeadAppendChild = HTMLHeadElement.prototype.appendChild;
 
-const nativeInsertRule = CSSStyleSheet.prototype.insertRule;
-let cssomPatchRefCount = 0;
-
 function patchCSSOM(): Unpatch {
-  cssomPatchRefCount++;
-  if (cssomPatchRefCount > 1) {
-    return () => {
-      cssomPatchRefCount--;
+  let state = sharedState.cssomPatch;
+  if (!state) {
+    const nativeInsertRule = CSSStyleSheet.prototype.insertRule;
+    const patchedInsertRule = function insertRule(this: CSSStyleSheet, rule: string, index?: number): number {
+      const ownerNode = this.ownerNode as HTMLElement | null;
+      if (ownerNode) {
+        const config = elementConfigs.get(ownerNode);
+        if (config?.styleIsolation) {
+          const scopedRule = transpileStyleRule(rule, config.styleIsolation);
+          return nativeInsertRule.call(this, scopedRule, index);
+        }
+      }
+      return nativeInsertRule.call(this, rule, index);
     };
+
+    state = { refCount: 0, nativeInsertRule, patchedInsertRule };
+    sharedState.cssomPatch = state;
+    CSSStyleSheet.prototype.insertRule = patchedInsertRule;
   }
 
-  CSSStyleSheet.prototype.insertRule = function patchedInsertRule(
-    this: CSSStyleSheet,
-    rule: string,
-    index?: number,
-  ): number {
-    const ownerNode = this.ownerNode as HTMLElement | null;
-    if (ownerNode) {
-      const config = elementAttachSandboxConfigMap.get(ownerNode);
-      if (config?.styleIsolation) {
-        const scopedRule = transpileStyleRule(rule, config.styleIsolation);
-        return nativeInsertRule.call(this, scopedRule, index);
-      }
-    }
-    return nativeInsertRule.call(this, rule, index);
-  };
+  state.refCount += 1;
 
+  let released = false;
   return () => {
-    cssomPatchRefCount--;
-    if (cssomPatchRefCount === 0) {
-      CSSStyleSheet.prototype.insertRule = nativeInsertRule;
+    if (released) return;
+    released = true;
+    state.refCount -= 1;
+    if (state.refCount > 0) return;
+
+    // Preserve patches installed by the host after qiankun initialized.
+    if (CSSStyleSheet.prototype.insertRule === state.patchedInsertRule) {
+      CSSStyleSheet.prototype.insertRule = state.nativeInsertRule;
+    }
+    if (sharedState.cssomPatch === state) {
+      delete sharedState.cssomPatch;
     }
   };
 }
 
-export function patchStandardSandbox(
-  appName: string,
-  getContainer: () => HTMLElement,
-  opts: {
-    sandbox: Sandbox;
-    mounting?: boolean;
-  } & Pick<SandboxConfig, 'fetch' | 'nodeTransformer' | 'styleIsolation'>,
-): Free {
-  const { sandbox, mounting = true, nodeTransformer, fetch, styleIsolation } = opts;
-  let sandboxConfig = sandboxConfigWeakMap.get(sandbox);
+export function patchStandardSandbox(context: IsolationPluginContext): Free {
+  const { appName, compartment, getContainer, config } = context;
+  const { nodeTransformer, fetch, styleIsolation } = config;
+  let sandboxConfig = sandboxConfigs.get(compartment);
   if (!sandboxConfig) {
     sandboxConfig = {
       appName,
-      sandbox,
+      compartment,
       fetch,
       nodeTransformer,
       styleIsolation,
       dynamicStyleSheetElements: [],
       dynamicExternalSyncScriptDeferredList: [],
     };
-    sandboxConfigWeakMap.set(sandbox, sandboxConfig);
+    sandboxConfigs.set(compartment, sandboxConfig);
   }
   // all dynamic style sheets are stored in proxy container
   const { dynamicStyleSheetElements } = sandboxConfig;
 
-  const unpatchDocument = patchDocument(sandbox, getContainer);
+  const unpatchDocument = patchDocument(compartment, appName, getContainer);
   const unpatchDOMPrototype = patchDOMPrototypeFns();
   const unpatchCSSOM = styleIsolation ? patchCSSOM() : undefined;
 
-  if (!mounting) calcAppCount(appName, 'increase', 'bootstrapping');
-  if (mounting) calcAppCount(appName, 'increase', 'mounting');
-
+  let released = false;
   return function free() {
-    if (!mounting) calcAppCount(appName, 'decrease', 'bootstrapping');
-    if (mounting) calcAppCount(appName, 'decrease', 'mounting');
+    if (!released) {
+      released = true;
+      // release the overwritten document
+      unpatchDocument();
 
-    // release the overwritten document
-    unpatchDocument();
-
-    // Always decrement CSSOM patch ref count — patchCSSOM() handles actual restoration
-    // when the count reaches zero
-    unpatchCSSOM?.();
-
-    // release the overwritten prototype after all the micro apps unmounted
-    if (isAllAppsUnmounted()) {
+      unpatchCSSOM?.();
       unpatchDOMPrototype();
     }
 
-    recordStyledComponentsCSSRules(dynamicStyleSheetElements as HTMLStyleElement[]);
+    recordStyledComponentsCSSRules(dynamicStyleSheetElements);
 
     // As now the sub app content all wrapped with a special id container,
     // the dynamic style sheet could be removed automatically while unmounting
@@ -482,8 +551,8 @@ async function attachRecordedStylesheets(
  * the (cached, never re-executed) modules believe they are still attached. Idempotent for the regular
  * remount path: already-attached elements are skipped.
  */
-export function reattachDynamicStylesheets(sandbox: Sandbox, container: HTMLElement): Promise<void> {
-  const sandboxConfig = sandboxConfigWeakMap.get(sandbox);
+export function reattachDynamicStylesheets(compartment: PluginCompartment, container: HTMLElement): Promise<void> {
+  const sandboxConfig = sandboxConfigs.get(compartment);
   if (!sandboxConfig) return Promise.resolve();
   return attachRecordedStylesheets(sandboxConfig.appName, sandboxConfig.dynamicStyleSheetElements, container);
 }

@@ -21,7 +21,7 @@ declare global {
 }
 
 export type MembraneTarget = Record<string | symbol, unknown>;
-export { type CompartmentGlobals, type Endowments } from '../compartment/types';
+export { type CompartmentGlobals } from '../compartment/types';
 
 type SymbolTarget = 'target' | 'globalContext';
 

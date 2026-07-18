@@ -10,11 +10,6 @@ import type { CompartmentModuleFacade, ImportHook, ModuleNamespace, Modules, Res
  */
 export type CompartmentGlobals = Record<string, unknown>;
 
-/**
- * @deprecated Use {@link CompartmentGlobals} instead.
- */
-export type Endowments = CompartmentGlobals;
-
 export type CompartmentTransform = (source: string) => string;
 
 /**

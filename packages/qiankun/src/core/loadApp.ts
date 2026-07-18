@@ -21,7 +21,15 @@ import { concat, isFunction, mergeWith } from 'lodash';
 import type { ParcelConfigObject } from 'single-spa';
 import getAddOns from '../addons';
 import { QiankunError } from '../error';
-import type { AppConfiguration, LifeCycleFn, LifeCycles, LoadableApp, MicroAppLifeCycles, ObjectType } from '../types';
+import type {
+  AppConfiguration,
+  LifeCycleFn,
+  LifeCycles,
+  LoadableApp,
+  MicroAppLifeCycles,
+  ObjectType,
+  SandboxConfiguration,
+} from '../types';
 import {
   getPureHTMLStringWithoutScripts,
   performanceGetEntriesByName,
@@ -56,13 +64,19 @@ export default async function loadApp<T extends ObjectType>(
   const {
     fetch = window.fetch,
     sandbox = true,
-    globalContext = window,
     nodeTransformer = defaultNodeTransformer,
-    styleIsolation: styleIsolationEnabled,
-    extraGlobals = {},
-    compartmentOptions = {},
     ...restConfiguration
   } = configuration || {};
+
+  const sandboxEnabled = sandbox !== false;
+  const sandboxConfiguration: SandboxConfiguration = typeof sandbox === 'object' ? sandbox : {};
+  const {
+    globals = {},
+    incubatorContext = window,
+    plugins = [],
+    styleIsolation: styleIsolationEnabled,
+    ...compartmentHooks
+  } = sandboxConfiguration;
 
   const enhancedFetch = makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)));
 
@@ -75,7 +89,7 @@ export default async function loadApp<T extends ObjectType>(
     performanceMark(markName);
   }
 
-  let global = globalContext;
+  let global = incubatorContext;
   let mountSandbox: (container: HTMLElement) => Promise<void> = () => Promise.resolve();
   let unmountSandbox = () => Promise.resolve();
   let sandboxInstance: Sandbox | undefined;
@@ -86,24 +100,25 @@ export default async function loadApp<T extends ObjectType>(
   let microAppDOMContainer: HTMLElement = container;
   initContainer(microAppDOMContainer, appName, { sandboxCfg: sandbox, mountTimes, instanceId });
 
-  if (sandbox) {
+  if (sandboxEnabled) {
     sandboxController = createSandboxContainer(appName, () => microAppDOMContainer, {
       compartmentOptions: {
-        ...compartmentOptions,
+        ...compartmentHooks,
         moduleHost: {
           entryUrl: entry,
           fetch: enhancedFetch,
-          globalsBaseSet: [...esmDestructurableGlobals, ...Object.keys(extraGlobals)],
+          globalsBaseSet: [...esmDestructurableGlobals, ...Object.keys(globals)],
           instanceId,
           materializeRedirect: (url) => defaultModuleResolver(url, microAppDOMContainer, document.head)?.url,
           isLifecycleNamespace: (namespace) =>
             isLifecycleObject(namespace) || isLifecycleObject(namespace.default as ObjectType),
         },
       },
-      extraGlobals,
-      globalContext,
+      globals,
+      incubatorContext,
       fetch: enhancedFetch,
       nodeTransformer,
+      plugins,
       styleIsolation: styleIsolationOpts,
     });
 
@@ -275,7 +290,11 @@ function initContainer(
 
   container.dataset.name = appName;
   container.dataset.version = __QIANKUN_VERSION__;
-  container.dataset.sandboxCfg = JSON.stringify(sandboxCfg);
+  // The sandbox configuration object may carry functions and large globals — store a
+  // debug-friendly summary instead of serializing it verbatim.
+  container.dataset.sandboxCfg = JSON.stringify(
+    typeof sandboxCfg === 'object' ? { enabled: true, styleIsolation: Boolean(sandboxCfg.styleIsolation) } : sandboxCfg,
+  );
 
   if (mountTimes > 1) {
     container.dataset.mountTimes = String(mountTimes);

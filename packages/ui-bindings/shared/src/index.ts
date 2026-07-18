@@ -59,7 +59,6 @@ export async function mountMicroApp({
 
   const microAppProps = omitSharedProps(componentProps);
   const configuration = {
-    globalContext: window,
     ...(componentProps.settings || {}),
   };
 

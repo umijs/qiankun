@@ -24,7 +24,6 @@ export {
   type EvaluateScriptOptions,
   type CompartmentGlobals,
   type CompartmentTransform,
-  type Endowments,
 } from './types';
 
 const compartmentGlobalIdPrefix = '__compartment_globalThis__';
@@ -155,13 +154,6 @@ export class Compartment implements CompartmentLoaderFacade {
     this.unshadowableGlobalNames = newlyDefinedNames.concat(
       this.unshadowableGlobalNames.filter((name) => !newlyDefinedNameSet.has(name)),
     );
-  }
-
-  /**
-   * @deprecated Use {@link defineUnshadowableGlobals} instead.
-   */
-  addIntrinsics(globals: UnshadowableGlobals): void {
-    this.defineUnshadowableGlobals(globals);
   }
 
   /** Membrane-backed globals view used by the ESM top-of-module injection. */
