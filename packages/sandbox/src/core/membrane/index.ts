@@ -5,7 +5,6 @@ import {
   esmInternalPrefix,
   freeze,
   getOwnPropertyDescriptor,
-  getOwnPropertyNames,
   hasOwnProperty,
   keys,
 } from '@qiankunjs/shared';
@@ -138,8 +137,8 @@ export class Membrane {
     const { endowments = {} } = opts || {};
     const whitelistVars = [...(opts?.whitelist || []), ...globalVariableWhiteList];
     const descriptorTargetMap = new Map<PropertyKey, SymbolTarget>();
-
-    const { target, propertiesWithGetter } = createMembraneTarget(endowments, incubatorContext);
+    const propertiesWithGetter = new Map<PropertyKey, boolean>();
+    const target = createMembraneTarget(endowments);
 
     this.target = target;
 
@@ -152,14 +151,30 @@ export class Membrane {
             incubatorContext[p as never] = value;
           } else {
             // We must keep its description while the property existed in incubatorContext before
-            if (!hasOwnProperty(membraneTarget, p) && hasOwnProperty(incubatorContext, p)) {
-              const descriptor = getOwnPropertyDescriptor(incubatorContext, p);
-              const { writable, configurable, enumerable } = descriptor!;
-              // only writable property can be overwritten
-              // here we ignored accessor descriptor of incubatorContext as it makes no sense to trigger its logic(which might make sandbox escaping instead)
-              // we force to set value by data descriptor
-              if (writable || hasOwnProperty(descriptor, 'set')) {
-                defineProperty(membraneTarget, p, { configurable, enumerable, writable: true, value });
+            if (!hasOwnProperty(membraneTarget, p)) {
+              /*
+               * never consult the host descriptor for shielded internal keys (e.g. the ESM realm
+               * accessor): materializing it would turn the key into an own prop and permanently
+               * unshield the real accessor for this app. As the app cannot observe the host key
+               * (get/has/getOwnPropertyDescriptor all shield it), the write falls through to the
+               * brand-new-own-global branch below instead.
+               */
+              const descriptor = isShieldedInternalGlobal(membraneTarget, p)
+                ? undefined
+                : getOwnPropertyDescriptor(incubatorContext, p);
+              if (descriptor && !descriptor.configurable) {
+                materializeNonConfigurableProperty(membraneTarget, propertiesWithGetter, p, descriptor);
+                membraneTarget[p] = value;
+              } else if (descriptor) {
+                const { writable, configurable, enumerable } = descriptor;
+                // only writable property can be overwritten
+                // here we ignored accessor descriptor of incubatorContext as it makes no sense to trigger its logic(which might make sandbox escaping instead)
+                // we force to set value by data descriptor
+                if (writable || hasOwnProperty(descriptor, 'set')) {
+                  defineProperty(membraneTarget, p, { configurable, enumerable, writable: true, value });
+                }
+              } else {
+                membraneTarget[p] = value;
               }
             } else {
               membraneTarget[p] = value;
@@ -239,9 +254,9 @@ export class Membrane {
         p: string | number | symbol,
       ): PropertyDescriptor | undefined {
         /*
-         as the descriptor of top/self/window/mockTop in raw window are configurable but not in proxy membraneTarget, we need to get it from membraneTarget to avoid TypeError
-         see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/getOwnPropertyDescriptor
-         > A property cannot be reported as non-configurable, if it does not exist as an own property of the membraneTarget object or if it exists as a configurable own property of the membraneTarget object.
+         * Proxy invariants require a non-configurable property to exist on the target before its
+         * descriptor is returned. Mirror only the requested property instead of scanning every
+         * property on the host window while constructing each sandbox.
          */
         if (hasOwnProperty(membraneTarget, p)) {
           const descriptor = getOwnPropertyDescriptor(membraneTarget, p);
@@ -251,13 +266,15 @@ export class Membrane {
 
         if (isShieldedInternalGlobal(membraneTarget, p)) return undefined;
 
-        if (hasOwnProperty(incubatorContext, p)) {
-          const descriptor = getOwnPropertyDescriptor(incubatorContext, p);
-          descriptorTargetMap.set(p, 'globalContext');
-          // A property cannot be reported as non-configurable, if it does not exist as an own property of the membraneTarget object
-          if (descriptor && !descriptor.configurable) {
-            descriptor.configurable = true;
+        const descriptor = getOwnPropertyDescriptor(incubatorContext, p);
+        if (descriptor) {
+          if (!descriptor.configurable) {
+            materializeNonConfigurableProperty(membraneTarget, propertiesWithGetter, p, descriptor);
+            descriptorTargetMap.set(p, 'target');
+            return getOwnPropertyDescriptor(membraneTarget, p);
           }
+
+          descriptorTargetMap.set(p, 'globalContext');
           return descriptor;
         }
 
@@ -274,7 +291,14 @@ export class Membrane {
       },
 
       defineProperty: (membraneTarget, p, attributes) => {
-        const from = descriptorTargetMap.get(p);
+        let from = descriptorTargetMap.get(p);
+        if (!from && !hasOwnProperty(membraneTarget, p) && !isShieldedInternalGlobal(membraneTarget, p)) {
+          const descriptor = getOwnPropertyDescriptor(incubatorContext, p);
+          if (descriptor && !descriptor.configurable) {
+            materializeNonConfigurableProperty(membraneTarget, propertiesWithGetter, p, descriptor);
+            from = 'target';
+          }
+        }
         /*
          Descriptor must be defined to native window while it comes from native window via Object.getOwnPropertyDescriptor(window, p),
          otherwise it would cause a TypeError with illegal invocation.
@@ -292,6 +316,13 @@ export class Membrane {
       },
 
       deleteProperty: (membraneTarget, p) => {
+        if (!hasOwnProperty(membraneTarget, p) && !isShieldedInternalGlobal(membraneTarget, p)) {
+          const descriptor = getOwnPropertyDescriptor(incubatorContext, p);
+          if (descriptor && !descriptor.configurable) {
+            materializeNonConfigurableProperty(membraneTarget, propertiesWithGetter, p, descriptor);
+          }
+        }
+
         if (hasOwnProperty(membraneTarget, p)) {
           delete membraneTarget[p];
           this.modifications.delete(p);
@@ -334,61 +365,35 @@ export class Membrane {
   }
 }
 
-function createMembraneTarget(
-  endowments: Endowments = {},
-  incubatorContext: WindowProxy,
-): {
-  target: MembraneTarget;
-  propertiesWithGetter: Map<PropertyKey, boolean>;
-} {
-  // map always has the best performance in `has` check scenario
-  // see https://jsperf.com/array-indexof-vs-set-has/23
-  const propertiesWithGetter = new Map<PropertyKey, boolean>();
-  const target: MembraneTarget = keys(endowments).reduce((acc, key) => {
+function createMembraneTarget(endowments: Endowments = {}): MembraneTarget {
+  return keys(endowments).reduce((target, key) => {
     const value = endowments[key];
     if (isPropertyDescriptor(value)) {
-      defineProperty(acc, key, value);
+      defineProperty(target, key, value);
     } else {
-      acc[key] = value;
+      target[key] = value;
     }
-    return acc;
+    return target;
   }, {} as MembraneTarget);
+}
 
-  /*
-   copy the non-configurable property of incubatorContext to membrane target to avoid TypeError
-   see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/getOwnPropertyDescriptor
-   > A property cannot be reported as non-configurable, if it does not exist as an own property of the target object or if it exists as a configurable own property of the target object.
-   */
-  getOwnPropertyNames(incubatorContext)
-    .filter((p) => {
-      const descriptor = getOwnPropertyDescriptor(incubatorContext, p);
-      // never copy qiankun-internal keys (e.g. the ESM realm accessor) into the target: once copied
-      // they become own props and isShieldedInternalGlobal would stop shielding them for this app,
-      // re-exposing the realm accessor to the 2nd+ instance through the proxy (defence in depth)
-      return !hasOwnProperty(endowments, p) && !descriptor?.configurable && !p.startsWith(esmInternalPrefix);
-    })
-    .forEach((p) => {
-      const descriptor = getOwnPropertyDescriptor(incubatorContext, p);
-      if (descriptor) {
-        const hasGetter = hasOwnProperty(descriptor, 'get');
-        if (hasGetter) {
-          propertiesWithGetter.set(p, true);
-        }
+function materializeNonConfigurableProperty(
+  target: MembraneTarget,
+  propertiesWithGetter: Map<PropertyKey, boolean>,
+  property: PropertyKey,
+  descriptor: PropertyDescriptor,
+): void {
+  if (hasOwnProperty(descriptor, 'get')) {
+    propertiesWithGetter.set(property, true);
+  }
 
-        defineProperty(
-          target,
-          p,
-          // freeze the descriptor to avoid being modified by zone.js
-          // see https://github.com/angular/zone.js/blob/a5fe09b0fac27ac5df1fa746042f96f05ccb6a00/lib/browser/define-property.ts#L71
-          freeze(descriptor),
-        );
-      }
-    });
-
-  return {
+  defineProperty(
     target,
-    propertiesWithGetter,
-  };
+    property,
+    // freeze the descriptor to avoid being modified by zone.js
+    // see https://github.com/angular/zone.js/blob/a5fe09b0fac27ac5df1fa746042f96f05ccb6a00/lib/browser/define-property.ts#L71
+    freeze(descriptor),
+  );
 }
 
 /**

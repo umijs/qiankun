@@ -29,6 +29,12 @@ changelog. There is **no root changelog** — the single aggregated log lives on
 action opens/updates a **"Version Packages" PR** that bumps versions and updates each package's
 `CHANGELOG.md`.
 
+The generator intentionally rescans the complete unreleased range from the latest reachable `v*` tag on
+every push to `next`. The Changesets action rebuilds its release branch from `next`, so limiting the scan to
+only the most recent push would drop changes that are still waiting in the release PR. Release tags are
+therefore part of the workflow's persisted state: do not delete or move them, and verify the baseline tag
+before resetting or migrating the release workflow.
+
 **B · Merge the release PR — fully automatic.** CI runs `changeset publish` to release every changed
 sub-package to npm, then `scripts/generate-release-notes.mjs` aggregates the published packages'
 `CHANGELOG.md` entries into one set of notes and `gh release create` posts a **single GitHub Release**.

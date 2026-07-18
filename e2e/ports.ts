@@ -12,6 +12,8 @@ export const SUB_APP_ENTRIES = {
   'sub-classic': `http://localhost:${PORTS['sub-classic']}`,
   // same server, dedicated pages exercising classic script streaming semantics
   'sub-classic-multiscript': `http://localhost:${PORTS['sub-classic']}/multiscript.html`,
+  // explicit <head>, intentionally no <body>: exercises the fragment parsing + sandbox body facade
+  'sub-classic-bodyless': `http://localhost:${PORTS['sub-classic']}/bodyless.html`,
   'sub-classic-broken-asset': `http://localhost:${PORTS['sub-classic']}/broken-asset.html`,
   'sub-esm': `http://localhost:${PORTS['sub-esm']}`,
   // same server, dedicated page whose HTML carries a <link rel="modulepreload">

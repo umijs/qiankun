@@ -1,0 +1,35 @@
+{
+  "name": "@qiankunjs/benchmark",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build:fixture": "vite build fixtures/host",
+    "check": "pnpm run test:unit && pnpm run typecheck && pnpm run build:fixture && node --test tests/browser.integration.test.mjs",
+    "compare": "pnpm run build:fixture && node runner.mjs --mode=revision --baseline-dir=artifacts/baseline --samples=100 --warmup=5 --calibration-samples=100",
+    "compare:results": "node compare-results.mjs",
+    "compare:check": "pnpm run build:fixture && node runner.mjs --mode=revision --baseline-dir=artifacts/baseline --samples=5 --warmup=2 --calibration-samples=5 --calibration-gate=false --comparison-gate=false",
+    "ecosystem": "pnpm run build:fixture && node runner.mjs --suite=ecosystem-html --samples=100 --warmup=5 --calibration-samples=100",
+    "ecosystem:check": "pnpm run build:fixture && node runner.mjs --suite=ecosystem-html --samples=5 --warmup=2 --calibration-samples=5 --calibration-gate=false --trials=1",
+    "run:check": "pnpm run build:fixture && node runner.mjs --samples=5 --warmup=2 --calibration-samples=5 --calibration-gate=false --trials=1",
+    "snapshot:baseline": "pnpm run build:fixture && node snapshot.mjs --name=baseline",
+    "site-isolation": "pnpm run build:fixture && node runner.mjs --suite=site-isolation --samples=100 --warmup=5 --calibration-samples=100",
+    "smoke": "pnpm run build:fixture && node runner.mjs --samples=100 --warmup=5 --calibration-samples=100",
+    "ssr-streaming": "pnpm run build:fixture && node runner.mjs --suite=ssr-streaming --samples=100 --warmup=5 --calibration-samples=100",
+    "ssr-streaming:check": "pnpm run build:fixture && node runner.mjs --suite=ssr-streaming --samples=5 --warmup=2 --calibration-samples=5 --calibration-gate=false --trials=1",
+    "test:unit": "node --test tests/browser.test.mjs tests/collect.test.mjs tests/fingerprint.test.mjs tests/frameworks.test.mjs tests/harness.test.mjs tests/hash.test.mjs tests/options.test.mjs tests/report.test.mjs tests/result-comparison.test.mjs tests/revisions.test.mjs tests/scenarios.test.mjs tests/schedule.test.mjs tests/server.test.mjs tests/snapshot.test.mjs tests/stats.test.mjs tests/suites.test.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@micro-zoe/micro-app": "1.0.0-rc.32",
+    "garfish": "1.19.7",
+    "qiankun": "workspace:*",
+    "qiankun-v2": "npm:qiankun@2.10.16",
+    "wujie": "2.1.0"
+  },
+  "devDependencies": {
+    "playwright": "1.61.1",
+    "typescript": "5.9.3",
+    "vite": "5.4.21"
+  }
+}

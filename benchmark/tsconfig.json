@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "declaration": false,
+    "noEmit": true,
+    "paths": {},
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "exclude": [],
+  "include": ["fixtures/host/src/**/*.ts", "fixtures/host/vite.config.ts"]
+}
