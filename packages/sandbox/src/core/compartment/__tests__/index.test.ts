@@ -1,10 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  COMPARTMENT_HOST_EXTENSIONS,
-  COMPARTMENT_INTENTIONAL_OMISSIONS,
-  Compartment,
-  type CompartmentOptions,
-} from '../../../index';
+import { Compartment, type CompartmentOptions } from '../../../index';
 import { type MembraneTarget } from '../../membrane';
 
 afterEach(() => {
@@ -56,12 +51,13 @@ describe('Compartment globals', () => {
   it('exposes the host extensions without claiming unsupported SES APIs', () => {
     const compartment = new Compartment();
 
-    expect(COMPARTMENT_INTENTIONAL_OMISSIONS).toEqual(['evaluate', 'harden', 'lockdown']);
-    COMPARTMENT_INTENTIONAL_OMISSIONS.forEach((member) => {
+    // Deliberate SES/Layer-4 omissions — see docs/rfcs/compartment-alignment.md §5.
+    (['evaluate', 'harden', 'lockdown'] as const).forEach((member) => {
       expect(member in compartment).toBe(false);
     });
-    expect(COMPARTMENT_HOST_EXTENSIONS).toContain('evaluateScript');
-    expect(COMPARTMENT_HOST_EXTENSIONS).toContain('defineUnshadowableGlobals');
+    // qiankun host extensions layered around the Compartment-shaped core.
+    expect(typeof compartment.evaluateScript).toBe('function');
+    expect(typeof compartment.defineUnshadowableGlobals).toBe('function');
   });
 });
 

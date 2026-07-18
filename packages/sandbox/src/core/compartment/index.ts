@@ -34,26 +34,6 @@ declare global {
 export type UnshadowableGlobals =
   Record<string, PropertyDescriptor> | ((rawTarget: MembraneTarget) => Record<string, PropertyDescriptor>);
 
-/** Deliberate differences from the SES/Layer-4 surface; update the RFC when this list changes. */
-export const COMPARTMENT_INTENTIONAL_OMISSIONS = ['evaluate', 'harden', 'lockdown'] as const;
-
-/** qiankun host extensions layered around the Compartment-shaped core. */
-export const COMPARTMENT_HOST_EXTENSIONS = [
-  'DOM globals',
-  'IsolationPlugin',
-  'active',
-  'defineUnshadowableGlobals',
-  'dispose',
-  'evaluateScript',
-  'getEsmGlobalsView',
-  'inactive',
-  'incubatorContext',
-  'latestSetProp',
-  'onGlobalSet',
-  'transformClassicScript',
-  'type',
-] as const;
-
 let compartmentCounter = 0;
 
 export class Compartment {

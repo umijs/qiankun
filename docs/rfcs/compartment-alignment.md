@@ -280,9 +280,9 @@ dynamicAppend 目前通过 `sandbox.addIntrinsics({ document: proxyDocument })` 
 - **形状兼容（类型层，零运行时依赖）**：在测试代码中按 ses 公开 API 与 Layer 4 草案手写一组「规范形状」接口类型，用类型断言（`satisfies` / 赋值兼容）验证 qiankun `Compartment` 的方法存在性与签名兼容。ses 不进入任何依赖。
 - **hook 契约测试（运行时，基准是本 RFC）**：`resolveHook` / `importHook` 的调用时序、入参、memoize 与重建幂等语义按 §3 的契约写单测——契约文本在本 RFC，不在 ses。
 - **语义回归**：现有 membrane / patchers / esm-sandbox 单测与 e2e 就是隔离分寸的可执行定义；重构全程保持全量通过，即语义未漂移。
-- 差异清单保留文档职能，在本 RFC 与 `AGENTS.md` 显式枚举：
-  - 「有意不实现」：sync `evaluate`（§2）、`lockdown` / `harden`；
-  - 「qiankun 扩展」：DOM globals、`evaluateScript`、`active` / `inactive`、`defineUnshadowableGlobals`、插件协议。
+- 差异清单**只保留文档职能**——本 RFC 是唯一权威来源，不在运行时代码里镜像成导出常量（那样既扩大产物导出面，又要靠额外测试维护两份清单；曾短暂引入的 `COMPARTMENT_INTENTIONAL_OMISSIONS` / `COMPARTMENT_HOST_EXTENSIONS` 已据此移除）。本 RFC 与 `AGENTS.md` 显式枚举：
+  - **有意不实现（相对 SES / Layer-4 surface）**：sync `evaluate`（§2）、`lockdown`、`harden`——`lockdown`/`harden` 的冻结语义与「子应用可自由使用宿主能力」的定位冲突（§8）。对应的运行时保证是这些成员**不出现在** `Compartment` 实例上（`compartment/__tests__/index.test.ts` 以 `'evaluate'/'harden'/'lockdown' in compartment === false` 的负向断言守护，防止将来出现语义不符的半吊子实现）。
+  - **qiankun 宿主扩展（围绕 Compartment 形状核心分层）**：DOM globals、`evaluateScript`（classic script 求值，§2）、`transformClassicScript`、`defineUnshadowableGlobals`、`getEsmGlobalsView`、`onGlobalSet` / `latestSetProp`（导出发现）、`active` / `inactive` / `dispose`（生命周期）、`incubatorContext`、`type`、`IsolationPlugin`（插件协议）。这些是 qiankun 自有面，不冒充规范 API。
 
 ### 6. 替换边界声明（阶段四，文档）
 
