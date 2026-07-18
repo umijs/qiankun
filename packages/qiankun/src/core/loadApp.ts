@@ -18,9 +18,7 @@ import {
   warn,
 } from '@qiankunjs/shared';
 import type { StyleIsolationOpts } from '@qiankunjs/shared';
-import concat from 'lodash/concat';
-import isFunction from 'lodash/isFunction';
-import mergeWith from 'lodash/mergeWith';
+import { concat, isFunction, mergeWith } from 'lodash';
 import type { ParcelConfigObject } from 'single-spa';
 import getAddOns from '../addons';
 import { QiankunError } from '../error';

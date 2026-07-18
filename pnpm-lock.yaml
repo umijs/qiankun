@@ -29,6 +29,9 @@ importers:
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.7.0(jiti@2.7.0))
+      '@optimize-lodash/rollup-plugin':
+        specifier: ^6.0.0
+        version: 6.0.0(rollup@4.57.1)
       '@types/lodash':
         specifier: ^4.17.24
         version: 4.17.24
@@ -1192,6 +1195,16 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
+  '@optimize-lodash/rollup-plugin@6.0.0':
+    resolution: {integrity: sha512-zTNVDRHGcezQCT2UVK7CSqJi7YKyM1YTJPvCkbE3NecHCsI/mdlizXGqcXgoshzyemsfscY7Tf8MmGnor2HAFg==}
+    engines: {node: '>= 18'}
+    peerDependencies:
+      rollup: '>= 4.x'
+
+  '@optimize-lodash/transform@4.0.0':
+    resolution: {integrity: sha512-/v61xAfj3e3g14UDP9qriYgkifLuSwALrhcSiY3SfuzzDJ5pRBsfp//Ih3daJlUMrODvB6IUk7dGfxgnRwcxjg==}
+    engines: {node: '>= 12'}
+
   '@oxc-project/types@0.139.0':
     resolution: {integrity: sha512-r9gHphtCs+1M7J0pw6Sn/hh/Wpa/iQrOOkrNAlVLF/gHq+/CJmHIWKKUUhdWjcD6CIa8idarspCsASiXCXvFUw==}
 
@@ -1334,6 +1347,15 @@ packages:
 
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
+
+  '@rollup/pluginutils@5.4.0':
+    resolution: {integrity: sha512-MfPp06CjRLfXQ3wY0R8vJDYBy/MvVcc9OulEfR0B8Iv9ko+GCNaRZ+EpJYFl27LhKsZK0o420sYCRHCjfCgeUg==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      rollup: ^1.20.0||^2.0.0||^3.0.0||^4.0.0
+    peerDependenciesMeta:
+      rollup:
+        optional: true
 
   '@rollup/rollup-android-arm-eabi@4.57.1':
     resolution: {integrity: sha512-A6ehUVSiSaaliTxai040ZpZ2zTevHYbvu/lDoeAteHI8QnaosIzm4qwtezfRg1jOYaUmnzLX1AOD6Z+UJjtifg==}
@@ -6667,6 +6689,17 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.20.1
 
+  '@optimize-lodash/rollup-plugin@6.0.0(rollup@4.57.1)':
+    dependencies:
+      '@optimize-lodash/transform': 4.0.0
+      '@rollup/pluginutils': 5.4.0(rollup@4.57.1)
+      rollup: 4.57.1
+
+  '@optimize-lodash/transform@4.0.0':
+    dependencies:
+      estree-walker: 2.0.2
+      magic-string: 0.30.21
+
   '@oxc-project/types@0.139.0': {}
 
   '@peculiar/asn1-cms@2.8.0':
@@ -6817,6 +6850,14 @@ snapshots:
     optional: true
 
   '@rolldown/pluginutils@1.0.1': {}
+
+  '@rollup/pluginutils@5.4.0(rollup@4.57.1)':
+    dependencies:
+      '@types/estree': 1.0.8
+      estree-walker: 2.0.2
+      picomatch: 4.0.5
+    optionalDependencies:
+      rollup: 4.57.1
 
   '@rollup/rollup-android-arm-eabi@4.57.1':
     optional: true

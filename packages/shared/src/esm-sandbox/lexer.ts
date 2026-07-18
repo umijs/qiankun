@@ -4,7 +4,7 @@
  * thin wrapper around es-module-lexer to make the wasm initialization preloadable
  */
 import { init, parse } from 'es-module-lexer';
-import once from 'lodash/once';
+import { once } from 'lodash';
 
 /**
  * Preload the wasm lexer. Safe to call multiple times, the initialization only happens once.

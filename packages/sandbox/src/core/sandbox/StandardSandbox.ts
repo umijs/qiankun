@@ -1,5 +1,5 @@
 import { hasOwnProperty } from '@qiankunjs/shared';
-import without from 'lodash/without';
+import { without } from 'lodash';
 import { Compartment } from '../compartment';
 import { globalsInES2015 } from '../globals';
 import type { Endowments } from '../membrane';

@@ -25,6 +25,17 @@ const languageOptions = {
 /** @type {import('eslint').Linter.RulesRecord} */
 const projectRules = {
   'no-else-return': ['error', { allowElseIf: false }],
+  'no-restricted-imports': [
+    'error',
+    {
+      patterns: [
+        {
+          group: ['lodash/*'],
+          message: "Import named methods from 'lodash'; the library build rewrites them to method subpaths.",
+        },
+      ],
+    },
+  ],
   'object-shorthand': ['error', 'properties'],
   'no-shadow': 'off',
 };

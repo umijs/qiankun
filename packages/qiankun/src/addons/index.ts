@@ -3,8 +3,7 @@
  * @since 2020-03-02
  */
 
-import concat from 'lodash/concat';
-import mergeWith from 'lodash/mergeWith';
+import { concat, mergeWith } from 'lodash';
 import type { LifeCycleFn, LifeCycles, ObjectType } from '../types';
 import getEngineFlagAddon from './engineFlag';
 import getRuntimePublicPathAddOn from './runtimePublicPath';

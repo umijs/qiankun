@@ -3,8 +3,7 @@
  * @since 2019-04-11
  */
 
-import isFunction from 'lodash/isFunction';
-import noop from 'lodash/noop';
+import { isFunction, noop } from 'lodash';
 
 declare global {
   interface Window {

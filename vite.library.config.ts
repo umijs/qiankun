@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { builtinModules, createRequire } from 'node:module';
 import { extname, join, relative, resolve, sep } from 'node:path';
+import { optimizeLodashImports } from '@optimize-lodash/rollup-plugin';
 import { defineConfig } from 'vite';
 
 interface PackageManifest {
@@ -75,6 +76,18 @@ function isProductionSource(filePath: string): boolean {
   );
 }
 
+function getLodashParseLanguage(filePath: string): 'js' | 'ts' | 'tsx' {
+  if (filePath.endsWith('.tsx')) {
+    return 'tsx';
+  }
+
+  if (sourceExtensionRE.test(filePath)) {
+    return 'ts';
+  }
+
+  return 'js';
+}
+
 function collectSourceEntries(sourceRoot: string): Record<string, string> {
   const files: string[] = [];
 
@@ -146,6 +159,13 @@ export default defineConfig(() => {
   return {
     root: packageRoot,
     publicDir: false as const,
+    plugins: [
+      optimizeLodashImports({
+        parseOptions: (filePath) => ({
+          lang: getLodashParseLanguage(filePath),
+        }),
+      }),
+    ],
     build: {
       copyPublicDir: false,
       emptyOutDir: true,

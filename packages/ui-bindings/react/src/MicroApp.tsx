@@ -1,5 +1,4 @@
-import isEqual from 'lodash/isEqual';
-import noop from 'lodash/noop';
+import { isEqual, noop } from 'lodash';
 import {
   type SharedProps,
   type MicroAppType,
