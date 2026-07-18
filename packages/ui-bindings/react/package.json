@@ -18,10 +18,12 @@
   },
   "devDependencies": {
     "@types/react": "^18.3.28",
+    "qiankun": "workspace:^",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "peerDependencies": {
+    "qiankun": "^3.0.0-rc.15",
     "react": ">=16.9.0",
     "react-dom": ">=16.9.0"
   },

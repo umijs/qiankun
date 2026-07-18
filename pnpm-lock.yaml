@@ -380,6 +380,9 @@ importers:
       '@types/react':
         specifier: ^18.3.28
         version: 18.3.31
+      qiankun:
+        specifier: workspace:^
+        version: link:../../qiankun
       react:
         specifier: ^18.3.1
         version: 18.3.1
