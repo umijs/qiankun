@@ -12,6 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v6
+
       - uses: actions/setup-node@v4
         with:
           node-version: "lts/*"
@@ -19,7 +21,6 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           cache: "pnpm"
 
-      - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm publish --tag latest
         env:
