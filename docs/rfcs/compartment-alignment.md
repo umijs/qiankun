@@ -139,6 +139,8 @@ Layer 4 草案已将 `importHook` 更名为 `loadHook`（草案原文承认与 s
 
 各阶段可独立落地、独立发版；①② 是 ③ 的前置（插件协议依赖 Compartment 公开接口），④ 贯穿始终。
 
+**延伸阶段⑤（沙箱独立开放）**：让 `@qiankunjs/sandbox` 成为非 qiankun 用户可直接使用的隔离库（`createSandbox` 默认值完备化、容器协议包内化、qiankun 收编为普通消费者），由独立的 [Standalone Sandbox RFC](./standalone-sandbox.md) 承接——它是本 RFC「替换边界 + 插件协议」故事的自然终点：对外开放的公开面，同时也是内部替换的稳定面。
+
 ## Detailed Design
 
 ### 1. Compartment 名实相符（阶段一）
