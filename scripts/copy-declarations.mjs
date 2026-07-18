@@ -41,6 +41,11 @@ async function copyDeclarations(sourceRoot, targetRoots) {
       }),
     ),
   );
+
+  // an empty sweep from a dist directory means tsc emitted nothing there — surface it in build logs
+  const sourceLabel = relative(packageRoot, sourceRoot) || '.';
+  const targetLabel = targetRoots.map((targetRoot) => relative(packageRoot, targetRoot)).join(', ');
+  console.log(`[copy-declarations] ${declarations.length} declaration file(s): ${sourceLabel} -> ${targetLabel}`);
 }
 
 await copyDeclarations(declarationSource, declarationTargets);

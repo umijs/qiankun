@@ -21,7 +21,7 @@ Before you begin contributing, please:
 
 ### Requirements
 
-- Node.js >= 22.15
+- Node.js ^22.15 || >=24 (Node 23 is not covered by our toolchain)
 - pnpm@11.13.1 (we use pnpm as the package manager, exact version specified in package.json)
 
 ### Local Development
@@ -290,7 +290,7 @@ When submitting bug reports, please include:
 
 - **Clear Title**: Briefly describe the issue
 - **Environment Information**:
-  - Node.js version (>= 22.15)
+  - Node.js version (^22.15 || >=24)
   - pnpm version (should be 11.13.1)
   - qiankun version
   - Browser version

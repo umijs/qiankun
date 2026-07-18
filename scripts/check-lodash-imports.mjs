@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { join, relative } from 'node:path';
@@ -64,8 +65,16 @@ let optimizedImportCount = 0;
 
 for (const packageRoot of packageRoots) {
   const packageRequire = createRequire(join(packageRoot, 'package.json'));
+  const presentFormats = outputFormats.filter((format) => existsSync(join(packageRoot, 'dist', format)));
 
-  for (const format of outputFormats) {
+  if (presentFormats.length === 0) {
+    errors.push(
+      `${relative(workspaceRoot, packageRoot)} has no dist output — build the package before checking lodash imports`,
+    );
+    continue;
+  }
+
+  for (const format of presentFormats) {
     const outputRoot = join(packageRoot, 'dist', format);
     let formatImportCount = 0;
 
@@ -98,7 +107,9 @@ for (const packageRoot of packageRoots) {
     }
 
     if (formatImportCount === 0) {
-      errors.push(`${relative(workspaceRoot, outputRoot)} contains no optimized lodash imports`);
+      errors.push(
+        `${relative(workspaceRoot, outputRoot)} emits no lodash imports although the package declares a lodash dependency — remove the dependency or fix the build`,
+      );
     }
   }
 }

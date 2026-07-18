@@ -10,7 +10,9 @@ const E2E_TIMEOUT = process.env.E2E_TIMEOUT ? parseInt(process.env.E2E_TIMEOUT, 
 const EXPECTED_QIANKUN_VERSION = 'rc';
 
 const APP_NAME_PLACEHOLDER = '{{APP_NAME}}';
-const PNPM_COMMAND = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
+const PNPM_COMMAND = 'pnpm';
+// .cmd shims cannot be spawned directly since the CVE-2024-27980 fix; go through the shell instead
+const SPAWN_OPTIONS = { shell: process.platform === 'win32' };
 
 interface ProcessResult {
   exitCode: number;
@@ -34,8 +36,8 @@ interface RunProcessOptions {
 function runProcess(command: string, args: string[], options: RunProcessOptions): Promise<ProcessResult> {
   return new Promise((resolve, reject) => {
     const child = options.captureOutput
-      ? spawn(command, args, { cwd: options.cwd, stdio: ['ignore', 'pipe', 'pipe'] })
-      : spawn(command, args, { cwd: options.cwd, stdio: 'inherit' });
+      ? spawn(command, args, { ...SPAWN_OPTIONS, cwd: options.cwd, stdio: ['ignore', 'pipe', 'pipe'] })
+      : spawn(command, args, { ...SPAWN_OPTIONS, cwd: options.cwd, stdio: 'inherit' });
     let stderr = '';
     let stdout = '';
 

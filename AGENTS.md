@@ -4,7 +4,7 @@
 
 Qiankun is a micro-frontend framework built on [single-spa](https://github.com/single-spa/single-spa). v3 rewrites the runtime around **streaming HTML-entry loading**, a **Proxy-membrane JS sandbox**, and native **ESM-sandbox** execution. It is a pnpm monorepo built with Vite 8; `tsc` emits package declarations.
 
-> Requires Node `>=22.15`, `pnpm@11.13.1` (see `packageManager`). Never use npm/yarn at the root.
+> Requires Node `^22.15 || >=24`, `pnpm@11.13.1` (see `packageManager`). Never use npm/yarn at the root.
 
 ## STRUCTURE
 

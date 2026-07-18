@@ -2,7 +2,7 @@
   "name": "qiankun-monorepo",
   "private": true,
   "engines": {
-    "node": ">=22.15"
+    "node": "^22.15.0 || >=24.0.0"
   },
   "scripts": {
     "start:example": "pnpm run build:packages && pnpm --parallel --filter './examples/*' run dev",
@@ -35,7 +35,7 @@
     "test:release-scripts": "node --test scripts/sanitize-pre-state.test.mjs",
     "test:e2e": "pnpm run build && pnpm --filter @qiankunjs/e2e run test:e2e",
     "prepare": "husky",
-    "clean": "rimraf node_modules **/*/node_modules"
+    "clean": "rimraf --glob node_modules 'packages/*/node_modules' 'packages/ui-bindings/*/node_modules' 'examples/*/node_modules' e2e/node_modules benchmark/node_modules"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.1",
