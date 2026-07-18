@@ -41,5 +41,10 @@ export default defineConfig({
       url: `http://localhost:${PORTS['sub-misbehaving']}`,
       reuseExistingServer: !CI,
     },
+    {
+      command: `node servers/serve.mjs ../examples/standalone-sandbox/dist ${PORTS['standalone-sandbox']}`,
+      url: `http://localhost:${PORTS['standalone-sandbox']}`,
+      reuseExistingServer: !CI,
+    },
   ],
 });

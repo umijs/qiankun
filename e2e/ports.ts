@@ -6,6 +6,7 @@ export const PORTS = {
   'sub-classic': 7501,
   'sub-esm': 7502,
   'sub-misbehaving': 7503,
+  'standalone-sandbox': 7504,
 } as const;
 
 export const SUB_APP_ENTRIES = {
