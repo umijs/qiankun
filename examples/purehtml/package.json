@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "description": "qiankun micro app with no build step: static html + vendored jQuery",
   "scripts": {
-    "dev": "vite --host 0.0.0.0 --port 7104 --strictPort"
+    "dev": "vite preview --host 0.0.0.0 --port 7104 --strictPort"
   },
   "devDependencies": {
     "vite": "^8.1.5"
