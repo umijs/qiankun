@@ -1,0 +1,470 @@
+:root {
+  color: #17212b;
+  background: #eef3f6;
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --ink: #17212b;
+  --muted: #62717d;
+  --paper: #f8fbfc;
+  --line: #c9d5dc;
+  --cobalt: #2448d8;
+  --cobalt-soft: #e4eafd;
+  --coral: #c8382d;
+  --teal: #187d70;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    linear-gradient(rgba(36, 72, 216, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(36, 72, 216, 0.055) 1px, transparent 1px),
+    #eef3f6;
+  background-size: 28px 28px;
+}
+
+button {
+  font: inherit;
+}
+
+.lab-shell {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 26px 0 54px;
+}
+
+.masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 10px 0 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.wordmark,
+.eyebrow,
+.boundary-label,
+.metric-label,
+.log-time,
+.code-caption {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.wordmark {
+  margin: 0;
+  color: var(--cobalt);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.package-name {
+  color: var(--muted);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.6fr);
+  gap: clamp(34px, 7vw, 92px);
+  padding: clamp(54px, 9vw, 104px) 0 48px;
+}
+
+.eyebrow {
+  margin: 0 0 18px;
+  color: var(--teal);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+h1 {
+  max-width: 780px;
+  margin: 0;
+  font-family: "Avenir Next", Avenir, "Trebuchet MS", sans-serif;
+  font-size: clamp(42px, 7vw, 78px);
+  font-weight: 650;
+  letter-spacing: -0.055em;
+  line-height: 0.96;
+}
+
+.intro-copy {
+  max-width: 630px;
+  margin: 26px 0 0;
+  color: #465762;
+  font-size: clamp(16px, 2vw, 19px);
+  line-height: 1.65;
+}
+
+.host-card {
+  align-self: end;
+  padding: 24px;
+  background: rgba(248, 251, 252, 0.86);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 14px 34px rgba(40, 61, 73, 0.08);
+}
+
+.host-card h2 {
+  margin: 0 0 14px;
+  font: 650 19px/1.25 "Avenir Next", Avenir, sans-serif;
+}
+
+.host-card .shared-label {
+  margin: 0;
+  color: var(--cobalt);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.host-note {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.control-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  background: var(--ink);
+  border-radius: 18px 18px 0 0;
+}
+
+.control-strip button {
+  min-height: 42px;
+  padding: 0 17px;
+  color: #f8fbfc;
+  background: transparent;
+  border: 1px solid #56636c;
+  border-radius: 11px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 750;
+  transition:
+    transform 140ms ease,
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+.control-strip button:hover:not(:disabled) {
+  background: #2a3741;
+  border-color: #84929b;
+  transform: translateY(-1px);
+}
+
+.control-strip button.primary {
+  color: #fff;
+  background: var(--cobalt);
+  border-color: var(--cobalt);
+}
+
+.control-strip button.danger {
+  color: #ffd6d1;
+}
+
+.control-strip button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.control-strip button:focus-visible {
+  outline: 3px solid #a9bbff;
+  outline-offset: 3px;
+}
+
+.controller-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  color: #d8e2e7;
+  font: 700 11px/1.2 ui-monospace, "SFMono-Regular", Menlo, monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.controller-state::before {
+  width: 8px;
+  height: 8px;
+  background: #81909a;
+  border-radius: 50%;
+  content: "";
+}
+
+.controller-state[data-state="running"]::before {
+  background: #4bd0a9;
+  box-shadow: 0 0 0 5px rgba(75, 208, 169, 0.15);
+}
+
+.controller-state[data-state="disposed"]::before {
+  background: #ff786e;
+}
+
+.workbench {
+  overflow: hidden;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-top: 0;
+  border-radius: 0 0 24px 24px;
+  box-shadow: 0 26px 70px rgba(40, 61, 73, 0.13);
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid var(--line);
+}
+
+.metric {
+  min-height: 112px;
+  padding: 21px;
+  border-right: 1px solid var(--line);
+}
+
+.metric:last-child {
+  border-right: 0;
+}
+
+.metric-label {
+  display: block;
+  margin-bottom: 13px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.metric-value {
+  color: var(--ink);
+  font-family: "Avenir Next", Avenir, sans-serif;
+  font-size: clamp(22px, 3vw, 31px);
+  font-weight: 650;
+  letter-spacing: -0.035em;
+}
+
+.metric-value.good {
+  color: var(--teal);
+}
+
+.boundary-section {
+  padding: clamp(26px, 5vw, 50px);
+}
+
+.boundary-frame {
+  position: relative;
+  min-height: 320px;
+  padding: clamp(28px, 5vw, 48px);
+  border: 2px dashed var(--cobalt);
+  border-radius: 24px;
+  background: var(--cobalt-soft);
+}
+
+.boundary-frame::before,
+.boundary-frame::after {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-color: var(--cobalt);
+  content: "";
+}
+
+.boundary-frame::before {
+  top: -6px;
+  left: -6px;
+  border-top: 4px solid;
+  border-left: 4px solid;
+}
+
+.boundary-frame::after {
+  right: -6px;
+  bottom: -6px;
+  border-right: 4px solid;
+  border-bottom: 4px solid;
+}
+
+.boundary-label {
+  position: absolute;
+  top: 0;
+  left: 28px;
+  padding: 0 10px;
+  color: var(--cobalt);
+  background: var(--cobalt-soft);
+  font-size: 10px;
+  font-weight: 900;
+  transform: translateY(-50%);
+}
+
+#sandbox-container:empty::before {
+  display: grid;
+  min-height: 220px;
+  color: #697b8a;
+  font: 700 12px/1.5 ui-monospace, "SFMono-Regular", Menlo, monospace;
+  letter-spacing: 0.06em;
+  place-items: center;
+  text-align: center;
+  text-transform: uppercase;
+  content: "The mount point is empty\A Run the widget to cross the boundary";
+  white-space: pre;
+}
+
+.evidence-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(300px, 0.9fr);
+  border-top: 1px solid var(--line);
+}
+
+.code-panel,
+.log-panel {
+  min-width: 0;
+  padding: clamp(24px, 4vw, 38px);
+}
+
+.code-panel {
+  border-right: 1px solid var(--line);
+}
+
+.code-caption {
+  display: block;
+  margin-bottom: 14px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+pre {
+  overflow-x: auto;
+  margin: 0;
+  padding: 22px;
+  color: #dbe7ec;
+  background: #15202a;
+  border-radius: 16px;
+  font: 12px/1.75 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+.log-panel h2 {
+  margin: 0 0 17px;
+  font: 650 19px/1.25 "Avenir Next", Avenir, sans-serif;
+}
+
+.activity-log {
+  display: grid;
+  gap: 0;
+  max-height: 260px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.activity-log li {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 14px;
+  padding: 11px 0;
+  color: #3c4e59;
+  border-bottom: 1px solid #dbe3e8;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.log-time {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+@media (max-width: 800px) {
+  .intro,
+  .evidence-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .host-card {
+    max-width: 520px;
+  }
+
+  .metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .metric:nth-child(2) {
+    border-right: 0;
+  }
+
+  .metric:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .code-panel {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+@media (max-width: 520px) {
+  .lab-shell {
+    width: min(100% - 20px, 1180px);
+    padding-top: 10px;
+  }
+
+  .masthead {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .intro {
+    padding-top: 44px;
+  }
+
+  .control-strip {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .controller-state {
+    margin: 8px 3px;
+  }
+
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .metric,
+  .metric:nth-child(2) {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .metric:last-child {
+    border-bottom: 0;
+  }
+
+  .boundary-section {
+    padding: 28px 16px 20px;
+  }
+
+  .boundary-frame {
+    padding: 24px 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
