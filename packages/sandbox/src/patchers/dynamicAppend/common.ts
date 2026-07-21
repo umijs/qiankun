@@ -152,11 +152,35 @@ export function getOverwrittenAppendChildOrInsertBefore(
       return appendChild.call(this, element, refChild) as T;
     }
 
+    // An element adopted through the mount-point fallback above (innerHTML-parsed, no config of
+    // its own) must be registered like the fragment branch does — otherwise the patched
+    // removeChild can never recognize it and its ledger entry would replay on every remount.
+    if (setSandboxConfig && !getSandboxConfig(element)) {
+      setSandboxConfig(element, sandboxConfig);
+    }
+
     if (element.tagName) {
       switch (element.tagName) {
         case LINK_TAG_NAME:
         case STYLE_TAG_NAME: {
           const stylesheetElement = element as HTMLLinkElement | HTMLStyleElement;
+
+          /*
+           * Only rel=stylesheet links belong to the dynamic-stylesheet ledger that remounts
+           * replay. Hint links (preload/modulepreload/preconnect/icon/…) still run through the
+           * transformer — their URLs must resolve against the app entry and preload requests must
+           * stay matchable by the pipeline fetch — but recording them would re-issue the hints on
+           * every remount, and a hint's own removal could never settle the entry.
+           */
+          if (
+            element.tagName === LINK_TAG_NAME &&
+            !(stylesheetElement as HTMLLinkElement).relList.contains('stylesheet')
+          ) {
+            const { compartment, nodeTransformer, fetch, styleIsolation } = sandboxConfig;
+            const transpiledHintElement = nodeTransformer(stylesheetElement, { compartment, fetch, styleIsolation });
+            return appendChild.call(this, transpiledHintElement, refChild) as T;
+          }
+
           Object.defineProperty(stylesheetElement, styleElementTargetSymbol, {
             value: target,
             writable: true,
