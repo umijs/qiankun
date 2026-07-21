@@ -45,6 +45,41 @@ describe('transpileLink', () => {
   });
 
   describe('without styleIsolation', () => {
+    it('aligns a sandboxed script preload with the pipeline fetch instead of leaving it unconsumable', () => {
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'script';
+      link.setAttribute('href', '/scripts/entry.js');
+
+      const result = transpileLink(
+        link,
+        baseURI,
+        makeOpts({ compartment: {} as AssetsTranspilerOpts['compartment'] }),
+      ) as HTMLLinkElement;
+
+      expect(result).toBe(link);
+      expect(result.as).toBe('fetch');
+      expect(result.crossOrigin).toBe('anonymous');
+      expect(result.getAttribute('href')).toBe('http://localhost:8000/scripts/entry.js');
+    });
+
+    it('keeps the include credentials of a use-credentials script preload', () => {
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'script';
+      link.crossOrigin = 'use-credentials';
+      link.setAttribute('href', '/scripts/entry.js');
+
+      const result = transpileLink(
+        link,
+        baseURI,
+        makeOpts({ compartment: {} as AssetsTranspilerOpts['compartment'] }),
+      ) as HTMLLinkElement;
+
+      expect(result.as).toBe('fetch');
+      expect(result.crossOrigin).toBe('use-credentials');
+    });
+
     it('returns the original link element with resolved href', () => {
       const link = document.createElement('link');
       link.rel = 'stylesheet';
