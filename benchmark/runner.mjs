@@ -142,12 +142,15 @@ function buildCalibrationReport(samples, seed, variants) {
 }
 
 function combineCalibrationEvaluations(aggregate, trialEvaluations) {
-  const trialFailures = trialEvaluations.flatMap(({ evaluation, trial }) =>
-    evaluation.failures.map((failure) => `trial ${trial + 1}: ${failure}`),
+  // The gate judges the aggregate across trials; per-trial results stay visible as diagnostics
+  // so trial-level drift remains observable without compounding the false-rejection rate.
+  const trialDiagnostics = trialEvaluations.flatMap(({ evaluation, trial }) =>
+    evaluation.failures.map((failure) => `trial ${trial + 1} diagnostic: ${failure}`),
   );
   return {
-    failures: [...aggregate.failures, ...trialFailures],
-    passed: aggregate.passed && trialFailures.length === 0,
+    diagnostics: trialDiagnostics,
+    failures: aggregate.failures,
+    passed: aggregate.passed,
     trials: trialEvaluations,
   };
 }
@@ -211,6 +214,10 @@ function renderRunSummary({
     );
     if (calibrationEvaluation && !calibrationEvaluation.passed) {
       calibrationEvaluation.failures.forEach((failure) => lines.push(`- ${failure}`));
+      lines.push('');
+    }
+    if (calibrationEvaluation?.diagnostics?.length) {
+      calibrationEvaluation.diagnostics.forEach((diagnostic) => lines.push(`- ${diagnostic}`));
       lines.push('');
     }
   }
@@ -339,9 +346,12 @@ async function main() {
         const trialCalibrationReport = buildCalibrationReport(trialCalibrationSamples, trialSeed, calibrationVariants);
         const trialCalibrationEvaluation = evaluateCalibration(trialCalibrationReport.comparisons['aa-calibration']);
         calibrationTrialEvaluations.push({ evaluation: trialCalibrationEvaluation, trial });
+        // A single trial's A/A result is a diagnostic, not a gate: requiring every independent
+        // trial's interval to contain zero would compound the false-rejection rate as trials are
+        // added. The aggregate evaluation across all trials is the enforced judgment.
         if (options.calibrationGate && !trialCalibrationEvaluation.passed) {
-          throw new Error(
-            `trial ${trial + 1} A/A calibration failed: ${trialCalibrationEvaluation.failures.join('; ')}`,
+          console.warn(
+            `[benchmark] trial ${trial + 1} A/A diagnostic: ${trialCalibrationEvaluation.failures.join('; ')}`,
           );
         }
 

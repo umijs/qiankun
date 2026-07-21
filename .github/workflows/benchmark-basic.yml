@@ -19,12 +19,16 @@ concurrency:
   group: basic-performance-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-jobs:
-  benchmark:
-    name: Basic performance gate
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
+env:
+  SHARD_COUNT: 6
 
+jobs:
+  changes:
+    name: Detect benchmark-relevant changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.changes.outputs.run }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -95,12 +99,24 @@ jobs:
             echo "No benchmark-relevant changes; performance gate skipped." >> "$GITHUB_STEP_SUMMARY"
           fi
 
+  shard:
+    name: Benchmark shard ${{ matrix.shard }}
+    needs: changes
+    if: ${{ needs.changes.outputs.run == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Install pnpm
-        if: ${{ steps.changes.outputs.run == 'true' }}
         uses: pnpm/action-setup@v6
 
       - name: Use Node.js 24
-        if: ${{ steps.changes.outputs.run == 'true' }}
         uses: actions/setup-node@v4
         with:
           node-version: 24.x
@@ -108,44 +124,82 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        if: ${{ steps.changes.outputs.run == 'true' }}
         run: pnpm install --frozen-lockfile
 
       - name: Install Chromium
-        if: ${{ steps.changes.outputs.run == 'true' }}
         run: pnpm --filter @qiankunjs/benchmark exec playwright install --with-deps chromium
 
-      - name: Run basic performance gate
-        if: ${{ steps.changes.outputs.run == 'true' }}
+      - name: Build packages
+        run: pnpm run build:packages
+
+      - name: Run benchmark shard
         env:
           CI: "true"
-        run: pnpm run benchmark:ci-basic
-
-      - name: Publish benchmark summary
-        if: ${{ always() && steps.changes.outputs.run == 'true' }}
-        shell: bash
+        working-directory: benchmark
         run: |
-          shopt -s nullglob
-          summaries=(benchmark/results/*/summary.md)
+          pnpm run test:unit
+          pnpm run typecheck
+          pnpm run build:fixture
+          node runner.mjs --suite=ci-basic --trials=2 --samples=100 --warmup=5 \
+            --calibration-samples=100 --chunk-interval=50 \
+            --calibration-gate=false --comparison-gate=false \
+            --seed=$((20260711 + ${{ matrix.shard }} * 9973))
 
-          if (( ${#summaries[@]} == 0 )); then
-            printf '%s\n' \
-              '## Basic performance gate' \
-              'No benchmark summary was generated.' \
-              >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-
-          for summary in "${summaries[@]}"; do
-            cat "$summary" >> "$GITHUB_STEP_SUMMARY"
-            printf '\n\n---\n\n' >> "$GITHUB_STEP_SUMMARY"
-          done
-
-      - name: Upload benchmark results
-        if: ${{ always() && steps.changes.outputs.run == 'true' }}
+      - name: Upload shard results
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: basic-performance-${{ github.run_id }}-${{ github.run_attempt }}
+          name: shard-${{ matrix.shard }}
           path: benchmark/results/
           if-no-files-found: warn
           retention-days: 14
+
+  gate:
+    name: Basic performance gate
+    needs:
+      - changes
+      - shard
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Skip without benchmark-relevant changes
+        if: ${{ needs.changes.outputs.run != 'true' }}
+        run: echo "No benchmark-relevant changes; performance gate skipped." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Require every shard to complete
+        if: ${{ needs.changes.outputs.run == 'true' && needs.shard.result != 'success' }}
+        run: |
+          echo "One or more benchmark shards failed; the aggregate verdict cannot be computed." >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+      - uses: actions/checkout@v4
+        if: ${{ needs.changes.outputs.run == 'true' }}
+
+      - name: Use Node.js 24
+        if: ${{ needs.changes.outputs.run == 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+
+      - name: Download shard results
+        if: ${{ needs.changes.outputs.run == 'true' }}
+        uses: actions/download-artifact@v4
+        with:
+          path: shards
+          pattern: shard-*
+
+      - name: Aggregate shard results
+        if: ${{ needs.changes.outputs.run == 'true' }}
+        shell: bash
+        run: |
+          status=0
+          node benchmark/aggregate-shards.mjs \
+            --input=shards \
+            --shards="$SHARD_COUNT" \
+            --summary-file=aggregate-summary.md || status=$?
+          if [[ -f aggregate-summary.md ]]; then
+            cat aggregate-summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$status"
