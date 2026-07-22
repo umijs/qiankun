@@ -110,6 +110,7 @@ Build/release:
 - In sandbox code, **never touch the real `window`/`document.head`** — go through the proxied view.
 - Don't invert the package dependency graph above (e.g. `shared` must not import `sandbox`).
 - e2e: never `waitForTimeout`; use web-first assertions; all ports come from `e2e/ports.ts`.
+- Performance work is judged in this order: **proportional impact first** (does the win scale with asset size / network / app scale — e.g. eliminating a duplicate download), **readability second** (never trade it away for small wins), **constant absolute savings last** (fixed single-digit-ms pipeline costs are noise in real apps and rarely worth landing). Beware: the ~50ms benchmark fixture makes fixed milliseconds masquerade as percentages — convert to absolute ms against realistic load times before deciding. And fix root causes at the source, not with per-call-site markers/exemptions downstream.
 
 ## NOTES
 
