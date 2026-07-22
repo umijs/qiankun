@@ -53,6 +53,24 @@ test('comparePairedTrials aggregates independent browser trials with equal trial
   assert.deepEqual(comparePairedTrials(trials, { iterations: 1_000, seed: 7 }), comparison);
 });
 
+test('comparePairedTrials reports the absolute paired delta in milliseconds alongside the ratio', () => {
+  const trials = [
+    { candidate: [112, 112, 112], reference: [100, 100, 100] },
+    { candidate: [112, 112, 112], reference: [100, 100, 100] },
+  ];
+  const comparison = comparePairedTrials(trials, { iterations: 500, seed: 7 });
+
+  assert.equal(comparison.absoluteDeltaMs, 12);
+  assert.deepEqual(comparison.absoluteDeltaConfidenceInterval95Ms, [12, 12]);
+  assert.ok(Math.abs(comparison.relativeDeltaPercent - 12) < 1e-10);
+
+  const mixed = comparePairedTrials([{ candidate: [105, 95], reference: [100, 100] }], {
+    iterations: 500,
+    seed: 7,
+  });
+  assert.equal(mixed.absoluteDeltaMs, 0);
+});
+
 test('evaluateCalibration enforces delta, zero coverage, and interval width', () => {
   assert.deepEqual(evaluateCalibration({ relativeDeltaPercent: 1, confidenceInterval95: [-2, 3] }), {
     passed: true,

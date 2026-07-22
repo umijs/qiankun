@@ -214,6 +214,16 @@ const BASIC_OVERHEAD_BUDGET_PERCENT = 10;
  * never hold stably against it, while +15% still guards the architecture gap from regressing.
  */
 const NATIVE_COLD_PAINT_FLOOR_BUDGET_PERCENT = 15;
+/*
+ * Absolute paired-delta guards bound the FIXED constant cost (pipeline and boot work) that the
+ * small fixture would otherwise disguise inside the percentage. Measured medians on hosted
+ * runners: ~+1ms sandbox versus no isolation, ~+2-3ms sandbox versus the native iframe. These
+ * budgets are machine-speed dependent — calibrated for GitHub ubuntu-24.04 runners and this
+ * fixture — and sized as disaster guards (an accidental extra round-trip or synchronous stall
+ * blows past them immediately).
+ */
+const SANDBOX_CONSTANT_OVERHEAD_BUDGET_MS = 5;
+const NATIVE_CONSTANT_OVERHEAD_BUDGET_MS = 10;
 
 const SAME_SITE_COMPARISONS = [
   {
@@ -439,8 +449,16 @@ export const SUITES = {
     calibrationSourceVariant: 'qk-sandbox',
     ciOnly: true,
     comparisonGates: [
-      { comparison: 'sandbox-cost', maxUpperBoundPercent: BASIC_OVERHEAD_BUDGET_PERCENT },
-      { comparison: 'qiankun-sandbox-native', maxUpperBoundPercent: NATIVE_COLD_PAINT_FLOOR_BUDGET_PERCENT },
+      {
+        comparison: 'sandbox-cost',
+        maxUpperBoundMs: SANDBOX_CONSTANT_OVERHEAD_BUDGET_MS,
+        maxUpperBoundPercent: BASIC_OVERHEAD_BUDGET_PERCENT,
+      },
+      {
+        comparison: 'qiankun-sandbox-native',
+        maxUpperBoundMs: NATIVE_CONSTANT_OVERHEAD_BUDGET_MS,
+        maxUpperBoundPercent: NATIVE_COLD_PAINT_FLOOR_BUDGET_PERCENT,
+      },
       { comparison: 'qiankun-v3-ssr-streaming-gain', maxUpperBoundPercent: -30 },
     ],
     comparisons: [

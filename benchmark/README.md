@@ -120,9 +120,11 @@ Hosted-runner noise has two layers, and the gate accounts for both. Browser-sess
 
 Each trial uses five warmups, 100 paired samples per product cell, and 100 samples per A/A arm. Every sample must still satisfy the complete measurement contract, including visible styled content, lifecycle settlement, error-free loading, and cleanup. The aggregated paired-bootstrap 95% confidence-interval upper bounds must satisfy:
 
-- sandbox versus no isolation: no greater than `+10%` — this is the sandbox-overhead budget proper;
-- sandbox versus native iframe: no greater than `+15%` — an end-to-end cold-paint floor across two architectures (fetch-driven streaming versus native iframe navigation with its preload scanner), not pure sandbox overhead: cross-VM measurement puts the floor at roughly `+2%` to `+9%` depending on the runner fleet mix with upper bounds up to `~+11.6%`, so `+15%` guards the architecture gap from regressing while remaining stably satisfiable;
+- sandbox versus no isolation: no greater than `+10%` and no greater than `+5ms` absolute — this is the sandbox-overhead budget proper;
+- sandbox versus native iframe: no greater than `+15%` and no greater than `+10ms` absolute — an end-to-end cold-paint floor across two architectures (fetch-driven streaming versus native iframe navigation with its preload scanner), not pure sandbox overhead: cross-VM measurement puts the floor at roughly `+2%` to `+9%` depending on the runner fleet mix with upper bounds up to `~+11.6%`, so `+15%` guards the architecture gap from regressing while remaining stably satisfiable;
 - streamed versus delayed-buffered SSR: no greater than `-30%`, proving the progressive path is at least 30% faster with 95% confidence.
+
+The percentage and absolute bounds guard different failure modes. A percentage detects proportional regressions but, on a small fixture, disguises fixed constant costs as percentages (and would dilute them into invisibility on a large one); the absolute paired-delta bound targets the constant directly — the measured fixed cost is roughly `+1ms` for the sandbox layer and `+2-3ms` for the whole pipeline versus the native iframe. Absolute milliseconds are machine-speed dependent: these budgets are calibrated for GitHub `ubuntu-24.04` hosted runners and this fixture, and sized as disaster guards (an accidental extra round-trip or synchronous stall exceeds them immediately).
 
 These are regression floors, not optimization targets. Both basic overhead comparisons are capped at 10%. Relative, within-run comparisons avoid absolute millisecond thresholds that would vary with CI runner hardware. The suite comparison gate can be disabled with `--comparison-gate=false` for plumbing diagnostics, but such a run is not performance evidence.
 
