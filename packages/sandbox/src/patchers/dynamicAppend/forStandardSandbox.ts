@@ -32,20 +32,10 @@ function getRequiredContainer(getContainer: IsolationPluginContext['getContainer
 }
 
 declare global {
-  interface Window {
-    __currentLockingSandbox__?: PluginCompartment;
-  }
-
   interface Document {
     [p: string]: unknown;
   }
 }
-
-Object.defineProperty(nativeGlobal, '__currentLockingSandbox__', {
-  enumerable: false,
-  writable: true,
-  configurable: true,
-});
 
 interface DOMPrototypePatchState {
   refCount: number;
@@ -98,6 +88,36 @@ const { containerOwners, elementConfigs, sandboxConfigs } = sharedState;
 const getSandboxConfig = (element: HTMLElement) => elementConfigs.get(element);
 const setSandboxConfig = (element: HTMLElement, config: SandboxConfig) => elementConfigs.set(element, config);
 
+/**
+ * Ownership follows the stylesheet's current DOM position, consistent with the insertion-point
+ * attribution model: a style inserted through a patched mount point already carries its config,
+ * while one injected deeper inside a container (e.g. a CSS-in-JS custom insertion target)
+ * resolves to the nearest tagged ancestor — the mount points are always tagged. The resolution
+ * is cached back onto the element, so insertRule-heavy CSS-in-JS paths walk at most once.
+ */
+const resolveStyleOwnerConfig = (ownerNode: HTMLElement): SandboxConfig | undefined => {
+  const attachedConfig = elementConfigs.get(ownerNode);
+  if (attachedConfig) return attachedConfig;
+
+  let ancestor = ownerNode.parentElement;
+  while (ancestor) {
+    const ancestorConfig = elementConfigs.get(ancestor);
+    if (ancestorConfig) {
+      elementConfigs.set(ownerNode, ancestorConfig);
+      return ancestorConfig;
+    }
+    ancestor = ancestor.parentElement;
+  }
+  return undefined;
+};
+
+// FIXME should not capture at module load, should get it every time it is used, otherwise it may miss the business itself monkey patch logic.
+// Captured from the prototype rather than an instance lookup (document.head.appendChild), which
+// could pick up a host page's instance-level patch and leak it into container operations.
+const nativeAppendChild = Node.prototype.appendChild;
+const nativeInsertBefore = Node.prototype.insertBefore;
+const nativeRemoveChild = Node.prototype.removeChild;
+
 function patchDocument(
   compartment: PluginCompartment,
   appName: string,
@@ -112,12 +132,6 @@ function patchDocument(
 
   const unpatch = patchDocumentHeadAndBodyMethods(container, compartment);
 
-  const attachElementToSandbox = (element: HTMLElement) => {
-    const sandboxConfig = sandboxConfigs.get(compartment);
-    if (sandboxConfig) {
-      elementConfigs.set(element, sandboxConfig);
-    }
-  };
   const getDocumentHeadElement = () => {
     const currentContainer = getRequiredContainer(getContainer, appName);
     const containerHeadElement = getContainerHeadElement(currentContainer);
@@ -158,22 +172,12 @@ function patchDocument(
     get: (target, p, receiver) => {
       switch (p) {
         case 'createElement': {
-          // Must store the original createElement function to avoid error in nested sandbox
+          // Ownership is decided at insertion time (insertion-point attribution), so creation
+          // needs no bookkeeping anymore — only the app-level override recorded by the paired
+          // setter must keep being honored.
           const targetCreateElement = modificationFns.createElement || target.createElement;
           return function createElement(...args: Parameters<typeof document.createElement>) {
-            if (!nativeGlobal.__currentLockingSandbox__) {
-              nativeGlobal.__currentLockingSandbox__ = compartment;
-            }
-
-            const element = targetCreateElement.call(target, ...args);
-
-            // only record the element which is created by the current sandbox, thus we can avoid the element created by nested sandboxes
-            if (nativeGlobal.__currentLockingSandbox__ === compartment) {
-              attachElementToSandbox(element);
-              delete nativeGlobal.__currentLockingSandbox__;
-            }
-
-            return element;
+            return targetCreateElement.call(target, ...args);
           };
         }
 
@@ -246,18 +250,18 @@ function patchDocumentHeadAndBodyMethods(container: HTMLElement, compartment: Pl
     tagMountPoint(headElement);
     patchedHeadMethods = {
       appendChild: getOverwrittenAppendChildOrInsertBefore(
-        document.head.appendChild,
+        nativeAppendChild,
         getSandboxConfig,
         'head',
         setSandboxConfig,
       ),
       insertBefore: getOverwrittenAppendChildOrInsertBefore(
-        document.head.insertBefore,
+        nativeInsertBefore,
         getSandboxConfig,
         'head',
         setSandboxConfig,
       ),
-      removeChild: getNewRemoveChild(document.head.removeChild, getSandboxConfig),
+      removeChild: getNewRemoveChild(nativeRemoveChild, getSandboxConfig),
     };
     Object.assign(headElement, patchedHeadMethods);
   };
@@ -280,19 +284,14 @@ function patchDocumentHeadAndBodyMethods(container: HTMLElement, compartment: Pl
   const containerBodyElement = container;
   tagMountPoint(containerBodyElement);
   const patchedBodyMethods = {
-    appendChild: getOverwrittenAppendChildOrInsertBefore(
-      document.body.appendChild,
-      getSandboxConfig,
-      'body',
-      setSandboxConfig,
-    ),
+    appendChild: getOverwrittenAppendChildOrInsertBefore(nativeAppendChild, getSandboxConfig, 'body', setSandboxConfig),
     insertBefore: getOverwrittenAppendChildOrInsertBefore(
-      document.head.insertBefore,
+      nativeInsertBefore,
       getSandboxConfig,
       'body',
       setSandboxConfig,
     ),
-    removeChild: getNewRemoveChild(document.body.removeChild, getSandboxConfig),
+    removeChild: getNewRemoveChild(nativeRemoveChild, getSandboxConfig),
   };
   Object.assign(containerBodyElement, patchedBodyMethods);
 
@@ -408,10 +407,6 @@ function patchDOMPrototypeFns(): Unpatch {
   };
 }
 
-// FIXME should not use global variable, should get it every time it is used, otherwise it may miss the runtime container or the business itself monkey patch logic
-const rawHeadInsertBefore = HTMLHeadElement.prototype.insertBefore;
-const rawHeadAppendChild = HTMLHeadElement.prototype.appendChild;
-
 function patchCSSOM(): Unpatch {
   let state = sharedState.cssomPatch;
   if (!state) {
@@ -419,7 +414,7 @@ function patchCSSOM(): Unpatch {
     const patchedInsertRule = function insertRule(this: CSSStyleSheet, rule: string, index?: number): number {
       const ownerNode = this.ownerNode as HTMLElement | null;
       if (ownerNode) {
-        const config = elementConfigs.get(ownerNode);
+        const config = resolveStyleOwnerConfig(ownerNode);
         if (config?.styleIsolation) {
           const scopedRule = transpileStyleRule(rule, config.styleIsolation);
           return nativeInsertRule.call(this, scopedRule, index);
@@ -545,9 +540,9 @@ async function attachRecordedStylesheets(
           // the reference node may be dynamic script comment which is not rebuilt while remounting thus reference node no longer exists
           // in this case, we should append the style element to the end of mountDom
           const refNode = mountDom.childNodes[refNo];
-          rawHeadInsertBefore.call(mountDom, styleElement, refNode);
+          nativeInsertBefore.call(mountDom, styleElement, refNode);
         } else {
-          rawHeadAppendChild.call(mountDom, styleElement);
+          nativeAppendChild.call(mountDom, styleElement);
         }
 
         return deferred.promise;

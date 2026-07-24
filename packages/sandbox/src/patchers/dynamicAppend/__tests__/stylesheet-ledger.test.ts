@@ -67,11 +67,11 @@ describe.sequential('dynamic stylesheet ledger', () => {
     expect(container.querySelector('link[rel="preload"]')).toBeNull();
   });
 
-  it('settles a fallback-adopted stylesheet when the app removes it again', async () => {
+  it('settles an insertion-adopted stylesheet when the app removes it again', async () => {
     const { container, controller } = createController((node) => node);
     await controller.mount(container);
 
-    // created outside the sandboxed createElement — adopted via the mount-point fallback
+    // created outside the sandboxed createElement — adopted at its insertion point
     const stylesheet = document.createElement('link');
     stylesheet.rel = 'stylesheet';
     stylesheet.setAttribute('href', 'data:text/css,.removed{}');

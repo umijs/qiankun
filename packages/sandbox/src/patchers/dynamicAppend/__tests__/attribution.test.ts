@@ -1,0 +1,170 @@
+import type { IsolationPluginConfig } from '../../types';
+import { createSandbox } from '../../../core/sandbox';
+import { containsLoaderStreamedNode } from '../../../core/sandbox/container';
+import type { SandboxConfig } from '../types';
+import { markLoaderStreamedNode, markNodeTranspiled } from '@qiankunjs/shared';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+const identityNodeTransformer: IsolationPluginConfig['nodeTransformer'] = (node) => node;
+
+let appSequence = 0;
+const controllers: Array<ReturnType<typeof createSandbox>> = [];
+const containers: HTMLElement[] = [];
+
+function createController(nodeTransformer: IsolationPluginConfig['nodeTransformer'] = identityNodeTransformer) {
+  const appName = `attribution-${String(appSequence++)}`;
+  const container = document.createElement('div');
+  container.innerHTML = '<qiankun-head></qiankun-head>';
+  document.body.appendChild(container);
+  containers.push(container);
+
+  const controller = createSandbox(appName, {
+    container: () => container,
+    fetch: window.fetch,
+    nodeTransformer,
+    styleIsolation: true,
+  });
+  controllers.push(controller);
+  return { container, controller };
+}
+
+function getSharedState() {
+  return Reflect.get(window, Symbol.for('qiankun.dynamicAppend.sharedState')) as {
+    sandboxConfigs: WeakMap<object, SandboxConfig>;
+    elementConfigs: WeakMap<HTMLElement, SandboxConfig>;
+  };
+}
+
+function getSandboxConfigOf(controller: ReturnType<typeof createSandbox>): SandboxConfig {
+  const config = getSharedState().sandboxConfigs.get(controller.instance);
+  if (!config) throw new Error('sandbox config was not registered at bootstrap');
+  return config;
+}
+
+describe.sequential('insertion-point attribution', () => {
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    await Promise.all(controllers.splice(0).map(async (controller) => controller.dispose()));
+    containers.splice(0).forEach((container) => container.remove());
+  });
+
+  it('no longer stamps ownership at createElement time', async () => {
+    const { container, controller } = createController();
+    await controller.mount(container);
+
+    const script = controller.instance.globalThis.document.createElement('script');
+    expect(getSharedState().elementConfigs.get(script)).toBeUndefined();
+  });
+
+  it('attributes a hijackable element to its insertion point regardless of creator', async () => {
+    const a = createController();
+    const b = createController();
+    await a.controller.mount(a.container);
+    await b.controller.mount(b.container);
+
+    // created through B's sandboxed document, inserted into A's container
+    const stylesheet = b.controller.instance.globalThis.document.createElement('link');
+    stylesheet.rel = 'stylesheet';
+    stylesheet.setAttribute('href', 'data:text/css,.cross{}');
+    a.container.appendChild(stylesheet);
+
+    const configA = getSandboxConfigOf(a.controller);
+    expect(getSharedState().elementConfigs.get(stylesheet)).toBe(configA);
+    expect(configA.dynamicStyleSheetElements).toContain(stylesheet);
+    expect(getSandboxConfigOf(b.controller).dynamicStyleSheetElements).not.toContain(stylesheet);
+  });
+
+  it('re-attributes an element moved across mount points and warns about it', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const a = createController();
+    const b = createController();
+    await a.controller.mount(a.container);
+    await b.controller.mount(b.container);
+
+    const stylesheet = document.createElement('link');
+    stylesheet.rel = 'stylesheet';
+    stylesheet.setAttribute('href', 'data:text/css,.moved{}');
+    a.container.appendChild(stylesheet);
+    a.container.removeChild(stylesheet);
+    expect(getSandboxConfigOf(a.controller).dynamicStyleSheetElements).not.toContain(stylesheet);
+
+    b.container.appendChild(stylesheet);
+
+    expect(getSharedState().elementConfigs.get(stylesheet)).toBe(getSandboxConfigOf(b.controller));
+    expect(getSandboxConfigOf(b.controller).dynamicStyleSheetElements).toContain(stylesheet);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('re-attributed'));
+  });
+
+  it('passes pipeline-transpiled nodes through natively', async () => {
+    const transformedNodes: Node[] = [];
+    const { container, controller } = createController((node) => {
+      transformedNodes.push(node);
+      return node;
+    });
+    await controller.mount(container);
+
+    const stylesheet = document.createElement('link');
+    stylesheet.rel = 'stylesheet';
+    stylesheet.setAttribute('href', 'data:text/css,.transpiled{}');
+    markNodeTranspiled(stylesheet);
+    container.appendChild(stylesheet);
+
+    expect(container.contains(stylesheet)).toBe(true);
+    expect(transformedNodes).not.toContain(stylesheet);
+    expect(getSharedState().elementConfigs.get(stylesheet)).toBeUndefined();
+    expect(getSandboxConfigOf(controller).dynamicStyleSheetElements).not.toContain(stylesheet);
+  });
+
+  it('keeps the transpiled effect mark invisible to streamed-content detection', async () => {
+    const { container, controller } = createController();
+    await controller.mount(container);
+
+    // an internal pipeline node (e.g. a compartment blob script) is transpiled but not streamed
+    const blobScript = document.createElement('script');
+    markNodeTranspiled(blobScript);
+    container.appendChild(blobScript);
+    expect(containsLoaderStreamedNode(container)).toBe(false);
+
+    const streamedNode = document.createElement('div');
+    markNodeTranspiled(streamedNode);
+    markLoaderStreamedNode(streamedNode);
+    container.appendChild(streamedNode);
+    expect(containsLoaderStreamedNode(container)).toBe(true);
+  });
+
+  it('scopes insertRule by the stylesheet current DOM position', async () => {
+    const { container, controller } = createController();
+    await controller.mount(container);
+    const config = getSandboxConfigOf(controller);
+
+    // injected below a non-mount-point insertion target, as CSS-in-JS custom targets do
+    const deepTarget = document.createElement('div');
+    container.appendChild(deepTarget);
+    const style = document.createElement('style');
+    deepTarget.appendChild(style);
+    expect(getSharedState().elementConfigs.get(style)).toBeUndefined();
+
+    // happy-dom sheets carry no ownerNode, so drive the patched prototype with an explicit one;
+    // ownership resolution runs before the native insertRule call, which may reject the fake sheet
+    const { insertRule } = CSSStyleSheet.prototype;
+    const sheetOf = (ownerNode: HTMLElement) => ({ ownerNode }) as unknown as CSSStyleSheet;
+    try {
+      insertRule.call(sheetOf(style), '.deep { color: red; }', 0);
+    } catch {
+      /* resolution already happened */
+    }
+    // ownership resolved by position (nearest tagged ancestor is the container mount point)
+    expect(getSharedState().elementConfigs.get(style)).toBe(config);
+
+    // a stylesheet living outside any tagged container resolves to no owner and stays unscoped
+    const outsideStyle = document.createElement('style');
+    document.body.appendChild(outsideStyle);
+    try {
+      insertRule.call(sheetOf(outsideStyle), '.outside { color: red; }', 0);
+    } catch {
+      /* resolution already happened */
+    }
+    expect(getSharedState().elementConfigs.get(outsideStyle)).toBeUndefined();
+    outsideStyle.remove();
+  });
+});

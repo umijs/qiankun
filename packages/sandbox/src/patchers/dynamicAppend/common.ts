@@ -109,55 +109,42 @@ export function getOverwrittenAppendChildOrInsertBefore(
     // jQuery-style insertions wrap nodes in a DocumentFragment, which would smuggle style/script
     // elements past the per-tag hijacking below — decompose such a fragment and route every child
     // through the same pipeline (a fragment empties on insertion natively, so per-child appends
-    // keep the same end state and order). Children parsed via innerHTML never went through the
-    // sandboxed createElement, so they inherit the config attached to the patched mount point.
+    // keep the same end state and order). Nodes a qiankun pipeline already transpiled (the
+    // loader's walk batches them into fragments for insertion performance) must pass through
+    // natively, never through the pipeline again.
     if (element.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
       const fragment = newChild as unknown as DocumentFragment;
-      const ownerConfig = getSandboxConfig(this);
-      // nodes a qiankun pipeline already transpiled (the loader's walk batches them into
-      // fragments for insertion performance) must pass through natively, never through the
-      // pipeline again
-      const shouldDecompose = Array.from(fragment.children).some(
-        (child) =>
-          isHijackingTag(child.tagName) &&
-          !isTranspiledNode(child) &&
-          (getSandboxConfig(child as HTMLElement) ?? ownerConfig),
-      );
+      const shouldDecompose =
+        !!getSandboxConfig(this) &&
+        Array.from(fragment.children).some((child) => isHijackingTag(child.tagName) && !isTranspiledNode(child));
       if (shouldDecompose) {
         Array.from(fragment.childNodes).forEach((child) => {
-          const childElement = child as HTMLElement;
-          if (
-            ownerConfig &&
-            setSandboxConfig &&
-            isHijackingTag(childElement.tagName) &&
-            !isTranspiledNode(childElement) &&
-            !getSandboxConfig(childElement)
-          ) {
-            setSandboxConfig(childElement, ownerConfig);
-          }
           appendChildInSandbox.call(this, child, refChild);
         });
         return newChild;
       }
     }
 
-    // elements parsed via innerHTML (e.g. jQuery's buildFragment) never went through the sandboxed
-    // createElement and carry no config of their own — inherit the one attached to the patched
-    // mount point, except for nodes a qiankun pipeline already transpiled, which must pass
-    // through untouched
-    const sandboxConfig = getSandboxConfig(element) ?? (isTranspiledNode(element) ? undefined : getSandboxConfig(this));
+    // insertion-point ownership: a hijackable element landing on a patched mount point belongs to
+    // the app owning that mount point, no matter who created it — except nodes a qiankun pipeline
+    // already transpiled, which must pass through untouched.
+    // See docs/rfcs/insertion-point-ownership.md.
+    const sandboxConfig = isTranspiledNode(element) ? undefined : getSandboxConfig(this);
 
-    // no attached sandbox config means the element is not created from the sandbox environment
     if (!isHijackingTag(element.tagName) || !sandboxConfig) {
       return appendChild.call(this, element, refChild) as T;
     }
 
-    // An element adopted through the mount-point fallback above (innerHTML-parsed, no config of
-    // its own) must be registered like the fragment branch does — otherwise the patched
-    // removeChild can never recognize it and its ledger entry would replay on every remount.
-    if (setSandboxConfig && !getSandboxConfig(element)) {
-      setSandboxConfig(element, sandboxConfig);
+    // Register the element under its insertion owner so the patched removeChild and the CSSOM
+    // patch can recognize it later — otherwise its ledger entry would replay on every remount.
+    // Re-insertion re-attributes: an element moved across mount points follows its new owner.
+    const previousConfig = getSandboxConfig(element);
+    if (previousConfig && previousConfig !== sandboxConfig) {
+      warn(
+        `Element ${element.tagName.toLowerCase()} previously owned by ${previousConfig.appName} is re-attributed to ${sandboxConfig.appName} as it is inserted into the latter's container`,
+      );
     }
+    setSandboxConfig?.(element, sandboxConfig);
 
     if (element.tagName) {
       switch (element.tagName) {
