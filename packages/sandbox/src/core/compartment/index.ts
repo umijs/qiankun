@@ -1,6 +1,6 @@
 import {
   EsmSandboxEngine,
-  markLoaderStreamedNode,
+  markNodeTranspiled,
   QiankunError,
   type DocumentModule,
   type ModuleNamespace,
@@ -180,7 +180,7 @@ export class Compartment implements CompartmentLoaderFacade {
 
     // The script is already transformed. Prevent the dynamic-append pipeline from
     // fetching and wrapping this internal blob a second time.
-    markLoaderStreamedNode(script);
+    markNodeTranspiled(script);
     script.async = false;
 
     await new Promise<void>((resolve, reject) => {

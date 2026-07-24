@@ -4,7 +4,7 @@ import type { AssetsTranspilerOpts, ScriptTranspilerOpts } from '@qiankunjs/shar
  * @author Kuitos
  * @since 2019-10-21
  */
-import { isLoaderStreamedNode, prepareDeferredQueue, warn } from '@qiankunjs/shared';
+import { isTranspiledNode, prepareDeferredQueue, warn } from '@qiankunjs/shared';
 import { qiankunHeadTagName } from '../../consts';
 import type { SandboxConfig } from './types';
 
@@ -114,12 +114,13 @@ export function getOverwrittenAppendChildOrInsertBefore(
     if (element.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
       const fragment = newChild as unknown as DocumentFragment;
       const ownerConfig = getSandboxConfig(this);
-      // nodes streamed by the loader's walk are already transpiled and batched into fragments for
-      // insertion performance — they must pass through natively, never through the pipeline again
+      // nodes a qiankun pipeline already transpiled (the loader's walk batches them into
+      // fragments for insertion performance) must pass through natively, never through the
+      // pipeline again
       const shouldDecompose = Array.from(fragment.children).some(
         (child) =>
           isHijackingTag(child.tagName) &&
-          !isLoaderStreamedNode(child) &&
+          !isTranspiledNode(child) &&
           (getSandboxConfig(child as HTMLElement) ?? ownerConfig),
       );
       if (shouldDecompose) {
@@ -129,7 +130,7 @@ export function getOverwrittenAppendChildOrInsertBefore(
             ownerConfig &&
             setSandboxConfig &&
             isHijackingTag(childElement.tagName) &&
-            !isLoaderStreamedNode(childElement) &&
+            !isTranspiledNode(childElement) &&
             !getSandboxConfig(childElement)
           ) {
             setSandboxConfig(childElement, ownerConfig);
@@ -142,10 +143,9 @@ export function getOverwrittenAppendChildOrInsertBefore(
 
     // elements parsed via innerHTML (e.g. jQuery's buildFragment) never went through the sandboxed
     // createElement and carry no config of their own — inherit the one attached to the patched
-    // mount point, except for nodes inserted by the loader's streaming walk, which are already
-    // transpiled and must pass through untouched
-    const sandboxConfig =
-      getSandboxConfig(element) ?? (isLoaderStreamedNode(element) ? undefined : getSandboxConfig(this));
+    // mount point, except for nodes a qiankun pipeline already transpiled, which must pass
+    // through untouched
+    const sandboxConfig = getSandboxConfig(element) ?? (isTranspiledNode(element) ? undefined : getSandboxConfig(this));
 
     // no attached sandbox config means the element is not created from the sandbox environment
     if (!isHijackingTag(element.tagName) || !sandboxConfig) {

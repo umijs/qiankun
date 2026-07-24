@@ -7,13 +7,14 @@
  *   (enforced by assertInPlaceTransform), including inline script/style text via a grafted host
  * - `isSyncScript` + `clone.async = false`: preserve document order for non-blocking external
  *   scripts (see https://github.com/marko-js/writable-dom/issues/7)
- * - `markLoaderStreamedNode`: lets the sandbox's patched container methods tell streamed
- *   (already-transpiled) nodes apart from dynamic insertions made by app code
+ * - `markNodeTranspiled` + `markLoaderStreamedNode`: the effect mark lets the sandbox's patched
+ *   container methods pass already-transpiled nodes through natively; the provenance mark lets
+ *   the sandbox detect that a container holds streamed entry content
  * - preload hints read the raw attributes (getAttribute) instead of the resolved properties, so
  *   the transformer can resolve them against the app entry rather than the host document
  * - an href-less stylesheet link is inert and must not block the walk
  */
-import { markLoaderStreamedNode } from '@qiankunjs/shared';
+import { markLoaderStreamedNode, markNodeTranspiled } from '@qiankunjs/shared';
 
 enum NodeType {
   ELEMENT_NODE = 1,
@@ -190,8 +191,10 @@ function writableDOM(
             clone.async = false;
           }
 
-          // [qiankun] let the sandbox's patched container methods tell streamed nodes (already
-          // transpiled by this walk) apart from dynamic insertions made by app code
+          // [qiankun] effect mark: this walk transpiles the node below, the sandbox's patched
+          // container methods must pass it through natively. Provenance mark: the sandbox's
+          // container protocol detects streamed entry content by it.
+          markNodeTranspiled(clone);
           markLoaderStreamedNode(clone);
 
           // [qiankun] transpile the node in place right before insertion. The blocking bookkeeping
