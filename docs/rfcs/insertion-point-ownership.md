@@ -1,10 +1,11 @@
 # RFC: Insertion-Point Ownership for Dynamic DOM Attribution
 
-- **Status**: Draft
+- **Status**: Draft(已实现,见本分支:标记拆分 → 归属收敛 + 创建者机制退役 + CSSOM 位置解析,附归属契约单测)
 - **Author**: qiankun maintainers
 - **Created**: 2026-07-25
 - **Target Release**: qiankun v3.x
 - **Tracking Issue**: TBD
+- **Last Revision**: 2026-07-25(实现验证:全仓单测 295 例、Chromium e2e 38 例、eslint/prettier、本地性能基准全部通过;嵌套沙箱以「createElement 不再记账」契约测试覆盖,未建完整嵌套 harness)
 
 ## Summary
 
