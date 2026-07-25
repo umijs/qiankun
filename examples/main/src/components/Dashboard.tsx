@@ -20,14 +20,17 @@ export default function Dashboard() {
         </h1>
         <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-ink-soft">
           Four independent apps — React, Vue, a webpack classic build, and plain HTML — mount into this shell. Each one
-          runs inside its own JS sandbox with scoped styles, and this page can prove it.
+          runs inside its own JS sandbox with scoped styles, and this page can prove it. The shell is a plain React app
+          that mounts them through qiankun's own React binding.
         </p>
       </header>
 
       <section aria-label="registered micro apps" className="rounded-[10px] border border-hairline bg-surface">
         <div className="flex items-center justify-between border-b border-hairline px-5 py-3">
           <h2 className="text-sm font-semibold text-ink">App registry</h2>
-          <span className="font-mono text-[11px] text-ink-soft">sandbox: on · style isolation: on</span>
+          <span className="font-mono text-[11px] text-ink-soft">
+            {'<MicroApp> · sandbox: on · style isolation: on'}
+          </span>
         </div>
         <ul>
           {microApps.map((app) => (

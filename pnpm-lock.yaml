@@ -135,6 +135,9 @@ importers:
 
   examples/main:
     dependencies:
+      '@qiankunjs/react':
+        specifier: workspace:*
+        version: link:../../packages/ui-bindings/react
       qiankun:
         specifier: workspace:*
         version: link:../../packages/qiankun
@@ -289,7 +292,7 @@ importers:
         version: 0.2.7(@swc/core@1.15.43)(webpack@5.108.4)
       webpack:
         specifier: ^5.108.4
-        version: 5.108.4(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.16)(webpack-cli@7.2.1)
+        version: 5.108.4(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.19)(webpack-cli@7.2.1)
       webpack-cli:
         specifier: ^7.2.1
         version: 7.2.1(js-yaml@4.1.1)(webpack-dev-server@6.0.0)(webpack@5.108.4)
@@ -8410,7 +8413,7 @@ snapshots:
       postcss-value-parser: 4.2.0
       semver: 7.7.3
     optionalDependencies:
-      webpack: 5.108.4(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.16)(webpack-cli@7.2.1)
+      webpack: 5.108.4(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.19)(webpack-cli@7.2.1)
 
   css-select@4.3.0:
     dependencies:
@@ -9350,7 +9353,7 @@ snapshots:
       pretty-error: 4.0.0
       tapable: 2.3.0
     optionalDependencies:
-      webpack: 5.108.4(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.16)(webpack-cli@7.2.1)
+      webpack: 5.108.4(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.19)(webpack-cli@7.2.1)
 
   htmlparser2@10.1.0:
     dependencies:
@@ -9981,17 +9984,17 @@ snapshots:
     dependencies:
       brace-expansion: 5.0.7
 
-  minimizer-webpack-plugin@5.6.1(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.16)(webpack@5.108.4):
+  minimizer-webpack-plugin@5.6.1(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.19)(webpack@5.108.4):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       jest-worker: 27.5.1
       schema-utils: 4.3.3
       terser: 5.46.0
-      webpack: 5.108.4(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.16)(webpack-cli@7.2.1)
+      webpack: 5.108.4(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.19)(webpack-cli@7.2.1)
     optionalDependencies:
       '@swc/core': 1.15.43
       lightningcss: 1.32.0
-      postcss: 8.5.16
+      postcss: 8.5.19
 
   minimizer-webpack-plugin@5.6.1(lightningcss@1.32.0)(postcss@8.5.19)(webpack@5.108.4(lightningcss@1.32.0)(postcss@8.5.19)):
     dependencies:
@@ -10828,7 +10831,7 @@ snapshots:
 
   style-loader@4.0.0(webpack@5.108.4):
     dependencies:
-      webpack: 5.108.4(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.16)(webpack-cli@7.2.1)
+      webpack: 5.108.4(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.19)(webpack-cli@7.2.1)
 
   stylis@4.3.6: {}
 
@@ -10850,7 +10853,7 @@ snapshots:
     dependencies:
       '@swc/core': 1.15.43
       '@swc/counter': 0.1.3
-      webpack: 5.108.4(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.16)(webpack-cli@7.2.1)
+      webpack: 5.108.4(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.19)(webpack-cli@7.2.1)
 
   systeminformation@5.30.7: {}
 
@@ -11282,7 +11285,7 @@ snapshots:
       import-local: 3.2.0
       interpret: 3.1.1
       rechoir: 0.8.0
-      webpack: 5.108.4(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.16)(webpack-cli@7.2.1)
+      webpack: 5.108.4(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.19)(webpack-cli@7.2.1)
       webpack-merge: 6.0.1
     optionalDependencies:
       js-yaml: 4.1.1
@@ -11296,7 +11299,7 @@ snapshots:
       range-parser: 1.2.1
       schema-utils: 4.3.3
     optionalDependencies:
-      webpack: 5.108.4(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.16)(webpack-cli@7.2.1)
+      webpack: 5.108.4(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.19)(webpack-cli@7.2.1)
 
   webpack-dev-server@6.0.0(webpack-cli@7.2.1)(webpack@5.108.4):
     dependencies:
@@ -11326,7 +11329,7 @@ snapshots:
       webpack-dev-middleware: 8.0.3(webpack@5.108.4)
       ws: 8.21.1
     optionalDependencies:
-      webpack: 5.108.4(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.16)(webpack-cli@7.2.1)
+      webpack: 5.108.4(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.19)(webpack-cli@7.2.1)
       webpack-cli: 7.2.1(js-yaml@4.1.1)(webpack-dev-server@6.0.0)(webpack@5.108.4)
     transitivePeerDependencies:
       - bufferutil
@@ -11341,7 +11344,7 @@ snapshots:
 
   webpack-sources@3.5.0: {}
 
-  webpack@5.108.4(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.16)(webpack-cli@7.2.1):
+  webpack@5.108.4(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.19)(webpack-cli@7.2.1):
     dependencies:
       '@types/estree': 1.0.8
       '@types/json-schema': 7.0.15
@@ -11359,7 +11362,7 @@ snapshots:
       graceful-fs: 4.2.11
       loader-runner: 4.3.2
       mime-db: 1.54.0
-      minimizer-webpack-plugin: 5.6.1(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.16)(webpack@5.108.4)
+      minimizer-webpack-plugin: 5.6.1(@swc/core@1.15.43)(lightningcss@1.32.0)(postcss@8.5.19)(webpack@5.108.4)
       neo-async: 2.6.2
       schema-utils: 4.3.3
       tapable: 2.3.0
