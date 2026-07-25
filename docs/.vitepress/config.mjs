@@ -80,7 +80,7 @@ export default defineConfig({
             {
               text: 'Tools',
               items: [
-                { text: 'Webpack Plugin', link: '/ecosystem/webpack-plugin' },
+                { text: 'Bundler Plugin', link: '/ecosystem/bundler-plugin' },
                 { text: 'Create Qiankun', link: '/ecosystem/create-qiankun' },
               ]
             }
@@ -152,6 +152,13 @@ export default defineConfig({
                 { text: '概览', link: '/zh-CN/ecosystem/' },
                 { text: 'React', link: '/zh-CN/ecosystem/react' },
                 { text: 'Vue', link: '/zh-CN/ecosystem/vue' },
+              ]
+            },
+            {
+              text: '工具',
+              items: [
+                { text: '打包插件', link: '/zh-CN/ecosystem/bundler-plugin' },
+                { text: 'Create Qiankun', link: '/zh-CN/ecosystem/create-qiankun' },
               ]
             }
           ],

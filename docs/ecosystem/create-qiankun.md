@@ -190,7 +190,7 @@ Each micro application includes:
 **React Micro App:**
 ```javascript
 // webpack.config.js
-const { QiankunWebpackPlugin } = require('@qiankunjs/webpack-plugin');
+const { QiankunWebpackPlugin } = require('@qiankunjs/bundler-plugin');
 
 module.exports = {
   plugins: [
@@ -203,7 +203,7 @@ module.exports = {
 ```javascript
 // vue.config.js
 const { defineConfig } = require('@vue/cli-service');
-const { QiankunWebpackPlugin } = require('@qiankunjs/webpack-plugin');
+const { QiankunWebpackPlugin } = require('@qiankunjs/bundler-plugin');
 
 module.exports = defineConfig({
   configureWebpack: {
@@ -506,7 +506,7 @@ After creating your project:
 - [Core APIs](/api/) - qiankun core APIs
 - [React Bindings](/ecosystem/react) - React UI bindings
 - [Vue Bindings](/ecosystem/vue) - Vue UI bindings
-- [Webpack Plugin](/ecosystem/webpack-plugin) - Build tool configuration
+- [Webpack Plugin](/ecosystem/bundler-plugin) - Build tool configuration
 
 ## 🤝 Contributing
 

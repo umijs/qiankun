@@ -656,7 +656,7 @@ if (!semver.gte(currentVersion, requiredVersion)) {
 
 **答：** qiankun 与各种构建工具配合使用：
 
-**Webpack：** 使用 `@qiankunjs/webpack-plugin`
+**Webpack：** 使用 `@qiankunjs/bundler-plugin`
 **Vite：** 使用 `vite-plugin-qiankun`
 **Rollup：** 手动配置
 **Parcel：** 手动配置

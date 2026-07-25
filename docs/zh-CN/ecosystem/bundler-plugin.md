@@ -1,25 +1,25 @@
 # Webpack 插件
 
-`@qiankunjs/webpack-plugin` 是专为 qiankun 微前端框架设计的 Webpack 插件。它简化并自动化了将微应用与 qiankun 集成所需的常见配置，确保正确的构建输出和运行时行为。
+`@qiankunjs/bundler-plugin` 是专为 qiankun 微前端框架设计的 Webpack 插件。它简化并自动化了将微应用与 qiankun 集成所需的常见配置，确保正确的构建输出和运行时行为。
 
 ## 🚀 安装
 
 ### 使用 npm
 
 ```bash
-npm install @qiankunjs/webpack-plugin --save-dev
+npm install @qiankunjs/bundler-plugin --save-dev
 ```
 
 ### 使用 yarn
 
 ```bash
-yarn add @qiankunjs/webpack-plugin --dev
+yarn add @qiankunjs/bundler-plugin --dev
 ```
 
 ### 使用 pnpm
 
 ```bash
-pnpm add @qiankunjs/webpack-plugin --save-dev
+pnpm add @qiankunjs/bundler-plugin --save-dev
 ```
 
 ## 🎯 功能特性
@@ -43,7 +43,7 @@ pnpm add @qiankunjs/webpack-plugin --save-dev
 
 ```javascript
 // webpack.config.js
-const { QiankunPlugin } = require('@qiankunjs/webpack-plugin');
+const { QiankunPlugin } = require('@qiankunjs/bundler-plugin');
 
 module.exports = {
   entry: './src/index.js',
@@ -62,7 +62,7 @@ module.exports = {
 
 ```javascript
 // webpack.config.js
-const { QiankunPlugin } = require('@qiankunjs/webpack-plugin');
+const { QiankunPlugin } = require('@qiankunjs/bundler-plugin');
 
 module.exports = {
   entry: './src/index.js',
@@ -107,7 +107,7 @@ new QiankunPlugin({
 
 ```javascript
 // webpack.config.js (Create React App with CRACO)
-const { QiankunPlugin } = require('@qiankunjs/webpack-plugin');
+const { QiankunPlugin } = require('@qiankunjs/bundler-plugin');
 
 module.exports = {
   webpack: {
@@ -126,7 +126,7 @@ module.exports = {
 
 ```javascript
 // vue.config.js
-const { QiankunPlugin } = require('@qiankunjs/webpack-plugin');
+const { QiankunPlugin } = require('@qiankunjs/bundler-plugin');
 
 module.exports = {
   configureWebpack: {
@@ -143,7 +143,7 @@ module.exports = {
 
 ```javascript
 // custom-webpack.config.js
-const { QiankunPlugin } = require('@qiankunjs/webpack-plugin');
+const { QiankunPlugin } = require('@qiankunjs/bundler-plugin');
 
 module.exports = {
   plugins: [
@@ -362,7 +362,7 @@ new QiankunPlugin({
 
 ```javascript
 // craco.config.js
-const { QiankunPlugin } = require('@qiankunjs/webpack-plugin');
+const { QiankunPlugin } = require('@qiankunjs/bundler-plugin');
 
 module.exports = {
   webpack: {
@@ -383,7 +383,7 @@ module.exports = {
 ```javascript
 // vue.config.js
 const { defineConfig } = require('@vue/cli-service');
-const { QiankunPlugin } = require('@qiankunjs/webpack-plugin');
+const { QiankunPlugin } = require('@qiankunjs/bundler-plugin');
 
 module.exports = defineConfig({
   configureWebpack: {
@@ -405,7 +405,7 @@ module.exports = defineConfig({
 
 ```javascript
 // next.config.js
-const { QiankunPlugin } = require('@qiankunjs/webpack-plugin');
+const { QiankunPlugin } = require('@qiankunjs/bundler-plugin');
 
 module.exports = {
   webpack: (config, { dev, isServer }) => {
@@ -573,7 +573,7 @@ module.exports = {
 
 **之后：**
 ```javascript
-const { QiankunPlugin } = require('@qiankunjs/webpack-plugin');
+const { QiankunPlugin } = require('@qiankunjs/bundler-plugin');
 
 module.exports = {
   plugins: [

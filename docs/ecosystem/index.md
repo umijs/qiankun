@@ -38,17 +38,17 @@ npm install @qiankunjs/vue
 
 ### Webpack Plugin
 
-**`@qiankunjs/webpack-plugin`** - Webpack plugin for micro applications
+**`@qiankunjs/bundler-plugin`** - Webpack plugin for micro applications
 
 - **Features**: Automatic public path injection, build optimization, development mode support
 - **Benefits**: Zero-config setup, improved developer experience, production-ready builds
 - **Use Case**: Essential for webpack-based micro applications
 
 ```bash
-npm install @qiankunjs/webpack-plugin --save-dev
+npm install @qiankunjs/bundler-plugin --save-dev
 ```
 
-[Learn more about Webpack Plugin →](/ecosystem/webpack-plugin)
+[Learn more about Webpack Plugin →](/ecosystem/bundler-plugin)
 
 ### Create Qiankun
 
@@ -245,7 +245,7 @@ Add webpack plugin to each micro application:
 
 ```javascript
 // webpack.config.js
-const { QiankunWebpackPlugin } = require('@qiankunjs/webpack-plugin');
+const { QiankunWebpackPlugin } = require('@qiankunjs/bundler-plugin');
 
 module.exports = {
   plugins: [
@@ -315,7 +315,7 @@ function Dashboard() {
 
 - [React Bindings](/ecosystem/react) - Complete React integration guide
 - [Vue Bindings](/ecosystem/vue) - Complete Vue integration guide  
-- [Webpack Plugin](/ecosystem/webpack-plugin) - Build tool configuration
+- [Webpack Plugin](/ecosystem/bundler-plugin) - Build tool configuration
 - [Create Qiankun](/ecosystem/create-qiankun) - Project scaffolding
 - [API Reference](/api/) - Core qiankun APIs
 

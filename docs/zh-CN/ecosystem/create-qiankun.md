@@ -190,7 +190,7 @@ start();
 **React 微应用：**
 ```javascript
 // webpack.config.js
-const { QiankunWebpackPlugin } = require('@qiankunjs/webpack-plugin');
+const { QiankunWebpackPlugin } = require('@qiankunjs/bundler-plugin');
 
 module.exports = {
   plugins: [
@@ -203,7 +203,7 @@ module.exports = {
 ```javascript
 // vue.config.js
 const { defineConfig } = require('@vue/cli-service');
-const { QiankunWebpackPlugin } = require('@qiankunjs/webpack-plugin');
+const { QiankunWebpackPlugin } = require('@qiankunjs/bundler-plugin');
 
 module.exports = defineConfig({
   configureWebpack: {
@@ -506,7 +506,7 @@ npm install
 - [核心 APIs](/zh-CN/api/) - qiankun 核心 APIs
 - [React 绑定](/zh-CN/ecosystem/react) - React UI 绑定
 - [Vue 绑定](/zh-CN/ecosystem/vue) - Vue UI 绑定
-- [Webpack 插件](/zh-CN/ecosystem/webpack-plugin) - 构建工具配置
+- [Webpack 插件](/zh-CN/ecosystem/bundler-plugin) - 构建工具配置
 
 ## 🤝 贡献
 

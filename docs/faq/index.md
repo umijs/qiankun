@@ -656,7 +656,7 @@ if (!semver.gte(currentVersion, requiredVersion)) {
 
 **A:** qiankun works with various build tools:
 
-**Webpack:** Use `@qiankunjs/webpack-plugin`
+**Webpack:** Use `@qiankunjs/bundler-plugin`
 **Vite:** Use `vite-plugin-qiankun`
 **Rollup:** Manual configuration
 **Parcel:** Manual configuration

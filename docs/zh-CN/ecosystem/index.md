@@ -38,17 +38,17 @@ npm install @qiankunjs/vue
 
 ### Webpack 插件
 
-**`@qiankunjs/webpack-plugin`** - 微应用的 Webpack 插件
+**`@qiankunjs/bundler-plugin`** - 微应用的 Webpack 插件
 
 - **特性**：自动公共路径注入、构建优化、开发模式支持
 - **优势**：零配置设置、改善开发体验、生产就绪构建
 - **适用场景**：基于 webpack 的微应用必备
 
 ```bash
-npm install @qiankunjs/webpack-plugin --save-dev
+npm install @qiankunjs/bundler-plugin --save-dev
 ```
 
-[了解更多 Webpack 插件 →](/zh-CN/ecosystem/webpack-plugin)
+[了解更多 Webpack 插件 →](/zh-CN/ecosystem/bundler-plugin)
 
 ### Create Qiankun
 
@@ -245,7 +245,7 @@ npx create-qiankun my-app
 
 ```javascript
 // webpack.config.js
-const { QiankunWebpackPlugin } = require('@qiankunjs/webpack-plugin');
+const { QiankunWebpackPlugin } = require('@qiankunjs/bundler-plugin');
 
 module.exports = {
   plugins: [
@@ -315,7 +315,7 @@ function Dashboard() {
 
 - [React 绑定](/zh-CN/ecosystem/react) - 完整 React 集成指南
 - [Vue 绑定](/zh-CN/ecosystem/vue) - 完整 Vue 集成指南
-- [Webpack 插件](/zh-CN/ecosystem/webpack-plugin) - 构建工具配置
+- [Webpack 插件](/zh-CN/ecosystem/bundler-plugin) - 构建工具配置
 - [Create Qiankun](/zh-CN/ecosystem/create-qiankun) - 项目脚手架
 - [API 参考](/zh-CN/api/) - 核心 qiankun API
 
