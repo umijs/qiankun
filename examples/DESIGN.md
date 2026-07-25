@@ -62,6 +62,7 @@ The demo explains itself: every probe states what it proves in one line.
 | app      | port | stack                                    | loading path            |
 | -------- | ---- | ---------------------------------------- | ----------------------- |
 | main     | 7099 | React 19 + Vite 8 + Tailwind 4           | host (`@qiankunjs/react`) |
+| vue-host | 7105 | Vue 3.5 + Vite 8                         | host (`@qiankunjs/vue`)   |
 | react    | 7100 | React 19 + Vite 8 (`bundler-plugin/vite`) | ESM sandbox             |
 | vue      | 7101 | Vue 3.5 + Vite 8 (`bundler-plugin/vite`)  | ESM sandbox             |
 | webpack  | 7102 | React 19 + webpack 5 (`QiankunWebpackPlugin`) | classic (window library) |
@@ -71,10 +72,15 @@ All examples are pnpm workspace members and consume `qiankun` / `@qiankunjs/reac
 `@qiankunjs/bundler-plugin` via `workspace:*`, so they always demo the in-repo code. Sandbox is
 explicitly enabled (`sandbox: true`) and style isolation on (`styleIsolation: true`) for every app.
 
-The shell mounts micro apps with `<MicroApp />` from `@qiankunjs/react` — the same binding we ship
-— one instance inside the stage frame, named by the active route. Loading and failure states are
-the component's `loader` / `errorBoundary` slots, so the stage veil and the mount-failed panel are
-dressed slots rather than shell-owned state.
+Both shells mount micro apps with `<MicroApp />` from the bindings we ship — `main` through
+`@qiankunjs/react`, `vue-host` through `@qiankunjs/vue` — one instance inside the stage frame, named by
+the active route. Loading and failure states are the component's `loader` / `errorBoundary` slots, so the
+stage veil and the mount-failed panel are dressed slots rather than shell-owned state.
+
+`main` is the full shell and owns the signature elements below. `vue-host` is deliberately slim: it carries
+the tokens, the stage frame and the header strip, but no dashboard, seal SVG or trigram. It uses plain
+scoped CSS with the same custom properties rather than a utility toolchain, and its extra instruments (the
+`appProps` toggle, the failing route, `data-mount-times`) exist to make the Vue binding verifiable.
 
 ## Sub-app layout contract
 
@@ -91,7 +97,9 @@ Every sub app renders a single column (max-width 720px, centered):
    - _Style probe_: appends a `<style>` tinting `body` background. With style isolation
      on, only the app's own area tints.
 3. **Local state** card: a framework-idiomatic counter proving independent state.
-4. **Footer** line (mono, ink-soft): `entry //localhost:<port> · lifecycle: <path>`.
+4. **Footer** line (mono, ink-soft): `entry //localhost:<port> · lifecycle: <path>`. The Vue app
+   appends `· host props: <scalars>` — it is the one app implementing an `update` lifecycle, which is
+   how `vue-host` demonstrates the bindings' props channel.
 
 Style rules for sub apps: scope everything under the app root element; no global
 resets, no `body`/`html` rules in the app stylesheet (the style probe is the only,

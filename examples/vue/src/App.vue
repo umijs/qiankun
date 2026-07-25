@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, version } from 'vue';
 
+const props = defineProps<{ hostProps?: Record<string, unknown> }>();
+
 const ACCENT = '#42B883';
 
 const poweredByQiankun = !!window.__POWERED_BY_QIANKUN__;
@@ -19,6 +21,14 @@ const tickOutput = computed(() => (ticks.value === null ? 'no interval running' 
 const styleOutput = computed(() =>
   tinted.value ? 'style[data-probe] appended to document.head' : 'no probe style injected',
 );
+// Echoed so a host driving the ui bindings' props channel can see its `update` land. qiankun mixes
+// its own props in (container, singleSpa, mountParcel, …), so only the scalars the host set are shown.
+const hostPropsOutput = computed(() => {
+  const scalars = Object.entries(props.hostProps ?? {}).filter(
+    ([, value]) => typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean',
+  );
+  return scalars.length ? scalars.map(([key, value]) => `${key}='${String(value)}'`).join(' ') : 'none';
+});
 
 function writeWindowProbe() {
   window.__SANDBOX_PROBE__ = 'vue:' + Date.now();
@@ -94,7 +104,9 @@ function injectStyleProbe() {
       </div>
     </section>
 
-    <footer class="app-footer">entry //localhost:7101 · lifecycle: src/main.ts</footer>
+    <footer class="app-footer">
+      entry //localhost:7101 · lifecycle: src/main.ts · host props: {{ hostPropsOutput }}
+    </footer>
   </div>
 </template>
 

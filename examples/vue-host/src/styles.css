@@ -1,0 +1,48 @@
+/* the shared examples design language (see examples/DESIGN.md), as plain custom properties —
+   this shell is deliberately slim and carries no utility-class toolchain */
+:root {
+  --paper: #f7f8fa;
+  --surface: #ffffff;
+  --ink: #1b1f26;
+  --ink-soft: #5c6470;
+  --hairline: #e4e7ec;
+  --primary: #2f54eb;
+  --cinnabar: #d93026;
+  --success: #16a34a;
+
+  --font-display: 'Space Grotesk', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-ornament: 'Songti SC', 'STSong', serif;
+  --font-sans: 'IBM Plex Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+
+  --shadow-stage: 0 1px 2px rgb(27 31 38 / 4%), 0 8px 24px rgb(27 31 38 / 6%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+/* the stage lifts in once per mount */
+@keyframes stage-lift {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage {
+    animation: none;
+  }
+}

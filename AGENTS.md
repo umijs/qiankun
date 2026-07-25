@@ -15,11 +15,11 @@ qiankun/
 │   ├── sandbox/         # JS isolation: Proxy membrane + Compartment  → packages/sandbox/AGENTS.md
 │   ├── loader/          # Streaming HTML-entry loader (writable-dom)  → packages/loader/AGENTS.md
 │   ├── shared/          # Transpilers, fetch-utils, module-resolver, ESM-sandbox engine → packages/shared/AGENTS.md
-│   ├── ui-bindings/     # <MicroApp> components: react/ vue/ shared/
+│   ├── ui-bindings/     # <MicroApp> components: react/ vue/ shared/ (dogfooded by examples/{main,vue-host})
 │   ├── bundler-plugin/  # Webpack(4/5) + Vite plugins: mark entry script, fix output library
 │   └── create-qiankun/  # `npm create qiankun` scaffolder (React/Vue, Vite)
 ├── e2e/                 # Playwright, runs against BUILT dist → e2e/README.md
-├── examples/            # Runnable integration demos (main + react/vue/purehtml/webpack)
+├── examples/            # Runnable demos: two hosts (main = @qiankunjs/react, vue-host = @qiankunjs/vue) + react/vue/purehtml/webpack
 └── docs/                # VitePress site (docs/rfcs holds design RFCs)
 ```
 

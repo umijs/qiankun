@@ -62,6 +62,8 @@ function useContainerInfo(frameRef: RefObject<HTMLElement | null>, appName: stri
       );
     };
 
+    // whatever is on the container right now still belongs to the app we are leaving
+    setInfo(idleContainer);
     read();
     // attributes only: the micro app's own DOM churn is none of our business
     const observer = new MutationObserver(read);
@@ -80,8 +82,10 @@ function useContainerInfo(frameRef: RefObject<HTMLElement | null>, appName: stri
 export default function Stage({ app }: StageProps) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   const info = useContainerInfo(frameRef, app.name);
-  const mounted = !loading;
+  const status = failed ? 'failed' : loading ? 'mounting' : 'mounted';
+  const mounted = status === 'mounted';
 
   return (
     <section className="stage-lift" aria-label="micro app stage">
@@ -104,10 +108,14 @@ export default function Stage({ app }: StageProps) {
             {info.name ? `data-name="${info.name}" · qiankun v${info.version ?? '…'}` : 'container idle'}
           </span>
           <span
-            className={`flex items-center gap-1.5 font-mono text-[11px] ${mounted ? 'text-success' : 'text-ink-soft'}`}
+            className={`flex items-center gap-1.5 font-mono text-[11px] ${
+              mounted ? 'text-success' : failed ? 'text-cinnabar' : 'text-ink-soft'
+            }`}
           >
-            <span className={`size-1.5 rounded-full ${mounted ? 'bg-success' : 'bg-primary'}`} />
-            {mounted ? 'mounted' : 'mounting'}
+            <span
+              className={`size-1.5 rounded-full ${mounted ? 'bg-success' : failed ? 'bg-cinnabar' : 'bg-primary'}`}
+            />
+            {status}
           </span>
         </div>
 
@@ -116,7 +124,7 @@ export default function Stage({ app }: StageProps) {
           entry={app.entry}
           settings={{ sandbox: { styleIsolation: true } }}
           loader={(mounting) => <StageVeil loading={mounting} onLoadingChange={setLoading} />}
-          errorBoundary={(error) => <StageFailure error={error} />}
+          errorBoundary={(error) => <StageFailure error={error} onFailedChange={setFailed} />}
           wrapperClassName="min-h-[70vh] overflow-auto"
           className="min-h-[70vh]"
         />
@@ -142,7 +150,14 @@ function StageVeil({ loading, onLoadingChange }: { loading: boolean; onLoadingCh
   );
 }
 
-function StageFailure({ error }: { error: Error }) {
+function StageFailure({ error, onFailedChange }: { error: Error; onFailedChange: (failed: boolean) => void }) {
+  // same shape as the veil: report the binding's failure up after render, so the stage header stops
+  // claiming the app is mounted
+  useEffect(() => {
+    onFailedChange(true);
+    return () => onFailedChange(false);
+  }, [onFailedChange]);
+
   return (
     <div className="absolute inset-0 z-20 flex items-center justify-center bg-surface/95 px-8">
       <div className="max-w-lg">
