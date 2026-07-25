@@ -1,7 +1,6 @@
 import type { AppConfiguration, MicroApp as MicroAppTypeDefinition, LifeCycles } from 'qiankun';
 import { loadMicroApp } from 'qiankun';
-import { concat, mergeWith, omit } from 'lodash';
-import type { LifeCycleFn } from 'qiankun';
+import { omit } from 'lodash';
 
 export type MicroAppType = {
   _unmounting?: boolean;
@@ -27,8 +26,26 @@ export type SharedSlots<T> = {
   errorBoundary?: (error: Error) => T;
 };
 
+/**
+ * Everything the binding component consumes itself. None of it is meaningful to a micro app,
+ * and leaking the render slots in particular would defeat the props diffing the components do
+ * before calling `update` — an inline `loader` is a new function on every host render.
+ */
+const componentOwnedProps = [
+  'name',
+  'entry',
+  'settings',
+  'lifeCycles',
+  'autoSetLoading',
+  'autoCaptureError',
+  'loader',
+  'errorBoundary',
+  'wrapperClassName',
+  'className',
+] as const;
+
 export const omitSharedProps = (props: Partial<SharedProps>) => {
-  return omit(props, ['wrapperClassName', 'className', 'lifeCycles', 'settings', 'entry', 'name']);
+  return omit(props, componentOwnedProps);
 };
 
 export async function mountMicroApp({
@@ -62,6 +79,9 @@ export async function mountMicroApp({
     ...(componentProps.settings || {}),
   };
 
+  // Handed over as-is: qiankun merges them over its own add-ons without mutating the source.
+  // (Wrapping each hook with `concat(undefined, hook)` used to yield `[undefined, hook]`, which
+  // qiankun then called as a hook — every app passing `lifeCycles` died on mount.)
   const microApp = loadMicroApp(
     {
       name: componentProps.name,
@@ -70,18 +90,14 @@ export async function mountMicroApp({
       props: microAppProps,
     },
     configuration,
-    mergeWith(
-      {},
-      componentProps.lifeCycles,
-      (v1: LifeCycleFn<Record<string, unknown>>, v2: LifeCycleFn<Record<string, unknown>>) => concat(v1, v2),
-    ),
+    componentProps.lifeCycles,
   );
 
   microApp.mountPromise
     .then(() => {
-      if (componentProps.autoSetLoading) {
-        setLoading?.(false);
-      }
+      // the app is up, so the loading state is over whichever way the host renders it —
+      // gating this on `autoSetLoading` would leave a custom `loader` spinning forever
+      setLoading?.(false);
     })
     .catch((err: Error) => {
       setError?.(err);

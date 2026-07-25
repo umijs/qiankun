@@ -21,12 +21,14 @@ export default function Page() {
 当启用子应用加载动画或错误捕获能力时，子应用接受一个额外的样式类 `wrapperClassName`，渲染的结果如下所示：
 
 ```tsx
-<div style={{ position: 'relative' }} className={wrapperClassName}>
+<div style={{ position: 'relative' }} className={`${wrapperClassName} qiankun-micro-app-wrapper`}>
+  <MicroApp className={`${className} qiankun-micro-app-container`} />
   <MicroAppLoader loading={loading} />
   <ErrorBoundary error={e} />
-  <MicroApp className={className} />
 </div>
 ```
+
+容器渲染在最前面，这样它的位置不会随 loader / errorBoundary 的出现与消失而改变——qiankun 的容器级缓存正是以该位置为键。也因为两个插槽在容器之后，它们无需 `z-index` 即可覆盖在微应用之上。
 
 ### 加载动画
 
@@ -96,10 +98,12 @@ export default function Page() {
 | --- | --- | --- | --- | --- |
 | `name` | 是 | 微应用的名称 | `string` |
 | `entry` | 是 | 微应用的 HTML 地址 | `string` |
+| `settings` | 否 | 该微应用的 qiankun 配置：沙箱、样式隔离、fetch 等 | `AppConfiguration` | `undefined` |
+| `lifeCycles` | 否 | 该微应用的 qiankun 生命周期钩子。钩子在同一容器内首次加载时被捕获，因此不要在其中闭包组件状态 | `LifeCycles` | `undefined` |
 | `autoSetLoading` | 否 | 自动设置微应用的加载状态 | `boolean` | `false` |
 | `loader` | 否 | 自定义的微应用加载状态组件 | `(loading) => React.ReactNode` | `undefined` |
 | `autoCaptureError` | 否 | 自动设置微应用的错误捕获 | `boolean` | `false` |
-| `errorBoundary` | 否 | 自定义的微应用错误捕获组件 | `(error: any) => React.ReactNode` | `undefined` |
+| `errorBoundary` | 否 | 自定义的微应用错误捕获组件 | `(error: Error) => React.ReactNode` | `undefined` |
 | `className` | 否 | 微应用的样式类 | `string` | `undefined` |
 | `wrapperClassName` | 否 | 包裹微应用加载组件、错误捕获组件和微应用的样式类，仅在启用加载组件或错误捕获组件时有效 | `string` | `undefined` |
 
@@ -108,11 +112,11 @@ export default function Page() {
 加载状态包括："NOT_LOADED" | "LOADING_SOURCE_CODE" | "NOT_BOOTSTRAPPED" | "BOOTSTRAPPING" | "NOT_MOUNTED" | "MOUNTING" | "MOUNTED" | "UPDATING" | "UNMOUNTING" | "UNLOADING" |
 
 ```tsx
-import { useRef } from 'react';
-import { MicroApp } from '@qiankunjs/react';
+import { useEffect, useRef } from 'react';
+import { MicroApp, type MicroAppType } from '@qiankunjs/react';
 
 export default function Page() {
-  const microAppRef = useRef();
+  const microAppRef = useRef<MicroAppType>(undefined);
 
   useEffect(() => {
     // 获取子应用加载状态

@@ -21,12 +21,14 @@ export default function Page() {
 When the sub-app loading animation or error capture capability is enabled, the sub-app accepts an additional style class `wrapperClassName`, and the rendered result is as follows:
 
 ```tsx
-<div style={{ position: 'relative' }} className={wrapperClassName}>
+<div style={{ position: 'relative' }} className={`${wrapperClassName} qiankun-micro-app-wrapper`}>
+  <MicroApp className={`${className} qiankun-micro-app-container`} />
   <MicroAppLoader loading={loading} />
   <ErrorBoundary error={e} />
-  <MicroApp className={className} />
 </div>
 ```
+
+The container is rendered first so its position never shifts as the loader and error slots come and go — qiankun keys its per-container caches on that position. Because the slots come after it, they paint above the micro app without needing a `z-index`.
 
 ### Load animation
 
@@ -96,10 +98,12 @@ export default function Page() {
 | --- | --- | --- | --- | --- |
 | `name` | yes | The name of the microapp | `string` |
 | `entry` | yes | The HTML address of the microapp | `string` |
+| `settings` | no | qiankun configuration for this microapp — sandbox, style isolation, fetch, … | `AppConfiguration` | `undefined` |
+| `lifeCycles` | no | qiankun lifecycle hooks for this microapp. They are captured on the first load into a given container, so avoid closing over component state in them | `LifeCycles` | `undefined` |
 | `autoSetLoading` | no | Automatically set the loading state of your microapp | `boolean` | `false` |
 | `loader` | no | Custom microapps load state components | `(loading) => React.ReactNode` | `undefined` |
 | `autoCaptureError` | no | Automatically set up error capture for microapps | `boolean` | `false` |
-| `errorBoundary` | no | Custom microapp error capture component | `(error: any) => React.ReactNode` | `undefined` |
+| `errorBoundary` | no | Custom microapp error capture component | `(error: Error) => React.ReactNode` | `undefined` |
 | `className` | no | The style class for the microapp | `string` | `undefined` |
 | `wrapperClassName` | no | Wrap the microapp loading component, error capture component, and microapp's style classes, and are only valid when the load component or error capture component is enabled | `string` | `undefined` |
 
@@ -108,11 +112,11 @@ export default function Page() {
 The loading status includes: "NOT_LOADED" | "LOADING_SOURCE_CODE" | "NOT_BOOTSTRAPPED" | "BOOTSTRAPPING" | "NOT_MOUNTED" | "MOUNTING" | "MOUNTED" | "UPDATING" | "UNMOUNTING" | "UNLOADING" |
 
 ```tsx
-import { useRef } from 'react';
-import { MicroApp } from '@qiankunjs/react';
+import { useEffect, useRef } from 'react';
+import { MicroApp, type MicroAppType } from '@qiankunjs/react';
 
 export default function Page() {
-  const microAppRef = useRef();
+  const microAppRef = useRef<MicroAppType>(undefined);
 
   useEffect(() => {
     // Get the child app load status
