@@ -42,6 +42,9 @@ const componentOwnedProps = [
   'errorBoundary',
   'wrapperClassName',
   'className',
+  // the Vue binding's channel for the micro app's own props: its contents are forwarded, the
+  // wrapper object itself is not
+  'appProps',
 ] as const;
 
 export const omitSharedProps = (props: Partial<SharedProps>) => {
@@ -127,43 +130,42 @@ export function updateMicroApp({
   microAppProps?: Record<string, unknown>;
   setLoading?: (loading: boolean) => void;
 }) {
-  if (microApp) {
-    if (!microApp._updatingPromise) {
-      // 初始化 updatingPromise 为 microApp.mountPromise，从而确保后续更新是在应用 mount 完成之后
-      microApp._updatingPromise = microApp.mountPromise;
-      microApp._updatingTimestamp = Date.now();
-    } else {
-      // 确保 microApp.update 调用是跟组件状态变更顺序一致的，且后一个微应用更新必须等待前一个更新完成
-      microApp._updatingPromise = microApp._updatingPromise.then(() => {
-        const canUpdate = (app: MicroAppType) => app.update && app.getStatus() === 'MOUNTED' && !app._unmounting;
-        if (canUpdate(microApp)) {
-          const props = {
-            ...microAppProps,
-            setLoading(l: boolean) {
-              setLoading?.(l);
-            },
-          };
+  if (!microApp) return;
 
-          if (process.env.NODE_ENV === 'development') {
-            const updatingTimestamp = microApp._updatingTimestamp!;
-            if (Date.now() - updatingTimestamp < 200) {
-              console.warn(
-                `[@qiankunjs/ui-shared] It seems like microApp ${name} is updating too many times in a short time(200ms), you may need to do some optimization to avoid the unnecessary re-rendering.`,
-              );
-            }
+  // 首次更新以 mountPromise 为起点，确保更新发生在 mount 完成之后。这里只能是「补上起点」，不能
+  // 「跳过本次更新」—— 否则宿主传入的第一次 props 变更会被直接吞掉。
+  microApp._updatingPromise ??= microApp.mountPromise;
+  microApp._updatingTimestamp ??= Date.now();
 
-            console.info(`[@qiankunjs/ui-shared}] MicroApp ${name} is updating with props: `, props);
-            microApp._updatingTimestamp = Date.now();
-          }
+  // 确保 microApp.update 调用是跟组件状态变更顺序一致的，且后一个微应用更新必须等待前一个更新完成
+  microApp._updatingPromise = microApp._updatingPromise.then(() => {
+    const canUpdate = (app: MicroAppType) => app.update && app.getStatus() === 'MOUNTED' && !app._unmounting;
+    if (canUpdate(microApp)) {
+      const props = {
+        ...microAppProps,
+        setLoading(l: boolean) {
+          setLoading?.(l);
+        },
+      };
 
-          // 返回 microApp.update 形成链式调用
-          return microApp.update?.(props);
+      if (process.env.NODE_ENV === 'development') {
+        const updatingTimestamp = microApp._updatingTimestamp!;
+        if (Date.now() - updatingTimestamp < 200) {
+          console.warn(
+            `[@qiankunjs/ui-shared] It seems like microApp ${name} is updating too many times in a short time(200ms), you may need to do some optimization to avoid the unnecessary re-rendering.`,
+          );
         }
 
-        return void 0;
-      });
+        console.info(`[@qiankunjs/ui-shared] MicroApp ${name} is updating with props: `, props);
+        microApp._updatingTimestamp = Date.now();
+      }
+
+      // 返回 microApp.update 形成链式调用
+      return microApp.update?.(props);
     }
-  }
+
+    return void 0;
+  });
 }
 
 export async function unmountMicroApp(microApp: MicroAppType) {

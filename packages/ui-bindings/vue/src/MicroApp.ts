@@ -69,8 +69,13 @@ export const MicroApp = defineComponent({
     const containerRef = ref(null);
     const microAppRef = shallowRef<MicroAppType>();
 
+    // `#error-boundary` is what the docs have always shown, but Vue does not normalize slot names
+    // the way it normalizes props — both spellings must be accepted or the documented slot silently
+    // renders nothing.
+    const errorBoundarySlot = () => slots.errorBoundary ?? slots['error-boundary'];
+
     const isNeedShowError = computed(() => {
-      return slots.errorBoundary || autoCaptureError.value;
+      return errorBoundarySlot() || autoCaptureError.value;
     });
 
     // 配置了 errorBoundary 才改 error 状态，否则直接往上抛异常
@@ -79,7 +84,7 @@ export const MicroApp = defineComponent({
         error.value = err;
         // error log 出来，不要吞
         if (err) {
-          console.error(error);
+          console.error(err);
         }
       } else if (err) {
         throw err;
@@ -88,19 +93,34 @@ export const MicroApp = defineComponent({
 
     const rootRef = ref(null);
 
+    /**
+     * Mounts and unmounts are serialized through one chain. `mountMicroApp` resolves a tick after
+     * the app is handed over, so a second `name` change arriving before the first settles would
+     * otherwise see no previous app to wait for and race two apps into the same container — which
+     * is exactly what a `<router-view>` does when the user clicks twice.
+     */
+    let lifecycle: Promise<MicroAppType | undefined> = Promise.resolve(undefined);
+
     const unmount = () => {
-      const microApp = microAppRef.value;
-
-      if (microApp) {
-        microApp._unmounting = true;
-
-        unmountMicroApp(microApp).catch((err: Error) => {
-          setComponentError(err);
-          loading.value = false;
-        });
+      const unmounting = lifecycle.then(async (microApp) => {
+        if (microApp) {
+          microApp._unmounting = true;
+          await unmountMicroApp(microApp);
+        }
 
         microAppRef.value = undefined;
-      }
+        return undefined;
+      });
+
+      unmounting.catch((err: Error) => {
+        setComponentError(err);
+        loading.value = false;
+      });
+
+      // the chain continues on the caught variant: unmounting an app whose mount failed rejects,
+      // and that must not swallow the next app's mount
+      lifecycle = unmounting.catch(() => undefined);
+      return lifecycle;
     };
 
     onMounted(() => {
@@ -108,26 +128,34 @@ export const MicroApp = defineComponent({
       watch(
         name,
         () => {
-          const prevApp = microAppRef.value;
-          // 销毁上一个子应用
-          unmount();
+          // props 必须在此刻快照：挂载被排到卸载之后执行，那时读 originProps 拿到的已经是更之后的
+          // 一次切换，于是最后那个应用会被反复挂载又拆掉
+          const componentProps = {
+            ...originProps,
+            ...appProps.value,
+          };
 
-          // 初始化下一个子应用
-          void mountMicroApp({
-            prevMicroApp: prevApp,
-            container: containerRef.value!,
-            componentProps: {
-              ...originProps,
-              ...appProps.value,
-            },
-            setLoading: (l) => {
-              loading.value = l;
-            },
-            setError: (err?: Error) => {
-              setComponentError(err);
-            },
-          }).then((app) => {
-            microAppRef.value = app;
+          // 销毁上一个子应用，再初始化下一个
+          const mounting = unmount().then(() =>
+            mountMicroApp({
+              container: containerRef.value!,
+              componentProps,
+              setLoading: (l) => {
+                loading.value = l;
+              },
+              setError: (err?: Error) => {
+                setComponentError(err);
+              },
+            }).then((app) => {
+              microAppRef.value = app;
+              return app;
+            }),
+          );
+
+          lifecycle = mounting.catch(() => undefined);
+          mounting.catch((err: Error) => {
+            setComponentError(err);
+            loading.value = false;
           });
         },
         {
@@ -139,6 +167,7 @@ export const MicroApp = defineComponent({
         appProps,
         () => {
           updateMicroApp({
+            name: name.value,
             microApp: microAppRef.value,
             setLoading: (l) => {
               loading.value = l;
@@ -156,7 +185,7 @@ export const MicroApp = defineComponent({
     });
 
     onBeforeUnmount(() => {
-      unmount();
+      void unmount();
     });
 
     const microAppWrapperClassName = computed(() =>
@@ -180,17 +209,30 @@ export const MicroApp = defineComponent({
   },
 
   render() {
-    return this.autoSetLoading || this.autoCaptureError || this.$slots.loader || this.$slots.errorBoundary
+    const loaderSlot = this.$slots.loader;
+    const errorBoundarySlot = this.$slots.errorBoundary ?? this.$slots['error-boundary'];
+    const container = h('div', {
+      class: this.microAppClassName,
+      ref: 'containerRef',
+    });
+
+    // The container is rendered before the slots on purpose: qiankun keys its parcel cache and its
+    // same-container serialization on the container's XPath, which counts same-tag siblings before
+    // the element, so a conditionally rendered loader would split one app across two cache keys.
+    return this.autoSetLoading || this.autoCaptureError || loaderSlot || errorBoundarySlot
       ? h(
           'div',
           {
             class: this.microAppWrapperClassName,
           },
           [
-            this.$slots.loader
-              ? typeof this.$slots.loader === 'function'
-                ? this.$slots.loader(this.loading)
-                : this.$slots.loader
+            container,
+            loaderSlot
+              ? typeof loaderSlot === 'function'
+                ? // slot props are an object, as the docs have always shown: `#loader="{ loading }"`
+                  // destructures nothing out of a bare boolean
+                  loaderSlot({ loading: this.loading })
+                : loaderSlot
               : this.autoSetLoading &&
                 h(MicroAppLoader, {
                   ...(isVue2
@@ -204,10 +246,10 @@ export const MicroApp = defineComponent({
                       }),
                 }),
             this.error
-              ? this.$slots.errorBoundary
-                ? typeof this.$slots.errorBoundary === 'function'
-                  ? this.$slots.errorBoundary(this.error)
-                  : this.$slots.errorBoundary
+              ? errorBoundarySlot
+                ? typeof errorBoundarySlot === 'function'
+                  ? errorBoundarySlot({ error: this.error })
+                  : errorBoundarySlot
                 : this.autoCaptureError &&
                   h(ErrorBoundary, {
                     ...(isVue2
@@ -221,15 +263,8 @@ export const MicroApp = defineComponent({
                         }),
                   })
               : null,
-            h('div', {
-              class: this.microAppClassName,
-              ref: 'containerRef',
-            }),
           ],
         )
-      : h('div', {
-          class: this.microAppClassName,
-          ref: 'containerRef',
-        });
+      : container;
   },
 });

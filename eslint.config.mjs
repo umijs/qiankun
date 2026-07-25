@@ -155,7 +155,9 @@ export default defineConfig([
     extends: [eslintReact.configs['recommended-typescript']],
     settings: {
       'react-x': {
-        // Detection starts at the monorepo root, but this binding must remain compatible with React 18 and earlier.
+        // Judged against the oldest supported React, not the one installed for development: the
+        // binding builds against React 19 but its peer range starts at 16.9, so rules that flag
+        // React-19-era replacements (forwardRef → ref as a prop) must stay quiet.
         version: '18.3.1',
         importSource: 'react',
         polymorphicPropName: 'as',

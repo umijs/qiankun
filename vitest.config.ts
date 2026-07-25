@@ -18,6 +18,10 @@ export default defineConfig({
       '@qiankunjs/shared': fromRoot('./packages/shared/src/index.ts'),
       '@qiankunjs/sandbox': fromRoot('./packages/sandbox/src/index.ts'),
       '@qiankunjs/loader': fromRoot('./packages/loader/src/index.ts'),
+      '@qiankunjs/ui-shared': fromRoot('./packages/ui-bindings/shared/src/index.ts'),
+      // the ui bindings import the facade by package name; the binding tests mock it, but the
+      // specifier still has to resolve without a built dist
+      qiankun: fromRoot('./packages/qiankun/src/index.ts'),
     },
   },
   test: {
@@ -32,7 +36,7 @@ export default defineConfig({
               extends: true,
               test: {
                 name: 'packages',
-                include: ['packages/**/*.{test,spec}.ts'],
+                include: ['packages/**/*.{test,spec}.{ts,tsx}'],
                 exclude: ['packages/create-qiankun/tests/e2e*.test.ts', '**/node_modules/**'],
               },
             },

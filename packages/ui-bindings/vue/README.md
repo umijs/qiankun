@@ -101,6 +101,8 @@ import { MicroApp } from '@qiankunjs/vue';
 | --- | --- | --- | --- | --- |
 | `name` | Yes | The name of the micro-application | `string` |  |
 | `entry` | Yes | The HTML address of the micro-application | `string` |  |
+| `settings` | No | qiankun configuration for this micro-application — sandbox, style isolation, fetch, … | `AppConfiguration` | `{ sandbox: true }` |
+| `lifeCycles` | No | qiankun lifecycle hooks for this micro-application. They are captured on the first load into a given container, so avoid closing over component state in them | `LifeCycles` | `undefined` |
 | `autoSetLoading` | No | Automatically set the loading status of the micro-application | `boolean` | `false` |
 | `autoCaptureError` | No | Automatically set error capturing for the micro-application | `boolean` | `false` |
 | `className` | No | The style class for the micro-application | `string` | `undefined` |
@@ -109,7 +111,9 @@ import { MicroApp } from '@qiankunjs/vue';
 
 ### Component Slots
 
-| Slot            | Description          |
-| --------------- | -------------------- |
-| `loader`        | Loading state slot   |
-| `errorBoundary` | Error capturing slot |
+| Slot                               | Slot props             | Description          |
+| ---------------------------------- | ---------------------- | -------------------- |
+| `loader`                           | `{ loading: boolean }` | Loading state slot   |
+| `errorBoundary` / `error-boundary` | `{ error: Error }`     | Error capturing slot |
+
+Vue does not normalize slot names the way it normalizes props, so both spellings of the error slot are accepted. Unlike the React binding, this component's wrapper is not positioned — give it a positioned class through `wrapperClassName` if your slot renders an overlay.
