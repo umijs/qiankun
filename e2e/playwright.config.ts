@@ -42,6 +42,11 @@ export default defineConfig({
       reuseExistingServer: !CI,
     },
     {
+      command: `node servers/serve.mjs fixtures/sub-nested/dist ${PORTS['sub-nested']}`,
+      url: `http://localhost:${PORTS['sub-nested']}`,
+      reuseExistingServer: !CI,
+    },
+    {
       command: `node servers/serve.mjs ../examples/standalone-sandbox/dist ${PORTS['standalone-sandbox']}`,
       url: `http://localhost:${PORTS['standalone-sandbox']}`,
       reuseExistingServer: !CI,

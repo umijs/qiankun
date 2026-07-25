@@ -61,3 +61,44 @@ test('standalone package isolates classic, ESM, DOM, styles, and side effects wi
   await page.evaluate(() => window.dispatchEvent(new Event('standalone-widget:ping')));
   await expect(page.locator('[data-metric="acks"]')).toHaveText('1');
 });
+
+/**
+ * A second controller taking over the same caller-owned container after a full classic-script
+ * evaluation lifecycle. The container preparation of that second mount has to see a plain host
+ * element again: nodes the compartment itself puts in the container while evaluating (its internal
+ * blob script) are pipeline-internal, and must never make the container look like it already holds
+ * streamed entry content — which would skip creating the virtual head the app then mounts into.
+ */
+test('a fresh controller re-prepares the same container after a classic evaluation', async ({ browserName, page }) => {
+  test.fail(browserName === 'firefox', FIREFOX_IMPORT_MAP_LIMITATION);
+
+  await page.goto(`${STANDALONE_ORIGIN}/`);
+
+  const state = page.locator('[data-controller-state]');
+  const container = page.locator('#sandbox-container');
+  const widget = container.locator('.third-party-widget');
+  await expect(state).toHaveAttribute('data-state', 'running');
+  await expect(container.locator('qiankun-head')).toHaveCount(1);
+
+  await page.locator('[data-action="dispose"]').click();
+  await expect(state).toHaveAttribute('data-state', 'disposed');
+  await expect(container.locator('qiankun-head')).toHaveCount(0);
+
+  await page.locator('[data-action="run"]').click();
+  await expect(state).toHaveAttribute('data-state', 'running');
+
+  // exactly one virtual head — neither skipped nor duplicated — and the widget is live again
+  await expect(container.locator('qiankun-head')).toHaveCount(1);
+  await expect(widget).toBeVisible();
+  await expect(widget).toHaveAttribute('data-dynamic-script', 'contained');
+  await expect(container).toHaveAttribute('data-esm-status', 'esm-graph-ready:true');
+
+  // and isolation still holds for the second controller
+  const isolatedStyle = container.locator('qiankun-head style');
+  await expect.poll(async () => isolatedStyle.textContent()).toContain('@scope ([data-name="pulseboard-widget"])');
+  const realmState = await page.evaluate(() => ({
+    classic: Reflect.has(window, '__STANDALONE_WIDGET__'),
+    esm: Reflect.has(window, '__STANDALONE_ESM__'),
+  }));
+  expect(realmState).toEqual({ classic: false, esm: false });
+});

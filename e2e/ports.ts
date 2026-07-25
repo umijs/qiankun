@@ -7,6 +7,7 @@ export const PORTS = {
   'sub-esm': 7502,
   'sub-misbehaving': 7503,
   'standalone-sandbox': 7504,
+  'sub-nested': 7505,
 } as const;
 
 export const SUB_APP_ENTRIES = {
@@ -20,6 +21,8 @@ export const SUB_APP_ENTRIES = {
   // same server, dedicated page whose HTML carries a <link rel="modulepreload">
   'sub-esm-preload': `http://localhost:${PORTS['sub-esm']}/preload.html`,
   'sub-misbehaving': `http://localhost:${PORTS['sub-misbehaving']}`,
+  // a classic app that is itself a qiankun host: it loads sub-classic-bodyless inside its own DOM
+  'sub-nested': `http://localhost:${PORTS['sub-nested']}`,
   // resolves to a 404 on purpose: the error-handling suite asserts the failure path
   'sub-missing': `http://localhost:${PORTS['sub-misbehaving']}/missing/`,
 } as const;

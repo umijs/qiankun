@@ -5,7 +5,7 @@
 - **Created**: 2026-07-25
 - **Target Release**: qiankun v3.x
 - **Tracking Issue**: TBD
-- **Last Revision**: 2026-07-25(实现验证:全仓单测 295 例、Chromium e2e 38 例、eslint/prettier、本地性能基准全部通过;嵌套沙箱以「createElement 不再记账」契约测试覆盖,未建完整嵌套 harness)
+- **Last Revision**: 2026-07-25(实现与验证完成:全仓单测、Chromium e2e、eslint/prettier、本地性能基准全部通过;嵌套沙箱补齐真实 e2e harness(`fixtures/sub-nested`,qiankun 套 qiankun),核心判别用例经变异测试确认可区分新旧归属语义)
 
 ## Summary
 
@@ -154,7 +154,13 @@ const config = elementConfigs.get(ownerNode) ?? resolveConfigByPosition(ownerNod
 
 **Phase 2 — 归属收敛**:D1(决策行 + 一律 stamp + fragment 简化)、D3(死代码删除)、D5(CSSOM 位置解析)。回归重点:`stylesheet-ledger.test.ts` 全部、`style-isolation.spec.ts:68`(jQuery fragment)、`router-mode.spec.ts:46-63`(共享容器接力竞态)、multi-instance 与 standalone 全套。
 
-**Phase 3 — 测试补账**(补历史空白 + 钉新契约):嵌套沙箱归属单测(现状为零覆盖,先钉旧行为再随 Phase 2 更新)、跨实例直插归属契约测试(钉 S1 新语义)、`StyleSheetManager` 式容器内自定义注入点的 insertRule scoping 单测(钉 D5)、容器占用检测在 Compartment blob script 存续期间不误判的单测(钉 D2 出处位纯度)。
+**Phase 3 — 测试补账**(补历史空白 + 钉新契约):跨实例直插归属契约单测(钉 S1)、`StyleSheetManager` 式容器内自定义注入点的 insertRule scoping 单测(钉 D5)、容器占用检测不被 Compartment blob script 误导的单测(钉 D2 出处位纯度)、以及**嵌套沙箱 e2e**(历史零覆盖):新增 `e2e/fixtures/sub-nested` —— 一个自带 qiankun 副本、在自己 DOM 内再挂一个子应用的 classic 应用,配 `e2e/tests/nested-sandbox.spec.ts`。
+
+### 嵌套与 evaluateScript 的覆盖实证(变异测试结论)
+
+- **嵌套归属**:`nested-sandbox` 中「外层应用创建、交给内层容器」的节点用例是新旧语义的**真判别式** —— 变异回创建者归属后,该用例精确失败于 `@scope ([data-name="sub-nested"])`(错误归属外层)。其余三条(各自容器内的样式归属、两层全局不外泄、外层卸载连带内层)在新旧模型下都应成立,作用是给已退役的 `__currentLockingSandbox__` 嵌套锁补上回归护栏。该 fixture 同时顺带验证了跨 qiankun 副本的 `Symbol.for` 契约(内外层是两份独立打包的 qiankun)。
+- **evaluateScript 的效果位**:已被现有 `standalone-sandbox` e2e 兜住 —— 去掉 `markNodeTranspiled(script)` 后该用例失败(控制器进入 `failed`,blob script 被二次转译)。
+- **evaluateScript 的出处位**:端到端**不可达**,已实证 —— 把拆分前的 `markLoaderStreamedNode(script)` 加回去,全部 e2e 依旧通过。原因是双重结构保护:blob script 始终位于 `<qiankun-head>` 内(占用检测的第一个条件因此为 false),且求值 settle 后即被移除。故出处位纯度由单测精确钉住,e2e 覆盖其可达邻域:新增「同容器在一次 classic 求值生命周期后由新控制器重新准备」用例(`standalone-sandbox.spec.ts`),断言虚拟头恰好重建一次、隔离对第二个控制器依然成立。
 
 各 Phase 独立成 conventional commit,`pnpm run ci` + Chromium e2e 全绿为 gate;Phase 2 附带跑一次性能门禁(D5 上溯为冷路径,预期无感,须实证)。
 
