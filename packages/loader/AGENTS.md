@@ -53,9 +53,14 @@ isDeferScript; // external + [defer]  → ordered via shared prepareDeferredQueu
 
 Nodes are parsed/transformed in a detached document first, then moved to live DOM — this prevents premature script execution before the transpiler has rewritten the node.
 
+### writable-dom fork discipline
+
+`writable-dom/` is vendored from marko-js/writable-dom and periodically re-synced; every deviation carries a `[qiankun]` comment so syncs can re-apply them mechanically. Changes there demand deliberate thought and must stay **generic**: general-purpose hooks or upstream bug fixes only — never qiankun-specific semantics coupled to other packages (no `@qiankunjs/*` imports, no sandbox marks, no downstream contract knowledge). The fork's one integration seam is the `assetTransformer` callback (every element passes through it right before insertion); downstream bookkeeping — e.g. the pipeline marks the sandbox patcher consumes — belongs in the callback `loadEntry` provides (`index.ts`), on the caller's side of that seam.
+
 ## ANTI-PATTERNS
 
 - **NEVER** include more than one `entry` script per HTML entry (throws `QiankunError`).
+- **NEVER** add qiankun-coupled logic inside `writable-dom/` — generic designs only; hang caller bookkeeping on the `assetTransformer` callback in `loadEntry` (see the fork discipline above).
 - **FIXME** (in code): non-standard HTML chunks that lack a `<head>` tag.
 
 ## EXPORTS (`src/index.ts`)
