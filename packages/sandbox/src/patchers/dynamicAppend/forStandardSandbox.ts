@@ -111,9 +111,12 @@ const resolveStyleOwnerConfig = (ownerNode: HTMLElement): SandboxConfig | undefi
   return undefined;
 };
 
-// FIXME should not capture at module load, should get it every time it is used, otherwise it may miss the business itself monkey patch logic.
-// Captured from the prototype rather than an instance lookup (document.head.appendChild), which
-// could pick up a host page's instance-level patch and leak it into container operations.
+// Deliberately captured from Node.prototype at module load: an instance lookup like
+// document.head.appendChild could pick up a host page's instance-level patch and leak it into
+// container operations with the wrong receiver. An app monkey-patching the appendChild *it*
+// sees stays effective regardless — its wrapper shadows our patched instance method on the
+// mount point and delegates to it, so the pipeline runs underneath the wrapper (pinned by the
+// patched-append e2e). Only prototype patches installed after this module loads are bypassed.
 const nativeAppendChild = Node.prototype.appendChild;
 const nativeInsertBefore = Node.prototype.insertBefore;
 const nativeRemoveChild = Node.prototype.removeChild;
@@ -238,6 +241,13 @@ function patchDocumentHeadAndBodyMethods(container: HTMLElement, compartment: Pl
     const sandboxConfig = sandboxConfigs.get(compartment);
     if (sandboxConfig) setSandboxConfig(mountPoint, sandboxConfig);
   };
+  // A follow-up app may have re-tagged a shared mount point, so only clear this app's own stamp —
+  // otherwise a disposed sandbox could still be resolved as a style owner by DOM position.
+  const untagMountPoint = (mountPoint: HTMLElement) => {
+    if (elementConfigs.get(mountPoint) === sandboxConfigs.get(compartment)) {
+      elementConfigs.delete(mountPoint);
+    }
+  };
 
   let patchedHeadMethods:
     | {
@@ -307,6 +317,7 @@ function patchDocumentHeadAndBodyMethods(container: HTMLElement, compartment: Pl
       if (containerHeadElement.removeChild === patchedHeadMethods.removeChild) {
         Reflect.deleteProperty(containerHeadElement, 'removeChild');
       }
+      untagMountPoint(containerHeadElement);
     }
 
     if (containerBodyElement.appendChild === patchedBodyMethods.appendChild) {
@@ -318,6 +329,7 @@ function patchDocumentHeadAndBodyMethods(container: HTMLElement, compartment: Pl
     if (containerBodyElement.removeChild === patchedBodyMethods.removeChild) {
       Reflect.deleteProperty(containerBodyElement, 'removeChild');
     }
+    untagMountPoint(containerBodyElement);
   };
 }
 

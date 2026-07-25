@@ -5,7 +5,7 @@
 - **Created**: 2026-07-25
 - **Target Release**: qiankun v3.x
 - **Tracking Issue**: TBD
-- **Last Revision**: 2026-07-25(实现与验证完成:全仓单测、Chromium e2e、eslint/prettier、本地性能基准全部通过;嵌套沙箱补齐真实 e2e harness(`fixtures/sub-nested`,qiankun 套 qiankun),核心判别用例经变异测试确认可区分新旧归属语义)
+- **Last Revision**: 2026-07-25(实现与验证完成:全仓单测、Chromium e2e、eslint/prettier、本地性能基准全部通过;嵌套沙箱补齐真实 e2e harness(`fixtures/sub-nested`,qiankun 套 qiankun),核心判别用例经变异测试确认可区分新旧归属语义。review 收尾:Q1 定案为无条件 warn、unpatch 清除挂载点 stamp、S2/D5 补缓存边界、D2 补 cloneNode 已知限制)
 
 ## Summary
 
@@ -104,6 +104,8 @@ const sandboxConfig = isTranspiledNode(element) ? undefined : getSandboxConfig(t
 
 loader 对流式元素两个都打;Compartment 只打效果位 —— 出处契约的污染消除,容器占用检测不再依赖短路顺序保命。两个符号均用 `Symbol.for` 注册,跨 `@qiankunjs/shared` 副本契约保持(现状同)。doc comment(`shared/src/common.ts:5-12`)按两个契约分别重写。
 
+已知限制(现状同,非本 RFC 引入):symbol 标记不随 `cloneNode` 复制 —— 克隆一个已转译节点再插入会重新进管线(样式可能被二次 `@scope` 包裹)。单一 `loaderStreamedNode` 时代行为相同,记录备查。
+
 ### D3 创建者机制退役
 
 删除:`attachElementToSandbox`(`forStandardSandbox.ts:115-120`)、`__currentLockingSandbox__` 全部(`:34-48` 声明与 defineProperty、`:163-177` createElement 锁逻辑)。`proxyDocument` 的 `createElement` get 保留 override 通道(`modificationFns`)但不再做任何归属动作;`createElement`/`querySelector` 的 set/get 配对结构不动(防写泄漏)。
@@ -126,6 +128,8 @@ const config = elementConfigs.get(ownerNode) ?? resolveConfigByPosition(ownerNod
 
 这与插入点模型同构(「样式现在活在谁的容器里」),并顺带修正现状的不一致:今天深插 style 的**文本规则不 scope、insertRule 规则却按创建者 scope**,若元素被挪出容器 insertRule 仍继续 scope(错误);按位置解析后两者行为统一且随位置正确。上溯只在无 stamp 的首次 `insertRule` 发生一次,之后走缓存 —— CSS-in-JS 高频 insertRule 路径无持续开销。
 
+缓存同时划定了修正的边界:首次解析后归属被钉在元素上,之后元素再被挪出容器,后续 `insertRule` 仍沿用缓存归属 —— 深插元素不经过 patched removeChild,缓存没有失效时机。这与 S3 属同类已知限制,不因缓存恶化(旧创建者 stamp 同样不随移动失效)。
+
 ### 不变量保持对照
 
 样式账本调查提炼的 9 条不变量逐条对照(编号见调查底稿,此处收录结论):
@@ -144,7 +148,7 @@ const config = elementConfigs.get(ownerNode) ?? resolveConfigByPosition(ownerNod
 
 **S1 — 跨实例直插**:B 用直接 DOM 引用把自建元素插进 A 的挂载点,归属从 B(创建者)变为 A(插入点)。评估:正常编排不可达(F2)、零测试依赖、与 F5 既定不变量更一致。**接受**,并在 Phase 3 用测试把新语义钉成契约。
 
-**S2 — 沙箱内创建、未经挂载点插入的 style 的 `insertRule` scoping**:归属来源从创建者 stamp 变为位置解析(D5)。容器内深插:行为不变(解析到同一 app);被挪出容器:从「继续 scope(错)」变为「不再 scope(对)」。**属修正而非回归**。
+**S2 — 沙箱内创建、未经挂载点插入的 style 的 `insertRule` scoping**:归属来源从创建者 stamp 变为位置解析(D5)。容器内深插:行为不变(解析到同一 app);首次 `insertRule` 解析前被挪出容器:从「继续 scope(错)」变为「不再 scope(对)」;首次解析后再挪出:沿用缓存归属(D5 缓存边界)。**属修正而非回归**,修正范围以首次解析为界。
 
 **S3 — 重插入即重归属**(D1 收养语义):元素跨挂载点移动后,removeChild/CSSOM 按最后插入点结算。跨容器移动在两种模型下账本层面都有未定义行为(直接 append 触发的隐式 detach 不经过旧容器的 patched removeChild,旧账本残留 —— 现状同病),不因本 RFC 恶化,记为已知限制。
 
@@ -172,10 +176,11 @@ const config = elementConfigs.get(ownerNode) ?? resolveConfigByPosition(ownerNod
 
 ## 附带清理项(顺路,不阻塞)
 
-- `forStandardSandbox.ts:289`:body `insertBefore` 误传 `document.head.insertBefore` 为原生函数(与 `Node.prototype.insertBefore` 同引用故无功能差异,但捕获自实例属性有被宿主实例级 patch 污染的理论风险),统一改为从 prototype 捕获。
+- `forStandardSandbox.ts:289`:body `insertBefore` 误传 `document.head.insertBefore` 为原生函数(与 `Node.prototype.insertBefore` 同引用故无功能差异,但捕获自实例属性有被宿主实例级 patch 污染的理论风险),统一改为从 prototype 捕获。子应用自行 wrap 它所见的挂载点 `appendChild`(业务 monkey-patch 常态)不受影响:wrapper 遮蔽实例级 patch 方法并委托之,管线在 wrapper 之下照常运行 —— 由新增 e2e(`sub-classic-patched-append`)钉住。
 - `shared/src/common.ts:5-12` doc comment 随 D2 重写为双契约表述。
+- unpatch 时清除挂载点自己的 stamp(守卫同主 config,共享容器接力时不误删后来者的 tag):防止 D5 位置解析把已卸载 app 判为陈旧归属;归属契约单测钉住。
 
 ## Open Questions
 
-- **Q1**:S3 的「一律 stamp」是否需要 dev 模式下对「元素携带异 app config 被重归属」发 warning(调试辅助)?倾向:加,成本一行。
+- **Q1(已定案)**:重归属 warning 无条件发,不做 dev gating —— 与 detached-container warning 的既有处理一致;该场景正常编排下不可达(F2),噪音风险可忽略。
 - **Q2**:D5 位置解析是否需要处理 Shadow DOM 边界(`getRootNode()` 跨越)?现状 qiankun 容器不使用 shadow root,倾向:不处理,遇到即视为无归属。

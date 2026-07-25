@@ -95,6 +95,23 @@ describe.sequential('insertion-point attribution', () => {
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('re-attributed'));
   });
 
+  it('clears the mount-point stamps once the sandbox is disposed', async () => {
+    const { container, controller } = createController();
+    await controller.mount(container);
+
+    const headElement = container.querySelector<HTMLElement>('qiankun-head');
+    if (!headElement) throw new Error('virtual head was not prepared');
+    const config = getSandboxConfigOf(controller);
+    expect(getSharedState().elementConfigs.get(container)).toBe(config);
+    expect(getSharedState().elementConfigs.get(headElement)).toBe(config);
+
+    await controller.dispose();
+
+    // a disposed sandbox must no longer be resolvable as a style owner by DOM position
+    expect(getSharedState().elementConfigs.get(container)).toBeUndefined();
+    expect(getSharedState().elementConfigs.get(headElement)).toBeUndefined();
+  });
+
   it('passes pipeline-transpiled nodes through natively', async () => {
     const transformedNodes: Node[] = [];
     const { container, controller } = createController((node) => {

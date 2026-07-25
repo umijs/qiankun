@@ -88,6 +88,36 @@ test.describe('runtime style isolation (@scope)', () => {
     expect(bodyBg).not.toBe(INJECTED);
   });
 
+  test('an app wrapping its own appendChild keeps its patch effective while styles stay piped and scoped', async ({
+    page,
+  }) => {
+    const HEAD = 'rgb(61, 62, 63)';
+    const BODY = 'rgb(71, 72, 73)';
+
+    await loadApp(page, 'sub-classic-patched-append', { sandbox: { styleIsolation: true } });
+
+    // the app wrapped the document.head/body appendChild it sees before injecting its styles —
+    // the sandbox pipeline must run *underneath* that wrapper, not bypass it: both insertions
+    // were observed by the app's own patch logic
+    await expect(page.getByTestId('patched-append-observed')).toHaveText('head:style,body:style');
+
+    // and delegating to the wrapped original still routed both styles through the pipeline
+    const container = page.locator('[data-name="sub-classic-patched-append"]');
+    const headStyle = container.locator(':scope > qiankun-head > style[data-testid="patched-append-head-style"]');
+    const bodyStyle = container.locator(':scope > style[data-testid="patched-append-body-style"]');
+    await expect(headStyle).toHaveCount(1);
+    await expect(bodyStyle).toHaveCount(1);
+    const scopedStyles = await Promise.all(
+      [headStyle, bodyStyle].map((style) =>
+        style.evaluate((element) => (element.textContent ?? '').trim().startsWith('@scope')),
+      ),
+    );
+    expect(scopedStyles).toEqual([true, true]);
+
+    await expect(page.getByTestId('patched-append-head-target')).toHaveCSS('color', HEAD);
+    await expect(page.getByTestId('patched-append-body-target')).toHaveCSS('color', BODY);
+  });
+
   test('a dynamically injected chunk-CSS link fires its load event and stays scoped', async ({ page }) => {
     const LAZY = 'rgb(4, 5, 6)';
 

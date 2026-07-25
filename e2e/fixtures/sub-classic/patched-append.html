@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>sub-classic-patched-append</title>
+  </head>
+  <body>
+    <main id="patched-append-root">
+      <p class="patched-append-head-target" data-testid="patched-append-head-target">head style target</p>
+      <p class="patched-append-body-target" data-testid="patched-append-body-target">body style target</p>
+      <!-- filled by the app with what its own appendChild wrappers observed -->
+      <p data-testid="patched-append-observed"></p>
+    </main>
+    <script src="./entry-patched-append.js" entry></script>
+  </body>
+</html>
