@@ -2,7 +2,7 @@ import type { IsolationPluginConfig } from '../../types';
 import { createSandbox } from '../../../core/sandbox';
 import { containsLoaderStreamedNode } from '../../../core/sandbox/container';
 import type { SandboxConfig } from '../types';
-import { markLoaderStreamedNode, markNodeTranspiled } from '@qiankunjs/shared';
+import { markLoaderStreamedNode, markNodeForNativePassthrough } from '@qiankunjs/shared';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const identityNodeTransformer: IsolationPluginConfig['nodeTransformer'] = (node) => node;
@@ -112,7 +112,7 @@ describe.sequential('insertion-point attribution', () => {
     expect(getSharedState().elementConfigs.get(headElement)).toBeUndefined();
   });
 
-  it('passes pipeline-transpiled nodes through natively', async () => {
+  it('passes pipeline-marked nodes through natively', async () => {
     const transformedNodes: Node[] = [];
     const { container, controller } = createController((node) => {
       transformedNodes.push(node);
@@ -123,7 +123,7 @@ describe.sequential('insertion-point attribution', () => {
     const stylesheet = document.createElement('link');
     stylesheet.rel = 'stylesheet';
     stylesheet.setAttribute('href', 'data:text/css,.transpiled{}');
-    markNodeTranspiled(stylesheet);
+    markNodeForNativePassthrough(stylesheet);
     container.appendChild(stylesheet);
 
     expect(container.contains(stylesheet)).toBe(true);
@@ -132,18 +132,18 @@ describe.sequential('insertion-point attribution', () => {
     expect(getSandboxConfigOf(controller).dynamicStyleSheetElements).not.toContain(stylesheet);
   });
 
-  it('keeps the transpiled effect mark invisible to streamed-content detection', async () => {
+  it('keeps the passthrough effect mark invisible to streamed-content detection', async () => {
     const { container, controller } = createController();
     await controller.mount(container);
 
-    // an internal pipeline node (e.g. a compartment blob script) is transpiled but not streamed
+    // an internal pipeline node (e.g. a compartment blob script) carries the effect mark only
     const blobScript = document.createElement('script');
-    markNodeTranspiled(blobScript);
+    markNodeForNativePassthrough(blobScript);
     container.appendChild(blobScript);
     expect(containsLoaderStreamedNode(container)).toBe(false);
 
     const streamedNode = document.createElement('div');
-    markNodeTranspiled(streamedNode);
+    markNodeForNativePassthrough(streamedNode);
     markLoaderStreamedNode(streamedNode);
     container.appendChild(streamedNode);
     expect(containsLoaderStreamedNode(container)).toBe(true);

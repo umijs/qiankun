@@ -5,17 +5,17 @@
 - **Created**: 2026-07-25
 - **Target Release**: qiankun v3.x
 - **Tracking Issue**: TBD
-- **Last Revision**: 2026-07-25(实现与验证完成:全仓单测、Chromium e2e、eslint/prettier、本地性能基准全部通过;嵌套沙箱补齐真实 e2e harness(`fixtures/sub-nested`,qiankun 套 qiankun),核心判别用例经变异测试确认可区分新旧归属语义。review 收尾:Q1 定案为无条件 warn、unpatch 清除挂载点 stamp、S2/D5 补缓存边界、D2 补 cloneNode 已知限制)
+- **Last Revision**: 2026-07-25(实现与验证完成:全仓单测、Chromium e2e、eslint/prettier、本地性能基准全部通过;嵌套沙箱补齐真实 e2e harness(`fixtures/sub-nested`,qiankun 套 qiankun),核心判别用例经变异测试确认可区分新旧归属语义。review 收尾:Q1 定案为无条件 warn、unpatch 清除挂载点 stamp、S2/D5 补缓存边界、D2 补 cloneNode 已知限制;二轮 review:效果位更名 `nativePassthroughNode` 以名实相符,盖章点从 writable-dom fork 移入 `loadEntry` 闭包,fork 不再感知 qiankun 语义)
 
 ## Summary
 
 把 dynamicAppend patcher 的元素归属(attribution)规则从「**创建者优先、插入点兜底**」收敛为「**插入点唯一**」:
 
-> 凡是插入某 app 已 patch 挂载点(容器 body / `<qiankun-head>`)的可劫持标签(script/link/style),即归属该 app、进入其管线 —— 除非节点带「已转译」效果位。
+> 凡是插入某 app 已 patch 挂载点(容器 body / `<qiankun-head>`)的可劫持标签(script/link/style),即归属该 app、进入其管线 —— 除非节点带「原生放行」效果位。
 
 同时把现有单一 `loaderStreamedNode` 标记按语义拆成两个:
 
-- **效果位** `transpiledNode`:「此节点已完成管线加工,动态插入管线必须原生放行」。loader 流式走读与 Compartment 内部 blob script 都打它;dynamicAppend 只消费它。
+- **效果位** `nativePassthroughNode`:「此节点由 qiankun 自有管线插入,动态插入管线必须原生放行」。loader 流式管线与 Compartment 内部 blob script 都打它;dynamicAppend 只消费它。
 - **出处位** `loaderStreamedNode`:「此节点由 HTML entry 流式加载产出」。仅 loader 打;仅容器占用检测(`containsLoaderStreamedNode`)消费。
 
 创建者归属机制(`attachElementToSandbox` + `__currentLockingSandbox__` 嵌套锁)整体退役。CSSOM `insertRule` 的 config 解析改为**按 DOM 位置**(向上找已 tag 的容器),与插入点模型自洽。
@@ -86,12 +86,12 @@ const sandboxConfig =
   getSandboxConfig(element) ?? (isLoaderStreamedNode(element) ? undefined : getSandboxConfig(this));
 
 // after
-const sandboxConfig = isTranspiledNode(element) ? undefined : getSandboxConfig(this);
+const sandboxConfig = isNativePassthroughNode(element) ? undefined : getSandboxConfig(this);
 ```
 
 **收养语义**:进入管线的元素**一律** `setSandboxConfig(element, sandboxConfig)`(去掉 `common.ts:158` 的 `!getSandboxConfig(element)` 守卫)。含义:重插入即重归属 —— 元素被挪到谁的挂载点就归谁,与插入点模型自洽,也让 removeChild(`common.ts:306`)与 CSSOM 读到的永远是「最后一次插入的归属」。
 
-**fragment 分支简化**(`common.ts:114-141`):`shouldDecompose` 从「child 自有 config ?? ownerConfig 的三元」简化为「存在可劫持且非 transpiled 的 child」;分解时对每个 child 直接 stamp `ownerConfig`(去掉 `:132-133` 两个守卫)。
+**fragment 分支简化**(`common.ts:114-141`):`shouldDecompose` 从「child 自有 config ?? ownerConfig 的三元」简化为「存在可劫持且非原生放行的 child」;分解时对每个 child 直接 stamp `ownerConfig`(去掉 `:132-133` 两个守卫)。
 
 ### D2 标记拆分
 
@@ -99,12 +99,14 @@ const sandboxConfig = isTranspiledNode(element) ? undefined : getSandboxConfig(t
 
 | 标记 | Symbol | 生产者 | 消费者 |
 | --- | --- | --- | --- |
-| 效果位 | `Symbol.for('qiankun.transpiledNode')` | loader 流式走读(`writable-dom/index.ts:195`)、Compartment blob script(`compartment/index.ts:183`) | dynamicAppend(`common.ts:122/132/148` 对应处) |
-| 出处位 | `Symbol.for('qiankun.loaderStreamedNode')`(保留) | 仅 loader 流式走读 | 仅 `containsLoaderStreamedNode`(`container.ts:27`) |
+| 效果位 | `Symbol.for('qiankun.nativePassthroughNode')` | loader 流式管线(`loadEntry` 的 transformer 闭包,`loader/src/index.ts`)、Compartment blob script(`compartment/index.ts:183`) | dynamicAppend(`common.ts:122/132/148` 对应处) |
+| 出处位 | `Symbol.for('qiankun.loaderStreamedNode')`(保留) | 仅 loader 流式管线(同上闭包) | 仅 `containsLoaderStreamedNode`(`container.ts:27`) |
 
 loader 对流式元素两个都打;Compartment 只打效果位 —— 出处契约的污染消除,容器占用检测不再依赖短路顺序保命。两个符号均用 `Symbol.for` 注册,跨 `@qiankunjs/shared` 副本契约保持(现状同)。doc comment(`shared/src/common.ts:5-12`)按两个契约分别重写。
 
-已知限制(现状同,非本 RFC 引入):symbol 标记不随 `cloneNode` 复制 —— 克隆一个已转译节点再插入会重新进管线(样式可能被二次 `@scope` 包裹)。单一 `loaderStreamedNode` 时代行为相同,记录备查。
+**盖章点归 loader 集成层,不归 writable-dom fork。** vendored 的 writable-dom 不感知任何 qiankun 下游语义(不 import `@qiankunjs/shared`),它的契约止步于「每个待插入 element 在插入前必经 `assetTransformer` 回调」;两个标记由 `loadEntry` 传入的闭包盖章。回调的调用范围恰好等于「walk 经手的节点」,故语义与在 walk 内盖章等价,唯一差异是 preload hint(blocked 期间的预扫描分支也走回调)从「不带标记、插入被 patch 容器时被二次转译」变为「带标记、原生放行」—— 属良性修正:hint 是 walk 自己插入、`onload` 后自己移除的瞬态节点;且 preload 分支仅在 walk 被 blocking 元素卡住时运行,容器中必已存在带出处位的元素,`containsLoaderStreamedNode` 判定不受影响。标记形态必须维持 symbol 属性而非 DOM attribute:attribute 会随 `cloneNode` 复制、可被应用代码伪造,效果位若可克隆/可伪造即成沙箱逃逸通道(symbol 属性两者皆不会)。
+
+已知限制(现状同,非本 RFC 引入):symbol 标记不随 `cloneNode` 复制 —— 克隆一个带效果位的节点再插入会重新进管线(样式可能被二次 `@scope` 包裹)。单一 `loaderStreamedNode` 时代行为相同,记录备查。
 
 ### D3 创建者机制退役
 
@@ -136,7 +138,7 @@ const config = elementConfigs.get(ownerNode) ?? resolveConfigByPosition(ownerNod
 
 1. **入账⇔摘账对称**(push 进账本的元素必须可被 removeChild 识别摘除,否则复活 #3163 修掉的账本堵塞):D1 的「一律 stamp」在直插、fragment、转译替换(`common.ts:203-204`)三条路径统一保证,比现状(守卫式补 stamp)更强。钉住测试:`stylesheet-ledger.test.ts:70-87`。
 2. hint link 转译但不入账(`common.ts:175-182`):不动。
-3. 已转译节点放行:由效果位承接(D2),语义不变。
+3. 管线节点原生放行:由效果位承接(D2),语义不变。
 4. 回放原生、不重注册:不动(F3)。
 5. `styleElementTargetSymbol`/`refNodeNo` 顺序元数据:不动;插入点模型下 target symbol 的含义(「插入的挂载点」)反而名实相符。
 6. 账本数组与 `elementConfigs` 跨挂载持久:不动。
@@ -154,7 +156,7 @@ const config = elementConfigs.get(ownerNode) ?? resolveConfigByPosition(ownerNod
 
 ## Implementation Plan
 
-**Phase 1 — 标记拆分**(独立可先行,风险低):shared 增 `transpiledNode` 标记对;loader 双打;Compartment 改打效果位;dynamicAppend 三处消费换效果位;`container.ts` 保持出处位。现有测试全量回归(`lifecycle.test.ts:100` 的出处位用法不变)。
+**Phase 1 — 标记拆分**(独立可先行,风险低):shared 增 `nativePassthroughNode` 标记对;loader 双打(盖章点在 `loadEntry` 闭包,见 D2);Compartment 改打效果位;dynamicAppend 三处消费换效果位;`container.ts` 保持出处位。现有测试全量回归(`lifecycle.test.ts:100` 的出处位用法不变)。
 
 **Phase 2 — 归属收敛**:D1(决策行 + 一律 stamp + fragment 简化)、D3(死代码删除)、D5(CSSOM 位置解析)。回归重点:`stylesheet-ledger.test.ts` 全部、`style-isolation.spec.ts:68`(jQuery fragment)、`router-mode.spec.ts:46-63`(共享容器接力竞态)、multi-instance 与 standalone 全套。
 
@@ -163,7 +165,7 @@ const config = elementConfigs.get(ownerNode) ?? resolveConfigByPosition(ownerNod
 ### 嵌套与 evaluateScript 的覆盖实证(变异测试结论)
 
 - **嵌套归属**:`nested-sandbox` 中「外层应用创建、交给内层容器」的节点用例是新旧语义的**真判别式** —— 变异回创建者归属后,该用例精确失败于 `@scope ([data-name="sub-nested"])`(错误归属外层)。其余三条(各自容器内的样式归属、两层全局不外泄、外层卸载连带内层)在新旧模型下都应成立,作用是给已退役的 `__currentLockingSandbox__` 嵌套锁补上回归护栏。该 fixture 同时顺带验证了跨 qiankun 副本的 `Symbol.for` 契约(内外层是两份独立打包的 qiankun)。
-- **evaluateScript 的效果位**:已被现有 `standalone-sandbox` e2e 兜住 —— 去掉 `markNodeTranspiled(script)` 后该用例失败(控制器进入 `failed`,blob script 被二次转译)。
+- **evaluateScript 的效果位**:已被现有 `standalone-sandbox` e2e 兜住 —— 去掉 `markNodeForNativePassthrough(script)` 后该用例失败(控制器进入 `failed`,blob script 被二次转译)。
 - **evaluateScript 的出处位**:端到端**不可达**,已实证 —— 把拆分前的 `markLoaderStreamedNode(script)` 加回去,全部 e2e 依旧通过。原因是双重结构保护:blob script 始终位于 `<qiankun-head>` 内(占用检测的第一个条件因此为 false),且求值 settle 后即被移除。故出处位纯度由单测精确钉住,e2e 覆盖其可达邻域:新增「同容器在一次 classic 求值生命周期后由新控制器重新准备」用例(`standalone-sandbox.spec.ts`),断言虚拟头恰好重建一次、隔离对第二个控制器依然成立。
 
 各 Phase 独立成 conventional commit,`pnpm run ci` + Chromium e2e 全绿为 gate;Phase 2 附带跑一次性能门禁(D5 上溯为冷路径,预期无感,须实证)。
@@ -172,7 +174,7 @@ const config = elementConfigs.get(ownerNode) ?? resolveConfigByPosition(ownerNod
 
 - 不支持两个活跃 app 共享一个容器(现状即不生成该场景,`containerOwners` 维持单 owner)。
 - 不改回放机制、账本数据结构、deferred 队列机制。
-- 不移除「已转译放行」效果位本身 —— 它是流式管线与动态管线并存的必要契约,本 RFC 只让它名实相符。
+- 不移除「原生放行」效果位本身 —— 它是流式管线与动态管线并存的必要契约,本 RFC 只让它名实相符。
 
 ## 附带清理项(顺路,不阻塞)
 

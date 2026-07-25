@@ -4,7 +4,7 @@ import type { AssetsTranspilerOpts, ScriptTranspilerOpts } from '@qiankunjs/shar
  * @author Kuitos
  * @since 2019-10-21
  */
-import { isTranspiledNode, prepareDeferredQueue, warn } from '@qiankunjs/shared';
+import { isNativePassthroughNode, prepareDeferredQueue, warn } from '@qiankunjs/shared';
 import { qiankunHeadTagName } from '../../consts';
 import type { SandboxConfig } from './types';
 
@@ -109,14 +109,14 @@ export function getOverwrittenAppendChildOrInsertBefore(
     // jQuery-style insertions wrap nodes in a DocumentFragment, which would smuggle style/script
     // elements past the per-tag hijacking below — decompose such a fragment and route every child
     // through the same pipeline (a fragment empties on insertion natively, so per-child appends
-    // keep the same end state and order). Nodes a qiankun pipeline already transpiled (the
-    // loader's walk batches them into fragments for insertion performance) must pass through
-    // natively, never through the pipeline again.
+    // keep the same end state and order). Nodes marked for native passthrough (the loader's
+    // pipeline batches its processed nodes into fragments for insertion performance) must pass
+    // through untouched, never through the pipeline again.
     if (element.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
       const fragment = newChild as unknown as DocumentFragment;
       const shouldDecompose =
         !!getSandboxConfig(this) &&
-        Array.from(fragment.children).some((child) => isHijackingTag(child.tagName) && !isTranspiledNode(child));
+        Array.from(fragment.children).some((child) => isHijackingTag(child.tagName) && !isNativePassthroughNode(child));
       if (shouldDecompose) {
         Array.from(fragment.childNodes).forEach((child) => {
           appendChildInSandbox.call(this, child, refChild);
@@ -127,9 +127,9 @@ export function getOverwrittenAppendChildOrInsertBefore(
 
     // insertion-point ownership: a hijackable element landing on a patched mount point belongs to
     // the app owning that mount point, no matter who created it — except nodes a qiankun pipeline
-    // already transpiled, which must pass through untouched.
+    // marked for native passthrough, which must pass through untouched.
     // See docs/rfcs/insertion-point-ownership.md.
-    const sandboxConfig = isTranspiledNode(element) ? undefined : getSandboxConfig(this);
+    const sandboxConfig = isNativePassthroughNode(element) ? undefined : getSandboxConfig(this);
 
     if (!isHijackingTag(element.tagName) || !sandboxConfig) {
       return appendChild.call(this, element, refChild) as T;
