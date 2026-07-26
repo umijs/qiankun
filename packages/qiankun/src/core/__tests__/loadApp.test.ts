@@ -36,6 +36,12 @@ const validLifecycles: MicroAppLifeCycles = {
 
 describe('loadApp sandbox cleanup', () => {
   beforeEach(() => {
+    // keep the entry pre-warm fetch off the real network — its DNS failures would otherwise
+    // settle after the happy-dom window teardown and show up as noise
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('<html></html>', { status: 200 })),
+    );
     mocks.createSandbox.mockReturnValue({
       dispose: mocks.dispose,
       instance: {
@@ -49,6 +55,7 @@ describe('loadApp sandbox cleanup', () => {
   });
 
   afterEach(() => {
+    vi.unstubAllGlobals();
     vi.restoreAllMocks();
     vi.clearAllMocks();
   });

@@ -29,6 +29,13 @@ type Entry = HTMLEntry;
 export type LoaderOpts = {
   streamTransformer?: () => TransformStream<string, string>;
   nodeTransformer?: NodeTransformer;
+  /**
+   * Notified exactly once when the entry DOM-write phase is over — the html stream fully piped,
+   * errored, or never started at all. Distinct from the returned promise, which may settle as
+   * early as the entry script's onload while the stream is still writing tail nodes; callers
+   * gating container occupancy (qiankun's container gate) key their release on this signal.
+   */
+  onDOMStreamSettled?: () => void;
 } & Omit<BaseTranspilerOpts, 'classicScriptTransformer' | 'compartment' | 'moduleResolver'> & {
     /** Sandbox-owned structural host facade; never depend on its concrete implementation. */
     compartment?: CompartmentLoaderFacade;
@@ -54,13 +61,27 @@ export async function loadEntry<T>(
   container: HTMLElement,
   opts: LoaderOpts,
 ): Promise<T | undefined> {
-  const { fetch, streamTransformer, compartment, nodeTransformer } = opts;
+  const { fetch, streamTransformer, compartment, nodeTransformer, onDOMStreamSettled } = opts;
   const classicScriptTransformer = compartment
     ? (source: string, sourceURL?: string) => compartment.transformClassicScript(source, sourceURL)
     : undefined;
 
+  let domStreamSettledNotified = false;
+  const notifyDOMStreamSettled = () => {
+    if (domStreamSettledNotified) return;
+    domStreamSettledNotified = true;
+    onDOMStreamSettled?.();
+  };
+
   const entryUrl = typeof entry === 'string' ? entry : entry.url;
-  const res = typeof entry === 'string' ? await fetch(entry) : entry.res;
+  let res: Response;
+  try {
+    res = typeof entry === 'string' ? await fetch(entry) : entry.res;
+  } catch (e) {
+    // the stream never started, but the DOM-write phase is over all the same
+    notifyDOMStreamSettled();
+    throw e;
+  }
   if (res.body) {
     let foundEntryScript = false;
     let foundEsmEntryScript = false;
@@ -211,6 +232,8 @@ export async function loadEntry<T>(
         }),
       )
       .then(() => {
+        notifyDOMStreamSettled();
+
         // module scripts execute after the entry HTML finishes streaming (mirroring their native
         // deferred semantics), in document order, driven by the engine
         const namespacePromise = compartment?.importDocumentModules() ?? Promise.resolve(undefined);
@@ -242,6 +265,7 @@ export async function loadEntry<T>(
         entryHTMLLoadedDeferred.resolve();
       })
       .catch((e) => {
+        notifyDOMStreamSettled();
         entryScriptLoadedDeferred.reject(e);
         entryHTMLLoadedDeferred.reject(e);
       });
@@ -249,5 +273,6 @@ export async function loadEntry<T>(
     return entryScriptLoadedDeferred.promise;
   }
 
+  notifyDOMStreamSettled();
   throw new QiankunError(`The response body of entry ${entryUrl} is empty!`);
 }

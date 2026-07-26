@@ -36,6 +36,7 @@ import {
   performanceMeasure,
   toArray,
 } from '../utils';
+import { acquireContainer, type ContainerRelease } from './containerOccupancy';
 
 declare const __QIANKUN_VERSION__: string;
 
@@ -94,6 +95,16 @@ export default async function loadApp<T extends ObjectType>(
   let mountTimes = 1;
 
   let microAppDOMContainer: HTMLElement = container;
+
+  // Pre-warm the entry request before entering the gate: makeFetchCacheable dedupes it with
+  // loadEntry's own fetch, so the network time overlaps a predecessor's teardown. Failures are
+  // swallowed here — loadEntry's own fetch surfaces them on the proper path.
+  void enhancedFetch(entry).catch(() => undefined);
+
+  // ① load-phase streaming critical section: acquired before the container wipe below, released
+  // once both the entry lifecycles promise and the DOM stream have settled (see the gate RFC).
+  const releaseLoadHold = await acquireContainer(microAppDOMContainer, appName);
+
   initContainer(microAppDOMContainer, { sandboxCfg: sandbox, mountTimes, instanceId });
   if (!sandboxEnabled) microAppDOMContainer.dataset.name = appName;
 
@@ -136,10 +147,35 @@ export default async function loadApp<T extends ObjectType>(
     nodeTransformer: resolvedNodeTransformer,
     ...restConfiguration,
   };
+  /*
+   * The load hold must not survive until unmount: single-spa re-checks shouldBeActive after load,
+   * so a rapid A→B→A navigation leaves B loaded-but-never-mounted — holding on would starve the
+   * container forever. Releasing on load settle alone is not enough either: the entry promise can
+   * settle at the entry script's onload while the stream is still writing tail nodes, and a wipe
+   * granted in that window would interleave with them. Both signals settle unconditionally, so
+   * releasing at their conjunction keeps the gate deadlock-free.
+   */
+  let entryLifecyclesSettled = false;
+  let domStreamSettled = false;
+  const releaseLoadHoldWhenSettled = () => {
+    if (entryLifecyclesSettled && domStreamSettled) releaseLoadHold();
+  };
+  const markEntryLifecyclesSettled = () => {
+    entryLifecyclesSettled = true;
+    releaseLoadHoldWhenSettled();
+  };
+
   const lifecycleSetup = await (async () => {
     let lifecyclesPromise: Promise<MicroAppLifeCycles | undefined> | undefined;
     try {
-      lifecyclesPromise = loadEntry<MicroAppLifeCycles>(entry, microAppDOMContainer, containerOpts);
+      lifecyclesPromise = loadEntry<MicroAppLifeCycles>(entry, microAppDOMContainer, {
+        ...containerOpts,
+        onDOMStreamSettled: () => {
+          domStreamSettled = true;
+          releaseLoadHoldWhenSettled();
+        },
+      });
+      void lifecyclesPromise.then(markEntryLifecyclesSettled, markEntryLifecyclesSettled);
 
       const assetPublicPath = calcPublicPath(entry);
       const {
@@ -178,6 +214,24 @@ export default async function loadApp<T extends ObjectType>(
   const { bootstrap, mount, unmount, update, beforeUnmount, afterUnmount, afterMount, beforeMount } = lifecycleSetup;
 
   return (mountContainer) => {
+    // ② mount→unmount occupancy period. Regular release is the clearContainer step at the end of
+    // the unmount chain, but single-spa marks an app SKIP_BECAUSE_BROKEN after a mount OR unmount
+    // failure and never runs the rest of its chains — without the failure fallback below, the
+    // container would starve every later acquirer.
+    let releaseMountHold: ContainerRelease | undefined;
+    const guardHooksWithMountHoldRelease = <F extends (...args: never[]) => Promise<unknown>>(hooks: F[]): F[] =>
+      hooks.map(
+        (hook) =>
+          (async (...args: Parameters<F>) => {
+            try {
+              return await hook(...args);
+            } catch (error) {
+              releaseMountHold?.();
+              throw error;
+            }
+          }) as F,
+      );
+
     const parcelConfig: ApplicationConfigObject = {
       name: appName,
 
@@ -194,6 +248,11 @@ export default async function loadApp<T extends ObjectType>(
               performanceMark(markName);
             }
           }
+        },
+        async () => {
+          // acquired before the remount reload below — that reload is a DOM write and must sit
+          // inside the critical section, or a loadMicroApp cross-app remount would still race
+          releaseMountHold = await acquireContainer(mountContainer, appName);
         },
         async () => {
           microAppDOMContainer = mountContainer;
@@ -245,6 +304,7 @@ export default async function loadApp<T extends ObjectType>(
         async () => execHooksChain(toArray(afterUnmount), app, global),
         async () => {
           clearContainer(mountContainer);
+          releaseMountHold?.();
         },
       ],
 
@@ -257,6 +317,11 @@ export default async function loadApp<T extends ObjectType>(
         },
       ],
     };
+
+    // Both chains stop at their first rejection, so every hook gets the failure fallback — done
+    // after construction to keep the literals' contextual typing intact.
+    parcelConfig.mount = guardHooksWithMountHoldRelease(toArray(parcelConfig.mount));
+    parcelConfig.unmount = guardHooksWithMountHoldRelease(toArray(parcelConfig.unmount));
 
     if (typeof update === 'function') {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
