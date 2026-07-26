@@ -5,6 +5,12 @@ const props = defineProps<{ hostProps?: Record<string, unknown> }>();
 
 const ACCENT = '#42B883';
 
+/**
+ * Where the shells fetch this app from: its own dev server locally, a path on the deployed site
+ * (`pages` is the mode `scripts/build-examples-site.mjs` builds with, and it sets Vite's base).
+ */
+const ENTRY = import.meta.env.MODE === 'pages' ? import.meta.env.BASE_URL : '//localhost:7101';
+
 const poweredByQiankun = !!window.__POWERED_BY_QIANKUN__;
 const modeLabel = poweredByQiankun ? 'inside qiankun' : 'standalone';
 
@@ -105,7 +111,7 @@ function injectStyleProbe() {
     </section>
 
     <footer class="app-footer">
-      entry //localhost:7101 · lifecycle: src/main.ts · host props: {{ hostPropsOutput }}
+      entry {{ ENTRY }} · lifecycle: src/main.ts · host props: {{ hostPropsOutput }}
     </footer>
   </div>
 </template>

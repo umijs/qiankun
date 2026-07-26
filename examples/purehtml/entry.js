@@ -53,7 +53,9 @@
         '      <button type="button" id="ph-count-up">+</button>',
         '    </div>',
         '  </section>',
-        '  <footer class="app-footer">entry //localhost:7104 · lifecycle: entry.js</footer>',
+        // no build step here, so nothing can stamp the deployed path in: name the entry document
+        // instead, which is true wherever this app is served from
+        '  <footer class="app-footer">entry index.html · lifecycle: entry.js</footer>',
         '</div>',
       ].join('\n'),
     );

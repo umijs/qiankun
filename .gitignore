@@ -29,6 +29,9 @@ packages/sandbox/src/core/sandbox/globals.ts
 .dumi/tmp-test
 .dumi/tmp-production
 
+# aggregated examples site (scripts/build-examples-site.mjs)
+dist-examples/
+
 # playwright e2e artifacts
 e2e/test-results/
 e2e/playwright-report/

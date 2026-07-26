@@ -5,6 +5,8 @@ runtime style isolation (`@scope`) explicitly enabled. Both mount them with `<Mi
 UI bindings — dogfooded rather than bypassed: `main` is the React shell (`@qiankunjs/react`) and
 `vue-host` is the Vue one (`@qiankunjs/vue`). See [DESIGN.md](./DESIGN.md) for the shared design language.
 
+They are deployed from `next` to **https://examples.qiankunjs.com** — see [Deployment](#deployment).
+
 | app                | port | stack                                         | loading path                     |
 | ------------------ | ---- | --------------------------------------------- | -------------------------------- |
 | main               | 7099 | React 19 + Vite 8 + Tailwind 4                | host (`@qiankunjs/react`)        |
@@ -48,3 +50,37 @@ Vue binding honest. It earns its keep with three things the React shell cannot s
 container, which is how you can see a remount take qiankun's warm path.
 
 `standalone-sandbox` is intentionally not a micro app. It imports only `@qiankunjs/sandbox`, evaluates a local third-party classic script, and demonstrates DOM/style containment plus timer and listener cleanup without `qiankun` or `@qiankunjs/loader`.
+
+## Deployment
+
+`next` deploys these examples to [examples.qiankunjs.com](https://examples.qiankunjs.com) (Cloudflare
+Pages project `qiankun-examples`, driven by
+[`.github/workflows/cloudflare-examples.yml`](../.github/workflows/cloudflare-examples.yml)). Because the
+examples consume the workspace packages via `workspace:*`, a change under `packages/**` redeploys them
+too — the deployed site always shows the current runtime.
+
+`scripts/build-examples-site.mjs` aggregates every app into one static site. Locally:
+
+```bash
+pnpm run build:packages
+node scripts/build-examples-site.mjs   # → dist-examples/
+```
+
+Where dev gives each app its own origin, the deployed site is one origin laid out by path:
+
+| path                   | app                                                    |
+| ---------------------- | ------------------------------------------------------ |
+| `/`                    | the React shell                                        |
+| `/vue-host/`           | the Vue shell                                          |
+| `/apps/<name>/`        | the micro apps, served with `Access-Control-Allow-Origin: *` |
+| `/standalone-sandbox/` | the sandbox-only lab                                   |
+
+Two consequences worth knowing before you touch this:
+
+- The shells read `import.meta.env.MODE === 'pages'` to pick between dev-server entries and `/apps/`
+  ones, and the Vue shell hangs its routes off `import.meta.env.BASE_URL` because it is not at the
+  site root. Add a route to a shell and the build script's `_redirects` generation picks it up — it
+  reads the routes back out of `apps.ts` and fails the build if it cannot.
+- `examples/404.html` ships to the site root deliberately. Without a top-level `404.html`, Cloudflare
+  Pages treats the site as a single-page app and answers unmatched paths with the root shell at status
+  200 — which would silently defeat the Vue shell's "Missing app" route.

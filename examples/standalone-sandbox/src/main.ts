@@ -194,8 +194,10 @@ async function runWidget(): Promise<void> {
     }
     const source = await response.text();
     await nextController.instance.evaluateScript(source, { sourceURL: widgetScriptUrl });
+    // resolved against this document, not the origin root: e2e serves this build from a server
+    // root while the deployed site serves it from /standalone-sandbox/
     const moduleNamespace = await nextController.instance.import(
-      new URL('/standalone-module.js', window.location.href).href,
+      new URL('./standalone-module.js', window.location.href).href,
     );
     container.dataset.esmStatus = String(moduleNamespace.status);
     controller = nextController;

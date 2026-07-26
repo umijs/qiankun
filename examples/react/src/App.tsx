@@ -3,6 +3,12 @@ import './App.css';
 
 const ACCENT = '#087EA4';
 
+/**
+ * Where the shells fetch this app from: its own dev server locally, a path on the deployed site
+ * (`pages` is the mode `scripts/build-examples-site.mjs` builds with, and it sets Vite's base).
+ */
+const ENTRY = import.meta.env.MODE === 'pages' ? import.meta.env.BASE_URL : '//localhost:7100';
+
 export default function App() {
   const poweredByQiankun = !!window.__POWERED_BY_QIANKUN__;
 
@@ -95,7 +101,7 @@ export default function App() {
         </div>
       </section>
 
-      <footer className="app-footer">entry //localhost:7100 · lifecycle: src/main.tsx</footer>
+      <footer className="app-footer">entry {ENTRY} · lifecycle: src/main.tsx</footer>
     </div>
   );
 }

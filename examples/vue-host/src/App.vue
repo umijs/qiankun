@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { appByPath, microApps } from './apps';
+import { appByPath, microApps, siblingShell } from './apps';
 import { currentPath, navigate } from './router';
 import Stage from './Stage.vue';
 
@@ -36,6 +36,7 @@ const activeApp = computed(() => appByPath(currentPath.value));
       </nav>
 
       <footer class="mono">
+        <a :href="siblingShell.href">{{ siblingShell.label }} · {{ siblingShell.sub }} ↗</a>
         <a href="https://github.com/umijs/qiankun" target="_blank" rel="noreferrer">umijs/qiankun ↗</a>
       </footer>
     </aside>
@@ -163,6 +164,9 @@ nav button.active .sub {
 }
 
 aside footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   padding: 16px 20px;
   border-top: 1px solid var(--hairline);
   font-size: 11px;

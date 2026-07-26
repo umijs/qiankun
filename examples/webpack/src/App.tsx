@@ -8,6 +8,12 @@ declare global {
   }
 }
 
+/**
+ * Where the shells fetch this app from: its own dev server locally, a path on the deployed site.
+ * Defined by webpack.config.js off its `deployBase` env, the same value it pins publicPath to.
+ */
+declare const __MICRO_APP_ENTRY__: string;
+
 function WindowProbe() {
   const [value, setValue] = useState<string>();
 
@@ -122,7 +128,7 @@ export default function App() {
         </div>
       </section>
 
-      <footer className="footer mono">entry //localhost:7102 · lifecycle: src/index.tsx</footer>
+      <footer className="footer mono">entry {__MICRO_APP_ENTRY__} · lifecycle: src/index.tsx</footer>
     </div>
   );
 }

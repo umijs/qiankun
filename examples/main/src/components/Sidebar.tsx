@@ -1,4 +1,4 @@
-import { microApps } from '../apps';
+import { microApps, siblingShell } from '../apps';
 import { navigate } from '../router';
 import Seal from './Seal';
 
@@ -38,7 +38,13 @@ export default function Sidebar({ activePath }: SidebarProps) {
         ))}
       </nav>
 
-      <footer className="border-t border-hairline px-5 py-4">
+      <footer className="flex flex-col gap-2 border-t border-hairline px-5 py-4">
+        <a
+          href={siblingShell.href}
+          className="font-mono text-[11px] text-ink-soft transition-colors duration-150 hover:text-primary"
+        >
+          {siblingShell.label} · {siblingShell.sub} ↗
+        </a>
         <a
           href="https://github.com/umijs/qiankun"
           target="_blank"

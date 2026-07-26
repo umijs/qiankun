@@ -21,6 +21,7 @@
     "benchmark:ssr-streaming:check": "pnpm run build:packages && pnpm --filter @qiankunjs/benchmark run ssr-streaming:check",
     "build": "pnpm -r run build && pnpm run check:lodash-imports",
     "build:packages": "pnpm --filter './packages/**' run build && pnpm run check:lodash-imports",
+    "build:examples-site": "pnpm run build:packages && node scripts/build-examples-site.mjs",
     "check:lodash-imports": "node scripts/check-lodash-imports.mjs",
     "ci:version": "changeset version && node scripts/sanitize-pre-state.mjs",
     "prerelease:alpha": "changeset pre enter alpha && changeset && pnpm ci:version",
