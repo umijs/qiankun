@@ -4,7 +4,8 @@ import type { AssetsTranspilerOpts, ScriptTranspilerOpts } from '@qiankunjs/shar
  * @author Kuitos
  * @since 2019-10-21
  */
-import { isNativePassthroughNode, prepareDeferredQueue, warn } from '@qiankunjs/shared';
+import { prepareDeferredQueue, warn } from '@qiankunjs/shared';
+import { isNativePassthroughNode } from '../../core/nativePassthrough';
 import { qiankunHeadTagName } from '../../consts';
 import type { SandboxConfig } from './types';
 
