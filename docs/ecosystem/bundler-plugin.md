@@ -5,11 +5,11 @@ The `@qiankunjs/bundler-plugin` provides bundler plugins for the qiankun micro-f
 ## Installation
 
 ```bash
-npm install @qiankunjs/bundler-plugin --save-dev
+npm install @qiankunjs/bundler-plugin@rc --save-dev
 # or
-yarn add @qiankunjs/bundler-plugin --dev
+yarn add @qiankunjs/bundler-plugin@rc --dev
 # or
-pnpm add @qiankunjs/bundler-plugin --save-dev
+pnpm add @qiankunjs/bundler-plugin@rc --save-dev
 ```
 
 ## Webpack Plugin

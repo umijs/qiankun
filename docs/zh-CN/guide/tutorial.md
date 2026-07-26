@@ -9,7 +9,7 @@
 首先安装 `qiankun`：
 
 ```shell
-$ yarn add qiankun # 或者 npm i qiankun -S
+$ yarn add qiankun@rc # 或者 npm i qiankun@rc -S
 ```
 
 注册微应用并启动：
@@ -169,7 +169,7 @@ start();
 1. 安装
 
 ```bash
-npm i qiankun
+npm i qiankun@rc
 npm i @qiankunjs/react
 ```
 
@@ -271,7 +271,7 @@ export default function Page() {
 1. 安装
 
 ```bash
-npm i qiankun
+npm i qiankun@rc
 npm i @qiankunjs/vue
 ```
 

@@ -39,18 +39,22 @@ features:
 
 ## 📦 Installation
 
+::: tip v3 installs from the `rc` tag
+qiankun 3.0 is in release candidate, so npm's `latest` tag still resolves to 2.x. Install with an explicit `@rc` to get v3.
+:::
+
 ::: code-group
 
 ```bash [npm]
-npm install qiankun
+npm install qiankun@rc
 ```
 
 ```bash [yarn]
-yarn add qiankun
+yarn add qiankun@rc
 ```
 
 ```bash [pnpm]
-pnpm add qiankun
+pnpm add qiankun@rc
 ```
 
 :::

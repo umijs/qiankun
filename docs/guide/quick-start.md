@@ -10,18 +10,22 @@ This guide will help you set up a basic qiankun micro-frontend application in 5 
 
 ## 🚀 Step 1: Install qiankun
 
+::: tip v3 installs from the `rc` tag
+qiankun 3.0 is in release candidate, so npm's `latest` tag still resolves to 2.x. Install with an explicit `@rc` to get v3.
+:::
+
 ::: code-group
 
 ```bash [npm]
-npm install qiankun
+npm install qiankun@rc
 ```
 
 ```bash [yarn]
-yarn add qiankun
+yarn add qiankun@rc
 ```
 
 ```bash [pnpm]
-pnpm add qiankun
+pnpm add qiankun@rc
 ```
 
 :::
@@ -34,7 +38,7 @@ pnpm add qiankun
 # Create main application using your favorite framework
 npx create-react-app main-app
 cd main-app
-npm install qiankun
+npm install qiankun@rc
 ```
 
 ### 2.2 Register Micro Applications

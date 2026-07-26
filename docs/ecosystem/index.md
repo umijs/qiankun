@@ -45,7 +45,7 @@ npm install @qiankunjs/vue
 - **Use Case**: Essential for webpack-based micro applications
 
 ```bash
-npm install @qiankunjs/bundler-plugin --save-dev
+npm install @qiankunjs/bundler-plugin@rc --save-dev
 ```
 
 [Learn more about Webpack Plugin →](/ecosystem/bundler-plugin)

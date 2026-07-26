@@ -39,18 +39,22 @@ features:
 
 ## 📦 安装
 
+::: tip v3 需要从 `rc` 标签安装
+qiankun 3.0 处于 release candidate 阶段，npm 的 `latest` 标签仍指向 2.x，因此需要显式加上 `@rc` 才能装到 v3。
+:::
+
 ::: code-group
 
 ```bash [npm]
-npm install qiankun
+npm install qiankun@rc
 ```
 
 ```bash [yarn]
-yarn add qiankun
+yarn add qiankun@rc
 ```
 
 ```bash [pnpm]
-pnpm add qiankun
+pnpm add qiankun@rc
 ```
 
 :::
