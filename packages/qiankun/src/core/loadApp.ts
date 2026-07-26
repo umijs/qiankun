@@ -111,6 +111,9 @@ export default async function loadApp<T extends ObjectType>(
   if (sandboxEnabled) {
     sandboxController = createSandbox(appName, {
       container: () => microAppDOMContainer,
+      // the streaming loader materializes the container structure from the entry HTML (including
+      // its <qiankun-head>) — the entry decides whether a head exists, the sandbox provisions none
+      provisionContainerHead: false,
       compartmentOptions: {
         moduleHost: {
           entryUrl: entry,

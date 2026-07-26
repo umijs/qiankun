@@ -1,8 +1,7 @@
 import type { IsolationPluginConfig } from '../../types';
-import { createSandbox } from '../../../core/sandbox';
+import { createSandbox, type CreateSandboxOptions } from '../../../core/sandbox';
 import { styleElementTargetSymbol } from '../common';
 import type { SandboxConfig } from '../types';
-import { markLoaderStreamedNode } from '@qiankunjs/shared';
 import { afterEach, describe, expect, it } from 'vitest';
 
 const identityNodeTransformer: IsolationPluginConfig['nodeTransformer'] = (node) => node;
@@ -11,7 +10,7 @@ let appSequence = 0;
 const controllers: Array<ReturnType<typeof createSandbox>> = [];
 const containers: HTMLElement[] = [];
 
-function createController() {
+function createController(extraOpts: Partial<CreateSandboxOptions> = {}) {
   const appName = `dynamic-append-lifecycle-${String(appSequence++)}`;
   const container = document.createElement('div');
   container.innerHTML = '<qiankun-head></qiankun-head>';
@@ -23,6 +22,7 @@ function createController() {
     fetch: window.fetch,
     nodeTransformer: identityNodeTransformer,
     styleIsolation: true,
+    ...extraOpts,
   });
   controllers.push(controller);
   return { container, controller };
@@ -81,7 +81,9 @@ describe.sequential('dynamic append patch lifecycle', () => {
 
   it('rolls back the freshly installed mount patch when stylesheet reattachment fails', async () => {
     const nativeObserve = MutationObserver.prototype.observe;
-    const { container, controller } = createController();
+    // head provisioning is the orchestrator's business here (qiankun's loader materializes it
+    // from the entry HTML) — opted out so the broken-head state below survives into mount
+    const { container, controller } = createController({ provisionContainerHead: false });
 
     // Seed a recorded head-targeted stylesheet, then break the container head so
     // reattachDynamicStylesheets rejects during mount.
@@ -96,9 +98,6 @@ describe.sequential('dynamic append patch lifecycle', () => {
     headStyle[styleElementTargetSymbol] = 'head';
     sandboxConfig.dynamicStyleSheetElements.push(headStyle);
     container.querySelector('qiankun-head')?.remove();
-    const streamedNode = document.createElement('div');
-    markLoaderStreamedNode(streamedNode);
-    container.appendChild(streamedNode);
 
     await expect(controller.mount(container)).rejects.toThrow(/not ready while rebuilding/);
 

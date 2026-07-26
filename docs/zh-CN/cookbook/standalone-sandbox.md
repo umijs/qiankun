@@ -205,6 +205,7 @@ cleanup();
 ```ts
 const controller = createSandbox(appName, {
   container,
+  provisionContainerHead,
   globals,
   incubatorContext,
   modules,
@@ -222,6 +223,7 @@ const controller = createSandbox(appName, {
 | 配置 | 用途 |
 | --- | --- |
 | `container` | 开启 DOM 约束，可传元素或 getter |
+| `provisionContainerHead` | mount 时容器内缺少 `<qiankun-head>` 是否由沙箱自动补建，默认 `true`；容器结构由外部管线（如 qiankun 的流式 loader）从 entry HTML 生成时传 `false` |
 | `globals` | 向沙箱全局对象补充值或属性描述符 |
 | `incubatorContext` | 指定全局读取向下透传时使用的宿主 window |
 | `modules` | 提供预置模块表 |

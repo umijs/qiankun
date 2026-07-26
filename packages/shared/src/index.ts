@@ -5,7 +5,7 @@
 export * from './assets-transpilers';
 export * from './utils';
 export * from './module-resolver';
-export * from './common';
+export type * from './common';
 export * from './reporter';
 export * from './esm-sandbox';
 export * from './fetch-utils/makeFetchCacheable';

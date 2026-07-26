@@ -5,7 +5,7 @@ import type {
   NodeTransformer,
   ScriptTranspilerOpts,
 } from '@qiankunjs/shared';
-import { Deferred, markLoaderStreamedNode, prepareDeferredQueue, QiankunError } from '@qiankunjs/shared';
+import { Deferred, prepareDeferredQueue, QiankunError } from '@qiankunjs/shared';
 import { createTagTransformStream } from './TagTransformStream';
 import WritableDOMStream from './writable-dom';
 
@@ -135,13 +135,10 @@ export async function loadEntry<T>(
         new WritableDOMStream(container, null, (clone) => {
           /*
            * Every element the walk is about to insert flows through this callback (writable-dom
-           * itself stays free of downstream knowledge): the loader stamps its provenance mark so
-           * the sandbox can detect that a container holds streamed entry content, then routes the
-           * node through the caller-provided transformer. A sandbox-provided transformer marks its
-           * own output for native passthrough there — the loader never handles that effect mark.
+           * itself stays free of downstream knowledge) and gets routed through the caller-provided
+           * transformer. A sandbox-provided transformer marks its own output for native
+           * passthrough there — the loader itself carries no sandbox semantics.
            */
-          markLoaderStreamedNode(clone);
-
           let transformerOpts: AssetsTranspilerOpts = {
             classicScriptTransformer,
             compartment,

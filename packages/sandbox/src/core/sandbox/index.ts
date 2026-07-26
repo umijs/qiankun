@@ -17,12 +17,7 @@ import {
 import type { CompartmentGlobals, CompartmentOptions } from '../compartment';
 import { markNodeForNativePassthrough } from '../nativePassthrough';
 import { StandardSandbox } from './StandardSandbox';
-import {
-  containsLoaderStreamedNode,
-  createStyleIsolationOpts,
-  ensureSandboxContainerHead,
-  prepareSandboxContainerName,
-} from './container';
+import { createStyleIsolationOpts, ensureSandboxContainerHead, prepareSandboxContainerName } from './container';
 import type { Sandbox } from './types';
 
 export type { Sandbox };
@@ -32,6 +27,15 @@ export { prepareSandboxContainer, type SandboxContainerPreparation } from './con
 export interface CreateSandboxOptions {
   /** Providing a container enables DOM containment and dynamic asset interception. */
   container?: HTMLElement | (() => HTMLElement);
+  /**
+   * Whether the sandbox provisions a virtual `<qiankun-head>` in the container at mount time when
+   * none exists. Defaults to true — a standalone embedder mounts on a plain container and the
+   * sandbox must self-provision the head its document contract relies on. Orchestrators whose
+   * entry pipeline materializes the head from the entry HTML (qiankun's streaming loader rewrites
+   * `<head>` to `<qiankun-head>` in-stream) pass false: the entry decides whether a head exists,
+   * and the sandbox must not mutate container structure it does not own.
+   */
+  provisionContainerHead?: boolean;
   /** The host context that incubates this sandbox (see the ShadowRealm proposal's "incubator realm"). */
   incubatorContext?: WindowProxy;
   globals?: CompartmentGlobals;
@@ -124,6 +128,7 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
     modules = compartmentOptions.modules,
     nodeTransformer: configuredNodeTransformer,
     plugins = [],
+    provisionContainerHead = true,
     resolveHook = compartmentOptions.resolveHook,
     styleIsolation: styleIsolationEnabled = false,
   } = opts;
@@ -156,7 +161,7 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
   };
   const prepareContainerForMount = (container: HTMLElement): void => {
     prepareContainerName(container);
-    if (!container.querySelector(qiankunHeadTagName) && !containsLoaderStreamedNode(container)) {
+    if (provisionContainerHead && !container.querySelector(qiankunHeadTagName)) {
       const { cleanup } = ensureSandboxContainerHead(container);
       const cleanups = containerHeadCleanups.get(container) ?? [];
       cleanups.push(cleanup);
