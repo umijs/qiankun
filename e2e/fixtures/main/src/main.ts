@@ -46,10 +46,21 @@ const precompiledArtifacts = new Map([
   [precompiledDependencyUrl, Object.freeze(precompiledDependencyArtifact)],
 ]);
 
+function resolveContainer(containerKey: string): HTMLElement {
+  let container = document.getElementById(`container-${containerKey}`);
+  if (!container) {
+    container = document.createElement('div');
+    container.id = `container-${containerKey}`;
+    document.getElementById('containers')!.appendChild(container);
+  }
+  return container;
+}
+
 // Imperative test API driven by playwright via page.evaluate
 const testAPI = {
   /**
-   * Load a sub app into a dedicated container. `key` allows multiple instances of the same app.
+   * Load a sub app into a dedicated container. `key` allows multiple instances of the same app;
+   * `containerKey` targets another key's container to drive cross-app shared-container scenarios.
    * Resolves with the single-spa status once mounted (or rejects with the load/mount error).
    */
   async load(
@@ -57,17 +68,39 @@ const testAPI = {
     configuration?: AppConfiguration,
     key: string = name,
     props?: Record<string, unknown>,
+    containerKey: string = key,
   ): Promise<string> {
-    let container = document.getElementById(`container-${key}`);
-    if (!container) {
-      container = document.createElement('div');
-      container.id = `container-${key}`;
-      document.getElementById('containers')!.appendChild(container);
-    }
-
+    const container = resolveContainer(containerKey);
     const app = loadMicroApp({ name, entry: SUB_APP_ENTRIES[name], container, props }, configuration);
     instances.set(key, app);
     await app.mountPromise;
+    return app.getStatus();
+  },
+
+  /**
+   * Like load, but returns right after kicking the app off — the caller observes the mount
+   * through status()/settle(). This is the "caller forgot to await/unmount" shape the
+   * container occupancy gate serializes.
+   */
+  loadDetached(
+    name: keyof typeof SUB_APP_ENTRIES,
+    key: string = name,
+    containerKey: string = key,
+    props?: Record<string, unknown>,
+  ): string {
+    const container = resolveContainer(containerKey);
+    const app = loadMicroApp({ name, entry: SUB_APP_ENTRIES[name], container, props });
+    instances.set(key, app);
+    // surface failures through settle()/status() instead of an unhandled rejection
+    void app.mountPromise.catch(() => undefined);
+    return app.getStatus();
+  },
+
+  /** Await the app's mount settling either way; resolves with the status it settled in. */
+  async settle(key: string): Promise<string> {
+    const app = instances.get(key);
+    if (!app) throw new Error(`no app instance for key ${key}`);
+    await app.mountPromise.catch(() => undefined);
     return app.getStatus();
   },
 

@@ -148,6 +148,32 @@ describe('loadApp container gate', () => {
     await loadApp(createApp('app-b', container));
   });
 
+  it('skips the teardown container wipe after a fallback release', async () => {
+    const container = document.createElement('div');
+    mockSettledLoadEntry();
+    const getBrokenConfig = await loadApp(createApp('app-a', container));
+    const brokenConfig = getBrokenConfig(container);
+    mocks.mount.mockRejectedValueOnce(new Error('sandbox mount failed'));
+    await expect(runHooks(brokenConfig.mount)).rejects.toThrow('sandbox mount failed');
+
+    // a successor occupies the container after the fallback release
+    mockSettledLoadEntry();
+    const getSuccessorConfig = await loadApp(createApp('app-b', container));
+    const successorConfig = getSuccessorConfig(container);
+    await runHooks(successorConfig.mount);
+    const successorDOM = document.createElement('p');
+    container.appendChild(successorDOM);
+
+    // single-spa still runs the broken parcel's unmount chain — its clearContainer step
+    // must not destroy the successor's live DOM
+    await runHooks(brokenConfig.unmount);
+    expect(container.contains(successorDOM)).toBe(true);
+
+    // the successor's own teardown still holds and clears normally
+    await runHooks(successorConfig.unmount);
+    expect(container.contains(successorDOM)).toBe(false);
+  });
+
   it('releases the mount hold when an unmount hook rejects before clearContainer', async () => {
     const container = document.createElement('div');
     mockSettledLoadEntry({

@@ -83,6 +83,7 @@ changelog 需注明以上两点。
 
 - 闸门模块:`packages/qiankun/src/core/containerOccupancy.ts`;接入点全部在 `loadApp.ts`。
 - mount/unmount 链的失败兜底通过包裹链内每个 hook 实现(`guardHooksWithMountHoldRelease`)。`registerMicroApps` 在链外自行前后追加的 `loader(true/false)` 指示器 hook 不在包裹范围内——指示器抛异常属病态用法,不做防御。
+- **teardown 写入以「仍持有②」为前提**(实现时由 e2e race 用例暴露、二次修订):single-spa 对 mount 失败的 parcel 仍会跑其 unmount 链,而此时兜底释放已把容器让给后继应用——链末尾的 `clearContainer` 若无条件执行,会把新持有者刚渲染的 live DOM 抹掉。故持有状态单次翻转(`mountHold.active`),unmount 链的 `clearContainer` 只在仍持有时执行;失去持有后的 teardown 只做应用/沙箱自身清理(unpatch 与 untag 均有 owner 守卫,不会误伤后继者)。
 - unmount 链中途失败的兜底释放会留下「沙箱实例 patch 未拆、闸门已放行」的残留态:下一个持有者的流式节点可能落在残留 patch 上。这正是 passthrough 效果位必须保持 `Symbol.for` 注册符号(跨 qiankun 副本可读)的原因之一,见 insertion-point-ownership RFC。
 
 ### 测试计划

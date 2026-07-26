@@ -220,8 +220,16 @@ export default async function loadApp<T extends ObjectType>(
     // ② mount→unmount occupancy period. Regular release is the clearContainer step at the end of
     // the unmount chain, but single-spa marks an app SKIP_BECAUSE_BROKEN after a mount OR unmount
     // failure and never runs the rest of its chains — without the failure fallback below, the
-    // container would starve every later acquirer.
-    let releaseMountHold: ContainerRelease | undefined;
+    // container would starve every later acquirer. The hold is dropped exactly once: once it is
+    // gone, the container may already belong to a later app, so teardown must not touch it —
+    // single-spa still runs the unmount chain of a parcel whose mount failed, and its
+    // clearContainer would otherwise wipe the successor's DOM.
+    let mountHold: { release: ContainerRelease; active: boolean } | undefined;
+    const dropMountHold = (): void => {
+      if (!mountHold?.active) return;
+      mountHold.active = false;
+      mountHold.release();
+    };
     const guardHooksWithMountHoldRelease = <F extends (...args: never[]) => Promise<unknown>>(hooks: F[]): F[] =>
       hooks.map(
         (hook) =>
@@ -229,7 +237,7 @@ export default async function loadApp<T extends ObjectType>(
             try {
               return await hook(...args);
             } catch (error) {
-              releaseMountHold?.();
+              dropMountHold();
               throw error;
             }
           }) as F,
@@ -255,7 +263,7 @@ export default async function loadApp<T extends ObjectType>(
         async () => {
           // acquired before the remount reload below — that reload is a DOM write and must sit
           // inside the critical section, or a loadMicroApp cross-app remount would still race
-          releaseMountHold = await acquireContainer(mountContainer, appName);
+          mountHold = { release: await acquireContainer(mountContainer, appName), active: true };
         },
         async () => {
           microAppDOMContainer = mountContainer;
@@ -306,8 +314,12 @@ export default async function loadApp<T extends ObjectType>(
         unmountSandbox,
         async () => execHooksChain(toArray(afterUnmount), app, global),
         async () => {
-          clearContainer(mountContainer);
-          releaseMountHold?.();
+          // only while still holding ②: after a fallback release the container may belong to a
+          // later app already, and clearing it here would destroy that app's live DOM
+          if (mountHold?.active) {
+            clearContainer(mountContainer);
+            dropMountHold();
+          }
         },
       ],
 
