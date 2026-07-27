@@ -7,7 +7,7 @@
   --ink: #1b1f26;
   --ink-soft: #5c6470;
   --hairline: #e4e7ec;
-  --primary: #2f54eb;
+  --primary: #6051a5;
   --accent: #1c78c0;
 
   max-width: 720px;
@@ -62,7 +62,7 @@
 
 .webpack-app .badge-accent {
   color: var(--primary);
-  border-color: rgb(47 84 235 / 35%);
+  border-color: rgb(96 81 165 / 35%);
 }
 
 /* Cards */

@@ -1,5 +1,6 @@
 import { appByPath } from './apps';
 import Dashboard from './components/Dashboard';
+import LocaleSwitch from './components/LocaleSwitch';
 import Sidebar from './components/Sidebar';
 import Stage from './components/Stage';
 import { usePathname } from './router';
@@ -14,6 +15,9 @@ export default function App() {
       {/* the route picks the app, <MicroApp /> does the mounting — leaving the stage means
           unmounting it, which is exactly the lifecycle we want on display */}
       <main className="min-w-0 flex-1 px-10 py-8">
+        <div className="mb-2 flex justify-end">
+          <LocaleSwitch />
+        </div>
         {activeApp ? <Stage app={activeApp} /> : <Dashboard />}
       </main>
     </div>

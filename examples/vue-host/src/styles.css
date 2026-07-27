@@ -6,8 +6,14 @@
   --ink: #1b1f26;
   --ink-soft: #5c6470;
   --hairline: #e4e7ec;
-  --primary: #2f54eb;
-  --cinnabar: #d93026;
+  /* the two logo colors. Purple carries every text and interactive use (6.5:1 on white);
+     amber only ever fills — at 2.2:1 it can never be type. */
+  --primary: #6051a5;
+  --primary-deep: #4a3d80;
+  --amber: #e5a540;
+  /* functional, never decorative: these two say "broken" and "healthy", so they stay
+     outside the brand palette */
+  --danger: #d93026;
   --success: #16a34a;
 
   --font-display: 'Space Grotesk', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;

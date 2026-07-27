@@ -111,7 +111,7 @@ That is the whole contract. See the [quick start](https://www.qiankunjs.com/guid
 
 ## 💿 Examples
 
-Every example is deployed and browsable at **[examples.qiankunjs.com](https://examples.qiankunjs.com)** — two host shells (React and Vue) mounting the same four micro apps, each running with the JS sandbox and style isolation on, plus a [standalone sandbox lab](https://examples.qiankunjs.com/standalone-sandbox/). Every app carries an "isolation lab" that demonstrates what the sandbox actually contains: globals, leaked timers, and injected styles.
+Every example is deployed and browsable at **[examples.qiankunjs.com](https://examples.qiankunjs.com)** — two host shells (React and Vue) mounting the same four micro apps, each running with the JS sandbox and style isolation on, plus a [standalone sandbox lab](https://examples.qiankunjs.com/standalone-sandbox/). Every app carries an "isolation lab" that demonstrates what the sandbox actually contains: globals, leaked timers, and injected styles. The shells switch between English and 简体中文, and the choice travels to the micro apps as a prop — they re-render through the `update` lifecycle rather than remounting.
 
 To run them locally:
 

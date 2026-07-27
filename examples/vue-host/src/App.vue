@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { appByPath, microApps, siblingShell } from './apps';
+import { locale, t, toggleLocale } from './i18n';
 import { currentPath, navigate } from './router';
 import Stage from './Stage.vue';
 
@@ -14,7 +15,7 @@ const activeApp = computed(() => appByPath(currentPath.value));
         <span class="seal" aria-hidden>乾坤</span>
         <span>
           <strong>qiankun</strong>
-          <small class="mono">vue host · @qiankunjs/vue</small>
+          <small class="mono">{{ t.shellSubtitle }}</small>
         </span>
       </header>
 
@@ -30,7 +31,7 @@ const activeApp = computed(() => appByPath(currentPath.value));
           <span class="dot" :style="{ backgroundColor: app.accent }" />
           <span>
             <span class="label">{{ app.label }}</span>
-            <span class="sub">{{ app.stack }}</span>
+            <span class="sub">{{ app.stack[locale] }}</span>
           </span>
         </button>
       </nav>
@@ -42,19 +43,19 @@ const activeApp = computed(() => appByPath(currentPath.value));
     </aside>
 
     <main>
+      <div class="toolbar">
+        <button type="button" class="locale mono" :aria-label="t.localeSwitchLabel" @click="toggleLocale">
+          {{ t.localeName }}
+        </button>
+      </div>
+
       <!-- deliberately not keyed: keeping one <Stage> alive lets the binding handle the app switch,
            which is the path worth exercising -->
       <Stage v-if="activeApp" :app="activeApp" />
       <section v-else class="intro">
-        <p class="eyebrow mono">袖里乾坤 · vue host</p>
-        <h1>The same four apps, mounted from Vue.</h1>
-        <p class="lede">
-          This shell is a plain Vue 3 app. It mounts the micro apps with
-          <code class="mono">&lt;MicroApp&gt;</code> from <code class="mono">@qiankunjs/vue</code> — the binding we
-          publish — and dresses its <code class="mono">#loader</code> and
-          <code class="mono">#error-boundary</code> slots. Pick an app on the left; “Missing app” is unreachable on
-          purpose, so the error slot has something to show.
-        </p>
+        <p class="eyebrow mono">{{ t.introEyebrow }}</p>
+        <h1>{{ t.introTitle }}</h1>
+        <p class="lede">{{ t.introLede }}</p>
       </section>
     </main>
   </div>
@@ -83,13 +84,16 @@ aside header {
   border-bottom: 1px solid var(--hairline);
 }
 
+/* the chop carries the logo's construction: a purple field cut by an amber corner */
 .seal {
   display: grid;
   place-items: center;
   width: 36px;
   height: 36px;
   border-radius: 6px;
-  background: var(--cinnabar);
+  background:
+    linear-gradient(135deg, transparent 62%, var(--amber) 62%),
+    var(--primary);
   color: #fff;
   font-family: var(--font-ornament);
   font-size: 13px;
@@ -185,6 +189,31 @@ main {
   flex: 1;
   min-width: 0;
   padding: 32px 40px;
+}
+
+/* its own row, so the control does not move when the stage replaces the intro */
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.locale {
+  padding: 4px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 11px;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease-out,
+    color 150ms ease-out;
+}
+
+.locale:hover {
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .mono {

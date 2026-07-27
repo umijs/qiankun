@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from './i18n';
 import { onMounted, watch } from 'vue';
 
 const props = defineProps<{ loading: boolean }>();
@@ -14,7 +15,7 @@ watch(
 </script>
 
 <template>
-  <div v-if="loading" class="veil">crossing the sandbox boundary…</div>
+  <div v-if="loading" class="veil">{{ t.crossingBoundary }}</div>
 </template>
 
 <style scoped>

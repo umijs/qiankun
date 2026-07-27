@@ -2,6 +2,7 @@
 import { MicroApp } from '@qiankunjs/vue';
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import type { MicroAppMeta } from './apps';
+import { locale, t } from './i18n';
 import StageFailure from './StageFailure.vue';
 import StageVeil from './StageVeil.vue';
 
@@ -14,7 +15,12 @@ const settings = { sandbox: { styleIsolation: true } };
  * The binding's channel for the micro app's own props. Mutated in place rather than replaced, so the
  * deep watcher fires on a real change instead of on every re-render.
  */
-const appProps = reactive({ theme: 'porcelain' });
+const appProps = reactive({ theme: 'porcelain', locale: locale.value });
+
+// the shell's language is a prop like any other: switching it re-renders the micro app in place
+watch(locale, (next) => {
+  appProps.locale = next;
+});
 
 function toggleTheme() {
   appProps.theme = appProps.theme === 'porcelain' ? 'ink' : 'porcelain';
@@ -23,7 +29,9 @@ function toggleTheme() {
 const loading = ref(true);
 const failed = ref(false);
 const frame = ref<HTMLElement | null>(null);
-const status = computed(() => (failed.value ? 'failed' : loading.value ? 'mounting' : 'mounted'));
+type Status = 'failed' | 'mounting' | 'mounted';
+const status = computed<Status>(() => (failed.value ? 'failed' : loading.value ? 'mounting' : 'mounted'));
+const statusLabel = computed(() => t.value[status.value]);
 
 interface ContainerInfo {
   name?: string;
@@ -106,36 +114,30 @@ onBeforeUnmount(() => observer?.disconnect());
     <header class="stage-head">
       <div>
         <h1>{{ app.label }}</h1>
-        <p class="mono">{{ app.stack }} · {{ app.loadingPath }} · entry {{ app.entry }}</p>
+        <p class="mono">{{ app.stack[locale] }} · {{ app.loadingPath }} · {{ t.entry }} {{ app.entry }}</p>
       </div>
       <div
         class="dimensions mono"
         :class="{ live: status === 'mounted' && info.sandbox && info.styleIsolation, failed: status === 'failed' }"
       >
-        <span>{{ info.sandbox ? 'js sandbox' : 'no sandbox' }}</span>
-        <span>{{ info.styleIsolation ? 'style isolation' : 'no style isolation' }}</span>
-        <span>{{ status }}</span>
+        <span>{{ info.sandbox ? t.jsSandbox : t.noSandbox }}</span>
+        <span>{{ info.styleIsolation ? t.styleIsolation : t.noStyleIsolation }}</span>
+        <span>{{ statusLabel }}</span>
       </div>
     </header>
 
     <div class="props-bar">
       <button type="button" class="mono" @click="toggleTheme">appProps.theme = "{{ appProps.theme }}"</button>
-      <p class="mono">
-        {{
-          app.acceptsProps
-            ? 'the Vue micro app exports an update lifecycle, so this reaches it live'
-            : 'this app exports no update lifecycle, so the change has nowhere to land'
-        }}
-      </p>
+      <p class="mono">{{ t.propsChannelNote }}</p>
     </div>
 
     <div ref="frame" class="frame">
       <div class="frame-head mono">
         <span>
-          {{ info.name ? `data-name="${info.name}" · qiankun v${info.version ?? '…'}` : 'container idle' }}
-          {{ info.mountTimes ? `· mount #${info.mountTimes}` : '' }}
+          {{ info.name ? `data-name="${info.name}" · qiankun v${info.version ?? '…'}` : t.containerIdle }}
+          {{ info.mountTimes ? `· ${t.mount} #${info.mountTimes}` : '' }}
         </span>
-        <span :class="status === 'mounted' ? 'ok' : status === 'failed' ? 'bad' : 'pending'">{{ status }}</span>
+        <span :class="status === 'mounted' ? 'ok' : status === 'failed' ? 'bad' : 'pending'">{{ statusLabel }}</span>
       </div>
 
       <!-- mount, unmount, loading and error capture all belong to the binding; the shell only
@@ -257,7 +259,7 @@ onBeforeUnmount(() => observer?.disconnect());
 
 .frame-head .bad,
 .dimensions.failed {
-  color: var(--cinnabar);
+  color: var(--danger);
 }
 
 /* the binding's wrapper is not positioned, so the overlay slots need this shell to make it one */

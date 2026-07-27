@@ -43,11 +43,29 @@ Every micro app implements the same "isolation lab":
   own area tints.
 - **Local state** — a framework-idiomatic counter that lives and dies with the app instance.
 
+## Language switching, and what it demonstrates
+
+Either shell switches between English and 简体中文 from the toolbar in its top-right corner, and the
+choice reaches the micro apps: **the shell's locale is just a prop**. Every micro app implements the
+`update` lifecycle, so switching language re-renders them in place — leave the counter at 3, switch
+language, and it is still 3. That is the visible difference between `update` and a remount.
+
+The two bindings spell the channel differently, and each shell is wired the way its binding expects:
+
+- **React** (`examples/main`) forwards every prop it does not own itself, so the shell passes
+  `locale={locale}` straight to `<MicroApp />`.
+- **Vue** (`examples/vue-host`) collects them in one wrapper, so the shell passes
+  `:app-props="{ theme, locale }"`.
+
+Each app owns its own translations — micro apps are independent deployables and none of them import
+the shell's table. The no-build app has no framework to diff with, so its `update` repaints wholesale
+and keeps its probe state in module scope to survive that.
+
 `vue-host` is a deliberately slim second shell: it carries no dashboard of its own and exists to keep the
-Vue binding honest. It earns its keep with three things the React shell cannot show — the `appProps` →
-`update` channel (the Vue micro app is the only one implementing an `update` lifecycle), a route whose entry
-404s so the `#error-boundary` slot has something to render, and `data-mount-times` read off the live
-container, which is how you can see a remount take qiankun's warm path.
+Vue binding honest. It earns its keep with three things the React shell cannot show — an explicit
+`appProps` wrapper (the Vue binding's shape for the props channel), a route whose entry 404s so the
+`#error-boundary` slot has something to render, and `data-mount-times` read off the live container,
+which is how you can see a remount take qiankun's warm path.
 
 `standalone-sandbox` is intentionally not a micro app. It imports only `@qiankunjs/sandbox`, evaluates a local third-party classic script, and demonstrates DOM/style containment plus timer and listener cleanup without `qiankun` or `@qiankunjs/loader`.
 

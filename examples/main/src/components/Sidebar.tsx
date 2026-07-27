@@ -1,4 +1,5 @@
 import { microApps, siblingShell } from '../apps';
+import { useLocale, useMessages } from '../i18n';
 import { navigate } from '../router';
 import Seal from './Seal';
 
@@ -7,6 +8,9 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ activePath }: SidebarProps) {
+  const locale = useLocale();
+  const m = useMessages();
+
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r border-hairline bg-surface">
       <button
@@ -17,19 +21,24 @@ export default function Sidebar({ activePath }: SidebarProps) {
         <Seal size={36} />
         <span className="leading-tight">
           <span className="block font-display text-lg font-semibold tracking-[-0.01em] text-ink">qiankun</span>
-          <span className="block font-mono text-[11px] text-ink-soft">micro-frontend shell</span>
+          <span className="block font-mono text-[11px] text-ink-soft">{m.shellSubtitle}</span>
         </span>
       </button>
 
       <nav className="flex-1 px-3 py-4">
-        <NavItem label="Dashboard" sub="host overview" active={activePath === '/'} onClick={() => navigate('/')} />
+        <NavItem
+          label={m.dashboard}
+          sub={m.dashboardSub}
+          active={activePath === '/'}
+          onClick={() => navigate('/')}
+        />
 
-        <p className="mt-6 mb-2 px-2 font-mono text-[10px] tracking-[0.18em] text-ink-soft uppercase">Micro apps</p>
+        <p className="mt-6 mb-2 px-2 font-mono text-[10px] tracking-[0.18em] text-ink-soft uppercase">{m.microApps}</p>
         {microApps.map((app) => (
           <NavItem
             key={app.name}
             label={app.label}
-            sub={app.stack}
+            sub={app.stack[locale]}
             dot={app.accent}
             mono={app.loadingPath === 'esm sandbox' ? 'esm' : 'classic'}
             active={activePath.startsWith(app.path)}
@@ -77,7 +86,7 @@ function NavItem({ label, sub, active, onClick, dot, mono }: NavItemProps) {
         active ? 'bg-primary/8 text-primary' : 'text-ink hover:bg-paper'
       }`}
     >
-      {active && <span className="absolute top-2 bottom-2 left-0 w-[3px] rounded-full bg-primary" />}
+      {active && <span className="absolute top-2 bottom-2 left-0 w-[3px] rounded-full bg-amber" />}
       {dot && <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: dot }} />}
       <span className="flex-1 leading-tight">
         <span className="block text-sm font-medium">{label}</span>

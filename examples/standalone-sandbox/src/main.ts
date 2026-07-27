@@ -25,7 +25,7 @@ app.innerHTML = `
 
       <aside class="host-card" aria-labelledby="host-probe-title">
         <h2 id="host-probe-title">Host realm control</h2>
-        <p class="shared-label" data-host-shared-label>.shared-label stays cobalt outside the boundary.</p>
+        <p class="shared-label" data-host-shared-label>.shared-label stays purple outside the boundary.</p>
         <p class="host-note">
           The widget injects a coral rule for this exact class name. Runtime style isolation should keep this
           control unchanged.
