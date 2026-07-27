@@ -77,13 +77,15 @@ export interface Messages {
   trigramSandbox: string;
   trigramStyles: string;
   trigramMounted: string;
+  mount: string;
+  propsChannelNote: string;
 }
 
 export const messages: Record<Locale, Messages> = {
   en: {
     localeName: '中文',
     localeSwitchLabel: 'Switch to Chinese',
-    shellSubtitle: 'micro-frontend shell',
+    shellSubtitle: '@qiankunjs/react',
     dashboard: 'Dashboard',
     dashboardSub: 'host overview',
     microApps: 'Micro apps',
@@ -108,11 +110,13 @@ export const messages: Record<Locale, Messages> = {
     trigramSandbox: 'JS sandbox',
     trigramStyles: 'style isolation',
     trigramMounted: 'mounted',
+    mount: 'mount',
+    propsChannelNote: 'every micro app exports an update lifecycle, so this reaches it live',
   },
   zh: {
     localeName: 'EN',
     localeSwitchLabel: '切换到英文',
-    shellSubtitle: '微前端主应用',
+    shellSubtitle: '@qiankunjs/react',
     dashboard: '总览',
     dashboardSub: '主应用视角',
     microApps: '微应用',
@@ -137,5 +141,7 @@ export const messages: Record<Locale, Messages> = {
     trigramSandbox: 'JS 沙箱',
     trigramStyles: '样式隔离',
     trigramMounted: '已挂载',
+    mount: '第',
+    propsChannelNote: '每个微应用都导出了 update 生命周期，所以这个变化会实时抵达',
   },
 };

@@ -12,6 +12,9 @@ interface StageProps {
 interface ContainerInfo {
   name?: string;
   version?: string;
+  /** qiankun only writes this from the second mount on: seeing it climb proves the remount took
+      the warm path, i.e. that the container kept its identity across app switches */
+  mountTimes?: string;
   sandbox: boolean;
   styleIsolation: boolean;
 }
@@ -51,11 +54,13 @@ function useContainerInfo(frameRef: RefObject<HTMLElement | null>, appName: stri
       const next: ContainerInfo = {
         name: container.dataset.name,
         version: container.dataset.version,
+        mountTimes: container.dataset.mountTimes,
         ...readSandboxCfg(container.dataset.sandboxCfg),
       };
       setInfo((prev) =>
         prev.name === next.name &&
         prev.version === next.version &&
+        prev.mountTimes === next.mountTimes &&
         prev.sandbox === next.sandbox &&
         prev.styleIsolation === next.styleIsolation
           ? prev
@@ -68,7 +73,7 @@ function useContainerInfo(frameRef: RefObject<HTMLElement | null>, appName: stri
     read();
     // attributes only: the micro app's own DOM churn is none of our business
     const observer = new MutationObserver(read);
-    observer.observe(container, { attributes: true, attributeFilter: ['data-name', 'data-version', 'data-sandbox-cfg'] });
+    observer.observe(container, { attributes: true, attributeFilter: ['data-name', 'data-version', 'data-sandbox-cfg', 'data-mount-times'] });
     return () => observer.disconnect();
   }, [frameRef, appName]);
 
@@ -82,6 +87,7 @@ function useContainerInfo(frameRef: RefObject<HTMLElement | null>, appName: stri
  */
 export default function Stage({ app }: StageProps) {
   const frameRef = useRef<HTMLDivElement>(null);
+  const [theme, setTheme] = useState('porcelain');
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const info = useContainerInfo(frameRef, app.name);
@@ -102,6 +108,18 @@ export default function Stage({ app }: StageProps) {
         <Trigram sandbox={info.sandbox && mounted} styles={info.styleIsolation && mounted} mounted={mounted} />
       </header>
 
+      {/* the props channel, driven by hand: the locale rides the same one */}
+      <div className="mb-3 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setTheme((t) => (t === 'porcelain' ? 'ink' : 'porcelain'))}
+          className="rounded-md border border-hairline bg-surface px-3 py-1.5 font-mono text-[11px] text-ink transition-colors duration-150 hover:border-primary hover:text-primary"
+        >
+          appProps.theme = "{theme}"
+        </button>
+        <p className="font-mono text-[11px] text-ink-soft">{m.propsChannelNote}</p>
+      </div>
+
       <div ref={frameRef} className="relative rounded-[10px] border border-hairline bg-surface shadow-stage">
         {/* viewfinder corner ticks: the visible sandbox boundary */}
         <CornerTicks />
@@ -109,6 +127,7 @@ export default function Stage({ app }: StageProps) {
         <div className="flex items-center justify-between border-b border-hairline px-4 py-2">
           <span className="font-mono text-[11px] text-ink-soft">
             {info.name ? `data-name="${info.name}" · qiankun v${info.version ?? '…'}` : m.containerIdle}
+            {info.mountTimes ? ` · ${m.mount} #${info.mountTimes}` : ''}
           </span>
           <span
             className={`flex items-center gap-1.5 font-mono text-[11px] ${
@@ -131,6 +150,7 @@ export default function Stage({ app }: StageProps) {
           // `appProps` shape). Every app implements `update`, so switching language re-renders
           // them in place rather than remounting.
           locale={locale}
+          theme={theme}
           loader={(mounting) => <StageVeil loading={mounting} onLoadingChange={setLoading} messages={m} />}
           errorBoundary={(error) => <StageFailure error={error} onFailedChange={setFailed} messages={m} />}
           wrapperClassName="min-h-[70vh] overflow-auto"

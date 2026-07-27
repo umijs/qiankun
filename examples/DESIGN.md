@@ -1,8 +1,10 @@
 # qiankun examples — design language
 
-The examples share one visual system, "a universe in every sleeve" (袖里乾坤): the main app
-is a porcelain-and-ink shell, every micro app is an independent small universe rendered
-inside a visible sandbox boundary. Keep this file in sync when you touch the examples' UI.
+The examples share one visual system, "a universe in every sleeve" (袖里乾坤): each host is a
+porcelain-and-ink shell, every micro app is an independent small universe rendered inside a
+visible sandbox boundary. The React and Vue shells implement this system identically — same
+dashboard, same sidebar, same stage — so that the only variable between them is the binding.
+Keep this file in sync when you touch the examples' UI.
 
 ## Tokens
 
@@ -52,7 +54,9 @@ the stage frame: `0 1px 2px rgb(28 32 38 / 4%), 0 8px 24px rgb(28 32 38 / 6%)`.
 Motion: 160ms ease-out on hover states; one orchestrated moment only — the stage frame
 fades/lifts 8px on mount. Always honor `prefers-reduced-motion`.
 
-## Signature elements (main app)
+## Signature elements (both shells)
+
+The two shells render the same chrome; a difference between them is a bug, not a variation.
 
 1. **The sandbox stage**: the micro-app container is wrapped in a "boundary frame" with
    corner ticks (viewfinder style), a header strip reading `data-name` / `data-version`

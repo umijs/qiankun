@@ -3,6 +3,9 @@ import { useLocale, useMessages } from '../i18n';
 import { navigate } from '../router';
 import Seal from './Seal';
 
+/** the short form of each loading path, for the tag on the right of a nav item */
+const loadingTag = { 'esm sandbox': 'esm', classic: 'classic', 'never loads': '404' } as const;
+
 interface SidebarProps {
   activePath: string;
 }
@@ -40,7 +43,7 @@ export default function Sidebar({ activePath }: SidebarProps) {
             label={app.label}
             sub={app.stack[locale]}
             dot={app.accent}
-            mono={app.loadingPath === 'esm sandbox' ? 'esm' : 'classic'}
+            mono={loadingTag[app.loadingPath]}
             active={activePath.startsWith(app.path)}
             onClick={() => navigate(app.path)}
           />

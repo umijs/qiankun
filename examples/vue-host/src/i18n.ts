@@ -51,20 +51,30 @@ export interface Messages {
   failed: string;
   crossingBoundary: string;
   mountFailed: string;
-  jsSandbox: string;
-  noSandbox: string;
-  styleIsolation: string;
-  noStyleIsolation: string;
   entry: string;
   mount: string;
   propsChannelNote: string;
+  dashboard: string;
+  dashboardSub: string;
+  microApps: string;
+  appRegistry: string;
+  hostRealmCheck: string;
+  /** `{code}` is replaced with the `window.__SANDBOX_PROBE__` code element */
+  hostRealmBody: string;
+  membraneHolds: string;
+  sandboxBreached: string;
+  isolated: string;
+  live: string;
+  trigramSandbox: string;
+  trigramStyles: string;
+  trigramMounted: string;
 }
 
 export const messages: Record<Locale, Messages> = {
   en: {
     localeName: '中文',
     localeSwitchLabel: 'Switch to Chinese',
-    shellSubtitle: 'vue host · @qiankunjs/vue',
+    shellSubtitle: '@qiankunjs/vue',
     introEyebrow: '袖里乾坤 · vue host',
     introTitle: 'The same four apps, mounted from Vue.',
     introLede:
@@ -75,18 +85,28 @@ export const messages: Record<Locale, Messages> = {
     failed: 'failed',
     crossingBoundary: 'crossing the sandbox boundary…',
     mountFailed: 'mount failed',
-    jsSandbox: 'js sandbox',
-    noSandbox: 'no sandbox',
-    styleIsolation: 'style isolation',
-    noStyleIsolation: 'no style isolation',
     entry: 'entry',
     mount: 'mount',
     propsChannelNote: 'every micro app exports an update lifecycle, so this reaches it live',
+    dashboard: 'Dashboard',
+    dashboardSub: 'host overview',
+    microApps: 'Micro apps',
+    appRegistry: 'App registry',
+    hostRealmCheck: 'Host realm check',
+    hostRealmBody:
+      'Every micro app has a probe button that writes {code} inside its sandbox. The host window you are looking at reads:',
+    membraneHolds: 'the membrane holds',
+    sandboxBreached: 'sandbox breached',
+    isolated: 'isolated',
+    live: 'live',
+    trigramSandbox: 'JS sandbox',
+    trigramStyles: 'style isolation',
+    trigramMounted: 'mounted',
   },
   zh: {
     localeName: 'EN',
     localeSwitchLabel: '切换到英文',
-    shellSubtitle: 'vue 主应用 · @qiankunjs/vue',
+    shellSubtitle: '@qiankunjs/vue',
     introEyebrow: '袖里乾坤 · vue 主应用',
     introTitle: '同样的四个应用，这次由 Vue 挂载。',
     introLede:
@@ -97,13 +117,22 @@ export const messages: Record<Locale, Messages> = {
     failed: '已失败',
     crossingBoundary: '正在穿过沙箱边界…',
     mountFailed: '挂载失败',
-    jsSandbox: 'JS 沙箱',
-    noSandbox: '无沙箱',
-    styleIsolation: '样式隔离',
-    noStyleIsolation: '无样式隔离',
     entry: '入口',
     mount: '第',
     propsChannelNote: '每个微应用都导出了 update 生命周期，所以这个变化会实时抵达',
+    dashboard: '总览',
+    dashboardSub: '主应用视角',
+    microApps: '微应用',
+    appRegistry: '微应用注册表',
+    hostRealmCheck: '宿主 realm 检查',
+    hostRealmBody: '每个微应用都有一个探针按钮，会在自己的沙箱里写入 {code}。而你正在看的这个宿主 window 读到的是：',
+    membraneHolds: '隔离膜完好',
+    sandboxBreached: '沙箱被击穿',
+    isolated: '已隔离',
+    live: '运行中',
+    trigramSandbox: 'JS 沙箱',
+    trigramStyles: '样式隔离',
+    trigramMounted: '已挂载',
   },
 };
 

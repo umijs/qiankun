@@ -3,23 +3,43 @@ import { computed } from 'vue';
 import { appByPath, microApps, siblingShell } from './apps';
 import { locale, t, toggleLocale } from './i18n';
 import { currentPath, navigate } from './router';
+import Dashboard from './Dashboard.vue';
 import Stage from './Stage.vue';
 
 const activeApp = computed(() => appByPath(currentPath.value));
+/** the shell's own route, and what the sidebar's first entry points at */
+const home = import.meta.env.BASE_URL;
+
+/** the short form of each loading path, for the tag on the right of a nav item */
+const loadingTag = { 'esm sandbox': 'esm', classic: 'classic', 'never loads': '404' } as const;
 </script>
 
 <template>
   <div class="shell">
     <aside>
-      <header>
+      <button type="button" class="brand" @click="navigate(home)">
         <span class="seal" aria-hidden>乾坤</span>
         <span>
           <strong>qiankun</strong>
           <small class="mono">{{ t.shellSubtitle }}</small>
         </span>
-      </header>
+      </button>
 
       <nav>
+        <button
+          type="button"
+          :aria-current="currentPath === home ? 'page' : undefined"
+          :class="{ active: currentPath === home }"
+          @click="navigate(home)"
+        >
+          <span>
+            <span class="label">{{ t.dashboard }}</span>
+            <span class="sub">{{ t.dashboardSub }}</span>
+          </span>
+        </button>
+
+        <p class="nav-group mono">{{ t.microApps }}</p>
+
         <button
           v-for="app in microApps"
           :key="app.name"
@@ -33,6 +53,7 @@ const activeApp = computed(() => appByPath(currentPath.value));
             <span class="label">{{ app.label }}</span>
             <span class="sub">{{ app.stack[locale] }}</span>
           </span>
+          <span class="tag mono">{{ loadingTag[app.loadingPath] }}</span>
         </button>
       </nav>
 
@@ -52,11 +73,7 @@ const activeApp = computed(() => appByPath(currentPath.value));
       <!-- deliberately not keyed: keeping one <Stage> alive lets the binding handle the app switch,
            which is the path worth exercising -->
       <Stage v-if="activeApp" :app="activeApp" />
-      <section v-else class="intro">
-        <p class="eyebrow mono">{{ t.introEyebrow }}</p>
-        <h1>{{ t.introTitle }}</h1>
-        <p class="lede">{{ t.introLede }}</p>
-      </section>
+      <Dashboard v-else />
     </main>
   </div>
 </template>
@@ -76,12 +93,17 @@ aside {
   background: var(--surface);
 }
 
-aside header {
+.brand {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 20px;
+  border: 0;
   border-bottom: 1px solid var(--hairline);
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 /* the chop carries the logo's construction: a purple field cut by an amber corner */
@@ -101,14 +123,18 @@ aside header {
   letter-spacing: -1px;
 }
 
-aside header strong {
+.brand > span:last-child {
+  line-height: 1.25;
+}
+
+.brand strong {
   display: block;
   font-family: var(--font-display);
   font-size: 18px;
   letter-spacing: -0.01em;
 }
 
-aside header small {
+.brand small {
   display: block;
   font-size: 11px;
   color: var(--ink-soft);
@@ -120,6 +146,7 @@ nav {
 }
 
 nav button {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -144,11 +171,42 @@ nav button.active {
   color: var(--primary);
 }
 
+/* the amber rail marks the active route — one of the few places amber carries meaning */
+nav button.active::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 0;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--amber);
+}
+
+.nav-group {
+  margin: 24px 0 8px;
+  padding: 0 8px;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.tag {
+  font-size: 10px;
+  color: var(--ink-soft);
+}
+
 .dot {
   width: 8px;
   height: 8px;
   flex-shrink: 0;
   border-radius: 50%;
+}
+
+nav button > span:not(.dot):not(.tag) {
+  flex: 1;
+  line-height: 1.25;
 }
 
 .label {

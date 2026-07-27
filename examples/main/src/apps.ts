@@ -10,7 +10,7 @@ export interface MicroAppMeta {
   entry: string;
   /** only the prose half varies by locale; version numbers and tool names do not translate */
   stack: Record<Locale, string>;
-  loadingPath: 'esm sandbox' | 'classic';
+  loadingPath: 'esm sandbox' | 'classic' | 'never loads';
   accent: string;
 }
 
@@ -59,6 +59,18 @@ export const microApps: MicroAppMeta[] = [
     stack: { en: 'no build · jQuery', zh: '无需构建 · jQuery' },
     loadingPath: 'classic',
     accent: '#B8860B',
+  },
+  {
+    // deliberately unreachable: the one route that shows what the errorBoundary slot renders.
+    // Deployed, `/apps/missing/` has no build behind it and the site's 404.html answers with a
+    // real 404, so the entry fetch throws there exactly as it does against the dev server.
+    name: 'missing',
+    label: 'Missing app',
+    path: '/missing',
+    entry: import.meta.env.MODE === 'pages' ? '/apps/missing/index.html' : '//localhost:7104/nowhere/index.html',
+    stack: { en: 'entry returns 404', zh: '入口返回 404' },
+    loadingPath: 'never loads',
+    accent: '#D93026',
   },
 ];
 

@@ -1,7 +1,7 @@
 # qiankun examples
 
-Two shells hosting the same four independent micro apps, every one running with the JS sandbox and
-runtime style isolation (`@scope`) explicitly enabled. Both mount them with `<MicroApp />` from our own
+Two identical shells hosting the same four independent micro apps, every one running with the JS
+sandbox and runtime style isolation (`@scope`) explicitly enabled. Both mount them with `<MicroApp />` from our own
 UI bindings — dogfooded rather than bypassed: `main` is the React shell (`@qiankunjs/react`) and
 `vue-host` is the Vue one (`@qiankunjs/vue`). See [DESIGN.md](./DESIGN.md) for the shared design language.
 
@@ -50,7 +50,8 @@ choice reaches the micro apps: **the shell's locale is just a prop**. Every micr
 `update` lifecycle, so switching language re-renders them in place — leave the counter at 3, switch
 language, and it is still 3. That is the visible difference between `update` and a remount.
 
-The two bindings spell the channel differently, and each shell is wired the way its binding expects:
+The two bindings spell the channel differently, and each shell is wired the way its binding expects —
+worth knowing because getting it wrong is silent:
 
 - **React** (`examples/main`) forwards every prop it does not own itself, so the shell passes
   `locale={locale}` straight to `<MicroApp />`.
@@ -61,11 +62,15 @@ Each app owns its own translations — micro apps are independent deployables an
 the shell's table. The no-build app has no framework to diff with, so its `update` repaints wholesale
 and keeps its probe state in module scope to survive that.
 
-`vue-host` is a deliberately slim second shell: it carries no dashboard of its own and exists to keep the
-Vue binding honest. It earns its keep with three things the React shell cannot show — an explicit
-`appProps` wrapper (the Vue binding's shape for the props channel), a route whose entry 404s so the
-`#error-boundary` slot has something to render, and `data-mount-times` read off the live container,
-which is how you can see a remount take qiankun's warm path.
+The two shells are deliberately **the same application twice**: same dashboard, same sidebar, same
+sandbox stage down to the trigram and the viewfinder ticks — the only difference is which binding does
+the mounting. That is what makes them a fair comparison; anything that looks different between them is
+a bug in one of the bindings or in one of the shells, not a design choice.
+
+Both therefore carry the whole demo surface: the app registry and host-realm check on the dashboard,
+the `appProps` toolbar, `data-mount-times` read off the live container (which is how you see a remount
+take qiankun's warm path), and a "Missing app" route whose entry 404s on purpose so the error slot has
+something to render.
 
 `standalone-sandbox` is intentionally not a micro app. It imports only `@qiankunjs/sandbox`, evaluates a local third-party classic script, and demonstrates DOM/style containment plus timer and listener cleanup without `qiankun` or `@qiankunjs/loader`.
 
