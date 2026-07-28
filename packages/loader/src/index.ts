@@ -24,10 +24,12 @@ export type LoaderOpts = {
   streamTransformer?: () => TransformStream<string, string>;
   nodeTransformer?: NodeTransformer;
   /**
-   * Notified exactly once when the entry DOM-write phase is over — the html stream fully piped,
-   * errored, or never started at all. Distinct from the returned promise, which may settle as
-   * early as the entry script's onload while the stream is still writing tail nodes; callers
-   * gating container occupancy (qiankun's container gate) key their release on this signal.
+   * Notified exactly once when the entry DOM-write phase is over — the html stream fully piped
+   * AND its post-stream evaluations (module scripts, classic defer scripts) finished, or the
+   * stream errored, or it never started at all. Distinct from the returned promise, which may
+   * settle as early as the entry script's onload while the stream is still writing tail nodes;
+   * callers gating container occupancy (qiankun's container gate) key their release on this
+   * signal, so it must outlast everything that still writes into the container.
    */
   onDOMStreamSettled?: () => void;
 } & Omit<BaseTranspilerOpts, 'classicScriptTransformer' | 'compartment' | 'moduleResolver'> & {
@@ -116,10 +118,22 @@ export async function loadEntry<T>(
     const { deferred: entryHTMLLoadedDeferred, queue: queueEntryHTMLDeferred } = prepareDeferredQueue(deferQueue);
     queueEntryHTMLDeferred();
 
-    let readableStream = res.body.pipeThrough(new TextDecoderStream());
+    // classic defer scripts evaluate after the stream ends — their completion is part of the
+    // DOM-write phase the settle signal guards (collected in the walk callback below)
+    const deferScriptExecutions: Array<Promise<void>> = [];
 
-    if (streamTransformer) {
-      readableStream = readableStream.pipeThrough(streamTransformer());
+    let readableStream: ReadableStream<string>;
+    try {
+      readableStream = res.body.pipeThrough(new TextDecoderStream());
+
+      if (streamTransformer) {
+        readableStream = readableStream.pipeThrough(streamTransformer());
+      }
+    } catch (e) {
+      // wiring the stream failed synchronously (a throwing streamTransformer factory, a locked
+      // body from a custom fetch) — the DOM-write phase is over without ever starting
+      notifyDOMStreamSettled();
+      throw e;
     }
 
     void readableStream
@@ -164,6 +178,23 @@ export async function loadEntry<T>(
           // the script have no src attribute after transpile, indicating that the script needs to wait for the src to be filled
           if (deferScriptMode && !script.hasAttribute('src')) {
             queueDeferScript!();
+          }
+
+          // A classic defer script evaluates after the stream ends, so its load/error event is
+          // the tail of the DOM-write phase (module/importmap scripts are engine-neutralized —
+          // they never fire load and their evaluation is awaited via importDocumentModules).
+          if (deferScriptMode && script.dataset.esm !== 'true' && !script.type.includes('importmap')) {
+            deferScriptExecutions.push(
+              new Promise<void>((resolve) => {
+                const settleExecution = () => {
+                  script.removeEventListener('load', settleExecution);
+                  script.removeEventListener('error', settleExecution);
+                  resolve();
+                };
+                script.addEventListener('load', settleExecution);
+                script.addEventListener('error', settleExecution);
+              }),
+            );
           }
 
           /*
@@ -220,9 +251,7 @@ export async function loadEntry<T>(
           return transformedNode;
         }),
       )
-      .then(() => {
-        notifyDOMStreamSettled();
-
+      .then(async () => {
         // module scripts execute after the entry HTML finishes streaming (mirroring their native
         // deferred semantics), in document order, driven by the engine
         const namespacePromise = compartment?.importDocumentModules() ?? Promise.resolve(undefined);
@@ -252,6 +281,15 @@ export async function loadEntry<T>(
         }
 
         entryHTMLLoadedDeferred.resolve();
+
+        // The DOM-write phase does not end with the last streamed byte: the module evaluation
+        // above and the classic defer scripts (unblocked by the resolve right before) both run
+        // after it and may still write into the container — dynamic style injection included.
+        // The settle signal keys occupancy release, so it must outlast them, or a gated
+        // successor would interleave with the tail writes.
+        await namespacePromise.catch(() => undefined);
+        await Promise.allSettled(deferScriptExecutions);
+        notifyDOMStreamSettled();
       })
       .catch((e) => {
         notifyDOMStreamSettled();
