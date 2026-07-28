@@ -258,6 +258,8 @@ const controller = createSandbox('trusted-widget', {
 
 如果外部 HTML 管线也要在节点落入 DOM 前执行转换，应使用 `controller.nodeTransformer`，不要直接复用 options 中未经处理的回调。控制器暴露的版本已经注入 Compartment、fetch、经典脚本包装器和样式隔离配置。
 
+它的输出还带有一层归属语义：控制器 transformer 会把节点标记为「管线成品」，沙箱打过补丁的插入点会原样放行，不再把它二次送入动态转译管线。特别地，经它处理的 `<style>` / `<link>` **不会**进入沙箱的动态样式台账——`unmount()` 后它会留在原处，之后的 `mount()` 也不会自动补挂。它的生命周期归属于准备它的管线：如果你的嵌入场景会反复 unmount / remount，请自行移除或重新插入。而沙箱内代码在运行时动态注入的样式（走补丁后的 DOM 方法、不带标记）仍保有完整的台账生命周期——unmount 时移除、remount 时恢复。
+
 ## 了解隔离边界
 
 这套沙箱优先保证浏览器兼容性和对象身份一致，因此 membrane 有意采用非传递设计。

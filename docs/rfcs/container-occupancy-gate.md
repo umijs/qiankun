@@ -5,7 +5,7 @@
 - **Created**: 2026-07-25
 - **Target Release**: qiankun v3.x
 - **Tracking Issue**: #3139
-- **Last Revision**: 2026-07-27(实现修订:①段释放点从「loadEntry settle」收紧为「entry promise settle ∧ DOM 流 settle」,见 §释放点修订)
+- **Last Revision**: 2026-07-28(review 修订:①段释放信号覆盖 post-stream 求值、①→② 采纳、initializedContainers 归属令牌、兜底先 teardown、update/指示器纳入守护、预热按需触发,并新增 §已知限制)
 
 ## 背景
 
@@ -46,9 +46,11 @@ qiankun 3 的 streaming loader 在 **load 阶段**就向容器流式写入 DOM �
   - 正常路径:`clearContainer`(unmount 链最后一步);
   - 失败兜底(**防死锁的关键**):**mount 链任一 hook reject、unmount 链任一 hook reject** 时都要释放。single-spa 对 mount **或 unmount** 失败的应用都标记 `SKIP_BECAUSE_BROKEN`,此后不再调它的 unmount,链末尾的 `clearContainer` 不会执行,必须显式兜底(`loadMicroApp.ts` 过滤 `LOAD_ERROR`/`SKIP_BECAUSE_BROKEN` 实例是同一问题的既有先例)。unmount 失败兜底释放后容器可能残留旧 DOM——无害,下一个持有者自己的 `initContainer` 会清掉,正好自洽。
 
-两段之间(load settle 后、mount acquire 前)存在一个可插队窗口。插队者同样被全序化,不破坏正确性:若真有 C 在窗口内占走容器,B 之后 mount 时命中 `!initializedContainers.has(container)` 走 pure-HTML 重放,只在这个罕见交错下退化为一次二次渲染(且全程无竞态)。正常 A→B 切换该窗口无人插队,单次渲染的收益保持。
+两段之间(load settle 后、mount acquire 前)存在一个可插队窗口。插队者同样被全序化,不破坏正确性:若真有 C 在窗口内占走容器,B 之后 mount 时发现 `initializedContainers` 中的归属令牌不是自己的(见 §归属令牌修订),走 pure-HTML 重放,只在这个罕见交错下退化为一次二次渲染(且全程无竞态,重放本身在②内执行)。正常 A→B 切换该窗口无人插队,单次渲染的收益保持。
 
-**预热不受闸**:闸门只拦 DOM 写入;acquire 前 `void enhancedFetch(entry)` 预热 entry HTML(`makeFetchCacheable` 是全局 LRU,会与 loadEntry 内部 fetch 去重;缓存对 rejection 与无效 status 主动逐出,预热失败不会污染正式加载)。
+**①→② 采纳(adoption)**:若 mount 到来时应用**自己的①段尚未释放**(流还在写——大文件尾部、defer/module 脚本仍在求值、乃至永不关闭的 chunked 响应)且目标容器与①一致,mount 不排队等自己,而是直接把①的持有**转为②**(settle 闩此后不再释放该持有)。这既消除了「应用的 mount 排在自己的 load 持有之后」的自死锁,也避免了常规场景下白白让出容器再重放一轮;跨应用互斥不受影响——被采纳的持有仍按②的规则在 unmount(或失败兜底)时释放。
+
+**预热按需**:闸门只拦 DOM 写入;当 acquire 前探测到容器已被占用(`isContainerHeld`)时,`void enhancedFetch(entry)` 预热 entry HTML,使网络时间与前任 teardown 重叠(`makeFetchCacheable` 是全局 LRU,会与 loadEntry 内部 fetch 去重;缓存对 rejection 与无效 status 主动逐出,预热失败不会污染正式加载)。无竞争时不预热——loadEntry 马上就会自己发起请求,多发一份只会在失败场景翻倍重试、并在内存里多驻留一份未消费的响应体。
 
 ### 释放点修订(2026-07-27,实现时收紧)
 
@@ -57,9 +59,15 @@ Issue 原文的①段释放点是「`loadEntry` settle 即释放」。实现时�
 因此释放条件收紧为两个信号的合取:
 
 1. entry lifecycles promise settle(loadApp 等待的那个信号);
-2. DOM 流 settle——loader 新增可选回调 `LoaderOpts.onDOMStreamSettled`,约定**所有路径恰好通知一次**:流完整写完、流中途出错、或流根本未启动(fetch 失败/空 body)。
+2. DOM 流 settle——loader 新增可选回调 `LoaderOpts.onDOMStreamSettled`,约定**所有路径恰好通知一次**:流完整写完(含下述 post-stream 求值)、流中途出错、接线阶段同步抛错(自定义 streamTransformer 工厂抛错、body 已被锁定),或流根本未启动(fetch 失败/空 body)。
 
-两个信号都无条件 settle(不依赖 mount/unmount 是否发生),①段的防饿死论证不受影响。此修订使 loader 增加约 15 行(原 issue 估计 sandbox/loader/shared 零改动),回调是通用的「DOM 写入阶段结束」信号,不携带 qiankun 语义。
+**「DOM 流 settle」不止于最后一个字节**(2026-07-28 二次收紧):module 脚本(引擎在流结束后按文档序求值)与 classic defer 脚本(流结束后拿到 blob src 才执行)都在最后一个字节之后运行,且都可能继续向容器写入(动态样式注入等)。若在它们完成前释放①,后继应用的 initContainer/流式写入会与这些「尾部写入」交错——正是闸门要防的竞态。故 settle 信号等到 `importDocumentModules()` settle 且各 defer 脚本的 load/error 事件落定后才发出(module/importmap 脚本被引擎中和为惰性元素,不产生 load 事件,由引擎 promise 覆盖)。若某个 defer 脚本的子资源请求永久悬挂,①随之延续——与永不关闭的 entry 流同类,应用自身仍可经①→②采纳正常 mount,只是后继应用严格排队(见 §已知限制)。
+
+两个信号都无条件 settle(不依赖 mount/unmount 是否发生),①段的防饿死论证不受影响;唯一的例外类(悬挂的网络流)由采纳机制兜住应用自身、由 dev 等待诊断暴露后继排队。回调是通用的「DOM 写入阶段结束」信号,不携带 qiankun 语义。
+
+### 归属令牌修订(2026-07-28,review 修订)
+
+`initializedContainers` 原为 app 无关的 `WeakSet<HTMLElement>`,存在两处漏洞:(a) 插队窗口内容器被**另一应用**初始化后,原应用 mount 时 `has(container)` 命中、跳过重放,直接挂到别人的 DOM 上;(b) mount 失败的兜底释放跳过了 `clearContainer`(teardown 须持有②),WeakSet 条目残留,重试时跳过重放、挂到坏 DOM 上。修订为 `WeakMap<HTMLElement, token>`:每次 `loadApp` 持有唯一令牌,initContainer 写入令牌,mount 仅在**自己的令牌仍在**时才可跳过重放;失败兜底(`dropMountHold`)在令牌仍属于自己时主动逐出(令牌已被后继覆盖则不动)。
 
 ### 影响面评估
 
@@ -81,10 +89,18 @@ changelog 需注明以上两点。
 
 ### 实现注记
 
-- 闸门模块:`packages/qiankun/src/core/containerOccupancy.ts`;接入点全部在 `loadApp.ts`。
-- mount/unmount 链的失败兜底通过包裹链内每个 hook 实现(`guardHooksWithMountHoldRelease`)。`registerMicroApps` 在链外自行前后追加的 `loader(true/false)` 指示器 hook 不在包裹范围内——指示器抛异常属病态用法,不做防御。
-- **teardown 写入以「仍持有②」为前提**(实现时由 e2e race 用例暴露、二次修订):single-spa 对 mount 失败的 parcel 仍会跑其 unmount 链,而此时兜底释放已把容器让给后继应用——链末尾的 `clearContainer` 若无条件执行,会把新持有者刚渲染的 live DOM 抹掉。故持有状态单次翻转(`mountHold.active`),unmount 链的 `clearContainer` 只在仍持有时执行;失去持有后的 teardown 只做应用/沙箱自身清理(unpatch 与 untag 均有 owner 守卫,不会误伤后继者)。
-- unmount 链中途失败的兜底释放会留下「沙箱实例 patch 未拆、闸门已放行」的残留态:下一个持有者的流式节点可能落在残留 patch 上。这正是 passthrough 效果位必须保持 `Symbol.for` 注册符号(跨 qiankun 副本可读)的原因之一,见 insertion-point-ownership RFC。
+- 闸门模块:`packages/qiankun/src/core/containerOccupancy.ts`;接入点全部在 `loadApp.ts`。`acquireContainer` 解析为 `ContainerHold`(`held` 查询 + 幂等 `release()`),`held` 与 release 的幂等标志同源,「是否仍持有」只有一个真相源。
+- ①的 acquire 与释放信号接线之间存在同步抛错窗口(sandbox 插件 bootstrap 由 `createSandbox` 重抛、多实例 chunk-cache 清理等):该窗口由 try/catch 兜底,失败时先 best-effort dispose 沙箱再释放①,防止永久泄漏。
+- mount/unmount 链的失败兜底通过包裹链内每个 hook 实现(`guardHooksWithMountHoldRelease`),`update` 生命周期同样纳入包裹(update reject 后 single-spa 拒绝 unmount 该 parcel,无人释放②)。`loader(true/false)` 指示器 hook 由 loadApp 收编进 mount 链内(`LoadableApp.loader`),位于包裹范围内——指示器是普通用户代码,抛错时同样走兜底释放,`registerMicroApps` 不再在链外拼接。
+- **兜底先 teardown、再放行**:链中途失败时,guard 在仍持有②的窗口内 best-effort 执行 `unmountSandbox()`(拆掉容器实例方法 patch 与挂载点标记),然后才 `dropMountHold`。否则 SKIP_BECAUSE_BROKEN 的残留 patch 会把后继应用(尤其 sandbox:false、流式节点不带 passthrough 标记的)劫持进死应用的转译管线。loadApp 在 sandbox 关闭时也会给流式 nodeTransformer 的输出补打 passthrough 标记,恢复跨副本免疫。
+- **teardown 写入以「仍持有②」为前提**(实现时由 e2e race 用例暴露、二次修订):single-spa 对 mount 失败的 parcel 仍会跑其 unmount 链,而此时兜底释放已把容器让给后继应用——链末尾的 `clearContainer` 若无条件执行,会把新持有者刚渲染的 live DOM 抹掉。故 unmount 链的 `clearContainer` 只在 `mountHold.held` 时执行;失去持有后的 teardown 只做应用/沙箱自身清理(unpatch 与 untag 均有 owner 守卫,不会误伤后继者)。
+- passthrough 效果位必须保持 `Symbol.for` 注册符号(跨 qiankun 副本可读):兜底 teardown 尽力拆 patch,但另一份 qiankun 副本的残留 patch 仍可能存在,流式节点须能被其识别放行,见 insertion-point-ownership RFC。
+- remount 的 pure-HTML 重放同样接 `onDOMStreamSettled` 并显式 await:脚本剥净使 entry promise 恰在整流后 settle 只是「碰巧成立」的不变量,显式等待把它变成结构保证。
+
+### 已知限制
+
+- **single-spa `dieOnTimeout`**:生命周期超时的 reject 发生在 hook **外部**(`reasonableTime` 竞速),链内每个 hook 都正常 resolve,guard 结构上感知不到,②不会被兜底释放;被放弃的链在闸门授予后照常恢复执行(全程持闸,不产生交错)。最终效果等价于「一个从未 unmount 的应用」:容器被其持有直到永远,dev 模式 3s 等待诊断可见。共享容器场景请勿开启 `dieOnTimeout`(默认关闭)。
+- **悬挂的网络流**:entry 响应永不关闭、或某 defer 脚本的子资源请求永久悬挂时,①段随之延续。应用自身经①→②采纳仍可正常 mount/unmount(释放随 unmount 发生);仅当应用 load 完成却永不 mount(如 A→B→A 快速导航中的 B)时,后继应用会一直排队——同样由 dev 等待诊断暴露,不设强制超时(正确性优先)。
 
 ### 测试计划
 

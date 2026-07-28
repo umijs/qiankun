@@ -205,6 +205,7 @@ Cleanup only reverts state created by that call. It keeps a pre-existing `<qiank
 ```ts
 const controller = createSandbox(appName, {
   container,
+  provisionContainerHead,
   globals,
   incubatorContext,
   modules,
@@ -222,6 +223,7 @@ const controller = createSandbox(appName, {
 | Option | Purpose |
 | --- | --- |
 | `container` | Enables DOM containment; accepts an element or a getter |
+| `provisionContainerHead` | Whether the sandbox provisions a `<qiankun-head>` at mount time when the container lacks one, default `true`; pass `false` when an external pipeline (such as qiankun's streaming loader) materializes the container structure from the entry HTML |
 | `globals` | Adds values or property descriptors to the sandbox global |
 | `incubatorContext` | Selects the host window through which global reads fall through |
 | `modules` | Supplies a table of predefined modules |
@@ -255,6 +257,8 @@ const controller = createSandbox('trusted-widget', {
 This identity transformer is intentionally shown as a warning, not a recommended default. It disables classic-script wrapping, and a dynamically appended script may execute against the host window. It also bypasses the default style transformation. Supply a custom transformer only when it implements equivalent controls or every affected asset is trusted.
 
 If an external HTML pipeline needs to transform nodes before insertion, use `controller.nodeTransformer` rather than the raw callback passed in options. The controller version has already been enriched with the Compartment, fetch implementation, classic-script wrapper, and style-isolation configuration.
+
+Its output also carries an ownership consequence: the controller's transformer marks each node as finished pipeline product, so the sandbox's patched insertion points let it through natively instead of routing it into the dynamic transpilation pipeline a second time. In particular, a `<style>` or `<link>` prepared this way is **not** recorded in the sandbox's dynamic-stylesheet ledger — it survives `unmount()` and is not re-attached on a later `mount()`. Its lifecycle belongs to the pipeline that prepared it: remove or re-insert it yourself if your embedding unmounts and remounts. Styles that sandboxed code injects at runtime (through the patched DOM methods, without the mark) keep the full ledger lifecycle — removed at unmount, restored at remount.
 
 ## Understand the isolation boundary
 
