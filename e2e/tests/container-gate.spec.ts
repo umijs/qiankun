@@ -59,21 +59,29 @@ test.describe('container occupancy gate', () => {
     await expect(page.getByTestId('load-marker')).toHaveCSS('color', 'rgb(7, 8, 9)');
   });
 
-  test('racing two loads into one container settles without deadlock and the later call wins', async ({ page }) => {
+  test('racing two loads into one container serializes FIFO — the first call mounts, the second takes over after unmount', async ({
+    page,
+  }) => {
     await page.evaluate(() => {
       const api = (window as unknown as E2EWindow).__E2E__;
       api.loadDetached('sub-classic', 'race-a', 'race-shared');
       api.loadDetached('sub-classic-multiscript', 'race-b', 'race-shared');
     });
 
-    // both settle — a hung gate would time this out
-    expect(await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.settle('race-b'))).toBe('MOUNTED');
-    const raceLoserStatus = await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.settle('race-a'));
-    expect(raceLoserStatus).not.toBe('MOUNTED');
+    // the first call owns the container and mounts fully — a hung gate would time this out
+    expect(await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.settle('race-a'))).toBe('MOUNTED');
+    await expect(page.getByTestId('classic-title')).toBeVisible();
+    // the second call must neither leave its own DOM behind nor mount into the winner's container
+    await expect(page.getByTestId('load-marker')).toHaveCount(0);
+    expect(await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.status('race-b'))).not.toBe('MOUNTED');
 
-    // the later call owns the container, fully functional
+    // FIFO handoff: once the winner unmounts, the queued app takes over fully functional —
+    // its mount replays the entry inside the critical section, loading-phase styles included
+    await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.unmount('race-a'));
+    expect(await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.settle('race-b'))).toBe('MOUNTED');
     await expect(page.getByTestId('load-marker')).toBeVisible();
     await expect(page.getByTestId('load-marker')).toHaveCSS('color', 'rgb(7, 8, 9)');
+    await expect(page.getByTestId('classic-title')).toHaveCount(0);
   });
 
   test('a mount-failed app releases the container for the next one', async ({ page }) => {

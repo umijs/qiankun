@@ -192,4 +192,112 @@ describe('loadApp container gate', () => {
     mockSettledLoadEntry();
     await loadApp(createApp('app-b', container));
   });
+
+  it('releases the load hold when sandbox creation fails after the acquire', async () => {
+    const container = document.createElement('div');
+    mocks.createSandbox.mockImplementationOnce(() => {
+      throw new Error('plugin bootstrap failed');
+    });
+    await expect(loadApp(createApp('app-a', container))).rejects.toThrow('plugin bootstrap failed');
+
+    // the failure happened before any release wiring existed — the catch fallback must have freed ①
+    mockSettledLoadEntry();
+    await loadApp(createApp('app-b', container));
+  });
+
+  it('adopts its own still-open load hold at mount instead of queueing behind itself', async () => {
+    const container = document.createElement('div');
+
+    // app-a's entry stream never settles — a hung chunked response
+    let settleStream: (() => void) | undefined;
+    mocks.loadEntry.mockImplementationOnce((_entry: unknown, _container: HTMLElement, opts: LoaderOpts) => {
+      settleStream = opts.onDOMStreamSettled;
+      return Promise.resolve(validLifecycles);
+    });
+    const getParcelConfig = await loadApp(createApp('app-a', container));
+    const parcelConfig = getParcelConfig(container);
+
+    // pre-adoption this deadlocked: the mount's acquire queued behind the app's own load hold
+    await runHooks(parcelConfig.mount);
+
+    // the adopted hold ② keeps successors out …
+    mockSettledLoadEntry();
+    const contendedLoad = loadApp(createApp('app-b', container));
+    await flushMicrotasks();
+    expect(mocks.loadEntry).toHaveBeenCalledTimes(1);
+
+    // … even once the stream settles (the latch must not release a hold the mount now owns)
+    settleStream!();
+    await flushMicrotasks();
+    expect(mocks.loadEntry).toHaveBeenCalledTimes(1);
+
+    await runHooks(parcelConfig.unmount);
+    await contendedLoad;
+    expect(mocks.loadEntry).toHaveBeenCalledTimes(2);
+  });
+
+  it('replays the entry when another app initialized the container between load and mount', async () => {
+    const container = document.createElement('div');
+    mockSettledLoadEntry();
+    const getParcelConfig = await loadApp(createApp('app-a', container));
+
+    // app-b claims the container in the gap between app-a's load settle and its mount
+    mockSettledLoadEntry();
+    await loadApp(createApp('app-b', container));
+
+    // app-a's first mount must not trust the foreign claim: it replays its entry inside hold ②
+    mockSettledLoadEntry();
+    await runHooks(getParcelConfig(container).mount);
+    expect(mocks.loadEntry).toHaveBeenCalledTimes(3);
+    const replayEntry = mocks.loadEntry.mock.calls[2][0] as { url: string; res: Response };
+    expect(replayEntry.url).toBe('https://app-a.test/index.html');
+  });
+
+  it('releases the mount hold when the update lifecycle rejects', async () => {
+    const container = document.createElement('div');
+    mockSettledLoadEntry({
+      ...validLifecycles,
+      update: async () => {
+        throw new Error('update failed');
+      },
+    });
+    const getParcelConfig = await loadApp(createApp('app-a', container));
+    const parcelConfig = getParcelConfig(container);
+    await runHooks(parcelConfig.mount);
+
+    // single-spa marks the parcel SKIP_BECAUSE_BROKEN after this and refuses to unmount it
+    await expect((parcelConfig.update as ParcelHook)({})).rejects.toThrow('update failed');
+
+    mockSettledLoadEntry();
+    await loadApp(createApp('app-b', container));
+  });
+
+  it('tears the sandbox down in the failure fallback before letting the container go', async () => {
+    const container = document.createElement('div');
+    mockSettledLoadEntry();
+    const getParcelConfig = await loadApp(createApp('app-a', container));
+
+    mocks.mount.mockRejectedValueOnce(new Error('sandbox mount failed'));
+    await expect(runHooks(getParcelConfig(container).mount)).rejects.toThrow('sandbox mount failed');
+
+    // the broken chain never reaches its own unmountSandbox step — the fallback must run it, or
+    // the container enters the successor's tenure with the dead app's patches still installed
+    expect(mocks.unmount).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the loader indicator inside the guarded chain so its failure cannot starve the container', async () => {
+    const container = document.createElement('div');
+    const loader = vi.fn((loading: boolean) => {
+      if (!loading) throw new Error('indicator exploded');
+    });
+    mockSettledLoadEntry();
+    const getParcelConfig = await loadApp({ ...createApp('app-a', container), loader });
+
+    await expect(runHooks(getParcelConfig(container).mount)).rejects.toThrow('indicator exploded');
+    expect(loader).toHaveBeenNthCalledWith(1, true);
+
+    // pre-guard this leaked the mount hold forever
+    mockSettledLoadEntry();
+    await loadApp(createApp('app-b', container));
+  });
 });

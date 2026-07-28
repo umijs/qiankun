@@ -3,7 +3,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LoaderOpts } from '@qiankunjs/loader';
-import { nativeGlobal } from '@qiankunjs/sandbox';
+import { isNativePassthroughNode, nativeGlobal } from '@qiankunjs/sandbox';
 import { createSandbox as createRealSandbox } from '../../../../sandbox/src/core/sandbox';
 
 const mocks = vi.hoisted(() => ({
@@ -190,6 +190,23 @@ describe('loadApp sandbox cleanup', () => {
       container,
       expect.objectContaining({ nodeTransformer: controllerNodeTransformer }),
     );
+  });
+
+  it('marks sandbox-less streamed nodes for native passthrough', async () => {
+    let streamedNodeTransformer: LoaderOpts['nodeTransformer'];
+    mocks.loadEntry.mockImplementationOnce((_entry: unknown, _container: HTMLElement, opts: LoaderOpts) => {
+      streamedNodeTransformer = opts.nodeTransformer;
+      opts.onDOMStreamSettled?.();
+      return Promise.resolve(validLifecycles);
+    });
+
+    await loadApp(createApp(), { sandbox: false });
+
+    // a residual patched mount point (a broken predecessor's) must let these nodes through
+    // untouched — pre-internalization the loader stamped every streamed clone unconditionally
+    const streamedStyle = document.createElement('style');
+    const transformedStyle = streamedNodeTransformer!(streamedStyle, { fetch: window.fetch });
+    expect(isNativePassthroughNode(transformedStyle)).toBe(true);
   });
 });
 

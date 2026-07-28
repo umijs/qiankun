@@ -56,11 +56,15 @@ export type LoadableApp<T extends ObjectType> = AppMetadata & {
   container: HTMLElement;
   // props pass to app
   props?: T;
+  /**
+   * Loading indicator, called with true when the mount chain starts (the container gate wait
+   * included) and false once the app is mounted. Runs inside the chain's failure fallback.
+   */
+  loader?: (loading: boolean) => void;
 };
 
 // for the route-based apps
 export type RegistrableApp<T extends ObjectType> = LoadableApp<T> & {
-  loader?: (loading: boolean) => void;
   activeRule: RegisterApplicationConfig['activeWhen'];
   // per-app loading configuration (sandbox, styleIsolation, fetch, ...), merged over the framework defaults
   configuration?: AppConfiguration;

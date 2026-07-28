@@ -6,20 +6,28 @@
  * and the mount→unmount period — each acquired and released by loadApp at its own boundaries.
  *
  * The registry is keyed by container element reference: a host re-render that produces a fresh
- * element never contends with holds on the old one. The holding token is the release closure's
+ * element never contends with holds on the old one. The holding token is the hold object's
  * identity (not the app name), so same-name multi-instance apps stay unambiguous. Waiters are
  * granted FIFO.
  */
 
 import { warn } from '@qiankunjs/shared';
 
-export type ContainerRelease = () => void;
+export interface ContainerHold {
+  /**
+   * True while this hold is the container's current occupancy. Backed by the same flag the
+   * release flips, so "am I still the holder" and "release is a no-op" can never disagree.
+   */
+  readonly held: boolean;
+  /** Idempotent: failure fallbacks and the regular release point may both fire for one hold. */
+  release(): void;
+}
 
 interface ContainerHolding {
   held: boolean;
   /** Current holder's app name, kept only for the dev waiting diagnosis. */
   holderName: string | undefined;
-  queue: Array<{ appName: string; grant: (release: ContainerRelease) => void }>;
+  queue: Array<{ appName: string; grant: (hold: ContainerHold) => void }>;
 }
 
 const holdings = new WeakMap<HTMLElement, ContainerHolding>();
@@ -30,7 +38,7 @@ const holdings = new WeakMap<HTMLElement, ContainerHolding>();
  */
 const WAITING_DIAGNOSIS_DELAY = 3_000;
 
-export function acquireContainer(container: HTMLElement, appName: string): Promise<ContainerRelease> {
+export function acquireContainer(container: HTMLElement, appName: string): Promise<ContainerHold> {
   let holding = holdings.get(container);
   if (!holding) {
     holding = { held: false, holderName: undefined, queue: [] };
@@ -40,10 +48,10 @@ export function acquireContainer(container: HTMLElement, appName: string): Promi
   if (!holding.held) {
     holding.held = true;
     holding.holderName = appName;
-    return Promise.resolve(createRelease(holding));
+    return Promise.resolve(createHold(holding));
   }
 
-  return new Promise<ContainerRelease>((resolve) => {
+  return new Promise<ContainerHold>((resolve) => {
     let waitingDiagnosisTimer: ReturnType<typeof setTimeout> | undefined;
     if (process.env.NODE_ENV === 'development') {
       const holderName = holding.holderName;
@@ -56,28 +64,37 @@ export function acquireContainer(container: HTMLElement, appName: string): Promi
 
     holding.queue.push({
       appName,
-      grant: (release) => {
+      grant: (hold) => {
         if (waitingDiagnosisTimer !== undefined) clearTimeout(waitingDiagnosisTimer);
-        resolve(release);
+        resolve(hold);
       },
     });
   });
 }
 
-function createRelease(holding: ContainerHolding): ContainerRelease {
-  let released = false;
-  return () => {
-    // Idempotent: failure fallbacks and the regular release point may both fire for one hold.
-    if (released) return;
-    released = true;
+/** Whether the container currently has a holder — a peek for pre-warm decisions, not a reservation. */
+export function isContainerHeld(container: HTMLElement): boolean {
+  return holdings.get(container)?.held ?? false;
+}
 
-    const next = holding.queue.shift();
-    if (next) {
-      holding.holderName = next.appName;
-      next.grant(createRelease(holding));
-    } else {
-      holding.held = false;
-      holding.holderName = undefined;
-    }
+function createHold(holding: ContainerHolding): ContainerHold {
+  let released = false;
+  return {
+    get held() {
+      return !released;
+    },
+    release() {
+      if (released) return;
+      released = true;
+
+      const next = holding.queue.shift();
+      if (next) {
+        holding.holderName = next.appName;
+        next.grant(createHold(holding));
+      } else {
+        holding.held = false;
+        holding.holderName = undefined;
+      }
+    },
   };
 }
