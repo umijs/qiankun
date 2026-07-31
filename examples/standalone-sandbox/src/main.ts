@@ -25,7 +25,7 @@ app.innerHTML = `
 
       <aside class="host-card" aria-labelledby="host-probe-title">
         <h2 id="host-probe-title">Host realm control</h2>
-        <p class="shared-label" data-host-shared-label>.shared-label stays cobalt outside the boundary.</p>
+        <p class="shared-label" data-host-shared-label>.shared-label stays purple outside the boundary.</p>
         <p class="host-note">
           The widget injects a coral rule for this exact class name. Runtime style isolation should keep this
           control unchanged.
@@ -194,8 +194,10 @@ async function runWidget(): Promise<void> {
     }
     const source = await response.text();
     await nextController.instance.evaluateScript(source, { sourceURL: widgetScriptUrl });
+    // resolved against this document, not the origin root: e2e serves this build from a server
+    // root while the deployed site serves it from /standalone-sandbox/
     const moduleNamespace = await nextController.instance.import(
-      new URL('/standalone-module.js', window.location.href).href,
+      new URL('./standalone-module.js', window.location.href).href,
     );
     container.dataset.esmStatus = String(moduleNamespace.status);
     controller = nextController;

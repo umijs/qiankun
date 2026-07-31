@@ -1,9 +1,11 @@
 # qiankun examples
 
-Two shells hosting the same four independent micro apps, every one running with the JS sandbox and
-runtime style isolation (`@scope`) explicitly enabled. Both mount them with `<MicroApp />` from our own
+Two identical shells hosting the same four independent micro apps, every one running with the JS
+sandbox and runtime style isolation (`@scope`) explicitly enabled. Both mount them with `<MicroApp />` from our own
 UI bindings — dogfooded rather than bypassed: `main` is the React shell (`@qiankunjs/react`) and
 `vue-host` is the Vue one (`@qiankunjs/vue`). See [DESIGN.md](./DESIGN.md) for the shared design language.
+
+They are deployed from `next` to **https://examples.qiankunjs.com** — see [Deployment](#deployment).
 
 | app                | port | stack                                         | loading path                     |
 | ------------------ | ---- | --------------------------------------------- | -------------------------------- |
@@ -41,10 +43,67 @@ Every micro app implements the same "isolation lab":
   own area tints.
 - **Local state** — a framework-idiomatic counter that lives and dies with the app instance.
 
-`vue-host` is a deliberately slim second shell: it carries no dashboard of its own and exists to keep the
-Vue binding honest. It earns its keep with three things the React shell cannot show — the `appProps` →
-`update` channel (the Vue micro app is the only one implementing an `update` lifecycle), a route whose entry
-404s so the `#error-boundary` slot has something to render, and `data-mount-times` read off the live
-container, which is how you can see a remount take qiankun's warm path.
+## Language switching, and what it demonstrates
+
+Either shell switches between English and 简体中文 from the toolbar in its top-right corner, and the
+choice reaches the micro apps: **the shell's locale is just a prop**. Every micro app implements the
+`update` lifecycle, so switching language re-renders them in place — leave the counter at 3, switch
+language, and it is still 3. That is the visible difference between `update` and a remount.
+
+The two bindings spell the channel differently, and each shell is wired the way its binding expects —
+worth knowing because getting it wrong is silent:
+
+- **React** (`examples/main`) forwards every prop it does not own itself, so the shell passes
+  `locale={locale}` straight to `<MicroApp />`.
+- **Vue** (`examples/vue-host`) collects them in one wrapper, so the shell passes
+  `:app-props="{ theme, locale }"`.
+
+Each app owns its own translations — micro apps are independent deployables and none of them import
+the shell's table. The no-build app has no framework to diff with, so its `update` repaints wholesale
+and keeps its probe state in module scope to survive that.
+
+The two shells are deliberately **the same application twice**: same dashboard, same sidebar, same
+sandbox stage down to the trigram and the viewfinder ticks — the only difference is which binding does
+the mounting. That is what makes them a fair comparison; anything that looks different between them is
+a bug in one of the bindings or in one of the shells, not a design choice.
+
+Both therefore carry the whole demo surface: the app registry and host-realm check on the dashboard,
+the `appProps` toolbar, `data-mount-times` read off the live container (which is how you see a remount
+take qiankun's warm path), and a "Missing app" route whose entry 404s on purpose so the error slot has
+something to render.
 
 `standalone-sandbox` is intentionally not a micro app. It imports only `@qiankunjs/sandbox`, evaluates a local third-party classic script, and demonstrates DOM/style containment plus timer and listener cleanup without `qiankun` or `@qiankunjs/loader`.
+
+## Deployment
+
+`next` deploys these examples to [examples.qiankunjs.com](https://examples.qiankunjs.com) (Cloudflare
+Pages project `qiankun-examples`, driven by
+[`.github/workflows/cloudflare-examples.yml`](../.github/workflows/cloudflare-examples.yml)). Because the
+examples consume the workspace packages via `workspace:*`, a change under `packages/**` redeploys them
+too — the deployed site always shows the current runtime.
+
+`scripts/build-examples-site.mjs` aggregates every app into one static site. Locally:
+
+```bash
+pnpm run build:packages
+node scripts/build-examples-site.mjs   # → dist-examples/
+```
+
+Where dev gives each app its own origin, the deployed site is one origin laid out by path:
+
+| path                   | app                                                    |
+| ---------------------- | ------------------------------------------------------ |
+| `/`                    | the React shell                                        |
+| `/vue-host/`           | the Vue shell                                          |
+| `/apps/<name>/`        | the micro apps, served with `Access-Control-Allow-Origin: *` |
+| `/standalone-sandbox/` | the sandbox-only lab                                   |
+
+Two consequences worth knowing before you touch this:
+
+- The shells read `import.meta.env.MODE === 'pages'` to pick between dev-server entries and `/apps/`
+  ones, and the Vue shell hangs its routes off `import.meta.env.BASE_URL` because it is not at the
+  site root. Add a route to a shell and the build script's `_redirects` generation picks it up — it
+  reads the routes back out of `apps.ts` and fails the build if it cannot.
+- `examples/404.html` ships to the site root deliberately. Without a top-level `404.html`, Cloudflare
+  Pages treats the site as a single-page app and answers unmatched paths with the root shell at status
+  200 — which would silently defeat the Vue shell's "Missing app" route.

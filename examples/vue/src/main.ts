@@ -12,8 +12,9 @@ declare global {
 let app: ReturnType<typeof createApp> | undefined;
 
 /**
- * Props the host hands over. qiankun re-delivers them through the `update` lifecycle, which this app
- * is the only example to implement — it is what makes the ui bindings' props channel observable.
+ * Props the host hands over — seeded on mount, then kept current by the `update` lifecycle every
+ * example implements. This is what makes the ui bindings' props channel observable: the shell's
+ * locale (and its theme toggle) land here without the app ever remounting.
  */
 const hostProps = reactive<Record<string, unknown>>({});
 
@@ -31,6 +32,9 @@ export async function bootstrap() {
 
 export async function mount(props: { container?: Element }) {
   console.log('[vue] mount', props);
+  // the host's props are already there on the first mount — seeding them here is what lets the
+  // app come up in the host's language instead of waiting for the first `update`
+  Object.assign(hostProps, props);
   render(props);
 }
 

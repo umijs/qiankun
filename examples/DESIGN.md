@@ -1,29 +1,42 @@
 # qiankun examples — design language
 
-The examples share one visual system, "a universe in every sleeve" (袖里乾坤): the main app
-is a porcelain-and-ink shell, every micro app is an independent small universe rendered
-inside a visible sandbox boundary. Keep this file in sync when you touch the examples' UI.
+The examples share one visual system, "a universe in every sleeve" (袖里乾坤): each host is a
+porcelain-and-ink shell, every micro app is an independent small universe rendered inside a
+visible sandbox boundary. The React and Vue shells implement this system identically — same
+dashboard, same sidebar, same stage — so that the only variable between them is the binding.
+Keep this file in sync when you touch the examples' UI.
 
 ## Tokens
 
-Color (light developer console: refined hairlines on cool neutrals, geekblue primary; the
-cinnabar seal stays as the one brand mark):
+Color: refined hairlines on cool neutrals, carrying **the two colors of the qiankun logo** —
+purple `#6051A5` (79% of the mark) and amber `#E5A540` (its notched cuts).
 
-| token            | value     | usage                                                          |
-| ---------------- | --------- | -------------------------------------------------------------- |
-| `--paper`        | `#F7F8FA` | page background (cool, light)                                  |
-| `--surface`      | `#FFFFFF` | cards, sidebar, stage                                          |
-| `--ink`          | `#1B1F26` | primary text                                                   |
-| `--ink-soft`     | `#5C6470` | secondary text                                                 |
-| `--hairline`     | `#E4E7EC` | borders, dividers                                              |
-| `--primary`      | `#2F54EB` | primary (geekblue): active nav, ticks, esm pill, live badges   |
-| `--primary-deep` | `#1D39C4` | primary hover / deep                                           |
-| `--cinnabar`     | `#D93026` | the seal brand mark + breach/danger ONLY                       |
-| `--success`      | `#16A34A` | healthy status (trigram, mounted, host clean)                  |
+| token            | value     | usage                                                                    |
+| ---------------- | --------- | ------------------------------------------------------------------------ |
+| `--paper`        | `#F7F8FA` | page background (cool, light)                                            |
+| `--surface`      | `#FFFFFF` | cards, sidebar, stage                                                    |
+| `--ink`          | `#1B1F26` | primary text                                                             |
+| `--ink-soft`     | `#5C6470` | secondary text                                                           |
+| `--hairline`     | `#E4E7EC` | borders, dividers                                                        |
+| `--primary`      | `#6051A5` | logo purple: active nav, ticks, esm pill, live badges, the seal field    |
+| `--primary-deep` | `#4A3D80` | primary hover / deep                                                     |
+| `--amber`        | `#E5A540` | logo amber — **fills only, never type** (see the contrast rule below)    |
+| `--danger`       | `#D93026` | breach / mount failure ONLY                                              |
+| `--success`      | `#16A34A` | healthy status (trigram, mounted, host clean)                            |
+
+**The contrast rule that shapes this palette:** purple reads 6.5:1 on white, so it carries every
+text and interactive use. Amber reads 2.2:1 — it can never be type, only a filled block (the seal's
+cut corner, the active nav indicator). `--danger` and `--success` are functional, not decorative:
+they say "broken" and "healthy", so they stay outside the brand palette even though the logo has
+no red or green.
 
 Per-app accent (used only inside that app and for its sidebar dot):
 
 - react `#087EA4` · vue `#42B883` · webpack `#1C78C0` · purehtml `#B8860B`
+
+These are the frameworks' own brand colors and are deliberately **not** folded into the logo
+palette: they are how the demo says "four different technology stacks", which is information,
+not decoration.
 
 Typography:
 
@@ -41,7 +54,9 @@ the stage frame: `0 1px 2px rgb(28 32 38 / 4%), 0 8px 24px rgb(28 32 38 / 6%)`.
 Motion: 160ms ease-out on hover states; one orchestrated moment only — the stage frame
 fades/lifts 8px on mount. Always honor `prefers-reduced-motion`.
 
-## Signature elements (main app)
+## Signature elements (both shells)
+
+The two shells render the same chrome; a difference between them is a bug, not a variation.
 
 1. **The sandbox stage**: the micro-app container is wrapped in a "boundary frame" with
    corner ticks (viewfinder style), a header strip reading `data-name` / `data-version`
@@ -50,12 +65,24 @@ fades/lifts 8px on mount. Always honor `prefers-reduced-motion`.
    mounted. A healthy, fully isolated, mounted app shows the full 乾 trigram; a bar
    renders broken (two segments) while its dimension is off/pending. This is a status
    display, not decoration.
-3. **The seal**: a small cinnabar square stamped 乾坤 (SVG) — sidebar brand + favicon.
+3. **The seal**: a small square stamped 乾坤 (SVG) — sidebar brand + favicon. It carries the
+   logo's construction rather than its shape: a purple field cut by an amber corner, which is
+   what the mark does with its rings.
 
 ## Copy register
 
-English, sentence case, plain verbs, no emoji, no exclamation marks. Data in mono.
-The demo explains itself: every probe states what it proves in one line.
+English and 简体中文, switchable from the toolbar in either shell. Sentence case, plain verbs,
+no emoji, no exclamation marks. Data in mono. The demo explains itself: every probe states what
+it proves in one line.
+
+**What is not translated:** technology names, API surface (`<MicroApp>`, `data-name`,
+`window.__SANDBOX_PROBE__`), loading paths (`esm sandbox` / `classic`) and package names. A
+reader matching the demo against the code it demonstrates needs those to read the same in both
+languages.
+
+Each app owns its own copy — the shells have `src/i18n.ts`, the micro apps have theirs, and the
+no-build app has a plain object literal in `entry.js`. Micro apps are independent deployables, so
+none of them import the shell's table. The locale itself travels as a prop (see below).
 
 ## Apps & ports
 

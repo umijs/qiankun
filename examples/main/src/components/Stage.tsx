@@ -2,6 +2,7 @@ import { MicroApp } from '@qiankunjs/react';
 import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import type { MicroAppMeta } from '../apps';
+import { useLocale, useMessages, type Messages } from '../i18n';
 import Trigram from './Trigram';
 
 interface StageProps {
@@ -11,6 +12,9 @@ interface StageProps {
 interface ContainerInfo {
   name?: string;
   version?: string;
+  /** qiankun only writes this from the second mount on: seeing it climb proves the remount took
+      the warm path, i.e. that the container kept its identity across app switches */
+  mountTimes?: string;
   sandbox: boolean;
   styleIsolation: boolean;
 }
@@ -50,11 +54,13 @@ function useContainerInfo(frameRef: RefObject<HTMLElement | null>, appName: stri
       const next: ContainerInfo = {
         name: container.dataset.name,
         version: container.dataset.version,
+        mountTimes: container.dataset.mountTimes,
         ...readSandboxCfg(container.dataset.sandboxCfg),
       };
       setInfo((prev) =>
         prev.name === next.name &&
         prev.version === next.version &&
+        prev.mountTimes === next.mountTimes &&
         prev.sandbox === next.sandbox &&
         prev.styleIsolation === next.styleIsolation
           ? prev
@@ -67,7 +73,7 @@ function useContainerInfo(frameRef: RefObject<HTMLElement | null>, appName: stri
     read();
     // attributes only: the micro app's own DOM churn is none of our business
     const observer = new MutationObserver(read);
-    observer.observe(container, { attributes: true, attributeFilter: ['data-name', 'data-version', 'data-sandbox-cfg'] });
+    observer.observe(container, { attributes: true, attributeFilter: ['data-name', 'data-version', 'data-sandbox-cfg', 'data-mount-times'] });
     return () => observer.disconnect();
   }, [frameRef, appName]);
 
@@ -81,11 +87,14 @@ function useContainerInfo(frameRef: RefObject<HTMLElement | null>, appName: stri
  */
 export default function Stage({ app }: StageProps) {
   const frameRef = useRef<HTMLDivElement>(null);
+  const [theme, setTheme] = useState('porcelain');
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const info = useContainerInfo(frameRef, app.name);
-  const status = failed ? 'failed' : loading ? 'mounting' : 'mounted';
-  const mounted = status === 'mounted';
+  const locale = useLocale();
+  const m = useMessages();
+  const status = failed ? m.failed : loading ? m.mounting : m.mounted;
+  const mounted = !failed && !loading;
 
   return (
     <section className="stage-lift" aria-label="micro app stage">
@@ -93,11 +102,23 @@ export default function Stage({ app }: StageProps) {
         <div>
           <h1 className="font-display text-2xl font-semibold tracking-[-0.01em] text-ink">{app.label}</h1>
           <p className="mt-0.5 font-mono text-[11px] text-ink-soft">
-            {app.stack} · {app.loadingPath} · entry {app.entry}
+            {app.stack[locale]} · {app.loadingPath} · {m.entry} {app.entry}
           </p>
         </div>
         <Trigram sandbox={info.sandbox && mounted} styles={info.styleIsolation && mounted} mounted={mounted} />
       </header>
+
+      {/* the props channel, driven by hand: the locale rides the same one */}
+      <div className="mb-3 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setTheme((t) => (t === 'porcelain' ? 'ink' : 'porcelain'))}
+          className="rounded-md border border-hairline bg-surface px-3 py-1.5 font-mono text-[11px] text-ink transition-colors duration-150 hover:border-primary hover:text-primary"
+        >
+          appProps.theme = "{theme}"
+        </button>
+        <p className="font-mono text-[11px] text-ink-soft">{m.propsChannelNote}</p>
+      </div>
 
       <div ref={frameRef} className="relative rounded-[10px] border border-hairline bg-surface shadow-stage">
         {/* viewfinder corner ticks: the visible sandbox boundary */}
@@ -105,15 +126,16 @@ export default function Stage({ app }: StageProps) {
 
         <div className="flex items-center justify-between border-b border-hairline px-4 py-2">
           <span className="font-mono text-[11px] text-ink-soft">
-            {info.name ? `data-name="${info.name}" · qiankun v${info.version ?? '…'}` : 'container idle'}
+            {info.name ? `data-name="${info.name}" · qiankun v${info.version ?? '…'}` : m.containerIdle}
+            {info.mountTimes ? ` · ${m.mount} #${info.mountTimes}` : ''}
           </span>
           <span
             className={`flex items-center gap-1.5 font-mono text-[11px] ${
-              mounted ? 'text-success' : failed ? 'text-cinnabar' : 'text-ink-soft'
+              mounted ? 'text-success' : failed ? 'text-danger' : 'text-ink-soft'
             }`}
           >
             <span
-              className={`size-1.5 rounded-full ${mounted ? 'bg-success' : failed ? 'bg-cinnabar' : 'bg-primary'}`}
+              className={`size-1.5 rounded-full ${mounted ? 'bg-success' : failed ? 'bg-danger' : 'bg-primary'}`}
             />
             {status}
           </span>
@@ -123,8 +145,14 @@ export default function Stage({ app }: StageProps) {
           name={app.name}
           entry={app.entry}
           settings={{ sandbox: { styleIsolation: true } }}
-          loader={(mounting) => <StageVeil loading={mounting} onLoadingChange={setLoading} />}
-          errorBoundary={(error) => <StageFailure error={error} onFailedChange={setFailed} />}
+          // The React binding forwards every prop it does not own itself, so `locale` lands
+          // straight in the micro app's props — no wrapper object (that is the Vue binding's
+          // `appProps` shape). Every app implements `update`, so switching language re-renders
+          // them in place rather than remounting.
+          locale={locale}
+          theme={theme}
+          loader={(mounting) => <StageVeil loading={mounting} onLoadingChange={setLoading} messages={m} />}
+          errorBoundary={(error) => <StageFailure error={error} onFailedChange={setFailed} messages={m} />}
           wrapperClassName="min-h-[70vh] overflow-auto"
           className="min-h-[70vh]"
         />
@@ -138,19 +166,35 @@ export default function Stage({ app }: StageProps) {
  * from here instead of guessing from the DOM. Reporting it up in an effect keeps the state change
  * out of `<MicroApp />`'s render.
  */
-function StageVeil({ loading, onLoadingChange }: { loading: boolean; onLoadingChange: (loading: boolean) => void }) {
+function StageVeil({
+  loading,
+  onLoadingChange,
+  messages,
+}: {
+  loading: boolean;
+  onLoadingChange: (loading: boolean) => void;
+  messages: Messages;
+}) {
   useEffect(() => onLoadingChange(loading), [loading, onLoadingChange]);
 
   if (!loading) return null;
 
   return (
     <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface/80">
-      <span className="animate-pulse font-mono text-xs text-ink-soft">crossing the sandbox boundary…</span>
+      <span className="animate-pulse font-mono text-xs text-ink-soft">{messages.crossingBoundary}</span>
     </div>
   );
 }
 
-function StageFailure({ error, onFailedChange }: { error: Error; onFailedChange: (failed: boolean) => void }) {
+function StageFailure({
+  error,
+  onFailedChange,
+  messages,
+}: {
+  error: Error;
+  onFailedChange: (failed: boolean) => void;
+  messages: Messages;
+}) {
   // same shape as the veil: report the binding's failure up after render, so the stage header stops
   // claiming the app is mounted
   useEffect(() => {
@@ -161,7 +205,7 @@ function StageFailure({ error, onFailedChange }: { error: Error; onFailedChange:
   return (
     <div className="absolute inset-0 z-20 flex items-center justify-center bg-surface/95 px-8">
       <div className="max-w-lg">
-        <p className="font-mono text-[10px] tracking-[0.18em] text-cinnabar uppercase">mount failed</p>
+        <p className="font-mono text-[10px] tracking-[0.18em] text-danger uppercase">{messages.mountFailed}</p>
         <p className="mt-2 font-mono text-[12px] leading-relaxed break-words text-ink-soft">{error.message}</p>
       </div>
     </div>

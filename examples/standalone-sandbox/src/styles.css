@@ -8,8 +8,8 @@
   --muted: #62717d;
   --paper: #f8fbfc;
   --line: #c9d5dc;
-  --cobalt: #2448d8;
-  --cobalt-soft: #e4eafd;
+  --brand: #6051a5;
+  --brand-soft: #ece9f6;
   --coral: #c8382d;
   --teal: #187d70;
 }
@@ -23,8 +23,8 @@ body {
   min-height: 100vh;
   margin: 0;
   background:
-    linear-gradient(rgba(36, 72, 216, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(36, 72, 216, 0.055) 1px, transparent 1px),
+    linear-gradient(rgba(96, 81, 165, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(96, 81, 165, 0.055) 1px, transparent 1px),
     #eef3f6;
   background-size: 28px 28px;
 }
@@ -61,7 +61,7 @@ button {
 
 .wordmark {
   margin: 0;
-  color: var(--cobalt);
+  color: var(--brand);
   font-size: 12px;
   font-weight: 800;
 }
@@ -120,7 +120,7 @@ h1 {
 
 .host-card .shared-label {
   margin: 0;
-  color: var(--cobalt);
+  color: var(--brand);
   font-size: 14px;
   font-weight: 700;
   line-height: 1.55;
@@ -167,8 +167,8 @@ h1 {
 
 .control-strip button.primary {
   color: #fff;
-  background: var(--cobalt);
-  border-color: var(--cobalt);
+  background: var(--brand);
+  border-color: var(--brand);
 }
 
 .control-strip button.danger {
@@ -266,9 +266,9 @@ h1 {
   position: relative;
   min-height: 320px;
   padding: clamp(28px, 5vw, 48px);
-  border: 2px dashed var(--cobalt);
+  border: 2px dashed var(--brand);
   border-radius: 24px;
-  background: var(--cobalt-soft);
+  background: var(--brand-soft);
 }
 
 .boundary-frame::before,
@@ -276,7 +276,7 @@ h1 {
   position: absolute;
   width: 18px;
   height: 18px;
-  border-color: var(--cobalt);
+  border-color: var(--brand);
   content: "";
 }
 
@@ -299,8 +299,8 @@ h1 {
   top: 0;
   left: 28px;
   padding: 0 10px;
-  color: var(--cobalt);
-  background: var(--cobalt-soft);
+  color: var(--brand);
+  background: var(--brand-soft);
   font-size: 10px;
   font-weight: 900;
   transform: translateY(-50%);

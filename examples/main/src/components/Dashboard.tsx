@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { microApps } from '../apps';
+import { useLocale, useMessages } from '../i18n';
 import { navigate } from '../router';
 
 export default function Dashboard() {
+  const locale = useLocale();
+  const m = useMessages();
+
   return (
     <div className="relative mx-auto max-w-4xl">
       {/* the sleeve watermark */}
@@ -14,20 +18,18 @@ export default function Dashboard() {
       </span>
 
       <header className="pt-6 pb-10">
-        <p className="mb-3 font-mono text-[11px] tracking-[0.18em] text-primary uppercase">袖里乾坤 · qiankun examples</p>
+        <p className="mb-3 font-mono text-[11px] tracking-[0.18em] text-primary uppercase">{m.eyebrow}</p>
         <h1 className="max-w-xl font-display text-[40px] leading-[1.12] font-semibold tracking-[-0.02em] text-ink">
-          A universe in every sleeve.
+          {m.heroTitle}
         </h1>
         <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-ink-soft">
-          Four independent apps — React, Vue, a webpack classic build, and plain HTML — mount into this shell. Each one
-          runs inside its own JS sandbox with scoped styles, and this page can prove it. The shell is a plain React app
-          that mounts them through qiankun's own React binding.
+          {m.heroLede}
         </p>
       </header>
 
       <section aria-label="registered micro apps" className="rounded-[10px] border border-hairline bg-surface">
         <div className="flex items-center justify-between border-b border-hairline px-5 py-3">
-          <h2 className="text-sm font-semibold text-ink">App registry</h2>
+          <h2 className="text-sm font-semibold text-ink">{m.appRegistry}</h2>
           <span className="font-mono text-[11px] text-ink-soft">
             {'<MicroApp> · sandbox: on · style isolation: on'}
           </span>
@@ -45,7 +47,7 @@ export default function Dashboard() {
                   <span className="block text-sm font-medium text-ink">{app.label}</span>
                   <span className="block font-mono text-[10px] text-ink-soft">{app.name}</span>
                 </span>
-                <span className="flex-1 text-[13px] text-ink-soft">{app.stack}</span>
+                <span className="flex-1 text-[13px] text-ink-soft">{app.stack[locale]}</span>
                 <span className="hidden font-mono text-[11px] text-ink-soft sm:block">{app.entry}</span>
                 <span
                   className={`w-24 shrink-0 rounded-full border px-2 py-0.5 text-center font-mono text-[10px] ${
@@ -73,6 +75,7 @@ export default function Dashboard() {
  * window.__SANDBOX_PROBE__ from inside their sandbox; the host realm must never see it.
  */
 function HostRealmCheck() {
+  const m = useMessages();
   const read = useCallback(() => String((window as Window & { __SANDBOX_PROBE__?: unknown }).__SANDBOX_PROBE__), []);
   const [value, setValue] = useState(read);
 
@@ -87,15 +90,16 @@ function HostRealmCheck() {
     <section aria-label="host realm check" className="mt-6 rounded-[10px] border border-hairline bg-surface px-5 py-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-ink">Host realm check</h2>
+          <h2 className="text-sm font-semibold text-ink">{m.hostRealmCheck}</h2>
           <p className="mt-1 max-w-lg text-[13px] leading-relaxed text-ink-soft">
-            Every micro app has a probe button that writes <code className="font-mono text-xs">window.__SANDBOX_PROBE__</code>{' '}
-            inside its sandbox. The host window you are looking at reads:
+            {m.hostRealmBody.split('{code}')[0]}
+            <code className="font-mono text-xs">window.__SANDBOX_PROBE__</code>
+            {m.hostRealmBody.split('{code}')[1]}
           </p>
         </div>
         <div className="text-right">
-          <code className={`font-mono text-sm ${clean ? 'text-success' : 'text-cinnabar'}`}>{value}</code>
-          <p className="mt-1 font-mono text-[10px] text-ink-soft">{clean ? 'the membrane holds' : 'sandbox breached'}</p>
+          <code className={`font-mono text-sm ${clean ? 'text-success' : 'text-danger'}`}>{value}</code>
+          <p className="mt-1 font-mono text-[10px] text-ink-soft">{clean ? m.membraneHolds : m.sandboxBreached}</p>
         </div>
       </div>
     </section>

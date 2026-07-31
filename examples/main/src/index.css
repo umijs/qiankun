@@ -6,9 +6,14 @@
   --color-ink: #1b1f26;
   --color-ink-soft: #5c6470;
   --color-hairline: #e4e7ec;
-  --color-primary: #2f54eb;
-  --color-primary-deep: #1d39c4;
-  --color-cinnabar: #d93026;
+  /* the two logo colors. Purple carries every text and interactive use (6.5:1 on white);
+     amber only ever fills — at 2.2:1 it can never be type. */
+  --color-primary: #6051a5;
+  --color-primary-deep: #4a3d80;
+  --color-amber: #e5a540;
+  /* functional, never decorative: these two say "broken" and "healthy", so they stay
+     outside the brand palette */
+  --color-danger: #d93026;
   --color-success: #16a34a;
 
   /* latin display face: geometric grotesque, reads developer-tool not literary */

@@ -45,7 +45,7 @@ npm install @qiankunjs/vue
 - **适用场景**：基于 webpack 的微应用必备
 
 ```bash
-npm install @qiankunjs/bundler-plugin --save-dev
+npm install @qiankunjs/bundler-plugin@rc --save-dev
 ```
 
 [了解更多 Webpack 插件 →](/zh-CN/ecosystem/bundler-plugin)

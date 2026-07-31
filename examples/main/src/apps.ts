@@ -1,3 +1,5 @@
+import { type Locale } from './i18n';
+
 export interface MicroAppMeta {
   /** qiankun app name (matches the sub app's lifecycle registration) */
   name: string;
@@ -6,18 +8,28 @@ export interface MicroAppMeta {
   /** route path that activates the app */
   path: string;
   entry: string;
-  stack: string;
-  loadingPath: 'esm sandbox' | 'classic';
+  /** only the prose half varies by locale; version numbers and tool names do not translate */
+  stack: Record<Locale, string>;
+  loadingPath: 'esm sandbox' | 'classic' | 'never loads';
   accent: string;
 }
+
+/**
+ * Each micro app is its own origin in dev (one dev server per app) but a path on the deployed
+ * site, where all of them are static builds under `/apps/`. `pages` is the mode
+ * `scripts/build-examples-site.mjs` builds the shells with; a plain `vite build` still targets
+ * the dev servers, so nothing about the local flow changes.
+ */
+const entryOf = (name: string, devPort: number): string =>
+  import.meta.env.MODE === 'pages' ? `/apps/${name}/` : `//localhost:${devPort}`;
 
 export const microApps: MicroAppMeta[] = [
   {
     name: 'react',
     label: 'React',
     path: '/react',
-    entry: '//localhost:7100',
-    stack: 'React 19 · Vite 8',
+    entry: entryOf('react', 7100),
+    stack: { en: 'React 19 · Vite 8', zh: 'React 19 · Vite 8' },
     loadingPath: 'esm sandbox',
     accent: '#087EA4',
   },
@@ -25,8 +37,8 @@ export const microApps: MicroAppMeta[] = [
     name: 'vue',
     label: 'Vue',
     path: '/vue',
-    entry: '//localhost:7101',
-    stack: 'Vue 3.5 · Vite 8',
+    entry: entryOf('vue', 7101),
+    stack: { en: 'Vue 3.5 · Vite 8', zh: 'Vue 3.5 · Vite 8' },
     loadingPath: 'esm sandbox',
     accent: '#42B883',
   },
@@ -34,8 +46,8 @@ export const microApps: MicroAppMeta[] = [
     name: 'webpack-app',
     label: 'Webpack',
     path: '/webpack',
-    entry: '//localhost:7102',
-    stack: 'React 19 · webpack 5',
+    entry: entryOf('webpack', 7102),
+    stack: { en: 'React 19 · webpack 5', zh: 'React 19 · webpack 5' },
     loadingPath: 'classic',
     accent: '#1C78C0',
   },
@@ -43,12 +55,31 @@ export const microApps: MicroAppMeta[] = [
     name: 'purehtml',
     label: 'Pure HTML',
     path: '/purehtml',
-    entry: '//localhost:7104',
-    stack: 'no build · jQuery',
+    entry: entryOf('purehtml', 7104),
+    stack: { en: 'no build · jQuery', zh: '无需构建 · jQuery' },
     loadingPath: 'classic',
     accent: '#B8860B',
   },
+  {
+    // deliberately unreachable: the one route that shows what the errorBoundary slot renders.
+    // Deployed, `/apps/missing/` has no build behind it and the site's 404.html answers with a
+    // real 404, so the entry fetch throws there exactly as it does against the dev server.
+    name: 'missing',
+    label: 'Missing app',
+    path: '/missing',
+    entry: import.meta.env.MODE === 'pages' ? '/apps/missing/index.html' : '//localhost:7104/nowhere/index.html',
+    stack: { en: 'entry returns 404', zh: '入口返回 404' },
+    loadingPath: 'never loads',
+    accent: '#D93026',
+  },
 ];
+
+/** The other shell. Cross-linked both ways so neither is a dead end for someone browsing the deployed site. */
+export const siblingShell = {
+  label: 'Vue host',
+  sub: '@qiankunjs/vue',
+  href: import.meta.env.MODE === 'pages' ? '/vue-host/' : 'http://localhost:7105',
+};
 
 export function appByPath(pathname: string): MicroAppMeta | undefined {
   return microApps.find((app) => pathname.startsWith(app.path));

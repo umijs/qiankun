@@ -2,8 +2,10 @@
 import { MicroApp } from '@qiankunjs/vue';
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import type { MicroAppMeta } from './apps';
+import { locale, t } from './i18n';
 import StageFailure from './StageFailure.vue';
 import StageVeil from './StageVeil.vue';
+import Trigram from './Trigram.vue';
 
 const props = defineProps<{ app: MicroAppMeta }>();
 
@@ -14,7 +16,12 @@ const settings = { sandbox: { styleIsolation: true } };
  * The binding's channel for the micro app's own props. Mutated in place rather than replaced, so the
  * deep watcher fires on a real change instead of on every re-render.
  */
-const appProps = reactive({ theme: 'porcelain' });
+const appProps = reactive({ theme: 'porcelain', locale: locale.value });
+
+// the shell's language is a prop like any other: switching it re-renders the micro app in place
+watch(locale, (next) => {
+  appProps.locale = next;
+});
 
 function toggleTheme() {
   appProps.theme = appProps.theme === 'porcelain' ? 'ink' : 'porcelain';
@@ -23,7 +30,9 @@ function toggleTheme() {
 const loading = ref(true);
 const failed = ref(false);
 const frame = ref<HTMLElement | null>(null);
-const status = computed(() => (failed.value ? 'failed' : loading.value ? 'mounting' : 'mounted'));
+type Status = 'failed' | 'mounting' | 'mounted';
+const status = computed<Status>(() => (failed.value ? 'failed' : loading.value ? 'mounting' : 'mounted'));
+const statusLabel = computed(() => t.value[status.value]);
 
 interface ContainerInfo {
   name?: string;
@@ -106,36 +115,32 @@ onBeforeUnmount(() => observer?.disconnect());
     <header class="stage-head">
       <div>
         <h1>{{ app.label }}</h1>
-        <p class="mono">{{ app.stack }} · {{ app.loadingPath }} · entry {{ app.entry }}</p>
+        <p class="mono">{{ app.stack[locale] }} · {{ app.loadingPath }} · {{ t.entry }} {{ app.entry }}</p>
       </div>
-      <div
-        class="dimensions mono"
-        :class="{ live: status === 'mounted' && info.sandbox && info.styleIsolation, failed: status === 'failed' }"
-      >
-        <span>{{ info.sandbox ? 'js sandbox' : 'no sandbox' }}</span>
-        <span>{{ info.styleIsolation ? 'style isolation' : 'no style isolation' }}</span>
-        <span>{{ status }}</span>
-      </div>
+      <Trigram
+        :sandbox="info.sandbox && status === 'mounted'"
+        :styles="info.styleIsolation && status === 'mounted'"
+        :mounted="status === 'mounted'"
+      />
     </header>
 
     <div class="props-bar">
       <button type="button" class="mono" @click="toggleTheme">appProps.theme = "{{ appProps.theme }}"</button>
-      <p class="mono">
-        {{
-          app.acceptsProps
-            ? 'the Vue micro app exports an update lifecycle, so this reaches it live'
-            : 'this app exports no update lifecycle, so the change has nowhere to land'
-        }}
-      </p>
+      <p class="mono">{{ t.propsChannelNote }}</p>
     </div>
 
     <div ref="frame" class="frame">
+      <span class="tick tl" /><span class="tick tr" /><span class="tick bl" /><span class="tick br" />
+
       <div class="frame-head mono">
         <span>
-          {{ info.name ? `data-name="${info.name}" · qiankun v${info.version ?? '…'}` : 'container idle' }}
-          {{ info.mountTimes ? `· mount #${info.mountTimes}` : '' }}
+          {{ info.name ? `data-name="${info.name}" · qiankun v${info.version ?? '…'}` : t.containerIdle }}
+          {{ info.mountTimes ? `· ${t.mount} #${info.mountTimes}` : '' }}
         </span>
-        <span :class="status === 'mounted' ? 'ok' : status === 'failed' ? 'bad' : 'pending'">{{ status }}</span>
+        <span class="status" :class="status === 'mounted' ? 'ok' : status === 'failed' ? 'bad' : 'pending'">
+          <span class="status-dot" aria-hidden="true" />
+          {{ statusLabel }}
+        </span>
       </div>
 
       <!-- mount, unmount, loading and error capture all belong to the binding; the shell only
@@ -189,26 +194,17 @@ onBeforeUnmount(() => observer?.disconnect());
   font-family: var(--font-mono);
 }
 
-.dimensions {
-  display: flex;
-  gap: 12px;
-  font-size: 11px;
-  color: var(--ink-soft);
-}
-
-.dimensions.live {
-  color: var(--success);
-}
 
 .props-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .props-bar button {
-  padding: 5px 10px;
+  padding: 6px 12px;
   border: 1px solid var(--hairline);
   border-radius: 6px;
   background: var(--surface);
@@ -229,6 +225,47 @@ onBeforeUnmount(() => observer?.disconnect());
   color: var(--ink-soft);
 }
 
+/* viewfinder corner ticks: the visible sandbox boundary */
+.tick {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-color: var(--primary);
+  pointer-events: none;
+}
+
+.tick.tl {
+  top: -1px;
+  left: -1px;
+  border-top: 2px solid;
+  border-left: 2px solid;
+  border-top-left-radius: 10px;
+}
+
+.tick.tr {
+  top: -1px;
+  right: -1px;
+  border-top: 2px solid;
+  border-right: 2px solid;
+  border-top-right-radius: 10px;
+}
+
+.tick.bl {
+  bottom: -1px;
+  left: -1px;
+  border-bottom: 2px solid;
+  border-left: 2px solid;
+  border-bottom-left-radius: 10px;
+}
+
+.tick.br {
+  right: -1px;
+  bottom: -1px;
+  border-right: 2px solid;
+  border-bottom: 2px solid;
+  border-bottom-right-radius: 10px;
+}
+
 .frame {
   position: relative;
   border: 1px solid var(--hairline);
@@ -247,17 +284,33 @@ onBeforeUnmount(() => observer?.disconnect());
   color: var(--ink-soft);
 }
 
+.status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentcolor;
+}
+
 .frame-head .ok {
   color: var(--success);
 }
 
 .frame-head .pending {
-  color: var(--primary);
+  color: var(--ink-soft);
 }
 
-.frame-head .bad,
-.dimensions.failed {
-  color: var(--cinnabar);
+.frame-head .pending .status-dot {
+  background: var(--primary);
+}
+
+.frame-head .bad {
+  color: var(--danger);
 }
 
 /* the binding's wrapper is not positioned, so the overlay slots need this shell to make it one */

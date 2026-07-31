@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from './i18n';
 import { onMounted, onUnmounted } from 'vue';
 
 const props = defineProps<{ error: Error }>();
@@ -12,7 +13,7 @@ onUnmounted(() => emit('change', false));
 
 <template>
   <div class="failure">
-    <p class="label">mount failed</p>
+    <p class="label">{{ t.mountFailed }}</p>
     <p class="message">{{ props.error.message }}</p>
   </div>
 </template>
@@ -35,7 +36,7 @@ onUnmounted(() => emit('change', false));
   font-size: 10px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--cinnabar);
+  color: var(--danger);
 }
 
 .message {

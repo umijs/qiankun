@@ -7,19 +7,19 @@
 ### 使用 npm
 
 ```bash
-npm install @qiankunjs/bundler-plugin --save-dev
+npm install @qiankunjs/bundler-plugin@rc --save-dev
 ```
 
 ### 使用 yarn
 
 ```bash
-yarn add @qiankunjs/bundler-plugin --dev
+yarn add @qiankunjs/bundler-plugin@rc --dev
 ```
 
 ### 使用 pnpm
 
 ```bash
-pnpm add @qiankunjs/bundler-plugin --save-dev
+pnpm add @qiankunjs/bundler-plugin@rc --save-dev
 ```
 
 ## 🎯 功能特性

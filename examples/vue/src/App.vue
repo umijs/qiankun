@@ -1,12 +1,22 @@
 <script setup lang="ts">
 import { computed, ref, version } from 'vue';
+import { messages, type Locale } from './i18n';
 
 const props = defineProps<{ hostProps?: Record<string, unknown> }>();
 
 const ACCENT = '#42B883';
 
+/**
+ * Where the shells fetch this app from: its own dev server locally, a path on the deployed site
+ * (`pages` is the mode `scripts/build-examples-site.mjs` builds with, and it sets Vite's base).
+ */
+const ENTRY = import.meta.env.MODE === 'pages' ? import.meta.env.BASE_URL : '//localhost:7101';
+
 const poweredByQiankun = !!window.__POWERED_BY_QIANKUN__;
-const modeLabel = poweredByQiankun ? 'inside qiankun' : 'standalone';
+
+// the host's language arrives on the same props channel as everything else
+const m = computed(() => messages[(props.hostProps?.locale as Locale | undefined) ?? 'en']);
+const modeLabel = computed(() => (poweredByQiankun ? m.value.insideQiankun : m.value.standalone));
 
 const probeValue = ref('');
 const ticks = ref<number | null>(null);
@@ -15,11 +25,11 @@ const count = ref(0);
 let timerStarted = false;
 
 const probeOutput = computed(() =>
-  probeValue.value ? `window.__SANDBOX_PROBE__ = '${probeValue.value}'` : 'window.__SANDBOX_PROBE__ is unset',
+  probeValue.value ? `window.__SANDBOX_PROBE__ = '${probeValue.value}'` : m.value.globalUnset,
 );
-const tickOutput = computed(() => (ticks.value === null ? 'no interval running' : `tick ${ticks.value}`));
+const tickOutput = computed(() => (ticks.value === null ? m.value.noInterval : m.value.tick(ticks.value)));
 const styleOutput = computed(() =>
-  tinted.value ? 'style[data-probe] appended to document.head' : 'no probe style injected',
+  tinted.value ? m.value.styleInjected : m.value.noStyle,
 );
 // Echoed so a host driving the ui bindings' props channel can see its `update` land. qiankun mixes
 // its own props in (container, singleSpa, mountParcel, …), so only the scalars the host set are shown.
@@ -27,7 +37,7 @@ const hostPropsOutput = computed(() => {
   const scalars = Object.entries(props.hostProps ?? {}).filter(
     ([, value]) => typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean',
   );
-  return scalars.length ? scalars.map(([key, value]) => `${key}='${String(value)}'`).join(' ') : 'none';
+  return scalars.length ? scalars.map(([key, value]) => `${key}='${String(value)}'`).join(' ') : m.value.none;
 });
 
 function writeWindowProbe() {
@@ -61,7 +71,7 @@ function injectStyleProbe() {
   <div class="vue-app">
     <header class="app-header">
       <span class="accent-dot" aria-hidden="true" />
-      <h1>Vue micro app</h1>
+      <h1>{{ m.title }}</h1>
       <div class="badges">
         <span class="badge">vue {{ version }}</span>
         <span class="badge">vite · esm</span>
@@ -70,42 +80,42 @@ function injectStyleProbe() {
     </header>
 
     <section class="card">
-      <h2>Isolation lab</h2>
+      <h2>{{ m.isolationLab }}</h2>
       <div class="probe">
-        <button type="button" @click="writeWindowProbe">Write window global</button>
+        <button type="button" @click="writeWindowProbe">{{ m.writeGlobal }}</button>
         <div class="probe-result">
           <output>{{ probeOutput }}</output>
-          <p>Proves globals stay inside this app's membrane — the host window never sees them.</p>
+          <p>{{ m.globalNote }}</p>
         </div>
       </div>
       <div class="probe">
-        <button type="button" @click="startTimerProbe">Start leaky interval</button>
+        <button type="button" @click="startTimerProbe">{{ m.startInterval }}</button>
         <div class="probe-result">
           <output>{{ tickOutput }}</output>
-          <p>Never cleared here — proves qiankun reclaims leaked timers on unmount.</p>
+          <p>{{ m.intervalNote }}</p>
         </div>
       </div>
       <div class="probe">
-        <button type="button" @click="injectStyleProbe">Tint body background</button>
+        <button type="button" @click="injectStyleProbe">{{ m.tintBody }}</button>
         <div class="probe-result">
           <output>{{ styleOutput }}</output>
-          <p>Tints body — proves style isolation keeps the tint inside this app.</p>
+          <p>{{ m.styleNote }}</p>
         </div>
       </div>
     </section>
 
     <section class="card">
-      <h2>Local state</h2>
+      <h2>{{ m.localState }}</h2>
       <div class="counter">
         <button type="button" @click="count--">−</button>
         <span class="counter-value">{{ count }}</span>
         <button type="button" @click="count++">+</button>
-        <p>ref state lives and dies with this app instance.</p>
+        <p>{{ m.stateNote }}</p>
       </div>
     </section>
 
     <footer class="app-footer">
-      entry //localhost:7101 · lifecycle: src/main.ts · host props: {{ hostPropsOutput }}
+      {{ m.entry }} {{ ENTRY }} · {{ m.lifecycle }}: src/main.ts · {{ m.hostProps }}: {{ hostPropsOutput }}
     </footer>
   </div>
 </template>
@@ -119,7 +129,7 @@ function injectStyleProbe() {
   --ink: #1b1f26;
   --ink-soft: #5c6470;
   --hairline: #e4e7ec;
-  --primary: #2f54eb;
+  --primary: #6051a5;
   --accent: #42b883;
   --sans: 'IBM Plex Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, monospace;
@@ -186,7 +196,7 @@ function injectStyleProbe() {
 }
 
 .vue-app .badge-live {
-  border-color: rgb(47 84 235 / 35%);
+  border-color: rgb(96 81 165 / 35%);
   color: var(--primary);
 }
 
