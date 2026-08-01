@@ -341,8 +341,10 @@ registerMicroApps([
 
 **2. Programmatic routing:**
 ```javascript
-// Navigate between micro apps
-import { navigateToUrl } from 'single-spa';
+// Navigate between micro apps. qiankun routes through its own vendored single-spa fork
+// (@qiankunjs/single-spa, already installed as a qiankun dependency) — do NOT install the npm
+// `single-spa` package alongside qiankun: that would create a second, independent router.
+import { navigateToUrl } from '@qiankunjs/single-spa';
 
 const navigateToUsers = () => {
   navigateToUrl('/users');

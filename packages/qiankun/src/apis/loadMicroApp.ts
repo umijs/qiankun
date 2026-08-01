@@ -1,5 +1,5 @@
-import type { ParcelConfigObject } from 'single-spa';
-import { mountRootParcel } from 'single-spa';
+import type { ParcelConfigObject } from '@qiankunjs/single-spa';
+import { AppOrParcelStatus, mountRootParcel } from '@qiankunjs/single-spa';
 import type { ParcelConfigObjectGetter } from '../core/loadApp';
 import loadApp from '../core/loadApp';
 import type { AppConfiguration, LifeCycles, LoadableApp, MicroApp, ObjectType } from '../types';
@@ -21,7 +21,8 @@ export function loadMicroApp<T extends ObjectType>(
   const containerXPath = getContainerXPath(container);
   const getContainerXPathKey = (xpath: string) => `${name}-${xpath}`;
 
-  let microApp: MicroApp;
+  // null after unmount cleanup so the long-lived remount closures release the parcel for GC
+  let microApp: MicroApp | null = null;
   const wrapParcelConfigForRemount = (config: ParcelConfigObject): ParcelConfigObject => {
     let microAppConfig = config;
     if (containerXPath) {
@@ -32,9 +33,12 @@ export function loadMicroApp<T extends ObjectType>(
           async () => {
             // While there are multiple micro apps mounted on the same container, we must wait until the prev instances all had unmounted
             // Otherwise it will lead some concurrent issues
-            const prevLoadMicroApps = containerMicroApps.slice(0, containerMicroApps.indexOf(microApp));
+            // this mount wrapper only runs after mountRootParcel below assigned the parcel
+            const prevLoadMicroApps = containerMicroApps.slice(0, containerMicroApps.indexOf(microApp as MicroApp));
             const prevLoadMicroAppsWhichNotBroken = prevLoadMicroApps.filter(
-              (v) => v.getStatus() !== 'LOAD_ERROR' && v.getStatus() !== 'SKIP_BECAUSE_BROKEN',
+              (v) =>
+                v.getStatus() !== AppOrParcelStatus.LOAD_ERROR &&
+                v.getStatus() !== AppOrParcelStatus.SKIP_BECAUSE_BROKEN,
             );
             await Promise.all(prevLoadMicroAppsWhichNotBroken.map((v) => v.unmountPromise));
           },
@@ -96,26 +100,28 @@ export function loadMicroApp<T extends ObjectType>(
     start();
   }
 
-  microApp = mountRootParcel(memorizedLoadingFn, { domElement: document.createElement('div'), ...props });
+  const mountedApp = mountRootParcel(memorizedLoadingFn, {
+    domElement: document.createElement('div'),
+    ...props,
+  });
+  microApp = mountedApp;
 
   if (containerXPath) {
     const appContainerXPathKey = getContainerXPathKey(containerXPath);
     // Store the microApps which they mounted on the same container
     const microAppsRef = containerMicroAppsMap.get(appContainerXPathKey) || [];
-    microAppsRef.push(microApp);
+    microAppsRef.push(mountedApp);
     containerMicroAppsMap.set(appContainerXPathKey, microAppsRef);
 
     const cleanup = () => {
-      const index = microAppsRef.indexOf(microApp);
+      const index = microAppsRef.indexOf(mountedApp);
       microAppsRef.splice(index, 1);
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
       microApp = null;
     };
 
     // gc after unmount
-    microApp.unmountPromise.then(cleanup).catch(cleanup);
+    mountedApp.unmountPromise.then(cleanup).catch(cleanup);
   }
 
-  return microApp;
+  return mountedApp;
 }

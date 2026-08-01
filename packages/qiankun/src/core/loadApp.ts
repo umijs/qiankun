@@ -18,7 +18,7 @@ import {
   warn,
 } from '@qiankunjs/shared';
 import { concat, isFunction, mergeWith } from 'lodash';
-import type { ParcelConfigObject } from 'single-spa';
+import type { ParcelConfigObject } from '@qiankunjs/single-spa';
 import getAddOns from '../addons';
 import { QiankunError } from '../error';
 import type {
@@ -41,16 +41,7 @@ import { acquireContainer, isContainerHeld, type ContainerHold } from './contain
 
 declare const __QIANKUN_VERSION__: string;
 
-type ApplicationConfigObject = ParcelConfigObject & {
-  /**
-   * single-spa reads this lifecycle from registered application source objects, even though its
-   * ParcelConfigObject type omits it. Root parcels ignore the extra field and retain their
-   * existing remount cache semantics.
-   */
-  unload: Array<() => Promise<void>>;
-};
-
-export type ParcelConfigObjectGetter = (remountContainer: HTMLElement) => ApplicationConfigObject;
+export type ParcelConfigObjectGetter = (remountContainer: HTMLElement) => ParcelConfigObject;
 
 export default async function loadApp<T extends ObjectType>(
   app: LoadableApp<T>,
@@ -298,12 +289,13 @@ export default async function loadApp<T extends ObjectType>(
           }) as F,
       );
 
-    const parcelConfig: ApplicationConfigObject = {
+    const parcelConfig: ParcelConfigObject = {
       name: appName,
 
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      bootstrap,
+      // MicroAppLifeCycles types every lifecycle with `container` props, but single-spa only
+      // passes it to the mount/unmount wrappers below (via closure); bootstrap runs before any
+      // container exists, so its narrower props type is asserted away here
+      bootstrap: bootstrap as ParcelConfigObject['bootstrap'],
 
       mount: [
         // The indicator spans the whole chain — the gate wait included — and sits inside the
@@ -426,11 +418,10 @@ export default async function loadApp<T extends ObjectType>(
     parcelConfig.unmount = guardHooksWithMountHoldRelease(toArray(parcelConfig.unmount));
 
     if (typeof update === 'function') {
-      // guarded like the chains above: single-spa marks a parcel whose update rejects
-      // SKIP_BECAUSE_BROKEN and refuses to unmount it, so nothing downstream would release ②
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      parcelConfig.update = guardHooksWithMountHoldRelease(toArray(update))[0];
+      // Guarded like the chains above: single-spa marks a parcel whose update rejects
+      // SKIP_BECAUSE_BROKEN and refuses to unmount it, so nothing downstream would release ②.
+      // Same props-type mismatch as bootstrap above: update receives parcel customProps at runtime.
+      parcelConfig.update = guardHooksWithMountHoldRelease(toArray(update))[0] as ParcelConfigObject['update'];
     }
 
     return parcelConfig;

@@ -4,13 +4,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock single-spa before importing effects
-vi.mock('single-spa', () => ({
+vi.mock('@qiankunjs/single-spa', () => ({
   getMountedApps: vi.fn(() => []),
   navigateToUrl: vi.fn(),
 }));
 
 import { setDefaultMountApp, runAfterFirstMounted } from '../effects';
-import { getMountedApps, navigateToUrl } from 'single-spa';
+import { getMountedApps, navigateToUrl } from '@qiankunjs/single-spa';
 
 describe('setDefaultMountApp', () => {
   beforeEach(() => {

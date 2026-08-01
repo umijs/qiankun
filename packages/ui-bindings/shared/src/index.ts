@@ -1,3 +1,4 @@
+import { AppOrParcelStatus } from '@qiankunjs/single-spa';
 import type { AppConfiguration, MicroApp as MicroAppTypeDefinition, LifeCycles } from 'qiankun';
 import { loadMicroApp } from 'qiankun';
 import { omit } from 'lodash';
@@ -139,7 +140,8 @@ export function updateMicroApp({
 
   // 确保 microApp.update 调用是跟组件状态变更顺序一致的，且后一个微应用更新必须等待前一个更新完成
   microApp._updatingPromise = microApp._updatingPromise.then(() => {
-    const canUpdate = (app: MicroAppType) => app.update && app.getStatus() === 'MOUNTED' && !app._unmounting;
+    const canUpdate = (app: MicroAppType) =>
+      app.update && app.getStatus() === AppOrParcelStatus.MOUNTED && !app._unmounting;
     if (canUpdate(microApp)) {
       const props = {
         ...microAppProps,

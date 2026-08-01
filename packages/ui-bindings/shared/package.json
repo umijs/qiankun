@@ -14,6 +14,7 @@
   "author": "linghaoSu",
   "license": "MIT",
   "dependencies": {
+    "@qiankunjs/single-spa": "workspace:^",
     "lodash": "^4.18.1"
   },
   "devDependencies": {
