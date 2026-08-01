@@ -100,6 +100,9 @@ export type Parcel<ExtraProps = CustomProps> = {
   getStatus(): AppOrParcelStatus;
   loadPromise: Promise<null>;
   initPromise: Promise<null>;
+  // qiankun fork: permanent alias of initPromise (reverting the upstream #1307 rename for
+  // parcels; always the same promise instance — see the fork README's divergence list)
+  bootstrapPromise: Promise<null>;
   mountPromise: Promise<null>;
   unmountPromise: Promise<null>;
   // Intended for internal use only

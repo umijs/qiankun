@@ -198,6 +198,9 @@ export function mountParcel(this: ParcelOwner, config: ParcelConfig, customProps
     rejectUnmount = reject;
   });
 
+  // hoisted so initPromise and its permanent bootstrapPromise alias share one promise instance
+  const externalInitPromise = promiseWithoutReturnValue(initPromise);
+
   let externalRepresentation: Parcel = {
     mount() {
       return promiseWithoutReturnValue(
@@ -227,7 +230,10 @@ export function mountParcel(this: ParcelOwner, config: ParcelConfig, customProps
       return parcel.status;
     },
     loadPromise: promiseWithoutReturnValue(loadPromise),
-    initPromise: promiseWithoutReturnValue(initPromise),
+    initPromise: externalInitPromise,
+    // qiankun fork: bootstrapPromise is a permanent alias of initPromise (upstream #1307 renamed
+    // it away; parcels returned by qiankun's loadMicroApp are public API — see the fork README)
+    bootstrapPromise: externalInitPromise,
     mountPromise: promiseWithoutReturnValue(mountPromise),
     unmountPromise: promiseWithoutReturnValue(unmountPromise),
     _parcel: parcel as InternalParcel,

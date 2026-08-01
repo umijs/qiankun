@@ -14,6 +14,7 @@ qiankun's vendored fork of [single-spa](https://github.com/single-spa/single-spa
 Maintained deliberately; this list is the contract (keep it in sync when adding divergences):
 
 1. **`bootstrap` is a permanent alias of `init` for applications** — reverts upstream [single-spa#1333](https://github.com/single-spa/single-spa/pull/1333), which removed the application-level fallback (the parcel-level fallback in `mount-parcel.ts` was always kept). Applications exporting only `bootstrap` keep working; `init` wins when both are present. Not a transitional shim — it will not be removed.
+2. **`parcel.bootstrapPromise` is a permanent alias of `parcel.initPromise`** — upstream [single-spa#1307](https://github.com/single-spa/single-spa/pull/1307) renamed it away. Parcels returned by qiankun's `loadMicroApp` are public API, so the old name stays on the external parcel representation, always as the same promise instance as `initPromise`.
 
 ## Invariant contracts (never break)
 
