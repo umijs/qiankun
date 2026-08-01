@@ -82,6 +82,9 @@ export type ParcelConfigObject<ExtraProps = CustomProps> = {
 export type LifeCycleFn<ExtraProps> = (config: ExtraProps & AppProps) => Promise<any>;
 export type LifeCycles<ExtraProps = {}> = {
   init?: LifeCycleFn<ExtraProps> | Array<LifeCycleFn<ExtraProps>>;
+  // qiankun fork: permanent alias of init, honored for applications (reverting upstream
+  // single-spa#1333) and parcels alike; init wins when both are present
+  bootstrap?: LifeCycleFn<ExtraProps> | Array<LifeCycleFn<ExtraProps>>;
   mount: LifeCycleFn<ExtraProps> | Array<LifeCycleFn<ExtraProps>>;
   unmount: LifeCycleFn<ExtraProps> | Array<LifeCycleFn<ExtraProps>>;
   update?: LifeCycleFn<ExtraProps> | Array<LifeCycleFn<ExtraProps>>;
