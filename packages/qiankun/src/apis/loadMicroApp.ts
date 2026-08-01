@@ -1,5 +1,5 @@
 import type { ParcelConfigObject } from '@qiankunjs/single-spa';
-import { mountRootParcel } from '@qiankunjs/single-spa';
+import { AppOrParcelStatus, mountRootParcel } from '@qiankunjs/single-spa';
 import type { ParcelConfigObjectGetter } from '../core/loadApp';
 import loadApp from '../core/loadApp';
 import type { AppConfiguration, LifeCycles, LoadableApp, MicroApp, ObjectType } from '../types';
@@ -36,7 +36,9 @@ export function loadMicroApp<T extends ObjectType>(
             // this mount wrapper only runs after mountRootParcel below assigned the parcel
             const prevLoadMicroApps = containerMicroApps.slice(0, containerMicroApps.indexOf(microApp as MicroApp));
             const prevLoadMicroAppsWhichNotBroken = prevLoadMicroApps.filter(
-              (v) => v.getStatus() !== 'LOAD_ERROR' && v.getStatus() !== 'SKIP_BECAUSE_BROKEN',
+              (v) =>
+                v.getStatus() !== AppOrParcelStatus.LOAD_ERROR &&
+                v.getStatus() !== AppOrParcelStatus.SKIP_BECAUSE_BROKEN,
             );
             await Promise.all(prevLoadMicroAppsWhichNotBroken.map((v) => v.unmountPromise));
           },

@@ -124,7 +124,9 @@ describe(`event listeners after single-spa is started`, () => {
     window.location.hash = `#/nowhere`;
 
     function listener1() {
-      ((msg) => { throw new Error(msg); })('listener1 should not be called, since it was removed');
+      ((msg) => {
+        throw new Error(msg);
+      })('listener1 should not be called, since it was removed');
     }
 
     function listener2() {

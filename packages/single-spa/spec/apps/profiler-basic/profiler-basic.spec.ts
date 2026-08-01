@@ -196,7 +196,9 @@ describe(`profiler basics`, () => {
         await singleSpa.unloadApplication('profiler-basics', {
           waitForUnmount: false,
         });
-        ((msg) => { throw new Error(msg); })('Expected unload err');
+        ((msg) => {
+          throw new Error(msg);
+        })('Expected unload err');
       } catch (err) {}
 
       await singleSpa.triggerAppChange();

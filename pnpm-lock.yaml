@@ -450,6 +450,9 @@ importers:
 
   packages/ui-bindings/shared:
     dependencies:
+      '@qiankunjs/single-spa':
+        specifier: workspace:^
+        version: link:../../single-spa
       lodash:
         specifier: 4.18.1
         version: 4.18.1
