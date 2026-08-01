@@ -13,13 +13,13 @@ describe(`profiler basics`, () => {
   describe('application profiler events', () => {
     beforeEach(() => {
       app = {
-        init: jest.fn(() => Promise.resolve()),
-        mount: jest.fn(() => Promise.resolve()),
-        unmount: jest.fn(() => Promise.resolve()),
-        unload: jest.fn(() => Promise.resolve()),
+        init: vi.fn(() => Promise.resolve()),
+        mount: vi.fn(() => Promise.resolve()),
+        unmount: vi.fn(() => Promise.resolve()),
+        unload: vi.fn(() => Promise.resolve()),
       };
 
-      loadApp = jest.fn(() => Promise.resolve(app));
+      loadApp = vi.fn(() => Promise.resolve(app));
 
       singleSpa.registerApplication({
         name: 'profiler-basics',
@@ -196,7 +196,7 @@ describe(`profiler basics`, () => {
         await singleSpa.unloadApplication('profiler-basics', {
           waitForUnmount: false,
         });
-        fail('Expected unload err');
+        ((msg) => { throw new Error(msg); })('Expected unload err');
       } catch (err) {}
 
       await singleSpa.triggerAppChange();
@@ -280,7 +280,9 @@ describe(`profiler basics`, () => {
     });
   });
 
-  describe('routing profiler events', () => {});
+  // upstream kept an empty `routing profiler events` suite here (the cases live in
+  // profiler-routing-start.spec.ts / profiler-routing-no-start.spec.ts); vitest rejects empty
+  // suites, so it was removed during the jest -> vitest migration
 });
 
 function getProfilerEventsByKind(kind, type = 'application') {

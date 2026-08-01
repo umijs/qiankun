@@ -2,16 +2,16 @@ import { registerApplication } from '../../src/single-spa';
 
 describe('start()', () => {
   beforeAll(() => {
-    jest.useFakeTimers({ legacyFakeTimers: true });
+    vi.useFakeTimers({ legacyFakeTimers: true });
   });
   afterAll(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it(`does not throw an error before start() is called`, async () => {
-    jest.spyOn(console, 'warn');
+    vi.spyOn(console, 'warn');
 
-    jest.advanceTimersByTime(5000);
+    vi.advanceTimersByTime(5000);
     expect(console.warn).not.toHaveBeenCalled();
 
     registerApplication({
@@ -22,7 +22,7 @@ describe('start()', () => {
       },
       activeWhen: '/',
     });
-    jest.advanceTimersByTime(5000);
+    vi.advanceTimersByTime(5000);
 
     expect(console.warn).toHaveBeenCalled();
     console.warn.mockRestore();

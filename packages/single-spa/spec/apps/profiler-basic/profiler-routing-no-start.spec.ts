@@ -37,9 +37,9 @@ describe(`profiler routing events before start()`, () => {
     expect(profilesAfter[0].operationSucceeded).toBe(true);
   });
 
-  // Excluded with xit() because load.js never throws Errors due to unhandled promise
+  // Excluded with it.skip() because load.js never throws Errors due to unhandled promise
   // rejection issues
-  xit('fires failed loadApp profiler', async () => {
+  it.skip('fires failed loadApp profiler', async () => {
     const profilesBefore = getProfilerEventsByKind('loadApps');
     expect(profilesBefore.length).toBe(0);
 

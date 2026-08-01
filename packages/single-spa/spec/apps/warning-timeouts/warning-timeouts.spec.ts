@@ -16,14 +16,14 @@ describe(`warning-timeouts app`, () => {
       (location) => location.hash === activeHash,
     );
     singleSpa.start();
-    consoleWarnSpy = jest.spyOn(console, 'warn');
-    jest.useFakeTimers();
+    consoleWarnSpy = vi.spyOn(console, 'warn');
+    vi.useFakeTimers();
     window.addEventListener('fake-timers-advance', advanceTimers);
   });
 
   afterAll(() => {
     consoleWarnSpy.mockRestore();
-    jest.useRealTimers();
+    vi.useRealTimers();
     window.removeEventListener('fake-timers-advance', advanceTimers);
   });
 
@@ -89,10 +89,10 @@ describe(`warning-timeouts app`, () => {
 
 async function controlledAppChange() {
   const appChangePromise = singleSpa.triggerAppChange();
-  jest.advanceTimersByTime(10);
+  vi.advanceTimersByTime(10);
   await appChangePromise;
 }
 
 function advanceTimers(evt) {
-  jest.advanceTimersByTime(evt.detail);
+  vi.advanceTimersByTime(evt.detail);
 }

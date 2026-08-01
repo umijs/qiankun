@@ -24,7 +24,7 @@ describe(`lifecycle-props-function app`, () => {
     app.reset();
     customProps = {};
 
-    jest.spyOn(console, 'warn');
+    vi.spyOn(console, 'warn');
   });
 
   afterEach(() => {

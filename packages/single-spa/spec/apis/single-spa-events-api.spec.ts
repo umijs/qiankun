@@ -98,8 +98,8 @@ describe(`events api :`, () => {
     });
 
     // Excluded because of https://github.com/facebook/jest/issues/5620
-    xit(`doesn't destroy single-spa when you throw an error inside of an event listener`, async () => {
-      const counterFn = jest.fn();
+    it.skip(`doesn't destroy single-spa when you throw an error inside of an event listener`, async () => {
+      const counterFn = vi.fn();
       let finish,
         finishPromise = new Promise((r) => (finish = r));
 

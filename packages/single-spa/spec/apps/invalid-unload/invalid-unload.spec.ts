@@ -51,7 +51,7 @@ describe(`invalid-unload app :`, () => {
         return singleSpa.unloadApplication('./invalid-unload.app');
       })
       .then(() => {
-        fail(
+        ((msg) => { throw new Error(msg); })(
           `unloadApplication() should have rejected the promise it returned because the app has a bad implementation of the unload lifecycle`,
         );
       })

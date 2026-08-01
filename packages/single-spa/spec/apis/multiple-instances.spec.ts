@@ -2,7 +2,7 @@ describe(`multiple instances of single-spa`, () => {
   let consoleWarnSpy;
 
   beforeEach(() => {
-    consoleWarnSpy = jest.spyOn(console, 'warn');
+    consoleWarnSpy = vi.spyOn(console, 'warn');
   });
 
   afterEach(() => {

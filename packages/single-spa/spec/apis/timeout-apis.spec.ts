@@ -4,22 +4,22 @@ describe('global timeout configuration', () => {
   let consoleWarnSpy, consoleErrSpy, parcel;
 
   beforeAll(() => {
-    consoleWarnSpy = jest.spyOn(console, 'warn');
-    consoleErrSpy = jest.spyOn(console, 'error');
-    jest.useFakeTimers();
+    consoleWarnSpy = vi.spyOn(console, 'warn');
+    consoleErrSpy = vi.spyOn(console, 'error');
+    vi.useFakeTimers();
     singleSpa.start();
   });
 
   afterAll(() => {
     consoleWarnSpy.mockRestore();
     consoleErrSpy.mockRestore();
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   afterEach(() => {
     consoleWarnSpy.mockReset();
     consoleErrSpy.mockReset();
-    jest.clearAllTimers();
+    vi.clearAllTimers();
   });
 
   describe('setInitMaxTime', () => {
@@ -141,27 +141,27 @@ function generateParcel(name, initDelay = 0, mountDelay = 0, updateDelay = 0, un
       init: () =>
         new Promise((resolve) => {
           setTimeout(resolve, initDelay);
-          jest.advanceTimersByTime(initDelay);
+          vi.advanceTimersByTime(initDelay);
         }),
       mount: () =>
         new Promise((resolve) => {
           setTimeout(resolve, mountDelay);
-          jest.advanceTimersByTime(mountDelay);
+          vi.advanceTimersByTime(mountDelay);
         }),
       update: () =>
         new Promise((resolve) => {
           setTimeout(resolve, updateDelay);
-          jest.advanceTimersByTime(updateDelay);
+          vi.advanceTimersByTime(updateDelay);
         }),
       unmount: () =>
         new Promise((resolve) => {
           setTimeout(resolve, unmountDelay);
-          jest.advanceTimersByTime(unmountDelay);
+          vi.advanceTimersByTime(unmountDelay);
         }),
       unload: () =>
         new Promise((resolve) => {
           setTimeout(resolve, unloadDelay);
-          jest.advanceTimersByTime(unloadDelay);
+          vi.advanceTimersByTime(unloadDelay);
         }),
     },
     {
@@ -172,8 +172,8 @@ function generateParcel(name, initDelay = 0, mountDelay = 0, updateDelay = 0, un
 
 async function controlledParcelActions(action, ...parcelArgs) {
   const parcel = singleSpa.mountRootParcel(...generateParcel(...parcelArgs));
-  jest.runAllTimers();
+  vi.runAllTimers();
   const actionPromise = action(parcel);
-  jest.runAllTimers();
+  vi.runAllTimers();
   await actionPromise;
 }

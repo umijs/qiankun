@@ -1,13 +1,14 @@
-const singleSpa = require('single-spa');
+// @vitest-environment node
+import * as singleSpa from 'single-spa';
 
 describe(`nodejs spec`, () => {
   describe('activity functions', () => {
     beforeEach(() => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
     });
 
     afterEach(() => {
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('can still check activity functions in nodejs with a mocked Location object', () => {
