@@ -1,4 +1,4 @@
-import * as singleSpa from "single-spa";
+import * as singleSpa from 'single-spa';
 
 const activeHash = `#happy-unload`;
 
@@ -7,19 +7,19 @@ describe(`happy-unload app :`, () => {
 
   beforeAll(() => {
     singleSpa.registerApplication(
-      "./happy-unload.app",
-      () => import("./happy-unload.app"),
+      './happy-unload.app',
+      () => import('./happy-unload.app'),
       (location) => location.hash === activeHash,
     );
     singleSpa.start();
   });
 
   beforeEach(() => {
-    location.hash = "";
+    location.hash = '';
 
-    return import("./happy-unload.app")
+    return import('./happy-unload.app')
       .then((app) => (myApp = app))
-      .then(() => singleSpa.unloadApplication("./happy-unload.app"))
+      .then(() => singleSpa.unloadApplication('./happy-unload.app'))
       .then(() => singleSpa.triggerAppChange())
       .then(() => myApp.reset());
   });
@@ -31,20 +31,16 @@ describe(`happy-unload app :`, () => {
       return singleSpa
         .triggerAppChange()
         .then(() => {
-          expect(singleSpa.getAppStatus("./happy-unload.app")).toEqual(
-            "MOUNTED",
-          );
+          expect(singleSpa.getAppStatus('./happy-unload.app')).toEqual('MOUNTED');
           expect(myApp.getNumInitCalls()).toBe(1);
           expect(myApp.getNumMountCalls()).toBe(1);
           expect(myApp.getNumUnmountCalls()).toBe(0);
           expect(myApp.getNumUnloadCalls()).toBe(0);
-          location.hash = "#";
-          return singleSpa.unloadApplication("./happy-unload.app");
+          location.hash = '#';
+          return singleSpa.unloadApplication('./happy-unload.app');
         })
         .then(() => {
-          expect(singleSpa.getAppStatus("./happy-unload.app")).toEqual(
-            "NOT_LOADED",
-          );
+          expect(singleSpa.getAppStatus('./happy-unload.app')).toEqual('NOT_LOADED');
           expect(myApp.getNumInitCalls()).toBe(1);
           expect(myApp.getNumMountCalls()).toBe(1);
           expect(myApp.getNumUnmountCalls()).toBe(1);
@@ -56,9 +52,7 @@ describe(`happy-unload app :`, () => {
           return singleSpa.triggerAppChange();
         })
         .then(() => {
-          expect(singleSpa.getAppStatus("./happy-unload.app")).toEqual(
-            "MOUNTED",
-          );
+          expect(singleSpa.getAppStatus('./happy-unload.app')).toEqual('MOUNTED');
           expect(myApp.getNumInitCalls()).toBe(2);
           expect(myApp.getNumMountCalls()).toBe(2);
           expect(myApp.getNumUnmountCalls()).toBe(1);
@@ -70,9 +64,7 @@ describe(`happy-unload app :`, () => {
       return singleSpa
         .triggerAppChange()
         .then(() => {
-          expect(singleSpa.getAppStatus("./happy-unload.app")).toEqual(
-            "NOT_LOADED",
-          );
+          expect(singleSpa.getAppStatus('./happy-unload.app')).toEqual('NOT_LOADED');
           expect(myApp.getNumInitCalls()).toBe(0);
           expect(myApp.getNumMountCalls()).toBe(0);
           expect(myApp.getNumUnmountCalls()).toBe(0);
@@ -82,31 +74,25 @@ describe(`happy-unload app :`, () => {
           return singleSpa.triggerAppChange();
         })
         .then(() => {
-          expect(singleSpa.getAppStatus("./happy-unload.app")).toEqual(
-            "MOUNTED",
-          );
+          expect(singleSpa.getAppStatus('./happy-unload.app')).toEqual('MOUNTED');
           expect(myApp.getNumInitCalls()).toBe(1);
           expect(myApp.getNumMountCalls()).toBe(1);
           expect(myApp.getNumUnmountCalls()).toBe(0);
           expect(myApp.getNumUnloadCalls()).toBe(0);
 
-          window.location.hash = "#";
+          window.location.hash = '#';
           return singleSpa.triggerAppChange();
         })
         .then(() => {
-          expect(singleSpa.getAppStatus("./happy-unload.app")).toEqual(
-            "NOT_MOUNTED",
-          );
+          expect(singleSpa.getAppStatus('./happy-unload.app')).toEqual('NOT_MOUNTED');
           expect(myApp.getNumInitCalls()).toBe(1);
           expect(myApp.getNumMountCalls()).toBe(1);
           expect(myApp.getNumUnmountCalls()).toBe(1);
           expect(myApp.getNumUnloadCalls()).toBe(0);
-          return singleSpa.unloadApplication("./happy-unload.app");
+          return singleSpa.unloadApplication('./happy-unload.app');
         })
         .then(() => {
-          expect(singleSpa.getAppStatus("./happy-unload.app")).toEqual(
-            "NOT_LOADED",
-          );
+          expect(singleSpa.getAppStatus('./happy-unload.app')).toEqual('NOT_LOADED');
           expect(myApp.getNumInitCalls()).toBe(1);
           expect(myApp.getNumMountCalls()).toBe(1);
           expect(myApp.getNumUnmountCalls()).toBe(1);
@@ -118,19 +104,15 @@ describe(`happy-unload app :`, () => {
       return singleSpa
         .triggerAppChange()
         .then(() => {
-          expect(singleSpa.getAppStatus("./happy-unload.app")).toEqual(
-            "NOT_LOADED",
-          );
+          expect(singleSpa.getAppStatus('./happy-unload.app')).toEqual('NOT_LOADED');
           expect(myApp.getNumInitCalls()).toBe(0);
           expect(myApp.getNumMountCalls()).toBe(0);
           expect(myApp.getNumUnmountCalls()).toBe(0);
           expect(myApp.getNumUnloadCalls()).toBe(0);
         })
-        .then(() => singleSpa.unloadApplication("./happy-unload.app"))
+        .then(() => singleSpa.unloadApplication('./happy-unload.app'))
         .then(() => {
-          expect(singleSpa.getAppStatus("./happy-unload.app")).toEqual(
-            "NOT_LOADED",
-          );
+          expect(singleSpa.getAppStatus('./happy-unload.app')).toEqual('NOT_LOADED');
           expect(myApp.getNumInitCalls()).toBe(0);
           expect(myApp.getNumMountCalls()).toBe(0);
           expect(myApp.getNumUnmountCalls()).toBe(0);
@@ -144,31 +126,25 @@ describe(`happy-unload app :`, () => {
       return singleSpa
         .triggerAppChange()
         .then(() => {
-          expect(singleSpa.getAppStatus("./happy-unload.app")).toEqual(
-            "MOUNTED",
-          );
+          expect(singleSpa.getAppStatus('./happy-unload.app')).toEqual('MOUNTED');
           expect(myApp.getNumInitCalls()).toBe(1);
           expect(myApp.getNumMountCalls()).toBe(1);
           expect(myApp.getNumUnmountCalls()).toBe(0);
           expect(myApp.getNumUnloadCalls()).toBe(0);
 
-          window.location.hash = "#";
+          window.location.hash = '#';
           return singleSpa.triggerAppChange();
         })
         .then(() => {
-          expect(singleSpa.getAppStatus("./happy-unload.app")).toEqual(
-            "NOT_MOUNTED",
-          );
+          expect(singleSpa.getAppStatus('./happy-unload.app')).toEqual('NOT_MOUNTED');
           expect(myApp.getNumInitCalls()).toBe(1);
           expect(myApp.getNumMountCalls()).toBe(1);
           expect(myApp.getNumUnmountCalls()).toBe(1);
           expect(myApp.getNumUnloadCalls()).toBe(0);
-          return singleSpa.unloadApplication("./happy-unload.app");
+          return singleSpa.unloadApplication('./happy-unload.app');
         })
         .then(() => {
-          expect(singleSpa.getAppStatus("./happy-unload.app")).toEqual(
-            "NOT_LOADED",
-          );
+          expect(singleSpa.getAppStatus('./happy-unload.app')).toEqual('NOT_LOADED');
           expect(myApp.getNumInitCalls()).toBe(1);
           expect(myApp.getNumMountCalls()).toBe(1);
           expect(myApp.getNumUnmountCalls()).toBe(1);
@@ -178,9 +154,7 @@ describe(`happy-unload app :`, () => {
           return singleSpa.triggerAppChange();
         })
         .then(() => {
-          expect(singleSpa.getAppStatus("./happy-unload.app")).toEqual(
-            "MOUNTED",
-          );
+          expect(singleSpa.getAppStatus('./happy-unload.app')).toEqual('MOUNTED');
           expect(myApp.getNumInitCalls()).toBe(2);
           expect(myApp.getNumMountCalls()).toBe(2);
           expect(myApp.getNumUnmountCalls()).toBe(1);
@@ -198,25 +172,21 @@ describe(`happy-unload app :`, () => {
       return singleSpa
         .triggerAppChange()
         .then(() => {
-          expect(singleSpa.getAppStatus("./happy-unload.app")).toEqual(
-            "MOUNTED",
-          );
+          expect(singleSpa.getAppStatus('./happy-unload.app')).toEqual('MOUNTED');
           expect(myApp.getNumInitCalls()).toBe(1);
           expect(myApp.getNumMountCalls()).toBe(1);
           expect(myApp.getNumUnmountCalls()).toBe(0);
           expect(myApp.getNumUnloadCalls()).toBe(0);
 
           originalUnloadPromise = singleSpa
-            .unloadApplication("./happy-unload.app", {
+            .unloadApplication('./happy-unload.app', {
               waitForUnmount: true,
             })
             .then(() => {
               /* This will get called only once the app is unloaded. And it will not
                * wait for the app to get remounted before it is called.
                */
-              expect(singleSpa.getAppStatus("./happy-unload.app")).toEqual(
-                "NOT_LOADED",
-              );
+              expect(singleSpa.getAppStatus('./happy-unload.app')).toEqual('NOT_LOADED');
 
               expect(myApp.getNumInitCalls()).toBe(1);
               expect(myApp.getNumMountCalls()).toBe(1);
@@ -231,9 +201,7 @@ describe(`happy-unload app :`, () => {
           return singleSpa.triggerAppChange();
         })
         .then(() => {
-          expect(singleSpa.getAppStatus("./happy-unload.app")).toEqual(
-            "MOUNTED",
-          );
+          expect(singleSpa.getAppStatus('./happy-unload.app')).toEqual('MOUNTED');
           expect(myApp.getNumInitCalls()).toBe(1);
           expect(myApp.getNumMountCalls()).toBe(1);
           expect(myApp.getNumUnmountCalls()).toBe(0);
@@ -243,9 +211,7 @@ describe(`happy-unload app :`, () => {
           return singleSpa.triggerAppChange();
         })
         .then(() => {
-          expect(singleSpa.getAppStatus("./happy-unload.app")).toEqual(
-            "NOT_LOADED",
-          );
+          expect(singleSpa.getAppStatus('./happy-unload.app')).toEqual('NOT_LOADED');
           expect(myApp.getNumInitCalls()).toBe(1);
           expect(myApp.getNumMountCalls()).toBe(1);
           expect(myApp.getNumUnmountCalls()).toBe(1);
@@ -265,7 +231,7 @@ describe(`happy-unload app :`, () => {
     return singleSpa
       .triggerAppChange()
       .then(() => {
-        expect(singleSpa.getAppStatus("./happy-unload.app")).toEqual("MOUNTED");
+        expect(singleSpa.getAppStatus('./happy-unload.app')).toEqual('MOUNTED');
         expect(myApp.getNumInitCalls()).toBe(1);
         expect(myApp.getNumMountCalls()).toBe(1);
         expect(myApp.getNumUnmountCalls()).toBe(0);
@@ -273,12 +239,12 @@ describe(`happy-unload app :`, () => {
       })
       .then(() => {
         // First caller to unloadApplication wants to waitForUnmount
-        const promise1 = singleSpa.unloadApplication("./happy-unload.app", {
+        const promise1 = singleSpa.unloadApplication('./happy-unload.app', {
           waitForUnmount: true,
         });
 
         // Second caller to unloadApplication doesn't want to waitForUnmount
-        const promise2 = singleSpa.unloadApplication("./happy-unload.app", {
+        const promise2 = singleSpa.unloadApplication('./happy-unload.app', {
           waitForUnmount: false,
         });
 

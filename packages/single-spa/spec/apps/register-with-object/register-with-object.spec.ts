@@ -1,4 +1,4 @@
-import * as singleSpa from "single-spa";
+import * as singleSpa from 'single-spa';
 
 let initialized, mounted;
 
@@ -19,16 +19,12 @@ const app = {
 
 describe(`register-with-object`, () => {
   beforeAll(() => {
-    singleSpa.registerApplication(
-      "register-with-object",
-      app,
-      (location) => location.hash === "#register-with-object",
-    );
+    singleSpa.registerApplication('register-with-object', app, (location) => location.hash === '#register-with-object');
     singleSpa.start();
   });
 
   beforeEach(() => {
-    location.hash = "#not-register-with-object";
+    location.hash = '#not-register-with-object';
 
     initialized = false;
     mounted = false;
@@ -38,14 +34,14 @@ describe(`register-with-object`, () => {
     expect(mounted).toEqual(false);
     expect(singleSpa.getMountedApps()).toEqual([]);
 
-    location.hash = "#register-with-object";
+    location.hash = '#register-with-object';
 
     return singleSpa.triggerAppChange().then(() => {
       expect(initialized).toEqual(true);
       expect(mounted).toEqual(true);
-      expect(singleSpa.getMountedApps()).toEqual(["register-with-object"]);
+      expect(singleSpa.getMountedApps()).toEqual(['register-with-object']);
 
-      location.hash = "#not-register-with-object";
+      location.hash = '#not-register-with-object';
 
       return singleSpa.triggerAppChange().then(() => {
         expect(initialized).toEqual(true);

@@ -1,6 +1,6 @@
-import * as singleSpa from "single-spa";
+import * as singleSpa from 'single-spa';
 
-const activeHash = "#no-object-prototype";
+const activeHash = '#no-object-prototype';
 
 describe(`no-object-prototype app`, () => {
   let myApp;
@@ -13,7 +13,7 @@ describe(`no-object-prototype app`, () => {
     app.unmount = async function () {};
 
     singleSpa.registerApplication({
-      name: "no-object-prototype",
+      name: 'no-object-prototype',
       app,
       activeWhen: (location) => location.hash === activeHash,
     });
@@ -22,20 +22,16 @@ describe(`no-object-prototype app`, () => {
   });
 
   beforeEach(() => {
-    location.hash = "#";
+    location.hash = '#';
   });
 
   it(`works when the application doesn't have the Object prototype`, async () => {
-    expect(singleSpa.getAppStatus("no-object-prototype")).toBe(
-      singleSpa.AppOrParcelStatus.NOT_LOADED,
-    );
+    expect(singleSpa.getAppStatus('no-object-prototype')).toBe(singleSpa.AppOrParcelStatus.NOT_LOADED);
 
     location.hash = activeHash;
 
     await singleSpa.triggerAppChange();
 
-    expect(singleSpa.getAppStatus("no-object-prototype")).toBe(
-      singleSpa.AppOrParcelStatus.MOUNTED,
-    );
+    expect(singleSpa.getAppStatus('no-object-prototype')).toBe(singleSpa.AppOrParcelStatus.MOUNTED);
   });
 });

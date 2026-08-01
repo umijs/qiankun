@@ -1,21 +1,12 @@
-import {
-  toName,
-  AppOrParcelStatus,
-  InternalApplication,
-  AppDevtools,
-} from "../applications/app.helpers";
-import { formatErrorMessage } from "../applications/app-errors";
-import { AppOrParcelTimeouts } from "../applications/timeouts";
+import { toName, AppOrParcelStatus, InternalApplication, AppDevtools } from '../applications/app.helpers';
+import { formatErrorMessage } from '../applications/app-errors';
+import { AppOrParcelTimeouts } from '../applications/timeouts';
 
-export function validLifecycleFn(
-  fn: LifeCycleFn<unknown> | LifeCycleFn<unknown>[],
-): boolean {
-  return fn && (typeof fn === "function" || isArrayOfFns(fn));
+export function validLifecycleFn(fn: LifeCycleFn<unknown> | LifeCycleFn<unknown>[]): boolean {
+  return fn && (typeof fn === 'function' || isArrayOfFns(fn));
 
   function isArrayOfFns(arr) {
-    return (
-      Array.isArray(arr) && !arr.find((item) => typeof item !== "function")
-    );
+    return Array.isArray(arr) && !arr.find((item) => typeof item !== 'function');
   }
 }
 
@@ -31,7 +22,7 @@ export function flattenFnArray(
     fns = [() => Promise.resolve()];
   }
 
-  const type = isParcel ? "parcel" : "application";
+  const type = isParcel ? 'parcel' : 'application';
   const name = toName(appOrParcel);
 
   return function (props: AppProps): Promise<unknown> {
@@ -57,11 +48,7 @@ export function flattenFnArray(
 }
 
 export function smellsLikeAPromise(promise) {
-  return (
-    promise &&
-    typeof promise.then === "function" &&
-    typeof promise.catch === "function"
-  );
+  return promise && typeof promise.then === 'function' && typeof promise.catch === 'function';
 }
 
 export interface CustomProps {
@@ -80,15 +67,11 @@ export type CustomPropsFn<ExtraProps extends CustomProps = CustomProps> = (
 
 export type AppProps = {
   name: string;
-  mountParcel(
-    parcelConfig: ParcelConfig,
-    customProps: ParcelProps & CustomProps,
-  ): Parcel;
+  mountParcel(parcelConfig: ParcelConfig, customProps: ParcelProps & CustomProps): Parcel;
 };
 
 export type ParcelConfig<ExtraProps = CustomProps> =
-  | ParcelConfigObject<ExtraProps>
-  | (() => Promise<ParcelConfigObject<ExtraProps>>);
+  ParcelConfigObject<ExtraProps> | (() => Promise<ParcelConfigObject<ExtraProps>>);
 
 type ParcelProps = { domElement: HTMLElement };
 export type ParcelConfigObject<ExtraProps = CustomProps> = {
@@ -96,9 +79,7 @@ export type ParcelConfigObject<ExtraProps = CustomProps> = {
   timeouts?: AppOrParcelTimeouts;
 } & LifeCycles<ExtraProps>;
 
-export type LifeCycleFn<ExtraProps> = (
-  config: ExtraProps & AppProps,
-) => Promise<any>;
+export type LifeCycleFn<ExtraProps> = (config: ExtraProps & AppProps) => Promise<any>;
 export type LifeCycles<ExtraProps = {}> = {
   init?: LifeCycleFn<ExtraProps> | Array<LifeCycleFn<ExtraProps>>;
   mount: LifeCycleFn<ExtraProps> | Array<LifeCycleFn<ExtraProps>>;
@@ -135,10 +116,10 @@ export interface ParcelMap {
 export interface InternalParcel {
   id: number;
   name: string;
-  init: LifeCycles["init"];
-  mount: LifeCycles["mount"];
-  unmount: LifeCycles["unmount"];
-  update: LifeCycles["update"];
+  init: LifeCycles['init'];
+  mount: LifeCycles['mount'];
+  unmount: LifeCycles['unmount'];
+  update: LifeCycles['update'];
   parcels: ParcelMap;
   status: AppOrParcelStatus;
   customProps: CustomProps;
@@ -156,23 +137,17 @@ interface Loaded extends LifeCycles {
   loadPromise?: Promise<LoadedApp | InternalApplication>;
 }
 
-export type LoadedAppOrParcel =
-  | (InternalApplication & Loaded)
-  | (InternalParcel & Loaded);
+export type LoadedAppOrParcel = (InternalApplication & Loaded) | (InternalParcel & Loaded);
 
 export type LoadedApp = InternalApplication & Loaded;
 
-export type Application<ExtraProps = {}> =
-  | LifeCycles<ExtraProps>
-  | LoadApp<ExtraProps>;
+export type Application<ExtraProps = {}> = LifeCycles<ExtraProps> | LoadApp<ExtraProps>;
 
-export type LoadApp<ExtraProps = {}> = (
-  config: ExtraProps & AppProps,
-) => Promise<LifeCycles<ExtraProps>>;
+export type LoadApp<ExtraProps = {}> = (config: ExtraProps & AppProps) => Promise<LifeCycles<ExtraProps>>;
 
 export interface SingleSpaLocation {
-  pathname: URL["pathname"];
-  hash?: URL["hash"];
+  pathname: URL['pathname'];
+  hash?: URL['hash'];
   search?: string;
 }
 

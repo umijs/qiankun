@@ -5,24 +5,24 @@ import {
   InternalParcel,
   LoadApp,
   ParcelMap,
-} from "../lifecycles/lifecycle.helpers";
-import { handleAppError } from "./app-errors";
-import { AppOrParcelTimeouts } from "./timeouts";
+} from '../lifecycles/lifecycle.helpers';
+import { handleAppError } from './app-errors';
+import { AppOrParcelTimeouts } from './timeouts';
 
 // App statuses
 export enum AppOrParcelStatus {
-  NOT_LOADED = "NOT_LOADED",
-  LOADING_SOURCE_CODE = "LOADING_SOURCE_CODE",
-  NOT_INITIALIZED = "NOT_INITIALIZED",
-  INITIALIZING = "INITIALIZING",
-  NOT_MOUNTED = "NOT_MOUNTED",
-  MOUNTING = "MOUNTING",
-  MOUNTED = "MOUNTED",
-  UPDATING = "UPDATING",
-  UNMOUNTING = "UNMOUNTING",
-  UNLOADING = "UNLOADING",
-  LOAD_ERROR = "LOAD_ERROR",
-  SKIP_BECAUSE_BROKEN = "SKIP_BECAUSE_BROKEN",
+  NOT_LOADED = 'NOT_LOADED',
+  LOADING_SOURCE_CODE = 'LOADING_SOURCE_CODE',
+  NOT_INITIALIZED = 'NOT_INITIALIZED',
+  INITIALIZING = 'INITIALIZING',
+  NOT_MOUNTED = 'NOT_MOUNTED',
+  MOUNTING = 'MOUNTING',
+  MOUNTED = 'MOUNTED',
+  UPDATING = 'UPDATING',
+  UNMOUNTING = 'UNMOUNTING',
+  UNLOADING = 'UNLOADING',
+  LOAD_ERROR = 'LOAD_ERROR',
+  SKIP_BECAUSE_BROKEN = 'SKIP_BECAUSE_BROKEN',
 }
 
 export function isActive(app) {
@@ -42,14 +42,12 @@ export function toName(app) {
   return app.name;
 }
 
-export function isParcel(
-  appOrParcel: AppOrParcel,
-): appOrParcel is InternalParcel {
+export function isParcel(appOrParcel: AppOrParcel): appOrParcel is InternalParcel {
   return Boolean((appOrParcel as InternalParcel).unmountThisParcel);
 }
 
-export function objectType(appOrParcel: AppOrParcel): "parcel" | "application" {
-  return isParcel(appOrParcel) ? "parcel" : "application";
+export function objectType(appOrParcel: AppOrParcel): 'parcel' | 'application' {
+  return isParcel(appOrParcel) ? 'parcel' : 'application';
 }
 
 export interface InternalApplication {

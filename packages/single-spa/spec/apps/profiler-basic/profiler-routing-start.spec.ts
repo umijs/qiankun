@@ -1,8 +1,5 @@
-import * as singleSpa from "single-spa";
-import {
-  clearProfilerData,
-  getProfilerData,
-} from "../../../src/devtools/profiler";
+import * as singleSpa from 'single-spa';
+import { clearProfilerData, getProfilerData } from '../../../src/devtools/profiler';
 
 describe(`profiler routing events after start()`, () => {
   let app, shouldMount;
@@ -31,58 +28,52 @@ describe(`profiler routing events after start()`, () => {
     clearProfilerData();
   });
 
-  it("fires successful unmountAndUnload profiler events", async () => {
-    const profilesBefore = getProfilerEventsByKind("unmountAndUnload");
+  it('fires successful unmountAndUnload profiler events', async () => {
+    const profilesBefore = getProfilerEventsByKind('unmountAndUnload');
     expect(profilesBefore.length).toBe(0);
 
     singleSpa.registerApplication({
-      name: "unmountAndUnload profiler success",
+      name: 'unmountAndUnload profiler success',
       app,
       activeWhen: () => shouldMount,
     });
 
     await singleSpa.triggerAppChange();
 
-    const profilesAfter = getProfilerEventsByKind("unmountAndUnload");
+    const profilesAfter = getProfilerEventsByKind('unmountAndUnload');
     expect(profilesAfter.length).toBeGreaterThan(0);
     expect(profilesAfter[0].operationSucceeded).toBe(true);
   });
 
-  it("fires successful loadAndMount profiler events", async () => {
-    const profilesBefore = getProfilerEventsByKind("loadAndMount");
+  it('fires successful loadAndMount profiler events', async () => {
+    const profilesBefore = getProfilerEventsByKind('loadAndMount');
     expect(profilesBefore.length).toBe(0);
 
     singleSpa.registerApplication({
-      name: "loadAndMount profiler success",
+      name: 'loadAndMount profiler success',
       app,
       activeWhen: () => shouldMount,
     });
 
     await singleSpa.triggerAppChange();
 
-    const profilesAfter = getProfilerEventsByKind("loadAndMount");
+    const profilesAfter = getProfilerEventsByKind('loadAndMount');
     expect(profilesAfter.length).toBeGreaterThan(0);
     expect(profilesAfter[0].operationSucceeded).toBe(true);
   });
 
-  it("fires navigationCanceled profiler events", async () => {
-    const profilesBefore = getProfilerEventsByKind("navigationCanceled");
+  it('fires navigationCanceled profiler events', async () => {
+    const profilesBefore = getProfilerEventsByKind('navigationCanceled');
     expect(profilesBefore.length).toBe(0);
 
-    window.addEventListener(
-      "single-spa:before-routing-event",
-      handleBeforeRouting,
-    );
+    window.addEventListener('single-spa:before-routing-event', handleBeforeRouting);
 
     await singleSpa.triggerAppChange();
 
-    const profilesAfter = getProfilerEventsByKind("navigationCanceled");
+    const profilesAfter = getProfilerEventsByKind('navigationCanceled');
     expect(profilesAfter.length).toBe(1);
 
-    window.removeEventListener(
-      "single-spa:before-routing-event",
-      handleBeforeRouting,
-    );
+    window.removeEventListener('single-spa:before-routing-event', handleBeforeRouting);
 
     function handleBeforeRouting(evt) {
       evt.detail.cancelNavigation();
@@ -91,9 +82,7 @@ describe(`profiler routing events after start()`, () => {
 });
 
 function getProfilerEventsByKind(name) {
-  return getProfilerData().filter(
-    (d) => d.type === "routing" && d.name === name,
-  );
+  return getProfilerData().filter((d) => d.type === 'routing' && d.name === name);
 }
 
 function tick(ms) {

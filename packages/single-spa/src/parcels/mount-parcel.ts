@@ -8,50 +8,38 @@ import {
   ParcelConfig,
   ParcelOwner,
   InternalParcel,
-} from "../lifecycles/lifecycle.helpers";
-import { AppOrParcelStatus, toName } from "../applications/app.helpers";
-import { toInitPromise } from "../lifecycles/init";
-import { toMountPromise } from "../lifecycles/mount";
-import { toUpdatePromise } from "../lifecycles/update";
-import { toUnmountPromise } from "../lifecycles/unmount";
-import { ensureValidAppTimeouts } from "../applications/timeouts";
-import { formatErrorMessage } from "../applications/app-errors";
+} from '../lifecycles/lifecycle.helpers';
+import { AppOrParcelStatus, toName } from '../applications/app.helpers';
+import { toInitPromise } from '../lifecycles/init';
+import { toMountPromise } from '../lifecycles/mount';
+import { toUpdatePromise } from '../lifecycles/update';
+import { toUnmountPromise } from '../lifecycles/unmount';
+import { ensureValidAppTimeouts } from '../applications/timeouts';
+import { formatErrorMessage } from '../applications/app-errors';
 
 let parcelCount: number = 0;
-const rootParcels: ParcelOwner = { name: "rootParcels", parcels: {} };
+const rootParcels: ParcelOwner = { name: 'rootParcels', parcels: {} };
 
 // This is a public api, exported to users of single-spa
-export function mountRootParcel(
-  config: ParcelConfig,
-  customProps: CustomProps,
-) {
+export function mountRootParcel(config: ParcelConfig, customProps: CustomProps) {
   return mountParcel.call(rootParcels, config, customProps);
 }
 
-export function mountParcel(
-  this: ParcelOwner,
-  config: ParcelConfig,
-  customProps: ParcelCustomProps,
-) {
+export function mountParcel(this: ParcelOwner, config: ParcelConfig, customProps: ParcelCustomProps) {
   const owningAppOrParcel = this;
 
   // Validate inputs
-  if (!config || (typeof config !== "object" && typeof config !== "function")) {
+  if (!config || (typeof config !== 'object' && typeof config !== 'function')) {
     throw Error(
-      formatErrorMessage(
-        2,
-        __DEV__ &&
-          "Cannot mount parcel without a config object or config loading function",
-      ),
+      formatErrorMessage(2, __DEV__ && 'Cannot mount parcel without a config object or config loading function'),
     );
   }
 
-  if (config.name && typeof config.name !== "string") {
+  if (config.name && typeof config.name !== 'string') {
     throw Error(
       formatErrorMessage(
         3,
-        __DEV__ &&
-          `Parcel name must be a string, if provided. Was given ${typeof config.name}`,
+        __DEV__ && `Parcel name must be a string, if provided. Was given ${typeof config.name}`,
         typeof config.name,
       ),
     );
@@ -60,12 +48,11 @@ export function mountParcel(
   const id = parcelCount++;
   let name = config.name || `parcel-${id}`;
 
-  if (typeof customProps !== "object") {
+  if (typeof customProps !== 'object') {
     throw Error(
       formatErrorMessage(
         4,
-        __DEV__ &&
-          `Parcel ${name} has invalid customProps -- must be an object but was given ${typeof customProps}`,
+        __DEV__ && `Parcel ${name} has invalid customProps -- must be an object but was given ${typeof customProps}`,
         name,
         typeof customProps,
       ),
@@ -76,24 +63,22 @@ export function mountParcel(
     throw Error(
       formatErrorMessage(
         5,
-        __DEV__ &&
-          `Parcel ${name} cannot be mounted without a domElement provided as a prop`,
+        __DEV__ && `Parcel ${name} cannot be mounted without a domElement provided as a prop`,
         name,
       ),
     );
   }
 
-  const passedConfigLoadingFunction = typeof config === "function";
-  const configLoadingFunction: () => Promise<ParcelConfigObject<CustomProps>> =
-    passedConfigLoadingFunction ? config : () => Promise.resolve(config);
+  const passedConfigLoadingFunction = typeof config === 'function';
+  const configLoadingFunction: () => Promise<ParcelConfigObject<CustomProps>> = passedConfigLoadingFunction
+    ? config
+    : () => Promise.resolve(config);
 
   // Internal representation
   const parcel: Partial<InternalParcel> = {
     id,
     parcels: {},
-    status: passedConfigLoadingFunction
-      ? AppOrParcelStatus.LOADING_SOURCE_CODE
-      : AppOrParcelStatus.NOT_INITIALIZED,
+    status: passedConfigLoadingFunction ? AppOrParcelStatus.LOADING_SOURCE_CODE : AppOrParcelStatus.NOT_INITIALIZED,
     customProps,
     parentName: toName(owningAppOrParcel),
     currentTask: undefined,
@@ -103,8 +88,7 @@ export function mountParcel(
           throw Error(
             formatErrorMessage(
               6,
-              __DEV__ &&
-                `Cannot unmount parcel '${name}' -- it is in a ${parcel.status} status`,
+              __DEV__ && `Cannot unmount parcel '${name}' -- it is in a ${parcel.status} status`,
               name,
               parcel.status,
             ),
@@ -134,7 +118,7 @@ export function mountParcel(
 
   let loadPromise = configLoadingFunction();
 
-  if (!loadPromise || typeof loadPromise.then !== "function") {
+  if (!loadPromise || typeof loadPromise.then !== 'function') {
     throw Error(
       formatErrorMessage(
         7,
@@ -159,55 +143,27 @@ export function mountParcel(
 
     if (
       // ES Module objects don't have the object prototype
-      Object.prototype.hasOwnProperty.call(config, "init") &&
+      Object.prototype.hasOwnProperty.call(config, 'init') &&
       !validLifecycleFn(config.init)
     ) {
-      throw Error(
-        formatErrorMessage(
-          9,
-          __DEV__ && `Parcel ${name} provided an invalid init function`,
-          name,
-        ),
-      );
+      throw Error(formatErrorMessage(9, __DEV__ && `Parcel ${name} provided an invalid init function`, name));
     }
 
     if (!validLifecycleFn(config.mount)) {
-      throw Error(
-        formatErrorMessage(
-          10,
-          __DEV__ && `Parcel ${name} must have a valid mount function`,
-          name,
-        ),
-      );
+      throw Error(formatErrorMessage(10, __DEV__ && `Parcel ${name} must have a valid mount function`, name));
     }
 
     if (!validLifecycleFn(config.unmount)) {
-      throw Error(
-        formatErrorMessage(
-          11,
-          __DEV__ && `Parcel ${name} must have a valid unmount function`,
-          name,
-        ),
-      );
+      throw Error(formatErrorMessage(11, __DEV__ && `Parcel ${name} must have a valid unmount function`, name));
     }
 
     if (config.update && !validLifecycleFn(config.update)) {
-      throw Error(
-        formatErrorMessage(
-          12,
-          __DEV__ && `Parcel ${name} provided an invalid update function`,
-          name,
-        ),
-      );
+      throw Error(formatErrorMessage(12, __DEV__ && `Parcel ${name} provided an invalid update function`, name));
     }
 
-    const init = flattenFnArray(
-      config,
-      config.init ? "init" : "bootstrap",
-      true,
-    );
-    const mount = flattenFnArray(config, "mount", true);
-    const unmount = flattenFnArray(config, "unmount", true);
+    const init = flattenFnArray(config, config.init ? 'init' : 'bootstrap', true);
+    const mount = flattenFnArray(config, 'mount', true);
+    const unmount = flattenFnArray(config, 'unmount', true);
 
     parcel.status = AppOrParcelStatus.NOT_INITIALIZED;
     parcel.name = name;
@@ -217,7 +173,7 @@ export function mountParcel(
     parcel.timeouts = ensureValidAppTimeouts(config.timeouts);
 
     if (config.update) {
-      parcel.update = flattenFnArray(config, "update", true);
+      parcel.update = flattenFnArray(config, 'update', true);
     }
 
     const fullParcel: InternalParcel = parcel as InternalParcel;
@@ -230,13 +186,9 @@ export function mountParcel(
 
   // Start initializing and mounting
   // The .then() causes the work to be put on the event loop instead of happening immediately
-  const initPromise = loadPromise.then(() =>
-    toInitPromise(parcel as InternalParcel, true),
-  );
+  const initPromise = loadPromise.then(() => toInitPromise(parcel as InternalParcel, true));
 
-  const mountPromise = initPromise.then(
-    () => (parcel.currentTask = toMountPromise(parcel as InternalParcel, true)),
-  );
+  const mountPromise = initPromise.then(() => (parcel.currentTask = toMountPromise(parcel as InternalParcel, true)));
   parcel.currentTask = mountPromise;
 
   let resolveUnmount, rejectUnmount;
@@ -254,8 +206,7 @@ export function mountParcel(
             throw Error(
               formatErrorMessage(
                 13,
-                __DEV__ &&
-                  `Cannot mount parcel '${name}' -- it is in a ${parcel.status} status`,
+                __DEV__ && `Cannot mount parcel '${name}' -- it is in a ${parcel.status} status`,
                 name,
                 parcel.status,
               ),
@@ -289,9 +240,7 @@ export function mountParcel(
           return (parcel.currentTask = parcel.currentTask.then(() => {
             parcel.customProps = customProps;
 
-            return promiseWithoutReturnValue(
-              toUpdatePromise(parcel as InternalParcel),
-            );
+            return promiseWithoutReturnValue(toUpdatePromise(parcel as InternalParcel));
           }));
         };
       }

@@ -1,4 +1,4 @@
-import * as singleSpa from "single-spa";
+import * as singleSpa from 'single-spa';
 
 const activeHash = `#lifecycle-props-function`;
 
@@ -9,8 +9,8 @@ describe(`lifecycle-props-function app`, () => {
     singleSpa.start();
 
     singleSpa.registerApplication(
-      "lifecycle-props-function",
-      () => import("./lifecycle-props-function.app"),
+      'lifecycle-props-function',
+      () => import('./lifecycle-props-function.app'),
       (location) => location.hash === activeHash,
       (name, location) => {
         return customProps;
@@ -19,12 +19,12 @@ describe(`lifecycle-props-function app`, () => {
   });
 
   beforeEach(async () => {
-    const app = await import("./lifecycle-props-function.app");
+    const app = await import('./lifecycle-props-function.app');
     myApp = app;
     app.reset();
     customProps = {};
 
-    jest.spyOn(console, "warn");
+    jest.spyOn(console, 'warn');
   });
 
   afterEach(() => {
@@ -33,7 +33,7 @@ describe(`lifecycle-props-function app`, () => {
 
   it(`is given dynamic props from a function for each lifecycle function`, async () => {
     customProps = {
-      dynamically: "set",
+      dynamically: 'set',
     };
 
     // This mounts the app
@@ -43,17 +43,17 @@ describe(`lifecycle-props-function app`, () => {
     // This unmounts the app
     window.location.hash = `#/no-app`;
     await singleSpa.triggerAppChange();
-    await singleSpa.unloadApplication("lifecycle-props-function");
+    await singleSpa.unloadApplication('lifecycle-props-function');
 
-    expect(myApp.getInitProps().name).toEqual("lifecycle-props-function");
-    expect(myApp.getMountProps().name).toEqual("lifecycle-props-function");
-    expect(myApp.getUnmountProps().name).toEqual("lifecycle-props-function");
-    expect(myApp.getUnloadProps().name).toEqual("lifecycle-props-function");
+    expect(myApp.getInitProps().name).toEqual('lifecycle-props-function');
+    expect(myApp.getMountProps().name).toEqual('lifecycle-props-function');
+    expect(myApp.getUnmountProps().name).toEqual('lifecycle-props-function');
+    expect(myApp.getUnloadProps().name).toEqual('lifecycle-props-function');
 
-    expect(myApp.getInitProps().dynamically).toEqual("set");
-    expect(myApp.getMountProps().dynamically).toEqual("set");
-    expect(myApp.getUnmountProps().dynamically).toEqual("set");
-    expect(myApp.getUnloadProps().dynamically).toEqual("set");
+    expect(myApp.getInitProps().dynamically).toEqual('set');
+    expect(myApp.getMountProps().dynamically).toEqual('set');
+    expect(myApp.getUnmountProps().dynamically).toEqual('set');
+    expect(myApp.getUnloadProps().dynamically).toEqual('set');
 
     expect(console.warn).not.toHaveBeenCalled();
   });
@@ -68,12 +68,12 @@ describe(`lifecycle-props-function app`, () => {
     // This unmounts the app
     window.location.hash = `#/no-app`;
     await singleSpa.triggerAppChange();
-    await singleSpa.unloadApplication("lifecycle-props-function");
+    await singleSpa.unloadApplication('lifecycle-props-function');
 
-    expect(myApp.getInitProps().name).toEqual("lifecycle-props-function");
-    expect(myApp.getMountProps().name).toEqual("lifecycle-props-function");
-    expect(myApp.getUnmountProps().name).toEqual("lifecycle-props-function");
-    expect(myApp.getUnloadProps().name).toEqual("lifecycle-props-function");
+    expect(myApp.getInitProps().name).toEqual('lifecycle-props-function');
+    expect(myApp.getMountProps().name).toEqual('lifecycle-props-function');
+    expect(myApp.getUnmountProps().name).toEqual('lifecycle-props-function');
+    expect(myApp.getUnloadProps().name).toEqual('lifecycle-props-function');
 
     expect(console.warn).toHaveBeenCalled();
     expect(console.warn.mock.calls[0][0]).toMatch(
@@ -82,7 +82,7 @@ describe(`lifecycle-props-function app`, () => {
   });
 
   it(`logs a warning if the custom props function doesn't return an object`, async () => {
-    customProps = "string";
+    customProps = 'string';
 
     // This mounts the app
     window.location.hash = activeHash;
@@ -91,12 +91,12 @@ describe(`lifecycle-props-function app`, () => {
     // This unmounts the app
     window.location.hash = `#/no-app`;
     await singleSpa.triggerAppChange();
-    await singleSpa.unloadApplication("lifecycle-props-function");
+    await singleSpa.unloadApplication('lifecycle-props-function');
 
-    expect(myApp.getInitProps().name).toEqual("lifecycle-props-function");
-    expect(myApp.getMountProps().name).toEqual("lifecycle-props-function");
-    expect(myApp.getUnmountProps().name).toEqual("lifecycle-props-function");
-    expect(myApp.getUnloadProps().name).toEqual("lifecycle-props-function");
+    expect(myApp.getInitProps().name).toEqual('lifecycle-props-function');
+    expect(myApp.getMountProps().name).toEqual('lifecycle-props-function');
+    expect(myApp.getUnmountProps().name).toEqual('lifecycle-props-function');
+    expect(myApp.getUnloadProps().name).toEqual('lifecycle-props-function');
 
     expect(console.warn).toHaveBeenCalled();
     expect(console.warn.mock.calls[0][0]).toMatch(
@@ -114,12 +114,12 @@ describe(`lifecycle-props-function app`, () => {
     // This unmounts the app
     window.location.hash = `#/no-app`;
     await singleSpa.triggerAppChange();
-    await singleSpa.unloadApplication("lifecycle-props-function");
+    await singleSpa.unloadApplication('lifecycle-props-function');
 
-    expect(myApp.getInitProps().name).toEqual("lifecycle-props-function");
-    expect(myApp.getMountProps().name).toEqual("lifecycle-props-function");
-    expect(myApp.getUnmountProps().name).toEqual("lifecycle-props-function");
-    expect(myApp.getUnloadProps().name).toEqual("lifecycle-props-function");
+    expect(myApp.getInitProps().name).toEqual('lifecycle-props-function');
+    expect(myApp.getMountProps().name).toEqual('lifecycle-props-function');
+    expect(myApp.getUnmountProps().name).toEqual('lifecycle-props-function');
+    expect(myApp.getUnloadProps().name).toEqual('lifecycle-props-function');
 
     expect(console.warn).toHaveBeenCalled();
     expect(console.warn.mock.calls[0][0]).toMatch(

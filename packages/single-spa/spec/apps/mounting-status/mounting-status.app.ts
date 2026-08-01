@@ -5,7 +5,7 @@ export function getEventTarget() {
 }
 export async function init() {}
 export async function mount() {
-  eventTarget.dispatchEvent(new CustomEvent("mount-start"));
+  eventTarget.dispatchEvent(new CustomEvent('mount-start'));
   await new Promise((r) => setTimeout(r, 20));
 }
 export async function unmount() {}

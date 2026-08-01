@@ -1,5 +1,5 @@
-import { AppOrParcel } from "../lifecycles/lifecycle.helpers";
-import { AppOrParcelStatus, objectType, toName } from "./app.helpers";
+import { AppOrParcel } from '../lifecycles/lifecycle.helpers';
+import { AppOrParcelStatus, objectType, toName } from './app.helpers';
 
 let errorHandlers: ErrorHandler[] = [];
 
@@ -9,11 +9,7 @@ export type SingleSpaError = Error & {
 
 export type ErrorHandler = (err: SingleSpaError) => any;
 
-export function handleAppError(
-  err: Error,
-  app: AppOrParcel,
-  newStatus: AppOrParcelStatus,
-) {
+export function handleAppError(err: Error, app: AppOrParcel, newStatus: AppOrParcelStatus) {
   const transformedErr = transformErr(err, app, newStatus);
 
   if (errorHandlers.length) {
@@ -26,26 +22,16 @@ export function handleAppError(
 }
 
 export function addErrorHandler(handler) {
-  if (typeof handler !== "function") {
-    throw Error(
-      formatErrorMessage(
-        28,
-        __DEV__ && "a single-spa error handler must be a function",
-      ),
-    );
+  if (typeof handler !== 'function') {
+    throw Error(formatErrorMessage(28, __DEV__ && 'a single-spa error handler must be a function'));
   }
 
   errorHandlers.push(handler);
 }
 
 export function removeErrorHandler(handler) {
-  if (typeof handler !== "function") {
-    throw Error(
-      formatErrorMessage(
-        29,
-        __DEV__ && "a single-spa error handler must be a function",
-      ),
-    );
+  if (typeof handler !== 'function') {
+    throw Error(formatErrorMessage(29, __DEV__ && 'a single-spa error handler must be a function'));
   }
 
   let removedSomething = false;
@@ -60,20 +46,12 @@ export function removeErrorHandler(handler) {
 
 export function formatErrorMessage(code, msg, ...args) {
   return `single-spa minified message #${code}: ${
-    msg ? msg + " " : ""
-  }See https://single-spa.js.org/error/?code=${code}${
-    args.length ? `&arg=${args.join("&arg=")}` : ""
-  }`;
+    msg ? msg + ' ' : ''
+  }See https://single-spa.js.org/error/?code=${code}${args.length ? `&arg=${args.join('&arg=')}` : ''}`;
 }
 
-export function transformErr(
-  ogErr: Error,
-  appOrParcel: AppOrParcel,
-  newStatus: AppOrParcelStatus,
-): SingleSpaError {
-  const errPrefix = `${objectType(appOrParcel)} '${toName(
-    appOrParcel,
-  )}' died in status ${appOrParcel.status}: `;
+export function transformErr(ogErr: Error, appOrParcel: AppOrParcel, newStatus: AppOrParcelStatus): SingleSpaError {
+  const errPrefix = `${objectType(appOrParcel)} '${toName(appOrParcel)}' died in status ${appOrParcel.status}: `;
 
   let result: Error;
 

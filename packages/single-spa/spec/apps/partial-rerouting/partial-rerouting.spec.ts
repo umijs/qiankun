@@ -1,6 +1,6 @@
-import * as singleSpa from "single-spa";
+import * as singleSpa from 'single-spa';
 
-describe("partial rerouting", () => {
+describe('partial rerouting', () => {
   function delay() {
     return new Promise((resolve) => setTimeout(resolve));
   }
@@ -8,11 +8,11 @@ describe("partial rerouting", () => {
   beforeAll(() => singleSpa.start());
 
   beforeEach(() => {
-    location.hash = "#";
+    location.hash = '#';
   });
 
   it("shouldn't init and mount app if the route has been changed while app was loading, but if the user navigates back it should be initialized and mounted successfully", async () => {
-    const activeHash = "#partial-rerouting";
+    const activeHash = '#partial-rerouting';
 
     let initialized = false;
     let mounted = false;
@@ -31,7 +31,7 @@ describe("partial rerouting", () => {
     };
 
     singleSpa.registerApplication(
-      "partial-rerouting",
+      'partial-rerouting',
       () => delay().then(() => app),
       (location) => location.hash === activeHash,
     );
@@ -40,7 +40,7 @@ describe("partial rerouting", () => {
 
     const promise = singleSpa.triggerAppChange();
 
-    singleSpa.navigateToUrl("#another-url");
+    singleSpa.navigateToUrl('#another-url');
     await Promise.all([singleSpa.triggerAppChange(), promise]);
 
     expect(initialized).toBeFalsy();
@@ -53,13 +53,13 @@ describe("partial rerouting", () => {
     expect(initialized).toBeTruthy();
     expect(mounted).toBeTruthy();
 
-    singleSpa.navigateToUrl("#another-url");
+    singleSpa.navigateToUrl('#another-url');
     await singleSpa.triggerAppChange();
 
     expect(unmounted).toBeTruthy();
   });
 
-  it("should initialize and mount second app succcessfully, but should skip initializing and mounting first app if the route has been changed", async () => {
+  it('should initialize and mount second app succcessfully, but should skip initializing and mounting first app if the route has been changed', async () => {
     let firstAppInitialized = false,
       firstAppMounted = false,
       firstAppUnmounted = false;
@@ -92,17 +92,17 @@ describe("partial rerouting", () => {
       },
     };
 
-    const firstAppActiveHash = "#first-app";
-    const secondAppActiveHash = "#second-app";
+    const firstAppActiveHash = '#first-app';
+    const secondAppActiveHash = '#second-app';
 
     singleSpa.registerApplication(
-      "first-app",
+      'first-app',
       () => delay().then(() => firstApp),
       (location) => location.hash === firstAppActiveHash,
     );
 
     singleSpa.registerApplication(
-      "second-app",
+      'second-app',
       () => Promise.resolve(secondApp),
       (location) => location.hash === secondAppActiveHash,
     );

@@ -1,12 +1,12 @@
-import * as singleSpa from "single-spa";
-import * as app from "./init-prioritized-over-bootstrap.app";
+import * as singleSpa from 'single-spa';
+import * as app from './init-prioritized-over-bootstrap.app';
 
 describe(`init-prioritized-over-bootstrap`, () => {
   it(`calls the init lifecycle rather than bootstrap`, async () => {
     singleSpa.registerApplication({
-      name: "legacy-bootstrap",
+      name: 'legacy-bootstrap',
       app,
-      activeWhen: ["/"],
+      activeWhen: ['/'],
     });
 
     singleSpa.start();

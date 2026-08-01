@@ -1,4 +1,4 @@
-import * as singleSpa from "single-spa";
+import * as singleSpa from 'single-spa';
 
 const activeHash = `#mount-times-out`;
 
@@ -11,22 +11,20 @@ describe(`mount-times-out app`, () => {
 
   beforeAll(() => {
     singleSpa.registerApplication(
-      "./mount-times-out.app",
-      () => import("./mount-times-out.app"),
+      './mount-times-out.app',
+      () => import('./mount-times-out.app'),
       (location) => location.hash === activeHash,
     );
     singleSpa.start();
   });
 
   beforeEach(() => {
-    location.hash = "#";
+    location.hash = '#';
 
     errs = [];
     singleSpa.addErrorHandler(handleError);
 
-    return import("./mount-times-out.app")
-      .then((app) => (myApp = app))
-      .then((app) => app.reset());
+    return import('./mount-times-out.app').then((app) => (myApp = app)).then((app) => app.reset());
   });
 
   afterEach(() => singleSpa.removeErrorHandler(handleError));
@@ -37,10 +35,8 @@ describe(`mount-times-out app`, () => {
     return singleSpa.triggerAppChange().then(() => {
       expect(myApp.inits()).toEqual(1);
       expect(myApp.mounts()).toEqual(1);
-      expect(singleSpa.getMountedApps()).toEqual(["./mount-times-out.app"]);
-      expect(singleSpa.getAppStatus("./mount-times-out.app")).toEqual(
-        "MOUNTED",
-      );
+      expect(singleSpa.getMountedApps()).toEqual(['./mount-times-out.app']);
+      expect(singleSpa.getAppStatus('./mount-times-out.app')).toEqual('MOUNTED');
     });
   });
 });

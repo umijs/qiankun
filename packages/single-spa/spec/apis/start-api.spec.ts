@@ -1,6 +1,6 @@
-import { registerApplication } from "../../src/single-spa";
+import { registerApplication } from '../../src/single-spa';
 
-describe("start()", () => {
+describe('start()', () => {
   beforeAll(() => {
     jest.useFakeTimers({ legacyFakeTimers: true });
   });
@@ -9,18 +9,18 @@ describe("start()", () => {
   });
 
   it(`does not throw an error before start() is called`, async () => {
-    jest.spyOn(console, "warn");
+    jest.spyOn(console, 'warn');
 
     jest.advanceTimersByTime(5000);
     expect(console.warn).not.toHaveBeenCalled();
 
     registerApplication({
-      name: "app1",
+      name: 'app1',
       app: {
         async mount() {},
         async unmount() {},
       },
-      activeWhen: "/",
+      activeWhen: '/',
     });
     jest.advanceTimersByTime(5000);
 

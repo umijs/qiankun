@@ -1,4 +1,4 @@
-import * as singleSpa from "single-spa";
+import * as singleSpa from 'single-spa';
 
 describe(`app-names`, () => {
   beforeAll(() => {
@@ -13,23 +13,16 @@ describe(`app-names`, () => {
         return Promise.resolve();
       },
     };
-    singleSpa.registerApplication(
-      "usingArgumentAPI",
-      app,
-      (location) => location.hash === "#app-names",
-    );
+    singleSpa.registerApplication('usingArgumentAPI', app, (location) => location.hash === '#app-names');
     singleSpa.registerApplication({
-      name: "usingObjectAPI",
+      name: 'usingObjectAPI',
       app,
-      activeWhen: (location) => location.hash === "#app-names",
+      activeWhen: (location) => location.hash === '#app-names',
     });
     singleSpa.start();
   });
 
   it(`should return all registered app names up to this point regardless of activity`, () => {
-    expect(singleSpa.getAppNames()).toEqual([
-      "usingArgumentAPI",
-      "usingObjectAPI",
-    ]);
+    expect(singleSpa.getAppNames()).toEqual(['usingArgumentAPI', 'usingObjectAPI']);
   });
 });

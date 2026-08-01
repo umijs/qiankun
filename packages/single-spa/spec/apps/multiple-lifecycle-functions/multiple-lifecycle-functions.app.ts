@@ -16,10 +16,8 @@ export const init = [
   function init1() {
     return new Promise((resolve) => {
       setTimeout(() => {
-        if (_init2Called)
-          _initsCalledOutOfOrder = `init 2 called before init 1`;
-        if (_init3Called)
-          _initsCalledOutOfOrder = `init 3 called before init 1`;
+        if (_init2Called) _initsCalledOutOfOrder = `init 2 called before init 1`;
+        if (_init3Called) _initsCalledOutOfOrder = `init 3 called before init 1`;
         _init1Called = true;
         resolve();
       }, 10);
@@ -46,10 +44,8 @@ export const mount = [
   function mount1() {
     return new Promise((resolve) => {
       setTimeout(() => {
-        if (_mount2Called)
-          _mountsCalledOutOfOrder = `mount 2 called before mount 1`;
-        if (_mount3Called)
-          _mountsCalledOutOfOrder = `mount 3 called before mount 1`;
+        if (_mount2Called) _mountsCalledOutOfOrder = `mount 2 called before mount 1`;
+        if (_mount3Called) _mountsCalledOutOfOrder = `mount 3 called before mount 1`;
         _mount1Called = true;
         resolve();
       }, 10);
@@ -58,8 +54,7 @@ export const mount = [
 
   function mount2() {
     return new Promise((resolve) => {
-      if (_mount3Called)
-        _mountsCalledOutOfOrder = `mount 2 called before mount 3`;
+      if (_mount3Called) _mountsCalledOutOfOrder = `mount 2 called before mount 3`;
       _mount2Called = true;
       resolve();
     });
@@ -77,10 +72,8 @@ export const unmount = [
   function unmount1() {
     return new Promise((resolve) => {
       setTimeout(() => {
-        if (_unmount2Called)
-          _unmountsCalledOutOfOrder = `unmount 2 called before unmount 1`;
-        if (_unmount3Called)
-          _unmountsCalledOutOfOrder = `unmount 3 called before unmount 1`;
+        if (_unmount2Called) _unmountsCalledOutOfOrder = `unmount 2 called before unmount 1`;
+        if (_unmount3Called) _unmountsCalledOutOfOrder = `unmount 3 called before unmount 1`;
         _unmount1Called = true;
         resolve();
       }, 10);
@@ -89,8 +82,7 @@ export const unmount = [
 
   function unmount2() {
     return new Promise((resolve) => {
-      if (_unmount3Called)
-        _unmountsCalledOutOfOrder = `unmount 2 called before unmount 3`;
+      if (_unmount3Called) _unmountsCalledOutOfOrder = `unmount 2 called before unmount 3`;
       _unmount2Called = true;
       resolve();
     });
@@ -105,10 +97,7 @@ export const unmount = [
 ];
 
 export function reset() {
-  _initsCalledOutOfOrder =
-    _mountsCalledOutOfOrder =
-    _unmountsCalledOutOfOrder =
-      undefined;
+  _initsCalledOutOfOrder = _mountsCalledOutOfOrder = _unmountsCalledOutOfOrder = undefined;
   _init1Called =
     _init2Called =
     _init3Called =

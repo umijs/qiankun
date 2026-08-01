@@ -1,4 +1,4 @@
-import * as singleSpa from "single-spa";
+import * as singleSpa from 'single-spa';
 
 const activeHash = `#invalid-init`;
 
@@ -12,8 +12,8 @@ describe(`invalid-init app`, () => {
 
   beforeAll(() => {
     singleSpa.registerApplication(
-      "./invalid-init.app",
-      () => import("./invalid-init.app"),
+      './invalid-init.app',
+      () => import('./invalid-init.app'),
       (location) => location.hash === activeHash,
     );
     singleSpa.start();
@@ -25,9 +25,7 @@ describe(`invalid-init app`, () => {
     errs = [];
     singleSpa.addErrorHandler(handleError);
 
-    return import("./invalid-init.app")
-      .then((app) => (myApp = app))
-      .then((app) => app.reset());
+    return import('./invalid-init.app').then((app) => (myApp = app)).then((app) => app.reset());
   });
 
   afterEach(() => {
@@ -39,9 +37,7 @@ describe(`invalid-init app`, () => {
       expect(myApp.mountWasCalled()).toEqual(false);
       expect(myApp.unmountWasCalled()).toEqual(false);
       expect(singleSpa.getMountedApps()).toEqual([]);
-      expect(singleSpa.getAppStatus("./invalid-init.app")).toEqual(
-        "SKIP_BECAUSE_BROKEN",
-      );
+      expect(singleSpa.getAppStatus('./invalid-init.app')).toEqual('SKIP_BECAUSE_BROKEN');
       expect(errs.length).toBeGreaterThan(0);
     });
   });

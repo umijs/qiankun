@@ -1,7 +1,7 @@
-import { getProps } from "../lifecycles/prop.helpers";
-import { objectType, toName } from "./app.helpers";
-import { formatErrorMessage } from "./app-errors";
-import { AppOrParcel } from "../lifecycles/lifecycle.helpers";
+import { getProps } from '../lifecycles/prop.helpers';
+import { objectType, toName } from './app.helpers';
+import { formatErrorMessage } from './app-errors';
+import { AppOrParcel } from '../lifecycles/lifecycle.helpers';
 
 export interface AppOrParcelTimeouts {
   init: Timeout;
@@ -47,19 +47,9 @@ const globalTimeoutConfig: AppOrParcelTimeouts = {
   },
 };
 
-export function setInitMaxTime(
-  time: number,
-  dieOnTimeout: boolean,
-  warningMillis: number,
-): void {
-  if (typeof time !== "number" || time <= 0) {
-    throw Error(
-      formatErrorMessage(
-        16,
-        __DEV__ &&
-          `init max time must be a positive integer number of milliseconds`,
-      ),
-    );
+export function setInitMaxTime(time: number, dieOnTimeout: boolean, warningMillis: number): void {
+  if (typeof time !== 'number' || time <= 0) {
+    throw Error(formatErrorMessage(16, __DEV__ && `init max time must be a positive integer number of milliseconds`));
   }
 
   globalTimeoutConfig.init = {
@@ -69,19 +59,9 @@ export function setInitMaxTime(
   };
 }
 
-export function setMountMaxTime(
-  time: number,
-  dieOnTimeout: boolean,
-  warningMillis: number,
-): void {
-  if (typeof time !== "number" || time <= 0) {
-    throw Error(
-      formatErrorMessage(
-        17,
-        __DEV__ &&
-          `mount max time must be a positive integer number of milliseconds`,
-      ),
-    );
+export function setMountMaxTime(time: number, dieOnTimeout: boolean, warningMillis: number): void {
+  if (typeof time !== 'number' || time <= 0) {
+    throw Error(formatErrorMessage(17, __DEV__ && `mount max time must be a positive integer number of milliseconds`));
   }
 
   globalTimeoutConfig.mount = {
@@ -91,18 +71,10 @@ export function setMountMaxTime(
   };
 }
 
-export function setUnmountMaxTime(
-  time: number,
-  dieOnTimeout: boolean,
-  warningMillis: number,
-) {
-  if (typeof time !== "number" || time <= 0) {
+export function setUnmountMaxTime(time: number, dieOnTimeout: boolean, warningMillis: number) {
+  if (typeof time !== 'number' || time <= 0) {
     throw Error(
-      formatErrorMessage(
-        18,
-        __DEV__ &&
-          `unmount max time must be a positive integer number of milliseconds`,
-      ),
+      formatErrorMessage(18, __DEV__ && `unmount max time must be a positive integer number of milliseconds`),
     );
   }
 
@@ -113,19 +85,9 @@ export function setUnmountMaxTime(
   };
 }
 
-export function setUnloadMaxTime(
-  time: number,
-  dieOnTimeout: boolean,
-  warningMillis: number,
-) {
-  if (typeof time !== "number" || time <= 0) {
-    throw Error(
-      formatErrorMessage(
-        19,
-        __DEV__ &&
-          `unload max time must be a positive integer number of milliseconds`,
-      ),
-    );
+export function setUnloadMaxTime(time: number, dieOnTimeout: boolean, warningMillis: number) {
+  if (typeof time !== 'number' || time <= 0) {
+    throw Error(formatErrorMessage(19, __DEV__ && `unload max time must be a positive integer number of milliseconds`));
   }
 
   globalTimeoutConfig.unload = {
@@ -137,7 +99,7 @@ export function setUnloadMaxTime(
 
 export function reasonableTime(
   appOrParcel: AppOrParcel,
-  lifecycle: "init" | "mount" | "update" | "unmount" | "unload",
+  lifecycle: 'init' | 'mount' | 'update' | 'unmount' | 'unload',
 ): Promise<any> {
   const timeoutConfig = appOrParcel.timeouts[lifecycle];
   const warningPeriod = timeoutConfig.warningMillis;
@@ -195,17 +157,11 @@ export function reasonableTime(
   });
 }
 
-export function ensureValidAppTimeouts(
-  timeouts: Partial<AppOrParcelTimeouts>,
-): AppOrParcelTimeouts {
+export function ensureValidAppTimeouts(timeouts: Partial<AppOrParcelTimeouts>): AppOrParcelTimeouts {
   const result = {};
 
   for (let key in globalTimeoutConfig) {
-    result[key] = Object.assign(
-      {},
-      globalTimeoutConfig[key],
-      timeouts?.[key] ?? {},
-    );
+    result[key] = Object.assign({}, globalTimeoutConfig[key], timeouts?.[key] ?? {});
   }
 
   return result as AppOrParcelTimeouts;

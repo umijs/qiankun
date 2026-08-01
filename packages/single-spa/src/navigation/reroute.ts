@@ -1,28 +1,16 @@
-import { isStarted } from "../start";
-import { toLoadPromise } from "../lifecycles/load";
-import { toInitPromise } from "../lifecycles/init";
-import { toMountPromise } from "../lifecycles/mount";
-import { toUnmountPromise } from "../lifecycles/unmount";
-import {
-  getAppStatus,
-  getAppChanges,
-  getMountedApps,
-} from "../applications/apps";
-import {
-  callCapturedEventListeners,
-  originalReplaceState,
-} from "./navigation-events";
-import { toUnloadPromise } from "../lifecycles/unload";
-import {
-  toName,
-  shouldBeActive,
-  AppOrParcelStatus,
-  InternalApplication,
-} from "../applications/app.helpers";
-import { isInBrowser } from "../utils/runtime-environment";
-import { formatErrorMessage } from "../applications/app-errors";
-import { ProfileEntry, addProfileEntry } from "../devtools/profiler";
-import { LoadedApp } from "../lifecycles/lifecycle.helpers";
+import { isStarted } from '../start';
+import { toLoadPromise } from '../lifecycles/load';
+import { toInitPromise } from '../lifecycles/init';
+import { toMountPromise } from '../lifecycles/mount';
+import { toUnmountPromise } from '../lifecycles/unmount';
+import { getAppStatus, getAppChanges, getMountedApps } from '../applications/apps';
+import { callCapturedEventListeners, originalReplaceState } from './navigation-events';
+import { toUnloadPromise } from '../lifecycles/unload';
+import { toName, shouldBeActive, AppOrParcelStatus, InternalApplication } from '../applications/app.helpers';
+import { isInBrowser } from '../utils/runtime-environment';
+import { formatErrorMessage } from '../applications/app-errors';
+import { ProfileEntry, addProfileEntry } from '../devtools/profiler';
+import { LoadedApp } from '../lifecycles/lifecycle.helpers';
 
 type EventArguments = [HashChangeEvent | PopStateEvent];
 
@@ -56,21 +44,20 @@ export function reroute(
     });
   }
 
-  let startTime: number, profilerKind: ProfileEntry["kind"];
+  let startTime: number, profilerKind: ProfileEntry['kind'];
 
   if (__PROFILE__) {
     startTime = performance.now();
     if (silentNavigation) {
-      profilerKind = "silentNavigation";
+      profilerKind = 'silentNavigation';
     } else if (eventArguments) {
-      profilerKind = "browserNavigation";
+      profilerKind = 'browserNavigation';
     } else {
-      profilerKind = "triggerAppChange";
+      profilerKind = 'triggerAppChange';
     }
   }
 
-  const { appsToUnload, appsToUnmount, appsToLoad, appsToMount } =
-    getAppChanges();
+  const { appsToUnload, appsToUnmount, appsToLoad, appsToMount } = getAppChanges();
   let appsThatChanged: InternalApplication[],
     cancelPromises: Promise<unknown>[] = [],
     oldUrl: string = currentUrl,
@@ -78,11 +65,7 @@ export function reroute(
 
   if (isStarted()) {
     appChangeUnderway = true;
-    appsThatChanged = appsToUnload.concat(
-      appsToLoad,
-      appsToUnmount,
-      appsToMount,
-    );
+    appsThatChanged = appsToUnload.concat(appsToLoad, appsToUnmount, appsToMount);
     return performAppChanges();
   } else {
     appsThatChanged = appsToLoad;
@@ -91,17 +74,14 @@ export function reroute(
 
   function cancelNavigation(val: boolean | Promise<boolean> = true) {
     const promise: Promise<boolean> =
-      typeof (val as Promise<boolean>)?.then === "function"
-        ? (val as Promise<boolean>)
-        : Promise.resolve(val);
+      typeof (val as Promise<boolean>)?.then === 'function' ? (val as Promise<boolean>) : Promise.resolve(val);
     cancelPromises.push(
       promise.catch((err) => {
         console.warn(
           Error(
             formatErrorMessage(
               42,
-              __DEV__ &&
-                `single-spa: A cancelNavigation promise rejected with the following value: ${err}`,
+              __DEV__ && `single-spa: A cancelNavigation promise rejected with the following value: ${err}`,
             ),
           ),
         );
@@ -139,14 +119,7 @@ export function reroute(
           })
           .finally(() => {
             if (__PROFILE__) {
-              addProfileEntry(
-                "routing",
-                "loadApps",
-                profilerKind,
-                startTime,
-                performance.now(),
-                succeeded,
-              );
+              addProfileEntry('routing', 'loadApps', profilerKind, startTime, performance.now(), succeeded);
             }
           })
       );
@@ -157,28 +130,18 @@ export function reroute(
     return Promise.resolve().then(() => {
       // https://github.com/single-spa/single-spa/issues/545
       fireSingleSpaEvent(
-        appsThatChanged.length === 0
-          ? "before-no-app-change"
-          : "before-app-change",
+        appsThatChanged.length === 0 ? 'before-no-app-change' : 'before-app-change',
         getCustomEventDetail(true),
       );
 
-      fireSingleSpaEvent(
-        "before-routing-event",
-        getCustomEventDetail(true, { cancelNavigation }),
-      );
+      fireSingleSpaEvent('before-routing-event', getCustomEventDetail(true, { cancelNavigation }));
 
       return Promise.all(cancelPromises).then((cancelValues) => {
         const navigationIsCanceled: boolean = cancelValues.some((v) => v);
 
         if (navigationIsCanceled) {
           // Change url back to old url, without triggering the normal single-spa reroute
-          originalReplaceState.call(
-            window.history,
-            history.state,
-            "",
-            oldUrl.substring(location.origin.length),
-          );
+          originalReplaceState.call(window.history, history.state, '', oldUrl.substring(location.origin.length));
 
           // Single-spa's internal tracking of current url needs to be updated after the url change above
           currentUrl = location.href;
@@ -187,33 +150,20 @@ export function reroute(
           appChangeUnderway = false;
 
           if (__PROFILE__) {
-            addProfileEntry(
-              "routing",
-              "navigationCanceled",
-              profilerKind,
-              startTime,
-              performance.now(),
-              true,
-            );
+            addProfileEntry('routing', 'navigationCanceled', profilerKind, startTime, performance.now(), true);
           }
 
           // Tell single-spa to reroute again, this time with the url set to the old URL
           return reroute(pendingPromises, eventArguments, true);
         }
 
-        const unloadPromises: Promise<InternalApplication>[] =
-          appsToUnload.map(toUnloadPromise);
+        const unloadPromises: Promise<InternalApplication>[] = appsToUnload.map(toUnloadPromise);
 
         const unmountUnloadPromises = (appsToUnmount as LoadedApp[])
           .map((app) => toUnmountPromise(app))
-          .map((unmountPromise: Promise<LoadedApp>) =>
-            unmountPromise.then(toUnloadPromise),
-          );
+          .map((unmountPromise: Promise<LoadedApp>) => unmountPromise.then(toUnloadPromise));
 
-        const allUnmountPromises: Promise<InternalApplication>[] = [
-          ...unmountUnloadPromises,
-          ...unloadPromises,
-        ];
+        const allUnmountPromises: Promise<InternalApplication>[] = [...unmountUnloadPromises, ...unloadPromises];
 
         const unmountAllPromise = Promise.all(allUnmountPromises);
 
@@ -224,30 +174,13 @@ export function reroute(
             if (__PROFILE__) {
               unmountFinishedTime = performance.now();
 
-              addProfileEntry(
-                "routing",
-                "unmountAndUnload",
-                profilerKind,
-                startTime,
-                performance.now(),
-                true,
-              );
+              addProfileEntry('routing', 'unmountAndUnload', profilerKind, startTime, performance.now(), true);
             }
-            fireSingleSpaEvent(
-              "before-mount-routing-event",
-              getCustomEventDetail(true),
-            );
+            fireSingleSpaEvent('before-mount-routing-event', getCustomEventDetail(true));
           },
           (err) => {
             if (__PROFILE__) {
-              addProfileEntry(
-                "routing",
-                "unmountAndUnload",
-                profilerKind,
-                startTime,
-                performance.now(),
-                true,
-              );
+              addProfileEntry('routing', 'unmountAndUnload', profilerKind, startTime, performance.now(), true);
             }
 
             throw err;
@@ -257,12 +190,9 @@ export function reroute(
         /* We load and init apps while other apps are unmounting, but we
          * wait to mount the app until all apps are finishing unmounting
          */
-        const loadThenMountPromises: Promise<InternalApplication>[] =
-          appsToLoad.map((app) => {
-            return toLoadPromise(app).then((app) =>
-              tryToInitAndMount(app, unmountAllPromise),
-            );
-          });
+        const loadThenMountPromises: Promise<InternalApplication>[] = appsToLoad.map((app) => {
+          return toLoadPromise(app).then((app) => tryToInitAndMount(app, unmountAllPromise));
+        });
 
         /* These are the apps that are already initialized and just need
          * to be mounted. They each wait for all unmounting apps to finish up
@@ -294,8 +224,8 @@ export function reroute(
                 () => {
                   if (__PROFILE__) {
                     addProfileEntry(
-                      "routing",
-                      "loadAndMount",
+                      'routing',
+                      'loadAndMount',
                       profilerKind,
                       unmountFinishedTime,
                       performance.now(),
@@ -306,8 +236,8 @@ export function reroute(
                 (err) => {
                   if (__PROFILE__) {
                     addProfileEntry(
-                      "routing",
-                      "loadAndMount",
+                      'routing',
+                      'loadAndMount',
                       profilerKind,
                       unmountFinishedTime,
                       performance.now(),
@@ -329,10 +259,9 @@ export function reroute(
     pendingPromises.forEach((promise) => promise.resolve(returnValue));
 
     try {
-      const appChangeEventName =
-        appsThatChanged.length === 0 ? "no-app-change" : "app-change";
+      const appChangeEventName = appsThatChanged.length === 0 ? 'no-app-change' : 'app-change';
       fireSingleSpaEvent(appChangeEventName, getCustomEventDetail());
-      fireSingleSpaEvent("routing-event", getCustomEventDetail());
+      fireSingleSpaEvent('routing-event', getCustomEventDetail());
     } catch (err) {
       /* We use a setTimeout because if someone else's event handler throws an error, single-spa
        * needs to carry on. If a listener to the event throws an error, it's their own fault, not
@@ -380,10 +309,7 @@ export function reroute(
     }
   }
 
-  function getCustomEventDetail(
-    isBeforeChanges: boolean = false,
-    extraProperties?: Object,
-  ): CustomEventInit {
+  function getCustomEventDetail(isBeforeChanges: boolean = false, extraProperties?: Object): CustomEventInit {
     const newAppStatuses = {};
     const appsByNewStatus = {
       // for apps that were mounted
@@ -429,15 +355,11 @@ export function reroute(
 
     return result;
 
-    function addApp(
-      app: InternalApplication,
-      status?: InternalApplication["status"],
-    ) {
+    function addApp(app: InternalApplication, status?: InternalApplication['status']) {
       const appName = toName(app);
       status = status || getAppStatus(appName);
       newAppStatuses[appName] = status;
-      const statusArr = (appsByNewStatus[status] =
-        appsByNewStatus[status] || []);
+      const statusArr = (appsByNewStatus[status] = appsByNewStatus[status] || []);
       statusArr.push(appName);
     }
   }
@@ -446,9 +368,7 @@ export function reroute(
     // During silent navigation (caused by navigation cancelation), we should not
     // fire any single-spa events
     if (!silentNavigation) {
-      window.dispatchEvent(
-        new CustomEvent(`single-spa:${name}`, eventProperties),
-      );
+      window.dispatchEvent(new CustomEvent(`single-spa:${name}`, eventProperties));
     }
   }
 }
@@ -466,9 +386,7 @@ function tryToInitAndMount(
 ): Promise<InternalApplication> {
   if (shouldBeActive(app)) {
     return toInitPromise(app as LoadedApp).then((app) =>
-      unmountAllPromise.then(() =>
-        shouldBeActive(app) ? toMountPromise(app) : app,
-      ),
+      unmountAllPromise.then(() => (shouldBeActive(app) ? toMountPromise(app) : app)),
     ) as Promise<InternalApplication>;
   } else {
     return unmountAllPromise.then(() => app);

@@ -1,4 +1,4 @@
-import * as singleSpa from "single-spa";
+import * as singleSpa from 'single-spa';
 
 const activeHash = `#multiple-lifecycle-functions`;
 
@@ -7,8 +7,8 @@ describe(`multiple-lifecycle-functions app`, () => {
 
   beforeAll(() => {
     singleSpa.registerApplication(
-      "./multiple-lifecycle-functions.app",
-      () => import("./multiple-lifecycle-functions.app"),
+      './multiple-lifecycle-functions.app',
+      () => import('./multiple-lifecycle-functions.app'),
       (location) => location.hash === activeHash,
     );
     singleSpa.start();
@@ -17,9 +17,7 @@ describe(`multiple-lifecycle-functions app`, () => {
   beforeEach(() => {
     location.hash = activeHash;
 
-    return import("./multiple-lifecycle-functions.app")
-      .then((app) => (myApp = app))
-      .then((app) => app.reset());
+    return import('./multiple-lifecycle-functions.app').then((app) => (myApp = app)).then((app) => app.reset());
   });
 
   it(`waits for each of the functions one by one, in order`, () => {
@@ -34,7 +32,7 @@ describe(`multiple-lifecycle-functions app`, () => {
       expect(myApp.mount2Called()).toEqual(true);
       expect(myApp.mount3Called()).toEqual(true);
 
-      location.hash = "#not-multiple-lifecycle-functions";
+      location.hash = '#not-multiple-lifecycle-functions';
       singleSpa.triggerAppChange().then(() => {
         expect(myApp.unmountsCalledOutOfOrder()).toEqual(undefined);
         expect(myApp.unmount1Called()).toEqual(true);

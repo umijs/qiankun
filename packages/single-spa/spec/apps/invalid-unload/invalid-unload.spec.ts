@@ -1,4 +1,4 @@
-import * as singleSpa from "single-spa";
+import * as singleSpa from 'single-spa';
 
 const activeHash = `#invalid-unload`;
 
@@ -11,15 +11,15 @@ describe(`invalid-unload app :`, () => {
 
   beforeAll(() => {
     singleSpa.registerApplication(
-      "./invalid-unload.app",
-      () => import("./invalid-unload.app"),
+      './invalid-unload.app',
+      () => import('./invalid-unload.app'),
       (location) => location.hash === activeHash,
     );
     singleSpa.start();
   });
 
   beforeEach(() => {
-    location.hash = "";
+    location.hash = '';
 
     errs = [];
     singleSpa.addErrorHandler(handleError);
@@ -32,7 +32,7 @@ describe(`invalid-unload app :`, () => {
   it(`throws an error if you call unloadApplication incorrectly`, () => {
     expect(() => {
       // The parameters are in the reverse order
-      singleSpa.unloadApplication({ waitForUnmount }, "./invalid-unload.app");
+      singleSpa.unloadApplication({ waitForUnmount }, './invalid-unload.app');
     }).toThrow();
 
     expect(() => {
@@ -47,8 +47,8 @@ describe(`invalid-unload app :`, () => {
       .triggerAppChange()
       .then(() => {
         // The unload lifecycle hasn't been called yet, so single-spa doesn't know it is a bad impl yet.
-        expect(singleSpa.getAppStatus("./invalid-unload.app")).toBe("MOUNTED");
-        return singleSpa.unloadApplication("./invalid-unload.app");
+        expect(singleSpa.getAppStatus('./invalid-unload.app')).toBe('MOUNTED');
+        return singleSpa.unloadApplication('./invalid-unload.app');
       })
       .then(() => {
         fail(
@@ -57,9 +57,7 @@ describe(`invalid-unload app :`, () => {
       })
       .catch((err) => {
         // Now the unload lifecycle has been called and has been determined to be invalid
-        expect(singleSpa.getAppStatus("./invalid-unload.app")).toBe(
-          "SKIP_BECAUSE_BROKEN",
-        );
+        expect(singleSpa.getAppStatus('./invalid-unload.app')).toBe('SKIP_BECAUSE_BROKEN');
       });
   });
 });

@@ -1,1 +1,1 @@
-export { getProfilerData } from "./profiler";
+export { getProfilerData } from './profiler';

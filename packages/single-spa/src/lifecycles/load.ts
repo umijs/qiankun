@@ -1,32 +1,17 @@
-import {
-  AppOrParcelStatus,
-  toName,
-  InternalApplication,
-} from "../applications/app.helpers";
-import { ensureValidAppTimeouts } from "../applications/timeouts";
-import { handleAppError, formatErrorMessage } from "../applications/app-errors";
-import {
-  LifeCycles,
-  LoadedApp,
-  flattenFnArray,
-  smellsLikeAPromise,
-  validLifecycleFn,
-} from "./lifecycle.helpers";
-import { getProps } from "./prop.helpers";
-import { addProfileEntry } from "../devtools/profiler";
+import { AppOrParcelStatus, toName, InternalApplication } from '../applications/app.helpers';
+import { ensureValidAppTimeouts } from '../applications/timeouts';
+import { handleAppError, formatErrorMessage } from '../applications/app-errors';
+import { LifeCycles, LoadedApp, flattenFnArray, smellsLikeAPromise, validLifecycleFn } from './lifecycle.helpers';
+import { getProps } from './prop.helpers';
+import { addProfileEntry } from '../devtools/profiler';
 
-export function toLoadPromise(
-  app: InternalApplication | LoadedApp,
-): Promise<LoadedApp | InternalApplication> {
+export function toLoadPromise(app: InternalApplication | LoadedApp): Promise<LoadedApp | InternalApplication> {
   return Promise.resolve().then(() => {
     if ((app as LoadedApp).loadPromise) {
       return (app as LoadedApp).loadPromise;
     }
 
-    if (
-      app.status !== AppOrParcelStatus.NOT_LOADED &&
-      app.status !== AppOrParcelStatus.LOAD_ERROR
-    ) {
+    if (app.status !== AppOrParcelStatus.NOT_LOADED && app.status !== AppOrParcelStatus.LOAD_ERROR) {
       return app;
     }
 
@@ -65,7 +50,7 @@ export function toLoadPromise(
 
           let validationErrMessage, validationErrCode;
 
-          if (typeof lifecycles !== "object") {
+          if (typeof lifecycles !== 'object') {
             validationErrCode = 34;
             if (__DEV__) {
               validationErrMessage = `does not export anything`;
@@ -98,46 +83,31 @@ export function toLoadPromise(
                   `The loading function for single-spa application '${toName(
                     appBeingLoaded,
                   )}' resolved with the following, which does not have mount and unmount functions`,
-                "application",
+                'application',
                 toName(appBeingLoaded),
                 appOptsStr,
               ),
               lifecycles,
             );
-            handleAppError(
-              validationErrMessage,
-              appBeingLoaded,
-              AppOrParcelStatus.SKIP_BECAUSE_BROKEN,
-            );
+            handleAppError(validationErrMessage, appBeingLoaded, AppOrParcelStatus.SKIP_BECAUSE_BROKEN);
             return appBeingLoaded;
           }
 
           if (lifecycles.devtools && lifecycles.devtools.overlays) {
-            appBeingLoaded.devtools.overlays = Object.assign(
-              {},
-              app.devtools.overlays,
-              lifecycles.devtools.overlays,
-            );
+            appBeingLoaded.devtools.overlays = Object.assign({}, app.devtools.overlays, lifecycles.devtools.overlays);
           }
 
           appBeingLoaded.status = AppOrParcelStatus.NOT_INITIALIZED;
-          appBeingLoaded.init = flattenFnArray(lifecycles, "init", false);
-          appBeingLoaded.mount = flattenFnArray(lifecycles, "mount", false);
-          appBeingLoaded.unmount = flattenFnArray(lifecycles, "unmount", false);
-          appBeingLoaded.unload = flattenFnArray(lifecycles, "unload", false);
+          appBeingLoaded.init = flattenFnArray(lifecycles, 'init', false);
+          appBeingLoaded.mount = flattenFnArray(lifecycles, 'mount', false);
+          appBeingLoaded.unmount = flattenFnArray(lifecycles, 'unmount', false);
+          appBeingLoaded.unload = flattenFnArray(lifecycles, 'unload', false);
           appBeingLoaded.timeouts = ensureValidAppTimeouts(lifecycles.timeouts);
 
           delete appBeingLoaded.loadPromise;
 
           if (__PROFILE__) {
-            addProfileEntry(
-              "application",
-              toName(appBeingLoaded),
-              "load",
-              startTime,
-              performance.now(),
-              true,
-            );
+            addProfileEntry('application', toName(appBeingLoaded), 'load', startTime, performance.now(), true);
           }
 
           return appBeingLoaded as LoadedApp;
@@ -156,14 +126,7 @@ export function toLoadPromise(
         handleAppError(err, appBeingLoaded, newStatus);
 
         if (__PROFILE__) {
-          addProfileEntry(
-            "application",
-            toName(appBeingLoaded),
-            "load",
-            startTime,
-            performance.now(),
-            false,
-          );
+          addProfileEntry('application', toName(appBeingLoaded), 'load', startTime, performance.now(), false);
         }
 
         return appBeingLoaded as LoadedApp;

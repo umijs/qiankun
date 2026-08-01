@@ -46,7 +46,7 @@ export function setDelay(millis) {
 
 function advanceTimers() {
   window.dispatchEvent(
-    new CustomEvent("fake-timers-advance", {
+    new CustomEvent('fake-timers-advance', {
       detail: delay,
     }),
   );

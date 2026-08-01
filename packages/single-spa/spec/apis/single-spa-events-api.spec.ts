@@ -1,4 +1,4 @@
-import * as singleSpa from "single-spa";
+import * as singleSpa from 'single-spa';
 
 const russellApp = {
   initCount: 0,
@@ -42,12 +42,8 @@ describe(`events api :`, () => {
   let boom = false;
 
   beforeAll(() => {
-    singleSpa.registerApplication(
-      "russell",
-      russellApp,
-      () => window.location.hash.indexOf("#/russell") === 0,
-    );
-    singleSpa.registerApplication("boom", boomApp, () => boom);
+    singleSpa.registerApplication('russell', russellApp, () => window.location.hash.indexOf('#/russell') === 0);
+    singleSpa.registerApplication('boom', boomApp, () => boom);
     singleSpa.start();
   });
 
@@ -63,7 +59,7 @@ describe(`events api :`, () => {
     boomApp.unloadCount = 0;
 
     boom = false;
-    location.hash = "#/";
+    location.hash = '#/';
     await singleSpa.triggerAppChange();
   });
 
@@ -76,27 +72,27 @@ describe(`events api :`, () => {
     it(`is fired on the window whenever the hash changes`, async () => {
       await singleSpa.triggerAppChange(); // start with a clean slate (no previous tests doing anything)
 
-      window.addEventListener("single-spa:routing-event", finishTest);
+      window.addEventListener('single-spa:routing-event', finishTest);
       window.location.hash = `#/hash-was-changed`;
 
       let finish;
       await new Promise((r) => (finish = r));
 
       function finishTest() {
-        window.removeEventListener("single-spa:routing-event", finishTest);
+        window.removeEventListener('single-spa:routing-event', finishTest);
         finish();
       }
     });
 
     it(`is fired on the window whenever the url changes`, async () => {
       await singleSpa.triggerAppChange();
-      window.addEventListener("single-spa:routing-event", finishTest);
+      window.addEventListener('single-spa:routing-event', finishTest);
       window.history.pushState({}, null, `#/push-state-called`);
       let finish;
       await new Promise((r) => (finish = r));
 
       function finishTest() {
-        window.removeEventListener("single-spa:routing-event", finishTest);
+        window.removeEventListener('single-spa:routing-event', finishTest);
         finish();
       }
     });
@@ -107,43 +103,43 @@ describe(`events api :`, () => {
       let finish,
         finishPromise = new Promise((r) => (finish = r));
 
-      process.on("uncaughtException", errHandler);
+      process.on('uncaughtException', errHandler);
 
       // If the counterFn had been called thrice, it means all listener be invoked.
       function doneIfAllListenerHadBeenInvoked() {
         if (counterFn.mock.calls.length === 3) {
-          process.off("uncaughtException", errHandler);
+          process.off('uncaughtException', errHandler);
           finish();
         }
       }
 
       function listener() {
-        window.removeEventListener("single-spa:routing-event", listener);
-        throw Error("Mwahaha I threw an error in an event listener");
+        window.removeEventListener('single-spa:routing-event', listener);
+        throw Error('Mwahaha I threw an error in an event listener');
       }
-      window.addEventListener("single-spa:routing-event", listener);
+      window.addEventListener('single-spa:routing-event', listener);
 
       function hashchangeListenerWithErr() {
-        window.removeEventListener("hashchange", hashchangeListenerWithErr);
-        throw Error("Mwahaha I threw an error in an hashchange event listener");
+        window.removeEventListener('hashchange', hashchangeListenerWithErr);
+        throw Error('Mwahaha I threw an error in an hashchange event listener');
       }
-      window.addEventListener("hashchange", hashchangeListenerWithErr);
+      window.addEventListener('hashchange', hashchangeListenerWithErr);
 
       function hashchangeListener() {
         counterFn();
-        window.removeEventListener("hashchange", hashchangeListener);
+        window.removeEventListener('hashchange', hashchangeListener);
         doneIfAllListenerHadBeenInvoked();
       }
-      window.addEventListener("hashchange", hashchangeListener);
+      window.addEventListener('hashchange', hashchangeListener);
 
       try {
         await singleSpa.triggerAppChange();
-        window.location.hash = "#/hashchange";
+        window.location.hash = '#/hashchange';
       } catch {
-        window.removeEventListener("single-spa:routing-event", listener);
-        window.removeEventListener("hashchange", hashchangeListener);
-        window.removeEventListener("hashchange", hashchangeListenerWithErr);
-        process.off("uncaughtException", errHandler);
+        window.removeEventListener('single-spa:routing-event', listener);
+        window.removeEventListener('hashchange', hashchangeListener);
+        window.removeEventListener('hashchange', hashchangeListenerWithErr);
+        process.off('uncaughtException', errHandler);
         throw err;
       }
 
@@ -157,52 +153,33 @@ describe(`events api :`, () => {
     });
   });
 
-  describe("single-spa:before-mount-routing-event", () => {
+  describe('single-spa:before-mount-routing-event', () => {
     it(`is fired after before-routing-event but before routing-event`, async () => {
       let firedEvents = [];
 
       await singleSpa.triggerAppChange(); // start with a clean slate (no previous tests doing anything)
-      window.addEventListener(
-        "single-spa:before-routing-event",
-        beforeRoutingEvent,
-      );
-      window.addEventListener(
-        "single-spa:before-mount-routing-event",
-        beforeMountRoutingEvent,
-      );
-      window.addEventListener("single-spa:routing-event", afterRoutingEvent);
+      window.addEventListener('single-spa:before-routing-event', beforeRoutingEvent);
+      window.addEventListener('single-spa:before-mount-routing-event', beforeMountRoutingEvent);
+      window.addEventListener('single-spa:routing-event', afterRoutingEvent);
 
       window.location.hash = `#/hash-was-changed`;
       await singleSpa.triggerAppChange();
 
-      expect(firedEvents).toEqual([
-        "before-routing-event",
-        "before-mount-routing-event",
-        "routing-event",
-      ]);
+      expect(firedEvents).toEqual(['before-routing-event', 'before-mount-routing-event', 'routing-event']);
 
       function beforeRoutingEvent() {
-        window.removeEventListener(
-          "single-spa:before-routing-event",
-          beforeRoutingEvent,
-        );
-        firedEvents.push("before-routing-event");
+        window.removeEventListener('single-spa:before-routing-event', beforeRoutingEvent);
+        firedEvents.push('before-routing-event');
       }
 
       function beforeMountRoutingEvent() {
-        window.removeEventListener(
-          "single-spa:before-mount-routing-event",
-          beforeMountRoutingEvent,
-        );
-        firedEvents.push("before-mount-routing-event");
+        window.removeEventListener('single-spa:before-mount-routing-event', beforeMountRoutingEvent);
+        firedEvents.push('before-mount-routing-event');
       }
 
       function afterRoutingEvent() {
-        window.removeEventListener(
-          "single-spa:routing-event",
-          afterRoutingEvent,
-        );
-        firedEvents.push("routing-event");
+        window.removeEventListener('single-spa:routing-event', afterRoutingEvent);
+        firedEvents.push('routing-event');
       }
     });
 
@@ -212,36 +189,26 @@ describe(`events api :`, () => {
       // make sure boomApp is not mounted
       boom = false;
 
-      location.hash = "#/russell";
+      location.hash = '#/russell';
       await singleSpa.triggerAppChange();
 
-      window.addEventListener(
-        "single-spa:before-mount-routing-event",
-        listener,
-      );
+      window.addEventListener('single-spa:before-mount-routing-event', listener);
 
-      expect(singleSpa.getAppStatus("russell")).toBe(
-        singleSpa.AppOrParcelStatus.MOUNTED,
-      );
+      expect(singleSpa.getAppStatus('russell')).toBe(singleSpa.AppOrParcelStatus.MOUNTED);
       expect(russellApp.unmountCount).toBe(0);
       expect(boomApp.mountCount).toBe(0);
 
       // now mount boomApp
       boom = true;
-      location.hash = "#/other";
+      location.hash = '#/other';
       await singleSpa.triggerAppChange();
 
-      expect(singleSpa.getAppStatus("russell")).toBe(
-        singleSpa.AppOrParcelStatus.NOT_MOUNTED,
-      );
+      expect(singleSpa.getAppStatus('russell')).toBe(singleSpa.AppOrParcelStatus.NOT_MOUNTED);
       expect(russellApp.unmountCount).toBe(1);
       expect(boomApp.mountCount).toBe(1);
 
       function listener() {
-        window.removeEventListener(
-          "single-spa:before-mount-routing-event",
-          listener,
-        );
+        window.removeEventListener('single-spa:before-mount-routing-event', listener);
 
         // unmounts have been called
         expect(russellApp.unmountCount).toBe(1);
@@ -258,7 +225,7 @@ describe(`events api :`, () => {
 
       await singleSpa.triggerAppChange();
 
-      window.addEventListener("single-spa:app-change", finishTest);
+      window.addEventListener('single-spa:app-change', finishTest);
       window.location.hash = `#/russell`;
 
       let finish,
@@ -268,21 +235,11 @@ describe(`events api :`, () => {
         const {
           detail: { appsByNewStatus, newAppStatuses, totalAppChanges },
         } = evt;
-        window.removeEventListener("single-spa:app-change", finishTest);
-        expect(
-          appsByNewStatus[singleSpa.AppOrParcelStatus.NOT_LOADED].sort(),
-        ).toEqual([]);
-        expect(
-          appsByNewStatus[
-            singleSpa.AppOrParcelStatus.SKIP_BECAUSE_BROKEN
-          ].sort(),
-        ).toEqual([]);
-        expect(
-          appsByNewStatus[singleSpa.AppOrParcelStatus.NOT_MOUNTED].sort(),
-        ).toEqual([]);
-        expect(
-          appsByNewStatus[singleSpa.AppOrParcelStatus.MOUNTED].sort(),
-        ).toEqual(["russell"].sort());
+        window.removeEventListener('single-spa:app-change', finishTest);
+        expect(appsByNewStatus[singleSpa.AppOrParcelStatus.NOT_LOADED].sort()).toEqual([]);
+        expect(appsByNewStatus[singleSpa.AppOrParcelStatus.SKIP_BECAUSE_BROKEN].sort()).toEqual([]);
+        expect(appsByNewStatus[singleSpa.AppOrParcelStatus.NOT_MOUNTED].sort()).toEqual([]);
+        expect(appsByNewStatus[singleSpa.AppOrParcelStatus.MOUNTED].sort()).toEqual(['russell'].sort());
 
         expect(totalAppChanges).toBe(1);
 
@@ -302,31 +259,21 @@ describe(`events api :`, () => {
 
       await singleSpa.triggerAppChange();
       boom = true; // turn on the boom application
-      window.addEventListener("single-spa:app-change", finishTest);
+      window.addEventListener('single-spa:app-change', finishTest);
       window.location.hash = `#/russell`;
 
       let finish,
         testFinishPromise = new Promise((r) => (finish = r));
 
       function finishTest(evt) {
-        window.removeEventListener("single-spa:app-change", finishTest);
+        window.removeEventListener('single-spa:app-change', finishTest);
         const {
           detail: { appsByNewStatus, newAppStatuses, totalAppChanges },
         } = evt;
-        expect(
-          appsByNewStatus[singleSpa.AppOrParcelStatus.NOT_LOADED].sort(),
-        ).toEqual([]);
-        expect(
-          appsByNewStatus[
-            singleSpa.AppOrParcelStatus.SKIP_BECAUSE_BROKEN
-          ].sort(),
-        ).toEqual([]);
-        expect(
-          appsByNewStatus[singleSpa.AppOrParcelStatus.NOT_MOUNTED].sort(),
-        ).toEqual([]);
-        expect(
-          appsByNewStatus[singleSpa.AppOrParcelStatus.MOUNTED].sort(),
-        ).toEqual(["russell", "boom"].sort());
+        expect(appsByNewStatus[singleSpa.AppOrParcelStatus.NOT_LOADED].sort()).toEqual([]);
+        expect(appsByNewStatus[singleSpa.AppOrParcelStatus.SKIP_BECAUSE_BROKEN].sort()).toEqual([]);
+        expect(appsByNewStatus[singleSpa.AppOrParcelStatus.NOT_MOUNTED].sort()).toEqual([]);
+        expect(appsByNewStatus[singleSpa.AppOrParcelStatus.MOUNTED].sort()).toEqual(['russell', 'boom'].sort());
 
         expect(totalAppChanges).toBe(2);
 
@@ -347,28 +294,18 @@ describe(`events api :`, () => {
       await singleSpa.triggerAppChange();
       let finish,
         testFinishPromise = new Promise((r) => (finish = r));
-      window.addEventListener("single-spa:app-change", finishTest);
+      window.addEventListener('single-spa:app-change', finishTest);
       window.location.hash = `#`;
 
       function finishTest(evt) {
-        window.removeEventListener("single-spa:app-change", finishTest);
+        window.removeEventListener('single-spa:app-change', finishTest);
         const {
           detail: { appsByNewStatus, newAppStatuses, totalAppChanges },
         } = evt;
-        expect(
-          appsByNewStatus[singleSpa.AppOrParcelStatus.NOT_LOADED].sort(),
-        ).toEqual([]);
-        expect(
-          appsByNewStatus[
-            singleSpa.AppOrParcelStatus.SKIP_BECAUSE_BROKEN
-          ].sort(),
-        ).toEqual([]);
-        expect(
-          appsByNewStatus[singleSpa.AppOrParcelStatus.MOUNTED].sort(),
-        ).toEqual([]);
-        expect(
-          appsByNewStatus[singleSpa.AppOrParcelStatus.NOT_MOUNTED].sort(),
-        ).toEqual(["russell"].sort());
+        expect(appsByNewStatus[singleSpa.AppOrParcelStatus.NOT_LOADED].sort()).toEqual([]);
+        expect(appsByNewStatus[singleSpa.AppOrParcelStatus.SKIP_BECAUSE_BROKEN].sort()).toEqual([]);
+        expect(appsByNewStatus[singleSpa.AppOrParcelStatus.MOUNTED].sort()).toEqual([]);
+        expect(appsByNewStatus[singleSpa.AppOrParcelStatus.NOT_MOUNTED].sort()).toEqual(['russell'].sort());
 
         expect(totalAppChanges).toBe(1);
 
@@ -390,7 +327,7 @@ describe(`events api :`, () => {
       let finish,
         testFinishPromise = new Promise((r) => (finish = r));
 
-      window.addEventListener("single-spa:app-change", finishTest);
+      window.addEventListener('single-spa:app-change', finishTest);
       window.location.hash = `#/russell`; // mount russell
       boom = false; // unmount boom
 
@@ -398,21 +335,11 @@ describe(`events api :`, () => {
         const {
           detail: { appsByNewStatus, newAppStatuses, totalAppChanges },
         } = evt;
-        window.removeEventListener("single-spa:app-change", finishTest);
-        expect(
-          appsByNewStatus[singleSpa.AppOrParcelStatus.NOT_LOADED].sort(),
-        ).toEqual([]);
-        expect(
-          appsByNewStatus[
-            singleSpa.AppOrParcelStatus.SKIP_BECAUSE_BROKEN
-          ].sort(),
-        ).toEqual([]);
-        expect(
-          appsByNewStatus[singleSpa.AppOrParcelStatus.NOT_MOUNTED].sort(),
-        ).toEqual(["boom"].sort());
-        expect(
-          appsByNewStatus[singleSpa.AppOrParcelStatus.MOUNTED].sort(),
-        ).toEqual(["russell"].sort());
+        window.removeEventListener('single-spa:app-change', finishTest);
+        expect(appsByNewStatus[singleSpa.AppOrParcelStatus.NOT_LOADED].sort()).toEqual([]);
+        expect(appsByNewStatus[singleSpa.AppOrParcelStatus.SKIP_BECAUSE_BROKEN].sort()).toEqual([]);
+        expect(appsByNewStatus[singleSpa.AppOrParcelStatus.NOT_MOUNTED].sort()).toEqual(['boom'].sort());
+        expect(appsByNewStatus[singleSpa.AppOrParcelStatus.MOUNTED].sort()).toEqual(['russell'].sort());
 
         expect(totalAppChanges).toBe(2);
 
@@ -431,18 +358,18 @@ describe(`events api :`, () => {
       let appChangeCalls = 0;
       function failTest() {
         appChangeCalls++;
-        window.removeEventListener("single-spa:app-change", failTest);
+        window.removeEventListener('single-spa:app-change', failTest);
       }
 
       window.location.hash = `#`;
 
       await singleSpa.triggerAppChange();
       await singleSpa.triggerAppChange();
-      window.addEventListener("single-spa:app-change", failTest);
+      window.addEventListener('single-spa:app-change', failTest);
       window.location.hash = `#/not-a-real-app`;
 
       await singleSpa.triggerAppChange();
-      window.removeEventListener("single-spa:app-change", failTest);
+      window.removeEventListener('single-spa:app-change', failTest);
       expect(appChangeCalls).toBe(0);
     });
   });
@@ -452,13 +379,13 @@ describe(`events api :`, () => {
       window.location.hash = `#`;
 
       await singleSpa.triggerAppChange();
-      window.addEventListener("single-spa:no-app-change", finishTest);
+      window.addEventListener('single-spa:no-app-change', finishTest);
       window.location.hash = `#not-a-real-app`;
       let finish,
         testFinishPromise = new Promise((r) => (finish = r));
 
       function finishTest() {
-        window.removeEventListener("single-spa:no-app-change", finishTest);
+        window.removeEventListener('single-spa:no-app-change', finishTest);
         finish();
       }
 
@@ -472,12 +399,10 @@ describe(`events api :`, () => {
 
       await singleSpa.triggerAppChange();
 
-      expect(singleSpa.getAppStatus("boom")).toMatch(/NOT_MOUNTED|NOT_LOADED/);
-      expect(singleSpa.getAppStatus("russell")).toBe(
-        singleSpa.AppOrParcelStatus.MOUNTED,
-      );
-      window.addEventListener("single-spa:before-app-change", finishTest);
-      window.addEventListener("single-spa:before-no-app-change", finishTest);
+      expect(singleSpa.getAppStatus('boom')).toMatch(/NOT_MOUNTED|NOT_LOADED/);
+      expect(singleSpa.getAppStatus('russell')).toBe(singleSpa.AppOrParcelStatus.MOUNTED);
+      window.addEventListener('single-spa:before-app-change', finishTest);
+      window.addEventListener('single-spa:before-no-app-change', finishTest);
       boom = true;
       window.location.hash = `#not-a-real-app`;
 
@@ -487,24 +412,13 @@ describe(`events api :`, () => {
       });
 
       function finishTest(evt) {
-        window.removeEventListener("single-spa:before-app-change", finishTest);
-        window.removeEventListener(
-          "single-spa:before-no-app-change",
-          finishTest,
-        );
-        expect(evt.type).toBe("single-spa:before-app-change");
-        expect(singleSpa.getAppStatus("boom")).toMatch(
-          /NOT_MOUNTED|NOT_LOADED/,
-        );
-        expect(singleSpa.getAppStatus("russell")).toBe(
-          singleSpa.AppOrParcelStatus.MOUNTED,
-        );
-        expect(
-          evt.detail.appsByNewStatus[singleSpa.AppOrParcelStatus.MOUNTED],
-        ).toEqual(["boom"]);
-        expect(
-          evt.detail.appsByNewStatus[singleSpa.AppOrParcelStatus.NOT_MOUNTED],
-        ).toEqual(["russell"]);
+        window.removeEventListener('single-spa:before-app-change', finishTest);
+        window.removeEventListener('single-spa:before-no-app-change', finishTest);
+        expect(evt.type).toBe('single-spa:before-app-change');
+        expect(singleSpa.getAppStatus('boom')).toMatch(/NOT_MOUNTED|NOT_LOADED/);
+        expect(singleSpa.getAppStatus('russell')).toBe(singleSpa.AppOrParcelStatus.MOUNTED);
+        expect(evt.detail.appsByNewStatus[singleSpa.AppOrParcelStatus.MOUNTED]).toEqual(['boom']);
+        expect(evt.detail.appsByNewStatus[singleSpa.AppOrParcelStatus.NOT_MOUNTED]).toEqual(['russell']);
         finish();
       }
     });
@@ -517,27 +431,18 @@ describe(`events api :`, () => {
       window.location.hash = `#/russell`;
 
       await singleSpa.triggerAppChange();
-      expect(singleSpa.getAppStatus("boom")).toMatch(/NOT_MOUNTED|NOT_LOADED/);
-      expect(singleSpa.getAppStatus("russell")).toBe(
-        singleSpa.AppOrParcelStatus.MOUNTED,
-      );
-      window.addEventListener("single-spa:before-no-app-change", finishTest);
-      window.addEventListener("single-spa:before-app-change", finishTest);
+      expect(singleSpa.getAppStatus('boom')).toMatch(/NOT_MOUNTED|NOT_LOADED/);
+      expect(singleSpa.getAppStatus('russell')).toBe(singleSpa.AppOrParcelStatus.MOUNTED);
+      window.addEventListener('single-spa:before-no-app-change', finishTest);
+      window.addEventListener('single-spa:before-app-change', finishTest);
       await singleSpa.triggerAppChange();
 
       function finishTest(evt) {
-        window.removeEventListener(
-          "single-spa:before-no-app-change",
-          finishTest,
-        );
-        window.removeEventListener("single-spa:before-app-change", finishTest);
-        expect(evt.type).toEqual("single-spa:before-no-app-change");
-        expect(
-          evt.detail.appsByNewStatus[singleSpa.AppOrParcelStatus.MOUNTED],
-        ).toEqual([]);
-        expect(
-          evt.detail.appsByNewStatus[singleSpa.AppOrParcelStatus.NOT_MOUNTED],
-        ).toEqual([]);
+        window.removeEventListener('single-spa:before-no-app-change', finishTest);
+        window.removeEventListener('single-spa:before-app-change', finishTest);
+        expect(evt.type).toEqual('single-spa:before-no-app-change');
+        expect(evt.detail.appsByNewStatus[singleSpa.AppOrParcelStatus.MOUNTED]).toEqual([]);
+        expect(evt.detail.appsByNewStatus[singleSpa.AppOrParcelStatus.NOT_MOUNTED]).toEqual([]);
         finish();
       }
       await testFinishPromise;
@@ -548,19 +453,16 @@ describe(`events api :`, () => {
     it(`allows you to cancel a hash navigation event in the before-routing-event handler`, async () => {
       const beforeRoutingEvent = (evt) => {
         expect(evt.detail.oldUrl).toMatch(/http:\/\/localhost\/(#\/)?/);
-        expect(evt.detail.newUrl).toBe("http://localhost/#/russell");
+        expect(evt.detail.newUrl).toBe('http://localhost/#/russell');
 
-        if (new URL(evt.detail.newUrl).hash === "#/russell") {
+        if (new URL(evt.detail.newUrl).hash === '#/russell') {
           evt.detail.cancelNavigation();
         }
       };
 
-      window.addEventListener(
-        "single-spa:before-routing-event",
-        beforeRoutingEvent,
-      );
+      window.addEventListener('single-spa:before-routing-event', beforeRoutingEvent);
 
-      const originalStatus = singleSpa.getAppStatus("russell");
+      const originalStatus = singleSpa.getAppStatus('russell');
       const originalUrl = window.location.href;
 
       expect(originalStatus).toMatch(/NOT_MOUNTED|NOT_LOADED/);
@@ -568,53 +470,44 @@ describe(`events api :`, () => {
       window.location.hash = `#/russell`;
 
       await singleSpa.triggerAppChange();
-      expect(singleSpa.getAppStatus("russell")).toBe(originalStatus);
+      expect(singleSpa.getAppStatus('russell')).toBe(originalStatus);
       expect(window.location.href).toBe(originalUrl);
-      window.removeEventListener(
-        "single-spa:before-routing-event",
-        beforeRoutingEvent,
-      );
+      window.removeEventListener('single-spa:before-routing-event', beforeRoutingEvent);
     });
 
     it(`allows you to cancel a pushState navigation event in the before-routing-event handler`, async () => {
-      await singleSpa.triggerAppChange("/");
+      await singleSpa.triggerAppChange('/');
 
       const app = { async mount() {}, async unmount() {} };
       singleSpa.registerApplication({
-        name: "cancel-pushstate",
+        name: 'cancel-pushstate',
         app,
-        activeWhen: "/cancel-pushstate",
+        activeWhen: '/cancel-pushstate',
       });
 
       const beforeRoutingEvent = (evt) => {
-        window.removeEventListener(
-          "single-spa:before-routing-event",
-          beforeRoutingEvent,
-        );
+        window.removeEventListener('single-spa:before-routing-event', beforeRoutingEvent);
         expect(evt.detail.oldUrl).toMatch(/http:\/\/localhost\/(#\/)?/);
-        expect(evt.detail.newUrl).toBe("http://localhost/cancel-pushstate");
+        expect(evt.detail.newUrl).toBe('http://localhost/cancel-pushstate');
 
-        if (new URL(evt.detail.newUrl).pathname === "/cancel-pushstate") {
+        if (new URL(evt.detail.newUrl).pathname === '/cancel-pushstate') {
           evt.detail.cancelNavigation();
         }
       };
 
       await singleSpa.triggerAppChange();
 
-      window.addEventListener(
-        "single-spa:before-routing-event",
-        beforeRoutingEvent,
-      );
+      window.addEventListener('single-spa:before-routing-event', beforeRoutingEvent);
 
-      const originalStatus = singleSpa.getAppStatus("russell");
+      const originalStatus = singleSpa.getAppStatus('russell');
       const originalUrl = window.location.href;
 
       expect(originalStatus).toMatch(/NOT_MOUNTED|NOT_LOADED/);
 
-      singleSpa.navigateToUrl("/cancel-pushstate");
+      singleSpa.navigateToUrl('/cancel-pushstate');
 
       await singleSpa.triggerAppChange();
-      expect(singleSpa.getAppStatus("russell")).toBe(originalStatus);
+      expect(singleSpa.getAppStatus('russell')).toBe(originalStatus);
       expect(window.location.href).toBe(originalUrl);
     });
 
@@ -624,85 +517,59 @@ describe(`events api :`, () => {
         cancelationStarted = false;
 
       singleSpa.registerApplication({
-        name: "cancel-navigation-silent-reroute",
+        name: 'cancel-navigation-silent-reroute',
         app: {
           async mount() {},
           async unmount() {},
         },
-        activeWhen: ["/"],
+        activeWhen: ['/'],
       });
 
-      singleSpa.navigateToUrl("/");
+      singleSpa.navigateToUrl('/');
       await singleSpa.triggerAppChange();
 
-      window.addEventListener("single-spa:before-routing-event", countEvents);
-      window.addEventListener(
-        "single-spa:before-mount-routing-event",
-        countEvents,
-      );
-      window.addEventListener("single-spa:before-app-change", countEvents);
-      window.addEventListener("single-spa:before-no-app-change", countEvents);
-      window.addEventListener("single-spa:app-change", countEvents);
-      window.addEventListener("single-spa:no-app-change", countEvents);
-      window.addEventListener("single-spa:routing-event", countEvents);
+      window.addEventListener('single-spa:before-routing-event', countEvents);
+      window.addEventListener('single-spa:before-mount-routing-event', countEvents);
+      window.addEventListener('single-spa:before-app-change', countEvents);
+      window.addEventListener('single-spa:before-no-app-change', countEvents);
+      window.addEventListener('single-spa:app-change', countEvents);
+      window.addEventListener('single-spa:no-app-change', countEvents);
+      window.addEventListener('single-spa:routing-event', countEvents);
 
-      window.addEventListener(
-        "single-spa:before-routing-event",
-        cancelTheNavigation,
-      );
+      window.addEventListener('single-spa:before-routing-event', cancelTheNavigation);
 
       let cancelationFinished,
-        cancelationFinishedPromise = new Promise(
-          (r) => (cancelationFinished = r),
-        );
+        cancelationFinishedPromise = new Promise((r) => (cancelationFinished = r));
 
-      singleSpa.navigateToUrl("/app1");
+      singleSpa.navigateToUrl('/app1');
 
       await cancelationFinishedPromise;
 
-      window.removeEventListener(
-        "single-spa:before-routing-event",
-        countEvents,
-      );
-      window.removeEventListener(
-        "single-spa:before-mount-routing-event",
-        countEvents,
-      );
-      window.removeEventListener("single-spa:before-app-change", countEvents);
-      window.removeEventListener(
-        "single-spa:before-no-app-change",
-        countEvents,
-      );
-      window.removeEventListener("single-spa:app-change", countEvents);
-      window.removeEventListener("single-spa:no-app-change", countEvents);
-      window.removeEventListener("single-spa:routing-event", countEvents);
-      window.removeEventListener(
-        "single-spa:before-routing-event",
-        cancelTheNavigation,
-      );
+      window.removeEventListener('single-spa:before-routing-event', countEvents);
+      window.removeEventListener('single-spa:before-mount-routing-event', countEvents);
+      window.removeEventListener('single-spa:before-app-change', countEvents);
+      window.removeEventListener('single-spa:before-no-app-change', countEvents);
+      window.removeEventListener('single-spa:app-change', countEvents);
+      window.removeEventListener('single-spa:no-app-change', countEvents);
+      window.removeEventListener('single-spa:routing-event', countEvents);
+      window.removeEventListener('single-spa:before-routing-event', cancelTheNavigation);
 
       // Give time for single-spa to actually cancel the navigation
       await tick();
 
       // Cancelation causes two reroutes, and therefore two before-no-app-change and two before-routing-events
-      expect(preCancelation).toEqual([
-        "single-spa:before-no-app-change",
-        "single-spa:before-routing-event",
-      ]);
+      expect(preCancelation).toEqual(['single-spa:before-no-app-change', 'single-spa:before-routing-event']);
       expect(postCancelation).toEqual([]);
-      expect(location.pathname).toEqual("/");
+      expect(location.pathname).toEqual('/');
 
       function countEvents(evt) {
         (cancelationStarted ? postCancelation : preCancelation).push(evt.type);
       }
 
       function cancelTheNavigation(evt) {
-        window.removeEventListener(
-          "single-spa:before-routing-event",
-          cancelTheNavigation,
-        );
-        expect(new URL(evt.detail.oldUrl).pathname).toEqual("/");
-        expect(new URL(evt.detail.newUrl).pathname).toEqual("/app1");
+        window.removeEventListener('single-spa:before-routing-event', cancelTheNavigation);
+        expect(new URL(evt.detail.oldUrl).pathname).toEqual('/');
+        expect(new URL(evt.detail.newUrl).pathname).toEqual('/app1');
         evt.detail.cancelNavigation();
         cancelationStarted = true;
         cancelationFinished();
@@ -714,7 +581,7 @@ describe(`events api :`, () => {
       cancelNavigationTest({
         shouldCancel: true,
         cancelValue: undefined,
-        name: "undefined-cancel",
+        name: 'undefined-cancel',
       }),
     );
 
@@ -723,7 +590,7 @@ describe(`events api :`, () => {
       cancelNavigationTest({
         shouldCancel: true,
         cancelValue: true,
-        name: "true-cancel",
+        name: 'true-cancel',
       }),
     );
 
@@ -732,7 +599,7 @@ describe(`events api :`, () => {
       cancelNavigationTest({
         shouldCancel: true,
         cancelValue: {},
-        name: "truthy-cancel",
+        name: 'truthy-cancel',
       }),
     );
 
@@ -741,7 +608,7 @@ describe(`events api :`, () => {
       cancelNavigationTest({
         shouldCancel: false,
         cancelValue: false,
-        name: "false-cancel",
+        name: 'false-cancel',
       }),
     );
 
@@ -750,7 +617,7 @@ describe(`events api :`, () => {
       cancelNavigationTest({
         shouldCancel: false,
         cancelValue: null,
-        name: "null-cancel",
+        name: 'null-cancel',
       }),
     );
 
@@ -758,8 +625,8 @@ describe(`events api :`, () => {
       `doesn't cancel navigation if you call with falsy value`,
       cancelNavigationTest({
         shouldCancel: false,
-        cancelValue: "",
-        name: "empty-string-cancel",
+        cancelValue: '',
+        name: 'empty-string-cancel',
       }),
     );
 
@@ -769,7 +636,7 @@ describe(`events api :`, () => {
       cancelNavigationTest({
         shouldCancel: true,
         cancelValue: () => Promise.resolve(true),
-        name: "async-cancel",
+        name: 'async-cancel',
       }),
     );
 
@@ -783,7 +650,7 @@ describe(`events api :`, () => {
               resolve(true);
             }, 10);
           }),
-        name: "async-delayed-cancel",
+        name: 'async-delayed-cancel',
       }),
     );
 
@@ -792,7 +659,7 @@ describe(`events api :`, () => {
       cancelNavigationTest({
         cancelValue: () => Promise.reject(),
         shouldCancel: false,
-        name: "async-cancel-rejection",
+        name: 'async-cancel-rejection',
       }),
     );
 
@@ -801,16 +668,16 @@ describe(`events api :`, () => {
       cancelNavigationTest({
         cancelValue: Promise.resolve(false),
         shouldCancel: false,
-        name: "async-cancel-false",
+        name: 'async-cancel-false',
       }),
     );
 
     it(
       `doesn't cancel with promise that resolves with a falsy value`,
       cancelNavigationTest({
-        cancelValue: Promise.resolve(""),
+        cancelValue: Promise.resolve(''),
         shouldCancel: false,
-        name: "async-cancel-falsy",
+        name: 'async-cancel-falsy',
       }),
     );
 
@@ -819,7 +686,7 @@ describe(`events api :`, () => {
       cancelNavigationTest({
         cancelValue: Promise.resolve(undefined),
         shouldCancel: false,
-        name: "async-cancel-undefined",
+        name: 'async-cancel-undefined',
       }),
     );
 
@@ -831,31 +698,23 @@ describe(`events api :`, () => {
             async mount() {},
             async unmount() {},
           },
-          activeWhen: ["/"],
+          activeWhen: ['/'],
         });
 
-        singleSpa.navigateToUrl("/");
+        singleSpa.navigateToUrl('/');
         await singleSpa.triggerAppChange();
 
-        window.addEventListener(
-          "single-spa:before-routing-event",
-          cancelTheNavigation,
-        );
+        window.addEventListener('single-spa:before-routing-event', cancelTheNavigation);
 
-        singleSpa.navigateToUrl("/app1");
+        singleSpa.navigateToUrl('/app1');
         await singleSpa.triggerAppChange();
 
-        window.removeEventListener(
-          "single-spa:before-routing-event",
-          cancelTheNavigation,
-        );
+        window.removeEventListener('single-spa:before-routing-event', cancelTheNavigation);
 
-        expect(location.pathname).toEqual(shouldCancel ? "/" : "/app1");
+        expect(location.pathname).toEqual(shouldCancel ? '/' : '/app1');
 
         function cancelTheNavigation(evt) {
-          evt.detail.cancelNavigation(
-            typeof cancelValue === "function" ? cancelValue() : cancelValue,
-          );
+          evt.detail.cancelNavigation(typeof cancelValue === 'function' ? cancelValue() : cancelValue);
         }
       };
     }

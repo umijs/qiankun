@@ -1,4 +1,4 @@
-import * as singleSpa from "single-spa";
+import * as singleSpa from 'single-spa';
 
 describe(`mount-before-other-loads`, () => {
   let errs = [];
@@ -17,7 +17,7 @@ describe(`mount-before-other-loads`, () => {
   });
 
   it(`will mount an application before loading another application finishes`, async () => {
-    location.hash = "#mount-before-other-loads";
+    location.hash = '#mount-before-other-loads';
 
     const appChangeResultBeforeStart = await singleSpa.triggerAppChange();
     expect(appChangeResultBeforeStart).toEqual([]);
@@ -26,47 +26,47 @@ describe(`mount-before-other-loads`, () => {
 
     const slowApp = {
       init: async () => {
-        order.push("slow:init");
+        order.push('slow:init');
       },
       mount: async () => {
-        order.push("slow:mount");
+        order.push('slow:mount');
       },
       unmount: async () => {
-        order.push("slow:unmount");
+        order.push('slow:unmount');
       },
     };
 
     const fastApp = {
       init: async () => {
-        order.push("fast:init");
+        order.push('fast:init');
       },
       mount: async () => {
-        order.push("fast:mount");
+        order.push('fast:mount');
       },
       unmount: async () => {
-        order.push("fast:unmount");
+        order.push('fast:unmount');
       },
     };
 
     singleSpa.registerApplication(
-      "slow-load",
+      'slow-load',
       () =>
         new Promise((resolve) => {
           setTimeout(() => {
-            order.push("slow:load");
+            order.push('slow:load');
             resolve(slowApp);
           }, 30);
         }),
-      (location) => location.hash.startsWith("#mount-before-other-loads"),
+      (location) => location.hash.startsWith('#mount-before-other-loads'),
     );
 
     singleSpa.registerApplication(
-      "fast-load",
+      'fast-load',
       async () => {
-        order.push("fast:load");
+        order.push('fast:load');
         return fastApp;
       },
-      (location) => location.hash.startsWith("#mount-before-other-loads"),
+      (location) => location.hash.startsWith('#mount-before-other-loads'),
     );
 
     expect(errs.length).toBe(0);
@@ -74,13 +74,6 @@ describe(`mount-before-other-loads`, () => {
     singleSpa.start();
     await singleSpa.triggerAppChange();
     expect(errs.length).toBe(0);
-    expect(order).toEqual([
-      "fast:load",
-      "fast:init",
-      "fast:mount",
-      "slow:load",
-      "slow:init",
-      "slow:mount",
-    ]);
+    expect(order).toEqual(['fast:load', 'fast:init', 'fast:mount', 'slow:load', 'slow:init', 'slow:mount']);
   });
 });

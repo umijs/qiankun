@@ -3,7 +3,7 @@ let initCalled, mountCalled;
 export function init() {
   return new Promise((resolve, reject) => {
     initCalled = true;
-    reject(new Error("the init-rejects app failed to init"));
+    reject(new Error('the init-rejects app failed to init'));
   });
 }
 

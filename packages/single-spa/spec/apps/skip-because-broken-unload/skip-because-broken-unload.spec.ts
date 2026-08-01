@@ -1,4 +1,4 @@
-import * as singleSpa from "single-spa";
+import * as singleSpa from 'single-spa';
 
 const activeHash = `#skip-because-broken`;
 
@@ -7,8 +7,8 @@ describe(`happy-unload app :`, () => {
 
   beforeAll(() => {
     singleSpa.registerApplication(
-      "skip-because-broken-unload",
-      () => import("./skip-because-broken-unload.app"),
+      'skip-because-broken-unload',
+      () => import('./skip-because-broken-unload.app'),
       (location) => location.hash === activeHash,
     );
     singleSpa.start();
@@ -19,14 +19,10 @@ describe(`happy-unload app :`, () => {
 
     await singleSpa.triggerAppChange();
 
-    expect(singleSpa.getAppStatus("skip-because-broken-unload")).toBe(
-      singleSpa.AppOrParcelStatus.SKIP_BECAUSE_BROKEN,
-    );
+    expect(singleSpa.getAppStatus('skip-because-broken-unload')).toBe(singleSpa.AppOrParcelStatus.SKIP_BECAUSE_BROKEN);
 
-    await singleSpa.unloadApplication("skip-because-broken-unload");
+    await singleSpa.unloadApplication('skip-because-broken-unload');
 
-    expect(singleSpa.getAppStatus("skip-because-broken-unload")).toBe(
-      singleSpa.AppOrParcelStatus.NOT_LOADED,
-    );
+    expect(singleSpa.getAppStatus('skip-because-broken-unload')).toBe(singleSpa.AppOrParcelStatus.NOT_LOADED);
   });
 });

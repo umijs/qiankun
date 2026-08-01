@@ -1,14 +1,12 @@
-import * as singleSpa from "single-spa";
+import * as singleSpa from 'single-spa';
 
 describe(`root parcels`, () => {
   it(`can mount and unmount root parcels`, () => {
     const parcelConfig = createParcelConfig();
     const parcel = singleSpa.mountRootParcel(parcelConfig, {
-      domElement: document.createElement("div"),
+      domElement: document.createElement('div'),
     });
-    expect(parcel.getStatus()).toBe(
-      singleSpa.AppOrParcelStatus.NOT_INITIALIZED,
-    );
+    expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_INITIALIZED);
 
     return parcel.mountPromise
       .then(() => {
@@ -22,20 +20,16 @@ describe(`root parcels`, () => {
       )
       .then(parcel.unmount)
       .then(() => {
-        expect(parcel.getStatus()).toBe(
-          singleSpa.AppOrParcelStatus.NOT_MOUNTED,
-        );
+        expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_MOUNTED);
       });
   });
 
   it(`doesn't resolve initPromise, mountPromise, or unmountPromise with any values`, () => {
     const parcelConfig = createParcelConfig();
     const parcel = singleSpa.mountRootParcel(parcelConfig, {
-      domElement: document.createElement("div"),
+      domElement: document.createElement('div'),
     });
-    expect(parcel.getStatus()).toBe(
-      singleSpa.AppOrParcelStatus.NOT_INITIALIZED,
-    );
+    expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_INITIALIZED);
 
     return parcel.initPromise
       .then((value) => {
@@ -61,45 +55,29 @@ describe(`root parcels`, () => {
         resolveConfigLoading = () => resolve(parcelConfig);
       });
     const parcel = singleSpa.mountRootParcel(configLoadingFunction, {
-      domElement: document.createElement("div"),
+      domElement: document.createElement('div'),
     });
-    expect(parcel.getStatus()).toBe(
-      singleSpa.AppOrParcelStatus.LOADING_SOURCE_CODE,
-    );
+    expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.LOADING_SOURCE_CODE);
     return Promise.resolve()
-      .then(() =>
-        expect(parcel.getStatus()).toBe(
-          singleSpa.AppOrParcelStatus.LOADING_SOURCE_CODE,
-        ),
-      )
+      .then(() => expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.LOADING_SOURCE_CODE))
       .then(() => resolveConfigLoading())
       .then(() => parcel.loadPromise)
-      .then(() =>
-        expect(parcel.getStatus()).not.toBe(
-          singleSpa.AppOrParcelStatus.LOADING_SOURCE_CODE,
-        ),
-      )
+      .then(() => expect(parcel.getStatus()).not.toBe(singleSpa.AppOrParcelStatus.LOADING_SOURCE_CODE))
       .then(() => parcel.mountPromise)
-      .then(() =>
-        expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.MOUNTED),
-      )
+      .then(() => expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.MOUNTED))
       .then(() => parcel.unmount())
-      .then(() =>
-        expect(parcel.getStatus()).toBe(
-          singleSpa.AppOrParcelStatus.NOT_MOUNTED,
-        ),
-      )
+      .then(() => expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_MOUNTED))
       .then(() => parcel.unmountPromise);
   });
 
   it(`allows you to update a parcel that has implemented the update lifecycle`, () => {
     const parcelConfig = createParcelConfig({ withUpdate: true });
     const parcel = singleSpa.mountRootParcel(parcelConfig, {
-      domElement: document.createElement("div"),
+      domElement: document.createElement('div'),
     });
 
     return parcel.mountPromise
-      .then(() => expect(typeof parcel.update).toBe("function"))
+      .then(() => expect(typeof parcel.update).toBe('function'))
       .then(() => expect(parcelConfig.updateCalls).toBe(0))
       .then(() => parcel.update({}))
       .then((resolvedVal) => expect(resolvedVal).toBe(null))
@@ -109,18 +87,16 @@ describe(`root parcels`, () => {
   it(`does not allow you to call update on a parcel that does not implement the update lifecycle`, () => {
     const parcelConfig = createParcelConfig();
     const parcel = singleSpa.mountRootParcel(parcelConfig, {
-      domElement: document.createElement("div"),
+      domElement: document.createElement('div'),
     });
 
-    return parcel.mountPromise.then(() =>
-      expect(parcel.update).toBeUndefined(),
-    );
+    return parcel.mountPromise.then(() => expect(parcel.update).toBeUndefined());
   });
 
   it(`can mount a parcel missing the init lifecycle`, async () => {
     const parcelConfig = { async mount() {}, async unmount() {} };
     const parcel = singleSpa.mountRootParcel(parcelConfig, {
-      domElement: document.createElement("div"),
+      domElement: document.createElement('div'),
     });
     await parcel.mountPromise;
   });
@@ -131,7 +107,7 @@ describe(`root parcels`, () => {
     parcelConfig.mount = async function () {};
     parcelConfig.unmount = async function () {};
     const parcel = singleSpa.mountRootParcel(parcelConfig, {
-      domElement: document.createElement("div"),
+      domElement: document.createElement('div'),
     });
     await parcel.mountPromise;
   });
@@ -140,7 +116,7 @@ describe(`root parcels`, () => {
   it(`can unmount a parcel that is still waiting for mount to finish`, async () => {
     const parcelConfig = createParcelConfig();
     const parcel = singleSpa.mountRootParcel(parcelConfig, {
-      domElement: document.createElement("div"),
+      domElement: document.createElement('div'),
     });
     await parcel.unmount();
   });
@@ -158,11 +134,9 @@ describe(`root parcels`, () => {
     expect(bootstrapCalled).toBe(false);
 
     const parcel = singleSpa.mountRootParcel(parcelConfig, {
-      domElement: document.createElement("div"),
+      domElement: document.createElement('div'),
     });
-    expect(parcel.getStatus()).toBe(
-      singleSpa.AppOrParcelStatus.NOT_INITIALIZED,
-    );
+    expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_INITIALIZED);
 
     return parcel.mountPromise
       .then(() => {
@@ -177,9 +151,7 @@ describe(`root parcels`, () => {
       )
       .then(parcel.unmount)
       .then(() => {
-        expect(parcel.getStatus()).toBe(
-          singleSpa.AppOrParcelStatus.NOT_MOUNTED,
-        );
+        expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_MOUNTED);
       });
   });
 
@@ -187,12 +159,10 @@ describe(`root parcels`, () => {
     const parcelConfig = createParcelConfig({ withUpdate: true });
 
     const parcel = singleSpa.mountRootParcel(parcelConfig, {
-      domElement: document.createElement("div"),
+      domElement: document.createElement('div'),
     });
 
-    expect(parcel.getStatus()).toBe(
-      singleSpa.AppOrParcelStatus.NOT_INITIALIZED,
-    );
+    expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_INITIALIZED);
     await parcel.initPromise;
 
     expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.MOUNTING);
@@ -209,12 +179,10 @@ describe(`root parcels`, () => {
     const parcelConfig = createParcelConfig({ withUpdate: true });
 
     const parcel = singleSpa.mountRootParcel(parcelConfig, {
-      domElement: document.createElement("div"),
+      domElement: document.createElement('div'),
     });
 
-    expect(parcel.getStatus()).toBe(
-      singleSpa.AppOrParcelStatus.NOT_INITIALIZED,
-    );
+    expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_INITIALIZED);
     await parcel.initPromise;
 
     expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.MOUNTING);

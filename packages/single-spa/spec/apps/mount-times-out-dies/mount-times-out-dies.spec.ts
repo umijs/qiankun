@@ -1,4 +1,4 @@
-import * as singleSpa from "single-spa";
+import * as singleSpa from 'single-spa';
 
 const activeHash = `#mount-times-out-dies`;
 
@@ -11,22 +11,20 @@ describe(`mount-times-out-dies app`, () => {
 
   beforeAll(() => {
     singleSpa.registerApplication(
-      "./mount-times-out-dies.app",
-      () => import("./mount-times-out-dies.app"),
+      './mount-times-out-dies.app',
+      () => import('./mount-times-out-dies.app'),
       (location) => location.hash === activeHash,
     );
     singleSpa.start();
   });
 
   beforeEach(() => {
-    location.hash = "#";
+    location.hash = '#';
 
     errs = [];
     singleSpa.addErrorHandler(handleError);
 
-    return import("./mount-times-out-dies.app")
-      .then((app) => (myApp = app))
-      .then((app) => app.reset());
+    return import('./mount-times-out-dies.app').then((app) => (myApp = app)).then((app) => app.reset());
   });
 
   afterEach(() => singleSpa.removeErrorHandler(handleError));
@@ -38,9 +36,7 @@ describe(`mount-times-out-dies app`, () => {
       expect(myApp.inits()).toEqual(1);
       expect(myApp.mounts()).toEqual(1);
       expect(singleSpa.getMountedApps()).toEqual([]);
-      expect(singleSpa.getAppStatus("./mount-times-out-dies.app")).toEqual(
-        "SKIP_BECAUSE_BROKEN",
-      );
+      expect(singleSpa.getAppStatus('./mount-times-out-dies.app')).toEqual('SKIP_BECAUSE_BROKEN');
     });
   });
 });

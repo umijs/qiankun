@@ -9,7 +9,7 @@ export function init() {
 export function mount() {
   return Promise.resolve().then(() => {
     mounted = true;
-    throw Error("mount failed");
+    throw Error('mount failed');
   });
 }
 

@@ -1,4 +1,4 @@
-import * as singleSpa from "single-spa";
+import * as singleSpa from 'single-spa';
 
 describe(`event listeners before single-spa is started :`, () => {
   beforeEach(ensureCleanSlate);
@@ -8,21 +8,21 @@ describe(`event listeners before single-spa is started :`, () => {
       popstateCalled = false;
 
     function hashchange() {
-      if (window.location.hash === "#/a-new-hash") hashchangeCalled = true;
+      if (window.location.hash === '#/a-new-hash') hashchangeCalled = true;
 
       checkTestComplete();
     }
 
     function popstate() {
-      if (window.location.hash === "#/a-new-hash") popstateCalled = true;
+      if (window.location.hash === '#/a-new-hash') popstateCalled = true;
 
       checkTestComplete();
     }
 
-    window.addEventListener("hashchange", hashchange);
-    window.addEventListener("popstate", popstate);
+    window.addEventListener('hashchange', hashchange);
+    window.addEventListener('popstate', popstate);
 
-    window.location.hash = "#/a-new-hash";
+    window.location.hash = '#/a-new-hash';
 
     function checkTestComplete() {
       if (isIE()) {
@@ -35,8 +35,8 @@ describe(`event listeners before single-spa is started :`, () => {
     }
 
     function cleanupAndFinish() {
-      window.removeEventListener("hashchange", hashchange);
-      window.removeEventListener("popstate", popstate);
+      window.removeEventListener('hashchange', hashchange);
+      window.removeEventListener('popstate', popstate);
       done();
     }
   });
@@ -63,8 +63,8 @@ describe(`event listeners after single-spa is started`, () => {
       checkTestComplete();
     }
 
-    window.addEventListener("hashchange", hashchange);
-    window.addEventListener("popstate", popstate);
+    window.addEventListener('hashchange', hashchange);
+    window.addEventListener('popstate', popstate);
 
     /* This will first trigger a PopStateEvent, and then a HashChangeEvent. The
      * hashchange event will be queued and not actually given to any event listeners
@@ -72,7 +72,7 @@ describe(`event listeners after single-spa is started`, () => {
      * The bug described in https://github.com/single-spa/single-spa/issues/74 explains
      * why this test is necessary.
      */
-    window.location.hash = "#/a-hash-single-spa-is-started";
+    window.location.hash = '#/a-hash-single-spa-is-started';
 
     function checkTestComplete() {
       if (isIE()) {
@@ -85,8 +85,8 @@ describe(`event listeners after single-spa is started`, () => {
     }
 
     function cleanupAndFinish() {
-      window.removeEventListener("hashchange", hashchange);
-      window.removeEventListener("popstate", popstate);
+      window.removeEventListener('hashchange', hashchange);
+      window.removeEventListener('popstate', popstate);
       done();
     }
   });
@@ -102,37 +102,37 @@ describe(`event listeners after single-spa is started`, () => {
     const boundListener1 = listener1.bind(null);
     const boundListener2 = listener2.bind(null);
 
-    window.addEventListener("hashchange", boundListener1);
-    window.addEventListener("hashchange", boundListener2);
+    window.addEventListener('hashchange', boundListener1);
+    window.addEventListener('hashchange', boundListener2);
 
-    window.removeEventListener("hashchange", boundListener1);
+    window.removeEventListener('hashchange', boundListener1);
 
     // This should trigger listener2 to be called
     window.location.hash = `#/nowhere`;
 
     function listener1() {
-      fail("listener1 should not be called, since it was removed");
+      fail('listener1 should not be called, since it was removed');
     }
 
     function listener2() {
-      window.removeEventListener("hashchange", boundListener2); // cleanup after ourselves
+      window.removeEventListener('hashchange', boundListener2); // cleanup after ourselves
       done();
     }
   });
 
   it(`Fires artificial popstate events with correct target`, async () => {
-    history.pushState(history.state, "", "/");
+    history.pushState(history.state, '', '/');
     await singleSpa.triggerAppChange();
 
     let finish,
       popstatePromise = new Promise((resolve) => (finish = resolve));
-    window.addEventListener("popstate", popstateListener);
-    history.pushState(history.state, "", "/new-url");
+    window.addEventListener('popstate', popstateListener);
+    history.pushState(history.state, '', '/new-url');
     await popstatePromise;
 
     function popstateListener(evt) {
       expect(evt.target).toBe(window);
-      window.removeEventListener("popstate", popstateListener);
+      window.removeEventListener('popstate', popstateListener);
       finish();
     }
   });

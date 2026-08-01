@@ -1,12 +1,8 @@
-import {
-  toName,
-  AppOrParcelStatus,
-  InternalApplication,
-} from "../applications/app.helpers";
-import { handleAppError } from "../applications/app-errors";
-import { reasonableTime } from "../applications/timeouts";
-import { addProfileEntry } from "../devtools/profiler";
-import { LoadedApp } from "./lifecycle.helpers";
+import { toName, AppOrParcelStatus, InternalApplication } from '../applications/app.helpers';
+import { handleAppError } from '../applications/app-errors';
+import { reasonableTime } from '../applications/timeouts';
+import { addProfileEntry } from '../devtools/profiler';
+import { LoadedApp } from './lifecycle.helpers';
 
 interface UnloadInfo {
   app: InternalApplication;
@@ -58,23 +54,14 @@ export function toUnloadPromise(app: LoadedApp): Promise<LoadedApp> {
       startTime = performance.now();
     }
 
-    const unloadPromise = app.unload
-      ? reasonableTime(app, "unload")
-      : Promise.resolve();
+    const unloadPromise = app.unload ? reasonableTime(app, 'unload') : Promise.resolve();
 
     app.status = AppOrParcelStatus.UNLOADING;
 
     return unloadPromise
       .then(() => {
         if (__PROFILE__) {
-          addProfileEntry(
-            "application",
-            toName(app),
-            "unload",
-            startTime,
-            performance.now(),
-            true,
-          );
+          addProfileEntry('application', toName(app), 'unload', startTime, performance.now(), true);
         }
 
         finishUnloadingApp(app, unloadInfo);
@@ -83,14 +70,7 @@ export function toUnloadPromise(app: LoadedApp): Promise<LoadedApp> {
       })
       .catch((err) => {
         if (__PROFILE__) {
-          addProfileEntry(
-            "application",
-            toName(app),
-            "unload",
-            startTime,
-            performance.now(),
-            false,
-          );
+          addProfileEntry('application', toName(app), 'unload', startTime, performance.now(), false);
         }
 
         errorUnloadingApp(app, unloadInfo, err);
@@ -137,7 +117,7 @@ export function addAppToUnload(
   reject: (val?) => any,
 ) {
   appsToUnload[toName(app)] = { app, resolve, reject };
-  Object.defineProperty(appsToUnload[toName(app)], "promise", {
+  Object.defineProperty(appsToUnload[toName(app)], 'promise', {
     get: promiseGetter,
   });
 }

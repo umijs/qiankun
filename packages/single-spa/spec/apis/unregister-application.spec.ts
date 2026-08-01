@@ -1,6 +1,6 @@
-import * as singleSpa from "single-spa";
+import * as singleSpa from 'single-spa';
 
-describe("unregisterApplication", function () {
+describe('unregisterApplication', function () {
   let app;
   beforeAll(() => {
     singleSpa.start();
@@ -22,18 +22,16 @@ describe("unregisterApplication", function () {
 
   it(`should throw an error if no such application exists`, () => {
     expect(() => {
-      window.__SINGLE_SPA_DEVTOOLS__.exposedMethods.unregisterApplication(
-        `app that doesn't exist`,
-      );
+      window.__SINGLE_SPA_DEVTOOLS__.exposedMethods.unregisterApplication(`app that doesn't exist`);
     }).toThrow();
   });
 
   it(`should remove the application so it can be re-registered`, () => {
-    singleSpa.registerApplication("about to unregister", app, () => false);
-    expect(singleSpa.getAppStatus("about to unregister")).toBeTruthy();
+    singleSpa.registerApplication('about to unregister', app, () => false);
+    expect(singleSpa.getAppStatus('about to unregister')).toBeTruthy();
 
-    return singleSpa.unregisterApplication("about to unregister").then(() => {
-      expect(singleSpa.getAppStatus("about to unregister")).toBeFalsy();
+    return singleSpa.unregisterApplication('about to unregister').then(() => {
+      expect(singleSpa.getAppStatus('about to unregister')).toBeFalsy();
     });
   });
 
@@ -51,7 +49,7 @@ describe("unregisterApplication", function () {
     };
 
     singleSpa.registerApplication({
-      name: "about to unregister",
+      name: 'about to unregister',
       app: slowMountApp,
       activeWhen: () => true,
     });
@@ -64,12 +62,10 @@ describe("unregisterApplication", function () {
 
     expect(mounted).toBe(true);
 
-    expect(singleSpa.getAppStatus("about to unregister")).toBe(
-      singleSpa.AppOrParcelStatus.MOUNTING,
-    );
+    expect(singleSpa.getAppStatus('about to unregister')).toBe(singleSpa.AppOrParcelStatus.MOUNTING);
 
-    return singleSpa.unregisterApplication("about to unregister").then(() => {
-      expect(singleSpa.getAppNames()).not.toContain("about to unregister");
+    return singleSpa.unregisterApplication('about to unregister').then(() => {
+      expect(singleSpa.getAppNames()).not.toContain('about to unregister');
       expect(mounted).toBe(false);
       return appChangePromise;
     });

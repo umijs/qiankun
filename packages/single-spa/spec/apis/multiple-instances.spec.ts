@@ -2,7 +2,7 @@ describe(`multiple instances of single-spa`, () => {
   let consoleWarnSpy;
 
   beforeEach(() => {
-    consoleWarnSpy = jest.spyOn(console, "warn");
+    consoleWarnSpy = jest.spyOn(console, 'warn');
   });
 
   afterEach(() => {
@@ -15,10 +15,10 @@ describe(`multiple instances of single-spa`, () => {
 
     expect(consoleWarnSpy).not.toHaveBeenCalled();
 
-    await import("single-spa");
+    await import('single-spa');
 
     expect(consoleWarnSpy).toHaveBeenCalledWith(
-      "single-spa minified message #41: single-spa has been loaded twice on the page. This can result in unexpected behavior. See https://single-spa.js.org/error/?code=41",
+      'single-spa minified message #41: single-spa has been loaded twice on the page. This can result in unexpected behavior. See https://single-spa.js.org/error/?code=41',
     );
   });
 });
