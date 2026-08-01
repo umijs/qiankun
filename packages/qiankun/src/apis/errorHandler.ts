@@ -4,4 +4,4 @@
  */
 
 // Re-export single-spa error handlers
-export { addErrorHandler, removeErrorHandler } from 'single-spa';
+export { addErrorHandler, removeErrorHandler } from '@qiankunjs/single-spa';

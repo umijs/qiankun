@@ -393,12 +393,12 @@ importers:
       '@qiankunjs/shared':
         specifier: workspace:^
         version: link:../shared
+      '@qiankunjs/single-spa':
+        specifier: workspace:^
+        version: link:../single-spa
       lodash:
         specifier: 4.18.1
         version: 4.18.1
-      single-spa:
-        specifier: ^6.0.3
-        version: 6.0.3
 
   packages/sandbox:
     dependencies:
@@ -5136,9 +5136,6 @@ packages:
 
   single-spa@5.9.5:
     resolution: {integrity: sha512-9SQdmsyz4HSP+3gs6PJzhkaMEg+6zTlu9oxIghnwUX3eq+ajq4ft5egl0iyR55LAmO/UwvU8NgIWs/ZyQMa6dw==}
-
-  single-spa@6.0.3:
-    resolution: {integrity: sha512-pXlwHXHhs3hx/MnGQHBLdFCVAN2rlm9TLBKazbDMyZ25QRxoen2vlUZ47MyXKa9K8Gd5UZs/gkuQad4TGbViwg==}
 
   sisteransi@1.0.5:
     resolution: {integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==}
@@ -10953,8 +10950,6 @@ snapshots:
   signal-exit@4.1.0: {}
 
   single-spa@5.9.5: {}
-
-  single-spa@6.0.3: {}
 
   sisteransi@1.0.5: {}
 

@@ -26,7 +26,7 @@ function createParcel(appName: string) {
     mountPromise: Promise.resolve(null),
     unmountPromise,
     loadPromise: Promise.resolve(null),
-    bootstrapPromise: Promise.resolve(null),
+    initPromise: Promise.resolve(null),
     getStatus: vi.fn(() => 'MOUNTED'),
     unmount: vi.fn(() => {
       events.push(`unmount:${appName}`);

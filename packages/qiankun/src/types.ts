@@ -4,7 +4,7 @@
  */
 import type { LoaderOpts } from '@qiankunjs/loader';
 import type { CreateSandboxOptions } from '@qiankunjs/sandbox';
-import type { LifeCycles as ParcelLifeCycles, Parcel, RegisterApplicationConfig } from 'single-spa';
+import type { LifeCycles as ParcelLifeCycles, Parcel, RegisterApplicationConfig } from '@qiankunjs/single-spa';
 
 export type {
   Compartment,

@@ -107,7 +107,7 @@ export async function mountMicroApp({
       setLoading?.(false);
     });
 
-  (['loadPromise', 'bootstrapPromise'] as const).forEach((key) => {
+  (['loadPromise', 'initPromise'] as const).forEach((key) => {
     const promise = microApp[key];
 
     promise.catch((e: Error) => {
