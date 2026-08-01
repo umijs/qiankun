@@ -32,7 +32,7 @@ const styleOutput = computed(() =>
   tinted.value ? m.value.styleInjected : m.value.noStyle,
 );
 // Echoed so a host driving the ui bindings' props channel can see its `update` land. qiankun mixes
-// its own props in (container, singleSpa, mountParcel, …), so only the scalars the host set are shown.
+// its own props in (container, mountParcel, …), so only the scalars the host set are shown.
 const hostPropsOutput = computed(() => {
   const scalars = Object.entries(props.hostProps ?? {}).filter(
     ([, value]) => typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean',

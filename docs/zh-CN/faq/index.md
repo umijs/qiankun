@@ -341,8 +341,10 @@ registerMicroApps([
 
 **2. 编程式路由：**
 ```javascript
-// 在微应用之间导航
-import { navigateToUrl } from 'single-spa';
+// 在微应用之间导航。qiankun 通过自己收编的 single-spa fork（@qiankunjs/single-spa，
+// 已作为 qiankun 的依赖自动安装）完成路由 —— 不要再额外安装 npm 上的 `single-spa` 包：
+// 那会创建第二个相互独立的路由实例。
+import { navigateToUrl } from '@qiankunjs/single-spa';
 
 const navigateToUsers = () => {
   navigateToUrl('/users');
