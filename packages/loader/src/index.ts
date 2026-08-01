@@ -78,6 +78,7 @@ export async function loadEntry<T>(
     notifyDOMStreamSettled();
     throw e;
   }
+
   if (res.body) {
     let foundEntryScript = false;
     let foundEsmEntryScript = false;
@@ -91,26 +92,6 @@ export async function loadEntry<T>(
         // TODO support non sandbox mode?
         entryScriptLoadedDeferred.resolve({} as T);
       }
-    };
-    /*
-     * ESM entry branch (ESM sandbox RFC §7): module scripts never write to window, so instead of the
-     * latestSetProp mechanism the lifecycles are taken from the entry module namespace resolved by the
-     * engine, and any module graph error (sync throw or TLA rejection) is plumbed back to the deferred
-     * so it reaches loadApp / single-spa addErrorHandler instead of vanishing as an unhandledrejection.
-     */
-    const onEsmEntry = (namespacePromise: Promise<Record<string, unknown> | undefined>) => {
-      namespacePromise.then(
-        (ns) => {
-          if (!entryScriptLoadedDeferred.isSettled()) {
-            entryScriptLoadedDeferred.resolve(ns as T);
-          }
-        },
-        (e) => {
-          if (!entryScriptLoadedDeferred.isSettled()) {
-            entryScriptLoadedDeferred.reject(e);
-          }
-        },
-      );
     };
 
     // defer scripts must wait until the entry HTML loaded
@@ -159,7 +140,7 @@ export async function loadEntry<T>(
             fetch,
           };
 
-          let queueDeferScript: () => void;
+          let queueDeferScript: () => void = () => {};
           const deferScriptMode = isDeferScript(clone as unknown as HTMLScriptElement);
           if (deferScriptMode) {
             const { deferred, prevDeferred, queue } = prepareDeferredQueue(deferQueue);
@@ -177,7 +158,7 @@ export async function loadEntry<T>(
 
           // the script have no src attribute after transpile, indicating that the script needs to wait for the src to be filled
           if (deferScriptMode && !script.hasAttribute('src')) {
-            queueDeferScript!();
+            queueDeferScript();
           }
 
           // A classic defer script evaluates after the stream ends, so its load/error event is
@@ -270,7 +251,17 @@ export async function loadEntry<T>(
             (error) => entryScriptLoadedDeferred.reject(error),
           );
         } else if (foundEsmEntryScript) {
-          onEsmEntry(namespacePromise);
+          /*
+           * ESM entry branch (ESM sandbox RFC §7): module scripts never write to window, so instead of the
+           * latestSetProp mechanism the lifecycles are taken from the entry module namespace resolved by the
+           * engine, and any module graph error (sync throw or TLA rejection) is plumbed back to the deferred
+           * so it reaches loadApp / single-spa addErrorHandler instead of vanishing as an unhandledrejection.
+           * (Deferred settles are first-wins, so the capabilities can be passed as plain callbacks.)
+           */
+          (namespacePromise as Promise<T | undefined>).then(
+            entryScriptLoadedDeferred.resolve,
+            entryScriptLoadedDeferred.reject,
+          );
         } else {
           // Classic entry drives the lifecycle deferred, but stray module scripts may coexist
           // with it — observe their graph failures so they surface as a console error instead
@@ -289,13 +280,12 @@ export async function loadEntry<T>(
         // successor would interleave with the tail writes.
         await namespacePromise.catch(() => undefined);
         await Promise.allSettled(deferScriptExecutions);
-        notifyDOMStreamSettled();
       })
       .catch((e) => {
-        notifyDOMStreamSettled();
         entryScriptLoadedDeferred.reject(e);
         entryHTMLLoadedDeferred.reject(e);
-      });
+      })
+      .finally(notifyDOMStreamSettled);
 
     return entryScriptLoadedDeferred.promise;
   }

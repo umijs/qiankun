@@ -18,11 +18,15 @@ export class Deferred<T> {
 
   constructor() {
     this.promise = new Promise<T>((resolve, reject) => {
+      // First settle wins, like the native promise capability — without the guard a late call
+      // would be a no-op on the promise yet still flip #status away from the real outcome.
       this.resolve = (value) => {
+        if (this.#status !== 'pending') return;
         this.#status = 'fulfilled';
         resolve(value);
       };
       this.reject = (reason) => {
+        if (this.#status !== 'pending') return;
         this.#status = 'rejected';
         // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- Match the native Promise reject contract, which permits consumers to propagate arbitrary reasons unchanged.
         reject(reason);
