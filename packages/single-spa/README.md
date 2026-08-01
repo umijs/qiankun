@@ -13,14 +13,20 @@ qiankun's vendored fork of [single-spa](https://github.com/single-spa/single-spa
 
 Maintained deliberately; this list is the contract (keep it in sync when adding divergences):
 
-1. **`bootstrap` is a permanent alias of `init` for applications** — reverts upstream [single-spa#1333](https://github.com/single-spa/single-spa/pull/1333), which removed the application-level fallback (the parcel-level fallback in `mount-parcel.ts` was always kept). Applications exporting only `bootstrap` keep working; `init` wins when both are present. Not a transitional shim — it will not be removed.
-2. **`parcel.bootstrapPromise` is a permanent alias of `parcel.initPromise`** — upstream [single-spa#1307](https://github.com/single-spa/single-spa/pull/1307) renamed it away. Parcels returned by qiankun's `loadMicroApp` are public API, so the old name stays on the external parcel representation, always as the same promise instance as `initPromise`.
+1. **The upstream `bootstrap` → `init` rename ([single-spa#1307](https://github.com/single-spa/single-spa/pull/1307), completed by [#1333](https://github.com/single-spa/single-spa/pull/1333)) is reverted wholesale — v6 naming is canonical.** qiankun's ecosystem was built on the bootstrap vocabulary and there was no reason to break it. Concretely:
+   - the `bootstrap` lifecycle is the canonical name for applications and parcels (`init` stays accepted as an alias; `bootstrap` wins when both are present);
+   - `parcel.bootstrapPromise` is the canonical parcel promise (`initPromise` stays as an alias, always the same promise instance);
+   - `setBootstrapMaxTime` is the canonical timeout API (`setInitMaxTime` stays as an alias export), and the `timeouts.bootstrap` key is canonical (`timeouts.init` accepted as an alias);
+   - the `NOT_BOOTSTRAPPED` / `BOOTSTRAPPING` statuses are restored, both as `AppOrParcelStatus` member names and as the raw `getStatus()` string values (v7's `NOT_INITIALIZED` / `INITIALIZING` strings do not exist in this fork — a status is a value, not an API, so it has exactly one spelling);
+   - error message texts use the bootstrap vocabulary again.
+
+   The v7 `init` names are permanent compatibility aliases, not deprecations. The upstream specs that exercise the `init` spelling are kept as the alias-path coverage; `spec/apps/bootstrap-prioritized-over-init/` (inverted from upstream's `init-prioritized-over-bootstrap`), `spec/apps/legacy-bootstrap/` and `spec/parcels/bootstrap-promise-alias.spec.ts` cover the canonical path.
 
 ## Invariant contracts (never break)
 
 - All `single-spa:*` window events (`single-spa:before-routing-event`, `single-spa:routing-event`, `single-spa:no-app-change`, `single-spa:first-mount`, …) — qiankun and the wider ecosystem listen to them.
 - The `window.__SINGLE_SPA_DEVTOOLS__` hook (single-spa-inspector support).
-- Public API and type signatures stay 1:1 with the upstream baseline during phase one (the `bootstrap` alias above is the single sanctioned exception).
+- Public API and type signatures stay 1:1 with the upstream baseline during phase one, except for the bootstrap-naming revert above — qiankun-observable behavior stays 1:1 with what its ecosystem shipped against, which is the higher-priority contract.
 - Zero runtime dependencies; this package sits at the bottom of the workspace dependency graph and must not import `@qiankunjs/shared`, `@qiankunjs/sandbox` or `@qiankunjs/loader`.
 
 ## Known semantics now owned by this fork

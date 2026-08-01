@@ -35,7 +35,7 @@ describe('global timeout configuration', () => {
 
       await controlledParcelActions((parcel) => parcel.initPromise, 'init-1', 10);
       expectError(
-        `single-spa minified message #31: Lifecycle function init for parcel init-1 lifecycle did not resolve or reject for 5 ms. See https://single-spa.js.org/error/?code=31&arg=init&arg=parcel&arg=init-1&arg=5`,
+        `single-spa minified message #31: Lifecycle function bootstrap for parcel init-1 lifecycle did not resolve or reject for 5 ms. See https://single-spa.js.org/error/?code=31&arg=bootstrap&arg=parcel&arg=init-1&arg=5`,
       );
     });
 
@@ -47,7 +47,7 @@ describe('global timeout configuration', () => {
 
       await controlledParcelActions((parcel) => parcel.initPromise, 'init-3', 10);
       expectWarning(
-        `single-spa minified message #31: Lifecycle function init for parcel init-3 lifecycle did not resolve or reject for 15 ms. See https://single-spa.js.org/error/?code=31&arg=init&arg=parcel&arg=init-3&arg=15`,
+        `single-spa minified message #31: Lifecycle function bootstrap for parcel init-3 lifecycle did not resolve or reject for 15 ms. See https://single-spa.js.org/error/?code=31&arg=bootstrap&arg=parcel&arg=init-3&arg=15`,
       );
     });
   });

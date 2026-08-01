@@ -117,7 +117,7 @@ describe(`invalid-load-function`, () => {
 
       return new Promise((resolve) => setTimeout(resolve, 201)).then(() =>
         singleSpa.triggerAppChange().then(() => {
-          expect(singleSpa.getAppStatus('invalid-load-4')).toBe(singleSpa.AppOrParcelStatus.NOT_INITIALIZED);
+          expect(singleSpa.getAppStatus('invalid-load-4')).toBe(singleSpa.AppOrParcelStatus.NOT_BOOTSTRAPPED);
         }),
       );
     });

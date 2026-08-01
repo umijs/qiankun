@@ -26,7 +26,7 @@ describe('parcel errors', () => {
 
         await parcel1.initPromise.catch((err) => {
           expect(err.appOrParcelName).toBe('initialize-error');
-          expect(err.message).toMatch(`INITIALIZING`);
+          expect(err.message).toMatch(`BOOTSTRAPPING`);
           expect(err.message.indexOf(`init-error`)).toBeGreaterThan(-1);
           expect(parcel1.getStatus()).toBe('SKIP_BECAUSE_BROKEN');
         });

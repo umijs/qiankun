@@ -29,7 +29,7 @@ function createParcel({ status = 'MOUNTED' }: { status?: string } = {}) {
     mountPromise: mount.promise,
     unmountPromise: unmount.promise,
     loadPromise: Promise.resolve(),
-    initPromise: Promise.resolve(),
+    bootstrapPromise: Promise.resolve(),
     getStatus: vi.fn(() => status),
     unmount: vi.fn(() => {
       unmount.resolve();

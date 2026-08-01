@@ -6,7 +6,7 @@ describe(`root parcels`, () => {
     const parcel = singleSpa.mountRootParcel(parcelConfig, {
       domElement: document.createElement('div'),
     });
-    expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_INITIALIZED);
+    expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_BOOTSTRAPPED);
 
     return parcel.mountPromise
       .then(() => {
@@ -29,7 +29,7 @@ describe(`root parcels`, () => {
     const parcel = singleSpa.mountRootParcel(parcelConfig, {
       domElement: document.createElement('div'),
     });
-    expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_INITIALIZED);
+    expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_BOOTSTRAPPED);
 
     return parcel.initPromise
       .then((value) => {
@@ -136,7 +136,7 @@ describe(`root parcels`, () => {
     const parcel = singleSpa.mountRootParcel(parcelConfig, {
       domElement: document.createElement('div'),
     });
-    expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_INITIALIZED);
+    expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_BOOTSTRAPPED);
 
     return parcel.mountPromise
       .then(() => {
@@ -162,7 +162,7 @@ describe(`root parcels`, () => {
       domElement: document.createElement('div'),
     });
 
-    expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_INITIALIZED);
+    expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_BOOTSTRAPPED);
     await parcel.initPromise;
 
     expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.MOUNTING);
@@ -182,7 +182,7 @@ describe(`root parcels`, () => {
       domElement: document.createElement('div'),
     });
 
-    expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_INITIALIZED);
+    expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_BOOTSTRAPPED);
     await parcel.initPromise;
 
     expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.MOUNTING);

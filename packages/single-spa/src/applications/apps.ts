@@ -53,7 +53,7 @@ export function getAppChanges(): AppChanges {
           appsToLoad.push(app);
         }
         break;
-      case AppOrParcelStatus.NOT_INITIALIZED:
+      case AppOrParcelStatus.NOT_BOOTSTRAPPED:
       case AppOrParcelStatus.NOT_MOUNTED:
         if (!appShouldBeActive && getAppUnloadInfo(toName(app))) {
           appsToUnload.push(app);

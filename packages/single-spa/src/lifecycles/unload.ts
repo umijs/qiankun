@@ -84,7 +84,7 @@ function finishUnloadingApp(app: LoadedApp, unloadInfo: UnloadInfo) {
   delete appsToUnload[toName(app)];
 
   // Unloaded apps don't have lifecycles
-  delete app.init;
+  delete app.bootstrap;
   delete app.mount;
   delete app.unmount;
   delete app.unload;
@@ -101,7 +101,7 @@ function errorUnloadingApp(app: LoadedApp, unloadInfo: UnloadInfo, err: Error) {
   delete appsToUnload[toName(app)];
 
   // Unloaded apps don't have lifecycles
-  delete app.init;
+  delete app.bootstrap;
   delete app.mount;
   delete app.unmount;
   delete app.unload;

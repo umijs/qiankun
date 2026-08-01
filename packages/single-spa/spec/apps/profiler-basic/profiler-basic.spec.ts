@@ -70,14 +70,14 @@ describe(`profiler basics`, () => {
     });
 
     it(`captures init profile events`, async () => {
-      const profilesBefore = getProfilerEventsByKind('init');
+      const profilesBefore = getProfilerEventsByKind('bootstrap');
       expect(profilesBefore.length).toBe(0);
 
       shouldMount = true;
       await singleSpa.triggerAppChange();
       expect(singleSpa.checkActivityFunctions()).toContain('profiler-basics');
       expect(singleSpa.getAppStatus('profiler-basics')).toEqual(singleSpa.AppOrParcelStatus.MOUNTED);
-      const profilesAfter = getProfilerEventsByKind('init');
+      const profilesAfter = getProfilerEventsByKind('bootstrap');
 
       expect(profilesAfter.length).toBe(1);
       expect(profilesAfter[0].operationSucceeded).toBe(true);
@@ -86,14 +86,14 @@ describe(`profiler basics`, () => {
     it(`captures init error profile events`, async () => {
       app.init.mockImplementationOnce(() => Promise.reject(Error('init err')));
 
-      const profilesBefore = getProfilerEventsByKind('init');
+      const profilesBefore = getProfilerEventsByKind('bootstrap');
       expect(profilesBefore.length).toBe(0);
 
       shouldMount = true;
       await singleSpa.triggerAppChange();
       expect(singleSpa.checkActivityFunctions()).toContain('profiler-basics');
       expect(singleSpa.getAppStatus('profiler-basics')).toEqual(singleSpa.AppOrParcelStatus.SKIP_BECAUSE_BROKEN);
-      const profilesAfter = getProfilerEventsByKind('init');
+      const profilesAfter = getProfilerEventsByKind('bootstrap');
 
       expect(profilesAfter.length).toBe(1);
       expect(profilesAfter[0].operationSucceeded).toBe(false);
@@ -232,13 +232,13 @@ describe(`profiler basics`, () => {
     });
 
     it('captures successful init events', async () => {
-      const profilesBefore = getProfilerEventsByKind('init', 'parcel');
+      const profilesBefore = getProfilerEventsByKind('bootstrap', 'parcel');
       expect(profilesBefore.length).toBe(0);
 
       const parcel = singleSpa.mountRootParcel(parcelConfig, props);
       await parcel.initPromise;
 
-      const profilesAfter = getProfilerEventsByKind('init', 'parcel');
+      const profilesAfter = getProfilerEventsByKind('bootstrap', 'parcel');
       expect(profilesAfter.length).toBe(1);
       expect(profilesAfter[0].operationSucceeded).toBe(true);
     });

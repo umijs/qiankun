@@ -1,6 +1,6 @@
 import { isStarted } from '../start';
 import { toLoadPromise } from '../lifecycles/load';
-import { toInitPromise } from '../lifecycles/init';
+import { toBootstrapPromise } from '../lifecycles/bootstrap';
 import { toMountPromise } from '../lifecycles/mount';
 import { toUnmountPromise } from '../lifecycles/unmount';
 import { getAppStatus, getAppChanges, getMountedApps } from '../applications/apps';
@@ -385,7 +385,7 @@ function tryToInitAndMount(
   unmountAllPromise: Promise<unknown>,
 ): Promise<InternalApplication> {
   if (shouldBeActive(app)) {
-    return toInitPromise(app as LoadedApp).then((app) =>
+    return toBootstrapPromise(app as LoadedApp).then((app) =>
       unmountAllPromise.then(() => (shouldBeActive(app) ? toMountPromise(app) : app)),
     ) as Promise<InternalApplication>;
   } else {

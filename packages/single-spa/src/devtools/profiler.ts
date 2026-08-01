@@ -4,7 +4,7 @@ export interface ProfileEntry {
   type: 'application' | 'parcel' | 'routing';
   name: string;
   kind:
-    | 'init'
+    | 'bootstrap'
     | 'load'
     | 'mount'
     | 'unload'

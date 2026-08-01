@@ -1,10 +1,10 @@
 import * as singleSpa from 'single-spa';
 
-// qiankun fork: upstream #1307 renamed the parcel's bootstrapPromise to initPromise; parcels
-// returned by qiankun's loadMicroApp are public API, so the old name stays as a permanent alias
-// (see packages/single-spa/README.md).
-describe(`bootstrapPromise alias`, () => {
-  it(`exposes bootstrapPromise as the same promise instance as initPromise, and it resolves`, async () => {
+// qiankun fork: bootstrapPromise is the canonical parcel promise name (reverting upstream #1307's
+// rename); initPromise stays as a permanent alias for v7-flavored consumers, always the same
+// promise instance (see packages/single-spa/README.md).
+describe(`bootstrapPromise naming`, () => {
+  it(`exposes initPromise as the same promise instance as bootstrapPromise, and it resolves`, async () => {
     const parcelConfig = {
       async bootstrap() {},
       async mount() {},
@@ -15,7 +15,7 @@ describe(`bootstrapPromise alias`, () => {
       domElement: document.createElement('div'),
     });
 
-    expect(parcel.bootstrapPromise).toBe(parcel.initPromise);
+    expect(parcel.initPromise).toBe(parcel.bootstrapPromise);
 
     await parcel.bootstrapPromise;
     await parcel.mountPromise;

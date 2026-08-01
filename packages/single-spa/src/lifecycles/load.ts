@@ -97,12 +97,13 @@ export function toLoadPromise(app: InternalApplication | LoadedApp): Promise<Loa
             appBeingLoaded.devtools.overlays = Object.assign({}, app.devtools.overlays, lifecycles.devtools.overlays);
           }
 
-          appBeingLoaded.status = AppOrParcelStatus.NOT_INITIALIZED;
-          appBeingLoaded.init = flattenFnArray(lifecycles, 'init', false);
-          // qiankun fork: bootstrap is a permanent alias of init for applications
-          // (reverts upstream single-spa#1333; see packages/single-spa/README.md)
-          if (!lifecycles.init && lifecycles.bootstrap) {
-            appBeingLoaded.init = flattenFnArray(lifecycles, 'bootstrap', false);
+          appBeingLoaded.status = AppOrParcelStatus.NOT_BOOTSTRAPPED;
+          // qiankun fork: bootstrap is the canonical lifecycle name (reverting upstream #1307's
+          // rename); v7's init naming stays accepted as an alias, bootstrap wins when both are
+          // present — see packages/single-spa/README.md
+          appBeingLoaded.bootstrap = flattenFnArray(lifecycles, 'bootstrap', false);
+          if (!lifecycles.bootstrap && lifecycles.init) {
+            appBeingLoaded.bootstrap = flattenFnArray(lifecycles, 'init', false);
           }
           appBeingLoaded.mount = flattenFnArray(lifecycles, 'mount', false);
           appBeingLoaded.unmount = flattenFnArray(lifecycles, 'unmount', false);

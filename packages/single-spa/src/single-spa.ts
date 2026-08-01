@@ -1,7 +1,14 @@
 export { start } from './start';
 export type { StartOpts } from './start';
 export { ensureJQuerySupport } from './jquery-support';
-export { setInitMaxTime, setMountMaxTime, setUnmountMaxTime, setUnloadMaxTime } from './applications/timeouts';
+export {
+  setBootstrapMaxTime,
+  // qiankun fork: v7's rename stays as a permanent alias (see the fork README)
+  setBootstrapMaxTime as setInitMaxTime,
+  setMountMaxTime,
+  setUnmountMaxTime,
+  setUnloadMaxTime,
+} from './applications/timeouts';
 export {
   registerApplication,
   unregisterApplication,

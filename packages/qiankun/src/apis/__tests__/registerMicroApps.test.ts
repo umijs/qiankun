@@ -22,9 +22,9 @@ import { triggerAppChange } from '@qiankunjs/single-spa';
 import { registerMicroApps, start } from '../registerMicroApps';
 
 describe('registerMicroApps', () => {
-  // Regression test for the vendored fork's application-level bootstrap alias (the revert of
-  // upstream single-spa#1333, see packages/single-spa/README.md): a micro app exporting only the
-  // classic `bootstrap` lifecycle must still have it invoked on the registerMicroApps path, where
+  // Regression test for the vendored fork's canonical bootstrap lifecycle (the revert of the
+  // upstream bootstrap->init rename, see packages/single-spa/README.md): a micro app exporting
+  // the classic `bootstrap` lifecycle must have it invoked on the registerMicroApps path, where
   // upstream v7 would silently ignore it.
   it('invokes a micro app bootstrap lifecycle on the registerMicroApps path', async () => {
     const bootstrap = vi.fn(async (): Promise<void> => {});

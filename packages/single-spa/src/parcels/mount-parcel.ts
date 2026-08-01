@@ -10,7 +10,7 @@ import {
   InternalParcel,
 } from '../lifecycles/lifecycle.helpers';
 import { AppOrParcelStatus, toName } from '../applications/app.helpers';
-import { toInitPromise } from '../lifecycles/init';
+import { toBootstrapPromise } from '../lifecycles/bootstrap';
 import { toMountPromise } from '../lifecycles/mount';
 import { toUpdatePromise } from '../lifecycles/update';
 import { toUnmountPromise } from '../lifecycles/unmount';
@@ -78,7 +78,7 @@ export function mountParcel(this: ParcelOwner, config: ParcelConfig, customProps
   const parcel: Partial<InternalParcel> = {
     id,
     parcels: {},
-    status: passedConfigLoadingFunction ? AppOrParcelStatus.LOADING_SOURCE_CODE : AppOrParcelStatus.NOT_INITIALIZED,
+    status: passedConfigLoadingFunction ? AppOrParcelStatus.LOADING_SOURCE_CODE : AppOrParcelStatus.NOT_BOOTSTRAPPED,
     customProps,
     parentName: toName(owningAppOrParcel),
     currentTask: undefined,
@@ -143,10 +143,11 @@ export function mountParcel(this: ParcelOwner, config: ParcelConfig, customProps
 
     if (
       // ES Module objects don't have the object prototype
-      Object.prototype.hasOwnProperty.call(config, 'init') &&
-      !validLifecycleFn(config.init)
+      (Object.prototype.hasOwnProperty.call(config, 'bootstrap') && !validLifecycleFn(config.bootstrap)) ||
+      // qiankun fork: v7's init naming stays accepted as an alias of bootstrap
+      (Object.prototype.hasOwnProperty.call(config, 'init') && !validLifecycleFn(config.init))
     ) {
-      throw Error(formatErrorMessage(9, __DEV__ && `Parcel ${name} provided an invalid init function`, name));
+      throw Error(formatErrorMessage(9, __DEV__ && `Parcel ${name} provided an invalid bootstrap function`, name));
     }
 
     if (!validLifecycleFn(config.mount)) {
@@ -161,13 +162,15 @@ export function mountParcel(this: ParcelOwner, config: ParcelConfig, customProps
       throw Error(formatErrorMessage(12, __DEV__ && `Parcel ${name} provided an invalid update function`, name));
     }
 
-    const init = flattenFnArray(config, config.init ? 'init' : 'bootstrap', true);
+    // qiankun fork: bootstrap is the canonical lifecycle name (reverting upstream #1307);
+    // v7's init naming stays accepted as an alias, bootstrap wins when both are present
+    const bootstrap = flattenFnArray(config, config.bootstrap ? 'bootstrap' : 'init', true);
     const mount = flattenFnArray(config, 'mount', true);
     const unmount = flattenFnArray(config, 'unmount', true);
 
-    parcel.status = AppOrParcelStatus.NOT_INITIALIZED;
+    parcel.status = AppOrParcelStatus.NOT_BOOTSTRAPPED;
     parcel.name = name;
-    parcel.init = init;
+    parcel.bootstrap = bootstrap;
     parcel.mount = mount;
     parcel.unmount = unmount;
     parcel.timeouts = ensureValidAppTimeouts(config.timeouts);
@@ -184,11 +187,13 @@ export function mountParcel(this: ParcelOwner, config: ParcelConfig, customProps
     return config;
   });
 
-  // Start initializing and mounting
+  // Start bootstrapping and mounting
   // The .then() causes the work to be put on the event loop instead of happening immediately
-  const initPromise = loadPromise.then(() => toInitPromise(parcel as InternalParcel, true));
+  const bootstrapPromise = loadPromise.then(() => toBootstrapPromise(parcel as InternalParcel, true));
 
-  const mountPromise = initPromise.then(() => (parcel.currentTask = toMountPromise(parcel as InternalParcel, true)));
+  const mountPromise = bootstrapPromise.then(
+    () => (parcel.currentTask = toMountPromise(parcel as InternalParcel, true)),
+  );
   parcel.currentTask = mountPromise;
 
   let resolveUnmount, rejectUnmount;
@@ -198,8 +203,8 @@ export function mountParcel(this: ParcelOwner, config: ParcelConfig, customProps
     rejectUnmount = reject;
   });
 
-  // hoisted so initPromise and its permanent bootstrapPromise alias share one promise instance
-  const externalInitPromise = promiseWithoutReturnValue(initPromise);
+  // hoisted so bootstrapPromise and its initPromise alias share one promise instance
+  const externalBootstrapPromise = promiseWithoutReturnValue(bootstrapPromise);
 
   let externalRepresentation: Parcel = {
     mount() {
@@ -230,10 +235,10 @@ export function mountParcel(this: ParcelOwner, config: ParcelConfig, customProps
       return parcel.status;
     },
     loadPromise: promiseWithoutReturnValue(loadPromise),
-    initPromise: externalInitPromise,
-    // qiankun fork: bootstrapPromise is a permanent alias of initPromise (upstream #1307 renamed
-    // it away; parcels returned by qiankun's loadMicroApp are public API — see the fork README)
-    bootstrapPromise: externalInitPromise,
+    bootstrapPromise: externalBootstrapPromise,
+    // qiankun fork: initPromise (upstream #1307's rename) stays as a permanent alias for
+    // v7-flavored consumers — always the same promise instance (see the fork README)
+    initPromise: externalBootstrapPromise,
     mountPromise: promiseWithoutReturnValue(mountPromise),
     unmountPromise: promiseWithoutReturnValue(unmountPromise),
     _parcel: parcel as InternalParcel,

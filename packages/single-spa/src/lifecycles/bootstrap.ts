@@ -4,11 +4,11 @@ import { handleAppError, transformErr } from '../applications/app-errors';
 import { ProfileEntry, addProfileEntry } from '../devtools/profiler';
 import { LoadedAppOrParcel } from './lifecycle.helpers';
 
-export function toInitPromise(appOrParcel: LoadedAppOrParcel, hardFail?: boolean): Promise<LoadedAppOrParcel> {
+export function toBootstrapPromise(appOrParcel: LoadedAppOrParcel, hardFail?: boolean): Promise<LoadedAppOrParcel> {
   let startTime: number, profileEventType: ProfileEntry['type'];
 
   return Promise.resolve().then(() => {
-    if (appOrParcel.status !== AppOrParcelStatus.NOT_INITIALIZED) {
+    if (appOrParcel.status !== AppOrParcelStatus.NOT_BOOTSTRAPPED) {
       return appOrParcel;
     }
 
@@ -17,13 +17,13 @@ export function toInitPromise(appOrParcel: LoadedAppOrParcel, hardFail?: boolean
       startTime = performance.now();
     }
 
-    appOrParcel.status = AppOrParcelStatus.INITIALIZING;
+    appOrParcel.status = AppOrParcelStatus.BOOTSTRAPPING;
 
-    return reasonableTime(appOrParcel, 'init')
-      .then(successfulInit)
+    return reasonableTime(appOrParcel, 'bootstrap')
+      .then(successfulBootstrap)
       .catch((err) => {
         if (__PROFILE__) {
-          addProfileEntry(profileEventType, toName(appOrParcel), 'init', startTime, performance.now(), false);
+          addProfileEntry(profileEventType, toName(appOrParcel), 'bootstrap', startTime, performance.now(), false);
         }
 
         if (hardFail) {
@@ -35,11 +35,11 @@ export function toInitPromise(appOrParcel: LoadedAppOrParcel, hardFail?: boolean
       });
   });
 
-  function successfulInit(): LoadedAppOrParcel {
+  function successfulBootstrap(): LoadedAppOrParcel {
     appOrParcel.status = AppOrParcelStatus.NOT_MOUNTED;
 
     if (__PROFILE__) {
-      addProfileEntry(profileEventType, toName(appOrParcel), 'init', startTime, performance.now(), true);
+      addProfileEntry(profileEventType, toName(appOrParcel), 'bootstrap', startTime, performance.now(), true);
     }
 
     return appOrParcel;

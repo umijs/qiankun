@@ -4,7 +4,7 @@ import { formatErrorMessage } from './app-errors';
 import { AppOrParcel } from '../lifecycles/lifecycle.helpers';
 
 export interface AppOrParcelTimeouts {
-  init: Timeout;
+  bootstrap: Timeout;
   mount: Timeout;
   unmount: Timeout;
   unload: Timeout;
@@ -20,7 +20,7 @@ export interface Timeout {
 const defaultWarningMillis: number = 1000;
 
 const globalTimeoutConfig: AppOrParcelTimeouts = {
-  init: {
+  bootstrap: {
     millis: 4000,
     dieOnTimeout: false,
     warningMillis: defaultWarningMillis,
@@ -47,12 +47,14 @@ const globalTimeoutConfig: AppOrParcelTimeouts = {
   },
 };
 
-export function setInitMaxTime(time: number, dieOnTimeout: boolean, warningMillis: number): void {
+export function setBootstrapMaxTime(time: number, dieOnTimeout: boolean, warningMillis: number): void {
   if (typeof time !== 'number' || time <= 0) {
-    throw Error(formatErrorMessage(16, __DEV__ && `init max time must be a positive integer number of milliseconds`));
+    throw Error(
+      formatErrorMessage(16, __DEV__ && `bootstrap max time must be a positive integer number of milliseconds`),
+    );
   }
 
-  globalTimeoutConfig.init = {
+  globalTimeoutConfig.bootstrap = {
     millis: time,
     dieOnTimeout,
     warningMillis: warningMillis || defaultWarningMillis,
@@ -99,7 +101,7 @@ export function setUnloadMaxTime(time: number, dieOnTimeout: boolean, warningMil
 
 export function reasonableTime(
   appOrParcel: AppOrParcel,
-  lifecycle: 'init' | 'mount' | 'update' | 'unmount' | 'unload',
+  lifecycle: 'bootstrap' | 'mount' | 'update' | 'unmount' | 'unload',
 ): Promise<any> {
   const timeoutConfig = appOrParcel.timeouts[lifecycle];
   const warningPeriod = timeoutConfig.warningMillis;
@@ -157,7 +159,14 @@ export function reasonableTime(
   });
 }
 
-export function ensureValidAppTimeouts(timeouts: Partial<AppOrParcelTimeouts>): AppOrParcelTimeouts {
+export function ensureValidAppTimeouts(
+  timeouts: Partial<AppOrParcelTimeouts> & { init?: Timeout },
+): AppOrParcelTimeouts {
+  // qiankun fork: v7's `init` timeout key stays accepted as an alias of `bootstrap`
+  if (timeouts?.init && !timeouts.bootstrap) {
+    timeouts = { ...timeouts, bootstrap: timeouts.init };
+  }
+
   const result = {};
 
   for (let key in globalTimeoutConfig) {

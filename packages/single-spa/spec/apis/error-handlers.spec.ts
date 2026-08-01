@@ -57,7 +57,7 @@ describe('error handlers api', () => {
     return singleSpa.triggerAppChange().then(() => {
       expect(errs.length).toBe(1);
       expect(errs[0].appOrParcelName).toBe('init-error');
-      expect(errs[0].message).toMatch(`'init-error' died in status INITIALIZING: couldn't init`);
+      expect(errs[0].message).toMatch(`'init-error' died in status BOOTSTRAPPING: couldn't init`);
       expect(singleSpa.getAppStatus('init-error')).toBe(singleSpa.AppOrParcelStatus.SKIP_BECAUSE_BROKEN);
     });
   });
