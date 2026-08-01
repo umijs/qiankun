@@ -1,6 +1,6 @@
 import * as singleSpa from 'single-spa';
 
-describe(`init-times-out-dies`, () => {
+describe(`bootstrap-times-out-dies`, () => {
   let myApp,
     errs = [];
 
@@ -10,9 +10,9 @@ describe(`init-times-out-dies`, () => {
 
   beforeAll(() => {
     singleSpa.registerApplication(
-      './init-times-out-dies.app',
-      () => import('./init-times-out-dies.app'),
-      (location) => location.hash === '#init-times-out-dies',
+      './bootstrap-times-out-dies.app',
+      () => import('./bootstrap-times-out-dies.app'),
+      (location) => location.hash === '#bootstrap-times-out-dies',
     );
     singleSpa.start();
   });
@@ -23,7 +23,7 @@ describe(`init-times-out-dies`, () => {
     errs = [];
     singleSpa.addErrorHandler(handleError);
 
-    return import('./init-times-out-dies.app').then((app) => (myApp = app)).then((app) => app.reset());
+    return import('./bootstrap-times-out-dies.app').then((app) => (myApp = app)).then((app) => app.reset());
   });
 
   afterEach(() => {
@@ -31,13 +31,13 @@ describe(`init-times-out-dies`, () => {
   });
 
   it(`is put into SKIP_BECAUSE_BROKEN if dieOnTimeout is true`, () => {
-    location.hash = '#init-times-out-dies';
+    location.hash = '#bootstrap-times-out-dies';
 
     return singleSpa.triggerAppChange().then(() => {
       expect(myApp.wasinitped()).toEqual(true);
       expect(myApp.wasMounted()).toEqual(false);
       expect(singleSpa.getMountedApps()).toEqual([]);
-      expect(singleSpa.getAppStatus('./init-times-out-dies.app')).toEqual('SKIP_BECAUSE_BROKEN');
+      expect(singleSpa.getAppStatus('./bootstrap-times-out-dies.app')).toEqual('SKIP_BECAUSE_BROKEN');
       expect(errs.length).toBeGreaterThan(0);
     });
   });

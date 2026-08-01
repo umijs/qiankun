@@ -33,7 +33,7 @@ describe(`mount-times-out app`, () => {
     location.hash = activeHash;
 
     return singleSpa.triggerAppChange().then(() => {
-      expect(myApp.inits()).toEqual(1);
+      expect(myApp.bootstraps()).toEqual(1);
       expect(myApp.mounts()).toEqual(1);
       expect(singleSpa.getMountedApps()).toEqual(['./mount-times-out.app']);
       expect(singleSpa.getAppStatus('./mount-times-out.app')).toEqual('MOUNTED');

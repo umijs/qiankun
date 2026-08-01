@@ -25,8 +25,8 @@ describe(`mount-before-other-loads`, () => {
     let order = [];
 
     const slowApp = {
-      init: async () => {
-        order.push('slow:init');
+      bootstrap: async () => {
+        order.push('slow:bootstrap');
       },
       mount: async () => {
         order.push('slow:mount');
@@ -37,8 +37,8 @@ describe(`mount-before-other-loads`, () => {
     };
 
     const fastApp = {
-      init: async () => {
-        order.push('fast:init');
+      bootstrap: async () => {
+        order.push('fast:bootstrap');
       },
       mount: async () => {
         order.push('fast:mount');
@@ -74,6 +74,6 @@ describe(`mount-before-other-loads`, () => {
     singleSpa.start();
     await singleSpa.triggerAppChange();
     expect(errs.length).toBe(0);
-    expect(order).toEqual(['fast:load', 'fast:init', 'fast:mount', 'slow:load', 'slow:init', 'slow:mount']);
+    expect(order).toEqual(['fast:load', 'fast:bootstrap', 'fast:mount', 'slow:load', 'slow:bootstrap', 'slow:mount']);
   });
 });

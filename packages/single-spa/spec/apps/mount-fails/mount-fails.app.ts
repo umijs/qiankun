@@ -1,6 +1,6 @@
 let initialized, mounted, unmounted;
 
-export function init() {
+export function bootstrap() {
   return Promise.resolve().then(() => {
     initialized = true;
   });

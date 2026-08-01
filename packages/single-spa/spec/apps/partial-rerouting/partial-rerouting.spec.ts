@@ -11,7 +11,7 @@ describe('partial rerouting', () => {
     location.hash = '#';
   });
 
-  it("shouldn't init and mount app if the route has been changed while app was loading, but if the user navigates back it should be initialized and mounted successfully", async () => {
+  it("shouldn't bootstrap and mount app if the route has been changed while app was loading, but if the user navigates back it should be initialized and mounted successfully", async () => {
     const activeHash = '#partial-rerouting';
 
     let initialized = false;
@@ -19,7 +19,7 @@ describe('partial rerouting', () => {
     let unmounted = false;
 
     const app = {
-      async init() {
+      async bootstrap() {
         initialized = true;
       },
       async mount() {
@@ -65,7 +65,7 @@ describe('partial rerouting', () => {
       firstAppUnmounted = false;
 
     const firstApp = {
-      async init() {
+      async bootstrap() {
         firstAppInitialized = true;
       },
       async mount() {
@@ -81,7 +81,7 @@ describe('partial rerouting', () => {
       secondAppUnmounted = false;
 
     const secondApp = {
-      async init() {
+      async bootstrap() {
         secondAppInitialized = true;
       },
       async mount() {

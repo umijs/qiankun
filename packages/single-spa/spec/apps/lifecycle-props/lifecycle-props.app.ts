@@ -1,7 +1,7 @@
-let initProps, mountProps, unmountProps, unloadProps;
+let bootstrapProps, mountProps, unmountProps, unloadProps;
 
-export function init(props) {
-  initProps = props;
+export function bootstrap(props) {
+  bootstrapProps = props;
   return Promise.resolve();
 }
 
@@ -21,7 +21,7 @@ export function unload(props) {
 }
 
 export function getInitProps() {
-  return initProps;
+  return bootstrapProps;
 }
 
 export function getMountProps() {
@@ -37,5 +37,5 @@ export function getUnloadProps() {
 }
 
 export function reset() {
-  initProps = mountProps = unmountProps = unloadProps = null;
+  bootstrapProps = mountProps = unmountProps = unloadProps = null;
 }

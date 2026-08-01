@@ -1,6 +1,6 @@
 let initialized;
 
-export function init() {
+export function bootstrap() {
   return new Promise((resolve) => {
     initialized = true;
     resolve();

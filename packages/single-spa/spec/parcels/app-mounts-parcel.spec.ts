@@ -12,9 +12,9 @@ describe('applications mounting parcels :', () => {
     shouldAppBeMounted = false;
 
     app = {
-      initCalls: 0,
-      init() {
-        app.initCalls++;
+      bootstrapCalls: 0,
+      bootstrap() {
+        app.bootstrapCalls++;
         return Promise.resolve();
       },
       mountCalls: 0,
@@ -40,11 +40,11 @@ describe('applications mounting parcels :', () => {
 
     shouldAppBeMounted = true;
 
-    expect(app.initCalls).toBe(0);
+    expect(app.bootstrapCalls).toBe(0);
     expect(app.mountCalls).toBe(0);
     expect(app.unmountCalls).toBe(0);
 
-    expect(parcelConfig.initCalls).toBe(0);
+    expect(parcelConfig.bootstrapCalls).toBe(0);
     expect(parcelConfig.mountCalls).toBe(0);
     expect(parcelConfig.unmountCalls).toBe(0);
 
@@ -54,7 +54,7 @@ describe('applications mounting parcels :', () => {
     return singleSpa
       .triggerAppChange()
       .then(() => {
-        expect(app.initCalls).toBe(1);
+        expect(app.bootstrapCalls).toBe(1);
         expect(app.mountCalls).toBe(1);
         expect(app.unmountCalls).toBe(0);
 
@@ -67,14 +67,14 @@ describe('applications mounting parcels :', () => {
         expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_BOOTSTRAPPED);
         expect(unmountPromiseHasResolved).toBe(false);
 
-        return parcel.initPromise.then(() => {
+        return parcel.bootstrapPromise.then(() => {
           expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.MOUNTING);
           expect(unmountPromiseHasResolved).toBe(false);
 
           return parcel.mountPromise.then(() => {
             expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.MOUNTED);
             expect(unmountPromiseHasResolved).toBe(false);
-            expect(parcelConfig.initCalls).toBe(1);
+            expect(parcelConfig.bootstrapCalls).toBe(1);
             expect(parcelConfig.mountCalls).toBe(1);
             expect(parcelConfig.unmountCalls).toBe(0);
 
@@ -86,11 +86,11 @@ describe('applications mounting parcels :', () => {
       .then(() => {
         expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_MOUNTED);
         expect(unmountPromiseHasResolved).toBe(true);
-        expect(app.initCalls).toBe(1);
+        expect(app.bootstrapCalls).toBe(1);
         expect(app.mountCalls).toBe(1);
         expect(app.unmountCalls).toBe(1);
 
-        expect(parcelConfig.initCalls).toBe(1);
+        expect(parcelConfig.bootstrapCalls).toBe(1);
         expect(parcelConfig.mountCalls).toBe(1);
         expect(parcelConfig.unmountCalls).toBe(1);
       });
@@ -104,18 +104,18 @@ describe('applications mounting parcels :', () => {
 
     shouldAppBeMounted = true;
 
-    expect(app.initCalls).toBe(0);
+    expect(app.bootstrapCalls).toBe(0);
     expect(app.mountCalls).toBe(0);
     expect(app.unmountCalls).toBe(0);
 
-    expect(parcelConfig.initCalls).toBe(0);
+    expect(parcelConfig.bootstrapCalls).toBe(0);
     expect(parcelConfig.mountCalls).toBe(0);
     expect(parcelConfig.unmountCalls).toBe(0);
 
     return singleSpa
       .triggerAppChange()
       .then(() => {
-        expect(app.initCalls).toBe(1);
+        expect(app.bootstrapCalls).toBe(1);
         expect(app.mountCalls).toBe(1);
         expect(app.unmountCalls).toBe(0);
       })
@@ -132,7 +132,7 @@ describe('applications mounting parcels :', () => {
         return parcel.mountPromise;
       })
       .then(() => {
-        expect(parcelConfig.initCalls).toBe(1);
+        expect(parcelConfig.bootstrapCalls).toBe(1);
         expect(parcelConfig.mountCalls).toBe(1);
         expect(parcelConfig.unmountCalls).toBe(0);
       })
@@ -141,11 +141,11 @@ describe('applications mounting parcels :', () => {
         return singleSpa.triggerAppChange();
       })
       .then(() => {
-        expect(app.initCalls).toBe(1);
+        expect(app.bootstrapCalls).toBe(1);
         expect(app.mountCalls).toBe(1);
         expect(app.unmountCalls).toBe(1);
 
-        expect(parcelConfig.initCalls).toBe(1);
+        expect(parcelConfig.bootstrapCalls).toBe(1);
         expect(parcelConfig.mountCalls).toBe(1);
         expect(parcelConfig.unmountCalls).toBe(1);
       });
@@ -302,9 +302,9 @@ describe('applications mounting parcels :', () => {
 
 function createParcelConfig() {
   const parcelConfig = {
-    initCalls: 0,
-    init() {
-      parcelConfig.initCalls++;
+    bootstrapCalls: 0,
+    bootstrap() {
+      parcelConfig.bootstrapCalls++;
       return Promise.resolve();
     },
     mountCalls: 0,

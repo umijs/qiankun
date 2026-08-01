@@ -159,14 +159,7 @@ export function reasonableTime(
   });
 }
 
-export function ensureValidAppTimeouts(
-  timeouts: Partial<AppOrParcelTimeouts> & { init?: Timeout },
-): AppOrParcelTimeouts {
-  // qiankun fork: v7's `init` timeout key stays accepted as an alias of `bootstrap`
-  if (timeouts?.init && !timeouts.bootstrap) {
-    timeouts = { ...timeouts, bootstrap: timeouts.init };
-  }
-
+export function ensureValidAppTimeouts(timeouts: Partial<AppOrParcelTimeouts>): AppOrParcelTimeouts {
   const result = {};
 
   for (let key in globalTimeoutConfig) {

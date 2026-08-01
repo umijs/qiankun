@@ -98,13 +98,7 @@ export function toLoadPromise(app: InternalApplication | LoadedApp): Promise<Loa
           }
 
           appBeingLoaded.status = AppOrParcelStatus.NOT_BOOTSTRAPPED;
-          // qiankun fork: bootstrap is the canonical lifecycle name (reverting upstream #1307's
-          // rename); v7's init naming stays accepted as an alias, bootstrap wins when both are
-          // present — see packages/single-spa/README.md
           appBeingLoaded.bootstrap = flattenFnArray(lifecycles, 'bootstrap', false);
-          if (!lifecycles.bootstrap && lifecycles.init) {
-            appBeingLoaded.bootstrap = flattenFnArray(lifecycles, 'init', false);
-          }
           appBeingLoaded.mount = flattenFnArray(lifecycles, 'mount', false);
           appBeingLoaded.unmount = flattenFnArray(lifecycles, 'unmount', false);
           appBeingLoaded.unload = flattenFnArray(lifecycles, 'unload', false);

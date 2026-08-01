@@ -13,7 +13,7 @@ describe(`profiler basics`, () => {
   describe('application profiler events', () => {
     beforeEach(() => {
       app = {
-        init: vi.fn(() => Promise.resolve()),
+        bootstrap: vi.fn(() => Promise.resolve()),
         mount: vi.fn(() => Promise.resolve()),
         unmount: vi.fn(() => Promise.resolve()),
         unload: vi.fn(() => Promise.resolve()),
@@ -69,7 +69,7 @@ describe(`profiler basics`, () => {
       expect(loadProfilesAfter[0].operationSucceeded).toBe(false);
     });
 
-    it(`captures init profile events`, async () => {
+    it(`captures bootstrap profile events`, async () => {
       const profilesBefore = getProfilerEventsByKind('bootstrap');
       expect(profilesBefore.length).toBe(0);
 
@@ -83,8 +83,8 @@ describe(`profiler basics`, () => {
       expect(profilesAfter[0].operationSucceeded).toBe(true);
     });
 
-    it(`captures init error profile events`, async () => {
-      app.init.mockImplementationOnce(() => Promise.reject(Error('init err')));
+    it(`captures bootstrap error profile events`, async () => {
+      app.bootstrap.mockImplementationOnce(() => Promise.reject(Error('bootstrap err')));
 
       const profilesBefore = getProfilerEventsByKind('bootstrap');
       expect(profilesBefore.length).toBe(0);
@@ -219,7 +219,7 @@ describe(`profiler basics`, () => {
       clearProfilerData();
 
       parcelConfig = {
-        async init() {},
+        async bootstrap() {},
         async mount() {},
         async update() {},
         async unmount() {},
@@ -231,12 +231,12 @@ describe(`profiler basics`, () => {
       };
     });
 
-    it('captures successful init events', async () => {
+    it('captures successful bootstrap events', async () => {
       const profilesBefore = getProfilerEventsByKind('bootstrap', 'parcel');
       expect(profilesBefore.length).toBe(0);
 
       const parcel = singleSpa.mountRootParcel(parcelConfig, props);
-      await parcel.initPromise;
+      await parcel.bootstrapPromise;
 
       const profilesAfter = getProfilerEventsByKind('bootstrap', 'parcel');
       expect(profilesAfter.length).toBe(1);

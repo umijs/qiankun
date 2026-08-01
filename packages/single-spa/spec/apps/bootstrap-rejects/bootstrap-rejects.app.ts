@@ -1,9 +1,9 @@
-let initCalled, mountCalled;
+let bootstrapCalled, mountCalled;
 
-export function init() {
+export function bootstrap() {
   return new Promise((resolve, reject) => {
-    initCalled = true;
-    reject(new Error('the init-rejects app failed to init'));
+    bootstrapCalled = true;
+    reject(new Error('the bootstrap-rejects app failed to bootstrap'));
   });
 }
 
@@ -21,14 +21,14 @@ export function unmount() {
 }
 
 export function reset() {
-  initCalled = false;
+  bootstrapCalled = false;
   mountCalled = false;
 }
 
 reset();
 
 export function wasinitped() {
-  return initCalled;
+  return bootstrapCalled;
 }
 
 export function wasMounted() {

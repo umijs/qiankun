@@ -3,7 +3,7 @@ import * as singleSpa from 'single-spa';
 describe(`app-names`, () => {
   beforeAll(() => {
     const app = {
-      init() {
+      bootstrap() {
         return Promise.resolve();
       },
       mount() {

@@ -1,6 +1,6 @@
 export let initialized, mounted;
 
-export async function init() {
+export async function bootstrap() {
   initialized = true;
 }
 

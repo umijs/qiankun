@@ -1,6 +1,6 @@
 let _numInits, _numMounts, _numUnmounts;
 
-export function init() {
+export function bootstrap() {
   return new Promise((resolve) => {
     _numInits++;
     resolve();

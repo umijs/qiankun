@@ -143,9 +143,8 @@ export function mountParcel(this: ParcelOwner, config: ParcelConfig, customProps
 
     if (
       // ES Module objects don't have the object prototype
-      (Object.prototype.hasOwnProperty.call(config, 'bootstrap') && !validLifecycleFn(config.bootstrap)) ||
-      // qiankun fork: v7's init naming stays accepted as an alias of bootstrap
-      (Object.prototype.hasOwnProperty.call(config, 'init') && !validLifecycleFn(config.init))
+      Object.prototype.hasOwnProperty.call(config, 'bootstrap') &&
+      !validLifecycleFn(config.bootstrap)
     ) {
       throw Error(formatErrorMessage(9, __DEV__ && `Parcel ${name} provided an invalid bootstrap function`, name));
     }
@@ -162,9 +161,7 @@ export function mountParcel(this: ParcelOwner, config: ParcelConfig, customProps
       throw Error(formatErrorMessage(12, __DEV__ && `Parcel ${name} provided an invalid update function`, name));
     }
 
-    // qiankun fork: bootstrap is the canonical lifecycle name (reverting upstream #1307);
-    // v7's init naming stays accepted as an alias, bootstrap wins when both are present
-    const bootstrap = flattenFnArray(config, config.bootstrap ? 'bootstrap' : 'init', true);
+    const bootstrap = flattenFnArray(config, 'bootstrap', true);
     const mount = flattenFnArray(config, 'mount', true);
     const unmount = flattenFnArray(config, 'unmount', true);
 
@@ -203,7 +200,6 @@ export function mountParcel(this: ParcelOwner, config: ParcelConfig, customProps
     rejectUnmount = reject;
   });
 
-  // hoisted so bootstrapPromise and its initPromise alias share one promise instance
   const externalBootstrapPromise = promiseWithoutReturnValue(bootstrapPromise);
 
   let externalRepresentation: Parcel = {
@@ -236,9 +232,6 @@ export function mountParcel(this: ParcelOwner, config: ParcelConfig, customProps
     },
     loadPromise: promiseWithoutReturnValue(loadPromise),
     bootstrapPromise: externalBootstrapPromise,
-    // qiankun fork: initPromise (upstream #1307's rename) stays as a permanent alias for
-    // v7-flavored consumers — always the same promise instance (see the fork README)
-    initPromise: externalBootstrapPromise,
     mountPromise: promiseWithoutReturnValue(mountPromise),
     unmountPromise: promiseWithoutReturnValue(unmountPromise),
     _parcel: parcel as InternalParcel,

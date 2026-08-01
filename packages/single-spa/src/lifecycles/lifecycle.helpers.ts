@@ -81,10 +81,9 @@ export type ParcelConfigObject<ExtraProps = CustomProps> = {
 
 export type LifeCycleFn<ExtraProps> = (config: ExtraProps & AppProps) => Promise<any>;
 export type LifeCycles<ExtraProps = {}> = {
-  // qiankun fork: bootstrap is the canonical lifecycle name (reverting upstream #1307's rename);
-  // init stays accepted as an alias for v7-flavored apps, bootstrap wins when both are present
+  // qiankun fork: bootstrap is the lifecycle name, reverting upstream #1307's rename to init
+  // (re-align if upstream ever ships a stable v7 — see the fork README)
   bootstrap?: LifeCycleFn<ExtraProps> | Array<LifeCycleFn<ExtraProps>>;
-  init?: LifeCycleFn<ExtraProps> | Array<LifeCycleFn<ExtraProps>>;
   mount: LifeCycleFn<ExtraProps> | Array<LifeCycleFn<ExtraProps>>;
   unmount: LifeCycleFn<ExtraProps> | Array<LifeCycleFn<ExtraProps>>;
   update?: LifeCycleFn<ExtraProps> | Array<LifeCycleFn<ExtraProps>>;
@@ -100,9 +99,6 @@ export type Parcel<ExtraProps = CustomProps> = {
   getStatus(): AppOrParcelStatus;
   loadPromise: Promise<null>;
   bootstrapPromise: Promise<null>;
-  // qiankun fork: permanent alias of bootstrapPromise for v7-flavored consumers (upstream #1307
-  // renamed it; always the same promise instance — see the fork README's divergence list)
-  initPromise: Promise<null>;
   mountPromise: Promise<null>;
   unmountPromise: Promise<null>;
   // Intended for internal use only

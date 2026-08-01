@@ -1,15 +1,15 @@
-let initCalled, mountCalled;
+let bootstrapCalled, mountCalled;
 
 export const timeouts = {
-  init: {
+  bootstrap: {
     millis: 20,
-    dieOnTimeout: false,
+    dieOnTimeout: true,
   },
 };
 
-export function init() {
+export function bootstrap() {
   return new Promise((resolve) => {
-    initCalled = true;
+    bootstrapCalled = true;
     setTimeout(resolve, 30);
   });
 }
@@ -28,14 +28,14 @@ export function unmount() {
 }
 
 export function reset() {
-  initCalled = false;
+  bootstrapCalled = false;
   mountCalled = false;
 }
 
 reset();
 
 export function wasinitped() {
-  return initCalled;
+  return bootstrapCalled;
 }
 
 export function wasMounted() {

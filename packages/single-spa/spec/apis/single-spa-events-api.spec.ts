@@ -1,12 +1,12 @@
 import * as singleSpa from 'single-spa';
 
 const russellApp = {
-  initCount: 0,
+  bootstrapCount: 0,
   mountCount: 0,
   unmountCount: 0,
   unloadCount: 0,
-  init: async () => {
-    russellApp.initCount++;
+  bootstrap: async () => {
+    russellApp.bootstrapCount++;
   },
   mount: async () => {
     russellApp.mountCount++;
@@ -20,12 +20,12 @@ const russellApp = {
 };
 
 const boomApp = {
-  initCount: 0,
+  bootstrapCount: 0,
   mountCount: 0,
   unmountCount: 0,
   unloadCount: 0,
-  init: async () => {
-    boomApp.initCount++;
+  bootstrap: async () => {
+    boomApp.bootstrapCount++;
   },
   mount: async () => {
     boomApp.mountCount++;
@@ -48,12 +48,12 @@ describe(`events api :`, () => {
   });
 
   afterEach(async () => {
-    russellApp.initCount = 0;
+    russellApp.bootstrapCount = 0;
     russellApp.mountCount = 0;
     russellApp.unmountCount = 0;
     russellApp.unloadCount = 0;
 
-    boomApp.initCount = 0;
+    boomApp.bootstrapCount = 0;
     boomApp.mountCount = 0;
     boomApp.unmountCount = 0;
     boomApp.unloadCount = 0;
@@ -375,7 +375,7 @@ describe(`events api :`, () => {
   });
 
   describe(`single-spa:no-app-change`, () => {
-    it(`is fired when no app is loaded, initped, mounted, unmounted, or unloaded`, async () => {
+    it(`is fired when no app is loaded, bootstrapped, mounted, unmounted, or unloaded`, async () => {
       window.location.hash = `#`;
 
       await singleSpa.triggerAppChange();

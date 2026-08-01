@@ -10,7 +10,7 @@ export function reset() {
   numUnmountCalls = 0;
 }
 
-export function init() {
+export function bootstrap() {
   numInitCalls++;
   return Promise.resolve();
 }

@@ -4,7 +4,7 @@ export function reset() {
   _wasInitialized = _wasMounted = _wasUnmounted = false;
 }
 
-export function init() {
+export function bootstrap() {
   _wasInitialized = true;
   return nonNativePromise();
 }

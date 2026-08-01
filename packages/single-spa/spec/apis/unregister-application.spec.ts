@@ -14,7 +14,7 @@ describe('unregisterApplication', function () {
       unmount() {
         return Promise.resolve();
       },
-      init() {
+      bootstrap() {
         return Promise.resolve();
       },
     };

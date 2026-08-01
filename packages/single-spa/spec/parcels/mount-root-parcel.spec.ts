@@ -24,14 +24,14 @@ describe(`root parcels`, () => {
       });
   });
 
-  it(`doesn't resolve initPromise, mountPromise, or unmountPromise with any values`, () => {
+  it(`doesn't resolve bootstrapPromise, mountPromise, or unmountPromise with any values`, () => {
     const parcelConfig = createParcelConfig();
     const parcel = singleSpa.mountRootParcel(parcelConfig, {
       domElement: document.createElement('div'),
     });
     expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_BOOTSTRAPPED);
 
-    return parcel.initPromise
+    return parcel.bootstrapPromise
       .then((value) => {
         expect(value).toBe(null);
         return parcel.mountPromise;
@@ -93,7 +93,7 @@ describe(`root parcels`, () => {
     return parcel.mountPromise.then(() => expect(parcel.update).toBeUndefined());
   });
 
-  it(`can mount a parcel missing the init lifecycle`, async () => {
+  it(`can mount a parcel missing the bootstrap lifecycle`, async () => {
     const parcelConfig = { async mount() {}, async unmount() {} };
     const parcel = singleSpa.mountRootParcel(parcelConfig, {
       domElement: document.createElement('div'),
@@ -121,39 +121,9 @@ describe(`root parcels`, () => {
     await parcel.unmount();
   });
 
-  it(`calls legacy bootstrap lifecycle, if init not provided`, async () => {
-    const parcelConfig = createParcelConfig();
-    let bootstrapCalled = false;
-    // @ts-ignore
-    parcelConfig.bootstrap = async () => {
-      bootstrapCalled = true;
-    };
-    // @ts-ignore
-    delete parcelConfig.init;
-
-    expect(bootstrapCalled).toBe(false);
-
-    const parcel = singleSpa.mountRootParcel(parcelConfig, {
-      domElement: document.createElement('div'),
-    });
-    expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_BOOTSTRAPPED);
-
-    return parcel.mountPromise
-      .then(() => {
-        expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.MOUNTED);
-        expect(bootstrapCalled).toBe(true);
-      })
-      .then(
-        () =>
-          new Promise((resolve, reject) => {
-            setTimeout(resolve, 20);
-          }),
-      )
-      .then(parcel.unmount)
-      .then(() => {
-        expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_MOUNTED);
-      });
-  });
+  // upstream's "calls legacy bootstrap lifecycle, if init not provided" fallback test was removed
+  // in the jest -> vitest fork migration: this fork reverted the bootstrap -> init rename, so
+  // there is no alias fallback left to exercise
 
   it(`allows for calling update before mount promise has finished`, async () => {
     const parcelConfig = createParcelConfig({ withUpdate: true });
@@ -163,7 +133,7 @@ describe(`root parcels`, () => {
     });
 
     expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_BOOTSTRAPPED);
-    await parcel.initPromise;
+    await parcel.bootstrapPromise;
 
     expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.MOUNTING);
     const updatePromise = parcel.update({ newProp: 1 });
@@ -183,7 +153,7 @@ describe(`root parcels`, () => {
     });
 
     expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.NOT_BOOTSTRAPPED);
-    await parcel.initPromise;
+    await parcel.bootstrapPromise;
 
     expect(parcel.getStatus()).toBe(singleSpa.AppOrParcelStatus.MOUNTING);
     const updatePromise = parcel.update({ newProp: 1 });
@@ -201,9 +171,9 @@ describe(`root parcels`, () => {
 
 function createParcelConfig(opts = {}) {
   const parcelConfig = {
-    initCalls: 0,
-    init() {
-      parcelConfig.initCalls++;
+    bootstrapCalls: 0,
+    bootstrap() {
+      parcelConfig.bootstrapCalls++;
       return Promise.resolve();
     },
     mountCalls: 0,

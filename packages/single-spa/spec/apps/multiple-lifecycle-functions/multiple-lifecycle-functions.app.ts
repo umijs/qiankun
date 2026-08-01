@@ -12,27 +12,27 @@ let _unmount1Called = false;
 let _unmount2Called = false;
 let _unmount3Called = false;
 
-export const init = [
-  function init1() {
+export const bootstrap = [
+  function bootstrap1() {
     return new Promise((resolve) => {
       setTimeout(() => {
-        if (_init2Called) _initsCalledOutOfOrder = `init 2 called before init 1`;
-        if (_init3Called) _initsCalledOutOfOrder = `init 3 called before init 1`;
+        if (_init2Called) _initsCalledOutOfOrder = `bootstrap 2 called before bootstrap 1`;
+        if (_init3Called) _initsCalledOutOfOrder = `bootstrap 3 called before bootstrap 1`;
         _init1Called = true;
         resolve();
       }, 10);
     });
   },
 
-  function init2() {
+  function bootstrap2() {
     return new Promise((resolve) => {
-      if (_init3Called) _initsCalledOutOfOrder = `init 2 called before init 3`;
+      if (_init3Called) _initsCalledOutOfOrder = `bootstrap 2 called before bootstrap 3`;
       _init2Called = true;
       resolve();
     });
   },
 
-  function init3() {
+  function bootstrap3() {
     return new Promise((resolve) => {
       _init3Called = true;
       resolve();
@@ -110,7 +110,7 @@ export function reset() {
       false;
 }
 
-export function initsCalledOutOfOrder() {
+export function bootstrapsCalledOutOfOrder() {
   return _initsCalledOutOfOrder;
 }
 
@@ -122,15 +122,15 @@ export function unmountsCalledOutOfOrder() {
   return _unmountsCalledOutOfOrder;
 }
 
-export function init1Called() {
+export function bootstrap1Called() {
   return _init1Called;
 }
 
-export function init2Called() {
+export function bootstrap2Called() {
   return _init2Called;
 }
 
-export function init3Called() {
+export function bootstrap3Called() {
   return _init3Called;
 }
 

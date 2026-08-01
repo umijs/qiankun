@@ -7,7 +7,7 @@ export const timeouts = {
   },
 };
 
-export function init() {
+export function bootstrap() {
   return new Promise((resolve) => {
     numInits++;
     resolve();
@@ -32,7 +32,7 @@ export function reset() {
   numInits = numMounts = numUnmounts = 0;
 }
 
-export function inits() {
+export function bootstraps() {
   return numInits;
 }
 

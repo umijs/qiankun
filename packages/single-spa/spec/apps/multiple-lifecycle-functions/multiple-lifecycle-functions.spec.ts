@@ -22,10 +22,10 @@ describe(`multiple-lifecycle-functions app`, () => {
 
   it(`waits for each of the functions one by one, in order`, () => {
     return singleSpa.triggerAppChange().then(() => {
-      expect(myApp.initsCalledOutOfOrder()).toEqual(undefined);
-      expect(myApp.init1Called()).toEqual(true);
-      expect(myApp.init2Called()).toEqual(true);
-      expect(myApp.init3Called()).toEqual(true);
+      expect(myApp.bootstrapsCalledOutOfOrder()).toEqual(undefined);
+      expect(myApp.bootstrap1Called()).toEqual(true);
+      expect(myApp.bootstrap2Called()).toEqual(true);
+      expect(myApp.bootstrap3Called()).toEqual(true);
 
       expect(myApp.mountsCalledOutOfOrder()).toEqual(undefined);
       expect(myApp.mount1Called()).toEqual(true);

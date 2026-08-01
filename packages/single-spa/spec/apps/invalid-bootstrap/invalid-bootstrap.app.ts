@@ -1,6 +1,6 @@
 let mountCalled, unmountCalled;
 
-export function init() {
+export function bootstrap() {
   // doesn't return a promise
   return;
 }

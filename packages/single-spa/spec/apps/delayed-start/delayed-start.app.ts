@@ -1,4 +1,4 @@
-export async function init() {}
+export async function bootstrap() {}
 
 export async function mount() {}
 

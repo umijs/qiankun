@@ -24,10 +24,10 @@ describe('parcel errors', () => {
         // avoid unhandled rejection causing test failure
         parcel1.mountPromise.catch((err) => {});
 
-        await parcel1.initPromise.catch((err) => {
+        await parcel1.bootstrapPromise.catch((err) => {
           expect(err.appOrParcelName).toBe('initialize-error');
           expect(err.message).toMatch(`BOOTSTRAPPING`);
-          expect(err.message.indexOf(`init-error`)).toBeGreaterThan(-1);
+          expect(err.message.indexOf(`bootstrap-error`)).toBeGreaterThan(-1);
           expect(parcel1.getStatus()).toBe('SKIP_BECAUSE_BROKEN');
         });
       });
@@ -93,7 +93,7 @@ describe('parcel errors', () => {
 
           await parcel1.mountPromise;
           expect(parcel1.getStatus()).toBe('MOUNTED');
-          expect(parcelConfig1.initCalls).toBe(1);
+          expect(parcelConfig1.bootstrapCalls).toBe(1);
           expect(parcelConfig1.mountCalls).toBe(1);
           expect(parcelConfig1.unmountCalls).toBe(0);
 
@@ -147,7 +147,7 @@ describe('parcel errors', () => {
           parcel1.unmountPromise.catch((err) => {});
 
           await parcel1.mountPromise;
-          expect(parcelConfig1.initCalls).toBe(1);
+          expect(parcelConfig1.bootstrapCalls).toBe(1);
           expect(parcelConfig1.mountCalls).toBe(1);
           expect(parcelConfig1.unmountCalls).toBe(0);
 
@@ -197,7 +197,7 @@ describe('parcel errors', () => {
       });
 
       // avoid unhandled rejection errors
-      parcel.initPromise.catch((err) => {});
+      parcel.bootstrapPromise.catch((err) => {});
       parcel.mountPromise.catch((err) => {});
 
       try {
@@ -210,12 +210,12 @@ describe('parcel errors', () => {
 
     it(`rejects the load promise if the config doesn't have a valid mount function`, async () => {
       const parcel = singleSpa.mountRootParcel(
-        { init() {}, unmount() {} },
+        { bootstrap() {}, unmount() {} },
         { domElement: document.createElement('div') },
       );
 
       // avoid unhandled rejection errors
-      parcel.initPromise.catch((err) => {});
+      parcel.bootstrapPromise.catch((err) => {});
       parcel.mountPromise.catch((err) => {});
 
       try {
@@ -228,12 +228,12 @@ describe('parcel errors', () => {
 
     it(`rejects the load promise if the config doesn't have a valid unmount function`, async () => {
       const parcel = singleSpa.mountRootParcel(
-        { init() {}, mount() {} },
+        { bootstrap() {}, mount() {} },
         { domElement: document.createElement('div') },
       );
 
       // avoid unhandled rejection errors
-      parcel.initPromise.catch((err) => {});
+      parcel.bootstrapPromise.catch((err) => {});
       parcel.mountPromise.catch((err) => {});
 
       try {
@@ -248,9 +248,9 @@ describe('parcel errors', () => {
 
 function createApp() {
   const app = {
-    initCalls: 0,
-    init() {
-      app.initCalls++;
+    bootstrapCalls: 0,
+    bootstrap() {
+      app.bootstrapCalls++;
       return Promise.resolve();
     },
     mountCalls: 0,
@@ -272,12 +272,12 @@ function createApp() {
 
 function createParcelConfig(errLocation) {
   const parcelConfig = {
-    initCalls: 0,
-    init() {
-      if (errLocation === 'init') {
-        return delayedSettle(Promise.reject(new Error('init error')));
+    bootstrapCalls: 0,
+    bootstrap() {
+      if (errLocation === 'bootstrap') {
+        return delayedSettle(Promise.reject(new Error('bootstrap error')));
       } else {
-        parcelConfig.initCalls++;
+        parcelConfig.bootstrapCalls++;
         return delayedSettle(Promise.resolve());
       }
     },

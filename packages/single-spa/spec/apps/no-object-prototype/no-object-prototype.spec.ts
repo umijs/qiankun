@@ -8,7 +8,7 @@ describe(`no-object-prototype app`, () => {
   beforeAll(() => {
     // ES Modules don't have the Object prototype, but should still work as applications
     const app = Object.create(null);
-    app.init = async function () {};
+    app.bootstrap = async function () {};
     app.mount = async function () {};
     app.unmount = async function () {};
 

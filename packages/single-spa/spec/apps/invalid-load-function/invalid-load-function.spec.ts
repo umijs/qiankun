@@ -97,7 +97,7 @@ describe(`invalid-load-function`, () => {
       if (count === 1) return Promise.reject(`It didn't load`);
       else
         return Promise.resolve({
-          init: () => new Promise(),
+          bootstrap: () => new Promise(),
           mount: () => new Promise(),
           unmount: () => new Promise(),
         });

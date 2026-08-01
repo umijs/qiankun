@@ -1,6 +1,6 @@
 import * as singleSpa from 'single-spa';
 
-describe(`init-times-out`, () => {
+describe(`bootstrap-times-out`, () => {
   let myApp,
     errs = [];
 
@@ -10,9 +10,9 @@ describe(`init-times-out`, () => {
 
   beforeAll(() => {
     singleSpa.registerApplication(
-      './init-times-out.app',
-      () => import('./init-times-out.app'),
-      (location) => location.hash === '#init-times-out',
+      './bootstrap-times-out.app',
+      () => import('./bootstrap-times-out.app'),
+      (location) => location.hash === '#bootstrap-times-out',
     );
     singleSpa.start();
   });
@@ -23,7 +23,7 @@ describe(`init-times-out`, () => {
     errs = [];
     singleSpa.addErrorHandler(handleError);
 
-    return import('./init-times-out.app').then((app) => (myApp = app)).then((app) => app.reset());
+    return import('./bootstrap-times-out.app').then((app) => (myApp = app)).then((app) => app.reset());
   });
 
   afterEach(() => {
@@ -31,13 +31,13 @@ describe(`init-times-out`, () => {
   });
 
   it(`is just waited for if dieOnTimeout is false`, () => {
-    location.hash = '#init-times-out';
+    location.hash = '#bootstrap-times-out';
 
     return singleSpa.triggerAppChange().then(() => {
       expect(myApp.wasinitped()).toEqual(true);
       expect(myApp.wasMounted()).toEqual(true);
-      expect(singleSpa.getMountedApps()).toEqual(['./init-times-out.app']);
-      expect(singleSpa.getAppStatus('./init-times-out.app')).toEqual(singleSpa.AppOrParcelStatus.MOUNTED);
+      expect(singleSpa.getMountedApps()).toEqual(['./bootstrap-times-out.app']);
+      expect(singleSpa.getAppStatus('./bootstrap-times-out.app')).toEqual(singleSpa.AppOrParcelStatus.MOUNTED);
       expect(errs.length).toBe(0);
     });
   });

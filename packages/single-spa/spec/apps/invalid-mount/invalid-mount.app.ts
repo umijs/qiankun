@@ -1,8 +1,8 @@
-let initCalled, mountCalled, unmountCalled;
+let bootstrapCalled, mountCalled, unmountCalled;
 
-export function init() {
+export function bootstrap() {
   return new Promise((resolve) => {
-    initCalled = true;
+    bootstrapCalled = true;
     resolve();
   });
 }
@@ -20,13 +20,13 @@ export function unmount() {
 }
 
 export function reset() {
-  initCalled = false;
+  bootstrapCalled = false;
   mountCalled = false;
   unmountCalled = false;
 }
 
 export function wasInitialized() {
-  return initCalled;
+  return bootstrapCalled;
 }
 
 export function wasMounted() {

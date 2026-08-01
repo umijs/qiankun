@@ -13,14 +13,14 @@ qiankun's vendored fork of [single-spa](https://github.com/single-spa/single-spa
 
 Maintained deliberately; this list is the contract (keep it in sync when adding divergences):
 
-1. **The upstream `bootstrap` → `init` rename ([single-spa#1307](https://github.com/single-spa/single-spa/pull/1307), completed by [#1333](https://github.com/single-spa/single-spa/pull/1333)) is reverted wholesale — v6 naming is canonical.** qiankun's ecosystem was built on the bootstrap vocabulary and there was no reason to break it. Concretely:
-   - the `bootstrap` lifecycle is the canonical name for applications and parcels (`init` stays accepted as an alias; `bootstrap` wins when both are present);
-   - `parcel.bootstrapPromise` is the canonical parcel promise (`initPromise` stays as an alias, always the same promise instance);
-   - `setBootstrapMaxTime` is the canonical timeout API (`setInitMaxTime` stays as an alias export), and the `timeouts.bootstrap` key is canonical (`timeouts.init` accepted as an alias);
-   - the `NOT_BOOTSTRAPPED` / `BOOTSTRAPPING` statuses are restored, both as `AppOrParcelStatus` member names and as the raw `getStatus()` string values (v7's `NOT_INITIALIZED` / `INITIALIZING` strings do not exist in this fork — a status is a value, not an API, so it has exactly one spelling);
-   - error message texts use the bootstrap vocabulary again.
+1. **The upstream `bootstrap` → `init` rename ([single-spa#1307](https://github.com/single-spa/single-spa/pull/1307), completed by [#1333](https://github.com/single-spa/single-spa/pull/1333)) is reverted wholesale — this fork speaks pure v6 vocabulary, with no `init` aliases.** qiankun's ecosystem was built on the bootstrap vocabulary and there was no reason to break it. Concretely:
+   - the `bootstrap` lifecycle is the only recognized name for applications and parcels (a v7-style `init` export is ignored, exactly as v6 ignored unknown fields);
+   - `parcel.bootstrapPromise`, `setBootstrapMaxTime` and the `timeouts.bootstrap` key are back; `initPromise`, `setInitMaxTime` and `timeouts.init` do not exist;
+   - the `NOT_BOOTSTRAPPED` / `BOOTSTRAPPING` statuses are restored, both as `AppOrParcelStatus` member names and as the raw `getStatus()` string values (v7's `NOT_INITIALIZED` / `INITIALIZING` strings do not exist in this fork);
+   - error message texts use the bootstrap vocabulary again;
+   - the vendored upstream specs were migrated back to the bootstrap vocabulary along with the sources.
 
-   The v7 `init` names are permanent compatibility aliases, not deprecations. The upstream specs that exercise the `init` spelling are kept as the alias-path coverage; `spec/apps/bootstrap-prioritized-over-init/` (inverted from upstream's `init-prioritized-over-bootstrap`), `spec/apps/legacy-bootstrap/` and `spec/parcels/bootstrap-promise-alias.spec.ts` cover the canonical path.
+   If upstream ever ships a stable (non-beta) v7 that still carries the rename, re-evaluate aligning with it then — until that day this fork does not track it.
 
 ## Invariant contracts (never break)
 

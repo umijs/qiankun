@@ -3,7 +3,7 @@ import * as singleSpa from 'single-spa';
 let initialized, mounted;
 
 const app = {
-  init() {
+  bootstrap() {
     initialized = true;
     return Promise.resolve();
   },

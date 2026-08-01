@@ -37,10 +37,10 @@ describe('error handlers api', () => {
     });
   });
 
-  it(`reports an error during init`, () => {
+  it(`reports an error during bootstrap`, () => {
     const app = {
-      init() {
-        return Promise.reject(new Error(`couldn't init`));
+      bootstrap() {
+        return Promise.reject(new Error(`couldn't bootstrap`));
       },
       mount() {
         return Promise.resolve();
@@ -50,21 +50,21 @@ describe('error handlers api', () => {
       },
     };
 
-    singleSpa.registerApplication('init-error', app, (location) => location.hash === '#init-error');
+    singleSpa.registerApplication('bootstrap-error', app, (location) => location.hash === '#bootstrap-error');
 
-    location.hash = '#init-error';
+    location.hash = '#bootstrap-error';
 
     return singleSpa.triggerAppChange().then(() => {
       expect(errs.length).toBe(1);
-      expect(errs[0].appOrParcelName).toBe('init-error');
-      expect(errs[0].message).toMatch(`'init-error' died in status BOOTSTRAPPING: couldn't init`);
-      expect(singleSpa.getAppStatus('init-error')).toBe(singleSpa.AppOrParcelStatus.SKIP_BECAUSE_BROKEN);
+      expect(errs[0].appOrParcelName).toBe('bootstrap-error');
+      expect(errs[0].message).toMatch(`'bootstrap-error' died in status BOOTSTRAPPING: couldn't bootstrap`);
+      expect(singleSpa.getAppStatus('bootstrap-error')).toBe(singleSpa.AppOrParcelStatus.SKIP_BECAUSE_BROKEN);
     });
   });
 
   it(`reports an error during mount`, () => {
     const app = {
-      init() {
+      bootstrap() {
         return Promise.resolve();
       },
       mount() {
@@ -88,7 +88,7 @@ describe('error handlers api', () => {
 
   it(`reports an error during unmount`, () => {
     const app = {
-      init() {
+      bootstrap() {
         return Promise.resolve();
       },
       mount() {
@@ -120,7 +120,7 @@ describe('error handlers api', () => {
 
   it(`reports an error during activity functions`, () => {
     const app = {
-      init() {
+      bootstrap() {
         return Promise.resolve();
       },
       mount() {
@@ -148,7 +148,7 @@ describe('error handlers api', () => {
 
   it(`only throws one error when the application or parcel fails to mount`, async () => {
     const app = {
-      async init() {},
+      async bootstrap() {},
       async mount() {
         throw Error('the mount failed');
       },
