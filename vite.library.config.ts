@@ -156,6 +156,13 @@ export default defineConfig(() => {
     throw new Error(`No production source entries found in ${sourceRoot}`);
   }
 
+  if (manifest.name === '@qiankunjs/single-spa') {
+    // The profile variant entry (and the profiler API it re-exports) is not built or published yet;
+    // the sources stay vendored for a future opt-in profile build.
+    delete entries['single-spa.profile'];
+    delete entries['devtools/profiler-api'];
+  }
+
   const commonOutput = {
     entryFileNames: '[name].js',
     preserveModules: true,
@@ -170,7 +177,15 @@ export default defineConfig(() => {
         ? {
             __QIANKUN_VERSION__: JSON.stringify(manifest.version),
           }
-        : undefined,
+        : manifest.name === '@qiankunjs/single-spa'
+          ? {
+              // Upstream single-spa relies on rollup-injected compile-time constants. __DEV__ stays a
+              // NODE_ENV probe in the emitted code so the consumer's bundler can constant-fold it.
+              __DEV__: '(process.env.NODE_ENV !== "production")',
+              __PROFILE__: 'false',
+              'process.env.BABEL_ENV': 'undefined',
+            }
+          : undefined,
     plugins: [
       optimizeLodashImports({
         parseOptions: (filePath) => ({

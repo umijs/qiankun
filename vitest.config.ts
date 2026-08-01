@@ -9,6 +9,11 @@ const isWorkspaceRoot = resolve(process.cwd()) === repositoryRoot;
 export default defineConfig({
   define: {
     __QIANKUN_VERSION__: JSON.stringify('0.0.0-test'),
+    // Compile-time constants the vendored single-spa sources expect (upstream injects them via
+    // rollup/babel). BABEL_ENV "test" enables navigateToUrl's simulated-DOM navigation branch.
+    __DEV__: 'true',
+    __PROFILE__: 'false',
+    'process.env.BABEL_ENV': JSON.stringify('test'),
   },
   // Resolve workspace packages to their source so cross-package test imports (e.g. the sandbox tests
   // importing @qiankunjs/shared through the membrane) work without a prior build — the CI unit-test
@@ -22,6 +27,10 @@ export default defineConfig({
       // the ui bindings import the facade by package name; the binding tests mock it, but the
       // specifier still has to resolve without a built dist
       qiankun: fromRoot('./packages/qiankun/src/index.ts'),
+      '@qiankunjs/single-spa': fromRoot('./packages/single-spa/src/index.ts'),
+      // the vendored single-spa specs import the upstream package name (jest moduleNameMapper
+      // equivalent); nothing else in the workspace may use this bare specifier
+      'single-spa': fromRoot('./packages/single-spa/src/single-spa.ts'),
     },
   },
   test: {
@@ -37,7 +46,22 @@ export default defineConfig({
               test: {
                 name: 'packages',
                 include: ['packages/**/*.{test,spec}.{ts,tsx}'],
-                exclude: ['packages/create-qiankun/tests/e2e*.test.ts', '**/node_modules/**'],
+                exclude: [
+                  'packages/create-qiankun/tests/e2e*.test.ts',
+                  'packages/single-spa/**',
+                  '**/node_modules/**',
+                ],
+              },
+            },
+            {
+              extends: true,
+              test: {
+                name: 'single-spa',
+                // The vendored upstream specs assume jest-style implicit globals; per-file overrides
+                // (e.g. the node environment for node-spec) use @vitest-environment docblocks.
+                globals: true,
+                include: ['packages/single-spa/{spec,node-spec}/**/*.spec.ts'],
+                exclude: ['**/node_modules/**'],
               },
             },
           ],

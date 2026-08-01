@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.build.json",
+  "compilerOptions": {
+    "outDir": "dist/esm",
+    "rootDir": "src",
+    // The vendored upstream sources predate this repo's strict settings; they compile under
+    // upstream's non-strict tsconfig. Relaxed here instead of rewriting upstream code — tightening
+    // is phase-two work (see the RFC in umijs/qiankun#3168), mirroring the ESLint exemption block.
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "strictFunctionTypes": false,
+    "strictPropertyInitialization": false,
+    "noImplicitThis": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": false
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/single-spa.profile.ts", "src/devtools/profiler-api.ts"]
+}

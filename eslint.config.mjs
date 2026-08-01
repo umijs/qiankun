@@ -142,6 +142,66 @@ export default defineConfig([
     },
   },
   {
+    name: 'qiankun/vendored-single-spa',
+    // Vendored single-spa fork (upstream 7.0 branch): keep recommended-level linting but relax the
+    // strict type-checked rules — upstream code is not rewritten just to satisfy them. Tightening
+    // happens incrementally in phase two (see the RFC in umijs/qiankun#3168). Unlike writable-dom
+    // (globally ignored), this fork evolves first-hand, so it stays under the linter.
+    files: ['packages/single-spa/**/*.ts'],
+    languageOptions: {
+      globals: {
+        // the vendored specs run with vitest globals enabled (see vitest.config.ts)
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeAll: 'readonly',
+        beforeEach: 'readonly',
+        afterAll: 'readonly',
+        afterEach: 'readonly',
+        vi: 'readonly',
+      },
+    },
+    rules: {
+      'no-else-return': 'off',
+      'object-shorthand': 'off',
+      'prefer-const': 'off',
+      'no-empty': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unnecessary-condition': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-floating-promises': 'off',
+      '@typescript-eslint/no-misused-promises': 'off',
+      '@typescript-eslint/no-shadow': 'off',
+      '@typescript-eslint/array-type': 'off',
+      '@typescript-eslint/consistent-type-imports': 'off',
+      '@typescript-eslint/consistent-type-exports': 'off',
+      '@typescript-eslint/restrict-template-expressions': 'off',
+      '@typescript-eslint/no-base-to-string': 'off',
+      '@typescript-eslint/unbound-method': 'off',
+      '@typescript-eslint/no-empty-object-type': 'off',
+      '@typescript-eslint/no-redundant-type-constituents': 'off',
+      '@typescript-eslint/no-this-alias': 'off',
+      '@typescript-eslint/restrict-plus-operands': 'off',
+      // crashes on an upstream spec's `catch {}` block that rethrows an outer-scope identifier
+      '@typescript-eslint/only-throw-error': 'off',
+      'prefer-rest-params': 'off',
+      'no-prototype-builtins': 'off',
+      'no-unassigned-vars': 'off',
+      '@typescript-eslint/prefer-promise-reject-errors': 'off',
+      '@typescript-eslint/ban-ts-comment': 'off',
+      '@typescript-eslint/no-unsafe-function-type': 'off',
+      '@typescript-eslint/no-unnecessary-type-assertion': 'off',
+      '@typescript-eslint/no-wrapper-object-types': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/await-thenable': 'off',
+    },
+  },
+  {
     name: 'qiankun/commonjs',
     files: ['**/*.cjs', 'packages/bundler-plugin/tests/webpack{4,5}/webpack.config.js'],
     languageOptions: {

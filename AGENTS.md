@@ -15,6 +15,7 @@ qiankun/
 │   ├── sandbox/         # JS isolation: Proxy membrane + Compartment  → packages/sandbox/AGENTS.md
 │   ├── loader/          # Streaming HTML-entry loader (writable-dom)  → packages/loader/AGENTS.md
 │   ├── shared/          # Transpilers, fetch-utils, module-resolver, ESM-sandbox engine → packages/shared/AGENTS.md
+│   ├── single-spa/      # Vendored single-spa fork (@qiankunjs/single-spa, upstream 7.0 @ ce0f925a) → packages/single-spa/README.md
 │   ├── ui-bindings/     # <MicroApp> components: react/ vue/ shared/ (dogfooded by examples/{main,vue-host})
 │   ├── bundler-plugin/  # Webpack(4/5) + Vite plugins: mark entry script, fix output library
 │   └── create-qiankun/  # `npm create qiankun` scaffolder (React/Vue, Vite)
@@ -53,6 +54,7 @@ Internal dependency graph (never invert it):
 ```
 qiankun → loader → sandbox → shared
                    sandbox → shared
+qiankun → single-spa   (vendored fork; zero deps, bottom of the graph — must not import shared/sandbox/loader)
 ui-bindings/{react,vue} → ui-bindings/shared → qiankun
 ```
 

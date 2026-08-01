@@ -418,6 +418,8 @@ importers:
         specifier: 4.18.1
         version: 4.18.1
 
+  packages/single-spa: {}
+
   packages/ui-bindings/react:
     dependencies:
       '@qiankunjs/ui-shared':
