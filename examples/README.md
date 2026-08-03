@@ -50,8 +50,11 @@ The **streaming** app demonstrates something none of the others can: its loading
 delays — the way a server-side renderer emits markup as data becomes ready. qiankun's loader pipes
 the response through the same streaming parser the browser uses for a top-level document, so each
 chunk paints the moment it lands: the critical section is readable while the entry script has not
-even been *requested* yet. Inline marks stamp every chunk's arrival, and the entry script — flushed
-last on purpose — draws the resulting waterfall. Loaders that buffer the whole entry before
+even been _requested_ yet. Inline marks stamp every chunk's arrival, and the entry script — flushed
+last on purpose — draws the resulting waterfall. The server also negotiates the initial language
+from `Accept-Language`: streamed content must speak the visitor's language from the first byte,
+because the host's props can only arrive with the entry script, seconds later — props stay
+authoritative once they do (switching the shell's language still reaches the app via `update`). Loaders that buffer the whole entry before
 rendering can only show a spinner for that window, which is why this app is also the one whose
 stage swaps the covering veil for a corner tag. Remounts replay from qiankun's warm cache and
 render at once; reload the page to watch the cold stream again.
