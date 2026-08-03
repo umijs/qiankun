@@ -70,6 +70,8 @@ export interface Messages {
   mounted: string;
   failed: string;
   crossingBoundary: string;
+  /** the non-covering loader tag: the streamed app must stay visible while it mounts */
+  streamingIn: string;
   mountFailed: string;
   isolated: string;
   live: string;
@@ -92,7 +94,7 @@ export const messages: Record<Locale, Messages> = {
     eyebrow: '袖里乾坤 · qiankun examples',
     heroTitle: 'A universe in every sleeve.',
     heroLede:
-      "Four independent apps — React, Vue, a webpack classic build, and plain HTML — mount into this shell. Each one runs inside its own JS sandbox with scoped styles, and this page can prove it. The shell is a plain React app that mounts them through qiankun's own React binding.",
+      "Five independent apps — React, Vue, a webpack classic build, plain HTML, and a server-streamed page — mount into this shell. Each one runs inside its own JS sandbox with scoped styles, and this page can prove it. The shell is a plain React app that mounts them through qiankun's own React binding.",
     appRegistry: 'App registry',
     hostRealmCheck: 'Host realm check',
     hostRealmBody: 'Every micro app has a probe button that writes {code} inside its sandbox. The host window you are looking at reads:',
@@ -103,6 +105,7 @@ export const messages: Record<Locale, Messages> = {
     mounted: 'mounted',
     failed: 'failed',
     crossingBoundary: 'crossing the sandbox boundary…',
+    streamingIn: 'streaming the document in…',
     mountFailed: 'mount failed',
     isolated: 'isolated',
     live: 'live',
@@ -123,7 +126,7 @@ export const messages: Record<Locale, Messages> = {
     eyebrow: '袖里乾坤 · qiankun 示例',
     heroTitle: '袖里自有乾坤。',
     heroLede:
-      '四个互相独立的应用——React、Vue、webpack 传统构建，以及不经构建的纯 HTML——都挂载在这个主应用里。每个都跑在自己的 JS 沙箱中、样式各自作用域化，这个页面能当场验证。主应用本身只是个普通 React 应用，通过 qiankun 自己的 React binding 挂载它们。',
+      '五个互相独立的应用——React、Vue、webpack 传统构建、不经构建的纯 HTML，以及服务端流式推送的页面——都挂载在这个主应用里。每个都跑在自己的 JS 沙箱中、样式各自作用域化，这个页面能当场验证。主应用本身只是个普通 React 应用，通过 qiankun 自己的 React binding 挂载它们。',
     appRegistry: '微应用注册表',
     hostRealmCheck: '宿主 realm 检查',
     hostRealmBody: '每个微应用都有一个探针按钮，会在自己的沙箱里写入 {code}。而你正在看的这个宿主 window 读到的是：',
@@ -134,6 +137,7 @@ export const messages: Record<Locale, Messages> = {
     mounted: '已挂载',
     failed: '已失败',
     crossingBoundary: '正在穿过沙箱边界…',
+    streamingIn: '文档流式注入中…',
     mountFailed: '挂载失败',
     isolated: '已隔离',
     live: '运行中',

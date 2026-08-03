@@ -50,6 +50,8 @@ export interface Messages {
   mounted: string;
   failed: string;
   crossingBoundary: string;
+  /** the non-covering loader tag: the streamed app must stay visible while it mounts */
+  streamingIn: string;
   mountFailed: string;
   entry: string;
   mount: string;
@@ -76,7 +78,7 @@ export const messages: Record<Locale, Messages> = {
     localeSwitchLabel: 'Switch to Chinese',
     shellSubtitle: '@qiankunjs/vue',
     introEyebrow: '袖里乾坤 · vue host',
-    introTitle: 'The same four apps, mounted from Vue.',
+    introTitle: 'The same five apps, mounted from Vue.',
     introLede:
       'This shell is a plain Vue 3 app. It mounts the micro apps with <MicroApp> from @qiankunjs/vue — the binding we publish — and dresses its #loader and #error-boundary slots. Pick an app on the left; “Missing app” is unreachable on purpose, so the error slot has something to show.',
     containerIdle: 'container idle',
@@ -84,6 +86,7 @@ export const messages: Record<Locale, Messages> = {
     mounted: 'mounted',
     failed: 'failed',
     crossingBoundary: 'crossing the sandbox boundary…',
+    streamingIn: 'streaming the document in…',
     mountFailed: 'mount failed',
     entry: 'entry',
     mount: 'mount',
@@ -108,7 +111,7 @@ export const messages: Record<Locale, Messages> = {
     localeSwitchLabel: '切换到英文',
     shellSubtitle: '@qiankunjs/vue',
     introEyebrow: '袖里乾坤 · vue 主应用',
-    introTitle: '同样的四个应用，这次由 Vue 挂载。',
+    introTitle: '同样的五个应用，这次由 Vue 挂载。',
     introLede:
       '这个主应用就是个普通的 Vue 3 应用。它用我们发布的 @qiankunjs/vue 里的 <MicroApp> 挂载微应用，并接管了 #loader 与 #error-boundary 两个插槽。左边随便选一个；“缺失的应用”是故意打不通的，好让错误插槽有东西可展示。',
     containerIdle: '容器空闲',
@@ -116,6 +119,7 @@ export const messages: Record<Locale, Messages> = {
     mounted: '已挂载',
     failed: '已失败',
     crossingBoundary: '正在穿过沙箱边界…',
+    streamingIn: '文档流式注入中…',
     mountFailed: '挂载失败',
     entry: '入口',
     mount: '第',

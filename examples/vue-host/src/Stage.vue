@@ -154,7 +154,9 @@ onBeforeUnmount(() => observer?.disconnect());
         class-name="stage-container"
       >
         <template #loader="{ loading: mounting }">
-          <StageVeil :loading="mounting" @change="loading = $event" />
+          <!-- the streamed app paints while it is still mounting — a covering veil would hide
+               exactly what it demonstrates, so it gets a corner tag instead -->
+          <StageVeil :loading="mounting" :covering="app.loadingPath !== 'streamed'" @change="loading = $event" />
         </template>
         <template #error-boundary="{ error }">
           <StageFailure :error="error" @change="failed = $event" />

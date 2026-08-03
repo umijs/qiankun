@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Streaming HTML micro app · qiankun</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- chunk arrival bookkeeping. It ships in the first chunk so every later chunk can stamp
+         how long after the first byte it painted; entry.js reads the same record to draw the
+         waterfall. Inside qiankun this window is the sandbox membrane, standalone it is the page. -->
+    <script>
+      (function (global) {
+        var t0 = performance.now();
+        var marks = [];
+        global.__QK_STREAM__ = {
+          marks: marks,
+          now: function () {
+            return Math.round(performance.now() - t0);
+          },
+          mark: function (id) {
+            var at = global.__QK_STREAM__.now();
+            marks.push({ id: id, at: at });
+            // Under qiankun the nodes preceding this script are still in the stream's staging
+            // fragment while it runs — they flush right after. Retry on frames until the badge
+            // is queryable (standalone it is immediately); entry.js backfills as a last resort.
+            var frames = 60;
+            var fill = function () {
+              var badge = document.querySelector('[data-mark="' + id + '"]');
+              if (badge) {
+                badge.textContent = '+' + at + 'ms';
+              } else if (frames-- > 0) {
+                requestAnimationFrame(fill);
+              }
+            };
+            fill();
+          },
+        };
+      })(window);
+    </script>
+    <style>
+      /* every rule scoped under the app root; qiankun's style isolation additionally
+         wraps this sheet in @scope when the app runs inside the shell */
+      .streaming-app {
+        --paper: #f7f8fa;
+        --surface: #ffffff;
+        --ink: #1b1f26;
+        --ink-soft: #5c6470;
+        --hairline: #e4e7ec;
+        --primary: #6051a5;
+        --accent: #c2410c;
+
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 40px 24px 48px;
+        color: var(--ink);
+        font-family: 'IBM Plex Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      /* the server renders every phrase twice; the active locale is a root attribute that
+         mount/update flips, so switching language never re-fetches the stream */
+      .streaming-app[data-locale='en'] [lang='zh'] {
+        display: none;
+      }
+
+      .streaming-app[data-locale='zh'] [lang='en'] {
+        display: none;
+      }
+
+      .streaming-app .app-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 24px;
+      }
+
+      .streaming-app .accent-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--accent);
+      }
+
+      .streaming-app h1 {
+        margin: 0;
+        font-family: 'Space Grotesk', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+        font-size: 26px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+
+      .streaming-app .badge {
+        padding: 2px 8px;
+        border: 1px solid var(--hairline);
+        border-radius: 999px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 10px;
+        color: var(--ink-soft);
+      }
+
+      .streaming-app .badge.mode-qiankun {
+        border-color: rgb(96 81 165 / 35%);
+        color: var(--primary);
+      }
+
+      .streaming-app .card {
+        background: var(--surface);
+        border: 1px solid var(--hairline);
+        border-radius: 10px;
+        margin-bottom: 16px;
+        animation: chunk-arrive 360ms ease-out both;
+      }
+
+      .streaming-app .card > h2 {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 0;
+        padding: 12px 20px;
+        border-bottom: 1px solid var(--hairline);
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      /* the arrival stamp: filled in by the inline script that travels in the same chunk */
+      .streaming-app .mark {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 11px;
+        font-style: normal;
+        font-weight: 500;
+        color: var(--accent);
+      }
+
+      .streaming-app .mark-caption {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 10px;
+        font-weight: 400;
+        color: var(--ink-soft);
+      }
+
+      .streaming-app .prose {
+        margin: 0;
+        padding: 14px 20px;
+        color: var(--ink-soft);
+      }
+
+      .streaming-app .row {
+        display: grid;
+        grid-template-columns: 72px 1fr auto;
+        gap: 12px;
+        padding: 10px 20px;
+        font-size: 13px;
+      }
+
+      .streaming-app .row + .row {
+        border-top: 1px solid var(--hairline);
+      }
+
+      .streaming-app .row b {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--ink-soft);
+      }
+
+      .streaming-app .row .amount {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 12px;
+      }
+
+      .streaming-app .timeline {
+        padding: 6px 0;
+      }
+
+      .streaming-app .timeline-row {
+        display: grid;
+        grid-template-columns: 148px 1fr 64px;
+        align-items: center;
+        gap: 12px;
+        padding: 7px 20px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 11px;
+        color: var(--ink-soft);
+      }
+
+      .streaming-app .timeline-row .bar {
+        position: relative;
+        height: 8px;
+        border-radius: 4px;
+        background: var(--paper);
+        overflow: hidden;
+      }
+
+      .streaming-app .timeline-row .bar > i {
+        position: absolute;
+        inset: 0 auto 0 0;
+        border-radius: 4px;
+        background: var(--accent);
+        opacity: 0.85;
+      }
+
+      .streaming-app .timeline-row.entry-row .bar > i {
+        background: var(--primary);
+      }
+
+      .streaming-app .timeline-row .at {
+        text-align: right;
+        color: var(--ink);
+      }
+
+      .streaming-app .verdict {
+        margin: 0;
+        padding: 12px 20px 16px;
+        border-top: 1px solid var(--hairline);
+        color: var(--ink-soft);
+        font-size: 13px;
+      }
+
+      .streaming-app .verdict strong {
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      .streaming-app .app-footer {
+        margin-top: 24px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 11px;
+        color: var(--ink-soft);
+      }
+
+      @keyframes chunk-arrive {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .streaming-app .card {
+          animation: none;
+        }
+      }
+    </style>
+    <!-- standalone page background only; scoped away by style isolation inside the shell -->
+    <style>
+      body {
+        margin: 0;
+        background: #f7f8fa;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="streaming-app" data-locale="en">
+      <header class="app-header">
+        <span class="accent-dot"></span>
+        <h1>
+          <span lang="en">Streaming HTML micro app</span>
+          <span lang="zh">流式 HTML 微应用</span>
+        </h1>
+        <span class="badge">chunked transfer</span>
+        <span class="badge">no build · classic</span>
+        <span class="badge" data-mode-badge hidden></span>
+      </header>
+
+      <section class="card">
+        <h2>
+          <span lang="en">Critical content</span>
+          <span lang="zh">关键首屏</span>
+          <em class="mark" data-mark="critical">…</em>
+          <span class="mark-caption">
+            <span lang="en">painted from the first chunk</span>
+            <span lang="zh">来自第一个分块</span>
+          </span>
+        </h2>
+        <p class="prose">
+          <span lang="en">
+            The server is still writing this document — it flushes it in four chunks, pausing between them like a
+            server-side renderer waiting on data. qiankun 3.0 pipes the response through the same streaming parser the
+            browser uses for a top-level page, so everything above this line was on screen while the rest of the HTML
+            did not exist yet. Loaders that buffer the entry can only show a spinner until the last byte arrives.
+          </span>
+          <span lang="zh">
+            服务器此刻还在写这份文档——它分四个分块推送，分块之间的停顿模拟服务端渲染等待数据的过程。qiankun 3.0
+            让响应流过与浏览器渲染顶层页面相同的流式解析管线,所以这行字上屏时，文档剩下的部分还不存在。
+            而缓冲整个入口的加载器，在最后一个字节到达前只能亮着 loading。
+          </span>
+        </p>
+      </section>
+      <script>
+        window.__QK_STREAM__.mark('critical');
+      </script>
+      <!--#flush:500-->
+      <section class="card">
+        <h2>
+          <span lang="en">Deferred: orders ledger</span>
+          <span lang="zh">延迟区块：订单流水</span>
+          <em class="mark" data-mark="orders">…</em>
+          <span class="mark-caption">
+            <span lang="en">second chunk, entry script not yet arrived</span>
+            <span lang="zh">第二个分块，entry 脚本尚未到达</span>
+          </span>
+        </h2>
+        <div class="row">
+          <b>#1024</b>
+          <span><span lang="en">Porcelain vase, glazed</span><span lang="zh">釉面瓷瓶</span></span>
+          <span class="amount">¥ 3,200</span>
+        </div>
+        <div class="row">
+          <b>#1025</b>
+          <span><span lang="en">Ink stone, Duan quarry</span><span lang="zh">端溪砚台</span></span>
+          <span class="amount">¥ 1,860</span>
+        </div>
+        <div class="row">
+          <b>#1026</b>
+          <span><span lang="en">Folding fan, plain ribs</span><span lang="zh">素骨折扇</span></span>
+          <span class="amount">¥ 420</span>
+        </div>
+        <div class="row">
+          <b>#1027</b>
+          <span><span lang="en">Silk sleeve, embroidered</span><span lang="zh">绣纹衣袖</span></span>
+          <span class="amount">¥ 2,480</span>
+        </div>
+      </section>
+      <script>
+        window.__QK_STREAM__.mark('orders');
+      </script>
+      <!--#flush:500-->
+      <section class="card">
+        <h2>
+          <span lang="en">Deferred: activity feed</span>
+          <span lang="zh">延迟区块：动态</span>
+          <em class="mark" data-mark="activity">…</em>
+          <span class="mark-caption">
+            <span lang="en">third chunk, still ahead of the entry</span>
+            <span lang="zh">第三个分块，仍先于 entry</span>
+          </span>
+        </h2>
+        <div class="row">
+          <b>09:12</b>
+          <span><span lang="en">Order #1027 settled</span><span lang="zh">订单 #1027 已结算</span></span>
+          <span class="amount">ok</span>
+        </div>
+        <div class="row">
+          <b>09:47</b>
+          <span><span lang="en">Inventory synced, 4 items</span><span lang="zh">库存已同步，共 4 件</span></span>
+          <span class="amount">ok</span>
+        </div>
+        <div class="row">
+          <b>10:03</b>
+          <span><span lang="en">Ledger exported to archive</span><span lang="zh">流水已归档</span></span>
+          <span class="amount">ok</span>
+        </div>
+      </section>
+      <script>
+        window.__QK_STREAM__.mark('activity');
+      </script>
+      <!--#flush:600-->
+      <section class="card" data-summary-card>
+        <h2>
+          <span lang="en">The waterfall, as it actually happened</span>
+          <span lang="zh">真实发生的时间轴</span>
+          <em class="mark" data-mark="entry">…</em>
+          <span class="mark-caption">
+            <span lang="en">entry script executed</span>
+            <span lang="zh">entry 脚本执行</span>
+          </span>
+        </h2>
+        <div class="timeline" data-timeline></div>
+        <p class="verdict" data-verdict></p>
+      </section>
+      <footer class="app-footer">
+        <span lang="en">entry index.html · lifecycle entry.js · chunked by server.mjs</span>
+        <span lang="zh">入口 index.html · 生命周期 entry.js · 分块来自 server.mjs</span>
+      </footer>
+    </div>
+    <!-- relative URLs are rewritten against the entry by qiankun's asset transpiler -->
+    <script src="./entry.js" entry></script>
+  </body>
+</html>

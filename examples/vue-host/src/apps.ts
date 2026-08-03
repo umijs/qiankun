@@ -10,7 +10,7 @@ export interface MicroAppMeta {
   entry: string;
   /** only the prose half varies by locale; version numbers and tool names do not translate */
   stack: Record<Locale, string>;
-  loadingPath: 'esm sandbox' | 'classic' | 'never loads';
+  loadingPath: 'esm sandbox' | 'classic' | 'streamed' | 'never loads';
   accent: string;
 }
 
@@ -30,7 +30,7 @@ const entryOf = (name: string, devPort: number): string => (deployed ? `/apps/${
  */
 const routeOf = (segment: string): string => `${import.meta.env.BASE_URL}${segment}`;
 
-/** The same four micro apps the React shell hosts — mounted here through the Vue binding instead. */
+/** The same five micro apps the React shell hosts — mounted here through the Vue binding instead. */
 export const microApps: MicroAppMeta[] = [
   {
     name: 'react',
@@ -67,6 +67,18 @@ export const microApps: MicroAppMeta[] = [
     stack: { en: 'no build · jQuery', zh: '无需构建 · jQuery' },
     loadingPath: 'classic',
     accent: '#B8860B',
+  },
+  {
+    // the loading path IS the exhibit: the server flushes the entry HTML in paced chunks and
+    // qiankun paints each one as it lands — content is readable before the entry script exists.
+    // The stage drops its covering veil for this app; a veil would hide exactly that.
+    name: 'streaming',
+    label: 'Streaming',
+    path: routeOf('streaming'),
+    entry: entryOf('streaming', 7106),
+    stack: { en: 'SSR chunks · no build', zh: 'SSR 分块 · 无需构建' },
+    loadingPath: 'streamed',
+    accent: '#C2410C',
   },
   {
     // deliberately unreachable: the one route that shows what the errorBoundary slot renders.

@@ -4,7 +4,7 @@ import { navigate } from '../router';
 import Seal from './Seal';
 
 /** the short form of each loading path, for the tag on the right of a nav item */
-const loadingTag = { 'esm sandbox': 'esm', classic: 'classic', 'never loads': '404' } as const;
+const loadingTag = { 'esm sandbox': 'esm', classic: 'classic', streamed: 'stream', 'never loads': '404' } as const;
 
 interface SidebarProps {
   activePath: string;

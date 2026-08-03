@@ -31,6 +31,8 @@ packages/sandbox/src/core/sandbox/globals.ts
 
 # aggregated examples site (scripts/build-examples-site.mjs)
 dist-examples/
+# Pages Functions for that site, generated next to it (wrangler resolves `functions/` from the repo root)
+/functions/
 
 # playwright e2e artifacts
 e2e/test-results/
@@ -43,3 +45,6 @@ benchmark/results/
 
 # typescript incremental build info
 *.tsbuildinfo
+
+# wrangler pages dev scratch (local simulation of the examples site)
+.wrangler/

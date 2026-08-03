@@ -2,7 +2,7 @@
 import { t } from './i18n';
 import { onMounted, watch } from 'vue';
 
-const props = defineProps<{ loading: boolean }>();
+const props = defineProps<{ loading: boolean; covering: boolean }>();
 const emit = defineEmits<{ (event: 'change', loading: boolean): void }>();
 
 // The loader slot is the binding's own view of "is this app up yet", so the stage header reads it
@@ -15,7 +15,8 @@ watch(
 </script>
 
 <template>
-  <div v-if="loading" class="veil">{{ t.crossingBoundary }}</div>
+  <div v-if="loading && covering" class="veil">{{ t.crossingBoundary }}</div>
+  <div v-else-if="loading" class="corner-tag">{{ t.streamingIn }}</div>
 </template>
 
 <style scoped>
@@ -39,8 +40,26 @@ watch(
   }
 }
 
+/* the streamed app's tag: pinned to a corner so the arriving chunks stay visible */
+.corner-tag {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  padding: 4px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-soft);
+  pointer-events: none;
+  animation: veil-pulse 1.6s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .veil {
+  .veil,
+  .corner-tag {
     animation: none;
   }
 }

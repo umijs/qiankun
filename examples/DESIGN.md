@@ -32,7 +32,7 @@ no red or green.
 
 Per-app accent (used only inside that app and for its sidebar dot):
 
-- react `#087EA4` · vue `#42B883` · webpack `#1C78C0` · purehtml `#B8860B`
+- react `#087EA4` · vue `#42B883` · webpack `#1C78C0` · purehtml `#B8860B` · streaming `#C2410C`
 
 These are the frameworks' own brand colors and are deliberately **not** folded into the logo
 palette: they are how the demo says "four different technology stacks", which is information,

@@ -11,7 +11,7 @@ const activeApp = computed(() => appByPath(currentPath.value));
 const home = import.meta.env.BASE_URL;
 
 /** the short form of each loading path, for the tag on the right of a nav item */
-const loadingTag = { 'esm sandbox': 'esm', classic: 'classic', 'never loads': '404' } as const;
+const loadingTag = { 'esm sandbox': 'esm', classic: 'classic', streamed: 'stream', 'never loads': '404' } as const;
 </script>
 
 <template>

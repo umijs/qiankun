@@ -1,0 +1,9 @@
+{
+  "name": "streaming",
+  "private": true,
+  "version": "0.0.0",
+  "description": "qiankun micro app whose entry HTML is streamed in paced chunks: the loading itself is the demo",
+  "scripts": {
+    "dev": "node server.mjs"
+  }
+}

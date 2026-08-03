@@ -41,6 +41,9 @@ const MICRO_APPS = [
   { dir: 'vue', name: 'vue', build: 'vite' },
   { dir: 'webpack', name: 'webpack', build: 'webpack' },
   { dir: 'purehtml', name: 'purehtml', build: 'copy', files: ['index.html', 'entry.js', 'vendor'] },
+  // its entry HTML is uploaded as an asset but *served* by a Pages Function that re-chunks it —
+  // see writePagesFunctions below
+  { dir: 'streaming', name: 'streaming', build: 'copy', files: ['index.html', 'entry.js'] },
 ];
 
 function run(command, args, cwd) {
@@ -136,6 +139,22 @@ function writePlatformFiles() {
   cpSync(join(examplesDir, '404.html'), join(siteDir, '404.html'));
 }
 
+/**
+ * The streamed example's whole point is server pacing, and Pages serves static assets in one
+ * flush — so its entry gets a Pages Function that replays the `<!--#flush:<ms>-->` markers over
+ * a streamed Response. `wrangler pages deploy` compiles the `functions/` directory it finds in
+ * its *working* directory (the repo root, both in CI and in the command above), which is why the
+ * function lands there and not inside `dist-examples/`. The directory is generated and
+ * gitignored; the source of truth stays with the example.
+ */
+function writePagesFunctions() {
+  const functionsDir = join(repoRoot, 'functions');
+  rmSync(functionsDir, { recursive: true, force: true });
+  mkdirSync(join(functionsDir, 'apps', 'streaming'), { recursive: true });
+  cpSync(join(examplesDir, 'streaming', 'pages-function.mjs'), join(functionsDir, 'apps', 'streaming', 'index.js'));
+  console.log('  functions/apps/streaming/index.js  (from examples/streaming/pages-function.mjs)');
+}
+
 function assertRoutesCovered() {
   for (const { dir, label } of SHELLS) {
     const routes = declaredRoutes(dir);
@@ -163,5 +182,6 @@ buildStandaloneSandbox();
 
 console.log('\nWriting Cloudflare Pages files');
 writePlatformFiles();
+writePagesFunctions();
 
 console.log(`\nSite ready at ${siteDir.replace(repoRoot + '/', '')}`);

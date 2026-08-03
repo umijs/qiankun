@@ -151,7 +151,16 @@ export default function Stage({ app }: StageProps) {
           // them in place rather than remounting.
           locale={locale}
           theme={theme}
-          loader={(mounting) => <StageVeil loading={mounting} onLoadingChange={setLoading} messages={m} />}
+          loader={(mounting) => (
+            <StageVeil
+              loading={mounting}
+              // the streamed app paints while it is still mounting — a covering veil would hide
+              // exactly what it demonstrates, so it gets a corner tag instead
+              covering={app.loadingPath !== 'streamed'}
+              onLoadingChange={setLoading}
+              messages={m}
+            />
+          )}
           errorBoundary={(error) => <StageFailure error={error} onFailedChange={setFailed} messages={m} />}
           wrapperClassName="min-h-[70vh] overflow-auto"
           className="min-h-[70vh]"
@@ -168,16 +177,26 @@ export default function Stage({ app }: StageProps) {
  */
 function StageVeil({
   loading,
+  covering,
   onLoadingChange,
   messages,
 }: {
   loading: boolean;
+  covering: boolean;
   onLoadingChange: (loading: boolean) => void;
   messages: Messages;
 }) {
   useEffect(() => onLoadingChange(loading), [loading, onLoadingChange]);
 
   if (!loading) return null;
+
+  if (!covering) {
+    return (
+      <div className="pointer-events-none absolute top-2 right-2 z-10 rounded-full border border-hairline bg-surface/90 px-2.5 py-1">
+        <span className="animate-pulse font-mono text-[10px] text-ink-soft">{messages.streamingIn}</span>
+      </div>
+    );
+  }
 
   return (
     <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface/80">

@@ -1,6 +1,6 @@
 # qiankun examples
 
-Two identical shells hosting the same four independent micro apps, every one running with the JS
+Two identical shells hosting the same five independent micro apps, every one running with the JS
 sandbox and runtime style isolation (`@scope`) explicitly enabled. Both mount them with `<MicroApp />` from our own
 UI bindings — dogfooded rather than bypassed: `main` is the React shell (`@qiankunjs/react`) and
 `vue-host` is the Vue one (`@qiankunjs/vue`). See [DESIGN.md](./DESIGN.md) for the shared design language.
@@ -16,6 +16,7 @@ They are deployed from `next` to **https://examples.qiankunjs.com** — see [Dep
 | webpack            | 7102 | React 19 + webpack 5 (`QiankunWebpackPlugin`) | classic (window library)         |
 | standalone-sandbox | 7103 | TypeScript + Vite 8                           | direct `@qiankunjs/sandbox` use |
 | purehtml           | 7104 | no build, vendored jQuery                     | classic (inline global)          |
+| streaming          | 7106 | no build, chunk-flushing Node server          | classic, entry HTML streamed     |
 
 ## Run
 
@@ -34,7 +35,7 @@ demo the in-repo code — rebuild packages (`pnpm build:packages`) after changin
 
 ## What each app demonstrates
 
-Every micro app implements the same "isolation lab":
+The framework apps implement the same "isolation lab":
 
 - **Window probe** — writes `window.__SANDBOX_PROBE__` inside its sandbox; the dashboard's
   host realm check proves the host window never sees it.
@@ -42,6 +43,18 @@ Every micro app implements the same "isolation lab":
 - **Style probe** — appends a `<style>` tinting `body`; with style isolation on, only the app's
   own area tints.
 - **Local state** — a framework-idiomatic counter that lives and dies with the app instance.
+
+The **streaming** app demonstrates something none of the others can: its loading. Its server
+(`examples/streaming/server.mjs`, zero dependencies) flushes the entry HTML in four paced chunks —
+`index.html` is split on `<!--#flush:<ms>-->` markers, the pacing living next to the content it
+delays — the way a server-side renderer emits markup as data becomes ready. qiankun's loader pipes
+the response through the same streaming parser the browser uses for a top-level document, so each
+chunk paints the moment it lands: the critical section is readable while the entry script has not
+even been *requested* yet. Inline marks stamp every chunk's arrival, and the entry script — flushed
+last on purpose — draws the resulting waterfall. Loaders that buffer the whole entry before
+rendering can only show a spinner for that window, which is why this app is also the one whose
+stage swaps the covering veil for a corner tag. Remounts replay from qiankun's warm cache and
+render at once; reload the page to watch the cold stream again.
 
 ## Language switching, and what it demonstrates
 
@@ -107,3 +120,7 @@ Two consequences worth knowing before you touch this:
 - `examples/404.html` ships to the site root deliberately. Without a top-level `404.html`, Cloudflare
   Pages treats the site as a single-page app and answers unmatched paths with the root shell at status
   200 — which would silently defeat the Vue shell's "Missing app" route.
+- The streaming app's pacing survives deployment through a Pages Function: the build script copies
+  `examples/streaming/pages-function.mjs` to `functions/apps/streaming/index.js` (repo root, where
+  `wrangler pages deploy` looks), and that function re-chunks the statically uploaded `index.html`
+  on the same `<!--#flush:<ms>-->` markers the dev server uses.
