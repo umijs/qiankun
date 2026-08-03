@@ -1,11 +1,6 @@
-import {
-  EsmSandboxEngine,
-  markNodeForNativePassthrough,
-  QiankunError,
-  type DocumentModule,
-  type ModuleNamespace,
-} from '@qiankunjs/shared';
+import { EsmSandboxEngine, QiankunError, type DocumentModule, type ModuleNamespace } from '@qiankunjs/shared';
 import { nativeDocument, nativeGlobal } from '../../consts';
+import { markNodeForNativePassthrough } from '../nativePassthrough';
 import { esmDestructurableGlobals } from '../esm-globals';
 import { globalsInES2015 } from '../globals';
 import { Membrane, type MembraneTarget } from '../membrane';

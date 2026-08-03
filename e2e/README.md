@@ -37,6 +37,7 @@ Suites map to qiankun's core promises:
 - `multi-instance` — same app twice in independent sandboxes, mixed classic + esm coexistence
 - `nested-sandbox` — qiankun inside qiankun: DOM ownership under chained document proxies (each app owns what its own container receives, including a node the outer app hands to the inner container)
 - `router-mode` — route-driven mount/unmount/switch including history back
+- `container-gate` — container occupancy serialization: waiting takeover, cross-app remount handoff, no-await races, mount/unmount-failure fallback release
 - `standalone-sandbox` — direct package use without qiankun/loader, including the no-`unsafe-eval` CSP path
 
 ## Browser matrix

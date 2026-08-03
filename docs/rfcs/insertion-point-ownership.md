@@ -186,3 +186,12 @@ const config = elementConfigs.get(ownerNode) ?? resolveConfigByPosition(ownerNod
 
 - **Q1(已定案)**:重归属 warning 无条件发,不做 dev gating —— 与 detached-container warning 的既有处理一致;该场景正常编排下不可达(F2),噪音风险可忽略。
 - **Q2**:D5 位置解析是否需要处理 Shadow DOM 边界(`getRootNode()` 跨越)?现状 qiankun 容器不使用 shadow root,倾向:不处理,遇到即视为无归属。
+
+## 后记(2026-07-27,容器占用闸门落地后的标记收敛)
+
+容器占用闸门(见 `container-occupancy-gate.md`)把共享容器的 DOM 写入全序化之后,本 RFC 拆出的两个标记按最小感知原则进一步收敛,盖章点与形态均有变化:
+
+- **效果位 `nativePassthroughNode`**:从 `@qiankunjs/shared` 移入 sandbox 包内部(`core/nativePassthrough.ts`,不再对外导出)。盖章点从 loadEntry 闭包移至 sandbox 自己的 pipeline transformer(`controller.nodeTransformer`,与 dynamicAppend 所用裸变体构成双闭包,以调用点身份区分,无调用方传参)。loader 对该标记零感知。仍为 `Symbol.for` 注册符号:unmount 链中途失败(SKIP_BECAUSE_BROKEN)会留下残留实例 patch,跨副本互认在该角落仍然必要。
+- **出处位 `loaderStreamedNode`**:**整体退役**。其唯一消费点(mount 时的 head 供给裁决)改由编排层显式声明——`createSandbox` 新增 `provisionContainerHead` 选项(默认 `true`,standalone 自建;qiankun 的 loadApp 传 `false`,head 由 entry HTML 经流式管线生成)。「容器是否由 loader 喂养」本就是编排者的静态知识,不必刻在 DOM 上再全树扫描回来。
+
+本 RFC 正文中关于「出处位保留、由 loadEntry 闭包盖两个章」的表述以本后记为准。

@@ -1,8 +1,7 @@
 import type { IsolationPluginConfig } from '../../types';
 import { createSandbox } from '../../../core/sandbox';
-import { containsLoaderStreamedNode } from '../../../core/sandbox/container';
+import { isNativePassthroughNode, markNodeForNativePassthrough } from '../../../core/nativePassthrough';
 import type { SandboxConfig } from '../types';
-import { markLoaderStreamedNode, markNodeForNativePassthrough } from '@qiankunjs/shared';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const identityNodeTransformer: IsolationPluginConfig['nodeTransformer'] = (node) => node;
@@ -132,21 +131,25 @@ describe.sequential('insertion-point attribution', () => {
     expect(getSandboxConfigOf(controller).dynamicStyleSheetElements).not.toContain(stylesheet);
   });
 
-  it('keeps the passthrough effect mark invisible to streamed-content detection', async () => {
+  it('stamps the controller transformer output while the dynamic pipeline output stays bare', async () => {
     const { container, controller } = createController();
     await controller.mount(container);
 
-    // an internal pipeline node (e.g. a compartment blob script) carries the effect mark only
-    const blobScript = document.createElement('script');
-    markNodeForNativePassthrough(blobScript);
-    container.appendChild(blobScript);
-    expect(containsLoaderStreamedNode(container)).toBe(false);
+    // the controller's public transformer is the pipeline variant: its output is final
+    // pipeline product and passes the patched mount points natively
+    const pipelineScript = document.createElement('script');
+    pipelineScript.textContent = 'window.pipelineOutput = true;';
+    const transformed = controller.nodeTransformer(pipelineScript, { fetch: window.fetch });
+    expect(isNativePassthroughNode(transformed)).toBe(true);
 
-    const streamedNode = document.createElement('div');
-    markNodeForNativePassthrough(streamedNode);
-    markLoaderStreamedNode(streamedNode);
-    container.appendChild(streamedNode);
-    expect(containsLoaderStreamedNode(container)).toBe(true);
+    // the dynamic-append pipeline transpiles through the bare variant: its output must stay
+    // unmarked so a later re-insertion re-enters the pipeline for ledger bookkeeping
+    const stylesheet = document.createElement('link');
+    stylesheet.rel = 'stylesheet';
+    stylesheet.setAttribute('href', 'data:text/css,.dynamic{}');
+    container.appendChild(stylesheet);
+    expect(getSandboxConfigOf(controller).dynamicStyleSheetElements).toContain(stylesheet);
+    expect(isNativePassthroughNode(stylesheet)).toBe(false);
   });
 
   it('scopes insertRule by the stylesheet current DOM position', async () => {

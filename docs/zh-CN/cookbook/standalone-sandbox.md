@@ -205,6 +205,7 @@ cleanup();
 ```ts
 const controller = createSandbox(appName, {
   container,
+  provisionContainerHead,
   globals,
   incubatorContext,
   modules,
@@ -222,6 +223,7 @@ const controller = createSandbox(appName, {
 | 配置 | 用途 |
 | --- | --- |
 | `container` | 开启 DOM 约束，可传元素或 getter |
+| `provisionContainerHead` | mount 时容器内缺少 `<qiankun-head>` 是否由沙箱自动补建，默认 `true`；容器结构由外部管线（如 qiankun 的流式 loader）从 entry HTML 生成时传 `false` |
 | `globals` | 向沙箱全局对象补充值或属性描述符 |
 | `incubatorContext` | 指定全局读取向下透传时使用的宿主 window |
 | `modules` | 提供预置模块表 |
@@ -255,6 +257,8 @@ const controller = createSandbox('trusted-widget', {
 上面这个“原样返回节点”的 transformer 只是风险示例，不是推荐配置。它会跳过经典脚本包装，动态插入的脚本可能直接访问宿主 window；默认的样式转换也会一并失效。只有在自定义实现提供了同等保护，或相关资源全部可信时，才应采用这种配置。
 
 如果外部 HTML 管线也要在节点落入 DOM 前执行转换，应使用 `controller.nodeTransformer`，不要直接复用 options 中未经处理的回调。控制器暴露的版本已经注入 Compartment、fetch、经典脚本包装器和样式隔离配置。
+
+它的输出还带有一层归属语义：控制器 transformer 会把节点标记为「管线成品」，沙箱打过补丁的插入点会原样放行，不再把它二次送入动态转译管线。特别地，经它处理的 `<style>` / `<link>` **不会**进入沙箱的动态样式台账——`unmount()` 后它会留在原处，之后的 `mount()` 也不会自动补挂。它的生命周期归属于准备它的管线：如果你的嵌入场景会反复 unmount / remount，请自行移除或重新插入。而沙箱内代码在运行时动态注入的样式（走补丁后的 DOM 方法、不带标记）仍保有完整的台账生命周期——unmount 时移除、remount 时恢复。
 
 ## 了解隔离边界
 

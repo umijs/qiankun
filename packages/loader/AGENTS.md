@@ -55,7 +55,7 @@ Nodes are parsed/transformed in a detached document first, then moved to live DO
 
 ### writable-dom fork discipline
 
-`writable-dom/` is vendored from marko-js/writable-dom and periodically re-synced; every deviation carries a `[qiankun]` comment so syncs can re-apply them mechanically. Changes there demand deliberate thought and must stay **generic**: general-purpose hooks or upstream bug fixes only — never qiankun-specific semantics coupled to other packages (no `@qiankunjs/*` imports, no sandbox marks, no downstream contract knowledge). The fork's one integration seam is the `assetTransformer` callback (every element passes through it right before insertion); downstream bookkeeping — e.g. the pipeline marks the sandbox patcher consumes — belongs in the callback `loadEntry` provides (`index.ts`), on the caller's side of that seam.
+`writable-dom/` is vendored from marko-js/writable-dom and periodically re-synced; every deviation carries a `[qiankun]` comment so syncs can re-apply them mechanically. Changes there demand deliberate thought and must stay **generic**: general-purpose hooks or upstream bug fixes only — never qiankun-specific semantics coupled to other packages (no `@qiankunjs/*` imports, no sandbox marks, no downstream contract knowledge). The fork's one integration seam is the `assetTransformer` callback (every element passes through it right before insertion); caller bookkeeping belongs in the callback `loadEntry` provides (`index.ts`), on the caller's side of that seam. The loader itself carries no sandbox semantics either: a sandbox-provided `nodeTransformer` stamps its own output (e.g. the native-passthrough mark its patcher consumes) — the loader just routes every element through whatever transformer it was given.
 
 ## ANTI-PATTERNS
 
@@ -67,5 +67,8 @@ Nodes are parsed/transformed in a detached document first, then moved to live DO
 
 ```typescript
 export { loadEntry, type LoaderOpts } from './index';
-// LoaderOpts = { fetch, compartment?, nodeTransformer?, streamTransformer? } & BaseTranspilerOpts
+// LoaderOpts = { fetch, compartment?, nodeTransformer?, streamTransformer?, onDOMStreamSettled? } & BaseTranspilerOpts
+// onDOMStreamSettled: notified exactly once when the DOM-write phase is over (stream piped, errored,
+// or never started) — distinct from the returned promise, which can settle at the entry script's
+// onload while tail nodes are still streaming; qiankun's container gate keys its release on it
 ```

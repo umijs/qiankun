@@ -5,13 +5,7 @@ import type {
   NodeTransformer,
   ScriptTranspilerOpts,
 } from '@qiankunjs/shared';
-import {
-  Deferred,
-  markLoaderStreamedNode,
-  markNodeForNativePassthrough,
-  prepareDeferredQueue,
-  QiankunError,
-} from '@qiankunjs/shared';
+import { Deferred, prepareDeferredQueue, QiankunError } from '@qiankunjs/shared';
 import { createTagTransformStream } from './TagTransformStream';
 import WritableDOMStream from './writable-dom';
 
@@ -29,6 +23,15 @@ type Entry = HTMLEntry;
 export type LoaderOpts = {
   streamTransformer?: () => TransformStream<string, string>;
   nodeTransformer?: NodeTransformer;
+  /**
+   * Notified exactly once when the entry DOM-write phase is over — the html stream fully piped
+   * AND its post-stream evaluations (module scripts, classic defer scripts) finished, or the
+   * stream errored, or it never started at all. Distinct from the returned promise, which may
+   * settle as early as the entry script's onload while the stream is still writing tail nodes;
+   * callers gating container occupancy (qiankun's container gate) key their release on this
+   * signal, so it must outlast everything that still writes into the container.
+   */
+  onDOMStreamSettled?: () => void;
 } & Omit<BaseTranspilerOpts, 'classicScriptTransformer' | 'compartment' | 'moduleResolver'> & {
     /** Sandbox-owned structural host facade; never depend on its concrete implementation. */
     compartment?: CompartmentLoaderFacade;
@@ -54,13 +57,28 @@ export async function loadEntry<T>(
   container: HTMLElement,
   opts: LoaderOpts,
 ): Promise<T | undefined> {
-  const { fetch, streamTransformer, compartment, nodeTransformer } = opts;
+  const { fetch, streamTransformer, compartment, nodeTransformer, onDOMStreamSettled } = opts;
   const classicScriptTransformer = compartment
     ? (source: string, sourceURL?: string) => compartment.transformClassicScript(source, sourceURL)
     : undefined;
 
+  let domStreamSettledNotified = false;
+  const notifyDOMStreamSettled = () => {
+    if (domStreamSettledNotified) return;
+    domStreamSettledNotified = true;
+    onDOMStreamSettled?.();
+  };
+
   const entryUrl = typeof entry === 'string' ? entry : entry.url;
-  const res = typeof entry === 'string' ? await fetch(entry) : entry.res;
+  let res: Response;
+  try {
+    res = typeof entry === 'string' ? await fetch(entry) : entry.res;
+  } catch (e) {
+    // the stream never started, but the DOM-write phase is over all the same
+    notifyDOMStreamSettled();
+    throw e;
+  }
+
   if (res.body) {
     let foundEntryScript = false;
     let foundEsmEntryScript = false;
@@ -75,36 +93,28 @@ export async function loadEntry<T>(
         entryScriptLoadedDeferred.resolve({} as T);
       }
     };
-    /*
-     * ESM entry branch (ESM sandbox RFC §7): module scripts never write to window, so instead of the
-     * latestSetProp mechanism the lifecycles are taken from the entry module namespace resolved by the
-     * engine, and any module graph error (sync throw or TLA rejection) is plumbed back to the deferred
-     * so it reaches loadApp / single-spa addErrorHandler instead of vanishing as an unhandledrejection.
-     */
-    const onEsmEntry = (namespacePromise: Promise<Record<string, unknown> | undefined>) => {
-      namespacePromise.then(
-        (ns) => {
-          if (!entryScriptLoadedDeferred.isSettled()) {
-            entryScriptLoadedDeferred.resolve(ns as T);
-          }
-        },
-        (e) => {
-          if (!entryScriptLoadedDeferred.isSettled()) {
-            entryScriptLoadedDeferred.reject(e);
-          }
-        },
-      );
-    };
 
     // defer scripts must wait until the entry HTML loaded
     const deferQueue: Array<Deferred<void>> = [];
     const { deferred: entryHTMLLoadedDeferred, queue: queueEntryHTMLDeferred } = prepareDeferredQueue(deferQueue);
     queueEntryHTMLDeferred();
 
-    let readableStream = res.body.pipeThrough(new TextDecoderStream());
+    // classic defer scripts evaluate after the stream ends — their completion is part of the
+    // DOM-write phase the settle signal guards (collected in the walk callback below)
+    const deferScriptExecutions: Array<Promise<void>> = [];
 
-    if (streamTransformer) {
-      readableStream = readableStream.pipeThrough(streamTransformer());
+    let readableStream: ReadableStream<string>;
+    try {
+      readableStream = res.body.pipeThrough(new TextDecoderStream());
+
+      if (streamTransformer) {
+        readableStream = readableStream.pipeThrough(streamTransformer());
+      }
+    } catch (e) {
+      // wiring the stream failed synchronously (a throwing streamTransformer factory, a locked
+      // body from a custom fetch) — the DOM-write phase is over without ever starting
+      notifyDOMStreamSettled();
+      throw e;
     }
 
     void readableStream
@@ -119,23 +129,18 @@ export async function loadEntry<T>(
       .pipeTo(
         new WritableDOMStream(container, null, (clone) => {
           /*
-           * Every element the walk is about to insert flows through this callback, which makes it
-           * the loader-side seam for the qiankun pipeline marks (writable-dom itself stays free of
-           * downstream knowledge): the effect mark tells the sandbox's patched container methods
-           * to let the node through natively; the provenance mark lets the sandbox detect that a
-           * container holds streamed entry content. Preload hints stamped here pass the patched
-           * methods untouched too — they are the walk's own transient nodes.
+           * Every element the walk is about to insert flows through this callback (writable-dom
+           * itself stays free of downstream knowledge) and gets routed through the caller-provided
+           * transformer. A sandbox-provided transformer marks its own output for native
+           * passthrough there — the loader itself carries no sandbox semantics.
            */
-          markNodeForNativePassthrough(clone);
-          markLoaderStreamedNode(clone);
-
           let transformerOpts: AssetsTranspilerOpts = {
             classicScriptTransformer,
             compartment,
             fetch,
           };
 
-          let queueDeferScript: () => void;
+          let queueDeferScript: () => void = () => {};
           const deferScriptMode = isDeferScript(clone as unknown as HTMLScriptElement);
           if (deferScriptMode) {
             const { deferred, prevDeferred, queue } = prepareDeferredQueue(deferQueue);
@@ -153,7 +158,24 @@ export async function loadEntry<T>(
 
           // the script have no src attribute after transpile, indicating that the script needs to wait for the src to be filled
           if (deferScriptMode && !script.hasAttribute('src')) {
-            queueDeferScript!();
+            queueDeferScript();
+          }
+
+          // A classic defer script evaluates after the stream ends, so its load/error event is
+          // the tail of the DOM-write phase (module/importmap scripts are engine-neutralized —
+          // they never fire load and their evaluation is awaited via importDocumentModules).
+          if (deferScriptMode && script.dataset.esm !== 'true' && !script.type.includes('importmap')) {
+            deferScriptExecutions.push(
+              new Promise<void>((resolve) => {
+                const settleExecution = () => {
+                  script.removeEventListener('load', settleExecution);
+                  script.removeEventListener('error', settleExecution);
+                  resolve();
+                };
+                script.addEventListener('load', settleExecution);
+                script.addEventListener('error', settleExecution);
+              }),
+            );
           }
 
           /*
@@ -210,7 +232,7 @@ export async function loadEntry<T>(
           return transformedNode;
         }),
       )
-      .then(() => {
+      .then(async () => {
         // module scripts execute after the entry HTML finishes streaming (mirroring their native
         // deferred semantics), in document order, driven by the engine
         const namespacePromise = compartment?.importDocumentModules() ?? Promise.resolve(undefined);
@@ -229,7 +251,17 @@ export async function loadEntry<T>(
             (error) => entryScriptLoadedDeferred.reject(error),
           );
         } else if (foundEsmEntryScript) {
-          onEsmEntry(namespacePromise);
+          /*
+           * ESM entry branch (ESM sandbox RFC §7): module scripts never write to window, so instead of the
+           * latestSetProp mechanism the lifecycles are taken from the entry module namespace resolved by the
+           * engine, and any module graph error (sync throw or TLA rejection) is plumbed back to the deferred
+           * so it reaches loadApp / single-spa addErrorHandler instead of vanishing as an unhandledrejection.
+           * (Deferred settles are first-wins, so the capabilities can be passed as plain callbacks.)
+           */
+          (namespacePromise as Promise<T | undefined>).then(
+            entryScriptLoadedDeferred.resolve,
+            entryScriptLoadedDeferred.reject,
+          );
         } else {
           // Classic entry drives the lifecycle deferred, but stray module scripts may coexist
           // with it — observe their graph failures so they surface as a console error instead
@@ -240,14 +272,24 @@ export async function loadEntry<T>(
         }
 
         entryHTMLLoadedDeferred.resolve();
+
+        // The DOM-write phase does not end with the last streamed byte: the module evaluation
+        // above and the classic defer scripts (unblocked by the resolve right before) both run
+        // after it and may still write into the container — dynamic style injection included.
+        // The settle signal keys occupancy release, so it must outlast them, or a gated
+        // successor would interleave with the tail writes.
+        await namespacePromise.catch(() => undefined);
+        await Promise.allSettled(deferScriptExecutions);
       })
       .catch((e) => {
         entryScriptLoadedDeferred.reject(e);
         entryHTMLLoadedDeferred.reject(e);
-      });
+      })
+      .finally(notifyDOMStreamSettled);
 
     return entryScriptLoadedDeferred.promise;
   }
 
+  notifyDOMStreamSettled();
   throw new QiankunError(`The response body of entry ${entryUrl} is empty!`);
 }

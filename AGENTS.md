@@ -42,6 +42,8 @@ qiankun/
 3. **loader** — `loadEntry(entry, container, opts)` streams the HTML entry through `writable-dom`, virtualizing `<head>` → `<qiankun-head>` and running each node through a `nodeTransformer`.
 4. **transpilers** (`shared/assets-transpilers`) rewrite each script/link/style node before it hits live DOM.
 
+Micro apps sharing one container element take FIFO turns for their DOM writes through the **container occupancy gate** (`core/containerOccupancy.ts`, two critical sections: load-phase streaming and mount→unmount; see `docs/rfcs/container-occupancy-gate.md`).
+
 Two execution paths, chosen per script type:
 
 - **Classic** (`<script entry>`, UMD/global): source is wrapped and run via a **blob URL** scoped to the sandbox membrane. The app's export = `sandbox.latestSetProp` (the last global the entry script set).

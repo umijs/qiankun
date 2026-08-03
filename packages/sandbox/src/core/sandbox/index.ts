@@ -15,13 +15,9 @@ import {
   type StyleIsolationOpts,
 } from '@qiankunjs/shared';
 import type { CompartmentGlobals, CompartmentOptions } from '../compartment';
+import { markNodeForNativePassthrough } from '../nativePassthrough';
 import { StandardSandbox } from './StandardSandbox';
-import {
-  containsLoaderStreamedNode,
-  createStyleIsolationOpts,
-  ensureSandboxContainerHead,
-  prepareSandboxContainerName,
-} from './container';
+import { createStyleIsolationOpts, ensureSandboxContainerHead, prepareSandboxContainerName } from './container';
 import type { Sandbox } from './types';
 
 export type { Sandbox };
@@ -31,6 +27,15 @@ export { prepareSandboxContainer, type SandboxContainerPreparation } from './con
 export interface CreateSandboxOptions {
   /** Providing a container enables DOM containment and dynamic asset interception. */
   container?: HTMLElement | (() => HTMLElement);
+  /**
+   * Whether the sandbox provisions a virtual `<qiankun-head>` in the container at mount time when
+   * none exists. Defaults to true — a standalone embedder mounts on a plain container and the
+   * sandbox must self-provision the head its document contract relies on. Orchestrators whose
+   * entry pipeline materializes the head from the entry HTML (qiankun's streaming loader rewrites
+   * `<head>` to `<qiankun-head>` in-stream) pass false: the entry decides whether a head exists,
+   * and the sandbox must not mutate container structure it does not own.
+   */
+  provisionContainerHead?: boolean;
   /** The host context that incubates this sandbox (see the ShadowRealm proposal's "incubator realm"). */
   incubatorContext?: WindowProxy;
   globals?: CompartmentGlobals;
@@ -56,7 +61,12 @@ export interface CreateSandboxOptions {
 
 export interface SandboxController {
   instance: Sandbox;
-  /** The fully configured transformer shared by loaders and dynamic DOM interception. */
+  /**
+   * The fully configured transformer for nodes an owner pipeline feeds into this sandbox — the
+   * entry loader's streaming walk, or an embedder preparing a node itself. Its output is final
+   * pipeline product: it is marked for native passthrough, so the sandbox's patched mount points
+   * insert it untouched instead of routing it through the dynamic transpilation pipeline again.
+   */
   nodeTransformer: NodeTransformer;
   styleIsolation?: StyleIsolationOpts;
   mount(container?: HTMLElement): Promise<void>;
@@ -118,6 +128,7 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
     modules = compartmentOptions.modules,
     nodeTransformer: configuredNodeTransformer,
     plugins = [],
+    provisionContainerHead = true,
     resolveHook = compartmentOptions.resolveHook,
     styleIsolation: styleIsolationEnabled = false,
   } = opts;
@@ -150,7 +161,7 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
   };
   const prepareContainerForMount = (container: HTMLElement): void => {
     prepareContainerName(container);
-    if (!container.querySelector(qiankunHeadTagName) && !containsLoaderStreamedNode(container)) {
+    if (provisionContainerHead && !container.querySelector(qiankunHeadTagName)) {
       const { cleanup } = ensureSandboxContainerHead(container);
       const cleanups = containerHeadCleanups.get(container) ?? [];
       cleanups.push(cleanup);
@@ -198,7 +209,7 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
   const baseNodeTransformer: NodeTransformer =
     configuredNodeTransformer ??
     ((node, transformerOpts) => transpileAssets(node, nativeDocument.baseURI, transformerOpts));
-  const nodeTransformer: NodeTransformer = (node, transformerOpts) => {
+  const transformNode: NodeTransformer = (node, transformerOpts) => {
     // The JS-only preset owns no container contract, even when a mount received one.
     const container = hasContainer ? getConfiguredContainer() : undefined;
     if (container) prepareContainerName(container);
@@ -210,13 +221,27 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
       styleIsolation,
     });
   };
+  /*
+   * Two views of one transformer, distinguished by call-site identity instead of caller-passed
+   * flags. The pipeline variant is the controller's public transformer: whoever runs a node
+   * through it (the entry loader's streaming walk, an embedder preparing a node itself) holds
+   * finished pipeline output, so it is stamped for native passthrough and the patched mount
+   * points let it through untouched. The dynamic-append patcher gets the bare variant through
+   * the plugin config: its output must NOT carry the mark, or an app re-inserting an already
+   * transpiled node would skip the ledger bookkeeping that remounts replay.
+   */
+  const pipelineNodeTransformer: NodeTransformer = (node, transformerOpts) => {
+    const transformedNode = transformNode(node, transformerOpts);
+    markNodeForNativePassthrough(transformedNode);
+    return transformedNode;
+  };
   const pluginContext: IsolationPluginContext = {
     compartment: sandbox,
     appName,
     getContainer: getConfiguredContainer,
     config: {
       fetch,
-      nodeTransformer,
+      nodeTransformer: transformNode,
       styleIsolation,
     },
   };
@@ -405,7 +430,7 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
 
   return {
     instance: sandbox,
-    nodeTransformer,
+    nodeTransformer: pipelineNodeTransformer,
     styleIsolation,
 
     /** Permanently release plugin side effects and the underlying Compartment. */

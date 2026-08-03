@@ -101,6 +101,26 @@ describe('standalone sandbox public journey', () => {
     expect(container.hasAttribute('data-name')).toBe(false);
   });
 
+  it('provisions no head when the embedder pipeline owns the container structure', async () => {
+    const container = appendContainer();
+    const controller = createSandbox('standalone-external-head', { container, provisionContainerHead: false });
+
+    // the orchestrator (e.g. qiankun's streaming loader) decides whether a head exists —
+    // an empty container stays structurally untouched at mount
+    await controller.mount();
+    expect(container.querySelector('qiankun-head')).toBeNull();
+    await controller.unmount();
+
+    // a head materialized by that pipeline is picked up as-is and never removed by dispose
+    const externalHead = document.createElement('qiankun-head');
+    container.appendChild(externalHead);
+    await controller.mount();
+    expect(container.querySelector('qiankun-head')).toBe(externalHead);
+
+    await controller.dispose();
+    expect(container.querySelector('qiankun-head')).toBe(externalHead);
+  });
+
   it('resolves a container getter again when remounting', async () => {
     const firstContainer = appendContainer();
     const secondContainer = appendContainer();

@@ -1,4 +1,4 @@
-import { isLoaderStreamedNode, type StyleIsolationOpts } from '@qiankunjs/shared';
+import { type StyleIsolationOpts } from '@qiankunjs/shared';
 import { nativeDocument, qiankunHeadTagName } from '../../consts';
 
 export interface SandboxContainerPreparation {
@@ -22,10 +22,6 @@ const namePreparationStates = new WeakMap<HTMLElement, NamePreparationState>();
 
 export function createStyleIsolationOpts(appName: string): StyleIsolationOpts {
   return { appName, scopeRoot: `[data-name="${appName}"]` };
-}
-
-export function containsLoaderStreamedNode(container: HTMLElement): boolean {
-  return Array.from(container.querySelectorAll('*')).some(isLoaderStreamedNode);
 }
 
 export function ensureSandboxContainerHead(container: HTMLElement): {
