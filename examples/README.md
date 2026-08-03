@@ -95,6 +95,10 @@ Pages project `qiankun-examples`, driven by
 examples consume the workspace packages via `workspace:*`, a change under `packages/**` redeploys them
 too — the deployed site always shows the current runtime.
 
+A pull request into `next` that touches `examples/**` (or the site build script) gets a **preview
+deployment** on a per-branch alias URL — surfaced in the workflow run's summary — without touching
+production. Fork PRs are skipped: they cannot read the Cloudflare credentials.
+
 `scripts/build-examples-site.mjs` aggregates every app into one static site. Locally:
 
 ```bash

@@ -11,15 +11,30 @@ on:
       - "examples/**"
       - "scripts/build-examples-site.mjs"
       - ".github/workflows/cloudflare-examples.yml"
+  # PRs into next that change the examples get a preview deployment: `wrangler pages deploy`
+  # with a non-production branch name is all it takes, Pages hosts it under a branch alias and
+  # production stays untouched. Deliberately narrower than the push paths — packages/** PRs
+  # would preview on every core change, and what a preview is for is reviewing the examples
+  # themselves; after merge the production deploy covers the packages case anyway.
+  pull_request:
+    branches:
+      - next
+    paths:
+      - "examples/**"
+      - "scripts/build-examples-site.mjs"
+      - ".github/workflows/cloudflare-examples.yml"
   workflow_dispatch:
 
-# Avoid overlapping deploys stepping on each other
+# Avoid overlapping deploys stepping on each other — per ref, so a PR's preview and the
+# production deploy never cancel each other. `head_ref` is only set on pull_request runs.
 concurrency:
-  group: cloudflare-examples
+  group: cloudflare-examples-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   deploy:
+    # fork PRs cannot read the Cloudflare secrets below — skip cleanly instead of failing
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -51,4 +66,17 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx -y wrangler@4 pages deploy dist-examples --project-name=qiankun-examples --branch=${{ github.ref_name }}
+        # `shell: bash` for pipefail: without it the tee would swallow a failed deploy.
+        # On pull_request runs `ref_name` is the useless "<n>/merge", hence `head_ref` first.
+        shell: bash
+        run: npx -y wrangler@4 pages deploy dist-examples --project-name=qiankun-examples --branch=${{ github.head_ref || github.ref_name }} | tee deploy.log
+
+      # The alias URL wrangler prints is the stable per-branch one — surface it where a
+      # reviewer looks, instead of making them dig through the deploy log.
+      - name: Surface the preview URL
+        if: github.event_name == 'pull_request'
+        run: |
+          {
+            echo "### Preview deployment"
+            grep -Eo 'https://[^ ]+\.pages\.dev' deploy.log | sort -u | sed 's/^/- /' || true
+          } >> "$GITHUB_STEP_SUMMARY"
