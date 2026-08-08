@@ -11,6 +11,31 @@
   // pollute the sandboxed window; must never be visible from the main realm
   global.__CLASSIC_POLLUTION__ = 'from-sub-classic';
 
+  if (global.__E2E_STORAGE_PROBE__) {
+    var storageProbe = String(global.__E2E_STORAGE_PROBE__);
+    localStorage.setItem('probe', storageProbe);
+    localStorage.namedProbe = storageProbe + '-named';
+    localStorage.deleteProbe = 'remove-me';
+    var namedDescriptor = Object.getOwnPropertyDescriptor(localStorage, 'namedProbe');
+    var deleteSucceeded = delete localStorage.deleteProbe;
+
+    global.__E2E_STORAGE_RESULT__ = localStorage.getItem('probe');
+    global.__E2E_STORAGE_NAMED_RESULT__ = localStorage.namedProbe;
+    global.__E2E_STORAGE_META_RESULT__ = [
+      'has:' + String('namedProbe' in localStorage),
+      'keys:' + Object.keys(localStorage).sort().join(','),
+      'descriptor:' + String(namedDescriptor && namedDescriptor.value),
+      'length:' + String(localStorage.length),
+      'indexed:' +
+        Array.from({ length: localStorage.length }, function (_, index) {
+          return localStorage.key(index);
+        })
+          .sort()
+          .join(','),
+      'deleted:' + String(deleteSucceeded && !('deleteProbe' in localStorage)),
+    ].join('|');
+  }
+
   global['sub-classic'] = {
     bootstrap: function () {
       bootstrapCount++;
@@ -31,6 +56,18 @@
         // read a main-realm global through the sandbox: must be visible inside it
         '<p data-testid="classic-main-global">' +
         String(global.__MAIN_GLOBAL__) +
+        '</p>' +
+        '<p data-testid="classic-extra-global">' +
+        String(global.__E2E_CLASSIC_EXTRA__ ?? 'missing') +
+        '</p>' +
+        '<p data-testid="storage-plugin-result">' +
+        String(global.__E2E_STORAGE_RESULT__ ?? 'missing') +
+        '</p>' +
+        '<p data-testid="storage-plugin-named-result">' +
+        String(global.__E2E_STORAGE_NAMED_RESULT__ ?? 'missing') +
+        '</p>' +
+        '<p data-testid="storage-plugin-meta-result">' +
+        String(global.__E2E_STORAGE_META_RESULT__ ?? 'missing') +
         '</p>';
       return Promise.resolve();
     },

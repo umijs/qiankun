@@ -53,7 +53,19 @@ export type ModuleRewriteResult = {
   needsRuntime: boolean;
 };
 
-type Edit = { start: number; end: number; replacement: string };
+type TextEdit = { kind: 'text'; start: number; end: number; replacement: string };
+type DynamicImportEdit = {
+  kind: 'dynamic-import';
+  start: number;
+  end: number;
+  argumentStart: number;
+  argumentEnd: number;
+};
+type Edit = TextEdit | DynamicImportEdit;
+type EditNode = { edit: Edit; children: EditNode[] };
+
+const stripTrailingComma = (source: string): string =>
+  source.replace(/,((?:(?:\s+)|(?:\/\*[\s\S]*?\*\/)|(?:\/\/[^\r\n]*(?:\r?\n|$)))*)$/, '$1');
 
 export function rewriteModule(opts: RewriteModuleOpts): ModuleRewriteResult {
   const { source, url, instanceKey, globalsBaseSet, resolveSpecifier, excludedNames } = opts;
@@ -69,7 +81,7 @@ export function rewriteModule(opts: RewriteModuleOpts): ModuleRewriteResult {
   for (const imp of imports) {
     if (imp.d === -2) {
       // import.meta: replace the whole [s, e) token span, never a naive string replace (RFC §2/§3)
-      edits.push({ start: imp.s, end: imp.e, replacement: '__qk_import_meta' });
+      edits.push({ kind: 'text', start: imp.s, end: imp.e, replacement: '__qk_import_meta' });
       usesImportMeta = true;
     } else if (imp.d === -1) {
       // static import or re-export, both carry their specifier span in the imports array
@@ -82,7 +94,12 @@ export function rewriteModule(opts: RewriteModuleOpts): ModuleRewriteResult {
       const resolved = resolveSpecifier(specifier, url);
       // still rewrite the specifier to the synthetic form; the `with { type }` clause that follows the
       // specifier span stays untouched, so a typed import keeps its attributes (RFC §14)
-      edits.push({ start: imp.s, end: imp.e, replacement: buildSyntheticSpecifier(instanceKey, resolved) });
+      edits.push({
+        kind: 'text',
+        start: imp.s,
+        end: imp.e,
+        replacement: buildSyntheticSpecifier(instanceKey, resolved),
+      });
       if (imp.a > -1) {
         typedDeps.add(resolved);
       } else {
@@ -110,8 +127,13 @@ export function rewriteModule(opts: RewriteModuleOpts): ModuleRewriteResult {
       // dynamic import: `import(x)` -> `__qk_dynamic_import(x, __qk_import_meta.url)`.
       // imp.d is the exact index of the `(` (robust against a comment between the keyword and paren);
       // rewrite the whole [ss, se) call so a trailing comma cannot produce an elided argument.
-      const inner = source.slice(imp.d + 1, imp.se - 1).replace(/,\s*$/, '');
-      edits.push({ start: imp.ss, end: imp.se, replacement: `__qk_dynamic_import(${inner}, __qk_import_meta.url)` });
+      edits.push({
+        kind: 'dynamic-import',
+        start: imp.ss,
+        end: imp.se,
+        argumentStart: imp.d + 1,
+        argumentEnd: imp.se - 1,
+      });
       usesImportMeta = true;
     }
   }
@@ -161,22 +183,52 @@ export function rewriteModule(opts: RewriteModuleOpts): ModuleRewriteResult {
     }
   }
 
-  // assemble once in ascending order: push each untouched gap then the replacement (O(n) instead of
-  // O(edits × length) re-slicing). Overlapping edits — only possible with nested dynamic import like
-  // `import(import(x))`, where the outer [ss,se) already contains the inner call — drop the inner edit
-  // (the inner import stays native; a rare, benign edge, never a corrupted splice).
-  edits.sort((a, b) => a.start - b.start || a.end - b.end);
-  const parts: string[] = [header];
-  let cursor = 0;
-  for (const edit of edits) {
-    if (edit.start < cursor) continue;
-    parts.push(source.slice(cursor, edit.start), edit.replacement);
-    cursor = edit.end;
-  }
-  parts.push(source.slice(cursor));
+  // Build a containment tree before rendering. Dynamic-import spans can contain other dynamic imports
+  // or import.meta tokens; composing their children into the parent replacement keeps every nested
+  // import on the runtime bridge instead of silently leaving the inner call native.
+  edits.sort((a, b) => a.start - b.start || b.end - a.end);
+  const editRoots: EditNode[] = [];
+  const editStack: EditNode[] = [];
+  edits.forEach((edit) => {
+    while (editStack.length > 0 && edit.start >= editStack[editStack.length - 1].edit.end) {
+      editStack.pop();
+    }
+
+    const node: EditNode = { edit, children: [] };
+    if (editStack.length > 0) {
+      const parent = editStack[editStack.length - 1];
+      if (edit.end > parent.edit.end) {
+        throw new QiankunError(`partially overlapping module rewrite spans in ${url}`);
+      }
+      parent.children.push(node);
+    } else {
+      editRoots.push(node);
+    }
+    editStack.push(node);
+  });
+
+  const renderRange = (start: number, end: number, nodes: EditNode[]): string => {
+    const parts: string[] = [];
+    let cursor = start;
+    nodes.forEach(({ edit, children }) => {
+      parts.push(source.slice(cursor, edit.start));
+      if (edit.kind === 'text') {
+        if (children.length > 0) {
+          throw new QiankunError(`unexpected nested module rewrite span in ${url}`);
+        }
+        parts.push(edit.replacement);
+      } else {
+        const inner = stripTrailingComma(renderRange(edit.argumentStart, edit.argumentEnd, children));
+        parts.push(`__qk_dynamic_import(${inner}, __qk_import_meta.url)`);
+      }
+      cursor = edit.end;
+    });
+    parts.push(source.slice(cursor, end));
+    return parts.join('');
+  };
 
   const injectedLines = header ? (header.match(/\n/g)?.length ?? 0) : 0;
-  let code = parts.join('');
+  let code = header + renderRange(0, source.length, editRoots);
   code = remapSourceMappingUrl(code, url, injectedLines);
   code += `\n//# sourceURL=${url}\n`;
 

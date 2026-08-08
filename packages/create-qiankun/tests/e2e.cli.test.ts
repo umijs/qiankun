@@ -1,8 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-member-access */
-
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import execa from 'execa';
-import fse from 'fs-extra';
+import { spawn } from 'node:child_process';
+import { access, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 
@@ -12,26 +10,87 @@ const E2E_TIMEOUT = process.env.E2E_TIMEOUT ? parseInt(process.env.E2E_TIMEOUT, 
 const EXPECTED_QIANKUN_VERSION = 'rc';
 
 const APP_NAME_PLACEHOLDER = '{{APP_NAME}}';
+const PNPM_COMMAND = 'pnpm';
+// .cmd shims cannot be spawned directly since the CVE-2024-27980 fix; go through the shell instead
+const SPAWN_OPTIONS = { shell: process.platform === 'win32' };
+
+interface ProcessResult {
+  exitCode: number;
+  stderr: string;
+  stdout: string;
+}
+
+interface GeneratedPackageJson {
+  dependencies: Record<string, string>;
+  devDependencies: Record<string, string>;
+  name: string;
+  scripts: Record<string, string>;
+}
+
+interface RunProcessOptions {
+  captureOutput?: boolean;
+  cwd: string;
+  rejectOnError?: boolean;
+}
+
+function runProcess(command: string, args: string[], options: RunProcessOptions): Promise<ProcessResult> {
+  return new Promise((resolve, reject) => {
+    const child = options.captureOutput
+      ? spawn(command, args, { ...SPAWN_OPTIONS, cwd: options.cwd, stdio: ['ignore', 'pipe', 'pipe'] })
+      : spawn(command, args, { ...SPAWN_OPTIONS, cwd: options.cwd, stdio: 'inherit' });
+    let stderr = '';
+    let stdout = '';
+
+    child.stdout?.on('data', (chunk: Buffer) => {
+      stdout += chunk.toString();
+    });
+    child.stderr?.on('data', (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
+    child.once('error', reject);
+    child.once('close', (exitCode, signal) => {
+      const resolvedExitCode = exitCode ?? 1;
+      if (resolvedExitCode !== 0 && options.rejectOnError !== false) {
+        const termination = signal ? `signal ${signal}` : `exit code ${String(resolvedExitCode)}`;
+        reject(new Error(`${command} failed with ${termination}${stderr ? `\n${stderr}` : ''}`));
+        return;
+      }
+
+      resolve({ exitCode: resolvedExitCode, stderr, stdout });
+    });
+  });
+}
+
+async function pathExists(filePath: string): Promise<boolean> {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function readJsonFile<T>(filePath: string): Promise<T> {
+  return JSON.parse(await readFile(filePath, 'utf8')) as T;
+}
+
+async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
+  await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
 
 async function runCli(cwd: string, appName: string, template: string): Promise<void> {
-  await execa('node', [CLI_PATH, appName, '--template', template], {
-    cwd,
-    stdio: 'inherit',
-  });
+  await runProcess(process.execPath, [CLI_PATH, appName, '--template', template], { cwd });
 }
 
 async function runCliMain(cwd: string, appName: string): Promise<void> {
-  await execa('node', [CLI_PATH, appName, '--type', 'main'], {
-    cwd,
-    stdio: 'inherit',
-  });
+  await runProcess(process.execPath, [CLI_PATH, appName, '--type', 'main'], { cwd });
 }
 
 async function runCliRaw(cwd: string, args: string[]): Promise<{ exitCode: number; output: string }> {
-  const result = await execa('node', [CLI_PATH, ...args], {
+  const result = await runProcess(process.execPath, [CLI_PATH, ...args], {
+    captureOutput: true,
     cwd,
-    stdio: 'pipe',
-    reject: false,
+    rejectOnError: false,
   });
 
   return {
@@ -46,24 +105,24 @@ const LOCAL_BUNDLER_PLUGIN = path.resolve(__dirname, '../../bundler-plugin');
 // so scaffold + plugin evolve (and break) together
 async function useLocalBundlerPlugin(appPath: string): Promise<void> {
   const pkgPath = path.join(appPath, 'package.json');
-  const pkg = (await fse.readJson(pkgPath)) as {
+  const pkg = await readJsonFile<{
     devDependencies?: Record<string, string>;
-  };
+  }>(pkgPath);
   if (pkg.devDependencies?.['@qiankunjs/bundler-plugin']) {
     pkg.devDependencies['@qiankunjs/bundler-plugin'] = `file:${LOCAL_BUNDLER_PLUGIN}`;
-    await fse.writeJson(pkgPath, pkg, { spaces: 2 });
+    await writeJsonFile(pkgPath, pkg);
   }
 }
 
 async function installAndBuild(appPath: string): Promise<void> {
   await useLocalBundlerPlugin(appPath);
-  await execa('pnpm', ['install'], { cwd: appPath, stdio: 'inherit' });
-  await execa('pnpm', ['build'], { cwd: appPath, stdio: 'inherit' });
+  await runProcess(PNPM_COMMAND, ['install'], { cwd: appPath });
+  await runProcess(PNPM_COMMAND, ['build'], { cwd: appPath });
 }
 
 async function installAndBuildMain(appPath: string): Promise<void> {
-  await execa('pnpm', ['install'], { cwd: appPath, stdio: 'inherit' });
-  await execa('pnpm', ['build'], { cwd: appPath, stdio: 'inherit' });
+  await runProcess(PNPM_COMMAND, ['install'], { cwd: appPath });
+  await runProcess(PNPM_COMMAND, ['build'], { cwd: appPath });
 }
 
 function normalizeContent(content: string, appName: string): string {
@@ -72,7 +131,7 @@ function normalizeContent(content: string, appName: string): string {
 
 async function loadFixture(template: string, fileName: string): Promise<string> {
   const fixturePath = path.join(FIXTURES_PATH, template, fileName);
-  return fse.readFile(fixturePath, 'utf-8');
+  return readFile(fixturePath, 'utf8');
 }
 
 async function assertFileMatchesFixture(
@@ -81,7 +140,7 @@ async function assertFileMatchesFixture(
   fixtureFileName: string,
   appName: string,
 ): Promise<void> {
-  const actualContent = await fse.readFile(actualPath, 'utf-8');
+  const actualContent = await readFile(actualPath, 'utf8');
   const expectedContent = await loadFixture(template, fixtureFileName);
   const normalizedActual = normalizeContent(actualContent, appName);
 
@@ -100,11 +159,11 @@ describe('create-qiankun CLI e2e', () => {
   const testDir = path.join(os.tmpdir(), `create-qiankun-e2e-${Date.now()}`);
 
   beforeAll(async () => {
-    await fse.ensureDir(testDir);
+    await mkdir(testDir, { recursive: true });
   });
 
   afterAll(async () => {
-    await fse.remove(testDir);
+    await rm(testDir, { force: true, recursive: true });
   });
 
   describe('CLI argument validation', () => {
@@ -114,7 +173,7 @@ describe('create-qiankun CLI e2e', () => {
 
       expect(result.exitCode).toBe(1);
       expect(result.output).toContain('Invalid type: mian');
-      expect(await fse.pathExists(path.join(testDir, appName))).toBe(false);
+      expect(await pathExists(path.join(testDir, appName))).toBe(false);
     });
 
     it('should reject --template when --type main is provided', async () => {
@@ -123,7 +182,7 @@ describe('create-qiankun CLI e2e', () => {
 
       expect(result.exitCode).toBe(1);
       expect(result.output).toContain('The --template option is only supported for sub apps');
-      expect(await fse.pathExists(path.join(testDir, appName))).toBe(false);
+      expect(await pathExists(path.join(testDir, appName))).toBe(false);
     });
   });
 
@@ -137,20 +196,20 @@ describe('create-qiankun CLI e2e', () => {
       async () => {
         await runCli(testDir, appName, template);
 
-        expect(await fse.pathExists(appPath)).toBe(true);
-        expect(await fse.pathExists(path.join(appPath, 'package.json'))).toBe(true);
-        expect(await fse.pathExists(path.join(appPath, 'vite.config.ts'))).toBe(true);
-        expect(await fse.pathExists(path.join(appPath, 'src/main.tsx'))).toBe(true);
+        expect(await pathExists(appPath)).toBe(true);
+        expect(await pathExists(path.join(appPath, 'package.json'))).toBe(true);
+        expect(await pathExists(path.join(appPath, 'vite.config.ts'))).toBe(true);
+        expect(await pathExists(path.join(appPath, 'src/main.tsx'))).toBe(true);
 
         await installAndBuild(appPath);
 
-        expect(await fse.pathExists(path.join(appPath, 'dist/index.html'))).toBe(true);
+        expect(await pathExists(path.join(appPath, 'dist/index.html'))).toBe(true);
       },
       E2E_TIMEOUT,
     );
 
     it('should produce valid qiankun HTML output', async () => {
-      const html = await fse.readFile(path.join(appPath, 'dist/index.html'), 'utf-8');
+      const html = await readFile(path.join(appPath, 'dist/index.html'), 'utf8');
       assertQiankunHtml(html);
     });
 
@@ -163,7 +222,7 @@ describe('create-qiankun CLI e2e', () => {
     });
 
     it('should have correct package.json scripts and dependencies', async () => {
-      const pkg = await fse.readJson(path.join(appPath, 'package.json'));
+      const pkg = await readJsonFile<GeneratedPackageJson>(path.join(appPath, 'package.json'));
 
       expect(pkg.name).toBe(appName);
       expect(pkg.scripts['build:qiankun']).toBeUndefined();
@@ -185,16 +244,16 @@ describe('create-qiankun CLI e2e', () => {
       async () => {
         await runCliMain(testDir, appName);
 
-        expect(await fse.pathExists(appPath)).toBe(true);
-        expect(await fse.pathExists(path.join(appPath, 'package.json'))).toBe(true);
-        expect(await fse.pathExists(path.join(appPath, 'vite.config.ts'))).toBe(true);
-        expect(await fse.pathExists(path.join(appPath, 'src/main.tsx'))).toBe(true);
-        expect(await fse.pathExists(path.join(appPath, 'src/App.tsx'))).toBe(true);
-        expect(await fse.pathExists(path.join(appPath, 'src/App.css'))).toBe(true);
+        expect(await pathExists(appPath)).toBe(true);
+        expect(await pathExists(path.join(appPath, 'package.json'))).toBe(true);
+        expect(await pathExists(path.join(appPath, 'vite.config.ts'))).toBe(true);
+        expect(await pathExists(path.join(appPath, 'src/main.tsx'))).toBe(true);
+        expect(await pathExists(path.join(appPath, 'src/App.tsx'))).toBe(true);
+        expect(await pathExists(path.join(appPath, 'src/App.css'))).toBe(true);
 
         await installAndBuildMain(appPath);
 
-        expect(await fse.pathExists(path.join(appPath, 'dist/index.html'))).toBe(true);
+        expect(await pathExists(path.join(appPath, 'dist/index.html'))).toBe(true);
       },
       E2E_TIMEOUT,
     );
@@ -216,13 +275,13 @@ describe('create-qiankun CLI e2e', () => {
     });
 
     it('should have correct package.json for main app', async () => {
-      const pkg = await fse.readJson(path.join(appPath, 'package.json'));
+      const pkg = await readJsonFile<GeneratedPackageJson>(path.join(appPath, 'package.json'));
 
       expect(pkg.name).toBe(appName);
       expect(pkg.dependencies['qiankun']).toBe(EXPECTED_QIANKUN_VERSION);
       expect(pkg.dependencies['@qiankunjs/react']).toBeUndefined();
-      expect(pkg.devDependencies?.['@vitejs/plugin-legacy']).toBeUndefined();
-      expect(pkg.scripts?.['build:qiankun']).toBeUndefined();
+      expect(pkg.devDependencies['@vitejs/plugin-legacy']).toBeUndefined();
+      expect(pkg.scripts['build:qiankun']).toBeUndefined();
     });
   });
 
@@ -236,20 +295,20 @@ describe('create-qiankun CLI e2e', () => {
       async () => {
         await runCli(testDir, appName, template);
 
-        expect(await fse.pathExists(appPath)).toBe(true);
-        expect(await fse.pathExists(path.join(appPath, 'package.json'))).toBe(true);
-        expect(await fse.pathExists(path.join(appPath, 'vite.config.ts'))).toBe(true);
-        expect(await fse.pathExists(path.join(appPath, 'src/main.ts'))).toBe(true);
+        expect(await pathExists(appPath)).toBe(true);
+        expect(await pathExists(path.join(appPath, 'package.json'))).toBe(true);
+        expect(await pathExists(path.join(appPath, 'vite.config.ts'))).toBe(true);
+        expect(await pathExists(path.join(appPath, 'src/main.ts'))).toBe(true);
 
         await installAndBuild(appPath);
 
-        expect(await fse.pathExists(path.join(appPath, 'dist/index.html'))).toBe(true);
+        expect(await pathExists(path.join(appPath, 'dist/index.html'))).toBe(true);
       },
       E2E_TIMEOUT,
     );
 
     it('should produce valid qiankun HTML output', async () => {
-      const html = await fse.readFile(path.join(appPath, 'dist/index.html'), 'utf-8');
+      const html = await readFile(path.join(appPath, 'dist/index.html'), 'utf8');
       assertQiankunHtml(html);
     });
 
@@ -262,7 +321,7 @@ describe('create-qiankun CLI e2e', () => {
     });
 
     it('should have correct package.json with Vue dependencies', async () => {
-      const pkg = await fse.readJson(path.join(appPath, 'package.json'));
+      const pkg = await readJsonFile<GeneratedPackageJson>(path.join(appPath, 'package.json'));
 
       expect(pkg.name).toBe(appName);
       expect(pkg.dependencies['@qiankunjs/vue']).toBeDefined();

@@ -21,8 +21,8 @@ Before you begin contributing, please:
 
 ### Requirements
 
-- Node.js >= 16.0.0
-- pnpm@9.15.0 (we use pnpm as the package manager, exact version specified in package.json)
+- Node.js ^22.15 || >=24 (Node 23 is not covered by our toolchain)
+- pnpm@11.13.1 (we use pnpm as the package manager, exact version specified in package.json)
 
 ### Local Development
 
@@ -53,17 +53,17 @@ Before you begin contributing, please:
 
 ### Development Scripts
 
-- `pnpm run build` - Build all packages using father
+- `pnpm run build` - Build package JavaScript with Vite 8 and declarations with `tsc`
 - `pnpm test` - Run tests using vitest
-- `pnpm run eslint` - Code style check with TypeScript ESLint rules
+- `pnpm run eslint` - Check code with the ESLint flat config and typed TypeScript rules
 - `pnpm run prettier` - Format code with prettier
 - `pnpm run prettier:check` - Check code formatting
 - `pnpm run ci` - Complete CI pipeline (build + lint + format check)
 - `pnpm run clean` - Clean node_modules and build artifacts
-- `pnpm run start:example` - Start example applications (main + react15)
+- `pnpm run start:example` - Start all example applications
 - `pnpm run docs:dev` - Start documentation development server
 - `pnpm run docs:build` - Build documentation
-- `pnpm run prepare` - Setup husky git hooks and dumi
+- `pnpm run prepare` - Set up Husky git hooks
 
 ## Code Contribution Workflow
 
@@ -99,7 +99,7 @@ Note: The project uses `next` as the main development branch (as configured in c
   - Use `unknown` instead of `any` when type is uncertain
   - Enable all strict options: `strictNullChecks`, `strictFunctionTypes`, `noImplicitReturns`, etc.
 - **Type Import/Export**:
-  - Use `import type` for type-only imports (enforced by ESLint)
+  - Use inline type specifiers such as `import { type Foo, bar }` (enforced by ESLint)
   - Use consistent type exports with inline type specifiers
 - **Naming Conventions**:
   - Variables and functions use `camelCase`
@@ -114,7 +114,7 @@ Note: The project uses `next` as the main development branch (as configured in c
 
 #### Code Style
 
-- Follow the project's ESLint configuration
+- Follow the project's flat ESLint configuration in `eslint.config.mjs`
 - Use 2-space indentation
 - No trailing whitespace
 - Keep one empty line at the end of files
@@ -132,7 +132,7 @@ Note: The project uses `next` as the main development branch (as configured in c
 - Ensure existing tests are not broken
 - Maintain reasonable test coverage
 - Place test files in appropriate `__tests__` directories or alongside source files with `.test.ts` suffix
-- Use vitest's global test APIs (no need to import `describe`, `it`, `expect`)
+- Import the vitest APIs used by each test (`describe`, `it`, `expect`, and so on)
 - Run tests with `pnpm test` or `pnpm -r run test` for all packages
 
 ### 5. Commit Code
@@ -273,7 +273,7 @@ For breaking changes, use one of these approaches:
    - All vitest tests pass
    - Test coverage meets requirements
    - Prettier formatting checks
-   - Build passes with father bundler
+   - Vite 8 JavaScript builds and `tsc` declaration builds pass
 
 ## Documentation Contributions
 
@@ -290,8 +290,8 @@ When submitting bug reports, please include:
 
 - **Clear Title**: Briefly describe the issue
 - **Environment Information**:
-  - Node.js version (>= 16.0.0)
-- pnpm version (should be 9.15.0)
+  - Node.js version (^22.15 || >=24)
+  - pnpm version (should be 11.13.1)
   - qiankun version
   - Browser version
   - Operating system
@@ -336,11 +336,12 @@ Do not run `changeset` manually after merging a normal pull request. The latest 
 
 ### Build System
 
-- **Build Tool**: [father](https://github.com/umijs/father) - A library build tool
+- **Build Tool**: [Vite 8](https://vite.dev/) for JavaScript and `tsc` for declarations
+- **TypeScript**: TypeScript 7 provides `tsc`; the aliased TypeScript 6 package is retained only for tools that require the compiler API
 - **Monorepo**: pnpm workspaces with packages in `packages/` directory
-- **Documentation**: [dumi](https://d.umijs.org/) for documentation site
+- **Documentation**: [VitePress](https://vitepress.dev/) for the documentation site
 - **Testing**: [vitest](https://vitest.dev/) for unit testing
-- **Code Quality**: ESLint + Prettier + TypeScript strict mode
+- **Code Quality**: ESLint flat config + Prettier + TypeScript strict mode
 
 ## Getting Help
 

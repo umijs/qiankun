@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "description": "qiankun micro app with no build step: static html + vendored jQuery",
   "scripts": {
-    "dev": "http-server . --cors -c-1 -p 7104"
+    "dev": "vite preview --host 0.0.0.0 --port 7104 --strictPort"
   },
   "devDependencies": {
-    "http-server": "^14.1.1"
+    "vite": "^8.1.5"
   }
 }

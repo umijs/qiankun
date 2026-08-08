@@ -16,7 +16,7 @@ function createCountedGlobal() {
     lockedGetter: {
       configurable: false,
       enumerable: true,
-      get() {
+      get(this: Record<string, unknown>) {
         return this.marker;
       },
     },
@@ -56,10 +56,10 @@ describe('non-configurable global properties', () => {
 
     expect(getDescriptorReads()).toBe(0);
     expect(Object.prototype.hasOwnProperty.call(membrane.target, 'locked')).toBe(false);
-    expect(Reflect.ownKeys(membrane.realmGlobal)).toContain('locked');
+    expect(Reflect.ownKeys(membrane.globalThisView)).toContain('locked');
     expect(getDescriptorReads()).toBe(0);
 
-    expect(Object.getOwnPropertyDescriptor(membrane.realmGlobal, 'locked')).toEqual({
+    expect(Object.getOwnPropertyDescriptor(membrane.globalThisView, 'locked')).toEqual({
       configurable: false,
       enumerable: true,
       value: 'host',
@@ -71,7 +71,7 @@ describe('non-configurable global properties', () => {
   it('keeps non-configurable data and accessor behavior after lazy materialization', () => {
     const { globalContext, rawGlobal } = createCountedGlobal();
     const membrane = new Membrane(globalContext, {});
-    const proxy = membrane.realmGlobal as unknown as Record<string, unknown>;
+    const proxy = membrane.globalThisView as unknown as Record<string, unknown>;
 
     expect(proxy.lockedGetter).toBe('host-marker');
     expect(Object.prototype.hasOwnProperty.call(membrane.target, 'lockedGetter')).toBe(false);
@@ -91,8 +91,8 @@ describe('non-configurable global properties', () => {
     const { globalContext } = createCountedGlobal();
     const membrane = new Membrane(globalContext, {});
 
-    expect(Object.getOwnPropertyNames(membrane.realmGlobal)).toContain('locked');
-    expect(Object.getOwnPropertyDescriptors(membrane.realmGlobal).locked).toEqual({
+    expect(Object.getOwnPropertyNames(membrane.globalThisView)).toContain('locked');
+    expect(Object.getOwnPropertyDescriptors(membrane.globalThisView).locked).toEqual({
       configurable: false,
       enumerable: true,
       value: 'host',
@@ -102,7 +102,7 @@ describe('non-configurable global properties', () => {
 
   it('never materializes a shielded internal key on set, keeping the host accessor unreachable', () => {
     const rawGlobal: Record<string, unknown> = {};
-    const hostAccessor = () => 'host-realm-accessor';
+    const hostAccessor = () => 'host-instance-accessor';
     Object.defineProperty(rawGlobal, '__qk_r_test', {
       configurable: false,
       enumerable: false,
@@ -110,7 +110,7 @@ describe('non-configurable global properties', () => {
       writable: false,
     });
     const membrane = new Membrane(rawGlobal as unknown as WindowProxy, {});
-    const proxy = membrane.realmGlobal as unknown as Record<string, unknown>;
+    const proxy = membrane.globalThisView as unknown as Record<string, unknown>;
 
     // shielded before any write
     expect(proxy.__qk_r_test).toBeUndefined();
@@ -125,17 +125,17 @@ describe('non-configurable global properties', () => {
     expect(rawGlobal.__qk_r_test).toBe(hostAccessor);
   });
 
-  it('keeps endowments ahead of the host global without scanning host descriptors', () => {
+  it('keeps explicit globals ahead of the host global without scanning host descriptors', () => {
     const { getDescriptorReads, globalContext } = createCountedGlobal();
     const membrane = new Membrane(
       globalContext,
       {},
       {
-        endowments: {
+        globals: {
           locked: {
             configurable: false,
             enumerable: true,
-            value: 'endowment',
+            value: 'compartment',
             writable: false,
           },
         },
@@ -143,7 +143,18 @@ describe('non-configurable global properties', () => {
     );
 
     expect(getDescriptorReads()).toBe(0);
-    expect((membrane.realmGlobal as unknown as Record<string, unknown>).locked).toBe('endowment');
+    expect((membrane.globalThisView as unknown as Record<string, unknown>).locked).toBe('compartment');
     expect(getDescriptorReads()).toBe(0);
+  });
+
+  it('returns globals defined after construction directly without native rebinding', () => {
+    const membrane = new Membrane(window, { fetch: true });
+    const customFetch = () => 'custom';
+
+    membrane.defineUnshadowableGlobals({
+      fetch: { value: customFetch, configurable: true, writable: true },
+    });
+
+    expect((membrane.globalThisView as unknown as Record<string, unknown>).fetch).toBe(customFetch);
   });
 });

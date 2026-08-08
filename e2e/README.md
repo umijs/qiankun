@@ -17,9 +17,13 @@ e2e/
 │   ├── sub-classic/     # classic global-lifecycle sub app (the UMD shape), no build step
 │   ├── sub-esm/         # native ESM sub app with a multi-module graph, no build step;
 │   │                    # preload.html variant carries a <link rel="modulepreload"> (vite output shape)
-│   └── sub-misbehaving/ # deliberately bad app: mount errors + leaked intervals (via props)
+│   ├── sub-misbehaving/ # deliberately bad app: mount errors + leaked intervals (via props)
+│   └── sub-nested/      # vite-built classic app that is itself a qiankun host: it bundles its own
+│                        # copy of qiankun and mounts sub-classic-bodyless inside its own DOM
 └── tests/               # suites organized by framework invariants, not by pages
 ```
+
+The standalone suite serves the built `examples/standalone-sandbox` app as an additional fixture. It imports only `@qiankunjs/sandbox` and exercises classic scripts, ESM, dynamic DOM, style isolation, and cleanup under a CSP without `unsafe-eval`.
 
 The main fixture serves two pages: `index.html` (imperative `loadMicroApp` playground driven via `window.__E2E__`) and `register.html` (`registerMicroApps` + hash-based `activeRule` routing mode).
 
@@ -31,7 +35,10 @@ Suites map to qiankun's core promises:
 - `style-isolation` — `@scope` based CSS isolation, with a control test documenting the unisolated leak
 - `error-handling` — 404 entries and throwing mounts reject cleanly without breaking the main app
 - `multi-instance` — same app twice in independent sandboxes, mixed classic + esm coexistence
+- `nested-sandbox` — qiankun inside qiankun: DOM ownership under chained document proxies (each app owns what its own container receives, including a node the outer app hands to the inner container)
 - `router-mode` — route-driven mount/unmount/switch including history back
+- `container-gate` — container occupancy serialization: waiting takeover, cross-app remount handoff, no-await races, mount/unmount-failure fallback release
+- `standalone-sandbox` — direct package use without qiankun/loader, including the no-`unsafe-eval` CSP path
 
 ## Browser matrix
 
@@ -53,7 +60,7 @@ pnpm run test:e2e:ui     # playwright UI mode for debugging
 
 First time only: `npx playwright install chromium` (or `--with-deps` on linux).
 
-Sub-app fixtures are served directly from source; only `fixtures/main` needs a build (`pnpm run build:fixtures`, done automatically by the test scripts). After changing any `packages/*` source, rebuild the package **and** the main fixture, since the fixture bundles qiankun.
+Sub-app fixtures are served directly from source. `fixtures/main`, `fixtures/sub-nested`, and `examples/standalone-sandbox` need builds (`pnpm run build:fixtures`, done automatically by the test scripts). Note that `ports.ts` is bundled into the built fixtures, so changing it requires rebuilding them. After changing any `packages/*` source, rebuild the packages and both built fixtures, since they bundle the local workspace code.
 
 ## Rules (anti-flake discipline)
 

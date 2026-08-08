@@ -3,18 +3,16 @@
  *
  * Keep this file in sync with upstream: every qiankun-specific deviation is marked with a
  * `[qiankun]` comment so periodic syncs can re-apply them mechanically. The deviations are:
- * - the `assetTransformer` parameter: transpiles every node in place right before insertion
- *   (enforced by assertInPlaceTransform), including inline script/style text via a grafted host
+ * - the `assetTransformer` parameter: transforms every element in place right before insertion
+ *   (enforced by assertInPlaceTransform), including inline script/style text via a grafted host.
+ *   The callback is the walk's only integration seam — callers hang their own bookkeeping
+ *   (e.g. marking nodes) on it, this file stays free of downstream knowledge
  * - `isSyncScript` + `clone.async = false`: preserve document order for non-blocking external
  *   scripts (see https://github.com/marko-js/writable-dom/issues/7)
- * - `markLoaderStreamedNode`: lets the sandbox's patched container methods tell streamed
- *   (already-transpiled) nodes apart from dynamic insertions made by app code
  * - preload hints read the raw attributes (getAttribute) instead of the resolved properties, so
  *   the transformer can resolve them against the app entry rather than the host document
  * - an href-less stylesheet link is inert and must not block the walk
  */
-import { markLoaderStreamedNode } from '@qiankunjs/shared';
-
 enum NodeType {
   ELEMENT_NODE = 1,
   TEXT_NODE = 3,
@@ -189,10 +187,6 @@ function writableDOM(
           if (isSyncScript(clone)) {
             clone.async = false;
           }
-
-          // [qiankun] let the sandbox's patched container methods tell streamed nodes (already
-          // transpiled by this walk) apart from dynamic insertions made by app code
-          markLoaderStreamedNode(clone);
 
           // [qiankun] transpile the node in place right before insertion. The blocking bookkeeping
           // above stays wired to it; a transformer that also listens for load/error (e.g. the

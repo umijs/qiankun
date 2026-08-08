@@ -6,16 +6,18 @@ import { createHarnessFingerprint } from './fingerprint.mjs';
 import { hashFiles, hashViteEntries } from './hash.mjs';
 import { CHROMIUM_LAUNCH_ARGS } from './origins.mjs';
 
-const HARNESS_SOURCE_FILES = [
+export const HARNESS_SOURCE_FILES = [
   'runner.mjs',
   'src/browser.mjs',
   'src/collect.mjs',
+  'src/comparison-gates.mjs',
   'src/fingerprint.mjs',
   'src/harness.mjs',
   'src/hash.mjs',
   'src/origins.mjs',
   'src/report.mjs',
   'src/revisions.mjs',
+  'src/run-verdict.mjs',
   'src/schedule.mjs',
   'src/server.mjs',
   'src/site-isolation.mjs',
@@ -23,18 +25,25 @@ const HARNESS_SOURCE_FILES = [
   'src/stats.mjs',
 ];
 
-const REVISION_HARNESS_SOURCE_FILES = [
+export const REVISION_HARNESS_SOURCE_FILES = [
   ...HARNESS_SOURCE_FILES,
+  '../package.json',
   '../pnpm-lock.yaml',
+  '../pnpm-workspace.yaml',
   'fixtures/host/qiankun.html',
+  'fixtures/host/rfc-performance.html',
   'fixtures/host/src/benchmark.ts',
   'fixtures/host/src/host.css',
   'fixtures/host/src/qiankun.ts',
+  'fixtures/host/src/rfc-performance.ts',
   'fixtures/host/vite.config.ts',
   'frameworks.mjs',
   'package.json',
+  'rfc-performance.mjs',
   'scenarios.mjs',
   'src/options.mjs',
+  'src/regression.mjs',
+  'src/rfc-performance.mjs',
 ];
 
 export async function createRevisionHarnessRecord(benchmarkRoot) {
@@ -93,6 +102,8 @@ export async function createHarnessRecord({
       warmup: options.warmup,
     },
     suite: {
+      calibrationAliases: runDefinition.calibrationAliases,
+      comparisonGates: runDefinition.comparisonGates,
       comparisons: runDefinition.comparisons,
       id: options.mode === 'revision' ? `revision:${options.scenario}` : options.suite,
       variants: runDefinition.variants,

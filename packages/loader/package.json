@@ -11,21 +11,19 @@
   "types": "./dist/esm/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "build": "father build",
-    "bench": "npm run build && tachometer ./benchmarks/parser/tern/import-html-entry.html ./benchmarks/parser/tern/parser.html --timeout=1",
+    "build": "rimraf dist && vite build --config ../../vite.library.config.ts && tsc -p tsconfig.build.json && node ../../scripts/copy-declarations.mjs src dist/esm && node ../../scripts/copy-declarations.mjs dist/esm dist/cjs",
+    "bench": "pnpm run build && tachometer ./benchmarks/parser/tern/import-html-entry.html ./benchmarks/parser/tern/parser.html --timeout=1",
     "test": "vitest --run"
   },
   "author": "Kuitos",
   "license": "MIT",
   "dependencies": {
-    "@babel/runtime": "^7.26.10",
     "@qiankunjs/sandbox": "workspace:^",
-    "@qiankunjs/shared": "workspace:^",
-    "lodash": "^4.17.11"
+    "@qiankunjs/shared": "workspace:^"
   },
   "devDependencies": {
-    "import-html-entry": "^1.12.0",
-    "tachometer": "^0.5.10"
+    "import-html-entry": "^1.17.0",
+    "tachometer": "^0.7.2"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"

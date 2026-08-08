@@ -1,6 +1,13 @@
 import { expect, test } from '@playwright/test';
 import { PORTS } from '../ports';
-import { FIREFOX_ESM_LIMITATION, loadApp, readMainRealmGlobal, unmountApp } from './helpers';
+import {
+  FIREFOX_ESM_LIMITATION,
+  loadApp,
+  loadAppWithPrecompiledHook,
+  readHookMetrics,
+  readMainRealmGlobal,
+  unmountApp,
+} from './helpers';
 
 const SUB_ESM_ORIGIN = `http://localhost:${PORTS['sub-esm']}`;
 const PRELOADED_MODULE_PATH = '/modules/preloaded.js';
@@ -23,6 +30,19 @@ test.describe('esm sub app under sandbox', () => {
     await expect(page.getByTestId('esm-counters')).toHaveText('mount:1,importedCount:1');
   });
 
+  test('mounts when CSP allows blob scripts but omits unsafe-eval', async ({ page }) => {
+    const response = await page.goto('/?csp-no-eval');
+    expect(response?.ok()).toBe(true);
+    const policy = response?.headers()['content-security-policy'];
+    expect(policy).toContain('script-src');
+    expect(policy).toContain('blob:');
+    expect(policy).not.toContain("'unsafe-eval'");
+
+    const status = await loadApp(page, 'sub-esm');
+    expect(status).toBe('MOUNTED');
+    await expect(page.getByTestId('esm-title')).toHaveText('esm mounted');
+  });
+
   test('window pollution from the esm app is invisible from the main realm', async ({ page }) => {
     await loadApp(page, 'sub-esm');
     await expect(page.getByTestId('esm-title')).toBeVisible();
@@ -34,6 +54,24 @@ test.describe('esm sub app under sandbox', () => {
     await loadApp(page, 'sub-esm');
 
     await expect(page.getByTestId('esm-main-global')).toHaveText('value-from-main');
+  });
+
+  test('sandbox globals participates in ESM global rewriting without leaking', async ({ page }) => {
+    await loadApp(page, 'sub-esm', { sandbox: { globals: { e2eExtraGlobal: 'esm-extra' } } });
+
+    await expect(page.getByTestId('esm-extra-global')).toHaveText('esm-extra');
+    expect(await readMainRealmGlobal(page, 'e2eExtraGlobal')).toBeUndefined();
+  });
+
+  test('a custom importHook can mount a precompiled module without fetching or rewriting it', async ({ page }) => {
+    const key = 'precompiled-hook';
+    const status = await loadAppWithPrecompiledHook(page, key);
+    expect(status).toBe('MOUNTED');
+    await expect(page.locator(`#container-${key}`).getByTestId('precompiled-hook')).toHaveText(
+      'static dependency:linked-path:value-from-main:sub-esm',
+    );
+    expect(await readHookMetrics(page, key)).toEqual({ hookCalls: 2, moduleFetches: 0 });
+    expect(await readMainRealmGlobal(page, '__PRECOMPILED_HOOK_POLLUTION__')).toBeUndefined();
   });
 
   test('runtime-created dunder globals stay readable as bare identifiers across modules', async ({ page }) => {

@@ -18,6 +18,37 @@ it('should just call fetch once while multiple request invoked parallel', () => 
   expect(fetch).toHaveBeenCalledOnce();
 });
 
+it('should cache by the canonical URL and effective credentials', () => {
+  const fetch = vi.fn(() => {
+    return Promise.resolve(new Response(slogan, { status: 200, statusText: 'OK' }));
+  });
+  const wrappedFetch = makeFetchCacheable(fetch);
+  const url = 'https://canonical-credentials.qiankun.org';
+
+  wrappedFetch(url);
+  wrappedFetch(new URL(`${url}/`), { credentials: 'same-origin' });
+  wrappedFetch(new Request(`${url}/`));
+  wrappedFetch(url, { credentials: 'include' });
+
+  expect(fetch).toHaveBeenCalledTimes(2);
+});
+
+it('should let init credentials override Request credentials', () => {
+  const fetch = vi.fn(() => {
+    return Promise.resolve(new Response(slogan, { status: 200, statusText: 'OK' }));
+  });
+  const wrappedFetch = makeFetchCacheable(fetch);
+  const url = 'https://request-credentials.qiankun.org/';
+
+  wrappedFetch(new Request(url, { credentials: 'include' }), {
+    credentials: 'omit',
+  });
+  wrappedFetch(new Request(url, { credentials: 'omit' }));
+  wrappedFetch(new Request(url, { credentials: 'include' }));
+
+  expect(fetch).toHaveBeenCalledTimes(2);
+});
+
 it('should support read response body as a stream multi times', async () => {
   const fetch = vi.fn(() => {
     return Promise.resolve(new Response(slogan, { status: 200, statusText: 'OK' }));

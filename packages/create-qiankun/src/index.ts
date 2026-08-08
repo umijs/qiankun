@@ -3,21 +3,13 @@
 import prompts from 'prompts';
 import { green, red, bold } from 'kolorist';
 import path from 'node:path';
-import minimist from 'minimist';
+import { parseArgs } from 'node:util';
 import { isDirectory, detectWorkspaceRoot } from './shared/utils';
 import { templateOptions, ViteTemplate, AppType, appTypeOptions } from './shared/types';
 import type { PromptAnswers } from './shared/types';
 import { generateViteApp } from './shared/generators/createVite';
 import { patchViteSubApp } from './shared/patchers';
 import { patchViteMainApp } from './shared/patchers/mainApp';
-
-interface CliArgs {
-  _: string[];
-  template?: string;
-  t?: string;
-  type?: string;
-  T?: string;
-}
 
 main().catch((e) => {
   console.error(e);
@@ -29,10 +21,18 @@ async function main() {
   console.log(green('Welcome to create-qiankun!'));
   console.log();
 
-  const argv = minimist(process.argv.slice(2)) as CliArgs;
-  const argAppName = argv._[0];
-  const argTemplate = argv.template || argv.t;
-  const argType = argv.type || argv.T;
+  const { positionals, values: cliValues } = parseArgs({
+    args: process.argv.slice(2),
+    allowPositionals: true,
+    strict: false,
+    options: {
+      template: { type: 'string', short: 't' },
+      type: { type: 'string', short: 'T' },
+    },
+  });
+  const argAppName = positionals[0];
+  const argTemplate = cliValues.template;
+  const argType = cliValues.type;
   const parsedArgType = argType === AppType.Main || argType === AppType.Sub ? argType : undefined;
 
   if (argType && !parsedArgType) {
@@ -46,7 +46,7 @@ async function main() {
   let answers: Partial<PromptAnswers>;
 
   try {
-    answers = (await prompts(
+    answers = await prompts(
       [
         {
           name: 'appType',
@@ -80,7 +80,7 @@ async function main() {
           throw new Error('Operation cancelled');
         },
       },
-    )) as Partial<PromptAnswers>;
+    );
   } catch {
     console.log(red('Operation cancelled'));
     process.exit(1);

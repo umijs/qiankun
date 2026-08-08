@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { messages, type Locale, type Messages } from './i18n';
 
 const ACCENT = '#1C78C0';
 
@@ -8,7 +9,13 @@ declare global {
   }
 }
 
-function WindowProbe() {
+/**
+ * Where the shells fetch this app from: its own dev server locally, a path on the deployed site.
+ * Defined by webpack.config.js off its `deployBase` env, the same value it pins publicPath to.
+ */
+declare const __MICRO_APP_ENTRY__: string;
+
+function WindowProbe({ m }: { m: Messages }) {
   const [value, setValue] = useState<string>();
 
   const run = () => {
@@ -19,17 +26,17 @@ function WindowProbe() {
   return (
     <div className="probe">
       <button className="control" onClick={run}>
-        Write global
+        {m.writeGlobal}
       </button>
       <div className="probe-result">
-        <code className="mono">{value ? `window.__SANDBOX_PROBE__ = '${value}'` : 'window.__SANDBOX_PROBE__ = undefined'}</code>
-        <p className="probe-note">Writes a window global and reads it back — the value stays inside this app's sandbox membrane.</p>
+        <code className="mono">{value ? `window.__SANDBOX_PROBE__ = '${value}'` : m.globalUndefined}</code>
+        <p className="probe-note">{m.globalNote}</p>
       </div>
     </div>
   );
 }
 
-function TimerProbe() {
+function TimerProbe({ m }: { m: Messages }) {
   const [ticks, setTicks] = useState<number>();
   const started = useRef(false);
 
@@ -44,17 +51,17 @@ function TimerProbe() {
   return (
     <div className="probe">
       <button className="control" onClick={run} disabled={started.current && ticks !== undefined}>
-        Leak a timer
+        {m.leakTimer}
       </button>
       <div className="probe-result">
-        <code className="mono">{ticks === undefined ? 'no interval running' : `ticks: ${ticks}`}</code>
-        <p className="probe-note">Starts a 1s setInterval and never clears it — qiankun reclaims leaked timers on unmount.</p>
+        <code className="mono">{ticks === undefined ? m.noInterval : m.ticks(ticks)}</code>
+        <p className="probe-note">{m.timerNote}</p>
       </div>
     </div>
   );
 }
 
-function StyleProbe() {
+function StyleProbe({ m }: { m: Messages }) {
   const [injected, setInjected] = useState(false);
 
   useEffect(() => {
@@ -77,17 +84,18 @@ function StyleProbe() {
   return (
     <div className="probe">
       <button className="control" onClick={run} disabled={injected}>
-        Tint body
+        {m.tintBody}
       </button>
       <div className="probe-result">
-        <code className="mono">{injected ? `body background → ${ACCENT}10` : 'no probe style injected'}</code>
-        <p className="probe-note">Appends a style tinting body — style isolation keeps the tint inside this app.</p>
+        <code className="mono">{injected ? m.tinted(`${ACCENT}10`) : m.noStyle}</code>
+        <p className="probe-note">{m.styleNote}</p>
       </div>
     </div>
   );
 }
 
-export default function App() {
+export default function App({ locale = 'en' }: { locale?: Locale }) {
+  const m = messages[locale];
   const [count, setCount] = useState(0);
   const insideQiankun = Boolean(window.__POWERED_BY_QIANKUN__);
 
@@ -95,34 +103,36 @@ export default function App() {
     <div className="webpack-app">
       <header className="header">
         <span className="accent-dot" aria-hidden="true" />
-        <h1 className="title">Webpack micro app</h1>
+        <h1 className="title">{m.title}</h1>
         <span className="badge mono">react {React.version}</span>
         <span className="badge mono">webpack 5 · classic</span>
         <span className={insideQiankun ? 'badge mono badge-accent' : 'badge mono'}>
-          {insideQiankun ? 'inside qiankun' : 'standalone'}
+          {insideQiankun ? m.insideQiankun : m.standalone}
         </span>
       </header>
 
       <section className="card">
-        <h2 className="card-title">Isolation lab</h2>
-        <WindowProbe />
-        <TimerProbe />
-        <StyleProbe />
+        <h2 className="card-title">{m.isolationLab}</h2>
+        <WindowProbe m={m} />
+        <TimerProbe m={m} />
+        <StyleProbe m={m} />
       </section>
 
       <section className="card">
-        <h2 className="card-title">Local state</h2>
+        <h2 className="card-title">{m.localState}</h2>
         <div className="probe">
           <button className="control" onClick={() => setCount((c) => c + 1)}>
-            count is {count}
+            {m.countIs(count)}
           </button>
           <div className="probe-result">
-            <p className="probe-note">React state lives entirely inside this app — remounting resets it.</p>
+            <p className="probe-note">{m.stateNote}</p>
           </div>
         </div>
       </section>
 
-      <footer className="footer mono">entry //localhost:7102 · lifecycle: src/index.tsx</footer>
+      <footer className="footer mono">
+        {m.entry} {__MICRO_APP_ENTRY__} · {m.lifecycle}: src/index.tsx
+      </footer>
     </div>
   );
 }

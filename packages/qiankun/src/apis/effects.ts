@@ -2,7 +2,7 @@
  * @author Kuitos
  * @since 2019-02-19
  */
-import { getMountedApps, navigateToUrl } from 'single-spa';
+import { getMountedApps, navigateToUrl } from '@qiankunjs/single-spa';
 
 const firstMountLogLabel = '[qiankun] first app mounted';
 if (process.env.NODE_ENV === 'development') {

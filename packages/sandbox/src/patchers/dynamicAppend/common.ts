@@ -4,7 +4,8 @@ import type { AssetsTranspilerOpts, ScriptTranspilerOpts } from '@qiankunjs/shar
  * @author Kuitos
  * @since 2019-10-21
  */
-import { isLoaderStreamedNode, prepareDeferredQueue, warn } from '@qiankunjs/shared';
+import { prepareDeferredQueue, warn } from '@qiankunjs/shared';
+import { isNativePassthroughNode } from '../../core/nativePassthrough';
 import { qiankunHeadTagName } from '../../consts';
 import type { SandboxConfig } from './types';
 
@@ -60,34 +61,6 @@ export function isStyledComponentsLike(element: HTMLStyleElement): boolean {
   return Boolean(!element.textContent && (element.sheet?.cssRules.length || getStyledElementCSSRules(element)?.length));
 }
 
-const appsCounterMap = new Map<string, { bootstrappingPatchCount: number; mountingPatchCount: number }>();
-
-export function calcAppCount(
-  appName: string,
-  calcType: 'increase' | 'decrease',
-  status: 'bootstrapping' | 'mounting',
-): void {
-  const appCount = appsCounterMap.get(appName) || { bootstrappingPatchCount: 0, mountingPatchCount: 0 };
-  switch (calcType) {
-    case 'increase':
-      appCount[`${status}PatchCount`] += 1;
-      break;
-    case 'decrease':
-      // bootstrap patch just called once but its freer will be called multiple times
-      if (appCount[`${status}PatchCount`] > 0) {
-        appCount[`${status}PatchCount`] -= 1;
-      }
-      break;
-  }
-  appsCounterMap.set(appName, appCount);
-}
-
-export function isAllAppsUnmounted(): boolean {
-  return Array.from(appsCounterMap.entries()).every(
-    ([, { bootstrappingPatchCount: bpc, mountingPatchCount: mpc }]) => bpc === 0 && mpc === 0,
-  );
-}
-
 const defineNonEnumerableProperty = (target: unknown, key: string | symbol, value: unknown) => {
   Object.defineProperty(target, key, {
     configurable: true,
@@ -137,55 +110,65 @@ export function getOverwrittenAppendChildOrInsertBefore(
     // jQuery-style insertions wrap nodes in a DocumentFragment, which would smuggle style/script
     // elements past the per-tag hijacking below — decompose such a fragment and route every child
     // through the same pipeline (a fragment empties on insertion natively, so per-child appends
-    // keep the same end state and order). Children parsed via innerHTML never went through the
-    // sandboxed createElement, so they inherit the config attached to the patched mount point.
+    // keep the same end state and order). Nodes marked for native passthrough (the loader's
+    // pipeline batches its processed nodes into fragments for insertion performance) must pass
+    // through untouched, never through the pipeline again.
     if (element.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
       const fragment = newChild as unknown as DocumentFragment;
-      const ownerConfig = getSandboxConfig(this as unknown as HTMLElement);
-      // nodes streamed by the loader's walk are already transpiled and batched into fragments for
-      // insertion performance — they must pass through natively, never through the pipeline again
-      const shouldDecompose = Array.from(fragment.children).some(
-        (child) =>
-          isHijackingTag(child.tagName) &&
-          !isLoaderStreamedNode(child) &&
-          (getSandboxConfig(child as HTMLElement) ?? ownerConfig),
-      );
+      const shouldDecompose =
+        !!getSandboxConfig(this) &&
+        Array.from(fragment.children).some((child) => isHijackingTag(child.tagName) && !isNativePassthroughNode(child));
       if (shouldDecompose) {
         Array.from(fragment.childNodes).forEach((child) => {
-          const childElement = child as HTMLElement;
-          if (
-            ownerConfig &&
-            setSandboxConfig &&
-            isHijackingTag(childElement.tagName) &&
-            !isLoaderStreamedNode(childElement) &&
-            !getSandboxConfig(childElement)
-          ) {
-            setSandboxConfig(childElement, ownerConfig);
-          }
           appendChildInSandbox.call(this, child, refChild);
         });
         return newChild;
       }
     }
 
-    // elements parsed via innerHTML (e.g. jQuery's buildFragment) never went through the sandboxed
-    // createElement and carry no config of their own — inherit the one attached to the patched
-    // mount point, except for nodes inserted by the loader's streaming walk, which are already
-    // transpiled and must pass through untouched
-    const sandboxConfig =
-      getSandboxConfig(element) ??
-      (isLoaderStreamedNode(element) ? undefined : getSandboxConfig(this as unknown as HTMLElement));
+    // insertion-point ownership: a hijackable element landing on a patched mount point belongs to
+    // the app owning that mount point, no matter who created it — except nodes a qiankun pipeline
+    // marked for native passthrough, which must pass through untouched.
+    // See docs/rfcs/insertion-point-ownership.md.
+    const sandboxConfig = isNativePassthroughNode(element) ? undefined : getSandboxConfig(this);
 
-    // no attached sandbox config means the element is not created from the sandbox environment
     if (!isHijackingTag(element.tagName) || !sandboxConfig) {
       return appendChild.call(this, element, refChild) as T;
     }
+
+    // Register the element under its insertion owner so the patched removeChild and the CSSOM
+    // patch can recognize it later — otherwise its ledger entry would replay on every remount.
+    // Re-insertion re-attributes: an element moved across mount points follows its new owner.
+    const previousConfig = getSandboxConfig(element);
+    if (previousConfig && previousConfig !== sandboxConfig) {
+      warn(
+        `Element ${element.tagName.toLowerCase()} previously owned by ${previousConfig.appName} is re-attributed to ${sandboxConfig.appName} as it is inserted into the latter's container`,
+      );
+    }
+    setSandboxConfig?.(element, sandboxConfig);
 
     if (element.tagName) {
       switch (element.tagName) {
         case LINK_TAG_NAME:
         case STYLE_TAG_NAME: {
           const stylesheetElement = element as HTMLLinkElement | HTMLStyleElement;
+
+          /*
+           * Only rel=stylesheet links belong to the dynamic-stylesheet ledger that remounts
+           * replay. Hint links (preload/modulepreload/preconnect/icon/…) still run through the
+           * transformer — their URLs must resolve against the app entry and preload requests must
+           * stay matchable by the pipeline fetch — but recording them would re-issue the hints on
+           * every remount, and a hint's own removal could never settle the entry.
+           */
+          if (
+            element.tagName === LINK_TAG_NAME &&
+            !(stylesheetElement as HTMLLinkElement).relList.contains('stylesheet')
+          ) {
+            const { compartment, nodeTransformer, fetch, styleIsolation } = sandboxConfig;
+            const transpiledHintElement = nodeTransformer(stylesheetElement, { compartment, fetch, styleIsolation });
+            return appendChild.call(this, transpiledHintElement, refChild) as T;
+          }
+
           Object.defineProperty(stylesheetElement, styleElementTargetSymbol, {
             value: target,
             writable: true,
@@ -198,10 +181,10 @@ export function getOverwrittenAppendChildOrInsertBefore(
             refNo = Array.from(this.childNodes).indexOf(referenceNode as ChildNode);
           }
 
-          const { sandbox, nodeTransformer, fetch, styleIsolation } = sandboxConfig;
+          const { compartment, nodeTransformer, fetch, styleIsolation } = sandboxConfig;
           const transpiledStyleSheetElement = nodeTransformer(stylesheetElement, {
+            compartment,
             fetch,
-            sandbox,
             styleIsolation,
           });
 
@@ -235,13 +218,13 @@ export function getOverwrittenAppendChildOrInsertBefore(
 
         case SCRIPT_TAG_NAME: {
           const scriptElement = element as HTMLScriptElement;
-          const { sandbox, dynamicExternalSyncScriptDeferredList, nodeTransformer, fetch } = sandboxConfig;
+          const { compartment, dynamicExternalSyncScriptDeferredList, nodeTransformer, fetch } = sandboxConfig;
 
           const externalSyncMode = scriptElement.hasAttribute('src') && !scriptElement.hasAttribute('async');
 
           let transformerOpts: AssetsTranspilerOpts = {
+            compartment,
             fetch,
-            sandbox,
           };
 
           let queueSyncScript: () => void;

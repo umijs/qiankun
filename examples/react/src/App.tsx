@@ -1,9 +1,17 @@
 import { useRef, useState, version } from 'react';
 import './App.css';
+import { messages, type Locale } from './i18n';
 
 const ACCENT = '#087EA4';
 
-export default function App() {
+/**
+ * Where the shells fetch this app from: its own dev server locally, a path on the deployed site
+ * (`pages` is the mode `scripts/build-examples-site.mjs` builds with, and it sets Vite's base).
+ */
+const ENTRY = import.meta.env.MODE === 'pages' ? import.meta.env.BASE_URL : '//localhost:7100';
+
+export default function App({ locale = 'en' }: { locale?: Locale }) {
+  const m = messages[locale];
   const poweredByQiankun = !!window.__POWERED_BY_QIANKUN__;
 
   const [probeValue, setProbeValue] = useState('');
@@ -40,49 +48,49 @@ export default function App() {
     <div className="react-app">
       <header className="app-header">
         <span className="accent-dot" aria-hidden="true" />
-        <h1>React micro app</h1>
+        <h1>{m.title}</h1>
         <div className="badges">
           <span className="badge">react {version}</span>
           <span className="badge">vite · esm</span>
           <span className={poweredByQiankun ? 'badge badge-live' : 'badge'}>
-            {poweredByQiankun ? 'inside qiankun' : 'standalone'}
+            {poweredByQiankun ? m.insideQiankun : m.standalone}
           </span>
         </div>
       </header>
 
       <section className="card">
-        <h2>Isolation lab</h2>
+        <h2>{m.isolationLab}</h2>
         <div className="probe">
           <button type="button" onClick={writeWindowProbe}>
-            Write window global
+            {m.writeGlobal}
           </button>
           <div className="probe-result">
-            <output>{probeValue ? `window.__SANDBOX_PROBE__ = '${probeValue}'` : 'window.__SANDBOX_PROBE__ is unset'}</output>
-            <p>Proves globals stay inside this app's membrane — the host window never sees them.</p>
+            <output>{probeValue ? `window.__SANDBOX_PROBE__ = '${probeValue}'` : m.globalUnset}</output>
+            <p>{m.globalNote}</p>
           </div>
         </div>
         <div className="probe">
           <button type="button" onClick={startTimerProbe}>
-            Start leaky interval
+            {m.startInterval}
           </button>
           <div className="probe-result">
-            <output>{ticks === null ? 'no interval running' : `tick ${ticks}`}</output>
-            <p>Never cleared here — proves qiankun reclaims leaked timers on unmount.</p>
+            <output>{ticks === null ? m.noInterval : m.tick(ticks)}</output>
+            <p>{m.intervalNote}</p>
           </div>
         </div>
         <div className="probe">
           <button type="button" onClick={injectStyleProbe}>
-            Tint body background
+            {m.tintBody}
           </button>
           <div className="probe-result">
-            <output>{tinted ? 'style[data-probe] appended to document.head' : 'no probe style injected'}</output>
-            <p>Tints body — proves style isolation keeps the tint inside this app.</p>
+            <output>{tinted ? m.styleInjected : m.noStyle}</output>
+            <p>{m.styleNote}</p>
           </div>
         </div>
       </section>
 
       <section className="card">
-        <h2>Local state</h2>
+        <h2>{m.localState}</h2>
         <div className="counter">
           <button type="button" onClick={() => setCount((c) => c - 1)}>
             −
@@ -91,11 +99,13 @@ export default function App() {
           <button type="button" onClick={() => setCount((c) => c + 1)}>
             +
           </button>
-          <p>useState lives and dies with this app instance.</p>
+          <p>{m.stateNote}</p>
         </div>
       </section>
 
-      <footer className="app-footer">entry //localhost:7100 · lifecycle: src/main.tsx</footer>
+      <footer className="app-footer">
+        {m.entry} {ENTRY} · {m.lifecycle}: src/main.tsx
+      </footer>
     </div>
   );
 }

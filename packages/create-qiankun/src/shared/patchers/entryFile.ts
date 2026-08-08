@@ -1,5 +1,5 @@
+import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import fse from 'fs-extra';
 import type { ViteTemplate } from '../types';
 import { isReactTemplate, isTypeScriptTemplate } from '../types';
 
@@ -75,7 +75,7 @@ if (window.__POWERED_BY_QIANKUN__) {
 }
 `;
 
-  await fse.writeFile(entryPath, content, 'utf-8');
+  await writeFile(entryPath, content, 'utf8');
 }
 
 async function writeVueEntry(appRoot: string, appName: string, isTs: boolean): Promise<void> {
@@ -137,5 +137,5 @@ if (window.__POWERED_BY_QIANKUN__) {
 }
 `;
 
-  await fse.writeFile(entryPath, content, 'utf-8');
+  await writeFile(entryPath, content, 'utf8');
 }

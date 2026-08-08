@@ -4,3 +4,31 @@ packages:
   - "benchmark"
   - "e2e"
   - "examples/*"
+autoInstallPeers: false
+peerDependencyRules:
+  # VitePress bundles Algolia DocSearch, but this site uses the local search provider.
+  ignoreMissing:
+    - search-insights
+overrides:
+  lodash: 4.18.1
+allowBuilds:
+  "@swc/core": true
+  core-js: true
+  core-js-pure: true
+  esbuild: true
+  less: true
+  vue-demi: true
+minimumReleaseAgeExclude:
+  - "@eslint-react/ast@5.17.1"
+  - "@eslint-react/core@5.17.1"
+  - "@eslint-react/eslint-plugin@5.17.1"
+  - "@eslint-react/eslint@5.17.1"
+  - "@eslint-react/jsx@5.17.1"
+  - "@eslint-react/shared@5.17.1"
+  - "@eslint-react/var@5.17.1"
+  - eslint-plugin-react-dom@5.17.1
+  - eslint-plugin-react-jsx@5.17.1
+  - eslint-plugin-react-naming-convention@5.17.1
+  - eslint-plugin-react-rsc@5.17.1
+  - eslint-plugin-react-web-api@5.17.1
+  - eslint-plugin-react-x@5.17.1

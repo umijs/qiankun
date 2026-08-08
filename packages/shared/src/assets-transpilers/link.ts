@@ -65,7 +65,7 @@ const preTranspileStyleSheetLink = (
   baseURI: string,
   opts: BaseTranspilerOpts,
 ): PreTranspileResult => {
-  const { sandbox, moduleResolver } = opts;
+  const { compartment, moduleResolver } = opts;
   const { href, rel } = link;
 
   // filter preload links
@@ -75,7 +75,7 @@ const preTranspileStyleSheetLink = (
     const matchedAssets = moduleResolver?.(linkHref);
     if (matchedAssets) {
       return {
-        mode: sandbox ? Mode.REUSED_DEP_IN_SANDBOX : Mode.REUSED_DEP,
+        mode: compartment ? Mode.REUSED_DEP_IN_SANDBOX : Mode.REUSED_DEP,
         result: { src: linkHref, ...matchedAssets },
       };
     }
@@ -94,17 +94,18 @@ const postProcessPreloadLink = (link: HTMLLinkElement, baseURI: string, opts: As
 
       switch (mode) {
         /**
-         * While the assets are transpiling in sandbox, it means they will be evaluated with manual fetching,
-         * thus we need to set the attribute `as` to fetch instead of script or style to avoid preload cache missing.
-         * see https://stackoverflow.com/questions/52635660/can-link-rel-preload-be-made-to-work-with-fetch/63814972#63814972
+         * While the assets are transpiling in sandbox, they will be evaluated with manual fetching,
+         * thus the attribute `as` becomes fetch instead of script to avoid preload cache missing
+         * (see https://stackoverflow.com/a/63814972). The preload request must also carry the same
+         * mode and credentials as that pipeline fetch, or the browser never matches the two and
+         * downloads the asset twice: map the crossorigin semantics exactly like the modulepreload
+         * rewrite below — missing/anonymous → cors + same-origin, use-credentials → cors + include.
          */
         case Mode.REMOTE_ASSETS_IN_SANDBOX: {
-          if (process.env.NODE_ENV === 'development' && !link.hasAttribute('crossorigin')) {
-            warn(
-              `crossorigin attribute of script ${href} is not specified, that will make preload invalid, see https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/rel/preload#cors-enabled_fetches`,
-            );
-          }
           link.as = 'fetch';
+          if (link.crossOrigin !== 'use-credentials') {
+            link.crossOrigin = 'anonymous';
+          }
           break;
         }
 
@@ -168,7 +169,7 @@ export default function transpileLink(
    * warm-up request at walk-ahead time, and the rewrite pipeline's fetch() picks the response up
    * from the preload cache regardless of HTTP cacheability (RFC §10.1).
    */
-  if (opts.esmEngine && link.rel === 'modulepreload') {
+  if (opts.compartment && link.rel === 'modulepreload') {
     if (hrefAttribute) {
       link.href = resolveUrl(hrefAttribute, baseURI);
       link.rel = 'preload';

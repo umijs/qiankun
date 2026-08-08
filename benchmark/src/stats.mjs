@@ -86,38 +86,63 @@ export function comparePairedTrials(trials, { iterations = 10_000, seed = 202607
     throw new Error('bootstrap iterations must be a positive integer');
   }
 
-  const logRatiosByTrial = trials.map(({ candidate, reference }) => {
+  // The absolute paired delta (milliseconds) rides the exact same hierarchical bootstrap as the
+  // log ratio, sharing every resample draw: the ratio expresses proportional overhead, while the
+  // absolute delta exposes the fixed constant cost a small fixture would otherwise disguise as a
+  // percentage. Sharing the draw sequence keeps the relative results bit-identical to before.
+  const pairsByTrial = trials.map(({ candidate, reference }) => {
     if (reference.length !== candidate.length) throw new Error('paired sample arrays must have the same length');
     validateSamples(reference, { positive: true });
     validateSamples(candidate, { positive: true });
-    return reference.map((sample, index) => Math.log(candidate[index] / sample));
+    return {
+      absoluteDeltas: reference.map((sample, index) => candidate[index] - sample),
+      logRatios: reference.map((sample, index) => Math.log(candidate[index] / sample)),
+    };
   });
-  const trialMedianLogRatios = logRatiosByTrial.map((logRatios) =>
-    medianSorted([...logRatios].sort((left, right) => left - right)),
+  const ascending = (left, right) => left - right;
+  const trialMedianLogRatios = pairsByTrial.map(({ logRatios }) => medianSorted([...logRatios].sort(ascending)));
+  const trialMedianAbsoluteDeltas = pairsByTrial.map(({ absoluteDeltas }) =>
+    medianSorted([...absoluteDeltas].sort(ascending)),
   );
-  const estimate = medianSorted([...trialMedianLogRatios].sort((left, right) => left - right));
+  const estimate = medianSorted([...trialMedianLogRatios].sort(ascending));
+  const absoluteEstimate = medianSorted([...trialMedianAbsoluteDeltas].sort(ascending));
   const random = createSeededRandom(seed);
   const bootstrap = [];
+  const absoluteBootstrap = [];
 
   for (let iteration = 0; iteration < iterations; iteration += 1) {
     const resampledTrialMedians = [];
-    for (let trialIndex = 0; trialIndex < logRatiosByTrial.length; trialIndex += 1) {
-      const selectedTrial = logRatiosByTrial[Math.floor(random() * logRatiosByTrial.length)];
-      const resampled = [];
-      for (let index = 0; index < selectedTrial.length; index += 1) {
-        resampled.push(selectedTrial[Math.floor(random() * selectedTrial.length)]);
+    const resampledTrialAbsoluteMedians = [];
+    for (let trialIndex = 0; trialIndex < pairsByTrial.length; trialIndex += 1) {
+      const selectedTrial = pairsByTrial[Math.floor(random() * pairsByTrial.length)];
+      const resampledRatios = [];
+      const resampledDeltas = [];
+      for (let index = 0; index < selectedTrial.logRatios.length; index += 1) {
+        const draw = Math.floor(random() * selectedTrial.logRatios.length);
+        resampledRatios.push(selectedTrial.logRatios[draw]);
+        resampledDeltas.push(selectedTrial.absoluteDeltas[draw]);
       }
-      resampled.sort((left, right) => left - right);
-      resampledTrialMedians.push(medianSorted(resampled));
+      resampledRatios.sort(ascending);
+      resampledDeltas.sort(ascending);
+      resampledTrialMedians.push(medianSorted(resampledRatios));
+      resampledTrialAbsoluteMedians.push(medianSorted(resampledDeltas));
     }
-    resampledTrialMedians.sort((left, right) => left - right);
+    resampledTrialMedians.sort(ascending);
+    resampledTrialAbsoluteMedians.sort(ascending);
     bootstrap.push(Math.expm1(medianSorted(resampledTrialMedians)) * 100);
+    absoluteBootstrap.push(medianSorted(resampledTrialAbsoluteMedians));
   }
-  bootstrap.sort((left, right) => left - right);
+  bootstrap.sort(ascending);
+  absoluteBootstrap.sort(ascending);
 
   return {
+    absoluteDeltaConfidenceInterval95Ms: [
+      quantileSorted(absoluteBootstrap, 0.025),
+      quantileSorted(absoluteBootstrap, 0.975),
+    ],
+    absoluteDeltaMs: absoluteEstimate,
     confidenceInterval95: [quantileSorted(bootstrap, 0.025), quantileSorted(bootstrap, 0.975)],
-    pairedCount: logRatiosByTrial.reduce((total, logRatios) => total + logRatios.length, 0),
+    pairedCount: pairsByTrial.reduce((total, { logRatios }) => total + logRatios.length, 0),
     relativeDeltaPercent: Math.expm1(estimate) * 100,
     trialCount: trials.length,
     trialRelativeDeltas: trialMedianLogRatios.map((value) => Math.expm1(value) * 100),

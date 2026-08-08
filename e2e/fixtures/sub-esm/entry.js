@@ -21,6 +21,9 @@ export async function mount(props) {
     // getCount() proves the imported module executed in the same sandboxed graph
     `<p data-testid="esm-counters">mount:${mountCount},importedCount:${getCount()}</p>`,
     `<p data-testid="esm-main-global">${String(window.__MAIN_GLOBAL__)}</p>`,
+    `<p data-testid="esm-extra-global">${
+      typeof e2eExtraGlobal === 'undefined' ? 'missing' : String(e2eExtraGlobal)
+    }</p>`,
     // bare dunder reads: __RUNTIME_FLAG__ was created at runtime by another module,
     // readSelfFlag() reads a flag written after its own module bindings were created
     `<p data-testid="esm-flags">runtime:${__RUNTIME_FLAG__},self:${readSelfFlag()}</p>`,

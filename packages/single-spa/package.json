@@ -1,0 +1,25 @@
+{
+  "name": "@qiankunjs/single-spa",
+  "version": "0.0.1-rc.0",
+  "description": "qiankun's vendored fork of single-spa (7.0 branch @ ce0f925a, v7.0.0-beta.13)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/umijs/qiankun.git"
+  },
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "sideEffects": false,
+  "scripts": {
+    "build": "rimraf dist && vite build --config ../../vite.library.config.ts && tsc -p tsconfig.build.json && node ../../scripts/copy-declarations.mjs src dist/esm && node ../../scripts/copy-declarations.mjs dist/esm dist/cjs",
+    "test": "vitest --run"
+  },
+  "author": "Kuitos",
+  "license": "MIT",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+  "files": [
+    "dist"
+  ]
+}

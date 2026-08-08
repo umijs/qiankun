@@ -1,10 +1,10 @@
 import path from 'node:path';
-import fse from 'fs-extra';
+import { readJsonFile, writeJsonFile } from '../../utils/fs';
 import { QIANKUN_VERSION } from '../../versions';
 
 export async function patchMainPackageJson(appRoot: string, appName: string): Promise<void> {
   const pkgPath = path.join(appRoot, 'package.json');
-  const pkg = (await fse.readJson(pkgPath)) as Record<string, unknown>;
+  const pkg = await readJsonFile<Record<string, unknown>>(pkgPath);
 
   pkg.name = appName;
 
@@ -13,5 +13,5 @@ export async function patchMainPackageJson(appRoot: string, appName: string): Pr
     qiankun: QIANKUN_VERSION,
   };
 
-  await fse.writeJson(pkgPath, pkg, { spaces: 2 });
+  await writeJsonFile(pkgPath, pkg);
 }

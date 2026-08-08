@@ -1,3 +1,5 @@
+import { useMessages } from '../i18n';
+
 interface TrigramProps {
   sandbox: boolean;
   styles: boolean;
@@ -10,10 +12,11 @@ interface TrigramProps {
  * pending. A mounted, fully isolated app completes the trigram.
  */
 export default function Trigram({ sandbox, styles, mounted }: TrigramProps) {
+  const m = useMessages();
   const bars = [
-    { on: sandbox, label: 'js sandbox' },
-    { on: styles, label: 'style isolation' },
-    { on: mounted, label: 'mounted' },
+    { on: sandbox, label: m.trigramSandbox },
+    { on: styles, label: m.trigramStyles },
+    { on: mounted, label: m.trigramMounted },
   ];
   const live = bars.every((bar) => bar.on);
 
@@ -32,7 +35,7 @@ export default function Trigram({ sandbox, styles, mounted }: TrigramProps) {
         )}
       </div>
       <span className={`font-mono text-[11px] ${live ? 'text-success' : 'text-ink-soft'}`}>
-        {live ? 'isolated · live' : `${bars.filter((b) => b.on).length}/3`}
+        {live ? `${m.isolated} · ${m.live}` : `${bars.filter((b) => b.on).length}/3`}
       </span>
     </div>
   );

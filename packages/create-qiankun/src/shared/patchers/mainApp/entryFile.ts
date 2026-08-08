@@ -1,5 +1,5 @@
+import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import fse from 'fs-extra';
 
 export async function writeMainEntryFile(appRoot: string, _appName: string): Promise<void> {
   const entryPath = path.join(appRoot, 'src/main.tsx');
@@ -35,5 +35,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 // start();
 `;
 
-  await fse.writeFile(entryPath, content, 'utf-8');
+  await writeFile(entryPath, content, 'utf8');
 }

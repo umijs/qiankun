@@ -2,9 +2,9 @@
 
 **Updated:** 2026-07-06 · **Commit:** dcc42ae4 · **Branch:** next (qiankun 3.0, active dev)
 
-Qiankun is a micro-frontend framework built on [single-spa](https://github.com/single-spa/single-spa). v3 rewrites the runtime around **streaming HTML-entry loading**, a **Proxy-membrane JS sandbox**, and native **ESM-sandbox** execution. pnpm monorepo, built with `father` (UmiJS).
+Qiankun is a micro-frontend framework built on [single-spa](https://github.com/single-spa/single-spa). v3 rewrites the runtime around **streaming HTML-entry loading**, a **Proxy-membrane JS sandbox**, and native **ESM-sandbox** execution. It is a pnpm monorepo built with Vite 8; `tsc` emits package declarations.
 
-> Requires Node `>=20.19`, `pnpm@10.28.2` (see `packageManager`). Never use npm/yarn at the root.
+> Requires Node `^22.15 || >=24`, `pnpm@11.13.1` (see `packageManager`). Never use npm/yarn at the root.
 
 ## STRUCTURE
 
@@ -15,11 +15,12 @@ qiankun/
 │   ├── sandbox/         # JS isolation: Proxy membrane + Compartment  → packages/sandbox/AGENTS.md
 │   ├── loader/          # Streaming HTML-entry loader (writable-dom)  → packages/loader/AGENTS.md
 │   ├── shared/          # Transpilers, fetch-utils, module-resolver, ESM-sandbox engine → packages/shared/AGENTS.md
-│   ├── ui-bindings/     # <MicroApp> components: react/ vue/ shared/
+│   ├── single-spa/      # Vendored single-spa fork (@qiankunjs/single-spa, upstream 7.0 @ ce0f925a) → packages/single-spa/README.md
+│   ├── ui-bindings/     # <MicroApp> components: react/ vue/ shared/ (dogfooded by examples/{main,vue-host})
 │   ├── bundler-plugin/  # Webpack(4/5) + Vite plugins: mark entry script, fix output library
 │   └── create-qiankun/  # `npm create qiankun` scaffolder (React/Vue, Vite)
 ├── e2e/                 # Playwright, runs against BUILT dist → e2e/README.md
-├── examples/            # Runnable integration demos (main + react/vue/purehtml/webpack)
+├── examples/            # Runnable demos: two hosts (main = @qiankunjs/react, vue-host = @qiankunjs/vue) + react/vue/purehtml/webpack
 └── docs/                # VitePress site (docs/rfcs holds design RFCs)
 ```
 
@@ -37,9 +38,11 @@ qiankun/
 `loadApp` (`packages/qiankun/src/core/loadApp.ts`) is the orchestrator. Per micro-app it wires:
 
 1. **fetch** — decorated `window.fetch`: `makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)))`.
-2. **sandbox** — `createSandboxContainer()` builds a Proxy-membrane `window`/`document` view; patchers (dynamicAppend, timers, listeners, history) each return a `free()` cleanup called on unmount.
+2. **sandbox** — `createSandbox()` builds a Proxy-membrane `window`/`document` view; patchers (dynamicAppend, timers, listeners, history) each return a `free()` cleanup called on unmount. Without a container it uses the JS-only preset; a container enables DOM containment.
 3. **loader** — `loadEntry(entry, container, opts)` streams the HTML entry through `writable-dom`, virtualizing `<head>` → `<qiankun-head>` and running each node through a `nodeTransformer`.
 4. **transpilers** (`shared/assets-transpilers`) rewrite each script/link/style node before it hits live DOM.
+
+Micro apps sharing one container element take FIFO turns for their DOM writes through the **container occupancy gate** (`core/containerOccupancy.ts`, two critical sections: load-phase streaming and mount→unmount; see `docs/rfcs/container-occupancy-gate.md`).
 
 Two execution paths, chosen per script type:
 
@@ -53,6 +56,7 @@ Internal dependency graph (never invert it):
 ```
 qiankun → loader → sandbox → shared
                    sandbox → shared
+qiankun → single-spa   (vendored fork; zero deps, bottom of the graph — must not import shared/sandbox/loader)
 ui-bindings/{react,vue} → ui-bindings/shared → qiankun
 ```
 
@@ -61,7 +65,7 @@ ui-bindings/{react,vue} → ui-bindings/shared → qiankun
 ```bash
 pnpm install                 # install all workspace deps
 
-# build (father → dual ESM+CJS in each package's dist/)
+# build (Vite 8 → package JavaScript; tsc → declarations)
 pnpm run build               # build everything (packages + examples)
 pnpm run build:packages      # build only packages/** (prereq for e2e & examples)
 
@@ -84,9 +88,9 @@ pnpm run start:example       # build packages + run all example apps in parallel
 pnpm run docs:dev            # VitePress docs
 ```
 
-## CONVENTIONS (enforced by eslint — `pnpm run eslint` will reject violations)
+## CONVENTIONS (enforced by ESLint flat config — `pnpm run eslint` will reject violations)
 
-TypeScript is strict + type-checked (`@typescript-eslint/recommended-requiring-type-checking`):
+TypeScript is strict + type-checked (`typescript-eslint`'s type-checked flat config):
 
 - **No `any`** — `no-explicit-any` auto-fixes to `unknown`. No `as any`, `@ts-ignore`, `@ts-expect-error`.
 - **Inline type imports** — `import { type Foo, bar }`, not `import type { Foo }` on its own line (`consistent-type-imports`/`consistent-type-exports` with `fixStyle: inline-type-imports`).
@@ -98,7 +102,8 @@ TypeScript is strict + type-checked (`@typescript-eslint/recommended-requiring-t
 
 Build/release:
 
-- `father` build, dual ESM+CJS; packages use `main`/`module`/`types` (no `exports` field).
+- Vite 8 builds browser package JavaScript as ESM+CJS, while `tsc` emits declarations; the `create-qiankun` Node CLI is CJS-only. Package entry fields and subpath exports must point at the corresponding `dist` outputs.
+- TypeScript 7 is installed as `@typescript/native` and owns the `tsc` binary. The `typescript` dependency intentionally aliases `@typescript/typescript6` because TypeScript 7.0 has no programmatic API yet and tools such as `typescript-eslint` and `vue-tsc` still require that compatibility API.
 - Versioning via **changesets**, but changesets are **auto-derived from Conventional Commits** in CI (`scripts/generate-changesets.mjs`) — do **not** hand-write `.changeset/*.md`. Just land a well-formed conventional commit (`feat`/`fix`/`feat!`…); the release job maps changed files → packages and infers the bump. Each sub-package keeps its own `CHANGELOG.md` (changeset default, visible on npm); on publish `scripts/generate-release-notes.mjs` aggregates them into **one GitHub Release**, which can be polished after the fact via the `/release-changelog` skill (`gh release edit`). Full flow: `.changeset/README.md`.
 - Conventional commits enforced by commitlint (`feat:`, `fix:`, `feat(esm-sandbox):`, …).
 
@@ -107,8 +112,10 @@ Build/release:
 - **NEVER** put more than one `entry` script in an HTML entry — the loader throws `QiankunError`.
 - **ALWAYS** unmount micro-apps; `loadMicroApp`/patchers return handles/`free()` — leaks break remount & multi-instance.
 - In sandbox code, **never touch the real `window`/`document.head`** — go through the proxied view.
+- The vendored `loader/src/writable-dom/` fork accepts **generic designs only** — never qiankun-coupled semantics; caller bookkeeping goes through its `assetTransformer` callback (see `packages/loader/AGENTS.md`).
 - Don't invert the package dependency graph above (e.g. `shared` must not import `sandbox`).
 - e2e: never `waitForTimeout`; use web-first assertions; all ports come from `e2e/ports.ts`.
+- Performance work is judged in this order: **proportional impact first** (does the win scale with asset size / network / app scale — e.g. eliminating a duplicate download), **readability second** (never trade it away for small wins), **constant absolute savings last** (fixed single-digit-ms pipeline costs are noise in real apps and rarely worth landing). Beware: the ~50ms benchmark fixture makes fixed milliseconds masquerade as percentages — convert to absolute ms against realistic load times before deciding. And fix root causes at the source, not with per-call-site markers/exemptions downstream.
 
 ## NOTES
 

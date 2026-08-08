@@ -1,10 +1,9 @@
-import { Deferred, prepareEsmLexer } from '@qiankunjs/shared';
+import { Deferred } from '@qiankunjs/shared';
 import { noop } from 'lodash';
-import type { StartOpts } from 'single-spa';
-import { registerApplication, start as startSingleSpa } from 'single-spa';
+import type { StartOpts } from '@qiankunjs/single-spa';
+import { registerApplication, start as startSingleSpa } from '@qiankunjs/single-spa';
 import loadApp from '../core/loadApp';
 import type { AppConfiguration, LifeCycles, ObjectType, RegistrableApp } from '../types';
-import { toArray } from '../utils';
 
 export let started = false;
 
@@ -28,14 +27,16 @@ export function registerMicroApps<T extends ObjectType>(apps: Array<RegistrableA
         loader(true);
         await frameworkStartedDefer.promise;
 
-        const { mount, ...otherMicroAppConfigs } = (
-          await loadApp({ name, entry, container, props }, { ...frameworkConfiguration, ...configuration }, lifeCycles)
+        // The loader indicator hooks live INSIDE loadApp's mount chain: appended out here they
+        // would run within the container hold ② but outside its failure fallback, and a throwing
+        // indicator would leak the hold forever (single-spa never runs a broken app's chains).
+        return (
+          await loadApp(
+            { name, entry, container, props, loader },
+            { ...frameworkConfiguration, ...configuration },
+            lifeCycles,
+          )
         )(container);
-
-        return {
-          mount: [async () => loader(true), ...toArray(mount), async () => loader(false)],
-          ...otherMicroAppConfigs,
-        };
       },
       activeWhen: activeRule,
       customProps: props,
@@ -45,10 +46,6 @@ export function registerMicroApps<T extends ObjectType>(apps: Array<RegistrableA
 
 export function start(opts: StartOpts = {}) {
   if (!started) {
-    // preload the wasm lexer of the ESM sandbox so the first micro app loading does not pay the
-    // instantiation cost, the transpiler pipeline awaits it again as the safety net (ESM sandbox RFC §10)
-    void prepareEsmLexer();
-
     // frameworkConfiguration = { prefetch: true, singular: true, sandbox: true, ...opts };
     // const { prefetch, urlRerouteOnly = defaultUrlRerouteOnly, ...importEntryOpts } = frameworkConfiguration;
 

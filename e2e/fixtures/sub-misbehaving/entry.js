@@ -2,11 +2,13 @@
  * A deliberately badly-behaved sub app for the failure-path and cleanup suites.
  * Behaviors are selected via props so one fixture covers several scenarios:
  * - props.behavior === 'mount-error': mount rejects
+ * - props.behavior === 'unmount-error': mounts fine, unmount rejects
  * - otherwise: mounts fine but leaks an interval (never cleared in unmount),
  *   which the sandbox is expected to reclaim on unmount
  */
 (function (global) {
   var ticks = 0;
+  var unmountShouldFail = false;
 
   global['sub-misbehaving'] = {
     bootstrap: function () {
@@ -16,6 +18,7 @@
       if (props && props.behavior === 'mount-error') {
         return Promise.reject(new Error('deliberate mount failure'));
       }
+      unmountShouldFail = !!(props && props.behavior === 'unmount-error');
 
       var root = (props && props.container ? props.container : document).querySelector('#misbehaving-root');
       root.innerHTML = '<p data-testid="misbehaving-content">misbehaving mounted</p>';
@@ -30,6 +33,9 @@
       return Promise.resolve();
     },
     unmount: function () {
+      if (unmountShouldFail) {
+        return Promise.reject(new Error('deliberate unmount failure'));
+      }
       // deliberately does NOT clear the interval
       return Promise.resolve();
     },

@@ -9,14 +9,20 @@ import type { Page } from '@playwright/test';
 export const FIREFOX_ESM_LIMITATION =
   'ESM sandbox needs dynamic import maps, unsupported in Firefox (RFC known limitation)';
 
-type E2EWindow = Window & {
+export type E2EWindow = Window & {
   __E2E__: {
     load(
       name: string,
       configuration?: Record<string, unknown>,
       key?: string,
       props?: Record<string, unknown>,
+      containerKey?: string,
     ): Promise<string>;
+    loadWithStoragePlugin(prefix: string, key: string, value: string): Promise<string>;
+    loadWithPrecompiledHook(key: string): Promise<string>;
+    hookMetrics(key: string): { hookCalls: number; moduleFetches: number } | undefined;
+    loadDetached(name: string, key?: string, containerKey?: string, props?: Record<string, unknown>): string;
+    settle(key: string): Promise<string>;
     unmount(key: string): Promise<string>;
     resetContainer(key: string): void;
     status(key: string): string | undefined;
@@ -29,16 +35,18 @@ export async function loadApp(
   configuration?: Record<string, unknown>,
   key = name,
   props?: Record<string, unknown>,
+  containerKey = key,
 ): Promise<string> {
   return page.evaluate(
-    ([appName, config, instanceKey, appProps]) =>
+    ([appName, config, instanceKey, appProps, appContainerKey]) =>
       (window as unknown as E2EWindow).__E2E__.load(
         appName as string,
         config as Record<string, unknown> | undefined,
         instanceKey as string,
         appProps as Record<string, unknown> | undefined,
+        appContainerKey as string,
       ),
-    [name, configuration, key, props] as const,
+    [name, configuration, key, props, containerKey] as const,
   );
 }
 
@@ -61,6 +69,33 @@ export async function loadAppExpectError(
 
 export async function unmountApp(page: Page, key: string): Promise<string> {
   return page.evaluate((instanceKey) => (window as unknown as E2EWindow).__E2E__.unmount(instanceKey), key);
+}
+
+export async function loadAppWithStoragePlugin(
+  page: Page,
+  prefix: string,
+  key: string,
+  value: string,
+): Promise<string> {
+  return page.evaluate(
+    ([storagePrefix, instanceKey, storedValue]) =>
+      (window as unknown as E2EWindow).__E2E__.loadWithStoragePlugin(storagePrefix, instanceKey, storedValue),
+    [prefix, key, value] as const,
+  );
+}
+
+export async function loadAppWithPrecompiledHook(page: Page, key: string): Promise<string> {
+  return page.evaluate(
+    (instanceKey) => (window as unknown as E2EWindow).__E2E__.loadWithPrecompiledHook(instanceKey),
+    key,
+  );
+}
+
+export async function readHookMetrics(
+  page: Page,
+  key: string,
+): Promise<{ hookCalls: number; moduleFetches: number } | undefined> {
+  return page.evaluate((instanceKey) => (window as unknown as E2EWindow).__E2E__.hookMetrics(instanceKey), key);
 }
 
 /** Drop and recreate the app container, the keyed re-render pattern main apps use on retry. */

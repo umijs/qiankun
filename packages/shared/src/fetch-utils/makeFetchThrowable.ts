@@ -21,7 +21,7 @@ export const makeFetchThrowable: (fetch: Fetch) => Fetch = (fetch) => {
         if (e instanceof Error && !e.message.includes(urlString)) {
           e.message = `${urlString} ${e.message}`;
         }
-      } catch (_) {
+      } catch {
         // e.message may be readonly
       }
       throw e;

@@ -7,22 +7,25 @@
   "types": "./dist/esm/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "build": "father build",
-    "dev": "father dev"
+    "build": "rimraf dist && vite build --config ../../../vite.library.config.ts && tsc -p tsconfig.build.json && node ../../../scripts/copy-declarations.mjs src dist/esm && node ../../../scripts/copy-declarations.mjs dist/esm dist/cjs",
+    "dev": "vite build --watch --config ../../../vite.library.config.ts",
+    "test": "vitest --run"
   },
   "author": "Bravepg",
   "license": "MIT",
   "dependencies": {
     "@qiankunjs/ui-shared": "workspace:^",
-    "lodash": "^4.17.11"
+    "lodash": "^4.18.1"
   },
   "devDependencies": {
-    "@types/react": "^18.0.0",
-    "eslint-plugin-react": "^7.33.2",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "qiankun": "workspace:^",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   },
   "peerDependencies": {
+    "qiankun": "^3.0.0-rc.15",
     "react": ">=16.9.0",
     "react-dom": ">=16.9.0"
   },

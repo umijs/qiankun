@@ -4,6 +4,10 @@ function formatSignedPercent(value) {
   return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
 }
 
+function formatSignedMs(value) {
+  return `${value >= 0 ? '+' : ''}${value.toFixed(2)}ms`;
+}
+
 function indexByRound(samples, comparisonId, trial, role) {
   const byRound = new Map();
   for (const sample of samples) {
@@ -142,13 +146,14 @@ export function renderSummaryMarkdown(report, { headingLevel = 1, title }) {
     '',
     `${sectionHeading} Comparisons`,
     '',
-    '| Comparison | Relative delta | 95% CI | Trials | Paired samples |',
-    '| --- | ---: | ---: | ---: | ---: |',
+    '| Comparison | Relative delta | 95% CI | Absolute delta | Absolute 95% CI | Trials | Paired samples |',
+    '| --- | ---: | ---: | ---: | ---: | ---: | ---: |',
   );
   Object.values(report.comparisons).forEach((comparison) => {
     const [lower, upper] = comparison.confidenceInterval95;
+    const [absoluteLower, absoluteUpper] = comparison.absoluteDeltaConfidenceInterval95Ms;
     lines.push(
-      `| ${comparison.label} | ${formatSignedPercent(comparison.relativeDeltaPercent)} | ${formatSignedPercent(lower)} to ${formatSignedPercent(upper)} | ${comparison.trialCount} | ${comparison.pairedCount} |`,
+      `| ${comparison.label} | ${formatSignedPercent(comparison.relativeDeltaPercent)} | ${formatSignedPercent(lower)} to ${formatSignedPercent(upper)} | ${formatSignedMs(comparison.absoluteDeltaMs)} | ${formatSignedMs(absoluteLower)} to ${formatSignedMs(absoluteUpper)} | ${comparison.trialCount} | ${comparison.pairedCount} |`,
     );
   });
 

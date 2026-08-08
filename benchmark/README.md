@@ -7,6 +7,14 @@ This workspace measures cold micro-app loading from the instant an adapter invok
 Run from the repository root:
 
 ```bash
+# Unified entry: run every suite sequentially and print one aggregated
+# console report (tachometer-style tables) at the end.
+pnpm bench                       # standard profile: 1 trial × 50 samples, A/A gate on (~20-30 min)
+pnpm bench --profile=check       # plumbing only: 5 samples, performance gates off (~2 min)
+pnpm bench --profile=full        # formal profile: 3 trials × 100 samples (hours)
+pnpm bench --suites=core,ssr-streaming   # limit the suite list
+pnpm bench --samples=30 --seed=42        # any other flag is forwarded to runner.mjs
+
 # Fast plumbing checks: one browser trial and five samples per cell.
 pnpm benchmark:check
 pnpm benchmark:ecosystem:check
@@ -18,9 +26,16 @@ pnpm benchmark:smoke
 pnpm benchmark:ecosystem
 pnpm benchmark:site-isolation
 pnpm benchmark:ssr-streaming
+
+# PR-CI-sized performance floor: three independent browser trials,
+# 100 samples per cell, and enforced A/A plus suite comparison gates.
+pnpm benchmark:ci-basic
+
+# RFC hard metric 2: baseline/candidate membrane, rewrite, and load-chain gate.
+pnpm benchmark:rfc-performance
 ```
 
-The check commands disable the A/A gate and are not performance evidence. Formal run results are written to `benchmark/results/<timestamp>-<commit>/`; raw warmups and measurements are retained.
+The check commands disable the A/A and suite comparison gates and are not performance evidence. Formal run results are written to `benchmark/results/<timestamp>-<commit>/`; raw warmups and measurements are retained.
 
 To compare two repeated runs by absolute median, use the guarded comparison command:
 
@@ -44,11 +59,14 @@ Suites are explicit and independent; adding an ecosystem framework does not alte
 | Suite | Cells | Purpose |
 | --- | --: | --- |
 | `core` | 8 | qiankun isolation cost plus buffered and streamed comparisons with native iframe and Wujie |
+| `ci-basic` | 5 | CI-only floor for the buffered sandbox path and progressive SSR streaming |
 | `site-isolation` | 6 | same-site anchors and cross-site entries for qiankun, native iframe, and Wujie |
 | `ecosystem-html` | 6 | one canonical same-site, buffered, isolated cell for each framework/version |
 | `ssr-streaming` | 6 | literal SSR progressive reveal compared with an identical delayed buffer, native iframe, qiankun v2, Wujie, and Garfish |
 
 The core suite contains qiankun with no isolation, sandbox only, and sandbox plus style isolation; same-site buffered native iframe and Wujie; and streamed native iframe, qiankun, and Wujie cells.
+
+The CI-only basic suite reuses five canonical cells: buffered qiankun without isolation, buffered qiankun with its default sandbox, a buffered native iframe, and the identical-byte qiankun v3 SSR fixture under delayed-buffered and streamed delivery. It is excluded from the unified `pnpm bench` suite list because those cells already belong to the formal core and SSR suites.
 
 The ecosystem suite intentionally adds only these canonical cells:
 
@@ -88,11 +106,27 @@ Rounds are paired within each independent browser trial. The primary estimate is
 
 ## A/A calibration
 
-Each trial first interleaves two aliases of the exact same selected qiankun cell. The SSR suite uses its streamed qiankun v3 cell; the other suites use the canonical fully isolated cell. Both every trial and the aggregate must satisfy:
+Each trial first interleaves two aliases of the exact same selected qiankun cell. This A/A run checks whether the harness can correctly report no difference when there is no implementation difference; it is not a product or revision comparison. The SSR suite uses its streamed qiankun v3 cell, the CI basic suite uses its sandbox cell, and the other suites use the canonical fully isolated cell. The gate judges the trial-aggregated evaluation, which must satisfy:
 
 - absolute paired median delta no greater than 3%;
 - the bootstrap 95% interval includes 0%;
 - interval width no greater than 10 percentage points.
+
+Per-trial A/A results are reported as diagnostics only: requiring every independent trial's interval to contain zero would compound the false-rejection rate as trials are added, while the hierarchical bootstrap already weighs each trial in the aggregate judgment.
+
+## Basic CI performance gate
+
+Hosted-runner noise has two layers, and the gate accounts for both. Browser-session state drifts between trials on one machine, which multiple independent trials absorb. Machines themselves additionally bias the sandbox-versus-native comparison by several percentage points — the two architectures stress different browser subsystems, so VM differences do not cancel in that ratio the way they do for qiankun-versus-qiankun cells. The CI workflow therefore runs **six shards on independent runner VMs, each with two browser trials and its own seed**, and a final job pools every shard's raw samples (`aggregate-shards.mjs`): shard trials are re-tagged into globally unique trial ids and judged by the same hierarchical bootstrap, so between-VM variance is part of the reported intervals. The local `pnpm benchmark:ci-basic` profile runs three trials on one machine and cannot capture the between-VM layer.
+
+Each trial uses five warmups, 100 paired samples per product cell, and 100 samples per A/A arm. Every sample must still satisfy the complete measurement contract, including visible styled content, lifecycle settlement, error-free loading, and cleanup. The aggregated paired-bootstrap 95% confidence-interval upper bounds must satisfy:
+
+- sandbox versus no isolation: no greater than `+10%` and no greater than `+5ms` absolute — this is the sandbox-overhead budget proper;
+- sandbox versus native iframe: no greater than `+15%` and no greater than `+10ms` absolute — an end-to-end cold-paint floor across two architectures (fetch-driven streaming versus native iframe navigation with its preload scanner), not pure sandbox overhead: cross-VM measurement puts the floor at roughly `+2%` to `+9%` depending on the runner fleet mix with upper bounds up to `~+11.6%`, so `+15%` guards the architecture gap from regressing while remaining stably satisfiable;
+- streamed versus delayed-buffered SSR: no greater than `-30%`, proving the progressive path is at least 30% faster with 95% confidence.
+
+The percentage and absolute bounds guard different failure modes. A percentage detects proportional regressions but, on a small fixture, disguises fixed constant costs as percentages (and would dilute them into invisibility on a large one); the absolute paired-delta bound targets the constant directly — the measured fixed cost is roughly `+1ms` for the sandbox layer and `+2-3ms` for the whole pipeline versus the native iframe. Absolute milliseconds are machine-speed dependent: these budgets are calibrated for GitHub `ubuntu-24.04` hosted runners and this fixture, and sized as disaster guards (an accidental extra round-trip or synchronous stall exceeds them immediately).
+
+These are regression floors, not optimization targets. Both basic overhead comparisons are capped at 10%. Relative, within-run comparisons avoid absolute millisecond thresholds that would vary with CI runner hardware. The suite comparison gate can be disabled with `--comparison-gate=false` for plumbing diagnostics, but such a run is not performance evidence.
 
 ## Revision comparison
 
@@ -113,4 +147,24 @@ The snapshot contains the complete Vite host bundle, preventing baseline and can
 
 Revision mode remains a single browser trial with balanced baseline/candidate rounds and fresh BrowserContexts; it passes only when every sample is valid and the paired-bootstrap 95% confidence interval is entirely below 0%. Use `--scenario=sandbox` with a named snapshot to isolate the buffered sandbox-only path.
 
-Local snapshots are written to `benchmark/artifacts/`. Snapshots and results are gitignored, and the benchmark remains a manual gate rather than part of regular PR CI.
+## RFC hard metric 2 acceptance
+
+The revision benchmark added in #3148 covers the complete buffered sandbox load chain through `--scenario=sandbox`. It does not time membrane property traps or ESM source rewriting independently, so the load result alone cannot satisfy the RFC's three-part performance criterion.
+
+`pnpm benchmark:rfc-performance` closes those two gaps while retaining the existing load-chain measurement:
+
+| Metric | Timed work | Reported value |
+| --- | --- | --: |
+| membrane get | repeated reads through a `Membrane` proxy view | Mops/s |
+| membrane set | repeated writes through the same membrane view | Mops/s |
+| ESM module rewrite | lexer, global scan, specifier edits, and source assembly for a deterministic module corpus | MiB/s |
+| sandbox load chain | the existing cold buffered `loadMicroApp` path from mount invocation to stable paint | ms |
+
+The browser micro-probes report batch time per operation; throughput is its inverse. Baseline and candidate cells are interleaved in the same Chromium process, while load-chain cells retain a fresh BrowserContext and page per attempt. Every comparison uses paired log ratios and retains the existing 10,000-resample bootstrap confidence interval as uncertainty evidence. A metric passes only when its paired median latency regression is at most **+5%** relative to baseline **and** the bootstrap 95% confidence interval is narrower than **10pp** — a wider interval fails the metric as inconclusive rather than letting a noisy run pass on its point estimate. This is deliberately different from the optimization-only revision gate, which requires the whole interval to be below 0%.
+
+The baseline snapshot and candidate must use the same benchmark harness. The snapshot contains both the normal qiankun host and the RFC micro-probe bundle, so package implementations cannot mix across revisions. Formal results are written to `benchmark/results/<timestamp>-<commit>-rfc-hard-metric-2/` as:
+
+- `result.json`: metadata, snapshot and harness fingerprints, raw warmups/product samples, bootstrap comparisons, and per-metric gate evaluations;
+- `summary.md`: the four metric medians, paired deltas, confidence intervals, and pass/fail decisions.
+
+Local snapshots are written to `benchmark/artifacts/`, and benchmark results are written to `benchmark/results/`; both are gitignored. The full framework suites, revision comparisons, and RFC hard-metric benchmark remain manual performance evidence, while `ci-basic` is sized for regular PR CI.

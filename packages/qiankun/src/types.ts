@@ -3,7 +3,30 @@
  * @since 2023-04-25
  */
 import type { LoaderOpts } from '@qiankunjs/loader';
-import type { LifeCycles as ParcelLifeCycles, Parcel, RegisterApplicationConfig } from 'single-spa';
+import type { CreateSandboxOptions } from '@qiankunjs/sandbox';
+import type { LifeCycles as ParcelLifeCycles, Parcel, RegisterApplicationConfig } from '@qiankunjs/single-spa';
+
+export type {
+  Compartment,
+  CompartmentGlobals,
+  CompartmentOptions,
+  CreateSandboxOptions,
+  Free,
+  ImportHook,
+  IsolationPlugin,
+  IsolationPluginConfig,
+  IsolationPluginContext,
+  ModuleDescriptor,
+  ModuleNamespace,
+  Modules,
+  ModuleSource,
+  PrecompileModuleSourceOpts,
+  ResolveHook,
+  Rebuild,
+  SandboxContainerPreparation,
+  SandboxController,
+  UnshadowableGlobals,
+} from '@qiankunjs/sandbox';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
@@ -33,24 +56,36 @@ export type LoadableApp<T extends ObjectType> = AppMetadata & {
   container: HTMLElement;
   // props pass to app
   props?: T;
+  /**
+   * Loading indicator, called with true when the mount chain starts (the container gate wait
+   * included) and false once the app is mounted. Runs inside the chain's failure fallback.
+   */
+  loader?: (loading: boolean) => void;
 };
 
 // for the route-based apps
 export type RegistrableApp<T extends ObjectType> = LoadableApp<T> & {
-  loader?: (loading: boolean) => void;
   activeRule: RegisterApplicationConfig['activeWhen'];
   // per-app loading configuration (sandbox, styleIsolation, fetch, ...), merged over the framework defaults
   configuration?: AppConfiguration;
 };
 
+/**
+ * The umbrella configuration for the JS sandbox — structurally a public projection of
+ * `CompartmentOptions` plus two qiankun host extensions (`plugins`, `styleIsolation`).
+ */
+export type SandboxConfiguration = Pick<
+  CreateSandboxOptions,
+  'globals' | 'incubatorContext' | 'modules' | 'resolveHook' | 'importHook' | 'loadHook' | 'plugins' | 'styleIsolation'
+>;
+
 export type AppConfiguration = Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
-  sandbox?: boolean;
-  globalContext?: WindowProxy;
   /**
-   * Enable runtime CSS isolation via @scope wrapping.
-   * When enabled, all micro-app styles are scoped to the app container.
+   * JS sandbox switch and configuration.
+   * `false` disables isolation entirely; `true` (the default) enables it with defaults;
+   * an object enables it and configures the underlying Compartment.
    */
-  styleIsolation?: boolean;
+  sandbox?: boolean | SandboxConfiguration;
 };
 
 export type LifeCycleFn<T extends ObjectType> = (app: LoadableApp<T>, global: WindowProxy) => Promise<void>;

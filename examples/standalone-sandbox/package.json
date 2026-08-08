@@ -1,0 +1,19 @@
+{
+  "name": "@qiankunjs/example-standalone-sandbox",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Standalone @qiankunjs/sandbox browser containment demo",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@qiankunjs/sandbox": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3",
+    "vite": "^8.1.3"
+  }
+}

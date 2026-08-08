@@ -65,11 +65,12 @@ export function parseRunnerOptions(args) {
     if (name === 'suite') {
       if (
         rawValue !== 'core' &&
+        rawValue !== 'ci-basic' &&
         rawValue !== 'site-isolation' &&
         rawValue !== 'ssr-streaming' &&
         rawValue !== 'ecosystem-html'
       ) {
-        throw new Error('suite must be core, site-isolation, ssr-streaming, or ecosystem-html');
+        throw new Error('suite must be core, ci-basic, site-isolation, ssr-streaming, or ecosystem-html');
       }
       options.suite = rawValue;
       continue;

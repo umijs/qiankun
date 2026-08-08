@@ -52,13 +52,12 @@ import { MicroApp } from '@qiankunjs/vue';
 <script setup>
 import CustomLoader from '@/components/CustomLoader.vue';
 import { MicroApp } from '@qiankunjs/vue';
-
 </script>
 <template>
-  <micro-app name="app1" entry="http://localhost:8000" >
-     <template #loader="{ loading }">
-       <custom-loader :loading="loading">
-     </template>
+  <micro-app name="app1" entry="http://localhost:8000">
+    <template #loader="{ loading }">
+      <custom-loader :loading="loading" />
+    </template>
   </micro-app>
 </template>
 ```
@@ -86,13 +85,12 @@ import { MicroApp } from '@qiankunjs/vue';
 <script setup>
 import CustomErrorBoundary from '@/components/CustomErrorBoundary.vue';
 import { MicroApp } from '@qiankunjs/vue';
-
 </script>
 <template>
-  <micro-app name="app1" entry="http://localhost:8000" >
-     <template #error-boundary="{ error }">
-       <custom-error-boundary :error="error">
-     </template>
+  <micro-app name="app1" entry="http://localhost:8000">
+    <template #error-boundary="{ error }">
+      <custom-error-boundary :error="error" />
+    </template>
   </micro-app>
 </template>
 ```
@@ -103,6 +101,8 @@ import { MicroApp } from '@qiankunjs/vue';
 | --- | --- | --- | --- | --- |
 | `name` | 是 | 微应用的名称 | `string` |
 | `entry` | 是 | 微应用的 HTML 地址 | `string` |
+| `settings` | 否 | 该微应用的 qiankun 配置：沙箱、样式隔离、fetch 等 | `AppConfiguration` | `{ sandbox: true }` |
+| `lifeCycles` | 否 | 该微应用的 qiankun 生命周期钩子。钩子在同一容器内首次加载时被捕获，因此不要在其中闭包组件状态 | `LifeCycles` | `undefined` |
 | `autoSetLoading` | 否 | 自动设置微应用的加载状态 | `boolean` | `false` |
 | `autoCaptureError` | 否 | 自动设置微应用的错误捕获 | `boolean` | `false` |
 | `className` | 否 | 微应用的样式类 | `string` | `undefined` |
@@ -111,7 +111,9 @@ import { MicroApp } from '@qiankunjs/vue';
 
 ### 组件插槽
 
-| 插槽            | 说明         |
-| --------------- | ------------ |
-| `loader`        | 加载状态插槽 |
-| `errorBoundary` | 错误捕获插槽 |
+| 插槽                               | 插槽参数               | 说明         |
+| ---------------------------------- | ---------------------- | ------------ |
+| `loader`                           | `{ loading: boolean }` | 加载状态插槽 |
+| `errorBoundary` / `error-boundary` | `{ error: Error }`     | 错误捕获插槽 |
+
+Vue 不会像归一化 props 那样归一化插槽名，因此错误插槽的两种写法都被接受。与 React 绑定不同，该组件的 wrapper 没有设置定位，如果你的插槽是覆盖层，请通过 `wrapperClassName` 给它一个定位样式类。

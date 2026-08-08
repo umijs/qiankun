@@ -6,7 +6,7 @@
   --ink: #1b1f26;
   --ink-soft: #5c6470;
   --hairline: #e4e7ec;
-  --primary: #2f54eb;
+  --primary: #6051a5;
   --accent: #087ea4;
   --sans: 'IBM Plex Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, monospace;
@@ -73,7 +73,7 @@
 }
 
 .react-app .badge-live {
-  border-color: rgb(47 84 235 / 35%);
+  border-color: rgb(96 81 165 / 35%);
   color: var(--primary);
 }
 

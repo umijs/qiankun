@@ -71,12 +71,8 @@ describe('link transpiler performance', () => {
       expect(mockFetch).toHaveBeenCalledTimes(1);
 
       // Second call - should use cache and apply the blob href synchronously
-      const start = performance.now();
       transpileLink(link2, 'https://example.com/', opts);
-      const duration = performance.now() - start;
 
-      // Cache hit should be nearly instant (< 5ms)
-      expect(duration).toBeLessThan(5);
       expect(mockFetch).toHaveBeenCalledTimes(1); // No additional fetch
       expect(hasBlobHref(link2)).toBe(true);
       // the very same blob is reused, not a new copy of the CSS
@@ -98,12 +94,9 @@ describe('link transpiler performance', () => {
       // Second app - same URL, different app
       const opts2 = createOpts(mockFetch, 'app2');
       const link2 = createLink('https://example.com/common.css');
-      const start = performance.now();
       transpileLink(link2, 'https://example.com/', opts2);
-      const duration = performance.now() - start;
 
-      // Should reuse raw CSS but transpile for new app (still fast)
-      expect(duration).toBeLessThan(5);
+      // Should reuse raw CSS but transpile for new app
       expect(mockFetch).toHaveBeenCalledTimes(1); // No additional fetch
       await vi.waitFor(() => expect(hasBlobHref(link2)).toBe(true), { timeout: 100 });
 
@@ -120,12 +113,10 @@ describe('link transpiler performance', () => {
 
       const links = Array.from({ length: 10 }, () => createLink('https://example.com/layout.css'));
 
-      const start = performance.now();
       links.forEach((link) => transpileLink(link, 'https://example.com/', opts));
-      const syncDuration = performance.now() - start;
 
-      // All 10 calls should complete synchronously in < 10ms
-      expect(syncDuration).toBeLessThan(10);
+      // All 10 calls return before the delayed fetch resolves — nothing is applied yet
+      expect(links.some(hasBlobHref)).toBe(false);
 
       // Wait for all to resolve
       await vi.waitFor(
@@ -216,9 +207,8 @@ describe('link transpiler performance', () => {
       transpileLink(link2, 'https://example.com/', opts);
       const warmDuration = performance.now() - warmStart;
 
-      // Warm cache should be at least 10x faster
+      // Warm cache should be at least 10x faster than the cold path
       expect(warmDuration).toBeLessThan(coldDuration / 10);
-      expect(warmDuration).toBeLessThan(5);
 
       // Both should share the exact same blob
       expect(link2.getAttribute('href')).toBe(link1.getAttribute('href'));

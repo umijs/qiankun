@@ -4,10 +4,11 @@ import test from 'node:test';
 import { createHarnessFingerprint } from '../src/fingerprint.mjs';
 import { compareBenchmarkResults } from '../src/result-comparison.mjs';
 
-function createResult(descriptor, median) {
+function createResult(descriptor, median, schemaVersion = 5) {
   return {
     metadata: {
       harness: { descriptor, fingerprint: createHarnessFingerprint(descriptor) },
+      schemaVersion,
     },
     product: {
       report: {
@@ -33,4 +34,12 @@ test('compareBenchmarkResults permits only matching harnesses', () => {
       compareBenchmarkResults(createResult(descriptor, 40), createResult({ browser: { args: [] }, suite: 'core' }, 44)),
     /benchmark harnesses are not comparable; changed fields: browser\.args/u,
   );
+});
+
+test('result comparison remains compatible across additive result schema versions', () => {
+  const descriptor = { browser: { args: ['--site-per-process'] }, suite: 'core' };
+  const rows = compareBenchmarkResults(createResult(descriptor, 40, 4), createResult(descriptor, 44, 5));
+
+  assert.equal(rows[0].referenceMedian, 40);
+  assert.equal(rows[0].candidateMedian, 44);
 });

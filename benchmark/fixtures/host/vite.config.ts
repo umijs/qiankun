@@ -14,6 +14,7 @@ export default defineConfig({
         native: fileURLToPath(new URL('native.html', import.meta.url)),
         qiankun: fileURLToPath(new URL('qiankun.html', import.meta.url)),
         qiankunV2: fileURLToPath(new URL('qiankun-v2.html', import.meta.url)),
+        rfcPerformance: fileURLToPath(new URL('rfc-performance.html', import.meta.url)),
         wujie: fileURLToPath(new URL('wujie.html', import.meta.url)),
       },
     },

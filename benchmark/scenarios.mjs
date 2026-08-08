@@ -191,6 +191,40 @@ const WUJIE_STREAMED = {
   label: 'Wujie · streamed response',
 };
 
+const SANDBOX_COST_COMPARISON = {
+  candidate: 'qk-sandbox',
+  id: 'sandbox-cost',
+  label: 'qiankun sandbox cost',
+  reference: 'qk-no-isolation',
+};
+
+const SSR_STREAMING_GAIN_COMPARISON = {
+  candidate: 'qk-v3-ssr-streamed',
+  id: 'qiankun-v3-ssr-streaming-gain',
+  label: 'qiankun v3 streamed vs delayed-buffered SSR',
+  reference: 'qk-v3-ssr-delayed-buffered',
+};
+
+const BASIC_OVERHEAD_BUDGET_PERCENT = 10;
+/*
+ * The native comparison is an end-to-end cold-paint floor across two architectures (fetch-driven
+ * streaming pipeline versus a native iframe navigation with its preload scanner), not pure
+ * sandbox overhead. Cross-VM aggregated measurement puts that floor at roughly +2% to +9%
+ * depending on the runner fleet mix, with 95% upper bounds up to ~+11.6% — a +10% bound can
+ * never hold stably against it, while +15% still guards the architecture gap from regressing.
+ */
+const NATIVE_COLD_PAINT_FLOOR_BUDGET_PERCENT = 15;
+/*
+ * Absolute paired-delta guards bound the FIXED constant cost (pipeline and boot work) that the
+ * small fixture would otherwise disguise inside the percentage. Measured medians on hosted
+ * runners: ~+1ms sandbox versus no isolation, ~+2-3ms sandbox versus the native iframe. These
+ * budgets are machine-speed dependent — calibrated for GitHub ubuntu-24.04 runners and this
+ * fixture — and sized as disaster guards (an accidental extra round-trip or synchronous stall
+ * blows past them immediately).
+ */
+const SANDBOX_CONSTANT_OVERHEAD_BUDGET_MS = 5;
+const NATIVE_CONSTANT_OVERHEAD_BUDGET_MS = 10;
+
 const SAME_SITE_COMPARISONS = [
   {
     candidate: 'qk-full-isolation',
@@ -213,12 +247,7 @@ const SAME_SITE_COMPARISONS = [
 ];
 
 const CORE_COMPARISONS = [
-  {
-    candidate: 'qk-sandbox',
-    id: 'sandbox-cost',
-    label: 'qiankun sandbox cost',
-    reference: 'qk-no-isolation',
-  },
+  SANDBOX_COST_COMPARISON,
   {
     candidate: 'qk-full-isolation',
     id: 'style-isolation-cost',
@@ -333,12 +362,7 @@ const SITE_ISOLATION_COMPARISONS = [
 ];
 
 const SSR_STREAMING_COMPARISONS = [
-  {
-    candidate: 'qk-v3-ssr-streamed',
-    id: 'qiankun-v3-ssr-streaming-gain',
-    label: 'qiankun v3 streamed vs delayed-buffered SSR',
-    reference: 'qk-v3-ssr-delayed-buffered',
-  },
+  SSR_STREAMING_GAIN_COMPARISON,
   {
     candidate: 'qk-v3-ssr-streamed',
     id: 'qiankun-v3-native-ssr-streamed',
@@ -421,7 +445,41 @@ export const SUITES = {
       GARFISH_STRICT_ISOLATION,
     ],
   },
+  'ci-basic': {
+    calibrationSourceVariant: 'qk-sandbox',
+    ciOnly: true,
+    comparisonGates: [
+      {
+        comparison: 'sandbox-cost',
+        maxUpperBoundMs: SANDBOX_CONSTANT_OVERHEAD_BUDGET_MS,
+        maxUpperBoundPercent: BASIC_OVERHEAD_BUDGET_PERCENT,
+      },
+      {
+        comparison: 'qiankun-sandbox-native',
+        maxUpperBoundMs: NATIVE_CONSTANT_OVERHEAD_BUDGET_MS,
+        maxUpperBoundPercent: NATIVE_COLD_PAINT_FLOOR_BUDGET_PERCENT,
+      },
+      { comparison: 'qiankun-v3-ssr-streaming-gain', maxUpperBoundPercent: -30 },
+    ],
+    comparisons: [
+      SANDBOX_COST_COMPARISON,
+      {
+        candidate: 'qk-sandbox',
+        id: 'qiankun-sandbox-native',
+        label: 'qiankun sandbox vs native iframe',
+        reference: 'native-iframe',
+      },
+      SSR_STREAMING_GAIN_COMPARISON,
+    ],
+    id: 'ci-basic',
+    title: 'Basic performance gate',
+    variants: [QK_NO_ISOLATION, QK_SANDBOX, NATIVE_IFRAME, QK_V3_SSR_DELAYED_BUFFERED, QK_V3_SSR_STREAMED],
+  },
 };
+
+export const DEFAULT_SUITE_IDS = Object.values(SUITES)
+  .filter((suite) => suite.ciOnly !== true)
+  .map((suite) => suite.id);
 
 export const PRODUCT_VARIANTS = SUITES.core.variants;
 export const PRODUCT_COMPARISONS = SUITES.core.comparisons;

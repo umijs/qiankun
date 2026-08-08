@@ -1,0 +1,205 @@
+name: Basic Performance Gate
+
+on:
+  pull_request:
+    branches:
+      - next
+  push:
+    branches:
+      - next
+  merge_group:
+    types:
+      - checks_requested
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: basic-performance-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  SHARD_COUNT: 6
+
+jobs:
+  changes:
+    name: Detect benchmark-relevant changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.changes.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect benchmark-relevant changes
+        id: changes
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          MERGE_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          MERGE_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          PUSH_HEAD_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          case "$EVENT_NAME" in
+            pull_request)
+              base_sha="$PR_BASE_SHA"
+              head_sha="$PR_HEAD_SHA"
+              ;;
+            merge_group)
+              base_sha="$MERGE_BASE_SHA"
+              head_sha="$MERGE_HEAD_SHA"
+              ;;
+            *)
+              base_sha="$PUSH_BASE_SHA"
+              head_sha="$PUSH_HEAD_SHA"
+              ;;
+          esac
+
+          if ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null ||
+             ! git cat-file -e "${head_sha}^{commit}" 2>/dev/null; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          should_run=false
+          while IFS= read -r file; do
+            case "$file" in
+              benchmark/*|\
+              packages/loader/*|\
+              packages/qiankun/*|\
+              packages/sandbox/*|\
+              packages/shared/*|\
+              package.json|\
+              pnpm-lock.yaml|\
+              pnpm-workspace.yaml|\
+              tsconfig.build.json|\
+              tsconfig.json|\
+              vite.library.config.ts|\
+              .github/workflows/benchmark-basic.yml)
+                should_run=true
+                break
+                ;;
+            esac
+          done < <(git diff --name-only "$base_sha" "$head_sha")
+
+          echo "run=$should_run" >> "$GITHUB_OUTPUT"
+
+          if [[ "$should_run" == "false" ]]; then
+            echo "No benchmark-relevant changes; performance gate skipped." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  shard:
+    name: Benchmark shard ${{ matrix.shard }}
+    needs: changes
+    if: ${{ needs.changes.outputs.run == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm --filter @qiankunjs/benchmark exec playwright install --with-deps chromium
+
+      - name: Build packages
+        run: pnpm run build:packages
+
+      - name: Run benchmark shard
+        env:
+          CI: "true"
+        working-directory: benchmark
+        run: |
+          pnpm run test:unit
+          pnpm run typecheck
+          pnpm run build:fixture
+          node runner.mjs --suite=ci-basic --trials=2 --samples=100 --warmup=5 \
+            --calibration-samples=100 --chunk-interval=50 \
+            --calibration-gate=false --comparison-gate=false \
+            --seed=$((20260711 + ${{ matrix.shard }} * 9973))
+
+      - name: Upload shard results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: shard-${{ matrix.shard }}
+          path: benchmark/results/
+          if-no-files-found: warn
+          retention-days: 14
+
+  gate:
+    name: Basic performance gate
+    needs:
+      - changes
+      - shard
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Skip without benchmark-relevant changes
+        if: ${{ needs.changes.outputs.run != 'true' }}
+        run: echo "No benchmark-relevant changes; performance gate skipped." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Require every shard to complete
+        if: ${{ needs.changes.outputs.run == 'true' && needs.shard.result != 'success' }}
+        run: |
+          echo "One or more benchmark shards failed; the aggregate verdict cannot be computed." >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+      - uses: actions/checkout@v4
+        if: ${{ needs.changes.outputs.run == 'true' }}
+
+      - name: Use Node.js 24
+        if: ${{ needs.changes.outputs.run == 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+
+      - name: Download shard results
+        if: ${{ needs.changes.outputs.run == 'true' }}
+        uses: actions/download-artifact@v4
+        with:
+          path: shards
+          pattern: shard-*
+
+      - name: Aggregate shard results
+        if: ${{ needs.changes.outputs.run == 'true' }}
+        shell: bash
+        run: |
+          status=0
+          node benchmark/aggregate-shards.mjs \
+            --input=shards \
+            --shards="$SHARD_COUNT" \
+            --summary-file=aggregate-summary.md || status=$?
+          if [[ -f aggregate-summary.md ]]; then
+            cat aggregate-summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$status"

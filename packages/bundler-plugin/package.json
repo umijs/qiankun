@@ -11,26 +11,41 @@
   "types": "./dist/esm/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js",
-      "types": "./dist/esm/index.d.ts"
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      }
     },
     "./webpack": {
-      "import": "./dist/esm/webpack/index.js",
-      "require": "./dist/cjs/webpack/index.js",
-      "types": "./dist/esm/webpack/index.d.ts"
+      "import": {
+        "types": "./dist/esm/webpack/index.d.ts",
+        "default": "./dist/esm/webpack/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/webpack/index.d.ts",
+        "default": "./dist/cjs/webpack/index.js"
+      }
     },
     "./vite": {
-      "import": "./dist/esm/vite/index.js",
-      "require": "./dist/cjs/vite/index.js",
-      "types": "./dist/esm/vite/index.d.ts"
+      "import": {
+        "types": "./dist/esm/vite/index.d.ts",
+        "default": "./dist/esm/vite/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/vite/index.d.ts",
+        "default": "./dist/cjs/vite/index.js"
+      }
     }
   },
   "scripts": {
     "build:webpack4": "cd ./tests/webpack4 && npm install && pnpm run build",
     "build:webpack5": "cd ./tests/webpack5 && npm install && pnpm run build",
     "test": "pnpm run build && pnpm run build:webpack4 && pnpm run build:webpack5 && vitest --run",
-    "build": "father build && node ./scripts/mark-module-types.mjs"
+    "build": "rimraf dist && vite build --config ../../vite.library.config.ts && tsc -p tsconfig.build.json && node ../../scripts/copy-declarations.mjs src dist/esm && node ../../scripts/copy-declarations.mjs dist/esm dist/cjs && node ./scripts/mark-module-types.mjs"
   },
   "files": [
     "dist"
@@ -50,12 +65,10 @@
   "author": "Hermanna",
   "license": "MIT",
   "dependencies": {
-    "webpack-sources": "^3.2.3",
-    "cheerio": "^1.0.0-rc.12"
+    "cheerio": "^1.2.0"
   },
   "devDependencies": {
-    "@types/webpack-sources": "^3.2.1",
-    "vite": "^8.1.3",
-    "webpack": "^5.0.0"
+    "vite": "^8.1.5",
+    "webpack": "^5.108.4"
   }
 }
