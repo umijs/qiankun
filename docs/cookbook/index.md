@@ -13,7 +13,7 @@ This is the collection of hands-on recipes for the common jobs you'll do with qi
 
 | Recipe | Goal |
 | --- | --- |
-| [Enable CSS style isolation](/cookbook/enable-style-isolation) | Turn on `styleIsolation` for a single app so a micro-app's CSS can't leak into the main app or its siblings. |
+| [Enable CSS style isolation](/cookbook/enable-style-isolation) | Turn on `sandbox.styleIsolation` for a single app so a micro-app's CSS can't leak into the main app or its siblings. |
 | [Optimize loading and preloading](/cookbook/optimize-loading) | Get the most out of the streaming loader, fetch caching, and automatic preload instead of relying on manual prefetch. |
 | [Handle load and runtime errors](/cookbook/handle-errors) | Catch failures during loading and the lifecycle with `addErrorHandler` / `removeErrorHandler` and a per-app loader. |
 | [Share state and communicate between apps](/cookbook/communicate-between-apps) | v3 no longer ships a built-in store; pass data and callbacks between the main app and micro-apps through `props`. |
@@ -21,6 +21,8 @@ This is the collection of hands-on recipes for the common jobs you'll do with qi
 | [Make a Vite app qiankun-ready](/cookbook/prepare-a-vite-app) | Wire up the `@qiankunjs/bundler-plugin/vite` plugin and export lifecycles so a Vite app can run as a micro-app. |
 | [Make a Webpack app qiankun-ready](/cookbook/prepare-a-webpack-app) | Add `QiankunWebpackPlugin` and export lifecycles so a Webpack app can run as a micro-app. |
 | [Run multiple micro-app instances](/cookbook/run-multiple-instances) | Use `loadMicroApp` to mount the same or several micro-apps at once, and unmount each cleanly. |
+| [Extend the sandbox with plugins](/cookbook/sandbox-plugins) | Write an isolation plugin so your own side effects are captured, released, and rebuilt along with the built-in ones. |
+| [Use the sandbox standalone](/cookbook/standalone-sandbox) | Reach for `@qiankunjs/sandbox` on its own to isolate third-party scripts without loading a whole micro-app. |
 
 ## Quick routing
 

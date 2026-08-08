@@ -1,12 +1,12 @@
 # Enable CSS style isolation
 
-Enable `styleIsolation` for a micro-app to stop its style rules from affecting the host or sibling applications outside its container.
+Enable `sandbox.styleIsolation` for a micro-app to stop its style rules from affecting the host or sibling applications outside its container.
 
 This is **one-way isolation**: micro-app styles do not leak out, but global host styles can still affect the micro-app.
 
 ## Enable isolation
 
-Pass `styleIsolation: true` as the second argument to [`loadMicroApp`](/api/load-micro-app):
+Pass `sandbox: { styleIsolation: true }` as the second argument to [`loadMicroApp`](/api/load-micro-app):
 
 ```ts
 import { loadMicroApp } from 'qiankun';
@@ -21,7 +21,7 @@ const microApp = loadMicroApp(
     container,
   },
   {
-    styleIsolation: true,
+    sandbox: { styleIsolation: true },
   },
 );
 
@@ -66,5 +66,5 @@ If the app becomes unstyled after enabling isolation, first check browser suppor
 ## Related
 
 - [Style isolation](/concepts/style-isolation) — capability, boundaries, and limitations.
-- [AppConfiguration](/api/configuration) — `styleIsolation` reference.
+- [AppConfiguration](/api/configuration) — `sandbox.styleIsolation` reference.
 - [Handle load and runtime errors](/cookbook/handle-errors) — capture resource-loading failures.

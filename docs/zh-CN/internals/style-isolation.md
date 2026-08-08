@@ -8,7 +8,7 @@
 
 ## 基本机制
 
-为应用设置 `styleIsolation: true` 后，qiankun 会将该应用的 CSS 包装在与应用容器绑定的 `@scope` 块中：
+为应用设置 `sandbox: { styleIsolation: true }` 后，qiankun 会将该应用的 CSS 包装在与应用容器绑定的 `@scope` 块中：
 
 ```css
 @scope ([data-name="your-app"]) {
@@ -30,7 +30,7 @@ flowchart TD
   D --> G["运行时 insertRule：为规则添加 scope"]
 ```
 
-样式隔离默认关闭。未设置 `styleIsolation` 时，`<style>` 和 `<link>` 节点不经过作用域改写。
+样式隔离默认关闭。未设置 `sandbox.styleIsolation` 时，`<style>` 和 `<link>` 节点不经过作用域改写。
 
 ## 内联 `<style>`
 
@@ -87,16 +87,16 @@ flowchart TD
 :::
 
 ::: tip 与 qiankun 2.x 的区别
-v3 使用本页所述的 `@scope` 与 blob URL 机制，并由单个布尔选项控制。2.x 中基于 Shadow DOM 的 `sandbox.strictStyleIsolation` 和 `sandbox.experimentalStyleIsolation` 已被移除，v3 仅提供 `styleIsolation`。详见[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
+v3 使用本页所述的 `@scope` 与 blob URL 机制，并由单个布尔选项控制。2.x 中基于 Shadow DOM 的 `sandbox.strictStyleIsolation` 和 `sandbox.experimentalStyleIsolation` 已被移除，v3 仅提供 `sandbox.styleIsolation`。详见[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
 :::
 
 ## 公开配置
 
 | 选项 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `styleIsolation` | `boolean` | `false` | 使用 `@scope` 开启运行时 CSS 隔离，将微应用样式限定在其容器（`[data-name="<appName>"]`）内 |
+| `sandbox.styleIsolation` | `boolean` | `false` | 使用 `@scope` 开启运行时 CSS 隔离，将微应用样式限定在其容器（`[data-name="<appName>"]`）内 |
 
-`styleIsolation` 按应用设置。使用 [`loadMicroApp`](/zh-CN/api/load-micro-app) 时，将其作为第二个参数传入：
+`styleIsolation` 按应用设置，位于应用配置的 `sandbox` 对象内。使用 [`loadMicroApp`](/zh-CN/api/load-micro-app) 时，将其作为第二个参数传入：
 
 ```ts
 import { loadMicroApp } from 'qiankun';
@@ -111,7 +111,7 @@ const microApp = loadMicroApp(
     container,
   },
   {
-    styleIsolation: true,
+    sandbox: { styleIsolation: true },
   },
 );
 ```

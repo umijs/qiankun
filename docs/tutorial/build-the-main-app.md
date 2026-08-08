@@ -12,7 +12,7 @@ Return to the `qiankun-tutorial` directory, next to `sub-app`:
 npm create vite@latest main-app -- --template react-ts
 cd main-app
 npm install
-npm install qiankun
+npm install qiankun@rc
 ```
 
 ## Fix the main-app port

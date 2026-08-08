@@ -9,7 +9,7 @@
 安装 qiankun 构建插件和 `html-webpack-plugin`：
 
 ```bash
-npm install --save-dev @qiankunjs/bundler-plugin html-webpack-plugin
+npm install --save-dev @qiankunjs/bundler-plugin@rc html-webpack-plugin
 ```
 
 `html-webpack-plugin` 用于生成 HTML 入口，使 qiankun 插件能够识别对应的入口脚本。

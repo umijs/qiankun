@@ -1,12 +1,12 @@
 # 启用 CSS 样式隔离
 
-为单个微应用启用 `styleIsolation` 后，该应用的样式规则不会影响容器之外的主应用或其他微应用。
+为单个微应用启用 `sandbox.styleIsolation` 后，该应用的样式规则不会影响容器之外的主应用或其他微应用。
 
 样式隔离是**单向的**：微应用样式不会影响外部内容，但主应用的全局样式仍可能作用于微应用。
 
 ## 启用隔离
 
-在 [`loadMicroApp`](/zh-CN/api/load-micro-app) 的第二个参数中设置 `styleIsolation: true`：
+在 [`loadMicroApp`](/zh-CN/api/load-micro-app) 的第二个参数中设置 `sandbox: { styleIsolation: true }`：
 
 ```ts
 import { loadMicroApp } from 'qiankun';
@@ -21,7 +21,7 @@ const microApp = loadMicroApp(
     container,
   },
   {
-    styleIsolation: true,
+    sandbox: { styleIsolation: true },
   },
 );
 
@@ -66,5 +66,5 @@ React 和 Vue 的 `<MicroApp>` 组件通过 `settings` 属性接收相同配置�
 ## 相关内容
 
 - [样式隔离](/zh-CN/concepts/style-isolation)——能力、边界与限制
-- [AppConfiguration](/zh-CN/api/configuration)——`styleIsolation` 配置参考
+- [AppConfiguration](/zh-CN/api/configuration)——`sandbox.styleIsolation` 配置参考
 - [处理加载与运行时错误](/zh-CN/cookbook/handle-errors)——捕获资源加载错误

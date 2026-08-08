@@ -67,7 +67,7 @@ Redirecting `window.x` isn't enough on its own — an app can also reach the rea
 
 ### Side effects, and their `free()`
 
-Beyond identity, the sandbox tracks stateful side effects through **patchers** (`packages/sandbox/src/patchers`). Each patcher overrides a set of APIs on the sandbox global and returns a `free()` closure. On unmount, every `free()` runs, undoing the side effect it caused and restoring the native function; it also returns a `rebuild` that reapplies the override on the next mount.
+Beyond identity, the sandbox tracks stateful side effects through **isolation plugins** (`packages/sandbox/src/patchers`). The ones below are the built-in preset; your own plugins run after them, and [Extend the sandbox with plugins](/cookbook/sandbox-plugins) documents the protocol. Each plugin overrides a set of APIs on the sandbox global and returns a `free()` closure. On unmount, every `free()` runs, undoing the side effect it caused and restoring the native function; it also returns a `rebuild` that reapplies the override on the next mount.
 
 | Patcher | Intercepts | Applied at |
 | --- | --- | --- |
@@ -122,7 +122,7 @@ The sandbox follows single-spa's mount / unmount:
 - On **unmount**, each patcher's `free()` runs first (collecting the rebuilds for next time), then `sandbox.inactive()` **locks** the membrane. While locked, global writes from the app are ignored (with a warning in dev).
 
 ::: info No snapshot diffing
-Some sandbox approaches snapshot every property on `window` at mount and diff it back at unmount. qiankun v3 does **not** do this. Isolation comes from never touching the real `window` in the first place, so there's nothing to diff back. A `SnapshotSandbox` type does exist in the enum, but it has no implementation — `createSandboxContainer` always constructs a `StandardSandbox`, in both the `Proxy`-present and `Proxy`-absent branches. In practice the v3 sandbox **requires** `Proxy`; there's no fallback path.
+Some sandbox approaches snapshot every property on `window` at mount and diff it back at unmount. qiankun v3 does **not** do this. Isolation comes from never touching the real `window` in the first place, so there's nothing to diff back. A `SnapshotSandbox` type does exist in the enum, but it has no implementation — `createSandbox` always constructs a `StandardSandbox`, in both the `Proxy`-present and `Proxy`-absent branches. In practice the v3 sandbox **requires** `Proxy`; there's no fallback path.
 :::
 
 ## Boundaries and escape hatches
@@ -163,7 +163,7 @@ The ESM sandbox engine is only constructed when `sandbox` is on. Turn the sandbo
 :::
 
 ::: info What changed from qiankun 2.x
-In v3, `sandbox` is a plain `boolean`. The 2.x object form — `sandbox: { strictStyleIsolation }` / `sandbox: { experimentalStyleIsolation }`, and Shadow DOM–based style isolation — is **gone**. CSS isolation is now a separate boolean option, [`styleIsolation`](/concepts/style-isolation), implemented with the CSS `@scope` at-rule. See [Migrating from qiankun 2.x](/cookbook/migrate-from-2x).
+In v3, `sandbox` is a `boolean | SandboxConfiguration`. The 2.x object form — `sandbox: { strictStyleIsolation }` / `sandbox: { experimentalStyleIsolation }`, and Shadow DOM–based style isolation — is **gone**. CSS isolation is the boolean [`sandbox.styleIsolation`](/concepts/style-isolation), implemented with the CSS `@scope` at-rule. See [Migrating from qiankun 2.x](/cookbook/migrate-from-2x).
 :::
 
 ## Related reading

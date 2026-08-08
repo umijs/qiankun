@@ -13,7 +13,7 @@
 
 | 指南 | 目标 |
 | --- | --- |
-| [启用 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation) | 为指定应用启用 `styleIsolation`，避免微应用样式影响主应用或其他微应用。 |
+| [启用 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation) | 为指定应用启用 `sandbox.styleIsolation`，避免微应用样式影响主应用或其他微应用。 |
 | [优化加载与预加载](/zh-CN/cookbook/optimize-loading) | 配置缓存、控制入口体积，并利用流式加载器的自动预加载能力。 |
 | [处理加载与运行时错误](/zh-CN/cookbook/handle-errors) | 通过 `addErrorHandler`、`removeErrorHandler` 和实例级状态处理加载及生命周期错误。 |
 | [在应用间共享状态与通信](/zh-CN/cookbook/communicate-between-apps) | 通过 `props` 在主应用和微应用之间传递数据与回调。qiankun v3 不再提供内置状态管理。 |
@@ -21,6 +21,8 @@
 | [接入 Vite 应用](/zh-CN/cookbook/prepare-a-vite-app) | 配置 `@qiankunjs/bundler-plugin/vite` 并导出生命周期，使 Vite 应用能够作为微应用加载。 |
 | [接入 Webpack 应用](/zh-CN/cookbook/prepare-a-webpack-app) | 配置 `QiankunWebpackPlugin` 并导出生命周期，使 Webpack 应用能够作为微应用加载。 |
 | [同时运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances) | 使用 `loadMicroApp` 挂载同一应用或不同应用的多个实例，并分别管理其卸载过程。 |
+| [用插件扩展沙箱](/zh-CN/cookbook/sandbox-plugins) | 编写隔离插件，让自定义副作用与内置插件一样被捕获、释放和重建。 |
+| [独立使用沙箱](/zh-CN/cookbook/standalone-sandbox) | 单独使用 `@qiankunjs/sandbox` 隔离第三方脚本，无需加载完整的微应用。 |
 
 ## 按目标选择指南
 

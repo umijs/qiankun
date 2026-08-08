@@ -7,7 +7,7 @@
 ## 安装
 
 ```bash
-npm install @qiankunjs/vue qiankun
+npm install @qiankunjs/vue@rc qiankun@rc
 ```
 
 主应用必须安装 `vue`，版本范围为 `^2.0.0 || >=3.0.0`。Vue 2 项目还需要安装 `@vue/composition-api`，因为组件通过 `vue-demi` 使用组合式 API。
@@ -47,7 +47,7 @@ import { MicroApp } from '@qiankunjs/vue';
 | `appProps` | `object` | `undefined` | 传递给微应用的 props。Vue 绑定仅通过该属性向微应用传递数据。 |
 
 ::: info `settings` 的默认值与 React 绑定不同
-Vue 绑定的 `settings` 默认为 `{ sandbox: true }`，[React 绑定](/zh-CN/ecosystem/react)则不设置默认值。两种绑定最终使用的配置均为 `{ globalContext: window, ...settings }`，因此 `globalContext` 默认值为 `window`，也可通过 `settings.globalContext` 覆盖。qiankun 核心运行时的 `sandbox` 默认值同样为 `true`。
+Vue 绑定的 `settings` 默认为 `{ sandbox: true }`，[React 绑定](/zh-CN/ecosystem/react)则不设置默认值，不会替你填任何默认项。两者的 `sandbox` 在 qiankun 核心运行时中都默认为 `true`，因此不额外传值时行为一致。
 :::
 
 ::: warning 业务数据通过 `appProps` 传递
@@ -56,14 +56,14 @@ React 绑定会将 `<MicroApp>` 上的附加 prop 传递给微应用，Vue 绑�
 
 ### `settings`（AppConfiguration）
 
-`settings` 与 [`loadMicroApp`](/zh-CN/api/load-micro-app) 的第二个参数结构相同。完整定义参见 [AppConfiguration](/zh-CN/api/configuration)，包括 `fetch`、`streamTransformer`、`nodeTransformer`、`sandbox`（默认为 `true`）、`globalContext`（默认为 `window`）和 `styleIsolation`（默认为 `false`）。
+`settings` 与 [`loadMicroApp`](/zh-CN/api/load-micro-app) 的第二个参数结构相同。完整定义参见 [AppConfiguration](/zh-CN/api/configuration)，字段为 `fetch`、`streamTransformer`、`nodeTransformer` 和 `sandbox`（默认为 `true`）。样式隔离、额外全局变量、孵化上下文和隔离插件均位于 `sandbox` 对象内部。
 
 ```vue
 <template>
   <micro-app
     name="app1"
     entry="http://localhost:8000"
-    :settings="{ sandbox: true, styleIsolation: true }"
+    :settings="{ sandbox: { styleIsolation: true } }"
   />
 </template>
 ```
@@ -215,7 +215,7 @@ onMounted(() => {
 </template>
 ```
 
-该句柄是一个 single-spa Parcel。`getStatus()` 返回 `NOT_LOADED`、`LOADING_SOURCE_CODE`、`NOT_BOOTSTRAPPED`、`BOOTSTRAPPING`、`NOT_MOUNTED`、`MOUNTING`、`MOUNTED`、`UPDATING`、`UNMOUNTING`、`UNLOADING`、`SKIP_BECAUSE_BROKEN` 或 `LOAD_ERROR`。完整类型参见[类型参考](/zh-CN/api/types)。
+该句柄是 `@qiankunjs/single-spa`（qiankun 内置的 single-spa fork）的 Parcel。`getStatus()` 返回 `NOT_LOADED`、`LOADING_SOURCE_CODE`、`NOT_BOOTSTRAPPED`、`BOOTSTRAPPING`、`NOT_MOUNTED`、`MOUNTING`、`MOUNTED`、`UPDATING`、`UNMOUNTING`、`UNLOADING`、`SKIP_BECAUSE_BROKEN` 或 `LOAD_ERROR`。完整类型参见[类型参考](/zh-CN/api/types)。
 
 ::: tip 由组件管理生命周期
 应优先通过 prop（`name`、`appProps`）管理微应用，而不是直接调用句柄上的 `unmount()` 或 `update()`。组件会按顺序执行卸载，并协调并发更新；直接调用句柄方法可能与组件的内部状态发生冲突。
@@ -260,7 +260,7 @@ const appProps = reactive({ userId: 42 });
   <micro-app
     name="app1"
     entry="http://localhost:8000"
-    :settings="{ sandbox: true, styleIsolation: true }"
+    :settings="{ sandbox: { styleIsolation: true } }"
     :appProps="appProps"
     autoSetLoading
     wrapperClassName="my-wrapper"

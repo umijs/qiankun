@@ -46,7 +46,7 @@ Read from the inside out: `makeFetchThrowable` throws when the response status i
 
 ### 2. Sandbox container
 
-When `sandbox` is `true` (the default), `createSandboxContainer` (`packages/sandbox`) builds a Proxy-membrane view of `window` and `document`. `loadApp` then runs the app against `sandboxInstance.globalThis` (the proxied window) instead of the real global, so the app reads and writes its own isolated globals. See [the JS sandbox](/concepts/js-sandbox) for how the membrane works and how patchers clean up side effects on unmount.
+When `sandbox` is `true` or an object (the default is `true`), `createSandbox` (`packages/sandbox`) builds a Proxy-membrane view of `window` and `document`. `loadApp` then runs the app against `sandboxInstance.globalThis` (the proxied window) instead of the real global, so the app reads and writes its own isolated globals. See [the JS sandbox](/concepts/js-sandbox) for how the membrane works and how patchers clean up side effects on unmount.
 
 The container also constructs the ESM engine (covered below) — the engine only exists inside the `if (sandbox)` branch, so turning the sandbox off also disables native ESM execution.
 
@@ -105,7 +105,7 @@ Only the `qiankun` package (and the `@qiankunjs/react` / `@qiankunjs/vue` bindin
 
 Putting the stages together, here is what `loadApp` does for a single micro-app from configuration to teardown.
 
-1. **Resolve config defaults.** `fetch = window.fetch` (then decorated), `sandbox = true`, `globalContext = window`, `nodeTransformer = defaultNodeTransformer`, `styleIsolation` off. See [AppConfiguration](/api/configuration) for the full field list.
+1. **Resolve config defaults.** `fetch = window.fetch` (then decorated), `sandbox = true`, `nodeTransformer = defaultNodeTransformer`. When `sandbox` is an object, its own defaults apply too: `incubatorContext = window` and `styleIsolation` off. See [AppConfiguration](/api/configuration) for the full field list.
 2. **Initialize the container.** The container is emptied and stamped with `data-name`, `data-version`, and `data-sandbox-cfg`. `data-mount-times` is added after the same loaded app is mounted again, while `data-instance-id` is added to the second and later `loadApp` instances with the same app name. The `instanceId` comes from a per-name counter and distinguishes [multiple instances](/cookbook/run-multiple-instances) of the same app.
 3. **Create the sandbox and ESM engine.** When `sandbox` is on, the Proxy membrane is built and the `EsmSandboxEngine` is constructed with the app name, instance id, entry URL, and the enhanced fetch.
 4. **Stream the entry.** `loadEntry` runs the HTML through the streaming pipeline and transpilers; classic and module scripts are dispatched to their respective paths. Module scripts are collected during streaming and executed in document order once the stream seals.

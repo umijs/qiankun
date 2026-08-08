@@ -16,7 +16,7 @@ This page is the single source of truth for moving a qiankun 2.x integration to 
 | `entry` | A string, or a `{ scripts, styles }` object | Only an HTML URL string |
 | `container` | A selector string or an `HTMLElement` | Only an `HTMLElement` instance |
 | `start()` options | `prefetch`, `sandbox`, `singular`, `fetch`, `getPublicPath`, `getTemplate`, `excludeAssetFilter`, etc. | Only single-spa's `StartOpts` (`{ urlRerouteOnly? }`) |
-| Sandbox / style isolation | `strictStyleIsolation` (Shadow DOM) or `experimentalStyleIsolation` (selector rewriting) | `sandbox: boolean` plus a separate `styleIsolation: boolean` (CSS `@scope`) |
+| Sandbox / style isolation | `strictStyleIsolation` (Shadow DOM) or `experimentalStyleIsolation` (selector rewriting) | `sandbox: boolean \| SandboxConfiguration`, with `sandbox.styleIsolation: boolean` (CSS `@scope`) |
 | Per-app config | Mixed into `start()` | A per-app `configuration: AppConfiguration` |
 | Global state store | `initGlobalState` / `onGlobalStateChange` / `setGlobalState` | Removed — pass your own store through props |
 | Micro-app build | Hand-written UMD / `libraryTarget` / `jsonpFunction` / `chunkLoadingGlobal` | `@qiankunjs/bundler-plugin` (webpack) or `qiankun()` (Vite) |
@@ -109,8 +109,9 @@ registerMicroApps(
   apps.map((app) => ({
     ...app,
     configuration: {
-      sandbox: true,        // JS sandbox (default true)
-      styleIsolation: true, // CSS @scope isolation (default false)
+      sandbox: {              // JS sandbox (default true)
+        styleIsolation: true, // CSS @scope isolation (default false)
+      },
     },
   })),
 );
@@ -118,13 +119,13 @@ start(); // no qiankun-specific options here
 ```
 :::
 
-Current per-app fields include `sandbox`, `styleIsolation`, `globalContext`, `fetch`, `streamTransformer`, and `nodeTransformer`. Defaults and advanced contracts are maintained in the [AppConfiguration reference](/api/configuration).
+Current per-app fields are `sandbox`, `fetch`, `streamTransformer`, and `nodeTransformer`; `styleIsolation`, `globals`, `incubatorContext`, and `plugins` live inside the `sandbox` object. Defaults and advanced contracts are maintained in the [AppConfiguration reference](/api/configuration).
 
 v3 has no `FrameworkConfiguration` type, no `getPublicPath` / `getTemplate` / `excludeAssetFilter`, and no `singular`.
 
-## Sandbox and style isolation: split into two independent booleans
+## Sandbox and style isolation: one umbrella, native `@scope`
 
-In 2.x, JavaScript and style-isolation options shared the nested `sandbox` configuration, with Shadow DOM and selector-rewrite style strategies. v3 splits JavaScript and style isolation into two independent booleans and uses native CSS `@scope` for styles — there is no Shadow DOM path anymore.
+In 2.x, JavaScript and style-isolation options shared a nested `sandbox` configuration, with Shadow DOM and selector-rewrite style strategies. v3 keeps a single `sandbox` umbrella but changes what is inside it: JS isolation is the switch itself, style isolation is `sandbox.styleIsolation`, and styles are scoped with native CSS `@scope` — there is no Shadow DOM path anymore.
 
 ::: code-group
 ```ts [2.x]
@@ -140,16 +141,18 @@ start({
 ```ts [3.0]
 // per app
 configuration: {
-  sandbox: true,        // JS isolation (Proxy membrane)
-  styleIsolation: true, // CSS isolation via @scope, wrapped to [data-name="<appName>"]
+  sandbox: {
+    // JS isolation (Proxy membrane) is on by any object form
+    styleIsolation: true, // CSS isolation via @scope, wrapped to [data-name="<appName>"]
+  },
 }
 ```
 :::
 
 A few key differences:
 
-- `sandbox` is now a plain `boolean` (JS isolation only). Setting `sandbox: false` runs the app on the real `window` — useful for legacy apps that can't tolerate proxied globals.
-- `styleIsolation` is a separate `boolean` (off by default). When on, each app's styles are wrapped in `@scope ([data-name="<appName>"]) { ... }`; external stylesheets are re-fetched and served as blob `<link>`s so `@scope` can wrap them.
+- `sandbox` is a `boolean | SandboxConfiguration`. Setting `sandbox: false` runs the app on the real `window` — useful for legacy apps that can't tolerate proxied globals; passing an object keeps isolation on and configures it.
+- `sandbox.styleIsolation` is a `boolean` (off by default). When on, each app's styles are wrapped in `@scope ([data-name="<appName>"]) { ... }`; external stylesheets are re-fetched and served as blob `<link>`s so `@scope` can wrap them.
 - The scope selector is derived internally as `[data-name="<appName>"]` and isn't user-configurable.
 
 ::: warning `@scope` browser support
@@ -341,7 +344,7 @@ Firefox doesn't support dynamically injected import maps, which natively loaded 
 ## Other v3 APIs worth adopting
 
 - [`isRuntimeCompatible`](/api/is-runtime-compatible) — probe browser support before starting.
-- The per-app [`configuration`](/api/configuration) on `RegistrableApp` (and the second argument of `loadMicroApp`) — `sandbox`, `styleIsolation`, `globalContext`, and `fetch` all live here now.
+- The per-app [`configuration`](/api/configuration) on `RegistrableApp` (and the second argument of `loadMicroApp`) — `sandbox` (with `styleIsolation`, `globals`, `incubatorContext`, `plugins` inside it) and `fetch` all live here now.
 
 For new integrations, start with `loadMicroApp`; the [API overview](/api/index) owns the complete current export list.
 
@@ -355,7 +358,7 @@ The streaming loader prefetches assets as it parses the entry HTML, so explicit 
 1. Change every `entry` to an HTML URL string.
 2. Change every `container` to an `HTMLElement` instance.
 3. Remove all qiankun-specific options from `start()`; move `sandbox` / `styleIsolation` / `fetch` into each app's `configuration`.
-4. Replace `sandbox: { strictStyleIsolation | experimentalStyleIsolation }` with `sandbox: boolean` plus `styleIsolation: boolean`.
+4. Replace `sandbox: { strictStyleIsolation | experimentalStyleIsolation }` with `sandbox: { styleIsolation: boolean }`.
 5. Remove `initGlobalState` / `onGlobalStateChange` / `setGlobalState`; pass your own store through `props`.
 6. Delete hand-written UMD / `libraryTarget` / `jsonpFunction` output config; add `@qiankunjs/bundler-plugin` (webpack) or `qiankun()` (Vite).
 7. Change the micro-app entry to render into `props.container` with `createRoot` / `app.mount`.

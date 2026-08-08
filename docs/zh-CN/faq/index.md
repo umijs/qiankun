@@ -34,7 +34,7 @@ v3 不再提供 `initGlobalState`、`setGlobalState` 等内置状态管理 API�
 
 ## 如何隔离样式？
 
-在应用配置中设置 `styleIsolation: true`。该配置仅限制微应用样式影响容器外部，不能阻止主应用的全局样式影响微应用。该能力还依赖原生 CSS `@scope`，外部样式资源也必须正确配置 CORS。
+在应用配置中设置 `sandbox: { styleIsolation: true }`。该配置仅限制微应用样式影响容器外部，不能阻止主应用的全局样式影响微应用。该能力还依赖原生 CSS `@scope`，外部样式资源也必须正确配置 CORS。
 
 操作步骤参见[开启样式隔离](/zh-CN/cookbook/enable-style-isolation)；限制与边界参见[样式隔离概念](/zh-CN/concepts/style-isolation)。
 

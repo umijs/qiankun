@@ -36,6 +36,8 @@ await Promise.all(apps.map((app) => app.unmount()));
 
 Do not share one container between two live instances. To switch applications in one location, await the current instance's `unmount()` before loading the next one.
 
+qiankun does hold a per-container occupancy gate: apps targeting the same element take FIFO turns for their DOM writes, so a second `loadMicroApp` into an occupied container waits instead of silently overwriting it. That is a safety net against interleaved writes, not a substitute for unmounting — an app whose handle is never unmounted holds its container forever, and everything queued behind it waits with it (in development, a wait longer than a few seconds logs a warning).
+
 ## Several instances of one application
 
 The same `name` and `entry` can be loaded more than once with different containers:
@@ -60,7 +62,7 @@ await Promise.all([left.mountPromise, right.mountPromise]);
 
 The micro-app must query and render only inside `props.container`. Page-level selectors, shared globals, and a singleton framework root let instances overwrite each other.
 
-If `styleIsolation` is enabled, remember that its CSS scope is keyed by `name`. Same-name instances share that selector; give each instance a distinct name when instance-specific styles must not match the others.
+If `sandbox.styleIsolation` is enabled, remember that its CSS scope is keyed by `name`. Same-name instances share that selector; give each instance a distinct name when instance-specific styles must not match the others.
 
 ## Update an instance
 

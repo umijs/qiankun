@@ -56,6 +56,6 @@ Treat automatic cleanup as a safety net, not as a replacement for a well-defined
 
 ## Configuration and next steps
 
-The `sandbox` option defaults to `true`. Setting `sandbox: false` makes the app share the real global object and also disables qiankun's isolated native ESM path. It should be a compatibility escape hatch, not a performance switch.
+The `sandbox` option defaults to `true`. Setting `sandbox: false` makes the app share the real global object and also disables qiankun's isolated native ESM path. It should be a compatibility escape hatch, not a performance switch. Passing an object instead of `true` keeps isolation on and configures it — see [SandboxConfiguration](/api/configuration#sandboxconfiguration).
 
 See [AppConfiguration](/api/configuration) for the option, [micro-app lifecycle and props](/concepts/lifecycle-and-props) for cleanup timing, and [native ESM support](/concepts/esm-sandbox) for module applications. Maintainers can find the implementation details in [JS sandbox internals](/internals/js-sandbox).

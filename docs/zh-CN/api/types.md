@@ -10,6 +10,7 @@ import type {
   LoadableApp,
   RegistrableApp,
   AppConfiguration,
+  SandboxConfiguration,
   LifeCycleFn,
   LifeCycles,
   MicroApp,
@@ -37,7 +38,8 @@ import type {
 | `AppMetadata` | `{ name; entry }` | 微应用的基本描述信息。 |
 | `LoadableApp<T>` | `AppMetadata & { container; props? }` | 配合 [`loadMicroApp`](/zh-CN/api/load-micro-app) 使用，`container` 是 `HTMLElement`。 |
 | `RegistrableApp<T>` | `LoadableApp<T> & { loader?; activeRule; configuration? }` | 配合 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 使用。 |
-| `AppConfiguration` | 加载器选项 `& { sandbox?; globalContext?; styleIsolation? }` | 单个应用的运行时配置，见 [AppConfiguration](/zh-CN/api/configuration)。 |
+| `AppConfiguration` | 加载器选项 `& { sandbox? }` | 单个应用的运行时配置，见 [AppConfiguration](/zh-CN/api/configuration)。 |
+| `SandboxConfiguration` | `{ styleIsolation?; globals?; incubatorContext?; plugins?; …模块钩子 }` | `sandbox` 的对象形式，见 [SandboxConfiguration](/zh-CN/api/configuration#sandboxconfiguration)。 |
 | `LifeCycleFn<T>` | `(app, global) => Promise<void>` | 单个框架级生命周期钩子。 |
 | `LifeCycles<T>` | `{ beforeLoad?; beforeMount?; afterMount?; beforeUnmount?; afterUnmount? }` | 框架级钩子，见[生命周期钩子](/zh-CN/api/lifecycles)。 |
 | `MicroApp` | single-spa `Parcel` | `loadMicroApp` 返回的句柄。 |
@@ -147,7 +149,7 @@ registerMicroApps([
     entry: 'http://localhost:7100',
     container: document.getElementById('subapp')!,
     activeRule: '/app1',
-    configuration: { sandbox: true, styleIsolation: true },
+    configuration: { sandbox: { styleIsolation: true } },
   },
 ]);
 ```
@@ -158,9 +160,7 @@ registerMicroApps([
 export type AppConfiguration = Partial<
   Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>
 > & {
-  sandbox?: boolean;
-  globalContext?: WindowProxy;
-  styleIsolation?: boolean;
+  sandbox?: boolean | SandboxConfiguration;
 };
 ```
 
@@ -171,14 +171,38 @@ export type AppConfiguration = Partial<
 | `fetch` | `typeof window.fetch` | `window.fetch` | 用于请求入口，以及由加载器处理的脚本、模块和样式的自定义 fetch。 |
 | `streamTransformer` | `() => TransformStream<string, string>` | `undefined` | 用于自定义 HTML 流式处理过程的转换器。 |
 | `nodeTransformer` | `<T extends Node>(node: T, opts) => T` | 内置默认值 | 在 `<script>`、`<link>` 和 `<style>` 节点进入容器前进行转换。 |
-| `sandbox` | `boolean` | `true` | 启用 [JavaScript 沙箱](/zh-CN/concepts/js-sandbox)隔离膜，以及适用场景下的 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)。 |
-| `globalContext` | `WindowProxy` | `window` | 沙箱隔离膜所代理的基础全局对象。 |
-| `styleIsolation` | `boolean` | `false` | 启用基于 CSS `@scope` 的运行时[样式隔离](/zh-CN/concepts/style-isolation)，作用域限制在应用容器内。 |
+| `sandbox` | `boolean \| SandboxConfiguration` | `true` | 启用 [JavaScript 沙箱](/zh-CN/concepts/js-sandbox)隔离膜，以及适用场景下的 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)。传入对象形式还可对其进行配置。 |
 
 字段行为和默认值见 [AppConfiguration](/zh-CN/api/configuration)。
 
-::: danger 不支持 sandbox 对象和 FrameworkConfiguration
-`sandbox` 的类型为布尔值。v3 不再支持 2.x 的对象形式 `sandbox: { strictStyleIsolation, experimentalStyleIsolation }`，也不再提供 Shadow DOM 隔离。样式隔离通过独立的布尔配置 `styleIsolation` 启用，并基于 CSS `@scope` 实现。`FrameworkConfiguration` 类型已移除，`start()` 也不再接收 sandbox、prefetch 或单例相关选项。
+## SandboxConfiguration
+
+```ts
+export type SandboxConfiguration = Pick<
+  CreateSandboxOptions,
+  | 'globals'
+  | 'incubatorContext'
+  | 'modules'
+  | 'resolveHook'
+  | 'importHook'
+  | 'loadHook'
+  | 'plugins'
+  | 'styleIsolation'
+>;
+```
+
+`sandbox` 的对象形式。它在结构上是沙箱 `CompartmentOptions` 的公开投影，外加 `plugins` 和 `styleIsolation` 两个宿主扩展。
+
+| 字段 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `styleIsolation` | `boolean` | `false` | 启用基于 CSS `@scope` 的运行时[样式隔离](/zh-CN/concepts/style-isolation)，作用域限制在应用容器内。 |
+| `globals` | `CompartmentGlobals` | `{}` | 安装到该应用 compartment 全局对象上的值或属性描述符。 |
+| `incubatorContext` | `WindowProxy` | `window` | 孵化该沙箱的宿主上下文。 |
+| `plugins` | `readonly IsolationPlugin[]` | `[]` | 追加在内置插件之后的隔离插件。 |
+| `modules` / `resolveHook` / `importHook` / `loadHook` | Compartment 模块钩子 | `undefined` | 沙箱内 ESM 的模块解析与加载钩子。 |
+
+::: danger 不支持 2.x 的 sandbox 对象和 FrameworkConfiguration
+`sandbox` 的类型是布尔值或 `SandboxConfiguration`。v3 不再支持 2.x 的对象形式 `sandbox: { strictStyleIsolation, experimentalStyleIsolation }`，也不再提供 Shadow DOM 隔离；样式隔离改为 `sandbox.styleIsolation`，基于 CSS `@scope` 实现。`FrameworkConfiguration` 类型已移除，`start()` 也不再接收 sandbox、prefetch 或单例相关选项。
 :::
 
 ## LifeCycleFn 与 LifeCycles
@@ -216,11 +240,11 @@ const lifeCycles: LifeCycles<Record<string, unknown>> = {
 ## MicroApp
 
 ```ts
-import type { Parcel } from 'single-spa';
+import type { Parcel } from '@qiankunjs/single-spa';
 export type MicroApp = Parcel;
 ```
 
-[`loadMicroApp`](/zh-CN/api/load-micro-app) 返回的句柄，其类型为 single-spa 的 `Parcel`。该句柄提供实例控制方法和各生命周期阶段对应的 Promise。
+[`loadMicroApp`](/zh-CN/api/load-micro-app) 返回的句柄，其类型是 `@qiankunjs/single-spa` 的 `Parcel`——qiankun 内置的 single-spa fork，已作为依赖随 qiankun 一同安装。该句柄提供实例控制方法和各生命周期阶段对应的 Promise。路由相关的辅助函数同样应从该包导入，不要再单独安装 `single-spa`，否则会引入第二个相互独立的路由器。
 
 | 成员 | 类型 | 说明 |
 | --- | --- | --- |

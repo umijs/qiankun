@@ -90,7 +90,7 @@ Inside this callback, qiankun calls `nodeTransformer(clone, transformerOpts)`. T
 
 - `SCRIPT` → `transpileScript` — classic scripts are wrapped and pointed at a blob URL scoped inside the sandbox; module scripts are tagged `data-esm="true"` and handed to the [ESM sandbox](/concepts/esm-sandbox) engine.
 - `LINK` → `transpileLink` — external stylesheets and preloads, rewritten when [style isolation](/concepts/style-isolation) is on.
-- `STYLE` → `transpileStyle` — transpiled only when `styleIsolation` is on, otherwise passed through as-is.
+- `STYLE` → `transpileStyle` — transpiled only when `sandbox.styleIsolation` is on, otherwise passed through as-is.
 
 If you want to intercept nodes yourself, you can pass a custom `nodeTransformer` through [AppConfiguration](/api/configuration), though the default already covers script, link and style.
 

@@ -52,9 +52,7 @@ Per-app options. All fields are optional; the defaults below are resolved intern
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `sandbox` | `boolean` | `true` | Enables the Proxy-membrane [JS sandbox](/concepts/js-sandbox) and the [ESM sandbox](/concepts/esm-sandbox). Set `false` only for legacy apps that must run against the real global. |
-| `globalContext` | `WindowProxy` | `window` | The base global the sandbox membrane proxies. |
-| `styleIsolation` | `boolean` | `false` | Opt in to runtime CSS `@scope` [style isolation](/concepts/style-isolation), scoped to `[data-name="<name>"]`. |
+| `sandbox` | `boolean \| SandboxConfiguration` | `true` | Enables the Proxy-membrane [JS sandbox](/concepts/js-sandbox) and the [ESM sandbox](/concepts/esm-sandbox). Set `false` only for legacy apps that must run against the real global; pass an object to keep isolation on and configure it. |
 | `fetch` | `typeof window.fetch` | `window.fetch` | Custom fetch for the entry and loader-managed scripts, modules, and styles. |
 | `streamTransformer` | `() => TransformStream<string, string>` | — | Optional transform piped into the HTML stream. |
 | `nodeTransformer` | `NodeTransformer` | internal default | Rewrites each script/link/style node before it hits live DOM. Override only for advanced cases. |
@@ -62,10 +60,19 @@ Per-app options. All fields are optional; the defaults below are resolved intern
 ```ts
 type AppConfiguration =
   Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
-    sandbox?: boolean;
-    globalContext?: WindowProxy;
-    styleIsolation?: boolean;
+    sandbox?: boolean | SandboxConfiguration;
   };
+```
+
+`sandbox` is the single umbrella for isolation. Its object form carries `styleIsolation`, `globals`, `incubatorContext`, `plugins`, and the Compartment module hooks:
+
+```ts
+loadMicroApp(app, {
+  sandbox: {
+    styleIsolation: true,
+    globals: { TENANT_ID: 'acme' },
+  },
+});
 ```
 
 See [AppConfiguration](/api/configuration) for the full reference.

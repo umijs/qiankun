@@ -10,6 +10,7 @@ import type {
   LoadableApp,
   RegistrableApp,
   AppConfiguration,
+  SandboxConfiguration,
   LifeCycleFn,
   LifeCycles,
   MicroApp,
@@ -37,7 +38,8 @@ See [Migrate from qiankun 2.x](/cookbook/migrate-from-2x) for the full list.
 | `AppMetadata` | `{ name; entry }` | The minimal identity of a micro-app. |
 | `LoadableApp<T>` | `AppMetadata & { container; props? }` | Used with [`loadMicroApp`](/api/load-micro-app). `container` is an `HTMLElement`. |
 | `RegistrableApp<T>` | `LoadableApp<T> & { loader?; activeRule; configuration? }` | Used with [`registerMicroApps`](/api/register-micro-apps). |
-| `AppConfiguration` | loader options `& { sandbox?; globalContext?; styleIsolation? }` | Per-app runtime configuration. See [AppConfiguration](/api/configuration). |
+| `AppConfiguration` | loader options `& { sandbox? }` | Per-app runtime configuration. See [AppConfiguration](/api/configuration). |
+| `SandboxConfiguration` | `{ styleIsolation?; globals?; incubatorContext?; plugins?; …module hooks }` | The object form of `sandbox`. See [SandboxConfiguration](/api/configuration#sandboxconfiguration). |
 | `LifeCycleFn<T>` | `(app, global) => Promise<void>` | A single framework lifecycle hook. |
 | `LifeCycles<T>` | `{ beforeLoad?; beforeMount?; afterMount?; beforeUnmount?; afterUnmount? }` | Framework hooks. See [Lifecycle hooks](/api/lifecycles). |
 | `MicroApp` | single-spa `Parcel` | The handle returned by `loadMicroApp`. |
@@ -147,7 +149,7 @@ registerMicroApps([
     entry: 'http://localhost:7100',
     container: document.getElementById('subapp')!,
     activeRule: '/app1',
-    configuration: { sandbox: true, styleIsolation: true },
+    configuration: { sandbox: { styleIsolation: true } },
   },
 ]);
 ```
@@ -158,9 +160,7 @@ registerMicroApps([
 export type AppConfiguration = Partial<
   Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>
 > & {
-  sandbox?: boolean;
-  globalContext?: WindowProxy;
-  styleIsolation?: boolean;
+  sandbox?: boolean | SandboxConfiguration;
 };
 ```
 
@@ -171,14 +171,38 @@ The per-app runtime configuration. It is the second argument to [`loadMicroApp`]
 | `fetch` | `typeof window.fetch` | `window.fetch` | Custom fetch for the entry and loader-managed scripts, modules, and styles. |
 | `streamTransformer` | `() => TransformStream<string, string>` | `undefined` | A transform piped into the HTML stream while it loads. |
 | `nodeTransformer` | `<T extends Node>(node: T, opts) => T` | internal default | Rewrites script / link / style nodes before they enter the container. |
-| `sandbox` | `boolean` | `true` | Enables the [JS sandbox](/concepts/js-sandbox) membrane and, where applicable, the [ESM sandbox](/concepts/esm-sandbox). |
-| `globalContext` | `WindowProxy` | `window` | The base global the sandbox membrane proxies. |
-| `styleIsolation` | `boolean` | `false` | Enables runtime CSS `@scope` [style isolation](/concepts/style-isolation) scoped to the app container. |
+| `sandbox` | `boolean \| SandboxConfiguration` | `true` | Enables the [JS sandbox](/concepts/js-sandbox) membrane and, where applicable, the [ESM sandbox](/concepts/esm-sandbox). The object form also configures it. |
 
 See [AppConfiguration](/api/configuration) for field behavior and defaults.
 
-::: danger No sandbox object or FrameworkConfiguration
-`sandbox` is a boolean. The 2.x object form `sandbox: { strictStyleIsolation, experimentalStyleIsolation }` and Shadow DOM isolation are gone. Style isolation is the separate boolean `styleIsolation`, implemented with CSS `@scope`. There is no `FrameworkConfiguration` type, and `start()` accepts no sandbox, prefetch, or singular options.
+## SandboxConfiguration
+
+```ts
+export type SandboxConfiguration = Pick<
+  CreateSandboxOptions,
+  | 'globals'
+  | 'incubatorContext'
+  | 'modules'
+  | 'resolveHook'
+  | 'importHook'
+  | 'loadHook'
+  | 'plugins'
+  | 'styleIsolation'
+>;
+```
+
+The object form of `sandbox` — structurally a public projection of the sandbox's `CompartmentOptions` plus the two host extensions `plugins` and `styleIsolation`.
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `styleIsolation` | `boolean` | `false` | Enables runtime CSS `@scope` [style isolation](/concepts/style-isolation) scoped to the app container. |
+| `globals` | `CompartmentGlobals` | `{}` | Values or property descriptors installed on the app's compartment global. |
+| `incubatorContext` | `WindowProxy` | `window` | The host context that incubates the sandbox. |
+| `plugins` | `readonly IsolationPlugin[]` | `[]` | Isolation plugins appended after the built-in ones. |
+| `modules` / `resolveHook` / `importHook` / `loadHook` | Compartment module hooks | `undefined` | Module resolution and loading hooks for sandboxed ESM. |
+
+::: danger No 2.x sandbox object, no FrameworkConfiguration
+`sandbox` is a boolean or a `SandboxConfiguration`. The 2.x object form `sandbox: { strictStyleIsolation, experimentalStyleIsolation }` and Shadow DOM isolation are gone; style isolation is `sandbox.styleIsolation`, implemented with CSS `@scope`. There is no `FrameworkConfiguration` type, and `start()` accepts no sandbox, prefetch, or singular options.
 :::
 
 ## LifeCycleFn and LifeCycles
@@ -216,11 +240,11 @@ const lifeCycles: LifeCycles<Record<string, unknown>> = {
 ## MicroApp
 
 ```ts
-import type { Parcel } from 'single-spa';
+import type { Parcel } from '@qiankunjs/single-spa';
 export type MicroApp = Parcel;
 ```
 
-The handle returned by [`loadMicroApp`](/api/load-micro-app). It is single-spa's `Parcel`, giving you imperative control plus promises for each phase.
+The handle returned by [`loadMicroApp`](/api/load-micro-app). It is a `Parcel` from `@qiankunjs/single-spa` — qiankun's vendored single-spa fork, already installed as a dependency — giving you imperative control plus promises for each phase. Import routing helpers from that package too, never from the separate `single-spa` package, which would set up a second, independent router.
 
 | Member | Type | Description |
 | --- | --- | --- |

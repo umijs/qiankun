@@ -65,7 +65,7 @@ flowchart TD
 
 ## 副作用管理
 
-除全局属性外，沙箱还通过 `packages/sandbox/src/patchers` 中的补丁模块追踪部分有状态副作用。每个补丁模块会覆盖沙箱全局中的一组 API，并返回 `free()` 闭包。卸载时调用 `free()`，用于清理已追踪的副作用并恢复原生函数；`free()` 还会返回重建函数（`rebuild`），供重新挂载时恢复必要的运行时状态。
+除全局属性外，沙箱还通过 `packages/sandbox/src/patchers` 中的**隔离插件**追踪部分有状态副作用。下表列出的是内置预设，自定义插件在其之后运行，协议见[用插件扩展沙箱](/zh-CN/cookbook/sandbox-plugins)。每个插件会覆盖沙箱全局中的一组 API，并返回 `free()` 闭包。卸载时调用 `free()`，用于清理已追踪的副作用并恢复原生函数；`free()` 还会返回重建函数（`rebuild`），供重新挂载时恢复必要的运行时状态。
 
 | 补丁模块 | 处理内容 | 应用阶段 |
 | --- | --- | --- |
@@ -120,7 +120,7 @@ const globalVariableWhiteList = ['System', '__cjsWrapper', /* + dev-only */];
 - **卸载时**，先调用各补丁模块的 `free()` 并保存下次挂载所需的重建函数，再由 `sandbox.inactive()` 锁定隔离膜。锁定期间，应用发起的全局写入会被忽略，开发环境中还会输出警告。
 
 ::: info v3 不使用快照差异比较
-部分沙箱会在挂载时记录 `window` 属性快照，并在卸载时通过差异比较恢复。qiankun v3 不采用此方式：全局写入从一开始就保存在应用本地对象中，因此无需恢复真实 `window`。代码中虽然存在 `SnapshotSandbox` 枚举值，但并未提供对应实现；`createSandboxContainer` 始终创建 `StandardSandbox`。qiankun v3 要求浏览器支持 `Proxy`，不提供旧版降级实现。
+部分沙箱会在挂载时记录 `window` 属性快照，并在卸载时通过差异比较恢复。qiankun v3 不采用此方式：全局写入从一开始就保存在应用本地对象中，因此无需恢复真实 `window`。代码中虽然存在 `SnapshotSandbox` 枚举值，但并未提供对应实现；`createSandbox` 始终创建 `StandardSandbox`。qiankun v3 要求浏览器支持 `Proxy`，不提供旧版降级实现。
 :::
 
 ## 隔离边界
@@ -160,7 +160,7 @@ ESM 沙箱引擎仅在启用 `sandbox` 时创建。关闭沙箱后，ESM 沙箱�
 :::
 
 ::: info 与 qiankun 2.x 的区别
-在 v3 中，`sandbox` 是普通的 `boolean`。2.x 的 `sandbox: { strictStyleIsolation }`、`sandbox: { experimentalStyleIsolation }` 以及基于 Shadow DOM 的样式隔离配置已被移除。CSS 隔离改由独立的 [`styleIsolation`](/zh-CN/concepts/style-isolation) 布尔选项控制，并使用 CSS `@scope` 实现。详见[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
+在 v3 中，`sandbox` 的类型是 `boolean | SandboxConfiguration`。2.x 的 `sandbox: { strictStyleIsolation }`、`sandbox: { experimentalStyleIsolation }` 以及基于 Shadow DOM 的样式隔离配置已被移除。CSS 隔离改由布尔选项 [`sandbox.styleIsolation`](/zh-CN/concepts/style-isolation) 控制，并使用 CSS `@scope` 实现。详见[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
 :::
 
 ## 相关阅读

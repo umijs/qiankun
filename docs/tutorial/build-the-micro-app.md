@@ -12,7 +12,7 @@ From your `qiankun-tutorial` directory:
 npm create vite@latest sub-app -- --template react-ts
 cd sub-app
 npm install
-npm install --save-dev @qiankunjs/bundler-plugin
+npm install --save-dev @qiankunjs/bundler-plugin@rc
 ```
 
 ## Configure Vite

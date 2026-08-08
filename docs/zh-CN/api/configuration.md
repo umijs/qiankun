@@ -14,9 +14,7 @@ import { type AppConfiguration } from 'qiankun';
 
 | 字段 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `sandbox` | `boolean` | `true` | 启用基于 `Proxy` 隔离膜的 JavaScript 沙箱。对于 `<script type="module">`，还会启用 ESM 沙箱引擎。设为 `false` 后，微应用将在真实全局对象中运行。 |
-| `globalContext` | `WindowProxy` | `window` | 沙箱隔离膜代理的基础全局对象。常规场景无需修改。 |
-| `styleIsolation` | `boolean` | `false` | 启用运行时 CSS 隔离，使用 CSS `@scope` 将微应用样式的作用域限制在应用容器内。 |
+| `sandbox` | `boolean \| SandboxConfiguration` | `true` | 隔离能力的统一入口。设为 `false` 时微应用在真实全局对象中运行；设为 `true` 时以默认配置启用沙箱；传入对象时启用沙箱并配置底层 Compartment。 |
 | `fetch` | `typeof window.fetch` | `window.fetch` | 用于请求入口，以及由加载器处理的脚本、模块和样式。图片等由浏览器直接发起的请求不一定经过该函数。 |
 | `streamTransformer` | `() => TransformStream<string, string>` | `undefined` | 可选。用于自定义 HTML 入口的流式处理过程，接收解码后的 HTML 字符串流。 |
 | `nodeTransformer` | `<T extends Node>(node: T, opts) => T` | 内置资源转换器 | 在 `<script>`、`<link>` 和 `<style>` 节点进入容器前进行转换。仅用于高级扩展。 |
@@ -27,27 +25,82 @@ import { type AppConfiguration } from 'qiankun';
 
 默认值为 `true`。启用后，每个微应用都会获得独立的 `window` 视图；原生 ESM 入口也使用相同的应用级隔离机制。相关行为与限制参见 [JavaScript 隔离](/zh-CN/concepts/js-sandbox)。
 
-设为 `sandbox: false` 后，微应用将在真实全局上下文中运行。该选项可用于无法兼容代理全局对象的旧应用，但应用之间将不再具备 JavaScript 隔离能力。
+设为 `sandbox: false` 后，微应用将在真实全局上下文中运行，同时原生 ESM 隔离也会关闭。该选项可用于无法兼容代理全局对象的旧应用，但应用之间将不再具备 JavaScript 隔离能力。
 
 ```ts
 configuration: { sandbox: false }
 ```
 
-`sandbox` 仅接受布尔值。设为 `false` 时，也会关闭原生 ESM 隔离。
+如需在保持隔离的同时调整沙箱行为，可传入对象而非 `true`：
 
-### globalContext
+```ts
+configuration: {
+  sandbox: {
+    styleIsolation: true,
+    globals: { TENANT_ID: 'acme' },
+  },
+}
+```
 
-默认值为 `window`，表示沙箱隔离膜所代理的基础全局对象。常规的单窗口场景无需配置此项；当宿主环境的基础执行域不是顶层 `window` 时，可通过此项指定相应的全局对象。
+## SandboxConfiguration
 
-### styleIsolation
+`SandboxConfiguration` 在结构上是沙箱 `CompartmentOptions` 的公开投影，外加 `plugins` 和 `styleIsolation` 两个宿主扩展：
+
+```ts
+import { type SandboxConfiguration } from 'qiankun';
+
+type SandboxConfiguration = Pick<
+  CreateSandboxOptions,
+  'globals' | 'incubatorContext' | 'modules' | 'resolveHook' | 'importHook' | 'loadHook' | 'plugins' | 'styleIsolation'
+>;
+```
+
+| 字段 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `styleIsolation` | `boolean` | `false` | 启用运行时 CSS 隔离，使用 CSS `@scope` 将微应用样式的作用域限制在应用容器内。 |
+| `globals` | `Record<string, unknown \| PropertyDescriptor>` | `{}` | 安装到该应用 compartment 全局对象上的值或属性描述符，不会修改宿主 `window`。 |
+| `incubatorContext` | `WindowProxy` | `window` | 孵化该沙箱的宿主上下文，即沙箱未遮蔽的属性所透读的全局对象。 |
+| `plugins` | `readonly IsolationPlugin[]` | `[]` | 追加在 qiankun 内置插件之后的隔离插件。 |
+| `modules` / `resolveHook` / `importHook` / `loadHook` | Compartment 模块钩子 | `undefined` | 沙箱内 ESM 的模块解析与加载钩子，属于高级用法。 |
+
+### sandbox.styleIsolation
 
 默认值为 `false`。设为 `true` 后，qiankun 使用原生 CSS [`@scope`](https://developer.mozilla.org/en-US/docs/Web/CSS/@scope) 将微应用样式限制在应用容器内。作用域根由应用配置确定，不支持自定义。
+
+样式隔离位于 `sandbox` 对象内部而非与之并列，是因为动态注入的样式依赖沙箱的 DOM 拦截：入口中的静态样式由加载器转译处理，动态样式则由沙箱处理。若在关闭 JS 沙箱的同时开启 CSS 隔离，所有动态样式都会静默泄漏，因此该组合在配置上不可表达。
 
 ::: warning 浏览器支持与 CORS
 样式隔离依赖原生 CSS `@scope`，qiankun 不提供兼容实现（polyfill）。不支持 `@scope` 的浏览器无法使用该配置。此外，外部样式表必须允许通过 CORS 获取；请求或转换失败时，qiankun 会忽略对应样式表，不会改为加载未隔离的样式。
 :::
 
 行为与限制参见[样式隔离](/zh-CN/concepts/style-isolation)，操作步骤参见[开启 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation)，实现细节参见[样式隔离实现](/zh-CN/internals/style-isolation)。
+
+### sandbox.globals
+
+默认值为 `{}`。每一项都会被安装到该微应用自己的 compartment 全局对象上：可以是普通值，也可以是属性描述符（用于控制可写性、可枚举性等）。宿主 `window` 不会被修改，配置的键对 classic 与 ESM 应用同样可见。
+
+```ts
+configuration: {
+  sandbox: {
+    globals: {
+      tenantId: 'acme',
+      featureClient: { value: createFeatureClient(), writable: false },
+    },
+  },
+}
+```
+
+### sandbox.incubatorContext
+
+默认值为 `window`，表示孵化该沙箱的宿主上下文，即沙箱未遮蔽的属性所透读的全局对象。该命名沿用 ShadowRealm 提案中的「incubator realm」。常规的单窗口场景无需配置此项；当宿主环境的基础执行域不是顶层 `window` 时，可通过此项指定相应的全局对象。
+
+### sandbox.plugins
+
+默认值为 `[]`。隔离插件运行在 qiankun 内置插件之后：`bootstrap` 插件在微应用脚本执行前运行，`mount` 插件在每次挂载时运行，其返回的 `Free` 函数会参与卸载清理与重新挂载时的恢复。完整协议参见[用插件扩展沙箱](/zh-CN/cookbook/sandbox-plugins)。
+
+### 模块钩子
+
+`modules`、`resolveHook` 和 `importHook`（`loadHook` 是它的别名）直接设置在 `sandbox` 对象上，用于配置该应用 Compartment 的模块加载行为——重定向、私有协议或预编译模块源。这些钩子仅作用于沙箱内的 ESM。示例参见[独立使用沙箱](/zh-CN/cookbook/standalone-sandbox)。
 
 ### fetch
 
@@ -79,8 +132,7 @@ const microApp = loadMicroApp(
     container: document.getElementById('subapp-container')!,
   },
   {
-    sandbox: true,
-    styleIsolation: true,
+    sandbox: { styleIsolation: true },
   },
 );
 ```
@@ -92,6 +144,8 @@ React 和 Vue 的 `<MicroApp>` 组件通过 `settings` 接收相同类型的配�
 ## 优先级
 
 所有字段都按微应用实例生效。`start()` 不接收也不会合并全局的沙箱、样式或 fetch 配置。
+
+应用级的 `sandbox` 对象会整体覆盖外层配置：配置合并是一次浅展开，沙箱内部的各个字段不会被深合并。
 
 ## 从 v2 迁移
 

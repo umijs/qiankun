@@ -48,8 +48,12 @@ features:
 在主应用中安装 qiankun：
 
 ```bash
-npm install qiankun
+npm install qiankun@rc
 ```
+
+::: tip v3 目前发布在 `rc` 标签上
+qiankun 3.0 仍处于 RC 阶段，npm 的 `latest` 标签指向的仍是 2.x。安装时需显式指定 `@rc` 才能获得 v3。
+:::
 
 容器创建后即可加载微应用。应保存返回的实例句柄，以便查询状态并执行卸载：
 
@@ -74,3 +78,5 @@ await microApp.unmount();
 微应用需要导出 `bootstrap`、`mount` 和 `unmount`。qiankun 会将其加载到指定的 `HTMLElement` 中，并调用相应的生命周期函数。[快速上手](/zh-CN/guide/getting-started)提供了完整的可运行示例。
 
 如果微应用的激活状态完全取决于当前 URL，可使用基于路由的 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 和 [`start`](/zh-CN/api/start)。
+
+仓库中的示例应用（两个主应用加载同一组微应用）已部署在 [examples.qiankunjs.com](https://examples.qiankunjs.com)，可直接在线体验。

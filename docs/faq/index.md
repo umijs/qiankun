@@ -34,7 +34,7 @@ No. v3 does not include `initGlobalState`, `setGlobalState`, or the related stor
 
 ## How do I isolate styles?
 
-Set `styleIsolation: true` in the app configuration. It stops micro-app CSS from leaking outside the container, but does not stop global host styles from entering the app. It also depends on native CSS `@scope` and CORS for external stylesheets.
+Set `sandbox: { styleIsolation: true }` in the app configuration. It stops micro-app CSS from leaking outside the container, but does not stop global host styles from entering the app. It also depends on native CSS `@scope` and CORS for external stylesheets.
 
 Follow [Enable style isolation](/cookbook/enable-style-isolation) for the steps and [Style isolation](/concepts/style-isolation) for the boundaries.
 

@@ -52,9 +52,7 @@ type LoadableApp<T extends ObjectType> = {
 
 | 选项 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `sandbox` | `boolean` | `true` | 启用基于 Proxy 隔离膜的 [JavaScript 沙箱](/zh-CN/concepts/js-sandbox)和 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)。仅当旧应用必须在真实全局对象中运行时，才应设为 `false`。 |
-| `globalContext` | `WindowProxy` | `window` | 沙箱隔离膜所代理的基础全局对象。 |
-| `styleIsolation` | `boolean` | `false` | 启用基于 CSS `@scope` 的运行时[样式隔离](/zh-CN/concepts/style-isolation)，作用域限制在 `[data-name="<name>"]`。 |
+| `sandbox` | `boolean \| SandboxConfiguration` | `true` | 启用基于 Proxy 隔离膜的 [JavaScript 沙箱](/zh-CN/concepts/js-sandbox)和 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)。仅当旧应用必须在真实全局对象中运行时，才应设为 `false`；传入对象则在保持隔离的同时配置沙箱。 |
 | `fetch` | `typeof window.fetch` | `window.fetch` | 用于请求入口，以及由加载器处理的脚本、模块和样式的自定义 fetch。 |
 | `streamTransformer` | `() => TransformStream<string, string>` | — | 用于自定义 HTML 流式处理过程的可选转换流。 |
 | `nodeTransformer` | `NodeTransformer` | 内部默认值 | 在 `<script>`、`<link>` 和 `<style>` 节点进入真实 DOM 前进行转换。仅高级扩展场景需要覆盖。 |
@@ -62,10 +60,19 @@ type LoadableApp<T extends ObjectType> = {
 ```ts
 type AppConfiguration =
   Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
-    sandbox?: boolean;
-    globalContext?: WindowProxy;
-    styleIsolation?: boolean;
+    sandbox?: boolean | SandboxConfiguration;
   };
+```
+
+`sandbox` 是隔离能力的统一入口。它的对象形式承载 `styleIsolation`、`globals`、`incubatorContext`、`plugins` 以及 Compartment 模块钩子：
+
+```ts
+loadMicroApp(app, {
+  sandbox: {
+    styleIsolation: true,
+    globals: { TENANT_ID: 'acme' },
+  },
+});
 ```
 
 完整的配置参考见 [AppConfiguration](/zh-CN/api/configuration)。

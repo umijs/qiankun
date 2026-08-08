@@ -137,7 +137,7 @@ export function registerAll(
       container,
       activeRule: '/react',
       loader: (loading) => onLoading('react', loading),
-      configuration: { sandbox: true, styleIsolation: true },
+      configuration: { sandbox: { styleIsolation: true } },
     },
     {
       name: 'vue',
@@ -145,7 +145,7 @@ export function registerAll(
       container,
       activeRule: '/vue',
       loader: (loading) => onLoading('vue', loading),
-      configuration: { sandbox: true, styleIsolation: true },
+      configuration: { sandbox: { styleIsolation: true } },
     },
     {
       // stable route-app id; it does not have to match output.library.name
@@ -197,7 +197,7 @@ Several route-driven apps may share a container only when their `activeRule` val
 
 When the entry script is correctly marked, qiankun resolves lifecycle functions from that entry's execution result: the module exports for ESM, or the value produced by the classic entry script. This primary path does not require `name` to equal a package name or Webpack's `output.library.name`.
 
-Only when the entry result does not contain a valid lifecycle object does qiankun make a final compatibility attempt at `globalContext[appName]`. The global key must match `name` if an app deliberately relies on that fallback, but the fallback is not the normal naming contract. For the full lookup order, see [Micro-app lifecycle and props](/concepts/lifecycle-and-props).
+Only when the entry result does not contain a valid lifecycle object does qiankun make a final compatibility attempt at `global[appName]` on the app's own global context. The global key must match `name` if an app deliberately relies on that fallback, but the fallback is not the normal naming contract. For the full lookup order, see [Micro-app lifecycle and props](/concepts/lifecycle-and-props).
 
 ### Per-app configuration is the only configuration entry point
 
@@ -211,8 +211,9 @@ registerMicroApps([
     container,
     activeRule: '/react',
     configuration: {
-      sandbox: true,          // default true; Proxy-membrane JS isolation
-      styleIsolation: true,   // default false; CSS @scope isolation
+      sandbox: {              // default true; Proxy-membrane JS isolation
+        styleIsolation: true, // default false; CSS @scope isolation
+      },
       // fetch: customFetch,  // optional custom fetch for this app's assets
     },
   },
@@ -222,7 +223,7 @@ registerMicroApps([
 For each field and its default, see [AppConfiguration](/api/configuration).
 
 ::: warning No 2.x start options
-`prefetch`, `sandbox: { strictStyleIsolation | experimentalStyleIsolation }`, `singular`, `getPublicPath`, and `getTemplate` were all qiankun 2.x `start` options, and none of them exist in v3. Style isolation is a single boolean `styleIsolation`, implemented under the hood with CSS `@scope` — there is no Shadow DOM mode. Prefetching is done automatically by the streaming loader, so there is no `prefetch` strategy to configure. See [Migrating from qiankun 2.x](/cookbook/migrate-from-2x).
+`prefetch`, `sandbox: { strictStyleIsolation | experimentalStyleIsolation }`, `singular`, `getPublicPath`, and `getTemplate` were all qiankun 2.x `start` options, and none of them exist in v3. Style isolation is `sandbox.styleIsolation`, a single boolean implemented under the hood with CSS `@scope` — there is no Shadow DOM mode. Prefetching is done automatically by the streaming loader, so there is no `prefetch` strategy to configure. See [Migrating from qiankun 2.x](/cookbook/migrate-from-2x).
 :::
 
 ::: info No built-in global state library

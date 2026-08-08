@@ -2,11 +2,11 @@
 
 Style isolation keeps CSS declared by a micro-app from matching elements outside that app's container. It is opt-in, scoped per app, and implemented with the browser's native CSS `@scope` support.
 
-It is separate from JavaScript isolation: the JS sandbox is enabled by default, while `styleIsolation` defaults to `false`.
+It is configured inside the sandbox object: the JS sandbox is enabled by default, while `sandbox.styleIsolation` defaults to `false`. CSS isolation lives there because dynamically injected styles ride on the sandbox's DOM interception — isolated CSS without a JS sandbox would silently leak them.
 
 ## The model
 
-With `styleIsolation: true`, qiankun limits the app's rules to the container identified by its app name. Conceptually, its styles become:
+With `sandbox: { styleIsolation: true }`, qiankun limits the app's rules to the container identified by its app name. Conceptually, its styles become:
 
 ```css
 @scope ([data-name="catalog"]) {
@@ -62,7 +62,7 @@ const microApp = loadMicroApp(
     container,
   },
   {
-    styleIsolation: true,
+    sandbox: { styleIsolation: true },
   },
 );
 ```

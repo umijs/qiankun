@@ -7,7 +7,7 @@
 ## 安装
 
 ```bash
-npm install @qiankunjs/react qiankun
+npm install @qiankunjs/react@rc qiankun@rc
 ```
 
 主应用必须安装 `react` 和 `react-dom`，两者的版本均需满足 `>=16.9.0`。
@@ -59,7 +59,7 @@ export type Props = SharedProps & SharedSlots<React.ReactNode> & Record<string, 
 除组件过滤的字段外，其他 prop 会在每次渲染时进行深度比较，并传递给微应用。详见[向微应用传递 props](#passing-props-to-the-micro-app)。
 
 ::: info 组件过滤的字段
-`name`、`entry`、`settings`、`lifeCycles`、`wrapperClassName` 和 `className` 会在调用微应用生命周期前从 props 中移除。当前实现仍会将 `autoSetLoading`、`autoCaptureError`、`loader` 和 `errorBoundary` 随其他附加 prop 一并传递给微应用。
+组件自身消费的所有字段——`name`、`entry`、`settings`、`lifeCycles`、`autoSetLoading`、`autoCaptureError`、`loader`、`errorBoundary`、`wrapperClassName` 和 `className`——都会在调用微应用生命周期前从 props 中移除，不会到达微应用。
 :::
 
 ## 向微应用传递 props {#passing-props-to-the-micro-app}
@@ -93,7 +93,7 @@ export async function mount(props) {
 
 ## 加载状态
 
-内部的 `loading` 状态初始值为 `true`。启用 `autoSetLoading` 后，组件会在应用的 `mountPromise` 完成时调用 `setLoading(false)`。如果未启用加载界面，该状态不会产生可见效果。
+内部的 `loading` 状态初始值为 `true`，并在应用的 `mountPromise` 敲定（无论成功还是失败）后被清除。该行为与 `autoSetLoading` 无关：该开关只决定是否渲染内置加载界面，若把状态本身也交由它控制，自定义 `loader` 就会一直转下去。未提供任何加载界面时，该状态不会产生可见效果。
 
 ### 内置加载界面
 
@@ -109,12 +109,11 @@ export async function mount(props) {
 <MicroApp
   name="app1"
   entry="http://localhost:8000"
-  autoSetLoading
   loader={(loading) => <Spinner spinning={loading} />}
 />
 ```
 
-提供 `loader` 后，组件会启用自定义加载界面；同时设置 `autoSetLoading`，组件才会在 `mountPromise` 完成后自动将 `loading` 设为 `false`。`wrapperClassName` 仅在加载界面或错误界面启用时生效，因为组件只在这两种情况下渲染带定位样式的包裹元素。
+自定义 `loader` 可独立生效，且优先级高于内置加载界面，因此无需再配合 `autoSetLoading`。`wrapperClassName` 仅在加载界面或错误界面启用时生效，因为组件只在这两种情况下渲染带定位样式的包裹元素。
 
 ## 错误处理
 
@@ -157,15 +156,15 @@ export async function mount(props) {
 
 ## 通过 ref 访问运行中的实例
 
-组件使用 `forwardRef` 转发 ref。该 ref 指向当前微应用的实例句柄，即 single-spa 的 Parcel（在 `qiankun` 中对应 `MicroApp` 类型）。通过该句柄可查询实例状态，也可等待各生命周期 Promise 完成。
+组件使用 `forwardRef` 转发 ref。该 ref 指向当前微应用的实例句柄，即 `@qiankunjs/single-spa` 的 Parcel（对应 `qiankun` 的 `MicroApp` 类型，`@qiankunjs/react` 以 `MicroAppType` 重新导出）。通过该句柄可查询实例状态，也可等待各生命周期 Promise 完成。
 
 ```tsx
 import { useRef } from 'react';
 import { MicroApp } from '@qiankunjs/react';
-import { type MicroApp as MicroAppType } from 'qiankun';
+import { type MicroAppType } from '@qiankunjs/react';
 
 function Page() {
-  const microAppRef = useRef<MicroAppType>();
+  const microAppRef = useRef<MicroAppType>(undefined);
 
   const logStatus = () => {
     console.log(microAppRef.current?.getStatus());
@@ -214,11 +213,11 @@ ref 主要用于查询状态和等待生命周期 Promise。不应通过 ref 直
 <MicroApp
   name="app1"
   entry="http://localhost:8000"
-  settings={{ sandbox: true, styleIsolation: true }}
+  settings={{ sandbox: { styleIsolation: true } }}
 />
 ```
 
-调用 `loadMicroApp` 前，组件会先设置 `globalContext: window`，再合并传入的 `settings`。因此，可通过 `settings.globalContext` 覆盖该默认值。`styleIsolation` 的行为参见[样式隔离](/zh-CN/concepts/style-isolation)，`sandbox` 的行为参见 [JavaScript 沙箱](/zh-CN/concepts/js-sandbox)。
+`settings` 会原样传给 `loadMicroApp`，组件不会替你填任何默认项。`sandbox.styleIsolation` 的行为参见[样式隔离](/zh-CN/concepts/style-isolation)，`sandbox` 本身的行为参见 [JavaScript 沙箱](/zh-CN/concepts/js-sandbox)。
 
 ## 生命周期钩子
 
@@ -267,7 +266,7 @@ flowchart TD
   B -- 是 --> C["loading = true, mountMicroApp()"]
   C --> D["loadMicroApp(app, settings, lifeCycles)"]
   D --> E{mountPromise}
-  E -- 成功 --> F["若开启 autoSetLoading:loading = false"]
+  E -- 成功 --> F["loading = false"]
   E -- 失败 --> G{是否启用 autoCaptureError 或配置 errorBoundary}
   G -- 是 --> H["setError(err)"]
   G -- 否 --> I["重新抛出异步错误"]

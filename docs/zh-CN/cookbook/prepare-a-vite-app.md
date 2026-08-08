@@ -11,7 +11,7 @@ qiankun v3 以原生 ESM 方式加载 Vite 应用。接入时需要安装 Vite �
 在 Vite 应用中安装构建插件：
 
 ```bash
-npm install --save-dev @qiankunjs/bundler-plugin
+npm install --save-dev @qiankunjs/bundler-plugin@rc
 ```
 
 将 `qiankun()` 与框架插件一同加入配置，并指定固定的开发服务器端口：

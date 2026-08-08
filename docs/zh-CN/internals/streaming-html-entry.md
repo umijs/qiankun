@@ -89,7 +89,7 @@ res.body
 
 - `SCRIPT` → `transpileScript`：Classic 脚本经包装后指向绑定沙箱作用域的 blob URL；模块脚本标记为 `data-esm="true"`，再交给 [ESM 沙箱实现](/zh-CN/internals/esm-sandbox)。
 - `LINK` → `transpileLink`：启用[样式隔离](/zh-CN/concepts/style-isolation)时，改写外部样式表和预加载节点。
-- `STYLE` → `transpileStyle`：仅在 `styleIsolation` 开启时转换，否则保持原样。
+- `STYLE` → `transpileStyle`：仅在 `sandbox.styleIsolation` 开启时转换，否则保持原样。
 
 也可以通过 [AppConfiguration](/zh-CN/api/configuration) 提供自定义 `nodeTransformer`。默认实现已经覆盖 `<script>`、`<link>` 和 `<style>` 节点。
 

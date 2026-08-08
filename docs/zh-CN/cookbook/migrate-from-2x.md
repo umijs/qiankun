@@ -16,7 +16,7 @@ qiankun 3.0 的公开 API 更精简，约束也更明确。本指南通过迁移
 | `entry` | 字符串，或 `{ scripts, styles }` 对象 | 只能是 HTML URL 字符串 |
 | `container` | 选择器字符串或 `HTMLElement` | 只能是 `HTMLElement` 实例 |
 | `start()` 选项 | `prefetch`、`sandbox`、`singular`、`fetch`、`getPublicPath`、`getTemplate`、`excludeAssetFilter` 等 | 仅支持 single-spa 的 `StartOpts`（`{ urlRerouteOnly? }`） |
-| 沙箱 / 样式隔离 | `strictStyleIsolation`（Shadow DOM）或 `experimentalStyleIsolation`（选择器改写） | `sandbox: boolean` + 独立的 `styleIsolation: boolean`（CSS `@scope`） |
+| 沙箱 / 样式隔离 | `strictStyleIsolation`（Shadow DOM）或 `experimentalStyleIsolation`（选择器改写） | `sandbox: boolean \| SandboxConfiguration`，样式隔离为 `sandbox.styleIsolation: boolean`（CSS `@scope`） |
 | 单应用配置 | 通过 `start()` 统一配置 | 每个应用分别设置 `configuration: AppConfiguration` |
 | 全局状态管理 | `initGlobalState` / `onGlobalStateChange` / `setGlobalState` | 已移除；通过 `props` 传入自有状态容器 |
 | 微应用构建 | 手动配置 UMD / `libraryTarget` / `jsonpFunction` / `chunkLoadingGlobal` | 使用 `@qiankunjs/bundler-plugin`（Webpack）或 `qiankun()`（Vite） |
@@ -109,8 +109,9 @@ registerMicroApps(
   apps.map((app) => ({
     ...app,
     configuration: {
-      sandbox: true,        // JavaScript 沙箱（默认开启）
-      styleIsolation: true, // CSS @scope 隔离（默认关闭）
+      sandbox: {              // JavaScript 沙箱（默认开启）
+        styleIsolation: true, // CSS @scope 隔离（默认关闭）
+      },
     },
   })),
 );
@@ -118,13 +119,13 @@ start(); // 此处不再接收 qiankun 专用选项
 ```
 :::
 
-当前的应用级字段包括 `sandbox`、`styleIsolation`、`globalContext`、`fetch`、`streamTransformer` 和 `nodeTransformer`。默认值和高级用法见 [AppConfiguration 参考](/zh-CN/api/configuration)。
+当前的应用级字段为 `sandbox`、`fetch`、`streamTransformer` 和 `nodeTransformer`；`styleIsolation`、`globals`、`incubatorContext` 和 `plugins` 位于 `sandbox` 对象内部。默认值和高级用法见 [AppConfiguration 参考](/zh-CN/api/configuration)。
 
 v3 已移除 `FrameworkConfiguration` 类型、`getPublicPath`、`getTemplate`、`excludeAssetFilter` 和 `singular`。
 
-## 沙箱与样式隔离：拆分为两个独立的布尔值
+## 沙箱与样式隔离：统一入口 + 原生 `@scope`
 
-2.x 将 JavaScript 和样式隔离选项统一放在嵌套的 `sandbox` 配置中，样式隔离可选择 Shadow DOM 或选择器改写。v3 将 JavaScript 隔离与样式隔离拆分为两个独立的布尔值，并改用原生 CSS `@scope`，不再提供 Shadow DOM 模式。
+2.x 将 JavaScript 和样式隔离选项统一放在嵌套的 `sandbox` 配置中，样式隔离可选择 Shadow DOM 或选择器改写。v3 保留了 `sandbox` 这一统一入口，但内容不同：JavaScript 隔离由开关本身控制，样式隔离改为 `sandbox.styleIsolation`，并改用原生 CSS `@scope`，不再提供 Shadow DOM 模式。
 
 ::: code-group
 ```ts [2.x]
@@ -140,16 +141,18 @@ start({
 ```ts [3.0]
 // 每个应用单独配置
 configuration: {
-  sandbox: true,        // 通过 Proxy 隔离膜实现 JavaScript 隔离
-  styleIsolation: true, // 使用 @scope 将 CSS 限制在 [data-name="<appName>"] 内
+  sandbox: {
+    // 传入对象形式即启用基于 Proxy 隔离膜的 JavaScript 隔离
+    styleIsolation: true, // 使用 @scope 将 CSS 限制在 [data-name="<appName>"] 内
+  },
 }
 ```
 :::
 
 主要差异如下：
 
-- `sandbox` 现在是一个仅控制 JavaScript 隔离的 `boolean`。设置为 `sandbox: false` 后，应用会在真实的 `window` 上运行，可用于兼容无法在代理全局对象中运行的旧应用。
-- `styleIsolation` 是独立的 `boolean`，默认值为 `false`。启用后，每个应用的样式会包含在 `@scope ([data-name="<appName>"]) { ... }` 中；外部样式表会被重新获取，并以 blob URL 形式注入 `<link>`，以便在样式内容外层添加 `@scope`。
+- `sandbox` 的类型是 `boolean | SandboxConfiguration`。设置为 `sandbox: false` 后，应用会在真实的 `window` 上运行，可用于兼容无法在代理全局对象中运行的旧应用；传入对象则在保持隔离的同时对其进行配置。
+- `sandbox.styleIsolation` 是一个 `boolean`，默认值为 `false`。启用后，每个应用的样式会包含在 `@scope ([data-name="<appName>"]) { ... }` 中；外部样式表会被重新获取，并以 blob URL 形式注入 `<link>`，以便在样式内容外层添加 `@scope`。
 - 作用域选择器由内部根据 `[data-name="<appName>"]` 推导，无法通过公开配置修改。
 
 ::: warning `@scope` 的浏览器支持
@@ -341,7 +344,7 @@ Firefox 不支持动态注入 import map，而以原生 ESM 方式加载的 Vite
 ## 其他 v3 API
 
 - [`isRuntimeCompatible`](/zh-CN/api/is-runtime-compatible)——在启动前检查浏览器兼容性
-- 应用级 [`configuration`](/zh-CN/api/configuration)——可通过 `RegistrableApp.configuration` 或 `loadMicroApp` 的第二个参数设置 `sandbox`、`styleIsolation`、`globalContext` 和 `fetch` 等选项
+- 应用级 [`configuration`](/zh-CN/api/configuration)——可通过 `RegistrableApp.configuration` 或 `loadMicroApp` 的第二个参数设置 `sandbox`（`styleIsolation`、`globals`、`incubatorContext`、`plugins` 均在其内部）和 `fetch` 等选项
 
 新项目应优先使用 `loadMicroApp`。完整的公开导出列表见 [API 总览](/zh-CN/api/index)。
 
@@ -355,7 +358,7 @@ Firefox 不支持动态注入 import map，而以原生 ESM 方式加载的 Vite
 1. 将每个 `entry` 改为 HTML URL 字符串。
 2. 将每个 `container` 改为 `HTMLElement` 实例。
 3. 移除 `start()` 中所有 qiankun 特有的选项，并将 `sandbox`、`styleIsolation` 和 `fetch` 等配置写入各应用的 `configuration`。
-4. 将 `sandbox: { strictStyleIsolation | experimentalStyleIsolation }` 改为 `sandbox: boolean` 和 `styleIsolation: boolean`。
+4. 将 `sandbox: { strictStyleIsolation | experimentalStyleIsolation }` 改为 `sandbox: { styleIsolation: boolean }`。
 5. 移除 `initGlobalState`、`onGlobalStateChange` 和 `setGlobalState`；通过 `props` 传入自有状态容器。
 6. 移除手动配置的 UMD、`libraryTarget` 和 `jsonpFunction` 输出选项；添加 `@qiankunjs/bundler-plugin`（Webpack）或 `qiankun()`（Vite）。
 7. 在微应用入口中使用 `createRoot` 或 `app.mount` 渲染到 `props.container`。

@@ -11,7 +11,7 @@ qiankun v3 loads Vite applications as native ESM. The integration has one path: 
 Install the bundler plugin in the Vite application:
 
 ```bash
-npm install --save-dev @qiankunjs/bundler-plugin
+npm install --save-dev @qiankunjs/bundler-plugin@rc
 ```
 
 Add `qiankun()` alongside the framework plugin and use a fixed development port:

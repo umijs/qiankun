@@ -7,7 +7,7 @@ Use it when the host is a React SPA and you want to drop a micro-app in as an or
 ## Installation
 
 ```bash
-npm install @qiankunjs/react qiankun
+npm install @qiankunjs/react@rc qiankun@rc
 ```
 
 The peer dependencies are `react` and `react-dom`, both required at `>=16.9.0`.
@@ -61,7 +61,7 @@ That trailing `Record<string, unknown>` is deliberate: **any prop that isn't one
 Every other prop is deep-compared on each render and then forwarded to the micro-app. See [Passing props to the micro-app](#passing-props-to-the-micro-app).
 
 ::: info Reserved fields are not forwarded
-`name`, `entry`, `settings`, `lifeCycles`, `wrapperClassName`, and `className` are consumed by the component itself and stripped off before the props reach the micro-app. The current implementation still forwards `autoSetLoading`, `autoCaptureError`, `loader`, and `errorBoundary` with the other extra props; application code should not depend on these component-control fields.
+Every prop the component owns — `name`, `entry`, `settings`, `lifeCycles`, `autoSetLoading`, `autoCaptureError`, `loader`, `errorBoundary`, `wrapperClassName`, and `className` — is consumed by the component and stripped off before the props reach the micro-app.
 :::
 
 ## Passing props to the micro-app {#passing-props-to-the-micro-app}
@@ -95,7 +95,7 @@ Changing `name` unmounts the current instance and creates a new one. Changing an
 
 ## Loading state
 
-The internal loading flag starts out `true`. It's only cleared automatically — via `setLoading(false)`, driven by the app's `mountPromise` — when `autoSetLoading` is enabled. Without a loader configured there's nothing to render for the loading state anyway, so the flag has no visible effect.
+The internal loading flag starts out `true` and is cleared once the app's `mountPromise` settles, whether it resolves or fails. That happens regardless of `autoSetLoading` — the flag only selects the built-in indicator, so gating the state on it would leave a custom `loader` spinning forever. Without a loading slot there is simply nothing to render for the state.
 
 ### Built-in loader
 
@@ -111,12 +111,11 @@ The built-in loader is just a placeholder that renders the literal text `loading
 <MicroApp
   name="app1"
   entry="http://localhost:8000"
-  autoSetLoading
   loader={(loading) => <Spinner spinning={loading} />}
 />
 ```
 
-Passing `loader` enables the custom loading UI. Keep `autoSetLoading` enabled if the component should automatically set `loading` to `false` when `mountPromise` resolves. `wrapperClassName` only takes effect when a loader or error boundary is active, because that is when the component renders the positioned wrapper element.
+A custom `loader` works on its own and takes precedence over the built-in indicator, so `autoSetLoading` is redundant next to it. `wrapperClassName` only takes effect when a loading or error slot is active, because that is when the component renders the positioned wrapper element.
 
 ## Error handling
 
@@ -159,15 +158,15 @@ For a more systematic treatment of error handling, see [Handling loading and run
 
 ## Getting the running app through a ref
 
-The component is a `forwardRef`. The forwarded ref points at the running micro-app handle — a single-spa Parcel (the `MicroApp` type from `qiankun`) — so you can read its status and await its lifecycle promises.
+The component is a `forwardRef`. The forwarded ref points at the running micro-app handle — a Parcel from `@qiankunjs/single-spa` (the `MicroApp` type in `qiankun`, re-exported by `@qiankunjs/react` as `MicroAppType`) — so you can read its status and await its lifecycle promises.
 
 ```tsx
 import { useRef } from 'react';
 import { MicroApp } from '@qiankunjs/react';
-import { type MicroApp as MicroAppType } from 'qiankun';
+import { type MicroAppType } from '@qiankunjs/react';
 
 function Page() {
-  const microAppRef = useRef<MicroAppType>();
+  const microAppRef = useRef<MicroAppType>(undefined);
 
   const logStatus = () => {
     console.log(microAppRef.current?.getStatus());
@@ -216,11 +215,11 @@ Loader- and sandbox-related options all go through `settings`, an [`AppConfigura
 <MicroApp
   name="app1"
   entry="http://localhost:8000"
-  settings={{ sandbox: true, styleIsolation: true }}
+  settings={{ sandbox: { styleIsolation: true } }}
 />
 ```
 
-Before calling `loadMicroApp`, the component sets `globalContext: window` and then merges your `settings` on top, so `settings.globalContext` can override that default. For what `styleIsolation` actually enables, see [Style isolation](/concepts/style-isolation); for `sandbox`, see [The JS sandbox](/concepts/js-sandbox).
+`settings` is handed to `loadMicroApp` as-is — the component defaults nothing on your behalf. For what `sandbox.styleIsolation` actually enables, see [Style isolation](/concepts/style-isolation); for `sandbox` itself, see [The JS sandbox](/concepts/js-sandbox).
 
 ## Lifecycle hooks
 
@@ -269,7 +268,7 @@ flowchart TD
   B -- yes --> C["loading = true, mountMicroApp()"]
   C --> D["loadMicroApp(app, settings, lifeCycles)"]
   D --> E{mountPromise}
-  E -- success --> F["if autoSetLoading: loading = false"]
+  E -- success --> F["loading = false"]
   E -- failure --> G{autoCaptureError enabled or errorBoundary set?}
   G -- yes --> H["setError(err)"]
   G -- no --> I["re-throw asynchronous error"]

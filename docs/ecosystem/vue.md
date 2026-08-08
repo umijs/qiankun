@@ -7,7 +7,7 @@ The component is built on [`vue-demi`](https://github.com/vueuse/vue-demi), so a
 ## Installation
 
 ```bash
-npm install @qiankunjs/vue qiankun
+npm install @qiankunjs/vue@rc qiankun@rc
 ```
 
 `vue` is a peer dependency with the range `^2.0.0 || >=3.0.0`. Under Vue 2 you also need `@vue/composition-api` installed (the component uses the Composition API through `vue-demi`).
@@ -47,7 +47,7 @@ The component renders a single container `<div>` (class `qiankun-micro-app-conta
 | `appProps` | `object` | `undefined` | Props passed through to the micro-app. This is the only channel for passing data to the sub-app in the Vue binding. |
 
 ::: info `settings` default differs from React
-The Vue binding defaults `settings` to `{ sandbox: true }`. The [React binding](/ecosystem/react) has no `settings` default. In both bindings the effective configuration is `{ globalContext: window, ...settings }`, so `window` is the default and `settings.globalContext` can override it. The `sandbox` field defaults to `true` at the facade level regardless.
+The Vue binding defaults `settings` to `{ sandbox: true }`. The [React binding](/ecosystem/react) has no `settings` default — nothing is defaulted on your behalf there. Either way `sandbox` defaults to `true` at the facade level, so the two bindings behave the same unless you pass something else.
 :::
 
 ::: warning Pass application data through `appProps`
@@ -56,14 +56,14 @@ Unlike the React binding, the Vue binding does not forward arbitrary attributes 
 
 ### `settings` (AppConfiguration)
 
-`settings` accepts the same object as the second argument of [`loadMicroApp`](/api/load-micro-app). The full shape is documented in [AppConfiguration](/api/configuration); the fields are exactly `fetch`, `streamTransformer`, `nodeTransformer`, `sandbox` (default `true`), `globalContext` (default `window`), and `styleIsolation` (default `false`).
+`settings` accepts the same object as the second argument of [`loadMicroApp`](/api/load-micro-app). The full shape is documented in [AppConfiguration](/api/configuration); the fields are exactly `fetch`, `streamTransformer`, `nodeTransformer`, and `sandbox` (default `true`). Style isolation, extra globals, the incubator context, and isolation plugins all live inside the `sandbox` object.
 
 ```vue
 <template>
   <micro-app
     name="app1"
     entry="http://localhost:8000"
-    :settings="{ sandbox: true, styleIsolation: true }"
+    :settings="{ sandbox: { styleIsolation: true } }"
   />
 </template>
 ```
@@ -215,7 +215,7 @@ onMounted(() => {
 </template>
 ```
 
-The handle is a single-spa parcel. Its `getStatus()` returns one of `NOT_LOADED`, `LOADING_SOURCE_CODE`, `NOT_BOOTSTRAPPED`, `BOOTSTRAPPING`, `NOT_MOUNTED`, `MOUNTING`, `MOUNTED`, `UPDATING`, `UNMOUNTING`, `UNLOADING`, `SKIP_BECAUSE_BROKEN`, or `LOAD_ERROR`. The full type is in the [Types reference](/api/types).
+The handle is a Parcel from `@qiankunjs/single-spa`, qiankun's vendored fork. Its `getStatus()` returns one of `NOT_LOADED`, `LOADING_SOURCE_CODE`, `NOT_BOOTSTRAPPED`, `BOOTSTRAPPING`, `NOT_MOUNTED`, `MOUNTING`, `MOUNTED`, `UPDATING`, `UNMOUNTING`, `UNLOADING`, `SKIP_BECAUSE_BROKEN`, or `LOAD_ERROR`. The full type is in the [Types reference](/api/types).
 
 ::: tip Let the component own the lifecycle
 Prefer driving the micro-app through props (`name`, `appProps`) rather than calling `unmount()`/`update()` on the handle yourself. The component serializes unmounts and guards concurrent updates internally; manual calls can race with that bookkeeping.
@@ -260,7 +260,7 @@ const appProps = reactive({ userId: 42 });
   <micro-app
     name="app1"
     entry="http://localhost:8000"
-    :settings="{ sandbox: true, styleIsolation: true }"
+    :settings="{ sandbox: { styleIsolation: true } }"
     :appProps="appProps"
     autoSetLoading
     wrapperClassName="my-wrapper"

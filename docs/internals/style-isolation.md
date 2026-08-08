@@ -8,7 +8,7 @@ This page explains what the mechanism does, why it is shaped the way it is, and 
 
 ## What it is
 
-Set `styleIsolation: true` on an app's configuration and qiankun wraps that app's CSS in an `@scope` block bound to the app container:
+Set `sandbox: { styleIsolation: true }` on an app's configuration and qiankun wraps that app's CSS in an `@scope` block bound to the app container:
 
 ```css
 @scope ([data-name="your-app"]) {
@@ -30,7 +30,7 @@ flowchart TD
   D --> G["runtime insertRule: scoped rule"]
 ```
 
-Style isolation is off by default. If you never set `styleIsolation`, `<style>` and `<link>` nodes pass through the loader untouched.
+Style isolation is off by default. If you never set `sandbox.styleIsolation`, `<style>` and `<link>` nodes pass through the loader untouched.
 
 ## Inline `<style>`
 
@@ -87,16 +87,16 @@ Because external stylesheets are re-fetched through `fetch` and served as `blob:
 :::
 
 ::: tip Difference from qiankun 2.x
-v3 style isolation is the `@scope` + blob-link mechanism described here, toggled by a single boolean. The 2.x options `sandbox.strictStyleIsolation` and `sandbox.experimentalStyleIsolation` (Shadow DOM based) do not exist in v3. The only knob is `styleIsolation`. See [Migrate from qiankun 2.x](/cookbook/migrate-from-2x).
+v3 style isolation is the `@scope` + blob-link mechanism described here, toggled by a single boolean. The 2.x options `sandbox.strictStyleIsolation` and `sandbox.experimentalStyleIsolation` (Shadow DOM based) do not exist in v3. The only knob is `sandbox.styleIsolation`. See [Migrate from qiankun 2.x](/cookbook/migrate-from-2x).
 :::
 
 ## The public knob
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `styleIsolation` | `boolean` | `false` | Enable runtime CSS isolation via `@scope` wrapping. When enabled, all of the micro-app's styles are scoped to its container (`[data-name="<appName>"]`). |
+| `sandbox.styleIsolation` | `boolean` | `false` | Enable runtime CSS isolation via `@scope` wrapping. When enabled, all of the micro-app's styles are scoped to its container (`[data-name="<appName>"]`). |
 
-`styleIsolation` is a per-app field on the app configuration. Pass it as the second argument to [loadMicroApp](/api/load-micro-app):
+`styleIsolation` is a per-app field inside the `sandbox` object of the app configuration. Pass it as the second argument to [loadMicroApp](/api/load-micro-app):
 
 ```ts
 import { loadMicroApp } from 'qiankun';
@@ -111,7 +111,7 @@ const microApp = loadMicroApp(
     container,
   },
   {
-    styleIsolation: true,
+    sandbox: { styleIsolation: true },
   },
 );
 ```

@@ -7,7 +7,7 @@ The package provides separate Vite and Webpack plugins. Use the matching import 
 ## Install
 
 ```bash
-npm install --save-dev @qiankunjs/bundler-plugin
+npm install --save-dev @qiankunjs/bundler-plugin@rc
 ```
 
 It supports Vite 5 and later and Webpack 4 / 5. Both peer dependencies are optional, so install only the bundler your project uses.

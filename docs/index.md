@@ -48,8 +48,12 @@ features:
 Install qiankun in the main app:
 
 ```bash
-npm install qiankun
+npm install qiankun@rc
 ```
+
+::: tip v3 installs from the `rc` tag
+qiankun 3.0 is a release candidate, so npm's `latest` tag still resolves to 2.x. Ask for `@rc` explicitly to get v3.
+:::
 
 Mount after the container exists, then keep the returned handle for status and teardown:
 
@@ -74,3 +78,5 @@ await microApp.unmount();
 The micro-app exports `bootstrap`, `mount`, and `unmount`; qiankun loads it into the `HTMLElement` and drives those lifecycles. Follow [Getting started](/guide/getting-started) for a complete runnable setup.
 
 For applications whose lifetime should be driven entirely by the URL, see the route-based [`registerMicroApps`](/api/register-micro-apps) and [`start`](/api/start) alternative.
+
+A live version of the repository's example apps — two hosts driving the same set of micro-apps — runs at [examples.qiankunjs.com](https://examples.qiankunjs.com).

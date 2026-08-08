@@ -137,7 +137,7 @@ export function registerAll(
       container,
       activeRule: '/react',
       loader: (loading) => onLoading('react', loading),
-      configuration: { sandbox: true, styleIsolation: true },
+      configuration: { sandbox: { styleIsolation: true } },
     },
     {
       name: 'vue',
@@ -145,7 +145,7 @@ export function registerAll(
       container,
       activeRule: '/vue',
       loader: (loading) => onLoading('vue', loading),
-      configuration: { sandbox: true, styleIsolation: true },
+      configuration: { sandbox: { styleIsolation: true } },
     },
     {
       // 稳定的路由应用标识，不要求等于 output.library.name
@@ -197,7 +197,7 @@ export default function App() {
 
 入口脚本带有正确标记时，qiankun 会从入口执行结果中解析生命周期：ESM 应用读取模块导出，Classic 应用读取入口脚本的导出值。正常解析流程不要求 `name` 与 `packageName` 或 Webpack 的 `output.library.name` 相同。
 
-仅当入口结果中不存在有效的生命周期对象时，qiankun 才会进入兼容分支，并尝试从 `globalContext[appName]` 读取生命周期。如需依赖该兼容逻辑，全局变量的属性名必须与 `name` 相同；不应将其作为常规命名约定。完整查找顺序见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
+仅当入口结果中不存在有效的生命周期对象时，qiankun 才会进入兼容分支，并尝试从该应用自身全局对象上的 `global[appName]` 读取生命周期。如需依赖该兼容逻辑，全局变量的属性名必须与 `name` 相同；不应将其作为常规命名约定。完整查找顺序见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
 
 ### 应用级配置
 
@@ -211,8 +211,9 @@ registerMicroApps([
     container,
     activeRule: '/react',
     configuration: {
-      sandbox: true,          // 默认值为 true；启用 Proxy 隔离膜
-      styleIsolation: true,   // 默认值为 false；启用 CSS @scope 隔离
+      sandbox: {              // 默认值为 true；启用 Proxy 隔离膜
+        styleIsolation: true, // 默认值为 false；启用 CSS @scope 隔离
+      },
       // fetch: customFetch,  // 可选；用于请求该应用资源的自定义 fetch
     },
   },
@@ -222,7 +223,7 @@ registerMicroApps([
 每个字段和默认值见 [AppConfiguration](/zh-CN/api/configuration)。
 
 ::: warning v3 不支持 2.x 的 start 选项
-`prefetch`、`sandbox: { strictStyleIsolation | experimentalStyleIsolation }`、`singular`、`getPublicPath` 和 `getTemplate` 均为 qiankun 2.x 的 `start` 选项，v3 已不再提供。样式隔离通过布尔配置 `styleIsolation` 启用，底层基于 CSS `@scope` 实现，不再提供 Shadow DOM 模式。资源预加载由流式加载器自动完成，也不再提供 `prefetch` 策略。见[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
+`prefetch`、`sandbox: { strictStyleIsolation | experimentalStyleIsolation }`、`singular`、`getPublicPath` 和 `getTemplate` 均为 qiankun 2.x 的 `start` 选项，v3 已不再提供。样式隔离改为布尔配置 `sandbox.styleIsolation`，底层基于 CSS `@scope` 实现，不再提供 Shadow DOM 模式。资源预加载由流式加载器自动完成，也不再提供 `prefetch` 策略。见[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
 :::
 
 ::: info 没有内置的全局状态库

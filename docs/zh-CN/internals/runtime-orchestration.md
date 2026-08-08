@@ -46,7 +46,7 @@ const enhancedFetch = makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(f
 
 ### 2. 沙箱容器
 
-当 `sandbox` 为 `true`（默认值）时，`createSandboxContainer`（`packages/sandbox`）会为 `window` 和 `document` 创建基于 Proxy 隔离膜的视图。应用代码运行在 `sandboxInstance.globalThis` 上，而非直接访问真实全局对象，因此全局写入会保存在当前应用的隔离环境中。隔离膜的行为以及补丁模块在卸载阶段的清理机制见 [JavaScript 沙箱实现](/zh-CN/internals/js-sandbox)。
+当 `sandbox` 为 `true`（默认值）或对象时，`createSandbox`（`packages/sandbox`）会为 `window` 和 `document` 创建基于 Proxy 隔离膜的视图。应用代码运行在 `sandboxInstance.globalThis` 上，而非直接访问真实全局对象，因此全局写入会保存在当前应用的隔离环境中。隔离膜的行为以及补丁模块在卸载阶段的清理机制见 [JavaScript 沙箱实现](/zh-CN/internals/js-sandbox)。
 
 ESM 引擎也在该沙箱容器中创建，并且仅存在于 `if (sandbox)` 分支。因此，设置 `sandbox: false` 会同时关闭原生 ESM 沙箱执行。
 
@@ -105,7 +105,7 @@ flowchart TD
 
 `loadApp` 对单个微应用依次执行以下步骤：
 
-1. **设置配置默认值。** 默认配置包括 `fetch = window.fetch`（随后会增强）、`sandbox = true`、`globalContext = window`、`nodeTransformer = defaultNodeTransformer`，以及关闭 `styleIsolation`。完整字段见 [AppConfiguration](/zh-CN/api/configuration)。
+1. **设置配置默认值。** 默认配置包括 `fetch = window.fetch`（随后会增强）、`sandbox = true`、`nodeTransformer = defaultNodeTransformer`。`sandbox` 传入对象时还会应用其自身的默认值：`incubatorContext = window`，`styleIsolation` 关闭。完整字段见 [AppConfiguration](/zh-CN/api/configuration)。
 2. **初始化容器。** 清空容器，并设置 `data-name`、`data-version` 和 `data-sandbox-cfg`。同一已加载应用再次挂载后会增加 `data-mount-times`；同名应用的第二个及后续 `loadApp` 实例则会增加 `data-instance-id`。`instanceId` 由按应用名计数的计数器生成，用于区分同一应用的[多个实例](/zh-CN/cookbook/run-multiple-instances)。
 3. **创建沙箱与 ESM 引擎。** 启用沙箱时，创建 Proxy 隔离膜，并使用应用名、实例 ID、入口 URL 和增强后的 `fetch` 构造 `EsmSandboxEngine`。
 4. **流式加载入口。** `loadEntry` 使 HTML 依次经过流式处理和资源转译；Classic 脚本与模块脚本分别进入对应执行流程。模块脚本在流式处理阶段收集，输入流结束后再按文档顺序执行。

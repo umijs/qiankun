@@ -2,11 +2,11 @@
 
 样式隔离用于限制微应用 CSS 的作用范围，防止其匹配应用容器之外的元素。该功能按应用启用，并依赖浏览器原生的 CSS `@scope` 能力。
 
-样式隔离与 JavaScript 隔离相互独立：JavaScript 沙箱默认开启，而 `styleIsolation` 的默认值为 `false`。
+样式隔离配置在 sandbox 对象内部：JavaScript 沙箱默认开启，而 `sandbox.styleIsolation` 的默认值为 `false`。CSS 隔离归入沙箱，是因为动态注入的样式依赖沙箱的 DOM 拦截——若关闭 JS 沙箱却开启 CSS 隔离，这些动态样式会静默泄漏。
 
 ## 作用域模型
 
-开启 `styleIsolation: true` 后，qiankun 会将应用的 CSS 规则限定在由应用名标识的容器中。其效果相当于：
+开启 `sandbox: { styleIsolation: true }` 后，qiankun 会将应用的 CSS 规则限定在由应用名标识的容器中。其效果相当于：
 
 ```css
 @scope ([data-name="catalog"]) {
@@ -62,7 +62,7 @@ const microApp = loadMicroApp(
     container,
   },
   {
-    styleIsolation: true,
+    sandbox: { styleIsolation: true },
   },
 );
 ```

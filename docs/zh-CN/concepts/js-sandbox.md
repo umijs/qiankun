@@ -56,6 +56,6 @@ qiankun 支持多个微应用在同一页面中运行，并通过 JavaScript 隔
 
 ## 配置与下一步
 
-`sandbox` 的默认值为 `true`。设置为 `sandbox: false` 后，微应用将直接共享真实全局对象，同时停用 qiankun 的原生 ESM 隔离机制。此配置仅适用于明确的兼容性需求，不应作为性能优化选项。
+`sandbox` 的默认值为 `true`。设置为 `sandbox: false` 后，微应用将直接共享真实全局对象，同时停用 qiankun 的原生 ESM 隔离机制。此配置仅适用于明确的兼容性需求，不应作为性能优化选项。传入对象而非 `true` 则在保持隔离的同时配置沙箱，见 [SandboxConfiguration](/zh-CN/api/configuration#sandboxconfiguration)。
 
 选项定义见 [AppConfiguration](/zh-CN/api/configuration)，清理时机见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)，模块应用见[原生 ESM 支持](/zh-CN/concepts/esm-sandbox)。维护者可以继续阅读 [JavaScript 沙箱实现](/zh-CN/internals/js-sandbox)。
