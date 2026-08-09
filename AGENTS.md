@@ -107,6 +107,16 @@ Build/release:
 - Versioning via **changesets**, but changesets are **auto-derived from Conventional Commits** in CI (`scripts/generate-changesets.mjs`) — do **not** hand-write `.changeset/*.md`. Just land a well-formed conventional commit (`feat`/`fix`/`feat!`…); the release job maps changed files → packages and infers the bump. Each sub-package keeps its own `CHANGELOG.md` (changeset default, visible on npm); on publish `scripts/generate-release-notes.mjs` aggregates them into **one GitHub Release**, which can be polished after the fact via the `/release-changelog` skill (`gh release edit`). Full flow: `.changeset/README.md`.
 - Conventional commits enforced by commitlint (`feat:`, `fix:`, `feat(esm-sandbox):`, …).
 
+## DOCS & README CONVENTIONS
+
+- **Chinese-first.** The primary audience is Chinese. `docs/zh-CN/` is the source of truth: write it to a native-author standard — no translationese, no AI-flavored filler (「让我们」「值得注意的是」「强大的/无缝的」), no calqued English syntax. The English pages align to the Chinese semantics, not the other way around; pure zh wording fixes don't require touching en. Same contract for `README.zh-CN.md` ↔ `README.md`: keep both editions in sync whenever either changes.
+- **Mainland reachability is a hard constraint.** Google Fonts only via the `.cn` mirrors (`fonts.googleapis.cn`/`fonts.gstatic.cn`); never reference resources on domains unreachable from mainland China.
+- **Domains**: canonical docs domain is `https://www.qiankunjs.com` (zh under `/zh-CN/`); `qiankun.umijs.org` stays alive and 307s to it; v2 docs live at `v2.qiankun.umijs.org`; live examples at `examples.qiankunjs.com`. Old-site URLs are kept working via `docs/public/_redirects` — extend it when moving pages, never break inbound links.
+- **Consistency rules**: terminology never drifts (主应用/微应用/沙箱/隔离膜; qiankun always lowercase); link text in reference lists ("相关内容"/"继续阅读"/"延伸阅读") equals the target page's H1; API pages use 「函数签名」/「默认值为 X」; `guide/browser-support` is the single source of truth for browser requirements — link it, don't restate version numbers elsewhere.
+- Until 3.0 reaches npm `latest`, install commands must say `qiankun@rc`, and the site shows a version banner (layout-top slot in `docs/.vitepress/theme/index.js`; remove it together with `--vp-layout-top-height` once stable ships).
+- **README GitHub alerts**: put the `[!WARNING]`/`[!NOTE]` marker on its own line followed by a blank `>` line. Prettier's `proseWrap: never` re-joins plain soft breaks, which silently breaks alert rendering.
+- VitePress compiles every `.md` as a Vue SFC: bare `<Tag>` in prose/link text or `{{` in inline code breaks the build (fenced code blocks are safe).
+
 ## ANTI-PATTERNS (this project)
 
 - **NEVER** put more than one `entry` script in an HTML entry — the loader throws `QiankunError`.
