@@ -14,14 +14,20 @@
 
 <p align="center">
   <a href="https://www.qiankunjs.com">Documentation</a> ·
-  <a href="https://www.qiankunjs.com/guide/quick-start">Quick start</a> ·
+  <a href="https://www.qiankunjs.com/guide/getting-started">Quick start</a> ·
   <a href="https://examples.qiankunjs.com">Live examples</a> ·
   <a href="https://github.com/umijs/qiankun/discussions/1378">Roadmap</a>
 </p>
 
+<p align="center">
+  English · <a href="./README.zh-CN.md">简体中文</a>
+</p>
+
 # qiankun（乾坤）
 
-> [!WARNING] 🚧 qiankun 3.0 is currently under active development. Check out the [Roadmap](https://github.com/umijs/qiankun/discussions/1378) for more details.
+> [!WARNING]
+>
+> 🚧 qiankun 3.0 is currently under active development — check out the [Roadmap](https://github.com/umijs/qiankun/discussions/1378) for details. Looking for qiankun 2.x? Its documentation lives at [v2.qiankun.umijs.org](https://v2.qiankun.umijs.org).
 
 > In Chinese, `qian(乾)` means heaven and `kun(坤)` earth. `qiankun` is the universe.
 
@@ -62,7 +68,9 @@ Qiankun inherits the fundamentals of [single-spa](https://github.com/single-spa/
 
 ## 🚀 Getting started
 
-> [!NOTE] v3 ships under the `rc` tag while `latest` still points at 2.x. Install with an explicit `@rc` to get it.
+> [!NOTE]
+>
+> v3 ships under the `rc` tag while `latest` still points at 2.x. Install with an explicit `@rc` to get it.
 
 The fastest path is the scaffolder, which generates a host or a micro app wired up correctly:
 
@@ -76,38 +84,40 @@ Or add qiankun to an existing host application:
 npm i qiankun@rc
 ```
 
-Register your micro apps and start:
+Load a micro app into any container element, and keep the returned handle to unmount it:
 
 ```ts
-import { registerMicroApps, start } from 'qiankun';
+import { loadMicroApp } from 'qiankun';
 
-registerMicroApps([
-  {
-    name: 'react-app',
-    entry: '//localhost:7100',
-    container: '#subapp-container',
-    activeRule: '/react',
-  },
-]);
+const microApp = loadMicroApp({
+  name: 'react-app',
+  entry: '//localhost:7100',
+  container: document.getElementById('subapp-container'),
+});
 
-start();
+// when this part of the page goes away:
+await microApp.unmount();
 ```
+
+If a micro app's activation is fully determined by the URL, the route-driven `registerMicroApps` + `start` APIs are the alternative orchestration model.
 
 A micro app only has to export the three lifecycle hooks:
 
 ```ts
+let root;
+
 export async function bootstrap() {}
 
-export async function mount(props: { container?: Element }) {
-  render(props.container);
+export async function mount(props: { container: HTMLElement }) {
+  root = render(props.container);
 }
 
 export async function unmount() {
-  unmountApp();
+  root.unmount();
 }
 ```
 
-That is the whole contract. See the [quick start](https://www.qiankunjs.com/guide/quick-start) for the bundler configuration each stack needs.
+That is the whole contract. See the [quick start](https://www.qiankunjs.com/guide/getting-started) for the bundler configuration each stack needs.
 
 ## 💿 Examples
 
@@ -134,6 +144,7 @@ This builds the workspace packages and starts every app in parallel — open htt
 | [@qiankunjs/loader](packages/loader) | [![loader version](https://img.shields.io/npm/v/@qiankunjs/loader/rc.svg?style=flat-square)](packages/loader/CHANGELOG.md) | Streaming HTML-entry loader |
 | [@qiankunjs/sandbox](packages/sandbox) | [![sandbox version](https://img.shields.io/npm/v/@qiankunjs/sandbox/rc.svg?style=flat-square)](packages/sandbox/CHANGELOG.md) | JS sandbox — usable standalone |
 | [@qiankunjs/shared](packages/shared) | [![shared version](https://img.shields.io/npm/v/@qiankunjs/shared/rc.svg?style=flat-square)](packages/shared/CHANGELOG.md) | Asset transpilers, fetch utilities, ESM-sandbox engine |
+| [@qiankunjs/single-spa](packages/single-spa) | [![single-spa version](https://img.shields.io/npm/v/@qiankunjs/single-spa/latest.svg?style=flat-square)](packages/single-spa/CHANGELOG.md) | Vendored [single-spa](https://github.com/single-spa/single-spa) fork the framework builds on |
 | [@qiankunjs/react](packages/ui-bindings/react) | [![react version](https://img.shields.io/npm/v/@qiankunjs/react/latest.svg?style=flat-square)](packages/ui-bindings/react/CHANGELOG.md) | `<MicroApp />` for React |
 | [@qiankunjs/vue](packages/ui-bindings/vue) | [![vue version](https://img.shields.io/npm/v/@qiankunjs/vue/latest.svg?style=flat-square)](packages/ui-bindings/vue/CHANGELOG.md) | `<MicroApp />` for Vue |
 | [@qiankunjs/ui-shared](packages/ui-bindings/shared) | [![ui-shared version](https://img.shields.io/npm/v/@qiankunjs/ui-shared/latest.svg?style=flat-square)](packages/ui-bindings/shared/CHANGELOG.md) | Shared internals of the UI bindings |
@@ -142,9 +153,9 @@ This builds the workspace packages and starts every app in parallel — open htt
 
 ## 📖 Documentation
 
-Full documentation lives at **[www.qiankunjs.com](https://www.qiankunjs.com)** (English and 简体中文):
+Full documentation lives at **[www.qiankunjs.com](https://www.qiankunjs.com)** (English and [简体中文](https://www.qiankunjs.com/zh-CN/)):
 
-- [Quick start](https://www.qiankunjs.com/guide/quick-start) — a running micro-frontend in five minutes
+- [Quick start](https://www.qiankunjs.com/guide/getting-started) — a running micro-frontend in five minutes
 - [Cookbook](https://www.qiankunjs.com/cookbook/) — style isolation, sandbox plugins, error handling, performance
 - [API reference](https://www.qiankunjs.com/api/) — every option, typed
 - [FAQ](https://www.qiankunjs.com/faq/) — the questions that come up most
