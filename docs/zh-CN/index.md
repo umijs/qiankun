@@ -2,7 +2,7 @@
 layout: home
 
 hero:
-  name: 微前端运行时
+  name: qiankun · 微前端运行时
   text: 独立交付，按需组合
   tagline: 使用 loadMicroApp，可将不同团队、不同技术栈的前端应用挂载到页面中的指定区域；各应用均可独立开发和发布。
   image:
@@ -15,6 +15,9 @@ hero:
     - theme: alt
       text: 了解适用场景
       link: /zh-CN/guide/what-is-qiankun
+    - theme: alt
+      text: 在线示例
+      link: https://examples.qiankunjs.com
 
 features:
   - icon:
@@ -24,7 +27,7 @@ features:
       height: 22
       wrap: true
     title: 独立开发与发布
-    details: 每个微应用可独立选择技术栈、管理代码仓库并安排发布，主应用仅在运行时进行组合。
+    details: 每个微应用可独立选择技术栈、管理代码仓库并安排发布，主应用只在运行时把它们组合到页面上。
   - icon:
       src: /icons/scope.svg
       alt: 挂载到页面区域的应用
@@ -55,7 +58,7 @@ npm install qiankun@rc
 qiankun 3.0 仍处于 RC 阶段，npm 的 `latest` 标签指向的仍是 2.x。安装时需显式指定 `@rc` 才能获得 v3。
 :::
 
-容器创建后即可加载微应用。应保存返回的实例句柄，以便查询状态并执行卸载：
+容器创建后即可加载微应用。记得保存返回的实例句柄，后续查询状态、卸载实例都要靠它：
 
 ```ts
 import { loadMicroApp } from 'qiankun';

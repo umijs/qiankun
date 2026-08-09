@@ -1,0 +1,23 @@
+# Redirects for URLs that existed on the previous VitePress site (and common
+# v2-era paths), so accumulated inbound links and search results keep working.
+# Cloudflare Pages format: <source> <destination> <status>.
+
+/guide /guide/what-is-qiankun 301
+/guide/ /guide/what-is-qiankun 301
+/guide/quick-start /guide/getting-started 301
+/guide/tutorial /tutorial/ 301
+/cookbook/error-handling /cookbook/handle-errors 301
+/cookbook/performance /cookbook/optimize-loading 301
+/cookbook/style-isolation /cookbook/enable-style-isolation 301
+/concepts /concepts/architecture 301
+/concepts/ /concepts/architecture 301
+
+/zh-CN/guide /zh-CN/guide/what-is-qiankun 301
+/zh-CN/guide/ /zh-CN/guide/what-is-qiankun 301
+/zh-CN/guide/quick-start /zh-CN/guide/getting-started 301
+/zh-CN/guide/tutorial /zh-CN/tutorial/ 301
+/zh-CN/cookbook/error-handling /zh-CN/cookbook/handle-errors 301
+/zh-CN/cookbook/performance /zh-CN/cookbook/optimize-loading 301
+/zh-CN/cookbook/style-isolation /zh-CN/cookbook/enable-style-isolation 301
+/zh-CN/concepts /zh-CN/concepts/architecture 301
+/zh-CN/concepts/ /zh-CN/concepts/architecture 301

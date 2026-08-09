@@ -3,7 +3,7 @@ import { withMermaid } from 'vitepress-plugin-mermaid'
 
 const enNav = [
   { text: 'Get started', link: '/guide/getting-started', activeMatch: '^/(guide|tutorial)/' },
-  { text: 'Guides', link: '/cookbook/', activeMatch: '^/cookbook/' },
+  { text: 'Cookbook', link: '/cookbook/', activeMatch: '^/cookbook/' },
   { text: 'Concepts', link: '/concepts/architecture', activeMatch: '^/concepts/' },
   { text: 'API', link: '/api/', activeMatch: '^/api/' },
   { text: 'Ecosystem', link: '/ecosystem/', activeMatch: '^/ecosystem/' },
@@ -11,11 +11,13 @@ const enNav = [
     text: 'More',
     items: [
       { text: 'FAQ', link: '/faq/' },
-      { text: 'Internals', link: '/internals/' },
+      { text: 'Runtime internals', link: '/internals/' },
+      { text: 'Live examples', link: 'https://examples.qiankunjs.com' },
       { text: 'Releases', link: 'https://github.com/umijs/qiankun/releases' },
       { text: 'RFCs', link: 'https://github.com/umijs/qiankun/tree/next/docs/rfcs' },
       { text: 'Roadmap', link: 'https://github.com/umijs/qiankun/discussions/1378' },
       { text: 'Community', link: 'https://github.com/umijs/qiankun/discussions' },
+      { text: 'Contributing', link: 'https://github.com/umijs/qiankun/blob/next/.github/CONTRIBUTING.md' },
     ],
   },
 ]
@@ -27,6 +29,7 @@ const enSidebar = {
       items: [
         { text: 'What is qiankun?', link: '/guide/what-is-qiankun' },
         { text: 'Get started in 5 minutes', link: '/guide/getting-started' },
+        { text: 'Browser support', link: '/guide/browser-support' },
       ],
     },
     {
@@ -71,9 +74,9 @@ const enSidebar = {
   ],
   '/cookbook/': [
     {
-      text: 'Guides',
+      text: 'Cookbook',
       items: [
-        { text: 'Guide index', link: '/cookbook/' },
+        { text: 'Overview', link: '/cookbook/' },
         { text: 'Prepare a Vite app', link: '/cookbook/prepare-a-vite-app' },
         { text: 'Prepare a Webpack app', link: '/cookbook/prepare-a-webpack-app' },
         { text: 'Share state and communicate', link: '/cookbook/communicate-between-apps' },
@@ -149,7 +152,7 @@ const enSidebar = {
 
 const zhNav = [
   { text: '开始使用', link: '/zh-CN/guide/getting-started', activeMatch: '^/zh-CN/(guide|tutorial)/' },
-  { text: '使用指南', link: '/zh-CN/cookbook/', activeMatch: '^/zh-CN/cookbook/' },
+  { text: '实用指南', link: '/zh-CN/cookbook/', activeMatch: '^/zh-CN/cookbook/' },
   { text: '核心概念', link: '/zh-CN/concepts/architecture', activeMatch: '^/zh-CN/concepts/' },
   { text: 'API', link: '/zh-CN/api/', activeMatch: '^/zh-CN/api/' },
   { text: '生态', link: '/zh-CN/ecosystem/', activeMatch: '^/zh-CN/ecosystem/' },
@@ -157,11 +160,13 @@ const zhNav = [
     text: '更多',
     items: [
       { text: '常见问题', link: '/zh-CN/faq/' },
-      { text: '深入原理', link: '/zh-CN/internals/' },
+      { text: '运行时实现', link: '/zh-CN/internals/' },
+      { text: '在线示例', link: 'https://examples.qiankunjs.com' },
       { text: '更新日志', link: 'https://github.com/umijs/qiankun/releases' },
       { text: 'RFC 设计文档', link: 'https://github.com/umijs/qiankun/tree/next/docs/rfcs' },
       { text: '路线图', link: 'https://github.com/umijs/qiankun/discussions/1378' },
       { text: '社区讨论', link: 'https://github.com/umijs/qiankun/discussions' },
+      { text: '参与贡献', link: 'https://github.com/umijs/qiankun/blob/next/.github/CONTRIBUTING.md' },
     ],
   },
 ]
@@ -172,7 +177,8 @@ const zhSidebar = {
       text: '从这里开始',
       items: [
         { text: '什么是 qiankun', link: '/zh-CN/guide/what-is-qiankun' },
-        { text: '5 分钟上手', link: '/zh-CN/guide/getting-started' },
+        { text: '快速上手', link: '/zh-CN/guide/getting-started' },
+        { text: '浏览器支持', link: '/zh-CN/guide/browser-support' },
       ],
     },
     {
@@ -217,7 +223,7 @@ const zhSidebar = {
   ],
   '/zh-CN/cookbook/': [
     {
-      text: '使用指南',
+      text: '实用指南',
       items: [
         { text: '指南索引', link: '/zh-CN/cookbook/' },
         { text: '接入 Vite 应用', link: '/zh-CN/cookbook/prepare-a-vite-app' },
@@ -302,34 +308,93 @@ export default withMermaid(
     ignoreDeadLinks: 'localhostLinks',
     lastUpdated: true,
     metaChunk: true,
+    // RFCs are design discussions that live on GitHub; keep them out of the
+    // built site (and out of local search) so drafts are never published.
+    srcExclude: ['rfcs/**'],
+
+    transformPageData(pageData, { siteConfig }) {
+      const isZh = pageData.relativePath.startsWith('zh-CN/')
+      const head = (pageData.frontmatter.head ??= [])
+      const title = pageData.title ? `${pageData.title} | qiankun` : 'qiankun'
+      const description =
+        pageData.description ||
+        (isZh
+          ? siteConfig.site.locales['zh-CN'].description
+          : siteConfig.site.description)
+      head.push(
+        ['meta', { property: 'og:locale', content: isZh ? 'zh_CN' : 'en_US' }],
+        ['meta', { property: 'og:title', content: title }],
+        ['meta', { property: 'og:description', content: description }],
+      )
+    },
 
     head: [
       ['link', { rel: 'icon', href: '/logo.png' }],
       ['meta', { name: 'theme-color', content: '#2f54eb' }],
-      ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
-      ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
+      // fonts.googleapis.cn / fonts.gstatic.cn are Google Fonts' China-reachable
+      // mirrors — the .com domains stall for the primary (mainland) audience.
+      ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.cn' }],
+      ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.cn', crossorigin: '' }],
       [
         'link',
         {
           rel: 'stylesheet',
-          href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap',
+          href: 'https://fonts.googleapis.cn/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap',
         },
       ],
       ['meta', { property: 'og:type', content: 'website' }],
-      ['meta', { property: 'og:title', content: 'qiankun — micro-frontends framework' }],
+      ['meta', { property: 'og:site_name', content: 'qiankun' }],
+      ['meta', { property: 'og:image', content: 'https://qiankun.umijs.org/logo.png' }],
       [
-        'meta',
-        {
-          property: 'og:description',
-          content: 'Load, compose, and isolate independently delivered micro-apps in one page.',
-        },
+        'script',
+        {},
+        // First-visit language negotiation: only on the root landing page, once
+        // per browser (cookie), so deep links and explicit choices are untouched.
+        `if(location.pathname==='/'&&!document.cookie.includes('qk_lang=')&&/^zh\\b/i.test(navigator.language)){document.cookie='qk_lang=zh;path=/;max-age=31536000';location.replace('/zh-CN/')}`,
       ],
-      ['meta', { property: 'og:image', content: '/logo.png' }],
     ],
 
     themeConfig: {
       logo: '/logo.png',
-      search: { provider: 'local' },
+      search: {
+        provider: 'local',
+        options: {
+          // miniSearch tokenizes on whitespace by default, which makes Chinese
+          // content unsearchable. Index CJK text per character and AND-combine
+          // query terms so multi-character queries still match precisely.
+          miniSearch: {
+            options: {
+              tokenize: (text) =>
+                (text.match(/[㐀-鿿豈-﫿]|[^\s\p{P}㐀-鿿豈-﫿]+/gu) ?? []).filter(
+                  Boolean,
+                ),
+            },
+            searchOptions: { combineWith: 'AND', fuzzy: 0.2, prefix: true },
+          },
+          locales: {
+            'zh-CN': {
+              translations: {
+                button: { buttonText: '搜索文档', buttonAriaLabel: '搜索文档' },
+                modal: {
+                  displayDetails: '显示详细列表',
+                  resetButtonTitle: '清除查询条件',
+                  backButtonTitle: '关闭搜索',
+                  noResultsText: '未找到相关结果',
+                  footer: {
+                    selectText: '选择',
+                    selectKeyAriaLabel: '回车',
+                    navigateText: '切换',
+                    navigateUpKeyAriaLabel: '上方向键',
+                    navigateDownKeyAriaLabel: '下方向键',
+                    closeText: '关闭',
+                    closeKeyAriaLabel: 'esc',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       socialLinks: [{ icon: 'github', link: 'https://github.com/umijs/qiankun' }],
       outline: { level: [2, 3] },
     },

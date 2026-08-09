@@ -2,7 +2,7 @@
 layout: home
 
 hero:
-  name: Micro-frontend runtime
+  name: qiankun · micro-frontend runtime
   text: Ship independently. Compose on demand.
   tagline: Use loadMicroApp to mount front-end apps from different teams and frameworks wherever your product needs them. Each app keeps its own development and release cadence.
   image:
@@ -15,6 +15,9 @@ hero:
     - theme: alt
       text: See when qiankun fits
       link: /guide/what-is-qiankun
+    - theme: alt
+      text: Live examples
+      link: https://examples.qiankunjs.com
 
 features:
   - icon:
