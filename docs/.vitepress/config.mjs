@@ -344,7 +344,7 @@ export default withMermaid(
       ],
       ['meta', { property: 'og:type', content: 'website' }],
       ['meta', { property: 'og:site_name', content: 'qiankun' }],
-      ['meta', { property: 'og:image', content: 'https://qiankun.umijs.org/logo.png' }],
+      ['meta', { property: 'og:image', content: 'https://www.qiankunjs.com/logo.png' }],
       [
         'script',
         {},
@@ -404,7 +404,8 @@ export default withMermaid(
       theme: { light: 'github-light', dark: 'github-dark' },
     },
 
-    sitemap: { hostname: 'https://qiankun.umijs.org' },
+    // Canonical docs domain; qiankun.umijs.org will 307 here.
+    sitemap: { hostname: 'https://www.qiankunjs.com' },
 
     locales: {
       root: {
