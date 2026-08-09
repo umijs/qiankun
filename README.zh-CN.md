@@ -134,7 +134,7 @@ pnpm start:example
 
 该命令会构建 workspace 内的所有包并并行启动全部示例应用——React 外壳在 http://localhost:7099，Vue 外壳在 http://localhost:7105。各应用分别演示什么见 [examples/README.md](./examples/README.md)。
 
-![](./examples/example.gif)
+![](./examples/example.zh-CN.gif)
 
 ## 📦 包一览
 
