@@ -346,7 +346,7 @@ Firefox doesn't support dynamically injected import maps, which natively loaded 
 - [`isRuntimeCompatible`](/api/is-runtime-compatible) — probe browser support before starting.
 - The per-app [`configuration`](/api/configuration) on `RegistrableApp` (and the second argument of `loadMicroApp`) — `sandbox` (with `styleIsolation`, `globals`, `incubatorContext`, `plugins` inside it) and `fetch` all live here now.
 
-For new integrations, start with `loadMicroApp`; the [API overview](/api/index) owns the complete current export list.
+For new integrations, start with `loadMicroApp`; the [API overview](/api/) owns the complete current export list.
 
 ::: warning prefetchApps is deprecated
 The streaming loader prefetches assets as it parses the entry HTML, so explicit prefetching is rarely needed. `prefetchApps` still exists but is deprecated in 3.0; the whole `prefetch` strategy from 2.x's `start()` is gone. For loading tuning, see [Optimizing loading and prefetch](/cookbook/optimize-loading).

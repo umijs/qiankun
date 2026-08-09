@@ -12,7 +12,7 @@ This model also preserves independent deployment: the same application can have 
 
 ## The entry contract
 
-Serve a valid, non-empty HTML document. A supported production build marks one external script as the lifecycle entry:
+Serve a valid, non-empty HTML document. With the official bundler plugin, a production build automatically marks one external script as the lifecycle entry:
 
 ```html
 <!doctype html>

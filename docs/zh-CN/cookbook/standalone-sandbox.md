@@ -2,10 +2,10 @@
 
 浏览器宿主可以直接引入 `@qiankunjs/sandbox`，无需同时使用 qiankun 或 HTML loader。这个包提供两层能力：
 
-- 只需要隔离 JavaScript 全局变量时，使用 `StandardSandbox`。它可以执行经典脚本，也可以加载 ESM。
+- 只需要隔离 JavaScript 全局变量时，使用 `StandardSandbox`。它可以执行 Classic 脚本，也可以加载 ESM。
 - 还需要约束动态 DOM、隔离样式并管理定时器和监听器时，使用 `createSandbox()`。
 
-包内也公开了更底层的 `Compartment`，供需要自行接入模块 hook 或组装宿主能力的场景使用。经典脚本不应直接从这里起步。
+包内也公开了更底层的 `Compartment`，供需要自行接入模块 hook 或组装宿主能力的场景使用。Classic 脚本不应直接从这里起步。
 
 ## 安装
 
@@ -19,7 +19,7 @@ pnpm add @qiankunjs/sandbox@rc
 
 | 使用场景 | 推荐入口 |
 | --- | --- |
-| 执行经典脚本或加载 ESM，不接管 DOM | `StandardSandbox` |
+| 执行 Classic 脚本或加载 ESM，不接管 DOM | `StandardSandbox` |
 | 限制动态 DOM 和样式，并统一清理副作用 | 传入容器的 `createSandbox()` |
 | 只管理定时器、window 监听器等副作用 | 不传容器的 `createSandbox()` |
 | 自行实现 Compartment 宿主 | `Compartment` |
@@ -28,7 +28,7 @@ pnpm add @qiankunjs/sandbox@rc
 
 ## 只隔离 JavaScript
 
-### 执行经典脚本
+### 执行 Classic 脚本
 
 ```ts
 import { StandardSandbox } from '@qiankunjs/sandbox';
@@ -70,11 +70,11 @@ console.log(namespace);
 sandbox.dispose();
 ```
 
-模块默认以 `document.baseURI` 为基准，并通过浏览器原生 fetch 获取。`StandardSandbox` 的第四个参数用于传递模块配置；`createSandbox()` 则把 `modules`、`resolveHook`、`importHook` 和 `loadHook` 放在顶层。需要接入私有协议或预编译模块时，可参考[扩展沙箱隔离能力](/zh-CN/cookbook/sandbox-plugins)。
+模块默认以 `document.baseURI` 为基准，并通过浏览器原生 fetch 获取。`StandardSandbox` 的第四个参数用于传递模块配置；`createSandbox()` 则把 `modules`、`resolveHook`、`importHook` 和 `loadHook` 放在顶层。需要接入私有协议或预编译模块时，可参考[用插件扩展沙箱](/zh-CN/cookbook/sandbox-plugins)。
 
 ## 将第三方组件限制在容器内
 
-下面的宿主代码直接加载一个第三方经典脚本，全程不依赖 qiankun 或 loader：
+下面的宿主代码直接加载一个第三方 Classic 脚本，全程不依赖 qiankun 或 loader：
 
 ```html
 <div id="widget-host"></div>
@@ -237,11 +237,11 @@ const controller = createSandbox(appName, {
 
 若顶层模块配置与 `compartmentOptions` 重复，以顶层配置为准。控制器会公开标准化后的 `instance`、`nodeTransformer`、可选的 `styleIsolation`，以及 `mount`、`unmount`、`dispose` 三个生命周期方法。
 
-自定义 globals 和插件的写法见[扩展沙箱隔离能力](/zh-CN/cookbook/sandbox-plugins)。
+自定义 globals 和插件的写法见[用插件扩展沙箱](/zh-CN/cookbook/sandbox-plugins)。
 
 ## 为什么默认 transformer 不能省
 
-动态 DOM 插件只能拦截 script 元素，单纯改变插入位置并不能隔离 JavaScript。默认 transformer 会先获取经典脚本内容，再用当前 Compartment 的 classic-script transformer 包装源码，最后交给浏览器通过 Blob URL 执行。正是这一步保证了 `window.someValue = ...` 只写入沙箱。
+动态 DOM 插件只能拦截 script 元素，单纯改变插入位置并不能隔离 JavaScript。默认 transformer 会先获取 Classic 脚本内容，再用当前 Compartment 的 classic-script transformer 包装源码，最后交给浏览器通过 Blob URL 执行。正是这一步保证了 `window.someValue = ...` 只写入沙箱。
 
 动态 style 和 stylesheet link 也走同一条转换路径。开启样式隔离后，内部生成的作用域参数会自动传给 transformer；独立使用时，资源基准地址为 `document.baseURI`。
 
@@ -254,9 +254,9 @@ const controller = createSandbox('trusted-widget', {
 });
 ```
 
-上面这个“原样返回节点”的 transformer 只是风险示例，不是推荐配置。它会跳过经典脚本包装，动态插入的脚本可能直接访问宿主 window；默认的样式转换也会一并失效。只有在自定义实现提供了同等保护，或相关资源全部可信时，才应采用这种配置。
+上面这个「原样返回节点」的 transformer 只是风险示例，不是推荐配置。它会跳过 Classic 脚本包装，动态插入的脚本可能直接访问宿主 window；默认的样式转换也会一并失效。只有在自定义实现提供了同等保护，或相关资源全部可信时，才应采用这种配置。
 
-如果外部 HTML 管线也要在节点落入 DOM 前执行转换，应使用 `controller.nodeTransformer`，不要直接复用 options 中未经处理的回调。控制器暴露的版本已经注入 Compartment、fetch、经典脚本包装器和样式隔离配置。
+如果外部 HTML 管线也要在节点落入 DOM 前执行转换，应使用 `controller.nodeTransformer`，不要直接复用 options 中未经处理的回调。控制器暴露的版本已经注入 Compartment、fetch、Classic 脚本包装器和样式隔离配置。
 
 它的输出还带有一层归属语义：控制器 transformer 会把节点标记为「管线成品」，沙箱打过补丁的插入点会原样放行，不再把它二次送入动态转译管线。特别地，经它处理的 `<style>` / `<link>` **不会**进入沙箱的动态样式台账——`unmount()` 后它会留在原处，之后的 `mount()` 也不会自动补挂。它的生命周期归属于准备它的管线：如果你的嵌入场景会反复 unmount / remount，请自行移除或重新插入。而沙箱内代码在运行时动态注入的样式（走补丁后的 DOM 方法、不带标记）仍保有完整的台账生命周期——unmount 时移除、remount 时恢复。
 
@@ -280,11 +280,11 @@ await sandbox.evaluateScript(`
 - 宿主和沙箱看到的 `sharedSettings.theme` 都变成了 `"dark"`，因为双方持有的是同一个对象；
 - DOM 节点、事件、函数和库实例同样保持原始身份，`===` 与 `instanceof` 不会因为穿过边界而失效。
 
-因此，它不适合直接执行恶意或不受信任的代码。沙箱不会冻结共享对象，不会 harden intrinsics，也不会创建新的源，更不会提供 iframe 或 Worker 那样的调用边界。需要安全边界时，应采用浏览器原生隔离机制。设计取舍详见 [Compartment Alignment RFC](/rfcs/compartment-alignment)。
+因此，它不适合直接执行恶意或不受信任的代码。沙箱不会冻结共享对象，不会 harden intrinsics，也不会创建新的源，更不会提供 iframe 或 Worker 那样的调用边界。需要安全边界时，应采用浏览器原生隔离机制。设计取舍详见 [Compartment Alignment RFC](https://github.com/umijs/qiankun/blob/next/docs/rfcs/compartment-alignment.md)。
 
 ## Content Security Policy
 
-经典脚本求值器和 ESM 引擎都不会调用 `eval` 或 `new Function`，因此无需在 CSP 中加入 `'unsafe-eval'`。生成后的代码通过 Blob URL 执行，需要为相关指令放行实际使用的资源：
+Classic 脚本求值器和 ESM 引擎都不会调用 `eval` 或 `new Function`，因此无需在 CSP 中加入 `'unsafe-eval'`。生成后的代码通过 Blob URL 执行，需要为相关指令放行实际使用的资源：
 
 - `script-src` 需要允许 `blob:`；
 - ESM 引擎会动态插入内联的 `script[type="importmap"]`，脚本策略也要允许这类节点；
@@ -300,7 +300,7 @@ Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' b
 
 ## 上线前检查
 
-- 经典脚本使用 `StandardSandbox`，不要直接交给裸 `Compartment`；
+- Classic 脚本使用 `StandardSandbox`，不要直接交给裸 `Compartment`；
 - 在应用安装定时器或监听器之前完成 `mount()`；
 - 除非替代实现保留了脚本隔离，否则不要覆盖默认 transformer；
 - 由宿主负责业务卸载和容器内容清理；

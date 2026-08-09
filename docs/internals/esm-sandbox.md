@@ -1,6 +1,6 @@
 # ESM sandbox internals
 
-> This page documents the ESM execution engine for maintainers. For user-facing behavior, see [Native ESM support](/concepts/esm-sandbox). For the design rationale, see the [ESM sandbox RFC](../rfcs/esm-sandbox.md).
+> This page documents the ESM execution engine for maintainers. For user-facing behavior, see [Native ESM support](/concepts/esm-sandbox). For the design rationale, see the [ESM sandbox RFC](https://github.com/umijs/qiankun/blob/next/docs/rfcs/esm-sandbox.md).
 
 Modern micro-apps ship native ES modules. A Vite dev server serves one `<script type="module">` per source file, wires them together with `import`/`export`, and relies on the browser's native module loader. qiankun's classic sandbox — which wraps source in `with (this) { … }` and reads the app's exports from the last global the script assigned — cannot run that code at all: `with` is a `SyntaxError` under ESM's forced strict mode, and lifecycle functions come from `export`, not from writes to `window`.
 

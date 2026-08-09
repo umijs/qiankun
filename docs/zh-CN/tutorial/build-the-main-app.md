@@ -93,14 +93,14 @@ export default function App() {
 
 示例中的按钮仅用于演示生命周期。在实际应用中，组件的挂载状态通常由标签页、弹窗、框架路由或其他业务状态决定。
 
-::: warning 始终保留并卸载句柄
-如果未保留 `loadMicroApp` 的返回值，主应用将无法可靠地卸载对应实例。每次调用 `loadMicroApp` 后，都应在所属组件销毁时调用一次 `unmount()`。
+::: warning 保留句柄，并用它完成卸载
+如果未保留 `loadMicroApp` 的返回值，主应用就没有办法再卸载该实例。每次调用 `loadMicroApp` 后，都应在所属组件销毁时调用一次 `unmount()`。
 
-React 清理函数不能返回 Promise，因此本例仅发起 `unmount()` 调用，并处理 Promise 拒绝。如果主应用的清理流程支持异步等待，则应在移除容器前等待该 Promise 完成。
+React 清理函数不能返回 Promise，因此本例只是发起 `unmount()` 调用，并捕获可能的失败。如果主应用的清理流程支持异步等待，则应在移除容器前等待该 Promise 完成。
 :::
 
 ## 路由驱动的编排方式
 
-本教程由 React 管理实例的创建和销毁。如果应用需要根据 URL 规则自动激活，可使用 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 和 [`start`](/zh-CN/api/start)。使用 `loadMicroApp` 时无需调用这两个 API。
+在本教程中，实例的创建和销毁由 React 组件树驱动。如果应用需要根据 URL 规则自动激活，可使用 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 和 [`start`](/zh-CN/api/start)。使用 `loadMicroApp` 时无需调用这两个 API。
 
 继续[第 3 步：运行并验证](/zh-CN/tutorial/run-and-verify)。

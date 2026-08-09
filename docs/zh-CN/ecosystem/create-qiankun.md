@@ -67,9 +67,9 @@ npx create-qiankun@latest main-app --type main
 | React 微应用 | Vite 插件、生命周期入口、独立运行分支 | `7101` |
 | Vue 微应用 | Vite 插件、生命周期入口、独立运行分支 | `7101` |
 
-微应用使用 `@qiankunjs/bundler-plugin/vite` 配置开发服务器和 HTML 入口。通过常规 `dev`、`build` 和 `preview` 命令生成或提供的页面均可由 qiankun 加载，无需额外生成 SystemJS 或 UMD 格式的构建产物。
+微应用使用 `@qiankunjs/bundler-plugin/vite` 配置开发服务器和 HTML 入口。`dev`/`preview` 提供的页面和 `build` 的构建产物，均可由 qiankun 直接加载，无需额外生成 SystemJS 或 UMD 格式的构建产物。
 
-脚手架生成的代码仅作为项目的初始实现，不构成新的公共 API。接入约定以[生命周期与 props](/zh-CN/concepts/lifecycle-and-props)和 [`loadMicroApp` API](/zh-CN/api/load-micro-app)为准。
+脚手架生成的代码仅作为项目的初始实现，不构成新的公共 API。接入约定以[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props) 和 [`loadMicroApp` API](/zh-CN/api/load-micro-app)为准。
 
 ## 默认连接方式
 
@@ -99,7 +99,7 @@ npm run dev
 
 ## 相关内容
 
-- [快速上手](/zh-CN/guide/getting-started)
-- [接入现有 Vite 应用](/zh-CN/cookbook/prepare-a-vite-app)
-- [@qiankunjs/bundler-plugin](/zh-CN/ecosystem/bundler-plugin)
-- [原生 ESM 支持](/zh-CN/concepts/esm-sandbox)
+- [快速上手](/zh-CN/guide/getting-started)。
+- [接入 Vite 应用](/zh-CN/cookbook/prepare-a-vite-app)。
+- [@qiankunjs/bundler-plugin](/zh-CN/ecosystem/bundler-plugin)。
+- [原生 ESM 支持](/zh-CN/concepts/esm-sandbox)。

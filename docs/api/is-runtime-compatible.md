@@ -57,10 +57,11 @@ The result only covers the three core runtime APIs above. It does not verify:
 - CSS `@scope` support for optional [style isolation](/concepts/style-isolation);
 - your Content Security Policy, CORS headers, entry URL, or asset availability.
 
-In particular, the native ESM path requires multiple dynamically injected import maps. Firefox does not enable that behavior by default, even when `isRuntimeCompatible()` returns `true`; use the Classic/Webpack delivery path when Firefox support is required.
+In particular, the native ESM path requires multiple dynamically injected import maps. Firefox does not enable that behavior by default, even when `isRuntimeCompatible()` returns `true`; ship classic scripts instead (for example, Webpack builds) when Firefox support is required.
 
 ## Related
 
 - [`loadMicroApp`](/api/load-micro-app)
 - [Native ESM support](/concepts/esm-sandbox)
-- [Runtime requirements](/guide/getting-started)
+- [Browser support](/guide/browser-support)
+- [Getting started](/guide/getting-started)

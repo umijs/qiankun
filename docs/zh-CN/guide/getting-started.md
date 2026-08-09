@@ -2,7 +2,7 @@
 
 本指南使用官方脚手架 `create-qiankun` 创建并运行一个主应用和一个微应用。主应用通过 `loadMicroApp` 管理微应用实例。
 
-开始前，请安装 Node.js `>=20.19` 和 npm，并准备现代 Chromium 浏览器或 Safari。
+开始前，请安装 Node.js `>=20.19` 和 npm，并准备基于 Chromium 的浏览器（Chrome、Edge 等）或 Safari（完整浏览器要求见[浏览器支持](/zh-CN/guide/browser-support)）。
 
 ## 创建并运行应用
 
@@ -37,10 +37,10 @@ npm run dev
 
 访问 **http://localhost:7099**，可查看主应用中挂载的微应用。直接访问 **http://localhost:7101**，可确认微应用能够独立运行。
 
-交互式命令、Vue 模板、pnpm 或 Yarn 备选用法，以及生成文件的完整说明，请查看 [`create-qiankun` 参考](/zh-CN/ecosystem/create-qiankun)。
+如需了解交互式命令、Vue 模板、改用 pnpm/Yarn 的方式，以及生成文件的完整说明，请查看 [`create-qiankun` 参考](/zh-CN/ecosystem/create-qiankun)。
 
 ::: warning Firefox 与 ESM 应用
-ESM 沙箱依赖动态注入 import map，而 Firefox 目前还不支持这项能力。请使用 Chromium 浏览器或 Safari 完成本指南。Classic 模式的微应用不受影响。
+ESM 沙箱依赖动态注入 import map，而 Firefox 目前还不支持这项能力。请使用基于 Chromium 的浏览器（Chrome、Edge 等）或 Safari 完成本指南。Classic 模式的微应用不受影响。
 :::
 
 ## 主应用如何管理微应用
@@ -83,7 +83,7 @@ export default function App() {
 | `entry` | 微应用的 HTML 入口。本例指向运行在 `7101` 端口的开发服务器。 |
 | `container` | 用于挂载微应用的 `HTMLElement`。 |
 
-`loadMicroApp` 返回一个 `MicroApp` 实例句柄。在实例存续期间应保留该句柄，并在清理时调用 `unmount()`，以便 qiankun 执行微应用的 `unmount` 生命周期并完成卸载。`useEffect` 的清理函数不能返回 Promise，因此本例仅发起卸载操作，并处理 Promise 拒绝。如果主应用的清理流程支持异步等待，则应在移除容器前等待 `unmount()` 完成。
+`loadMicroApp` 返回一个 `MicroApp` 实例句柄。在实例存续期间应保留该句柄，并在清理时调用 `unmount()`，以便 qiankun 执行微应用的 `unmount` 生命周期并完成卸载。`useEffect` 的清理函数不能返回 Promise，因此本例只是发起卸载，并捕获可能的失败。如果主应用的清理流程支持异步等待，则应在移除容器前等待 `unmount()` 完成。
 
 ## 微应用的接入要求
 
@@ -92,7 +92,7 @@ export default function App() {
 - `@qiankunjs/bundler-plugin` 为 qiankun 配置 HTML 入口和开发服务器。
 - 入口模块导出 `bootstrap`、`mount` 和 `unmount`。`mount` 在主应用提供的容器内渲染，`unmount` 销毁框架根节点。
 
-直接访问 `7101` 端口时，微应用会通过独立运行逻辑完成渲染。因此，该应用既可独立开发，也可由主应用加载。
+直接访问 `7101` 端口时，微应用会走独立运行分支自行渲染。因此，该应用既可独立开发，也可由主应用加载。
 
 ## 路由驱动的应用
 
@@ -101,6 +101,6 @@ export default function App() {
 ## 下一步
 
 - 按照[手动教程](/zh-CN/tutorial/)在不使用脚手架的情况下搭建相同结构。
-- 在[生命周期与 props](/zh-CN/concepts/lifecycle-and-props)中了解应用契约。
+- 在[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)中了解应用契约。
 - 改造一个现有的 [Vite](/zh-CN/cookbook/prepare-a-vite-app) 或 [Webpack](/zh-CN/cookbook/prepare-a-webpack-app) 应用。
 - 在 [`loadMicroApp` API](/zh-CN/api/load-micro-app)中查看全部选项和方法。

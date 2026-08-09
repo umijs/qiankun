@@ -67,4 +67,4 @@ const microApp = loadMicroApp(
 );
 ```
 
-完整操作与验证见[开启 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation)，选项定义见 [AppConfiguration](/zh-CN/api/configuration)。维护者可以继续阅读[样式隔离实现](/zh-CN/internals/style-isolation)。
+完整操作与验证见[启用 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation)，选项定义见 [AppConfiguration](/zh-CN/api/configuration)。维护者可以继续阅读[样式隔离实现](/zh-CN/internals/style-isolation)。

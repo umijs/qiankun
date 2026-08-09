@@ -346,7 +346,7 @@ Firefox 不支持动态注入 import map，而以原生 ESM 方式加载的 Vite
 - [`isRuntimeCompatible`](/zh-CN/api/is-runtime-compatible)——在启动前检查浏览器兼容性
 - 应用级 [`configuration`](/zh-CN/api/configuration)——可通过 `RegistrableApp.configuration` 或 `loadMicroApp` 的第二个参数设置 `sandbox`（`styleIsolation`、`globals`、`incubatorContext`、`plugins` 均在其内部）和 `fetch` 等选项
 
-新项目应优先使用 `loadMicroApp`。完整的公开导出列表见 [API 总览](/zh-CN/api/index)。
+新项目应优先使用 `loadMicroApp`。完整的公开导出列表见 [API 总览](/zh-CN/api/)。
 
 ::: warning prefetchApps 已废弃
 流式加载器会在解析入口 HTML 的过程中自动预加载资源，因此大多数场景无需显式预取。`prefetchApps` 仍保留，但已在 3.0 中废弃；2.x 中 `start()` 的 `prefetch` 策略已移除。加载优化见[优化加载与预加载](/zh-CN/cookbook/optimize-loading)。

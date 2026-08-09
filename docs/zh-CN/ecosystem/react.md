@@ -27,7 +27,7 @@ export default function Page() {
 组件会渲染一个 `<div>` 作为挂载容器，并在组件卸载时自动卸载微应用。
 
 ::: warning `name` 和 `entry` 均为必填项
-缺少 `name` 或 `entry` 时，组件仅输出日志 `the name and entry of MicroApp is needed`，不会加载微应用，也不会抛出异常。因此，必须同时提供这两个 prop。
+缺少 `name` 或 `entry` 时，组件仅输出错误日志 `the name and entry of MicroApp is needed`，不会加载微应用，也不会抛出异常。因此，必须同时提供这两个 prop。
 :::
 
 ## Props
@@ -49,8 +49,8 @@ export type Props = SharedProps & SharedSlots<React.ReactNode> & Record<string, 
 | `lifeCycles` | [`LifeCycles`](/zh-CN/api/lifecycles) | — | 由主应用提供的生命周期钩子，如 `beforeLoad`、`beforeMount`。 |
 | `autoSetLoading` | `boolean` | `false` | 是否渲染内置加载界面，并在应用挂载完成后自动结束加载状态。 |
 | `autoCaptureError` | `boolean` | `false` | 是否使用内置错误边界处理加载错误。 |
-| `wrapperClassName` | `string` | — | 添加到包裹元素 `class` 属性开头的类名。仅在启用加载界面或错误边界时生效。 |
-| `className` | `string` | — | 添加到挂载容器 `class` 属性开头的类名。 |
+| `wrapperClassName` | `string` | — | 附加在包裹元素内置类名之前的自定义类名。仅在启用加载界面或错误边界时生效。 |
+| `className` | `string` | — | 附加在挂载容器内置类名之前的自定义类名。 |
 | `loader` | `(loading: boolean) => ReactNode` | — | 用于自定义加载界面的渲染函数。 |
 | `errorBoundary` | `(error: Error) => ReactNode` | — | 用于自定义错误界面的渲染函数。 |
 
@@ -152,7 +152,7 @@ export async function mount(props) {
 />
 ```
 
-完整的错误处理方式参见[处理加载与运行时错误](/zh-CN/cookbook/handle-errors)和 [addErrorHandler / removeErrorHandler](/zh-CN/api/error-handling)。
+完整的错误处理方式参见[处理微应用错误](/zh-CN/cookbook/handle-errors)和 [addErrorHandler / removeErrorHandler](/zh-CN/api/error-handling)。
 
 ## 通过 ref 访问运行中的实例
 
@@ -217,7 +217,7 @@ ref 主要用于查询状态和等待生命周期 Promise。不应通过 ref 直
 />
 ```
 
-`settings` 会原样传给 `loadMicroApp`，组件不会替你填任何默认项。`sandbox.styleIsolation` 的行为参见[样式隔离](/zh-CN/concepts/style-isolation)，`sandbox` 本身的行为参见 [JavaScript 沙箱](/zh-CN/concepts/js-sandbox)。
+`settings` 会原样传给 `loadMicroApp`，组件不会替你填任何默认项。`sandbox.styleIsolation` 的行为参见[样式隔离](/zh-CN/concepts/style-isolation)，`sandbox` 本身的行为参见 [JavaScript 隔离](/zh-CN/concepts/js-sandbox)。
 
 ## 生命周期钩子
 
@@ -285,4 +285,4 @@ flowchart TD
 - [AppConfiguration](/zh-CN/api/configuration)——`settings` 的类型定义。
 - [生命周期钩子](/zh-CN/api/lifecycles)——`lifeCycles` 的类型定义。
 - [Vue `<MicroApp>` 组件](/zh-CN/ecosystem/vue)——Vue 绑定通过独立的 `appProps` 对象传递微应用 props。
-- [同时运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)
+- [运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)。

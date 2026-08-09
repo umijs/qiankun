@@ -2,7 +2,7 @@
 
 This guide uses the official `create-qiankun` scaffolder to run a main app and a micro-app. The main app controls the micro-app directly with `loadMicroApp`.
 
-You need Node.js `>=20.19`, npm, and a modern Chromium-based browser or Safari.
+You need Node.js `>=20.19`, npm, and a modern Chromium-based browser or Safari (see [Browser support](/guide/browser-support) for the full requirements).
 
 ## Create and run the applications
 

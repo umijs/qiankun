@@ -94,7 +94,7 @@ await Promise.all([left.unmount(), right.unmount()]);
 
 ## 原生 ESM 注意事项
 
-同一 ESM 应用的并发实例必须使用独立容器，并应覆盖模块首次求值和动态创建元素等测试场景。当前 ESM 实现对于同时求值的同源实例仍存在已知限制。若业务需要运行大量并发实例，应使用实际应用充分验证，或评估采用 Classic 脚本构建。
+同一 ESM 应用的并发实例必须使用独立容器；测试时应覆盖模块首次求值、动态创建元素等场景。当前 ESM 实现对于同时求值的同源实例仍存在已知限制。若业务需要运行大量并发实例，应使用实际应用充分验证，或评估采用 Classic 脚本构建。
 
 实现原理见 [ESM 沙箱实现](/zh-CN/internals/esm-sandbox)，常规 ESM 接入要求见[原生 ESM 支持](/zh-CN/concepts/esm-sandbox)。
 

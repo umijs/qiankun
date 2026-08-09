@@ -16,12 +16,12 @@ flowchart LR
   A -->|"MicroApp.unmount()"| Q
 ```
 
-两个项目分别管理依赖、开发服务器和构建流程。运行时通过微应用的 HTML 入口地址建立连接。
+两个项目分别管理依赖、开发服务器和构建流程。两个项目在运行时仅通过微应用的 HTML 入口地址产生关联。
 
 ## 前置要求
 
 - Node.js `>=20.19` 和 npm。
-- 现代 Chromium 浏览器或 Safari。
+- 基于 Chromium 的浏览器（Chrome、Edge 等）或 Safari。
 - 两个空闲端口：`7099` 和 `7101`。
 
 ## 项目目录
@@ -32,7 +32,7 @@ qiankun-tutorial/
 └── sub-app/        # React 微应用，端口 7101
 ```
 
-两个项目应创建在同一个 `qiankun-tutorial` 目录下，无需采用单体仓库（monorepo）结构。
+两个项目应创建在同一个 `qiankun-tutorial` 目录下，无需放进同一个 monorepo。
 
 ## 三个步骤
 
@@ -48,7 +48,7 @@ qiankun-tutorial/
 
 - 应用的 `name`；
 - 指向微应用 HTML 的 `entry` 字符串；
-- 已经存在的 `HTMLElement` 类型 `container`。
+- 一个已存在于页面中的 `HTMLElement`，作为 `container`。
 
 微应用需要提供 `bootstrap`、`mount` 和 `unmount`。qiankun 根据双方提供的信息创建实例，并向主应用返回句柄。实例不再使用时，主应用必须通过该句柄调用 `unmount()`。
 

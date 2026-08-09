@@ -14,11 +14,11 @@ The host page fetches the micro-app HTML Entry, scripts, and styles. Every cross
 
 Find the first failing request in the Network panel and check its final URL, response status, and `Access-Control-Allow-Origin`. External CSS also needs CORS when style isolation is enabled.
 
-## Why do I get “more than one entry script”?
+## Why do I get `more than one entry script`?
 
 An HTML Entry may contain at most one external script with the `entry` attribute. Do not mark several chunks by hand; let the bundler plugin identify the real entry. See [HTML Entry and execution](/concepts/html-entry-loading).
 
-## Why do I get “lifecycle functions not found”?
+## Why do I get `lifecycle functions not found`?
 
 The micro-app must expose `bootstrap`, `mount`, and `unmount`. Native ESM uses named exports or a default lifecycle object; a Classic build needs the correct bundler output configuration.
 
@@ -26,7 +26,7 @@ Check the corresponding [Vite](/cookbook/prepare-a-vite-app) or [Webpack](/cookb
 
 ## Does qiankun support Vite and native ESM?
 
-Yes. With the default sandbox enabled, `<script type="module">` uses the native ESM path. HMR is disabled for a hosted Vite app, and Firefox and CSP need additional attention. See [Native ESM support](/concepts/esm-sandbox).
+Yes. With the default sandbox enabled, `<script type="module">` uses the native ESM path. When a Vite app is loaded by qiankun, its HMR connection is disabled (standalone development is unaffected), so refresh manually during development. Firefox and CSP need additional attention. See [Native ESM support](/concepts/esm-sandbox).
 
 ## Is there a built-in global state store?
 
@@ -40,7 +40,7 @@ Follow [Enable style isolation](/cookbook/enable-style-isolation) for the steps 
 
 ## Which browsers are supported?
 
-[`isRuntimeCompatible()`](/api/is-runtime-compatible) checks only the base runtime requirements: `Proxy`, `TransformStream`, and `URL.createObjectURL`. Native ESM additionally needs dynamic import maps, and style isolation needs CSS `@scope`. Check the relevant concept page for every capability you enable.
+See [Browser support](/guide/browser-support) for the full capability-to-browser matrix. In short: [`isRuntimeCompatible()`](/api/is-runtime-compatible) checks only the base runtime requirements — `Proxy`, `TransformStream`, and `URL.createObjectURL` — while native ESM additionally needs dynamic import maps and style isolation needs CSS `@scope`, so evaluate each capability you enable separately.
 
 ## Why does entry code not run again on remount?
 

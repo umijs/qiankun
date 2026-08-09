@@ -20,7 +20,7 @@ function isRuntimeCompatible(): boolean;
 | `TransformStream` | 流式加载 HTML 入口 |
 | `URL.createObjectURL` | 隔离执行脚本 |
 
-应用应优先使用该函数检测运行时能力，无需自行维护浏览器版本列表。
+建议使用该函数检测运行时能力，而不是自行维护浏览器版本列表。
 
 ## 使用方式
 
@@ -53,14 +53,15 @@ if (!isRuntimeCompatible()) {
 
 返回值仅表示上述三项核心运行时 API 是否可用，不会验证：
 
-- [原生 ESM 应用](/zh-CN/concepts/esm-sandbox)额外依赖的浏览器行为；
+- [原生 ESM 支持](/zh-CN/concepts/esm-sandbox)额外依赖的浏览器行为；
 - 可选[样式隔离](/zh-CN/concepts/style-isolation)所需的 CSS `@scope`；
 - Content Security Policy、CORS 响应头、入口地址或资源是否可用。
 
-原生 ESM 执行路径需要动态注入多个 import map。即使 `isRuntimeCompatible()` 返回 `true`，Firefox 默认也不支持该能力。需要支持 Firefox 时，应采用 Classic/Webpack 交付方式。
+原生 ESM 执行路径需要动态注入多个 import map。即使 `isRuntimeCompatible()` 返回 `true`，Firefox 默认也不支持该能力。需要支持 Firefox 时，应改用 Classic 脚本方式交付（例如 Webpack 构建产物）。
 
 ## 相关内容
 
-- [`loadMicroApp`](/zh-CN/api/load-micro-app)
-- [原生 ESM 支持](/zh-CN/concepts/esm-sandbox)
-- [运行环境要求](/zh-CN/guide/getting-started)
+- [`loadMicroApp`](/zh-CN/api/load-micro-app)。
+- [原生 ESM 支持](/zh-CN/concepts/esm-sandbox)。
+- [浏览器支持](/zh-CN/guide/browser-support)。
+- [快速上手](/zh-CN/guide/getting-started)。

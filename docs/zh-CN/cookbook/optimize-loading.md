@@ -29,7 +29,7 @@ performance.measure('sub-app:mount', 'sub-app:start');
 
 对于文件名包含内容哈希的 JavaScript、CSS 和字体资源，应配置长期缓存。HTML 入口需要及时更新，可使用协商缓存。压缩和 CDN 配置也应覆盖微应用的全部资源。
 
-qiankun 还会在当前页面进程中使用内存 LRU 缓存保存成功的请求，并可能复用同一应用和容器对应的生命周期配置。只有运行时缓存未命中时，HTTP 协商缓存才会参与请求；同一页面中的重新挂载不能用于刷新部署版本。如需确保加载新发布的微应用，应刷新主应用页面。
+qiankun 还会在当前页面内维护一个内存 LRU 缓存，保存成功的请求结果，并可能复用同一应用和容器对应的生命周期配置。只有运行时缓存未命中时，HTTP 协商缓存才会参与请求；同一页面中的重新挂载不能用于刷新部署版本。如需确保加载新发布的微应用，应刷新主应用页面。
 
 ### 2. 保持 HTML 入口简洁
 
@@ -73,7 +73,7 @@ qiankun 还会在当前页面进程中使用内存 LRU 缓存保存成功的请�
 
 ## 相关内容
 
-- [HTML 入口与执行](/zh-CN/concepts/html-entry-loading)——加载流程及其外部表现
-- [处理加载与运行时错误](/zh-CN/cookbook/handle-errors)——处理资源加载失败
+- [HTML 入口](/zh-CN/concepts/html-entry-loading)——加载流程及其外部表现
+- [处理微应用错误](/zh-CN/cookbook/handle-errors)——处理资源加载失败
 - [AppConfiguration](/zh-CN/api/configuration)——自定义 `fetch` 与高级选项
 - [流式 HTML 入口实现](/zh-CN/internals/streaming-html-entry)——面向贡献者的实现细节

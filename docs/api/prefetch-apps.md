@@ -24,7 +24,7 @@ The function returns immediately. It provides no completion promise and does not
 
 ## Legacy behavior
 
-When called, it fetches the entry HTML during browser idle time and attempts to fetch external scripts and stylesheets found in the document. It may skip work when the browser is offline, saving data, or on a slow connection. Individual request failures do not produce a synchronous exception.
+When called, it fetches the entry HTML during browser idle time and attempts to fetch external scripts and stylesheets found in the document. It may skip work when the browser is offline, has Save-Data enabled, or is on a slow connection. Individual request failures do not produce a synchronous exception.
 
 ```ts
 import { prefetchApps } from 'qiankun';

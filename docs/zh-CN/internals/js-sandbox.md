@@ -45,7 +45,9 @@ flowchart TD
 }).bind(window.__compartment_globalThis__<N>__)();
 ```
 
-当某个名称已存在于沙箱本地对象或主应用全局对象时，`with (this)` 会使对应的裸引用经过代理 `window`；顶层声明则保留在包装函数的局部作用域中。对于全新且未声明的赋值（如 `foo = 1`），隔离膜的 `has` 拦截器不会命中，该写入在非严格模式的 Classic 脚本中可能逃逸到真实全局对象。微应用必须避免隐式全局变量，应显式声明变量或使用 `window.foo`。包装后的源码通过 blob URL 执行，`<N>` 则为每个实例提供独立的隔间槽位。
+包装后的源码通过 blob URL 执行，`<N>` 为每个实例提供独立的隔间槽位。当某个名称已存在于沙箱本地对象或主应用全局对象时，`with (this)` 会使对应的裸引用经过代理 `window`；顶层声明则保留在包装函数的局部作用域中。
+
+对于全新且未声明的赋值（如 `foo = 1`），隔离膜的 `has` 拦截器不会命中，该写入在非严格模式的 Classic 脚本中可能逃逸到真实全局对象。微应用必须避免隐式全局变量，应显式声明变量或使用 `window.foo`。
 
 只有 Classic 脚本使用隔间。`<script type="module">` 由 [ESM 沙箱实现](/zh-CN/internals/esm-sandbox)处理。ESM 引擎通过 `sandbox.getEsmGlobalsView()` 使用同一份隔离膜视图，但通过词法分析器改写模块源码，而不是使用 `with` 包装。两种执行方式共享当前应用的全局命名空间。
 
@@ -110,7 +112,7 @@ const globalVariableWhiteList = ['System', '__cjsWrapper', /* + dev-only */];
 多实例清理依赖各补丁模块的 `free()`。如果遗漏某个实例的卸载，其事件监听器、定时器和动态 DOM 将继续存在，并可能影响后续挂载。通过 `loadMicroApp` 创建的每个实例都应使用对应句柄调用 `unmount()`。
 :::
 
-具体用法见[同时运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)。
+具体用法见[运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)。
 
 ## 沙箱的激活与停用
 
@@ -163,7 +165,7 @@ ESM 沙箱引擎仅在启用 `sandbox` 时创建。关闭沙箱后，ESM 沙箱�
 在 v3 中，`sandbox` 的类型是 `boolean | SandboxConfiguration`。2.x 的 `sandbox: { strictStyleIsolation }`、`sandbox: { experimentalStyleIsolation }` 以及基于 Shadow DOM 的样式隔离配置已被移除。CSS 隔离改由布尔选项 [`sandbox.styleIsolation`](/zh-CN/concepts/style-isolation) 控制，并使用 CSS `@scope` 实现。详见[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
 :::
 
-## 相关阅读
+## 延伸阅读
 
 - [原生 ESM 支持](/zh-CN/concepts/esm-sandbox)：原生模块应用可依赖的公开行为。
 - [加载一个微应用实例](/zh-CN/concepts/architecture)：沙箱在整体运行模型中的位置。

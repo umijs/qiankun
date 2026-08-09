@@ -15,7 +15,7 @@ const microApp = loadMicroApp({
 await microApp.unmount();
 ```
 
-如果应用必须根据 URL 自动激活，可使用 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 和 [`start`](/zh-CN/api/start)。这是适用于路由驱动场景的另一种加载方式，不是使用 `loadMicroApp` 的前置条件。
+如果应用必须根据 URL 自动激活，可使用 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 和 [`start`](/zh-CN/api/start)。这是面向路由驱动场景的另一种加载方式，与 `loadMicroApp` 相互独立，无需搭配使用。
 
 ## 导出一览
 
@@ -44,7 +44,7 @@ function loadMicroApp<T extends ObjectType>(
 ): MicroApp;
 ```
 
-返回值提供 `mount`、`unmount`、`getStatus` 和各阶段的 Promise。只有微应用导出可选的 `update` 生命周期时，句柄才提供 `update` 方法。不再使用实例时，应调用 `unmount()`。
+返回值提供 `mount`、`unmount`、`getStatus` 和各阶段的 Promise。只有微应用导出 `update` 生命周期时，句柄才提供 `update` 方法。不再使用实例时，应调用 `unmount()`。
 
 ### 路由驱动：`registerMicroApps` + `start`
 
@@ -66,6 +66,6 @@ start(opts?);
 
 ## 迁移与废弃项
 
-从 qiankun 2.x 升级时，请参阅[迁移指南](/zh-CN/cookbook/migrate-from-2x)。各 API 页面仅描述当前版本的行为。
+从 qiankun 2.x 升级时，请参阅[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。各 API 页面仅描述当前版本的行为。
 
-`prefetchApps` 已废弃；流式 HTML 入口加载会在解析过程中自动发现并预加载资源。替代建议见[优化加载](/zh-CN/cookbook/optimize-loading)。
+`prefetchApps` 已废弃；流式 HTML 入口加载会在解析过程中自动发现并预加载资源。替代建议见[优化微应用加载](/zh-CN/cookbook/optimize-loading)。

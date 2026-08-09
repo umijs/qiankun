@@ -1,6 +1,6 @@
 # 处理微应用错误
 
-应在能够恢复对应故障的位置处理错误。使用 [`loadMicroApp`](/zh-CN/api/load-micro-app) 时，主应用负责在实例所在位置显示错误提示，并保留实例句柄以便后续清理。对于通过 `registerMicroApps` 注册的路由驱动应用，可使用全局错误处理器统一记录错误并上报监控系统。
+哪一层能从故障中恢复，就在哪一层处理错误。使用 [`loadMicroApp`](/zh-CN/api/load-micro-app) 时，主应用负责在实例所在位置显示错误提示，并保留实例句柄以便后续清理。对于通过 `registerMicroApps` 注册的路由驱动应用，可使用全局错误处理器统一记录错误并上报监控系统。
 
 本页介绍入口加载和生命周期执行失败的处理方式。应用成功挂载后，由界面事件或业务代码引发的错误，仍应交由微应用自身的框架错误边界和监控方案处理。
 
@@ -70,7 +70,7 @@ React 和 Vue 的 `<MicroApp>` 组件封装了相同的实例级 Promise 处理�
 - React 支持 `autoCaptureError` 或自定义 `errorBoundary`，参见 [React 集成](/zh-CN/ecosystem/react)；
 - Vue 支持 `autoCaptureError` 或 `#error-boundary` 插槽，参见 [Vue 集成](/zh-CN/ecosystem/vue)。
 
-组件错误边界用于在实例所在位置显示错误界面，并可在捕获错误时直接上报监控系统。由于组件基于 `loadMicroApp`，其首次加载和生命周期错误不会同时触发 single-spa 全局错误处理器。
+组件错误边界用于在实例所在位置显示错误界面，并可在捕获错误时直接上报监控系统。由于组件基于 `loadMicroApp`，其首次加载和生命周期错误只会走实例 Promise，不会再进入 single-spa 的全局错误处理器。
 
 ## 按现象排查
 
@@ -89,7 +89,7 @@ React 和 Vue 的 `<MicroApp>` 组件封装了相同的实例级 Promise 处理�
 
 ## 仅对临时性故障进行重试
 
-qiankun 的增强 fetch 使用当前封装实例共享的有限自动重试额度，但不会判断故障是否具有临时性，因此网络异常或无效 HTTP 响应都可能消耗该额度，调用方不能假定每个失败请求都会得到重试。请求最终失败时，相应的实例 Promise 会被拒绝。对于路由驱动应用，该错误还会通知全局处理器；`loadMicroApp` 调用方则应处理实例 Promise。不应在 `loadMicroApp` 之外增加递归重试或无上限重试。
+qiankun 增强后的 fetch 自带一个有限的自动重试额度，由同一个 fetch 封装实例共享。它不会区分故障是否临时，网络异常和无效 HTTP 响应都会消耗额度，因此不能假定每个失败请求都会被重试。请求最终失败时，相应的实例 Promise 会被拒绝。对于路由驱动应用，该错误还会通知全局处理器；`loadMicroApp` 调用方则应处理实例 Promise。不应在 `loadMicroApp` 之外增加递归重试或无上限重试。
 
 调用方仅应在故障可能具有临时性时提供额外的用户重试，并先等待上一次 `mountPromise` 结束。生命周期导出无效、入口脚本数量不正确、容器无效或 ESM 依赖无法解析等配置错误必须直接修正，无法通过重试解决。身份认证和网关逻辑应通过自定义 [`fetch`](/zh-CN/api/configuration) 实现。
 

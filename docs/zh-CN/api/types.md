@@ -65,7 +65,7 @@ type Props = { userId: number; theme: 'light' | 'dark' };
 export type HTMLEntry = string;
 ```
 
-微应用入口始终是 HTML 文档的地址。qiankun 通过 [HTML 入口加载器](/zh-CN/concepts/html-entry-loading)流式解析该文档，并执行其中引用的脚本。
+微应用入口始终是 HTML 文档的地址。qiankun 通过 [HTML 入口](/zh-CN/concepts/html-entry-loading)流式解析该文档，并执行其中引用的脚本。
 
 ```ts
 const entry: HTMLEntry = 'http://localhost:7101';
@@ -171,7 +171,7 @@ export type AppConfiguration = Partial<
 | `fetch` | `typeof window.fetch` | `window.fetch` | 用于请求入口，以及由加载器处理的脚本、模块和样式的自定义 fetch。 |
 | `streamTransformer` | `() => TransformStream<string, string>` | `undefined` | 用于自定义 HTML 流式处理过程的转换器。 |
 | `nodeTransformer` | `<T extends Node>(node: T, opts) => T` | 内置默认值 | 在 `<script>`、`<link>` 和 `<style>` 节点进入容器前进行转换。 |
-| `sandbox` | `boolean \| SandboxConfiguration` | `true` | 启用 [JavaScript 沙箱](/zh-CN/concepts/js-sandbox)隔离膜，以及适用场景下的 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)。传入对象形式还可对其进行配置。 |
+| `sandbox` | `boolean \| SandboxConfiguration` | `true` | 启用基于隔离膜的 [JavaScript 隔离](/zh-CN/concepts/js-sandbox)，以及适用场景下的[原生 ESM 支持](/zh-CN/concepts/esm-sandbox)。传入对象形式还可对其进行配置。 |
 
 字段行为和默认值见 [AppConfiguration](/zh-CN/api/configuration)。
 
@@ -303,12 +303,15 @@ type MicroAppLifeCycles = {
 各生命周期函数都会接收主应用通过 `props` 传入的数据。qiankun 只会在调用 `mount` 和 `unmount` 时额外注入用于渲染的 `container: HTMLElement`；`bootstrap` 和 `update` 不应依赖该字段。微应用可按以下方式导出生命周期函数：
 
 ```ts
+let root: { unmount(): void } | null = null;
+
 export async function bootstrap() {}
 export async function mount(props: { container: HTMLElement }) {
-  render(props.container);
+  root = render(props.container); // 渲染并保存句柄
 }
-export async function unmount(props: { container: HTMLElement }) {
-  unmount(props.container);
+export async function unmount() {
+  root?.unmount(); // 卸载渲染树
+  root = null;
 }
 ```
 
@@ -347,7 +350,7 @@ declare global {
 
 | 属性 | 类型 | 说明 |
 | --- | --- | --- |
-| `__POWERED_BY_QIANKUN__` | `boolean` | 应用由 qiankun 运行时，该属性会设置在沙箱全局对象上，可用于区分独立运行和嵌入运行。 |
+| `__POWERED_BY_QIANKUN__` | `boolean` | 应用运行在 qiankun 中时，该属性会设置在沙箱全局对象上，可用于区分独立运行和嵌入运行。 |
 | `__INJECTED_PUBLIC_PATH_BY_QIANKUN__` | `string` | qiankun 注入的运行时公共路径（public path），用于从正确的来源解析应用资源。 |
 | `__QIANKUN_DEVELOPMENT__` | `boolean` | qiankun 以开发模式运行时设置，用于启用开发阶段的附加诊断。 |
 | `Zone` | `CallableFunction` | 加载 Zone.js 的应用（例如 Angular 应用）会提供该属性。qiankun 使用该属性处理经过补丁修改的定时器。 |
@@ -377,8 +380,8 @@ if (window.__POWERED_BY_QIANKUN__) {
 
 ## 相关内容
 
-- [AppConfiguration](/zh-CN/api/configuration)——各配置项的完整说明
-- [生命周期钩子（LifeCycles）](/zh-CN/api/lifecycles)——框架级钩子参考
-- [registerMicroApps](/zh-CN/api/register-micro-apps) 和 [loadMicroApp](/zh-CN/api/load-micro-app)——使用这些类型的 API
-- [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)——生命周期参数的传递方式
-- [从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)——不兼容类型变更
+- [AppConfiguration](/zh-CN/api/configuration)——各配置项的完整说明。
+- [生命周期钩子（LifeCycles）](/zh-CN/api/lifecycles)——框架级钩子参考。
+- [registerMicroApps](/zh-CN/api/register-micro-apps) 和 [loadMicroApp](/zh-CN/api/load-micro-app)——使用这些类型的 API。
+- [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)——生命周期参数的传递方式。
+- [从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)——不兼容类型变更。

@@ -84,4 +84,4 @@ Webpack 插件不会配置开发服务器的 CORS。开发服务器和生产静�
 - 微应用必须导出[生命周期契约](/zh-CN/concepts/lifecycle-and-props)。
 - 生产资源必须满足浏览器的 CORS、CSP 和 MIME 类型要求。
 
-加载器对入口的处理方式参见 [HTML 入口与执行](/zh-CN/concepts/html-entry-loading)。
+加载器对入口的处理方式参见 [HTML 入口](/zh-CN/concepts/html-entry-loading)。

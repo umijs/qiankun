@@ -67,7 +67,7 @@ This synchronous path skips rules that are already `@scope`-wrapped and keeps `@
 
 ## Preload rewrites
 
-With style isolation enabled, a `<link rel="preload" as="style">` targets a native stylesheet load even though the transpiler later consumes the stylesheet through `fetch()`. qiankun rewrites it to `as="fetch"` and adds `crossorigin="anonymous"` unless the link already uses `use-credentials`, allowing the later fetch to reuse the warm-up response.
+A response preloaded through `<link rel="preload" as="style">` can only be reused by a native stylesheet request. With style isolation enabled, the transpiler consumes the stylesheet through `fetch()` instead, so the original preload would go to waste. qiankun therefore rewrites the link to `as="fetch"` and adds `crossorigin="anonymous"` unless it already uses `use-credentials`, allowing the later `fetch()` to reuse the warm-up response.
 
 Separately, whenever the [ESM sandbox](/concepts/esm-sandbox) is active, qiankun rewrites `rel="modulepreload"` to `rel="preload" as="fetch"` because the engine imports rewritten blob URLs instead of the original module URL. This rewrite does not depend on style isolation. The original modulepreload credentials behavior is preserved through the `crossorigin` setting.
 

@@ -21,7 +21,7 @@ const microApp = loadMicroApp({
 });
 ```
 
-qiankun 将 HTML 文档作为微应用资源的唯一描述文件，并按照文档中的 `<script>`、`<link>` 和 `<style>` 声明加载资源，主应用无需同步维护 JavaScript 和 CSS 文件清单。新的页面会话或运行时缓存未命中时，qiankun 会从最新的 `index.html` 读取带哈希的资源文件名；同一页面中的重新挂载可能复用已缓存的入口和生命周期，不能用于刷新已部署的版本。
+qiankun 将 HTML 文档作为微应用资源的唯一描述文件，并按照文档中的 `<script>`、`<link>` 和 `<style>` 声明加载资源，主应用无需同步维护 JavaScript 和 CSS 文件清单。新的页面会话或运行时缓存未命中时，qiankun 会从最新的 `index.html` 读取带哈希的资源文件名；同一页面内的重新挂载可能复用已缓存的入口和生命周期，因此不能指望通过重新挂载拿到新部署的版本。
 
 `loadEntry(entry, container, opts)`（`packages/loader/src/index.ts`）负责处理 HTML 入口的全过程。它不会将资源直接插入主文档，而是在节点进入应用容器前交给沙箱和资源转译器处理。
 
@@ -29,11 +29,11 @@ qiankun 将 HTML 文档作为微应用资源的唯一描述文件，并按照文
 
 浏览器在顶层导航中可以边接收 HTML 边解析和渲染，但传统的微应用加载通常先下载完整 HTML，再从字符串中提取脚本和样式，因此无法利用服务端的流式响应。
 
-qiankun 3.0 之前的加载过程也是如此：完整下载 HTML 后，通过正则表达式提取 `<script>` 和 `<link>`，再逐项处理。v3 改用客户端流式处理，在接收 HTML 响应的同时转换节点并写入已加载的文档，使首次加载和后续路由切换都可使用流式处理。
+qiankun 3.0 之前的加载过程也是如此：完整下载 HTML 后，通过正则表达式提取 `<script>` 和 `<link>`，再逐项处理。v3 改用客户端流式处理，在接收 HTML 响应的同时转换节点并写入当前页面的 DOM，使首次加载和后续路由切换都可使用流式处理。
 
 该实现主要带来两项改进：
 
-- **缩短资源发现时间。** 外部脚本和样式一旦出现在当前输入片段中，就可以开始处理，无需等待完整文档下载。解析方式也由正则表达式改为基于 `writable-dom` 的 DOM 遍历。
+- **缩短资源发现时间。** 外部脚本和样式一旦出现在当前数据块中，就可以开始处理，无需等待完整文档下载。解析方式也由正则表达式改为基于 `writable-dom` 的 DOM 遍历。
 - **减少手动模拟浏览器行为。** 旧实现通过 `eval` 执行脚本，需要自行模拟 `<script>` 的 `load` 和 `error` 事件。v3 将转换后的脚本节点插入 DOM，由浏览器负责执行和事件派发。Classic 脚本使用 blob URL，模块脚本则由 [ESM 沙箱实现](/zh-CN/internals/esm-sandbox)处理。
 
 ::: tip 性能测试数据
@@ -79,7 +79,7 @@ res.body
 | `createTagTransformStream` | 在字符串层执行标签改写，用于 [`<head>` 虚拟化](#head-virtualization) |
 | `WritableDOMStream` | `writable-dom` 的项目分支（`packages/loader/src/writable-dom/`），负责增量解析 HTML；遇到同步脚本和样式表时阻塞以保持执行顺序，并在阻塞期间预加载其他资源 |
 
-由于写入端按输入数据块提交内容，微应用 DOM 可以在整个 HTML 文档下载完成前开始构建。
+由于写入端按数据块提交内容，微应用 DOM 可以在整个 HTML 文档下载完成前开始构建。
 
 ### 逐节点转译
 
@@ -108,7 +108,7 @@ res.body
 
 随后，沙箱的动态追加（dynamic append）补丁将 `<qiankun-head>` 作为应用级虚拟 `<head>`。微应用向 `document.head` 追加节点时，补丁会将节点重定向到 `container.querySelector('qiankun-head')`（`packages/sandbox/src/patchers/dynamicAppend/common.ts`），而不是真实 `document.head`。这些节点因此被限制在应用容器中，并在卸载时随容器清理。
 
-转换器会缓冲输入数据块，并对首次出现的标签执行 `String.prototype.replace`。如果数据块边界将 `<head>` 标签分割为两部分，转换器会保留缓冲内容，等待后续数据块补全；替换成功后再输出并清空缓冲区。
+转换器会缓冲数据块，并对首次出现的标签执行 `String.prototype.replace`。如果数据块边界将 `<head>` 标签分割为两部分，转换器会保留缓冲内容，等待后续数据块补全；替换成功后再输出并清空缓冲区。
 
 ## `entry` 脚本约定
 

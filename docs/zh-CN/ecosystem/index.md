@@ -52,6 +52,6 @@ React 和 Vue 绑定会创建容器、调用 `loadMicroApp`、传递 props，并
 
 ## 下一步
 
-- [5 分钟上手](/zh-CN/guide/getting-started)
+- [快速上手](/zh-CN/guide/getting-started)
 - [了解微应用实例的加载过程](/zh-CN/concepts/architecture)
 - [`loadMicroApp` API](/zh-CN/api/load-micro-app)

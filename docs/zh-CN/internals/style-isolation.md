@@ -4,7 +4,7 @@
 
 样式隔离用于限制微应用 CSS 的作用范围，防止其影响主应用或其他微应用。qiankun v3 提供按应用启用的运行时隔离机制，底层使用浏览器原生的 CSS [`@scope`](https://developer.mozilla.org/en-US/docs/Web/CSS/@scope) 规则，而非 Shadow DOM。启用后，qiankun 会改写微应用引入的样式表，使其中的规则仅在当前应用容器内生效。
 
-配置方式见 [AppConfiguration](/zh-CN/api/configuration) 和[开启 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation)。
+配置方式见 [AppConfiguration](/zh-CN/api/configuration) 和[启用 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation)。
 
 ## 基本机制
 
@@ -67,7 +67,7 @@ flowchart TD
 
 ## 预加载改写
 
-启用样式隔离后，`<link rel="preload" as="style">` 面向浏览器原生样式加载，而转译器随后通过 `fetch()` 获取样式表。qiankun 会将其改写为 `as="fetch"`，并在未使用 `use-credentials` 时设置 `crossorigin="anonymous"`，使后续请求可以复用预加载响应。
+`<link rel="preload" as="style">` 预加载的响应只能被浏览器原生的样式请求复用；启用样式隔离后，样式表改由转译器通过 `fetch()` 获取，原有预加载会被浪费。因此，qiankun 会将其改写为 `as="fetch"`，并在未使用 `use-credentials` 时设置 `crossorigin="anonymous"`，使后续 `fetch()` 请求可以复用预加载响应。
 
 启用 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)后，还会执行另一个独立流程：qiankun 将 `rel="modulepreload"` 改写为 `rel="preload" as="fetch"`。ESM 引擎执行改写后的 blob URL，而不是原始模块 URL，因此该转换与样式隔离无关；节点的 `crossorigin` 设置会保留原有的模块预加载凭据语义。
 
@@ -116,4 +116,4 @@ const microApp = loadMicroApp(
 );
 ```
 
-完整字段见 [AppConfiguration](/zh-CN/api/configuration)，操作步骤见[开启 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation)。
+完整字段见 [AppConfiguration](/zh-CN/api/configuration)，操作步骤见[启用 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation)。

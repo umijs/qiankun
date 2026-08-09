@@ -303,12 +303,15 @@ type MicroAppLifeCycles = {
 Every lifecycle receives the data passed through `props`. qiankun additionally injects `container: HTMLElement` only when it calls `mount` and `unmount`; `bootstrap` and `update` should not rely on that field. A micro-app's entry exports these:
 
 ```ts
+let root: { unmount(): void } | null = null;
+
 export async function bootstrap() {}
 export async function mount(props: { container: HTMLElement }) {
-  render(props.container);
+  root = render(props.container); // render and keep the handle
 }
-export async function unmount(props: { container: HTMLElement }) {
-  unmount(props.container);
+export async function unmount() {
+  root?.unmount(); // tear down the rendered tree
+  root = null;
 }
 ```
 

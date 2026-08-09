@@ -88,7 +88,7 @@ await microApp.mount();
 - 尚未结束的请求、Worker、Observer 和其他外部资源；
 - 被主应用回调或服务保留的引用。
 
-必须处理 `unmount()` 返回的 Promise。如果当前流程允许等待，应在卸载完成后再移除容器；如果框架的清理回调无法等待异步操作，应先调用卸载方法并为 Promise 注册拒绝处理函数，再释放对实例句柄的引用。生命周期实现应支持反复挂载和卸载，且不得产生重复监听或残留界面。
+必须处理 `unmount()` 返回的 Promise。如果当前流程允许等待，应在卸载完成后再移除容器；如果框架的清理回调无法等待异步操作，就先调用 `unmount()` 并给它的 Promise 挂上 `catch`，然后再释放句柄引用。生命周期实现应支持反复挂载和卸载，且不得产生重复监听或残留界面。
 
 如果需要根据 URL 自动激活微应用，可以使用 [`registerMicroApps`](/zh-CN/api/register-micro-apps)。此方式采用相同的微应用契约，但由路由决定挂载和卸载时机。
 
@@ -96,5 +96,5 @@ await microApp.mount();
 
 - [`loadMicroApp` API](/zh-CN/api/load-micro-app)——完整的句柄与 Promise 参考。
 - [加载一个微应用实例](/zh-CN/concepts/architecture)——微应用的整体运行模型。
-- [同时运行多个实例](/zh-CN/cookbook/run-multiple-instances)——容器与实例模式。
+- [运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)——容器与实例模式。
 - [生命周期解析原理](/zh-CN/internals/lifecycle-resolution)——供维护者阅读的导出发现与钩子顺序。

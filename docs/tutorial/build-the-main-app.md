@@ -93,7 +93,7 @@ This is the complete ownership relationship:
 
 The button is only there to make the lifecycle visible in the tutorial. In an application, the same component might be controlled by a tab, a dialog, a framework router, or any other product state.
 
-::: warning Always keep and unmount the handle
+::: warning Keep the handle, and unmount through it
 Calling `loadMicroApp` without retaining its result leaves the main app with no reliable way to release that instance. Pair each call with an `unmount()` in the owning component's cleanup path.
 
 React cleanup cannot return a Promise, so this example starts `unmount()` and handles rejection. In host workflows that can wait, await the Promise before removing the container.

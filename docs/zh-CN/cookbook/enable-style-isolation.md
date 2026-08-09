@@ -67,4 +67,4 @@ React 和 Vue 的 `<MicroApp>` 组件通过 `settings` 属性接收相同配置�
 
 - [样式隔离](/zh-CN/concepts/style-isolation)——能力、边界与限制
 - [AppConfiguration](/zh-CN/api/configuration)——`sandbox.styleIsolation` 配置参考
-- [处理加载与运行时错误](/zh-CN/cookbook/handle-errors)——捕获资源加载错误
+- [处理微应用错误](/zh-CN/cookbook/handle-errors)——捕获资源加载错误

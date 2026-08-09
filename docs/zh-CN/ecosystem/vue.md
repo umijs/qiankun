@@ -47,7 +47,7 @@ import { MicroApp } from '@qiankunjs/vue';
 | `appProps` | `object` | `undefined` | 传递给微应用的 props。Vue 绑定仅通过该属性向微应用传递数据。 |
 
 ::: info `settings` 的默认值与 React 绑定不同
-Vue 绑定的 `settings` 默认为 `{ sandbox: true }`，[React 绑定](/zh-CN/ecosystem/react)则不设置默认值，不会替你填任何默认项。两者的 `sandbox` 在 qiankun 核心运行时中都默认为 `true`，因此不额外传值时行为一致。
+Vue 绑定的 `settings` 默认值为 `{ sandbox: true }`，[React 绑定](/zh-CN/ecosystem/react)则不设置默认值，不会替你填任何默认项。两者的 `sandbox` 在 qiankun 核心运行时中默认值都为 `true`，因此不额外传值时行为一致。
 :::
 
 ::: warning 业务数据通过 `appProps` 传递
@@ -56,7 +56,7 @@ React 绑定会将 `<MicroApp>` 上的附加 prop 传递给微应用，Vue 绑�
 
 ### `settings`（AppConfiguration）
 
-`settings` 与 [`loadMicroApp`](/zh-CN/api/load-micro-app) 的第二个参数结构相同。完整定义参见 [AppConfiguration](/zh-CN/api/configuration)，字段为 `fetch`、`streamTransformer`、`nodeTransformer` 和 `sandbox`（默认为 `true`）。样式隔离、额外全局变量、孵化上下文和隔离插件均位于 `sandbox` 对象内部。
+`settings` 与 [`loadMicroApp`](/zh-CN/api/load-micro-app) 的第二个参数结构相同。完整定义参见 [AppConfiguration](/zh-CN/api/configuration)，字段为 `fetch`、`streamTransformer`、`nodeTransformer` 和 `sandbox`（默认值为 `true`）。样式隔离、额外全局变量、孵化上下文和隔离插件均位于 `sandbox` 对象内部。
 
 ```vue
 <template>
@@ -68,7 +68,7 @@ React 绑定会将 `<MicroApp>` 上的附加 prop 传递给微应用，Vue 绑�
 </template>
 ```
 
-如需为特定微应用关闭 JavaScript 沙箱，可传入 `:settings="{ sandbox: false }"`。相关行为参见 [JavaScript 沙箱](/zh-CN/concepts/js-sandbox)和[样式隔离](/zh-CN/concepts/style-isolation)。
+如需为特定微应用关闭 JavaScript 沙箱，可传入 `:settings="{ sandbox: false }"`。相关行为参见 [JavaScript 隔离](/zh-CN/concepts/js-sandbox)和[样式隔离](/zh-CN/concepts/style-isolation)。
 
 ## 向微应用传递 props（`appProps`）
 
@@ -96,7 +96,7 @@ export async function mount(props) {
 }
 ```
 
-组件会**深度侦听** `appProps`。修改嵌套值（例如 `appProps.theme = 'light'`）会尝试更新当前实例。执行更新前，微应用必须导出 `update` 生命周期、处于 `MOUNTED` 状态，并且尚未开始卸载。相关说明参见[在应用间共享状态与通信](/zh-CN/cookbook/communicate-between-apps)。
+组件会**深度侦听** `appProps`。修改嵌套值（例如 `appProps.theme = 'light'`）会尝试更新当前实例。执行更新前，微应用必须导出 `update` 生命周期、处于 `MOUNTED` 状态，并且尚未开始卸载。相关说明参见[应用间共享状态与通信](/zh-CN/cookbook/communicate-between-apps)。
 
 ::: tip `update` 仅在挂载完成后执行
 组件会等待 `mountPromise` 完成，再按顺序处理更新，并且仅在 Parcel 状态为 `MOUNTED` 时调用 `update`。挂载期间发生的中间状态变化不保证逐次触发更新。
@@ -188,7 +188,7 @@ import { MicroApp } from '@qiankunjs/vue';
 如果既未启用 `autoCaptureError`，也未提供 `#error-boundary` 插槽，则 `load`、`bootstrap` 和 `mount` 阶段的错误会从异步加载流程中重新抛出。建议启用组件内置错误界面或提供自定义错误界面，避免产生未处理的 Promise 拒绝。
 
 ::: warning
-启用 `autoCaptureError` 或提供 `#error-boundary` 插槽后，组件会通过错误界面呈现异常，不再重新抛出。同一微应用应选择一种错误处理方式。详见[处理加载与运行时错误](/zh-CN/cookbook/handle-errors)。
+启用 `autoCaptureError` 或提供 `#error-boundary` 插槽后，组件会通过错误界面呈现异常，不再重新抛出。同一微应用应选择一种错误处理方式。详见[处理微应用错误](/zh-CN/cookbook/handle-errors)。
 :::
 
 ## 重新挂载与实例句柄
@@ -282,4 +282,4 @@ const appProps = reactive({ userId: 42 });
 - [loadMicroApp](/zh-CN/api/load-micro-app)——组件所封装的核心 API。
 - [AppConfiguration](/zh-CN/api/configuration)——`settings` 的类型定义。
 - [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)——`mount`、`update` 和 `unmount` 的语义。
-- [同时运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)——同时挂载多个微应用。
+- [运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)——同时挂载多个微应用。

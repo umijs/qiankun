@@ -98,7 +98,7 @@ flowchart TD
 - `ui-bindings` — the `<MicroApp>` components for [React](/ecosystem/react) and [Vue](/ecosystem/vue), built on `qiankun`.
 
 ::: warning These are internal packages
-Only the `qiankun` package (and the `@qiankunjs/react` / `@qiankunjs/vue` bindings) are public API. `loader`, `sandbox`, and `shared` are implementation detail — their exports can change between releases. Depend on the documented [API reference](/api/index), not on internal packages.
+Only the `qiankun` package (and the `@qiankunjs/react` / `@qiankunjs/vue` bindings) are public API. `loader`, `sandbox`, and `shared` are implementation detail — their exports can change between releases. Depend on the documented [API reference](/api/), not on internal packages.
 :::
 
 ## The end-to-end load lifecycle
@@ -106,7 +106,7 @@ Only the `qiankun` package (and the `@qiankunjs/react` / `@qiankunjs/vue` bindin
 Putting the stages together, here is what `loadApp` does for a single micro-app from configuration to teardown.
 
 1. **Resolve config defaults.** `fetch = window.fetch` (then decorated), `sandbox = true`, `nodeTransformer = defaultNodeTransformer`. When `sandbox` is an object, its own defaults apply too: `incubatorContext = window` and `styleIsolation` off. See [AppConfiguration](/api/configuration) for the full field list.
-2. **Initialize the container.** The container is emptied and stamped with `data-name`, `data-version`, and `data-sandbox-cfg`. `data-mount-times` is added after the same loaded app is mounted again, while `data-instance-id` is added to the second and later `loadApp` instances with the same app name. The `instanceId` comes from a per-name counter and distinguishes [multiple instances](/cookbook/run-multiple-instances) of the same app.
+2. **Initialize the container.** The container is emptied and stamped with `data-name`, `data-version`, and `data-sandbox-cfg`. `data-mount-times` appears after the same loaded app is mounted again (its value is the mount count), while `data-instance-id` is added to the second and later `loadApp` instances with the same app name. The `instanceId` comes from a per-name counter and distinguishes [multiple instances](/cookbook/run-multiple-instances) of the same app.
 3. **Create the sandbox and ESM engine.** When `sandbox` is on, the Proxy membrane is built and the `EsmSandboxEngine` is constructed with the app name, instance id, entry URL, and the enhanced fetch.
 4. **Stream the entry.** `loadEntry` runs the HTML through the streaming pipeline and transpilers; classic and module scripts are dispatched to their respective paths. Module scripts are collected during streaming and executed in document order once the stream seals.
 5. **Discover lifecycles.** `getLifecyclesFromExports` resolves `{ bootstrap, mount, unmount, update }` with a fallback chain: the exports object itself, then its `default`, then `global[latestSetProp]` (classic), then `window[appName]`. If none is a valid lifecycle object it throws. `update` is optional. See [Micro-app lifecycle and props](/concepts/lifecycle-and-props).
@@ -130,4 +130,4 @@ Beyond beginning single-spa routing, [`start`](/api/start) has one qiankun-speci
 - [The ESM sandbox](/concepts/esm-sandbox) — how native `<script type="module">` runs through the membrane without a bundler.
 - [Style isolation](/concepts/style-isolation) — CSS `@scope` and blob-link stylesheet rewriting.
 - [Micro-app lifecycle and props](/concepts/lifecycle-and-props) — the lifecycle contract a micro-app must export and the props it receives.
-- [API reference overview](/api/index) — the complete public API surface.
+- [API reference overview](/api/) — the complete public API surface.

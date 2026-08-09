@@ -1,6 +1,6 @@
 # addErrorHandler / removeErrorHandler
 
-这两个函数用于注册和移除 single-spa 的全局错误处理器，主要接收由 `registerMicroApps` 注册的路由驱动应用在加载和生命周期执行过程中产生的错误。移除处理器时必须传入注册时使用的同一函数引用。qiankun 直接导出 single-spa 的对应函数，不改变其行为。
+这两个函数用于注册和移除 single-spa 的全局错误处理器。处理器主要接收路由驱动应用（经 `registerMicroApps` 注册）在加载和生命周期执行中产生的错误。移除处理器时必须传入注册时使用的同一函数引用。qiankun 直接导出 single-spa 的对应函数，不改变其行为。
 
 该 API 适合用于集中记录路由驱动应用的日志和上报监控数据。通过 `loadMicroApp` 创建的实例不会在首次加载或生命周期失败时调用该全局处理器，应通过实例句柄中的 Promise 处理相应错误。面向用户的错误恢复界面应由负责该区域的 `loadMicroApp` 调用方或 `<MicroApp>` 组件处理。
 
@@ -65,6 +65,6 @@ React 和 Vue 的 `<MicroApp>` 组件可通过各自的错误边界选项提供�
 
 ## 相关内容
 
-- [处理微应用错误](/zh-CN/cookbook/handle-errors)——错误界面、诊断与重试建议
-- [`loadMicroApp`](/zh-CN/api/load-micro-app)——实例 Promise 与清理
-- [React `<MicroApp>`](/zh-CN/ecosystem/react)和 [Vue `<MicroApp>`](/zh-CN/ecosystem/vue)——组件错误边界
+- [处理微应用错误](/zh-CN/cookbook/handle-errors)——错误界面、诊断与重试建议。
+- [`loadMicroApp`](/zh-CN/api/load-micro-app)——实例 Promise 与清理。
+- [React `<MicroApp>`](/zh-CN/ecosystem/react) 和 [Vue `<MicroApp>`](/zh-CN/ecosystem/vue)——组件错误边界。

@@ -191,7 +191,7 @@ export async function mount(props) {
 ```
 
 ::: danger 必须渲染到 props.container
-微应用应挂载到 `props.container`，不能使用指向真实页面的固定全局选择器，例如 `document.getElementById(...)`。全局选择器会破坏容器边界，并导致多实例渲染异常。详见[同时运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)。
+微应用应挂载到 `props.container`，不能使用指向真实页面的固定全局选择器，例如 `document.getElementById(...)`。全局选择器会破坏容器边界，并导致多实例渲染异常。详见[运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)。
 :::
 
 如果微应用导出了 `update` 生命周期，[`loadMicroApp`](/zh-CN/api/load-micro-app) 返回的 [`MicroApp`](/zh-CN/api/types) 句柄会提供 `update(props)`，用于向已挂载实例传递新的 props。
@@ -235,7 +235,7 @@ single-spa 的 `unmount` 用于停用应用并保留可复用的运行时状态�
 **完整销毁（`unload`）**：只有进入 single-spa 的 `unload` 生命周期后，qiankun 才会销毁 ESM Realm。`EsmSandboxEngine.dispose()` 会撤销引擎创建的所有 blob URL，并注销当前实例的 Realm。后续再次激活时，`loadApp` 会使用新的引擎重新执行完整加载流程。`dispose()` 绑定到 `unload` 而非 `unmount`，因此已经卸载但尚未执行 `unload` 的 ESM 应用仍会在内存中保留 Realm 和模块命名空间。
 
 ::: info `loadMicroApp` 不提供 `unload`
-`loadMicroApp` 返回的公开句柄不包含 single-spa 的 `unload` 生命周期。不再使用实例时仍应调用 `unmount()`，但该操作不会完整销毁 ESM 引擎。详见[同时运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)。
+`loadMicroApp` 返回的公开句柄不包含 single-spa 的 `unload` 生命周期。不再使用实例时仍应调用 `unmount()`，但该操作不会完整销毁 ESM 引擎。详见[运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)。
 :::
 
 ## 延伸阅读

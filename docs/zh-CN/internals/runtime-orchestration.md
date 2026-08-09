@@ -42,7 +42,15 @@ flowchart LR
 const enhancedFetch = makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)));
 ```
 
-从内到外，各层职责如下：`makeFetchThrowable` 在响应状态码不属于 `200–399` 时抛出异常，`makeFetchRetryable` 为当前封装后的 fetch 实例提供共享的有限重试额度，`makeFetchCacheable` 负责请求去重和缓存。重试层不会判断错误是否具有临时性，因此网络异常和无效 HTTP 响应均可能消耗该额度，也不保证每个失败请求都会得到重试。`enhancedFetch` 用于获取入口 HTML、由 qiankun 主动获取并转换的资源（如沙箱中的 Classic 脚本、ESM 模块和隔离样式），以及重新挂载时不含脚本的 HTML。图片和未启用隔离的样式表等浏览器原生请求不经过该函数。
+从内到外，各层职责如下：`makeFetchThrowable` 在响应状态码不属于 `200–399` 时抛出异常，`makeFetchRetryable` 为当前封装后的 fetch 实例提供共享的有限重试额度，`makeFetchCacheable` 负责请求去重和缓存。重试层不会判断错误是否具有临时性，因此网络异常和无效 HTTP 响应均可能消耗该额度，也不保证每个失败请求都会得到重试。
+
+`enhancedFetch` 用于获取以下资源：
+
+- 入口 HTML；
+- 由 qiankun 主动获取并转换的资源，包括沙箱中的 Classic 脚本、ESM 模块和隔离样式；
+- 重新挂载时不含脚本的 HTML。
+
+图片和未启用隔离的样式表等浏览器原生请求不经过该函数。
 
 ### 2. 沙箱容器
 
@@ -98,7 +106,7 @@ flowchart TD
 - `ui-bindings`：基于 `qiankun` 实现的 [React](/zh-CN/ecosystem/react) 和 [Vue](/zh-CN/ecosystem/vue) `<MicroApp>` 组件。
 
 ::: warning 内部包不属于公共 API
-除 `qiankun`、`@qiankunjs/react` 和 `@qiankunjs/vue` 外，`loader`、`sandbox`、`shared` 均属于实现细节，其导出可能在版本升级时发生变化。应用代码应仅依赖 [API 参考](/zh-CN/api/index)中明确记录的公共接口。
+除 `qiankun`、`@qiankunjs/react` 和 `@qiankunjs/vue` 外，`loader`、`sandbox`、`shared` 均属于实现细节，其导出可能在版本升级时发生变化。应用代码应仅依赖 [API 参考](/zh-CN/api/)中明确记录的公共接口。
 :::
 
 ## 完整加载生命周期
@@ -106,7 +114,7 @@ flowchart TD
 `loadApp` 对单个微应用依次执行以下步骤：
 
 1. **设置配置默认值。** 默认配置包括 `fetch = window.fetch`（随后会增强）、`sandbox = true`、`nodeTransformer = defaultNodeTransformer`。`sandbox` 传入对象时还会应用其自身的默认值：`incubatorContext = window`，`styleIsolation` 关闭。完整字段见 [AppConfiguration](/zh-CN/api/configuration)。
-2. **初始化容器。** 清空容器，并设置 `data-name`、`data-version` 和 `data-sandbox-cfg`。同一已加载应用再次挂载后会增加 `data-mount-times`；同名应用的第二个及后续 `loadApp` 实例则会增加 `data-instance-id`。`instanceId` 由按应用名计数的计数器生成，用于区分同一应用的[多个实例](/zh-CN/cookbook/run-multiple-instances)。
+2. **初始化容器。** 清空容器，并设置 `data-name`、`data-version` 和 `data-sandbox-cfg`。重新挂载后容器上会出现 `data-mount-times`（值为挂载次数）；同名应用的第二个及后续实例会带上 `data-instance-id`。`instanceId` 由按应用名计数的计数器生成，用于区分同一应用的[多个实例](/zh-CN/cookbook/run-multiple-instances)。
 3. **创建沙箱与 ESM 引擎。** 启用沙箱时，创建 Proxy 隔离膜，并使用应用名、实例 ID、入口 URL 和增强后的 `fetch` 构造 `EsmSandboxEngine`。
 4. **流式加载入口。** `loadEntry` 使 HTML 依次经过流式处理和资源转译；Classic 脚本与模块脚本分别进入对应执行流程。模块脚本在流式处理阶段收集，输入流结束后再按文档顺序执行。
 5. **解析生命周期。** `getLifecyclesFromExports` 依次尝试从导出对象、`exports.default`、`global[latestSetProp]`（Classic）和 `window[appName]` 中解析 `{ bootstrap, mount, unmount, update }`。如果均不符合生命周期对象要求，则抛出异常；其中 `update` 为可选函数。详见[生命周期解析原理](/zh-CN/internals/lifecycle-resolution)。
@@ -123,7 +131,7 @@ flowchart TD
 
 如果主应用尚未调用 `start()`，[`loadMicroApp`](/zh-CN/api/load-micro-app) 会自动调用一次。这可以确保主应用的 `pushState` 和 `replaceState` 正确触发 `popstate`，使命令式加载场景中的路由行为保持一致。
 
-## 继续阅读
+## 延伸阅读
 
 - [加载一个微应用实例](/zh-CN/concepts/architecture)：面向使用者的整体运行模型。
 - [HTML 入口](/zh-CN/concepts/html-entry-loading)：HTML 入口的公开约定。
@@ -134,4 +142,4 @@ flowchart TD
 - [ESM 沙箱实现](/zh-CN/internals/esm-sandbox)：原生 `<script type="module">` 如何通过隔离膜执行。
 - [样式隔离实现](/zh-CN/internals/style-isolation)：CSS `@scope` 与 blob URL 样式表改写。
 - [生命周期解析原理](/zh-CN/internals/lifecycle-resolution)：生命周期对象的解析与组合。
-- [API 参考总览](/zh-CN/api/index)：完整的公共 API。
+- [API 参考总览](/zh-CN/api/)：完整的公共 API。

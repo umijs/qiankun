@@ -53,9 +53,9 @@ See [Prepare a Vite app](/cookbook/prepare-a-vite-app) for the supported setup a
 
 ## Compatibility and diagnostics
 
-- Current Chromium/Edge and Safari releases support the required browser capability. Firefox does not enable it by default, so use the Classic/Webpack delivery path when Firefox support is required.
+- Recent Chromium/Edge and Safari releases support the required browser capability; see [Browser support](/guide/browser-support) for the version matrix. Firefox does not enable it by default, so use the Classic/Webpack delivery path when Firefox support is required.
 - A Content Security Policy must allow `blob:` scripts. qiankun's ESM path does not require `'unsafe-eval'`.
-- Modules and their assets must be served with correct CORS headers and MIME types. Typed JSON, CSS, and WASM imports may retain native, shared-page behavior rather than full per-app isolation.
+- Modules and their assets must be served with correct CORS headers and MIME types. JSON, CSS, and WASM imports with type attributes (`with { type: … }`) may retain native, shared-page behavior rather than full per-app isolation.
 - Production stack traces can contain `blob:` URLs instead of source file URLs. Keep source maps and configure error reporting to map those frames back to deployed sources.
 
-Use the classic/UMD path when its browser reach or development behavior better fits the application. For implementation details, see [ESM sandbox internals](/internals/esm-sandbox) and the [ESM sandbox RFC](../rfcs/esm-sandbox.md).
+Use the classic/UMD path when its browser reach or development behavior better fits the application. For implementation details, see [ESM sandbox internals](/internals/esm-sandbox) and the [ESM sandbox RFC](https://github.com/umijs/qiankun/blob/next/docs/rfcs/esm-sandbox.md).

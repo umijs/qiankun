@@ -27,11 +27,11 @@ npm run dev
 ## 验证生命周期
 
 1. 页面初始显示主应用标题、按钮，以及 `sub-app` 渲染的界面。
-2. 点击**卸载微应用**。React 移除 `MicroAppSlot`，其清理函数调用所保存句柄的 `unmount()` 方法，微应用界面随之消失。
+2. 点击**卸载微应用**。React 移除 `MicroAppSlot`，清理函数会用之前保存的句柄调用 `unmount()`，微应用界面随之消失。
 3. 点击**挂载微应用**。页面创建新的容器和 `MicroApp` 句柄，应用再次出现。
 4. 直接访问 **http://localhost:7101**，确认同一个微应用无需主应用也能独立渲染。
 
-完成以上检查后，说明主应用与微应用已按约定完成接入。主应用无需了解微应用内部的渲染方式，只负责创建容器并管理返回的实例句柄。
+以上检查全部通过，就说明主应用与微应用已按约定接入完毕。主应用无需了解微应用内部的渲染方式，只负责创建容器并管理返回的实例句柄。
 
 ## 构建两个应用
 
@@ -63,12 +63,12 @@ npm run build
 | 应用首次出现，但无法正常重新挂载 | 确认微应用在 `unmount` 中销毁了 React 根节点，并且主应用调用了句柄的 `unmount()`。 |
 | Vite 在其他端口启动 | 添加 `strictPort: true`，释放 `7099` 和 `7101` 端口后重新启动。 |
 
-ESM 微应用请使用 Chromium 浏览器或 Safari；Firefox 目前还不支持 ESM 沙箱所需的动态注入 import map。
+ESM 微应用请使用基于 Chromium 的浏览器（Chrome、Edge 等）或 Safari；Firefox 目前还不支持 ESM 沙箱所需的动态注入 import map。
 
 ## 下一步
 
 - 通过 [`loadMicroApp` props](/zh-CN/api/load-micro-app)向实例传递数据。
-- 在[生命周期与 props](/zh-CN/concepts/lifecycle-and-props)中了解主应用与微应用各自的职责。
+- 在[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)中了解主应用与微应用各自的职责。
 - 在需要时启用[样式隔离](/zh-CN/cookbook/enable-style-isolation)。
 - 在主应用中处理[加载和运行时错误](/zh-CN/cookbook/handle-errors)。
 - 使用 [React](/zh-CN/ecosystem/react) 或 [Vue](/zh-CN/ecosystem/vue) 绑定提供的声明式组件 API。

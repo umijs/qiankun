@@ -73,7 +73,7 @@ type SandboxConfiguration = Pick<
 样式隔离依赖原生 CSS `@scope`，qiankun 不提供兼容实现（polyfill）。不支持 `@scope` 的浏览器无法使用该配置。此外，外部样式表必须允许通过 CORS 获取；请求或转换失败时，qiankun 会忽略对应样式表，不会改为加载未隔离的样式。
 :::
 
-行为与限制参见[样式隔离](/zh-CN/concepts/style-isolation)，操作步骤参见[开启 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation)，实现细节参见[样式隔离实现](/zh-CN/internals/style-isolation)。
+行为与限制参见[样式隔离](/zh-CN/concepts/style-isolation)，操作步骤参见[启用 CSS 样式隔离](/zh-CN/cookbook/enable-style-isolation)，实现细节参见[样式隔离实现](/zh-CN/internals/style-isolation)。
 
 ### sandbox.globals
 
@@ -104,13 +104,13 @@ configuration: {
 
 ### fetch
 
-默认值为 `window.fetch`。qiankun 会在调用方提供的 fetch 基础上检查响应状态是否处于 `200–399` 范围，并为请求失败提供有限的重试额度，同时执行请求去重和缓存。
+默认值为 `window.fetch`。qiankun 会在调用方提供的 fetch 基础上检查响应状态是否处于 `200-399` 范围，并对失败请求进行有限次数的自动重试，同时执行请求去重和缓存。
 
 自定义 `fetch` 通常用于携带身份凭据、添加请求头或使用代理。该函数必须保持标准 Fetch API 的响应格式和流式处理语义；qiankun 提供的校验、重试和缓存仍会生效。
 
 ### streamTransformer
 
-默认值为 `undefined`。配置后，`TransformStream<string, string>` 可自定义 HTML 入口的流式处理过程，执行位置在字节解码之后、qiankun 转换标签之前。该转换器可在流式处理期间修改入口 HTML，例如插入或删除标记。常规应用通常无需配置此项。
+默认值为 `undefined`。配置后，返回的 `TransformStream<string, string>` 会参与 HTML 入口的流式处理，执行位置在字节解码之后、qiankun 转换标签之前。该转换器可在流式处理期间修改入口 HTML，例如插入或删除标记。常规应用通常无需配置此项。
 
 处理流程的详细说明见[流式 HTML 入口实现](/zh-CN/internals/streaming-html-entry)。
 
@@ -157,4 +157,4 @@ v2 的对象形式沙箱配置、`start()` 全局配置和旧版样式隔离选�
 - [registerMicroApps](/zh-CN/api/register-micro-apps)——路由驱动应用通过 `configuration` 设置同一类型。
 - [start](/zh-CN/api/start)——框架启动；注意它只接收 `{ urlRerouteOnly }`。
 - [类型参考](/zh-CN/api/types)——完整的类型定义，包括 `RegistrableApp` 和 `LoadableApp`。
-- [样式隔离](/zh-CN/concepts/style-isolation) 和 [JavaScript 沙箱](/zh-CN/concepts/js-sandbox)——`styleIsolation` 与 `sandbox` 的工作原理和能力边界。
+- [样式隔离](/zh-CN/concepts/style-isolation)和 [JavaScript 隔离](/zh-CN/concepts/js-sandbox)——`styleIsolation` 与 `sandbox` 的工作原理和能力边界。

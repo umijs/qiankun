@@ -1,20 +1,20 @@
 # 应用间共享状态与通信
 
-在 qiankun v3 中，共享状态应由主应用管理，并且只向各微应用提供其所需的数据和接口。大多数场景应优先使用 `loadMicroApp`：通过 `props` 传入初始数据，并保存返回的实例句柄，以便后续更新或卸载微应用。
+在 qiankun v3 中，共享状态由主应用管理，只向各微应用提供其所需的数据和接口。大多数场景优先使用 `loadMicroApp` 即可：通过 `props` 传入初始数据，并保存返回的实例句柄，以便后续更新或卸载微应用。
 
 ::: warning 从 qiankun 2.x 迁移
-qiankun v3 不再提供 `initGlobalState`、`onGlobalStateChange`、`setGlobalState` 和 `MicroAppStateActions`。应改用下文所述的显式通信方式，详见[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
+qiankun v3 不再提供 `initGlobalState`、`onGlobalStateChange`、`setGlobalState` 和 `MicroAppStateActions`。请改用下文所述的显式通信方式，详见[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
 :::
 
 ## 状态归属原则
 
-共享状态的唯一数据源应位于主应用。微应用通过 `props` 接收以下内容：
+把共享状态的唯一数据源放在主应用。微应用通过 `props` 接收以下内容：
 
 - 用于渲染的**数据快照**；
 - 用于上报事件或请求主应用执行操作的**回调函数**；
 - 多个应用需要共享实时状态时，由**主应用管理的状态容器或服务**。
 
-不应将 `window` 用作应用间的状态接口。全局对象无法明确状态归属和清理边界，并且在启用 JavaScript 隔离后也不能作为可靠的通信约定。
+不要把 `window` 当作应用间的状态接口。全局对象无法明确状态归属和清理边界，并且在启用 JavaScript 隔离后也不能作为可靠的通信约定。
 
 ## 优先使用 `loadMicroApp` 和 props
 
@@ -50,13 +50,13 @@ export async function unmount() {
 }
 ```
 
-`props` 中的普通值表示挂载时的数据快照。通过 `props` 传入的函数和对象仍由主应用持有，微应用获得的是对应引用。因此，应仅传入必要的引用，并为其定义范围明确的接口。
+`props` 中的普通值表示挂载时的数据快照。通过 `props` 传入的函数和对象仍由主应用持有，微应用获得的是对应引用。因此，只传入必要的引用，并为它们定义范围明确的接口即可。
 
-主应用不再需要该微应用时，应调用 `await profileApp.unmount()`。仅移除容器或释放句柄变量，不会执行微应用的卸载生命周期。
+主应用不再需要该微应用时，调用 `await profileApp.unmount()`。仅移除容器或释放句柄变量，不会执行微应用的卸载生命周期。
 
 ## 通过 `update` 传递新快照
 
-已挂载的应用需要更新渲染数据时，应通过已保存的句柄，在挂载完成后调用可选的 `update` 方法：
+已挂载的应用需要更新渲染数据时，通过已保存的句柄，在挂载完成后调用可选的 `update` 方法：
 
 ```ts [主应用]
 async function showDarkTheme() {
@@ -80,7 +80,7 @@ export async function update(nextProps) {
 }
 ```
 
-每次更新都应传入微应用所需自定义 `props` 的完整快照，不应依赖 qiankun 将新值与旧对象合并。如果微应用未导出 `update`，实例句柄不会提供更新方法，因此调用时应使用可选链。
+每次更新都应传入完整的自定义 `props` 快照，不要依赖 qiankun 将新值与旧对象合并。如果微应用未导出 `update`，实例句柄不会提供更新方法，因此调用时需使用可选链。
 
 对于连续事件流或高频变化的状态，回调函数或由主应用管理的状态容器通常比反复传递快照更合适。
 
@@ -88,7 +88,7 @@ export async function update(nextProps) {
 
 ### 通过回调接收微应用事件
 
-微应用需要上报事件或请求主应用执行操作时，应传入职责明确的回调函数：
+微应用需要上报事件或请求主应用执行操作时，传入职责明确的回调函数：
 
 ```ts [主应用与微应用]
 const onProfileAction = (action: { type: 'ready' | 'sign-out' }) => {
@@ -106,11 +106,11 @@ export async function mount(props) {
 }
 ```
 
-回调参数应采用便于扩展的结构，并尽可能保持可序列化。回调名称应表达 `onCheckout`、`requestNavigation` 等业务意图，不应向微应用暴露完整的主应用对象。
+回调参数尽量采用便于扩展的结构，并保持可序列化。回调应按业务意图命名，例如 `onCheckout`、`requestNavigation`；不要向微应用暴露完整的主应用对象。
 
 ### 由主应用管理共享状态
 
-多个应用需要共享同一份实时状态时，应在主应用中创建状态容器，并向各应用传入同一个精简接口。可以使用 Redux、Zustand、RxJS 或项目自有的状态方案；qiankun 不限制具体实现。
+多个应用需要共享同一份实时状态时，可以在主应用中创建状态容器，向各应用传入同一个精简接口。可以使用 Redux、Zustand、RxJS 或项目自有的状态方案；qiankun 不限制具体实现。
 
 ```ts [主应用]
 const sessionStore = createSessionStore();
@@ -145,7 +145,7 @@ export async function unmount() {
 
 ## 路由驱动和解耦通信方式
 
-如果应用是否激活完全由 URL 决定，可以使用 `registerMicroApps`。该 API 接收初始 `props`，但不会为各应用返回可用于更新快照的实例句柄；后续状态变化应通过回调函数或主应用管理的状态容器传递。参见 [`registerMicroApps`](/zh-CN/api/register-micro-apps)。
+如果应用是否激活完全由 URL 决定，可以使用 `registerMicroApps`。该 API 接收初始 `props`，但不会为各应用返回可用于更新快照的实例句柄；后续状态变化通过回调函数或主应用管理的状态容器传递。参见 [`registerMicroApps`](/zh-CN/api/register-micro-apps)。
 
 需要降低应用间的直接依赖时，可根据通信范围选择浏览器提供的通道：
 
@@ -154,7 +154,7 @@ export async function unmount() {
 - 通过 `postMessage` 实现跨窗口通信，并严格校验来源；
 - 通过主应用提供的 `EventTarget` 发送无需持久化的同页面事件，并在卸载时移除监听器。
 
-应像定义 `props` 类型一样明确消息结构、版本和归属。浏览器通道适用于特定的通信范围，不应以全局事件总线代替常规状态管理。
+消息结构、版本和归属最好像 `props` 类型一样写明确。浏览器通道各有适用的通信范围，不要用全局事件总线代替常规状态管理。
 
 ## 检查清单
 

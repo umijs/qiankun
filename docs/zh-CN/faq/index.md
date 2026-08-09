@@ -14,11 +14,11 @@
 
 应先在网络（Network）面板中定位首个失败请求，检查最终 URL、响应状态和 `Access-Control-Allow-Origin`。启用样式隔离后，外部 CSS 资源同样需要正确配置 CORS。
 
-## 为什么出现 “more than one entry script” 错误？
+## 为什么出现 `more than one entry script` 错误？
 
-一个 HTML 入口最多只能包含一个带有 `entry` 属性的外部脚本。请勿为多个代码分块手动添加该标记；应由构建插件标记实际入口。相关约定见 [HTML 入口与执行](/zh-CN/concepts/html-entry-loading)。
+一个 HTML 入口最多只能包含一个带有 `entry` 属性的外部脚本。请勿为多个代码分块手动添加该标记；应由构建插件标记实际入口。相关约定见 [HTML 入口](/zh-CN/concepts/html-entry-loading)。
 
-## 为什么出现 “lifecycle functions not found” 错误？
+## 为什么出现 `lifecycle functions not found` 错误？
 
 微应用必须导出 `bootstrap`、`mount` 和 `unmount`。原生 ESM 应用可使用具名导出或默认生命周期对象；Classic 构建则需要正确配置打包输出。
 
@@ -26,7 +26,7 @@
 
 ## 支持 Vite 和原生 ESM 吗？
 
-支持。开启默认沙箱时，`<script type="module">` 会使用原生 ESM 路径。Vite 开发环境中的 HMR 会被关闭，Firefox 和 CSP 还需要额外注意事项，详见[原生 ESM 支持](/zh-CN/concepts/esm-sandbox)。
+支持。开启默认沙箱时，`<script type="module">` 会使用原生 ESM 路径。作为微应用被 qiankun 加载时，Vite 的 HMR 连接会被关闭（独立运行不受影响），开发时需手动刷新。Firefox 和 CSP 还需要额外注意事项，详见[原生 ESM 支持](/zh-CN/concepts/esm-sandbox)。
 
 ## 有内置的全局状态库吗？
 
@@ -36,11 +36,11 @@ v3 不再提供 `initGlobalState`、`setGlobalState` 等内置状态管理 API�
 
 在应用配置中设置 `sandbox: { styleIsolation: true }`。该配置仅限制微应用样式影响容器外部，不能阻止主应用的全局样式影响微应用。该能力还依赖原生 CSS `@scope`，外部样式资源也必须正确配置 CORS。
 
-操作步骤参见[开启样式隔离](/zh-CN/cookbook/enable-style-isolation)；限制与边界参见[样式隔离概念](/zh-CN/concepts/style-isolation)。
+操作步骤参见[启用样式隔离](/zh-CN/cookbook/enable-style-isolation)；限制与边界参见[样式隔离概念](/zh-CN/concepts/style-isolation)。
 
 ## 支持哪些浏览器？
 
-[`isRuntimeCompatible()`](/zh-CN/api/is-runtime-compatible) 仅检查基础运行时所需的 `Proxy`、`TransformStream` 和 `URL.createObjectURL`。原生 ESM 还依赖动态 import map，样式隔离则依赖 CSS `@scope`。应根据项目实际启用的能力查阅对应概念文档。
+完整的「能力 × 浏览器要求」矩阵见[浏览器支持](/zh-CN/guide/browser-support)。简单来说：[`isRuntimeCompatible()`](/zh-CN/api/is-runtime-compatible) 仅检查基础运行时所需的 `Proxy`、`TransformStream` 和 `URL.createObjectURL`；原生 ESM 还依赖动态 import map，样式隔离则依赖 CSS `@scope`，需按项目实际启用的能力分别评估。
 
 ## 为什么重新挂载时不会再次执行入口代码？
 

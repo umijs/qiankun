@@ -99,7 +99,7 @@ The important parts are the public behavior:
 - `mount` renders inside `props.container`, which qiankun provides as an `HTMLElement`.
 - `unmount` destroys the React root and releases references so the application can be mounted again.
 - When qiankun is not present, the final branch renders into the app's own `#root`, preserving standalone development.
-- A native ESM entry uses the module lifecycle exports directly; it does not need to attach them to `window` again.
+- The entry is a native ES module, so qiankun reads the lifecycle exports from it directly; there is no need to attach these functions to `window`.
 
 The default Vite `index.html` already contains `<div id="root"></div>`, so no other HTML change is required.
 

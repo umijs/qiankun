@@ -110,11 +110,11 @@ sequenceDiagram
 
 ## 从 v2 迁移
 
-这两个函数在 v3 中仍为公共 API，并且均只执行一次。有关已移除的全局状态 API 和其他不兼容变更，请参阅 [v3 迁移指南](/zh-CN/cookbook/migrate-from-2x)。
+这两个函数在 v3 中仍为公共 API，并且均只执行一次。有关已移除的全局状态 API 和其他不兼容变更，请参阅[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
 
 ## 相关内容
 
-- [registerMicroApps](/zh-CN/api/register-micro-apps)——注册路由驱动的微应用
-- [start](/zh-CN/api/start)——启动 single-spa 的路由处理并派发生命周期事件
-- [应用间共享状态与通信](/zh-CN/cookbook/communicate-between-apps)——v3 中替代 2.x 全局状态 API 的方案
-- [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)——微应用挂载阶段在完整生命周期中的位置
+- [registerMicroApps](/zh-CN/api/register-micro-apps)——注册路由驱动的微应用。
+- [start](/zh-CN/api/start)——启动 single-spa 的路由处理并派发生命周期事件。
+- [应用间共享状态与通信](/zh-CN/cookbook/communicate-between-apps)——v3 中替代 2.x 全局状态 API 的方案。
+- [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)——微应用挂载阶段在完整生命周期中的位置。

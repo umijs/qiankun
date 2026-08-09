@@ -4,7 +4,7 @@
 
 直接使用 [`loadMicroApp`](/zh-CN/api/load-micro-app) 时无需调用 `start()`。
 
-## 签名
+## 函数签名
 
 ```ts
 function start(opts?: StartOpts): void;
@@ -39,7 +39,7 @@ start();
 
 `loadMicroApp` 会确保运行时已完成初始化，因此按需加载时可直接调用。只有路由注册方案需要显式调用 `start()`。
 
-从 qiankun 2.x 迁移时，不应继续向 `start()` 传入沙箱、预取或 fetch 配置。完整变更见[迁移指南](/zh-CN/cookbook/migrate-from-2x)。
+从 qiankun 2.x 迁移时，不应继续向 `start()` 传入沙箱、预取或 fetch 配置。完整变更见[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
 
 ## 相关内容
 

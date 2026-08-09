@@ -74,7 +74,7 @@ type LifeCycles<T extends ObjectType> = {
 
 `beforeMount` 和 `afterMount` 分别在应用 `mount` 的前后执行，不包含入口加载或 `bootstrap` 阶段；`beforeUnmount` 和 `afterUnmount` 则分别在应用 `unmount` 的前后执行。
 
-应用重新挂载时，每次状态转换都会执行对应的挂载和卸载钩子。`beforeLoad` 属于入口准备阶段，不会在每次挂载时执行。
+应用重新挂载时，每一次挂载/卸载都会再次执行对应钩子。`beforeLoad` 属于入口准备阶段，不会在每次挂载时执行。
 
 ### `beforeLoad` 与网络时机
 
@@ -100,7 +100,7 @@ qiankun 会等待 `beforeLoad` 完成，再使用从入口解析出的生命周�
 
 ## 相关内容
 
-- [`loadMicroApp`](/zh-CN/api/load-micro-app)——按需加载和管理微应用实例
-- [`registerMicroApps`](/zh-CN/api/register-micro-apps)——路由驱动激活
-- [`AppConfiguration`](/zh-CN/api/configuration)——请求与沙箱配置
-- [类型参考](/zh-CN/api/types)——`LoadableApp`、`MicroApp` 及相关类型
+- [`loadMicroApp`](/zh-CN/api/load-micro-app)——按需加载和管理微应用实例。
+- [`registerMicroApps`](/zh-CN/api/register-micro-apps)——路由驱动激活。
+- [`AppConfiguration`](/zh-CN/api/configuration)——请求与沙箱配置。
+- [类型参考](/zh-CN/api/types)——`LoadableApp`、`MicroApp` 及相关类型。

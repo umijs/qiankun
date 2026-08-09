@@ -5,9 +5,9 @@ This is the collection of hands-on recipes for the common jobs you'll do with qi
 ## How to read a recipe
 
 - Each recipe starts from a concrete goal (turn on a capability, get an app ready, handle a situation) rather than from the full surface of an API.
-- Recipes are self-contained. They assume the framework is already installed and that you have a working main app and at least one micro-app. If you don't yet, start with [Getting started](/guide/getting-started) or the [tutorial](/tutorial/index).
+- Recipes are self-contained. They assume the framework is already installed and that you have a working main app and at least one micro-app. If you don't yet, start with [Getting started](/guide/getting-started) or the [tutorial](/tutorial/).
 - Concepts are covered elsewhere. A recipe just points you to the relevant concept page ([the JS sandbox](/concepts/js-sandbox), [style isolation](/concepts/style-isolation), [HTML streaming loading](/concepts/html-entry-loading)) instead of re-explaining it.
-- API details live in the [reference](/api/index). Recipes show an option in a real scenario; the reference lists every field with its type and default.
+- API details live in the [reference](/api/). Recipes show an option in a real scenario; the reference lists every field with its type and default.
 
 ## Recipes at a glance
 
@@ -59,6 +59,6 @@ qiankun 2.x offered `initGlobalState` / `onGlobalStateChange` / `setGlobalState`
 
 ## Related
 
-- [API reference overview](/api/index) — every export and type.
+- [API reference overview](/api/) — every export and type.
 - [Loading a micro-app instance](/concepts/architecture) — the `loadMicroApp` runtime model.
 - [FAQ](/faq/index) — short answers to common questions.

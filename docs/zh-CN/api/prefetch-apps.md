@@ -6,7 +6,7 @@
 qiankun v3 的流式 HTML 入口加载会在处理入口时发现并加载资源。`start()` 也不再接收预取策略。当前性能建议见[优化微应用加载](/zh-CN/cookbook/optimize-loading)。
 :::
 
-## 签名
+## 函数签名
 
 ```ts
 function prefetchApps(
@@ -24,7 +24,7 @@ function prefetchApps(
 
 ## 兼容行为
 
-调用后，该函数会在浏览器空闲时获取入口 HTML，并尝试获取其中引用的外部脚本和样式表。在离线、节省流量或低速网络环境中，预取可能被跳过。单个请求失败也不会使函数同步抛出错误。
+调用后，该函数会在浏览器空闲时获取入口 HTML，并尝试获取其中引用的外部脚本和样式表。在离线、开启省流模式（Save-Data）或低速网络环境中，预取可能被跳过。单个请求失败也不会使函数同步抛出错误。
 
 ```ts
 import { prefetchApps } from 'qiankun';
@@ -37,6 +37,6 @@ prefetchApps([{ name: 'legacy-app', entry: 'https://cdn.example.com/legacy-app/'
 
 ## 相关内容
 
-- [优化微应用加载](/zh-CN/cookbook/optimize-loading)
-- [HTML 入口与执行](/zh-CN/concepts/html-entry-loading)
-- [从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)
+- [优化微应用加载](/zh-CN/cookbook/optimize-loading)。
+- [HTML 入口](/zh-CN/concepts/html-entry-loading)。
+- [从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。

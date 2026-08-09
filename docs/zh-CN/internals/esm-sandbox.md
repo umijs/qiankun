@@ -1,6 +1,6 @@
 # ESM 沙箱实现
 
-> 本页面向维护者说明 ESM 执行引擎的实现细节。面向使用者的行为见[原生 ESM 支持](/zh-CN/concepts/esm-sandbox)，设计取舍见 [ESM 沙箱 RFC](../../rfcs/esm-sandbox.md)。
+> 本页面向维护者说明 ESM 执行引擎的实现细节。面向使用者的行为见[原生 ESM 支持](/zh-CN/concepts/esm-sandbox)，设计取舍见 [ESM 沙箱 RFC](https://github.com/umijs/qiankun/blob/next/docs/rfcs/esm-sandbox.md)。
 
 现代构建工具可以直接输出原生 ES 模块。以 Vite 开发服务器为例，每个源文件都作为独立模块提供，并由浏览器通过 `import` 和 `export` 加载模块图。此类代码无法使用 Classic 沙箱的执行方式：Classic 沙箱通过 `with (this) { … }` 包装源码，并从入口脚本最后写入的全局变量中读取导出；ESM 强制采用严格模式，禁止使用 `with`，生命周期函数也来自模块导出，而非 `window` 属性。
 
@@ -17,7 +17,7 @@ qiankun v3 使用 `EsmSandboxEngine` 处理原生模块图。该引擎复用 [Ja
 | 重新挂载 | 顶层代码不重新执行，复用已解析的生命周期函数 | 顶层代码不重新执行，`import(sameBlob)` 返回相同的模块命名空间对象 |
 | 模块标识 | 直接使用 blob URL | 合成模块说明符 → import map → blob URL |
 
-ESM 引擎不重新实现模块解析，而是组合现有的 [HTML 入口加载器](/zh-CN/concepts/html-entry-loading)、Proxy 隔离膜和浏览器原生模块加载器。其职责集中在资源获取与模块求值之间的源码转换和地址映射。
+ESM 引擎不重新实现模块解析，而是组合现有的 [HTML 入口](/zh-CN/concepts/html-entry-loading)加载器、Proxy 隔离膜和浏览器原生模块加载器。其职责集中在资源获取与模块求值之间的源码转换和地址映射。
 
 ## 启用条件与脚本分发
 
@@ -85,7 +85,7 @@ HTML 流处理阶段与模块求值阶段相互分离：
 2. 如果未标记 `entry`，则使用第一个包含生命周期对象的已执行模块命名空间；其 `.default` 也会参与判断。这适用于 `export default { bootstrap, mount, unmount }` 形式的 Vite 入口。
 3. 如果仍未找到生命周期对象，则使用最后执行的模块命名空间。这适用于 HTML 中仅包含一个 `<script type="module">` 的常见情况。
 
-非入口模块发生异常（包括顶层 `await` 导致的 Promise 拒绝）时，只会输出 `console.error` 并跳过该模块，不会立即使应用加载失败，以兼容 Classic 应用包含非关键模块脚本的情况。显式标记的入口模块执行失败时，入口加载将失败；未显式标记入口时，`loadApp` 会校验已选择的成功模块，如果最终没有有效生命周期，再使应用加载失败。对于路由注册应用，该加载错误会进入 single-spa 全局处理器；对于 `loadMicroApp`，错误会通过实例的生命周期 Promise 返回。
+非入口模块发生异常（包括顶层 `await` 导致的 Promise 拒绝）时，只会输出 `console.error` 并跳过该模块，不会立即使应用加载失败，以兼容 Classic 应用包含非关键模块脚本的情况。显式标记的入口模块执行失败时，入口加载会直接失败；未显式标记入口时，`loadApp` 会校验已选择的成功模块；如果最终仍未找到有效生命周期，此时才判定加载失败。对于路由注册应用，该加载错误会进入 single-spa 全局处理器；对于 `loadMicroApp`，错误会通过实例的生命周期 Promise 返回。
 
 ## `import map` 管理
 
@@ -110,7 +110,7 @@ instanceKey = `__qk_${appName}_${instanceId}_${++instanceSeq}__`;
 
 改写后的 blob 在真实全局作用域中运行，因此未正确处理的裸 `__qk_*` 标识符可能访问真实全局对象。引擎通过以下机制限制此类访问：
 
-- **Realm 访问器**：Realm 访问器用于返回模块对应的隔离膜视图。访问器以当前 qiankun 运行时随机生成的键挂载到 `globalThis`，再通过不可预测的实例令牌索引；该令牌仅写入当前实例的运行时模块 blob。隔离膜还会将 `__qk_*` 属性列入黑名单。用户模块导入以 `__qk_` 开头的合成模块说明符时，引擎会抛出 `QiankunError`。间接访问真实全局对象的表达式（如 `(0, eval)('globalThis')`）仍可能绕过隔离，这与 Classic 沙箱相同，不属于安全保证范围。
+- **Realm 访问器**：用于返回模块对应的隔离膜视图。访问器以当前 qiankun 运行时随机生成的键挂载到 `globalThis`，再通过不可预测的实例令牌索引；该令牌仅写入当前实例的运行时模块 blob。隔离膜还会将 `__qk_*` 属性列入黑名单。用户模块导入以 `__qk_` 开头的合成模块说明符时，引擎会抛出 `QiankunError`。间接访问真实全局对象的表达式（如 `(0, eval)('globalThis')`）仍可能绕过隔离，这与 Classic 沙箱相同，不属于安全保证范围。
 - **重声明检测**：注入的 `const { window, … }` 可能与模块顶层已有的 `const window = …` 冲突，并在解析阶段抛出 `SyntaxError`。由于 import map 条目一经注册便无法撤销，引擎会在更新 import map 前先导入探测 blob。探测 blob 将运行时模块说明符替换为未注册目标，用于暴露重声明错误，同时确保模块不会真正求值。引擎提取发生冲突的标识符，加入排除集合后重新改写模块。
 
 ## Vite 开发环境处理

@@ -52,7 +52,7 @@ type LoadableApp<T extends ObjectType> = {
 
 | 选项 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `sandbox` | `boolean \| SandboxConfiguration` | `true` | 启用基于 Proxy 隔离膜的 [JavaScript 沙箱](/zh-CN/concepts/js-sandbox)和 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)。仅当旧应用必须在真实全局对象中运行时，才应设为 `false`；传入对象则在保持隔离的同时配置沙箱。 |
+| `sandbox` | `boolean \| SandboxConfiguration` | `true` | 启用基于 Proxy 隔离膜的 [JavaScript 隔离](/zh-CN/concepts/js-sandbox)和[原生 ESM 支持](/zh-CN/concepts/esm-sandbox)。仅当旧应用必须在真实全局对象中运行时，才应设为 `false`；传入对象则在保持隔离的同时配置沙箱。 |
 | `fetch` | `typeof window.fetch` | `window.fetch` | 用于请求入口，以及由加载器处理的脚本、模块和样式的自定义 fetch。 |
 | `streamTransformer` | `() => TransformStream<string, string>` | — | 用于自定义 HTML 流式处理过程的可选转换流。 |
 | `nodeTransformer` | `NodeTransformer` | 内部默认值 | 在 `<script>`、`<link>` 和 `<style>` 节点进入真实 DOM 前进行转换。仅高级扩展场景需要覆盖。 |
@@ -93,7 +93,7 @@ type LifeCycles<T extends ObjectType> = {
 };
 ```
 
-细节见 [生命周期钩子](/zh-CN/api/lifecycles)。
+细节见[生命周期钩子](/zh-CN/api/lifecycles)。
 
 ## 返回值
 
@@ -142,8 +142,6 @@ type Parcel = {
 :::
 
 ## 行为 {#behavior}
-
-该函数具有以下行为：
 
 - **调用后立即开始加载和挂载。** 无需预先调用 `start()`；如需等待应用完成渲染，应等待 `mountPromise`。
 - **一个容器在同一时刻只承载一个应用。** 如果连续向同一容器加载应用，后一个实例会等待前一个实例卸载。
@@ -199,5 +197,5 @@ const microApp = loadMicroApp(
 - [start](/zh-CN/api/start)——`loadMicroApp` 会自动调用该函数；路由驱动应用则需要显式调用。
 - [AppConfiguration](/zh-CN/api/configuration)——完整的配置项参考。
 - [生命周期钩子](/zh-CN/api/lifecycles)——`LifeCycles` 钩子的完整说明。
-- [微应用的生命周期与 props](/zh-CN/concepts/lifecycle-and-props)——props 的传递方式与微应用生命周期。
+- [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)——props 的传递方式与微应用生命周期。
 - [运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)——在同一页面运行多个实例的方法。

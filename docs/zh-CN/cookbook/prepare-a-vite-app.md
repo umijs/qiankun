@@ -1,4 +1,4 @@
-# 接入 Vite 微应用
+# 接入 Vite 应用
 
 qiankun v3 以原生 ESM 方式加载 Vite 应用。接入时需要安装 Vite 插件，从入口模块导出微应用生命周期，并由主应用通过 [`loadMicroApp`](/zh-CN/api/load-micro-app) 加载。无需使用 UMD 包装、SystemJS 转换或全局生命周期对象。
 
@@ -48,7 +48,7 @@ export default defineConfig({
 
 :::
 
-该插件不接收参数，主要为 Vite 提供接入 qiankun 所需的两项能力：
+该插件不接收参数，为 Vite 提供接入 qiankun 所需的两项能力：
 
 - 为开发服务器和预览服务器配置 CORS 响应头，使主应用能够获取 HTML 入口和模块依赖；
 - 在生产构建中为唯一的入口模块脚本添加 qiankun 所需的 `entry` 属性。
@@ -193,7 +193,7 @@ await microApp.unmount();
 - JavaScript 模块和动态导入的代码块；
 - CSS、图片以及应用引用的其他资源。
 
-应从主应用页面测试最终资源 URL、重定向、MIME 类型和 CORS 响应头。如果应用请求需要携带 Cookie，则不能将 `Access-Control-Allow-Origin` 配置为通配符；必须同时指定明确的来源、允许携带凭据的响应头，以及主应用的自定义 [`fetch`](/zh-CN/api/configuration)。
+应从主应用页面测试最终资源 URL、重定向、MIME 类型和 CORS 响应头。如果应用请求需要携带 Cookie，则不能将 `Access-Control-Allow-Origin` 配置为通配符；需要同时做三件事：在服务端指定明确的允许来源、返回支持凭据的响应头，并在主应用侧配置自定义 [`fetch`](/zh-CN/api/configuration)。
 
 ## 6. 验证开发与生产环境
 
@@ -209,5 +209,5 @@ await microApp.unmount();
 - [HTML 入口](/zh-CN/concepts/html-entry-loading)——入口约定与 CORS 要求
 - [原生 ESM 支持](/zh-CN/concepts/esm-sandbox)——ESM 的运行行为与兼容性
 - [`@qiankunjs/bundler-plugin`](/zh-CN/ecosystem/bundler-plugin)——插件参考
-- [同时运行多个实例](/zh-CN/cookbook/run-multiple-instances)——重新挂载与清理模式
+- [运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)——重新挂载与清理模式
 - [接入 Webpack 应用](/zh-CN/cookbook/prepare-a-webpack-app)——Classic 脚本构建方案

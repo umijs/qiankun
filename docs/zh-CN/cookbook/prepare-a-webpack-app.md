@@ -36,7 +36,7 @@ module.exports = {
 };
 ```
 
-插件会将构建产物配置为浏览器全局库，并在 `html-webpack-plugin` 生成的 HTML 中标记入口脚本。`output.library`、`output.libraryTarget`、`output.globalObject` 以及 Webpack 4 的 JSONP 函数均应由插件统一配置。
+插件会将构建产物配置为浏览器全局库，并在 `html-webpack-plugin` 生成的 HTML 中标记入口脚本。`output.library`、`output.libraryTarget`、`output.globalObject` 以及 Webpack 4 的 JSONP 函数这几个字段交由插件设置即可，不要在自己的 Webpack 配置里再手动指定。
 
 ### 选择稳定的 `packageName`
 
@@ -47,7 +47,7 @@ module.exports = {
 - `packageName` 用于命名 Webpack 输出的全局库。
 - `loadMicroApp({ name })` 用于标识 qiankun 中的应用。
 
-qiankun 会优先从入口脚本的导出或沙箱捕获的全局对象中解析生命周期。查找 `window[name]` 仅用于兼容旧有方式，不是主要约定。设置 `sandbox: false` 后，沙箱无法再捕获入口导出；除非构建产物自行将生命周期赋给 `window[name]`，否则全局库的属性名（通常由 `packageName` 决定）必须与主应用传入的 `name` 相同，才能使用这一兼容逻辑。
+qiankun 会优先从入口脚本的导出或沙箱捕获的全局对象中解析生命周期。查找 `window[name]` 仅用于兼容旧有方式，不是主要约定。设置 `sandbox: false` 后，沙箱无法再捕获入口导出，qiankun 只能退回 `window[name]` 查找。此时要么构建产物自行把生命周期赋给 `window[name]`，要么让全局库名（通常即 `packageName`）与主应用传入的 `name` 保持一致。
 
 ### 设置运行时公共路径（public path）
 

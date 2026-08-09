@@ -49,7 +49,7 @@ type RegistrableApp<T extends ObjectType> = {
 | `entry` | `string` | 是 | 微应用 HTML 入口的 URL，例如 `//localhost:7100`。v3 仅支持字符串形式的 HTML 地址，不再支持 2.x 的 `{ scripts, styles }` 对象形式。 |
 | `container` | `HTMLElement` | 是 | 用于挂载微应用的实际 DOM 元素，不能使用选择器字符串。可传入框架 ref 对应的节点，或 `document.getElementById(...)` 的返回值。 |
 | `activeRule` | `string \| ActivityFn \| Array<string \| ActivityFn>` | 是 | 应用的激活条件，将直接传递给 single-spa 的 `activeWhen`。字符串表示路径前缀；函数 `(location) => boolean` 可自定义匹配逻辑；数组中的任意一项匹配即可激活应用。 |
-| `props` | `T` | 否 | 每次调用生命周期（`bootstrap`／`mount`／`unmount`／`update`）时传给微应用的数据。 |
+| `props` | `T` | 否 | 每次调用生命周期（`bootstrap`、`mount`、`unmount`、`update`）时传给微应用的数据。 |
 | `loader` | `(loading: boolean) => void` | 否 | 报告加载状态。资源开始加载或应用开始挂载时收到 `true`，挂载完成后收到 `false`。调用方应根据参数值更新当前加载状态，不应根据回调次数推断状态。 |
 | `configuration` | `AppConfiguration` | 否 | 单个应用的运行时配置：`sandbox`、`styleIsolation`、`fetch` 等。见 [AppConfiguration](/zh-CN/api/configuration) 和[应用级配置](#应用级配置)。 |
 
@@ -102,7 +102,7 @@ registerMicroApps(apps, {
 - **按 `name` 去重。** 名称已注册的应用会被忽略，因此多次调用 `registerMicroApps` 注册存在重叠的应用不会产生重复记录。
 - **注册到 single-spa。** 每个新应用都会注册为 single-spa 应用，其中 `activeWhen` 对应 `activeRule`，`customProps` 对应 `props`。
 - **调用 `start()` 后才会激活。** 内部加载器会等待 [start](/zh-CN/api/start) 调用完成，再加载和挂载应用。仅注册应用不会产生可见变化。
-- **`loader` 报告状态，但不保证回调次数。** 加载开始时会收到 `true`，必要时在挂载前可能再次收到 `true`，挂载完成后会收到 `false`。回调应支持重复执行。
+- **`loader` 报告状态，但不保证回调次数。** 加载开始时会收到 `true`，在挂载前可能再次收到 `true`，挂载完成后会收到 `false`。回调应支持重复执行。
 - **`lifeCycles` 作用于整次调用。** 第二个参数中的钩子会作用于本次注册的所有应用。
 
 ```mermaid
@@ -227,14 +227,14 @@ registerMicroApps([
 :::
 
 ::: info 没有内置的全局状态库
-v3 不再提供 `initGlobalState`、`onGlobalStateChange` 和 `setGlobalState`。应用间共享状态时，应通过 `props` 向各应用传递自定义方法或状态容器。见[跨应用共享状态与通信](/zh-CN/cookbook/communicate-between-apps)。
+v3 不再提供 `initGlobalState`、`onGlobalStateChange` 和 `setGlobalState`。应用间共享状态时，应通过 `props` 向各应用传递自定义方法或状态容器。见[应用间共享状态与通信](/zh-CN/cookbook/communicate-between-apps)。
 :::
 
 ## 相关内容
 
-- [start](/zh-CN/api/start)——激活已注册的应用
-- [loadMicroApp](/zh-CN/api/load-micro-app)——按需挂载和管理微应用实例
-- [AppConfiguration](/zh-CN/api/configuration)——单应用的 `sandbox`、`styleIsolation`、`fetch`
-- [生命周期钩子（LifeCycles）](/zh-CN/api/lifecycles)——全局钩子参考
-- [setDefaultMountApp / runAfterFirstMounted](/zh-CN/api/effects)——与默认路由和首次挂载相关的辅助函数
-- [类型参考](/zh-CN/api/types)——`RegistrableApp`、`LoadableApp`、`HTMLEntry`
+- [start](/zh-CN/api/start)——激活已注册的应用。
+- [loadMicroApp](/zh-CN/api/load-micro-app)——按需挂载和管理微应用实例。
+- [AppConfiguration](/zh-CN/api/configuration)——单应用的 `sandbox`、`styleIsolation`、`fetch`。
+- [生命周期钩子（LifeCycles）](/zh-CN/api/lifecycles)——全局钩子参考。
+- [setDefaultMountApp / runAfterFirstMounted](/zh-CN/api/effects)——与默认路由和首次挂载相关的辅助函数。
+- [类型参考](/zh-CN/api/types)——`RegistrableApp`、`LoadableApp`、`HTMLEntry`。
