@@ -9,7 +9,10 @@
   var stream = global.__QK_STREAM__;
   // captured at evaluation time, not at mount: this is the honest "entry arrived" moment
   var entryAt = stream ? stream.now() : 0;
-  var locale = 'en';
+  // adopt the language the server negotiated from Accept-Language for the streamed markup, so
+  // mounting does not flip it; props remain authoritative when they carry a different choice
+  var streamedRoot = document.querySelector('.streaming-app');
+  var locale = streamedRoot && streamedRoot.getAttribute('data-locale') === 'zh' ? 'zh' : 'en';
 
   /**
    * This app's own copy. The host hands `locale` over through qiankun's props channel and
