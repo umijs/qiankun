@@ -32,7 +32,7 @@ Package versions — until qiankun 3.0 stable ships, `rc` is the dist-tag for th
 | Package                               | Dist-tag | Goes in                                       |
 | ------------------------------------- | -------- | --------------------------------------------- |
 | `qiankun`                             | `rc`     | main app `dependencies`                       |
-| `@qiankunjs/react` / `@qiankunjs/vue` | `latest` | main app `dependencies` (optional UI binding) |
+| `@qiankunjs/react` / `@qiankunjs/vue` | `rc`     | main app `dependencies` (optional UI binding) |
 | `@qiankunjs/bundler-plugin`           | `rc`     | sub app `devDependencies`                     |
 
 ## Key facts

@@ -58,6 +58,34 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PNPM_CONFIG_PROVENANCE: true
 
+      # `changeset publish` sends a package to `latest` instead of the prerelease
+      # tag whenever EVERY version already on npm carries that same prerelease
+      # identifier: it reads that as "no regular release yet" and falls back
+      # (getReleaseTag in @changesets/cli). Packages that only ever shipped as
+      # -rc.N — the UI bindings, @qiankunjs/single-spa — therefore freeze their
+      # `rc` tag at the first publish while `latest` tracks the newest build, so
+      # the `@rc` install commands in the docs resolve to a stale version. Point
+      # the tag back at what was just published; a no-op for the packages
+      # changesets already tagged correctly.
+      - name: Re-point the prerelease dist-tag
+        if: steps.changesets.outputs.published == 'true'
+        run: |
+          PRE_MODE=$(jq -r '.mode // "exit"' .changeset/pre.json 2>/dev/null || echo exit)
+          if [ "${PRE_MODE}" != "pre" ]; then
+            echo "Not in prerelease mode (${PRE_MODE}) — publish already owns the tag."
+            exit 0
+          fi
+
+          PRE_TAG=$(jq -r '.tag' .changeset/pre.json)
+          echo '${{ steps.changesets.outputs.publishedPackages }}' \
+            | jq -r '.[] | "\(.name)@\(.version)"' \
+            | while read -r spec; do
+                echo "Tagging ${spec} as ${PRE_TAG}"
+                npm dist-tag add "${spec}" "${PRE_TAG}"
+              done
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+
       - name: Create Unified GitHub Release
         if: steps.changesets.outputs.published == 'true'
         run: |

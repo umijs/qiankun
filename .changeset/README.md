@@ -23,6 +23,11 @@ Commits that touch no package (docs, `e2e/`, `examples/`, root config, CI) produ
 Each sub-package keeps its **own `CHANGELOG.md`** (the changeset default), so npm shows a per-package
 changelog. There is **no root changelog** — the single aggregated log lives only on the GitHub Release.
 
+Private workspace packages (`examples/*`, `benchmark/`, `e2e/`) are excluded from versioning entirely via
+`"privatePackages": false` in `config.json` — without it changesets bumps them and writes them a
+`CHANGELOG.md` just because they depend on a released package, which is pure noise for something that
+never reaches npm. (`config.json` is strict JSON and cannot carry the comment, hence this note.)
+
 ## Release flow (three stages)
 
 **A · Every PR merge — fully automatic.** CI derives changesets from the new commits; the changesets
@@ -38,6 +43,13 @@ before resetting or migrating the release workflow.
 **B · Merge the release PR — fully automatic.** CI runs `changeset publish` to release every changed
 sub-package to npm, then `scripts/generate-release-notes.mjs` aggregates the published packages'
 `CHANGELOG.md` entries into one set of notes and `gh release create` posts a **single GitHub Release**.
+
+Between those two, the workflow re-points the prerelease dist-tag at what it just published. `changeset
+publish` ignores `pre.json`'s tag for a package whose npm versions are _all_ that same prerelease — it
+treats "only ever released as `-rc.N`" as "never regularly released" and publishes to `latest` instead. Left
+alone, such a package's `rc` tag stays frozen at its first publish (this is how `@qiankunjs/react@rc` came to
+mean `0.0.1-rc.2` while `latest` was `0.0.1-rc.14`) and every `@rc` install command in the docs quietly
+resolves to a stale build.
 
 **C · Polish the release — optional, agent-assisted.** After publish, run the
 [`/release-changelog`](../.claude/skills/release-changelog/SKILL.md) skill to refine that GitHub Release's
