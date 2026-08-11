@@ -51,10 +51,12 @@ delays — the way a server-side renderer emits markup as data becomes ready. qi
 the response through the same streaming parser the browser uses for a top-level document, so each
 chunk paints the moment it lands: the critical section is readable while the entry script has not
 even been _requested_ yet. Inline marks stamp every chunk's arrival, and the entry script — flushed
-last on purpose — draws the resulting waterfall. The server also negotiates the initial language
-from `Accept-Language`: streamed content must speak the visitor's language from the first byte,
-because the host's props can only arrive with the entry script, seconds later — props stay
-authoritative once they do (switching the shell's language still reaches the app via `update`). Loaders that buffer the whole entry before
+last on purpose — draws the resulting waterfall. Streamed content speaks the shell's language from
+the first byte: until mount, the app's CSS follows the inherited document language via `:lang()` —
+the shell's `<html lang>`, which only the client knows (it may differ from `Accept-Language` after
+a manual switch) — because the host's props can only arrive with the entry script, seconds later.
+Props stay authoritative once they do (switching the shell's language still reaches the app via
+`update`). Loaders that buffer the whole entry before
 rendering can only show a spinner for that window, which is why this app is also the one whose
 stage swaps the covering veil for a corner tag. Remounts replay from qiankun's warm cache and
 render at once; reload the page to watch the cold stream again.

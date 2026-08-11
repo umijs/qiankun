@@ -12,10 +12,7 @@ export async function onRequestGet(context) {
   // ASSETS bypasses functions, so fetching the canonical URL yields the static file this
   // function shadows. Not `/index.html`: Pages answers the non-canonical spelling with a 308.
   const asset = await context.env.ASSETS.fetch(new URL('/apps/streaming/', context.request.url));
-  // same Accept-Language negotiation as server.mjs: the first chunk must already speak the
-  // visitor's language — the host's props only arrive with the entry script, seconds later
-  const locale = (context.request.headers.get('accept-language') ?? '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
-  const parts = (await asset.text()).replace('data-locale="en"', `data-locale="${locale}"`).split(FLUSH_MARKER);
+  const parts = (await asset.text()).split(FLUSH_MARKER);
 
   const encoder = new TextEncoder();
   const { readable, writable } = new TransformStream();

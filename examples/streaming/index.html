@@ -63,13 +63,18 @@
         line-height: 1.5;
       }
 
-      /* the server renders every phrase twice; the active locale is a root attribute that
-         mount/update flips, so switching language never re-fetches the stream */
-      .streaming-app[data-locale='en'] [lang='zh'] {
+      /* the server renders every phrase twice. Until mount sets data-locale, the active locale
+         follows the inherited document language — inside qiankun the shell's <html lang>,
+         standalone this page's own — so streamed chunks paint in the final language instead of
+         flipping when the entry script lands. mount/update then pin it via data-locale, so
+         switching language never re-fetches the stream. */
+      .streaming-app:not([data-locale]):lang(zh) [lang='en'],
+      .streaming-app[data-locale='zh'] [lang='en'] {
         display: none;
       }
 
-      .streaming-app[data-locale='zh'] [lang='en'] {
+      .streaming-app:not([data-locale]):not(:lang(zh)) [lang='zh'],
+      .streaming-app[data-locale='en'] [lang='zh'] {
         display: none;
       }
 
@@ -258,7 +263,7 @@
     </style>
   </head>
   <body>
-    <div class="streaming-app" data-locale="en">
+    <div class="streaming-app">
       <header class="app-header">
         <span class="accent-dot"></span>
         <h1>

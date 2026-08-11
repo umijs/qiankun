@@ -9,10 +9,13 @@
   var stream = global.__QK_STREAM__;
   // captured at evaluation time, not at mount: this is the honest "entry arrived" moment
   var entryAt = stream ? stream.now() : 0;
-  // adopt the language the server negotiated from Accept-Language for the streamed markup, so
-  // mounting does not flip it; props remain authoritative when they carry a different choice
+  // adopt the language the streamed markup rendered in: until mount pins data-locale, the CSS
+  // follows the inherited document language via :lang(), so read the same source — the nearest
+  // [lang] ancestor (the shell's <html lang> inside qiankun, this page's own standalone). That
+  // way mounting without a locale prop does not flip anything; props stay authoritative.
   var streamedRoot = document.querySelector('.streaming-app');
-  var locale = streamedRoot && streamedRoot.getAttribute('data-locale') === 'zh' ? 'zh' : 'en';
+  var langHolder = streamedRoot && streamedRoot.closest('[lang]');
+  var locale = langHolder && /^zh/i.test(langHolder.getAttribute('lang') || '') ? 'zh' : 'en';
 
   /**
    * This app's own copy. The host hands `locale` over through qiankun's props channel and

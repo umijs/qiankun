@@ -62,12 +62,7 @@ const server = createServer((request, response) => {
   // no Content-Length → Node switches to chunked transfer, and each write() is a flush
   response.writeHead(200, baseHeaders('text/html; charset=utf-8'));
   const parts = chunkedHtml();
-  // SSR-style language negotiation: streamed content must speak the visitor's language from the
-  // first byte — the host's props can only arrive with the entry script, seconds from now, and
-  // repainting on mount would flash the wrong language for the whole stream. Props stay
-  // authoritative once they do arrive (a manual language switch reaches the app via `update`).
-  const locale = (request.headers['accept-language'] ?? '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
-  response.write(parts[0].replace('data-locale="en"', `data-locale="${locale}"`));
+  response.write(parts[0]);
 
   let elapsed = 0;
   const timers = [];
