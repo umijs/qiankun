@@ -38,6 +38,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      # for the sticky preview-URL comment below
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4
@@ -72,11 +74,17 @@ jobs:
         run: npx -y wrangler@4 pages deploy dist-examples --project-name=qiankun-examples --branch=${{ github.head_ref || github.ref_name }} | tee deploy.log
 
       # The alias URL wrangler prints is the stable per-branch one — surface it where a
-      # reviewer looks, instead of making them dig through the deploy log.
+      # reviewer looks: the run summary and, first of all, the PR conversation. One sticky
+      # comment per PR, edited in place on every push instead of piling up.
       - name: Surface the preview URL
         if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           {
             echo "### Preview deployment"
             grep -Eo 'https://[^ ]+\.pages\.dev' deploy.log | sort -u | sed 's/^/- /' || true
-          } >> "$GITHUB_STEP_SUMMARY"
+          } > preview.md
+          cat preview.md >> "$GITHUB_STEP_SUMMARY"
+          gh pr comment "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}" \
+            --body-file preview.md --edit-last --create-if-none
