@@ -254,7 +254,7 @@ export default defineConfig({
 ```
 
 ::: info Scaffolding a new app
-For a new project, `create-qiankun` wires all of this up for you. See [create-qiankun](/ecosystem/create-qiankun) and [Getting started](/guide/getting-started).
+For a new project, the [Agent skill](/ecosystem/agent-skill) lets a coding agent wire all of this up for you. See also [Getting started](/guide/getting-started).
 
 :::
 
@@ -318,7 +318,7 @@ An HTML entry may mark at most one script as the `entry`. Two entry scripts make
 
 v3 raises the minimum environment.
 
-- **Node**: building and running the toolchain (`create-qiankun`, Vite) needs `>=20.19`.
+- **Node**: building and running the toolchain (Vite and friends) needs `>=20.19`.
 - **Browser**: the runtime needs `Proxy`, `TransformStream`, and `URL.createObjectURL`. Style isolation additionally needs native CSS `@scope`.
 
 Before `start()`, gate on capability with the new v3 [`isRuntimeCompatible`](/api/is-runtime-compatible):

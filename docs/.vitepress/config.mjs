@@ -125,7 +125,7 @@ const enSidebar = {
       text: 'Ecosystem',
       items: [
         { text: 'Overview', link: '/ecosystem/' },
-        { text: 'create-qiankun', link: '/ecosystem/create-qiankun' },
+        { text: 'Agent skill', link: '/ecosystem/agent-skill' },
         { text: 'Bundler plugin', link: '/ecosystem/bundler-plugin' },
         { text: '<MicroApp> for React', link: '/ecosystem/react' },
         { text: '<MicroApp> for Vue', link: '/ecosystem/vue' },
@@ -274,7 +274,7 @@ const zhSidebar = {
       text: '生态',
       items: [
         { text: '概览', link: '/zh-CN/ecosystem/' },
-        { text: 'create-qiankun', link: '/zh-CN/ecosystem/create-qiankun' },
+        { text: 'Agent skill', link: '/zh-CN/ecosystem/agent-skill' },
         { text: 'Bundler 插件', link: '/zh-CN/ecosystem/bundler-plugin' },
         { text: 'React <MicroApp>', link: '/zh-CN/ecosystem/react' },
         { text: 'Vue <MicroApp>', link: '/zh-CN/ecosystem/vue' },

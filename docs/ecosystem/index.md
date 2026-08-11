@@ -7,7 +7,6 @@ The qiankun core runtime loads and manages instances through `loadMicroApp`. Off
 | Package | Purpose | Use it when |
 | --- | --- | --- |
 | [`qiankun`](/api/) | Core runtime and `loadMicroApp` API | The host needs direct control over instances |
-| [`create-qiankun`](/ecosystem/create-qiankun) | Vite project scaffolder | Creating a new host or micro-app |
 | [`@qiankunjs/bundler-plugin`](/ecosystem/bundler-plugin) | Vite and Webpack integration | Preparing an existing project as a micro-app |
 | [`@qiankunjs/react`](/ecosystem/react) | React `<MicroApp>` component | React component lifecycles should manage instances |
 | [`@qiankunjs/vue`](/ecosystem/vue) | Vue `<MicroApp>` component | Vue component lifecycles should manage instances |
@@ -24,13 +23,13 @@ All three host styles use the same micro-app HTML Entry, lifecycle, and isolatio
 
 ## Create a new project
 
-The fastest path is the official scaffolder:
+Project creation ships as an [Agent skill](/ecosystem/agent-skill) — install the skill, then let a coding agent generate the projects following the official conventions:
 
 ```bash
-npx create-qiankun@latest
+npx skills add umijs/qiankun
 ```
 
-It can generate a React host that uses `loadMicroApp` by default and a React or Vue micro-app. See [create-qiankun](/ecosystem/create-qiankun) for all options.
+Once installed, describe your goal to the agent; it can generate a host using `loadMicroApp` or the `MicroApp` component, and React or Vue micro-apps. Without an agent, follow the [tutorial](/tutorial/) to build the setup by hand.
 
 ## Prepare an existing micro-app
 

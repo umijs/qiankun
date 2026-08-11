@@ -254,7 +254,7 @@ export default defineConfig({
 ```
 
 ::: info 创建新应用
-对于新项目，`create-qiankun` 可生成所需配置。详见 [create-qiankun](/zh-CN/ecosystem/create-qiankun) 和[快速上手](/zh-CN/guide/getting-started)。
+对于新项目，可通过 [Agent skill](/zh-CN/ecosystem/agent-skill) 让 coding agent 生成所需配置。另见[快速上手](/zh-CN/guide/getting-started)。
 
 :::
 
@@ -318,7 +318,7 @@ Vue 的实现结构相同：在 `mount` 中调用 `createApp(...).mount(...)`，
 
 v3 提高了最低环境要求。
 
-- **Node**：构建和运行 `create-qiankun`、Vite 等工具需要 Node `>=20.19`。
+- **Node**：构建和运行 Vite 等工具链需要 Node `>=20.19`。
 - **浏览器**：运行时需要支持 `Proxy`、`TransformStream` 和 `URL.createObjectURL`。样式隔离还要求浏览器原生支持 CSS `@scope`。
 
 调用 `start()` 之前，应先使用 v3 新增的 [`isRuntimeCompatible`](/zh-CN/api/is-runtime-compatible) 检查所需的运行时能力：

@@ -3,7 +3,7 @@
 qiankun v3 以原生 ESM 方式加载 Vite 应用。接入时需要安装 Vite 插件，从入口模块导出微应用生命周期，并由主应用通过 [`loadMicroApp`](/zh-CN/api/load-micro-app) 加载。无需使用 UMD 包装、SystemJS 转换或全局生命周期对象。
 
 ::: tip 创建新应用
-[create-qiankun](/zh-CN/ecosystem/create-qiankun) 可生成所需配置。本指南主要用于改造已有的 React 或 Vue 应用。
+通过 [Agent skill](/zh-CN/ecosystem/agent-skill) 可让 coding agent 生成所需配置。本指南主要用于改造已有的 React 或 Vue 应用。
 :::
 
 ## 1. 安装并配置插件

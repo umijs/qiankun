@@ -17,8 +17,8 @@ qiankun/
 │   ├── shared/          # Transpilers, fetch-utils, module-resolver, ESM-sandbox engine → packages/shared/AGENTS.md
 │   ├── single-spa/      # Vendored single-spa fork (@qiankunjs/single-spa, upstream 7.0 @ ce0f925a) → packages/single-spa/README.md
 │   ├── ui-bindings/     # <MicroApp> components: react/ vue/ shared/ (dogfooded by examples/{main,vue-host})
-│   ├── bundler-plugin/  # Webpack(4/5) + Vite plugins: mark entry script, fix output library
-│   └── create-qiankun/  # `npm create qiankun` scaffolder (React/Vue, Vite)
+│   └── bundler-plugin/  # Webpack(4/5) + Vite plugins: mark entry script, fix output library
+├── skills/              # Agent skills (installed by users via `npx skills add umijs/qiankun`) — content, not code: no build/publish
 ├── e2e/                 # Playwright, runs against BUILT dist → e2e/README.md
 ├── examples/            # Runnable demos: two hosts (main = @qiankunjs/react, vue-host = @qiankunjs/vue) + react/vue/purehtml/webpack
 └── docs/                # VitePress site (docs/rfcs holds design RFCs)
@@ -102,7 +102,7 @@ TypeScript is strict + type-checked (`typescript-eslint`'s type-checked flat con
 
 Build/release:
 
-- Vite 8 builds browser package JavaScript as ESM+CJS, while `tsc` emits declarations; the `create-qiankun` Node CLI is CJS-only. Package entry fields and subpath exports must point at the corresponding `dist` outputs.
+- Vite 8 builds browser package JavaScript as ESM+CJS, while `tsc` emits declarations. Package entry fields and subpath exports must point at the corresponding `dist` outputs.
 - TypeScript 7 is installed as `@typescript/native` and owns the `tsc` binary. The `typescript` dependency intentionally aliases `@typescript/typescript6` because TypeScript 7.0 has no programmatic API yet and tools such as `typescript-eslint` and `vue-tsc` still require that compatibility API.
 - Versioning via **changesets**, but changesets are **auto-derived from Conventional Commits** in CI (`scripts/generate-changesets.mjs`) — do **not** hand-write `.changeset/*.md`. Just land a well-formed conventional commit (`feat`/`fix`/`feat!`…); the release job maps changed files → packages and infers the bump. Each sub-package keeps its own `CHANGELOG.md` (changeset default, visible on npm); on publish `scripts/generate-release-notes.mjs` aggregates them into **one GitHub Release**, which can be polished after the fact via the `/release-changelog` skill (`gh release edit`). Full flow: `.changeset/README.md`.
 - Conventional commits enforced by commitlint (`feat:`, `fix:`, `feat(esm-sandbox):`, …).

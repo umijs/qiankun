@@ -54,7 +54,7 @@ export default defineConfig({
               test: {
                 name: 'packages',
                 include: ['packages/**/*.{test,spec}.{ts,tsx}'],
-                exclude: ['packages/create-qiankun/tests/e2e*.test.ts', 'packages/single-spa/**', '**/node_modules/**'],
+                exclude: ['packages/single-spa/**', '**/node_modules/**'],
               },
             },
             // the vendored single-spa specs need jest-flavored settings; they live in the

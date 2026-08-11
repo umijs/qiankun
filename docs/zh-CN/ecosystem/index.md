@@ -7,7 +7,6 @@ qiankun 核心运行时通过 `loadMicroApp` 加载和管理微应用实例。�
 | 包 | 用途 | 适用场景 |
 | --- | --- | --- |
 | [`qiankun`](/zh-CN/api/) | 核心运行时和 `loadMicroApp` API | 主应用需要直接管理实例生命周期时 |
-| [`create-qiankun`](/zh-CN/ecosystem/create-qiankun) | Vite 项目脚手架 | 创建新的主应用或微应用时 |
 | [`@qiankunjs/bundler-plugin`](/zh-CN/ecosystem/bundler-plugin) | Vite 与 Webpack 构建集成 | 将现有项目改造为微应用时 |
 | [`@qiankunjs/react`](/zh-CN/ecosystem/react) | React `<MicroApp>` 组件 | 由 React 组件生命周期管理实例时 |
 | [`@qiankunjs/vue`](/zh-CN/ecosystem/vue) | Vue `<MicroApp>` 组件 | 由 Vue 组件生命周期管理实例时 |
@@ -24,13 +23,13 @@ qiankun 核心运行时通过 `loadMicroApp` 加载和管理微应用实例。�
 
 ## 创建新项目
 
-创建新项目时，可使用官方脚手架：
+qiankun 以 [Agent skill](/zh-CN/ecosystem/agent-skill) 的形式提供项目创建能力——安装 skill 后，由 coding agent 按官方约定生成项目：
 
 ```bash
-npx create-qiankun@latest
+npx skills add umijs/qiankun
 ```
 
-该命令可生成默认使用 `loadMicroApp` 的 React 主应用，以及 React 或 Vue 微应用。完整参数参见 [create-qiankun](/zh-CN/ecosystem/create-qiankun)。
+安装后向 agent 描述目标即可，它能生成使用 `loadMicroApp` 或 `MicroApp` 组件的主应用，以及 React 或 Vue 微应用。不使用 agent 时，可按[教程](/zh-CN/tutorial/)手动搭建。
 
 ## 接入已有微应用
 

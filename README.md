@@ -72,10 +72,10 @@ Qiankun inherits the fundamentals of [single-spa](https://github.com/single-spa/
 >
 > v3 ships under the `rc` tag while `latest` still points at 2.x. Install with an explicit `@rc` to get it.
 
-The fastest path is the scaffolder, which generates a host or a micro app wired up correctly:
+The fastest path is the agent skill — install it, then ask your coding agent (Claude Code, Cursor, …) to scaffold a host or a micro app wired up correctly:
 
 ```shell
-npm create qiankun@latest
+npx skills add umijs/qiankun
 ```
 
 Or add qiankun to an existing host application:
@@ -149,7 +149,6 @@ This builds the workspace packages and starts every app in parallel — open htt
 | [@qiankunjs/vue](packages/ui-bindings/vue) | [![vue version](https://img.shields.io/npm/v/@qiankunjs/vue/latest.svg?style=flat-square)](packages/ui-bindings/vue/CHANGELOG.md) | `<MicroApp />` for Vue |
 | [@qiankunjs/ui-shared](packages/ui-bindings/shared) | [![ui-shared version](https://img.shields.io/npm/v/@qiankunjs/ui-shared/latest.svg?style=flat-square)](packages/ui-bindings/shared/CHANGELOG.md) | Shared internals of the UI bindings |
 | [@qiankunjs/bundler-plugin](packages/bundler-plugin) | [![bundler-plugin version](https://img.shields.io/npm/v/@qiankunjs/bundler-plugin/rc.svg?style=flat-square)](packages/bundler-plugin/CHANGELOG.md) | webpack 4/5 and Vite plugins for micro apps |
-| [create-qiankun](packages/create-qiankun) | [![create-qiankun version](https://img.shields.io/npm/v/create-qiankun/latest.svg?style=flat-square)](packages/create-qiankun/CHANGELOG.md) | Project scaffolder |
 
 ## 📖 Documentation
 

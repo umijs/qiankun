@@ -72,10 +72,10 @@ qiankun 继承了 [single-spa](https://github.com/single-spa/single-spa) 的基�
 >
 > v3 目前发布在 `rc` 标签上，npm 的 `latest` 仍指向 2.x。安装时需显式指定 `@rc`。
 
-最快的方式是使用脚手架，直接生成配置完整的主应用或微应用：
+最快的方式是使用 agent skill——安装后，让你的 coding agent（Claude Code、Cursor 等）生成配置完整的主应用或微应用：
 
 ```shell
-npm create qiankun@latest
+npx skills add umijs/qiankun
 ```
 
 也可以在现有主应用中直接安装：
@@ -149,7 +149,6 @@ pnpm start:example
 | [@qiankunjs/vue](packages/ui-bindings/vue) | [![vue version](https://img.shields.io/npm/v/@qiankunjs/vue/latest.svg?style=flat-square)](packages/ui-bindings/vue/CHANGELOG.md) | Vue 版 `<MicroApp />` |
 | [@qiankunjs/ui-shared](packages/ui-bindings/shared) | [![ui-shared version](https://img.shields.io/npm/v/@qiankunjs/ui-shared/latest.svg?style=flat-square)](packages/ui-bindings/shared/CHANGELOG.md) | UI 绑定的共享内部实现 |
 | [@qiankunjs/bundler-plugin](packages/bundler-plugin) | [![bundler-plugin version](https://img.shields.io/npm/v/@qiankunjs/bundler-plugin/rc.svg?style=flat-square)](packages/bundler-plugin/CHANGELOG.md) | 微应用侧的 webpack 4/5 与 Vite 插件 |
-| [create-qiankun](packages/create-qiankun) | [![create-qiankun version](https://img.shields.io/npm/v/create-qiankun/latest.svg?style=flat-square)](packages/create-qiankun/CHANGELOG.md) | 项目脚手架 |
 
 ## 📖 文档
 

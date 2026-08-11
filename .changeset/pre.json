@@ -9,8 +9,7 @@
     "@qiankunjs/react": "0.0.1",
     "@qiankunjs/bundler-plugin": "0.0.1",
     "@qiankunjs/ui-shared": "0.0.0",
-    "@qiankunjs/vue": "0.0.0",
-    "create-qiankun": "0.0.0"
+    "@qiankunjs/vue": "0.0.0"
   },
   "changesets": []
 }

@@ -1,21 +1,26 @@
 # Getting started
 
-This guide uses the official `create-qiankun` scaffolder to run a main app and a micro-app. The main app controls the micro-app directly with `loadMicroApp`.
+This guide creates and runs a main app and a micro-app with the official [Agent skill](/ecosystem/agent-skill). The main app controls the micro-app directly with `loadMicroApp`.
 
 You need Node.js `>=20.19`, npm, and a modern Chromium-based browser or Safari (see [Browser support](/guide/browser-support) for the full requirements).
 
 ## Create and run the applications
 
-From an empty working directory, create the two projects:
+From an empty working directory, install the skill, then have your coding agent (Claude Code, Cursor, …) create the two projects:
 
 ```bash
 mkdir qiankun-demo
 cd qiankun-demo
-npx create-qiankun@latest main-app --type main
-npx create-qiankun@latest sub-app --template react-ts
+npx skills add umijs/qiankun
 ```
 
-Start them in two terminals, both opened from `qiankun-demo`:
+Describe the goal to the agent, for example:
+
+> Use qiankun to create a React + TypeScript main app named main-app (port 7099, loading the micro-app with loadMicroApp) and a React + TypeScript micro-app named sub-app (port 7101)
+
+If you are not working with an agent, follow the [tutorial](/tutorial/) to build the same structure by hand — the rest of this page applies either way.
+
+Once the projects exist, start them in two terminals, both opened from `qiankun-demo`:
 
 ::: code-group
 
@@ -37,7 +42,7 @@ npm run dev
 
 Open **http://localhost:7099**. The page now contains the independently served micro-app. You can also open **http://localhost:7101** to confirm that the micro-app still runs by itself.
 
-For interactive prompts, Vue templates, pnpm or Yarn alternatives, and generated-file details, see the [`create-qiankun` reference](/ecosystem/create-qiankun).
+For the skill's installation details, coverage, and what it generates, see [Agent skill](/ecosystem/agent-skill).
 
 ::: warning Firefox and ESM applications
 The ESM sandbox depends on dynamically injected import maps, which Firefox does not currently support. Use a Chromium-based browser or Safari for this guide. Classic micro-apps are unaffected.
@@ -100,7 +105,7 @@ The standalone branch renders the same application when it is opened directly on
 
 ## Next steps
 
-- Build the same setup without a scaffolder in the [manual tutorial](/tutorial/).
+- Build the same setup step by step in the [tutorial](/tutorial/).
 - Learn the application contract in [Lifecycle and props](/concepts/lifecycle-and-props).
 - Prepare an existing [Vite](/cookbook/prepare-a-vite-app) or [Webpack](/cookbook/prepare-a-webpack-app) application.
 - See every option and method in the [`loadMicroApp` API](/api/load-micro-app).

@@ -11,6 +11,7 @@
 /cookbook/style-isolation /cookbook/enable-style-isolation 301
 /concepts /concepts/architecture 301
 /concepts/ /concepts/architecture 301
+/ecosystem/create-qiankun /ecosystem/agent-skill 301
 
 /zh-CN/guide /zh-CN/guide/what-is-qiankun 301
 /zh-CN/guide/ /zh-CN/guide/what-is-qiankun 301
@@ -21,3 +22,4 @@
 /zh-CN/cookbook/style-isolation /zh-CN/cookbook/enable-style-isolation 301
 /zh-CN/concepts /zh-CN/concepts/architecture 301
 /zh-CN/concepts/ /zh-CN/concepts/architecture 301
+/zh-CN/ecosystem/create-qiankun /zh-CN/ecosystem/agent-skill 301

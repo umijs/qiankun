@@ -3,7 +3,7 @@
 qiankun v3 loads Vite applications as native ESM. The integration has one path: install the Vite plugin, export the micro-app lifecycles from the entry module, and load the app from the host with [`loadMicroApp`](/api/load-micro-app). No UMD wrapper, SystemJS transform, or global lifecycle object is needed.
 
 ::: tip Starting a new app?
-[create-qiankun](/ecosystem/create-qiankun) generates this setup for you. This guide is for adapting an existing React or Vue application.
+The [Agent skill](/ecosystem/agent-skill) lets a coding agent generate this setup for you. This guide is for adapting an existing React or Vue application.
 :::
 
 ## 1. Install and configure the plugin

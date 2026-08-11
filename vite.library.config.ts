@@ -147,7 +147,6 @@ export default defineConfig(() => {
   const packageRoot = process.cwd();
   const manifest = readManifest(packageRoot);
   const sourceRoot = resolve(packageRoot, 'src');
-  const isNodeCli = manifest.name === 'create-qiankun';
 
   generatePackageSources(packageRoot, manifest);
 
@@ -198,36 +197,28 @@ export default defineConfig(() => {
       emptyOutDir: true,
       lib: {
         entry: entries,
-        ...(isNodeCli ? { formats: ['cjs'] as ['cjs'] } : {}),
       },
       minify: false,
       outDir: 'dist',
       reportCompressedSize: false,
-      sourcemap: !isNodeCli,
-      target: isNodeCli ? 'node22' : browserTarget,
+      sourcemap: true,
+      target: browserTarget,
       rolldownOptions: {
         external: createExternalMatcher(manifest),
         treeshake: false,
-        output: isNodeCli
-          ? {
-              ...commonOutput,
-              dir: 'dist',
-              exports: 'named' as const,
-              format: 'cjs' as const,
-            }
-          : [
-              {
-                ...commonOutput,
-                dir: 'dist/esm',
-                format: 'es' as const,
-              },
-              {
-                ...commonOutput,
-                dir: 'dist/cjs',
-                exports: 'named' as const,
-                format: 'cjs' as const,
-              },
-            ],
+        output: [
+          {
+            ...commonOutput,
+            dir: 'dist/esm',
+            format: 'es' as const,
+          },
+          {
+            ...commonOutput,
+            dir: 'dist/cjs',
+            exports: 'named' as const,
+            format: 'cjs' as const,
+          },
+        ],
       },
     },
   };
