@@ -1,6 +1,6 @@
 {
   "name": "@qiankunjs/single-spa",
-  "version": "0.0.1-rc.0",
+  "version": "0.1.0-rc.1",
   "description": "qiankun's vendored fork of single-spa (7.0 branch @ ce0f925a, v7.0.0-beta.13)",
   "repository": {
     "type": "git",

@@ -1,5 +1,32 @@
 # qiankun
 
+## 3.0.0-rc.22
+
+### Minor Changes
+
+- feat(qiankun): container occupancy gate + sandbox pipeline-mark internalization (#3169)
+- feat(sandbox): align Compartment module loading (#3159)
+- feat(qiankun): expose compartment sandbox configuration and plugins (#3160)
+- feat(sandbox): expose standalone sandbox controller (#3161)
+- feat: vendor single-spa 7.0 as @qiankunjs/single-spa (RFC #3168) (#3170)
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @qiankunjs/loader@0.1.0-rc.22
+  - @qiankunjs/sandbox@0.1.0-rc.18
+  - @qiankunjs/shared@0.1.0-rc.14
+  - @qiankunjs/single-spa@0.1.0-rc.1
+
 ## 3.0.0-rc.21
 
 ### Patch Changes

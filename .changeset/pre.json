@@ -9,7 +9,20 @@
     "@qiankunjs/react": "0.0.1",
     "@qiankunjs/bundler-plugin": "0.0.1",
     "@qiankunjs/ui-shared": "0.0.0",
-    "@qiankunjs/vue": "0.0.0"
+    "@qiankunjs/vue": "0.0.0",
+    "@qiankunjs/single-spa": "0.0.1-rc.0"
   },
-  "changesets": []
+  "changesets": [
+    "auto-11b8442",
+    "auto-1a25196",
+    "auto-34317aa",
+    "auto-4e9ce5f",
+    "auto-5576442",
+    "auto-59d9204",
+    "auto-7eeefd0",
+    "auto-8bec431",
+    "auto-945fa02",
+    "auto-9d70d5e",
+    "auto-dc274f8"
+  ]
 }

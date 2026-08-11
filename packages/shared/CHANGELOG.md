@@ -1,5 +1,17 @@
 # @qiankunjs/shared
 
+## 0.1.0-rc.14
+
+### Minor Changes
+
+- feat(qiankun): container occupancy gate + sandbox pipeline-mark internalization (#3169)
+- feat(sandbox): align Compartment module loading (#3159)
+
+### Patch Changes
+
+- fix: make preloads consumable, unclog the stylesheet ledger, and stabilize the perf gate (#3163)
+- refactor(sandbox): converge dynamic DOM attribution on the insertion point (#3165)
+
 ## 0.0.1-rc.13
 
 ### Patch Changes

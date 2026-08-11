@@ -1,5 +1,27 @@
 # @qiankunjs/loader
 
+## 0.1.0-rc.22
+
+### Minor Changes
+
+- feat(qiankun): container occupancy gate + sandbox pipeline-mark internalization (#3169)
+- feat(sandbox): align Compartment module loading (#3159)
+
+### Patch Changes
+
+- refactor(sandbox): converge dynamic DOM attribution on the insertion point (#3165)
+- fix(loader): stream HTML chunks incrementally with benchmark coverage (#3145)
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @qiankunjs/sandbox@0.1.0-rc.18
+  - @qiankunjs/shared@0.1.0-rc.14
+
 ## 0.0.1-rc.21
 
 ### Patch Changes

@@ -1,5 +1,26 @@
 # @qiankunjs/sandbox
 
+## 0.1.0-rc.18
+
+### Minor Changes
+
+- feat(qiankun): container occupancy gate + sandbox pipeline-mark internalization (#3169)
+- feat(sandbox): align Compartment module loading (#3159)
+- feat(qiankun): expose compartment sandbox configuration and plugins (#3160)
+- feat(sandbox): expose standalone sandbox controller (#3161)
+
+### Patch Changes
+
+- refactor(sandbox): align Compartment global and classic-script semantics (#3155)
+- fix(sandbox): lazily mirror globals and expand performance benchmarks (#3148)
+- fix: make preloads consumable, unclog the stylesheet ledger, and stabilize the perf gate (#3163)
+- refactor(sandbox): converge dynamic DOM attribution on the insertion point (#3165)
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @qiankunjs/shared@0.1.0-rc.14
+
 ## 0.0.1-rc.17
 
 ### Patch Changes
