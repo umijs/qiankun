@@ -33,9 +33,9 @@
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
     "ci": "pnpm run build && pnpm run eslint && pnpm run prettier:check",
-    "ci:publish": "changeset publish",
+    "ci:publish": "node scripts/publish-packages.mjs",
     "test": "pnpm run test:release-scripts && pnpm -r run test",
-    "test:release-scripts": "node --test scripts/sanitize-pre-state.test.mjs",
+    "test:release-scripts": "node --test scripts/*.test.mjs",
     "test:e2e": "pnpm run build && pnpm --filter @qiankunjs/e2e run test:e2e",
     "prepare": "husky",
     "clean": "rimraf --glob node_modules 'packages/*/node_modules' 'packages/ui-bindings/*/node_modules' 'examples/*/node_modules' e2e/node_modules benchmark/node_modules"

@@ -44,12 +44,11 @@ before resetting or migrating the release workflow.
 sub-package to npm, then `scripts/generate-release-notes.mjs` aggregates the published packages'
 `CHANGELOG.md` entries into one set of notes and `gh release create` posts a **single GitHub Release**.
 
-Between those two, the workflow re-points the prerelease dist-tag at what it just published. `changeset
-publish` ignores `pre.json`'s tag for a package whose npm versions are _all_ that same prerelease — it
-treats "only ever released as `-rc.N`" as "never regularly released" and publishes to `latest` instead. Left
-alone, such a package's `rc` tag stays frozen at its first publish (this is how `@qiankunjs/react@rc` came to
-mean `0.0.1-rc.2` while `latest` was `0.0.1-rc.14`) and every `@rc` install command in the docs quietly
-resolves to a stale build.
+In prerelease mode, `scripts/publish-packages.mjs` passes `pre.json`'s tag explicitly to `changeset
+publish`. This overrides Changesets' `only-pre` fallback, which otherwise sends a package to `latest` when
+every published version already has the same prerelease identifier. Publishing with `--tag rc` keeps the
+documented `@rc` install commands current and remains compatible with npm Trusted Publishing; outside
+prerelease mode, the script leaves the tag unspecified so stable releases continue to use `latest`.
 
 **C · Polish the release — optional, agent-assisted.** After publish, run the
 [`/release-changelog`](../.claude/skills/release-changelog/SKILL.md) skill to refine that GitHub Release's
