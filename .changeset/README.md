@@ -44,11 +44,16 @@ before resetting or migrating the release workflow.
 sub-package to npm, then `scripts/generate-release-notes.mjs` aggregates the published packages'
 `CHANGELOG.md` entries into one set of notes and `gh release create` posts a **single GitHub Release**.
 
-In prerelease mode, `scripts/publish-packages.mjs` passes `pre.json`'s tag explicitly to `changeset
-publish`. This overrides Changesets' `only-pre` fallback, which otherwise sends a package to `latest` when
-every published version already has the same prerelease identifier. Publishing with `--tag rc` keeps the
-documented `@rc` install commands current and remains compatible with npm Trusted Publishing; outside
-prerelease mode, the script leaves the tag unspecified so stable releases continue to use `latest`.
+In prerelease mode, `scripts/publish-packages.mjs` runs `changeset publish --tag <pre.json tag>` with
+`pre.json` set aside for the duration of the publish, then restores it. Both halves are needed: Changesets
+refuses `--tag` outright while the pre-state says `mode: "pre"`, yet its own tag choice in that mode sends a
+package to `latest` whenever every version already on npm carries that same prerelease identifier (the
+`only-pre` fallback — how `@qiankunjs/react@rc` came to mean `0.0.1-rc.2` while `latest` was `0.0.1-rc.14`).
+Re-pointing the tag afterwards with `npm dist-tag add` is not an option either: it needs a long-lived npm
+token, which trusted publishing deliberately does not provide. The pre-state affects nothing else in the
+publish flow (which packages get published, git tagging, provenance), so hiding it is what makes the
+configured tag apply to every package. Outside prerelease mode, the script leaves the tag unspecified so
+stable releases continue to use `latest`.
 
 **C · Polish the release — optional, agent-assisted.** After publish, run the
 [`/release-changelog`](../.claude/skills/release-changelog/SKILL.md) skill to refine that GitHub Release's
