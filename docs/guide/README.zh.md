@@ -69,4 +69,4 @@ TODO
 - 🛡​ **样式隔离**，确保微应用之间样式互相不干扰。
 - 🧳 **JS 沙箱**，确保微应用之间 全局变量/事件 不冲突。
 - ⚡️ **资源预加载**，在浏览器空闲时间预加载未打开的微应用资源，加速微应用打开速度。
-- 🔌 **umi 插件**，提供了 [@umijs/plugin-qiankun](https://github.com/umijs/plugins/tree/master/packages/plugin-qiankun) 供 umi 应用一键切换成微前端架构系统。
+- 🔌 **umi 插件**，提供了 [@umijs/plugin-qiankun](https://github.com/umijs/plugins/tree/master/packages/plugin-qiankun) 供 umi 应用一键切换成微前端架构系统。...
