@@ -336,3 +336,4 @@ if ($http_custom_referer != "main") {
 
 1. `jsSandbox` 配置去掉，改为 `sandbox` ，可选值也修改了。
 2. 新增了 `getPublicPath` 和 `getTemplate` ，用于替代`RegisterMicroAppsOpts`。
+...
