@@ -5,7 +5,7 @@
 - **Created**: 2026-07-18
 - **Last Revision**: 2026-07-18（实现与验收完成）
 - **Target Release**: `@qiankunjs/sandbox` v3.x
-- **Tracking Issue**: TBD
+- **Tracking Issue**: [PR #3161](https://github.com/umijs/qiankun/pull/3161)
 - **Depends on**: [Compartment Alignment RFC](./compartment-alignment.md)（Accepted，本 RFC 是其延伸阶段⑤）
 
 ## Summary

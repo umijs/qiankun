@@ -1,10 +1,10 @@
 # RFC: ESM Sandbox for qiankun
 
-- **Status**: Draft（v1 已实现，见 `rfc/esm-sandbox` 分支）
+- **Status**: Accepted
 - **Author**: qiankun maintainers
 - **Created**: 2026-04-18
 - **Target Release**: qiankun v3.x
-- **Tracking Issue**: TBD
+- **Tracking Issue**: [PR #3133](https://github.com/umijs/qiankun/pull/3133)
 - **Last Revision**: 2026-07-18（随 Compartment Alignment RFC 更新当前接口：ESM 机制收进 `Compartment` 的 module hooks / descriptor 门面；`extraGlobals` 接入应用配置；内部 realm registry 更名为 instance registry；lexer 切至 CSP-safe 的 `es-module-lexer/js` 入口；document credentials 通过上下文专属 runtime bridge 贯穿普通动态 import 图；synthetic key 加入跨 qiankun 副本随机 nonce；dispose 的全部异步边界改为 fail-closed；预编译 `ModuleSource` 只按结构化 import span 重定位。下文保留 v1 设计过程中的 realm 术语，用于解释当时的安全模型。）
 - **Previous Implementation Revision**: 2026-07-04（第三轮修订，随 v1 实现 + code review 落地：realm 访问器改为**每副本随机 key + 不可猜 token** 索引（堵死裸标识符/proxy/`with` 三条越权路径，并顺带解决多 qiankun 副本抢占单例崩溃）；`dispose` 覆盖全部 blob（含 inline/rebuilt）并接入 single-spa `unload`；入口选取改为"显式 entry 优先 → 生命周期 namespace → 最后执行"且非入口模块失败不炸整个 app、支持 `export default` 生命周期；typed import（JSON/CSS）走 §14 passthrough 而非硬崩；probe 去掉 120 字窗口改为"解构集非空 ∧ 含声明关键字"不漏检；动态 import 用 lexer `imp.d` 定位括号并整体覆盖 `[ss,se)` 修正注释击穿/尾逗号；fetch 透传 `crossorigin` credentials；import-bindings/importmap 解析加注释剥离与幂等；membrane 复用 `esmInternalPrefix` 且不拷贝 `__qk_*` 到 target）
 - **Second Revision**: 2026-07-04（注入引导改为 runtime 模块 import（消除 CSP `unsafe-eval` 依赖与 TDZ）、解构白名单按需过滤（标识符扫描 ∩ 基集）、顶层重名 SyntaxError 防护、共享依赖收缩为 source 级、既有 sourceMappingURL 偏移合并）

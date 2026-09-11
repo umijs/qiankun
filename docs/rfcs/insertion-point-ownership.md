@@ -1,10 +1,10 @@
 # RFC: Insertion-Point Ownership for Dynamic DOM Attribution
 
-- **Status**: Draft(已实现,见本分支:标记拆分 → 归属收敛 + 创建者机制退役 + CSSOM 位置解析,附归属契约单测)
+- **Status**: Accepted
 - **Author**: qiankun maintainers
 - **Created**: 2026-07-25
 - **Target Release**: qiankun v3.x
-- **Tracking Issue**: TBD
+- **Tracking Issue**: [PR #3165](https://github.com/umijs/qiankun/pull/3165)
 - **Last Revision**: 2026-07-25(实现与验证完成:全仓单测、Chromium e2e、eslint/prettier、本地性能基准全部通过;嵌套沙箱补齐真实 e2e harness(`fixtures/sub-nested`,qiankun 套 qiankun),核心判别用例经变异测试确认可区分新旧归属语义。review 收尾:Q1 定案为无条件 warn、unpatch 清除挂载点 stamp、S2/D5 补缓存边界、D2 补 cloneNode 已知限制;二轮 review:效果位更名 `nativePassthroughNode` 以名实相符,盖章点从 writable-dom fork 移入 `loadEntry` 闭包,fork 不再感知 qiankun 语义)
 
 ## Summary
