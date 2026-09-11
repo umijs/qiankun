@@ -44,7 +44,7 @@ flowchart TD
 
 处理步骤如下：
 
-1. **获取源码**：通过增强后的 fetch 获取模块。装饰器顺序为 cacheable → retryable → throwable。
+1. **获取源码**：`loadApp` 为模块配置独立的响应缓存，装饰器顺序为 cacheable → retryable → throwable。模块源码不占用入口、Classic 脚本和样式的缓存容量。
 2. **扫描模块**：使用 [`es-module-lexer`](https://github.com/guybedford/es-module-lexer) 分析源码。该 WASM 词法分析器会在 `start()` 期间通过 `prepareEsmLexer()` 预初始化。
 3. **改写源码**：
    - 将受沙箱管理的全局属性在模块顶部从隔离膜视图中解构，例如 `const { window, document, … } = __qk_view`；
@@ -126,6 +126,12 @@ Vite 将 CSS 作为 JavaScript 模块加载，并在模块顶层注入样式。�
 :::
 
 ## 生命周期与缓存
+
+`loadApp` 分别为模块源码与其他资源配置 LRU 响应缓存：模块缓存容量为 512 条，入口、Classic 脚本和样式共用的缓存容量仍为 50 条。两者均按规范化 URL 与实际生效的 `credentials` 区分请求，缓存请求中的 Promise，读取时克隆响应，失败响应不保留。
+
+模块响应缓存由同一份 qiankun 运行时的应用实例共享，生命周期随运行时，不在某个实例的 `dispose()` 中清空。这可以让新实例复用原始源码，同时避免约 270 个模块的 Vite 开发应用挤出入口和样式。512 是条目数量上限，不是字节上限；超过容量时按最近最少使用顺序淘汰。独立使用 `createSandbox` 或 `Compartment` 时，响应缓存由调用方提供的 `fetch` 决定；`createSandbox` 还可通过 `moduleFetch` 单独配置模块源码请求。
+
+引擎仍为每个实例单独保存模块描述符、改写产物和命名空间，不跨实例共享隔离膜视图。实例内模块图不受响应缓存的 512 条容量限制，`dispose()` 会释放实例缓存与 blob URL。
 
 ESM 沙箱会在挂载和卸载之间保留模块图：
 

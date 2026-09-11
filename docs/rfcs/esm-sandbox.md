@@ -73,7 +73,7 @@ qiankun 当前的 JS 沙箱实现基于 classic script 执行模型：
     │     的双取问题（见 §10.1）。
     │
     ├─ ESM transpiler (packages/shared/src/assets-transpilers/module.ts, 新增) 流水线（per module）
-    │   ├─ fetch 源码（走全局 LRU cache，引用计数 +1）
+    │   ├─ fetch 源码（走独立的模块响应 LRU，容量 512）
     │   ├─ es-module-lexer 扫描 imports / exports / import.meta / dynamic import()
     │   ├─ 标识符扫描过滤：单遍 token 扫描 ∩ globalsInBrowser，再剔除模块自声明/导入重名（见 §1）
     │   ├─ 顶部注入 globals 与 import.meta（经 per-instance runtime 模块 import 引导，零 eval、无 TDZ，见 §1）：
@@ -481,7 +481,7 @@ return {
 | remount | **复用同一个 blob URL** | 命中复用 | 重新激活 |
 | unload | 引用计数 -1，归零则 `revokeObjectURL` | 不动（全局 LRU 自管理） | GC |
 
-blob URL 缓存 key 必须包含 instanceId；fetch LRU 可以继续按原始 URL 复用响应体。这样同一子应用的同一实例 remount 可复用 module namespace，而 unload 后重新加载会获得新的实例前缀与 blob URL，避免命中已退休的全局 import map 条目。
+blob URL 缓存 key 必须包含 instanceId；模块响应 LRU 按原始 URL 与 credentials 复用响应体，容量为 512，与入口和样式的 50 条 LRU 分离。这样同一子应用的同一实例 remount 可复用 module namespace，而 unload 后重新加载会获得新的实例前缀与 blob URL，避免命中已退休的全局 import map 条目。
 
 > **不变量（需显式声明）**：remount = **同 instanceId、复用同一 blob、不注入新 import map 条目**；unload→reload = **分配新 instanceId、新 blob、新条目**。Acceptance 的「100 次循环」必须明确是 remount（不含 unload），否则会被误读为 reload 级膨胀（见 Acceptance / §11）。
 
@@ -598,6 +598,10 @@ qiankun 用全局单变量 `nativeGlobal.__currentLockingSandbox__` 把 `documen
 ```
 
 > 注意两实例的 vue 条目指向**各自的** blob——v1 是 source 级共享：fetch 响应经 LRU 只取一次，但改写产物与 module namespace 不共享（见上方第 4 点）。`__qk_shared__/...` 形式的稳定 key 条目仅在 v2 引入 namespace 级共享后才会出现。
+
+**模块源码响应缓存（Q4 已解决）**
+
+`loadApp` 从同一份 retryable → throwable fetch 分别装配两条缓存路径：模块源码使用独立的 512 条 LRU，入口、Classic 脚本和样式继续使用 50 条 LRU。两者不相互占用容量；源码响应按 URL 与 credentials 在同一运行时副本内共享，`dispose()` 不清空共享缓存。保留全局共享而非增加实例内响应缓存，是因为引擎已有 descriptor/module Promise 缓存，实例内不会因 LRU 淘汰而再次下载已加载模块；需要解决的是跨实例复用与入口、样式被大模块图挤出的开销。实例销毁仍释放自身改写产物、模块图和 Realm。直接使用 sandbox/Compartment 的调用方仍决定其 fetch 是否缓存。
 
 **浏览器兼容性**
 
@@ -979,7 +983,7 @@ loadMicroApp(
 1. **`__qk_import_meta.resolve` 是否需要支持 fallback 到浏览器原生 `import.meta.resolve`？** —— 后者要求 baseURL 必须是当前模块 URL，但 qiankun 内部已用 blob URL 加载，原生 resolve 可能给出 blob URL。倾向：完全自实现，不 fallback。
 2. **是否提供 `disableEsmSandbox` 全局开关用于排查？** —— 倾向：是，作为 escape hatch。
 3. **Vite HMR 是否支持？** —— v1 范围外。Vite HMR 走 WebSocket + 模块热替换，与本方案的"复用 blob URL"语义直接冲突。需要单独 RFC。v1 提供 `import.meta.hot` noop stub 保证不报错（见 §13）。
-4. **全局 fetch LRU 缓存容量是否足够？** —— `makeFetchCacheable` 当前全局 LRU 容量为 50。**单个**中等规模 Vite dev 子应用即有 ~270 模块，**已远超 50**——不必等「多应用并发」就会频繁淘汰（原表述把风险归因于多应用并发，定位偏了）。§17 的依赖图级 prefetch 会进一步加压。选项：(a) 为 ESM 模块 fetch 使用独立的更大缓存（按子应用模块量级，如 ≥512）；(b) 提高全局 LRU 容量；(c) v1 先观察命中率。倾向 **(a)**（独立大缓存），而非沿用 50。
+4. **全局 fetch LRU 缓存容量是否足够？** —— **已解决，采用 (a) 独立模块缓存**：`loadApp` 将模块源码请求与入口、Classic 脚本和样式请求分流，前者使用容量 512 的 LRU，后者保留容量 50。两个缓存都按规范化 URL 与实际生效的 credentials 分区。模块响应缓存由同一运行时副本共享，不随某个引擎销毁而清空，以保留跨实例源码复用；只缓存响应，不共享改写产物或隔离膜。引擎自身的模块图仍按实例保存并在 `dispose()` 时释放，不受 LRU 容量限制。约 270 个模块的应用跨实例加载可复用全部源码，也不会挤出入口和样式。512 是条目数上限而非字节上限，更大或多个应用的工作集仍可能发生淘汰。§17 的依赖图级 prefetch 不包含在本次改动中。
 5. **§12 集成架构方案选择（v1 阻塞决策，不可挂起）** —— 方案 C（移除 + 异步插入）需 POC 验证在 writable-dom 流式管线中的可行性。**修正**：多个动态插入的 module script **设 `async=false` 即由 HTML 规范保证按插入序执行**（与 classic 同机制，option B/C 均适用），并非 C 独有优势；option B 因此不应被「需验证是否在所有浏览器触发执行」低估。真正待验证的是占位/重插与 entry-script onload 钩子、defer 队列的交互。**此项必须在实现前定稿**。
 6. **`loadMicroApp` 多实例是否在 v1 scope 内？** —— 同一子应用加载两次时，不同实例通过 **实例唯一 specifier 前缀** 实现在全局 import map 中的隔离。
 7. **realm 访问器的安全性（v1 已实现，结论较第二轮修正）** —— 第二轮曾定为「membrane get-trap 黑名单屏蔽 `__qk_*`」+ 固定单例 `__qk_realm`。**code review 推翻了「屏蔽足够」**：改写模块跑在真实全局作用域，裸 `__qk_realm(...)` 直达真实全局、**不经 proxy**，屏蔽只挡 `globalThis.__qk_realm`；且 `createMembraneTarget` 拷贝 non-configurable 全局属性会让屏蔽从第二个应用起失效。**v1 最终方案**：访问器改为**每副本随机 key** `globalThis['__qk_r_<random>']` + 按**不可猜 token** 索引（token 仅内联在该实例 runtime blob 源码里，改写器拒绝业务代码 import `__qk_*` specifier）——即便拿到真全局也无从命名访问器、无从提供他人 token。membrane 屏蔽保留为纵深（且 `createMembraneTarget` 不再拷贝 `__qk_*`，复用 `esmInternalPrefix` 单一常量）。详见 §1「安全（v1 实现）」。随机 key 每副本私有，顺带解决多 qiankun 副本抢占单例崩溃。
