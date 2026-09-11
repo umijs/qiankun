@@ -9,6 +9,7 @@ export default defineConfig({
     outDir: 'dist',
     rollupOptions: {
       input: {
+        classicPreexecution: fileURLToPath(new URL('classic-preexecution.html', import.meta.url)),
         garfish: fileURLToPath(new URL('garfish.html', import.meta.url)),
         microApp: fileURLToPath(new URL('micro-app.html', import.meta.url)),
         native: fileURLToPath(new URL('native.html', import.meta.url)),
