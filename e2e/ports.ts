@@ -19,6 +19,8 @@ export const SUB_APP_ENTRIES = {
   'sub-classic-broken-asset': `http://localhost:${PORTS['sub-classic']}/broken-asset.html`,
   // the app monkey-patches the document.head/body appendChild it sees before injecting styles
   'sub-classic-patched-append': `http://localhost:${PORTS['sub-classic']}/patched-append.html`,
+  // inline script immediately after </head>, before MutationObserver can patch the virtual head
+  'sub-classic-early-head': `http://localhost:${PORTS['sub-classic']}/early-head.html`,
   'sub-esm': `http://localhost:${PORTS['sub-esm']}`,
   // same server, dedicated page whose HTML carries a <link rel="modulepreload">
   'sub-esm-preload': `http://localhost:${PORTS['sub-esm']}/preload.html`,

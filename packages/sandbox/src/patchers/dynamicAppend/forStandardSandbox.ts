@@ -84,6 +84,8 @@ const sharedState = (() => {
 })();
 
 const { containerOwners, elementConfigs, sandboxConfigs } = sharedState;
+// Scripts may retain a document proxy across remounts; its getter must use the active installation.
+const activeHeadPatchers = new WeakMap<PluginCompartment, (headElement: HTMLHeadElement) => void>();
 
 const getSandboxConfig = (element: HTMLElement) => elementConfigs.get(element);
 const setSandboxConfig = (element: HTMLElement, config: SandboxConfig) => elementConfigs.set(element, config);
@@ -133,13 +135,19 @@ function patchDocument(
     return () => {};
   }
 
-  const unpatch = patchDocumentHeadAndBodyMethods(container, compartment);
+  const { ensureHeadPatched, unpatch } = patchDocumentHeadAndBodyMethods(container, compartment);
+  activeHeadPatchers.set(compartment, ensureHeadPatched);
 
   const getDocumentHeadElement = () => {
     const currentContainer = getRequiredContainer(getContainer, appName);
     const containerHeadElement = getContainerHeadElement(currentContainer);
     if (!containerHeadElement) {
       throw new QiankunError(`${appName} head element not existed while accessing document.head!`);
+    }
+    // A streamed head and the adjacent inline script can enter live DOM in the same
+    // insertion batch, before MutationObserver delivery. Never expose an unpatched head.
+    if (containerOwners.get(currentContainer) === compartment) {
+      activeHeadPatchers.get(compartment)?.(containerHeadElement);
     }
     return containerHeadElement;
   };
@@ -228,13 +236,19 @@ function patchDocument(
 
   return () => {
     unpatch();
+    if (activeHeadPatchers.get(compartment) === ensureHeadPatched) {
+      activeHeadPatchers.delete(compartment);
+    }
     if (containerOwners.get(container) === compartment) {
       containerOwners.delete(container);
     }
   };
 }
 
-function patchDocumentHeadAndBodyMethods(container: HTMLElement, compartment: PluginCompartment): Unpatch {
+function patchDocumentHeadAndBodyMethods(
+  container: HTMLElement,
+  compartment: PluginCompartment,
+): { ensureHeadPatched: (headElement: HTMLHeadElement) => void; unpatch: Unpatch } {
   // tag the mount points with the owning app config, so fragment-wrapped children (parsed via
   // innerHTML rather than the sandboxed createElement) can inherit it during decomposition
   const tagMountPoint = (mountPoint: HTMLElement) => {
@@ -249,46 +263,39 @@ function patchDocumentHeadAndBodyMethods(container: HTMLElement, compartment: Pl
     }
   };
 
-  let patchedHeadMethods:
-    | {
-        appendChild: typeof document.head.appendChild;
-        insertBefore: typeof document.head.insertBefore;
-        removeChild: typeof document.head.removeChild;
-      }
-    | undefined;
-  const patchHeadElementMethod = (headElement: HTMLHeadElement) => {
-    tagMountPoint(headElement);
-    patchedHeadMethods = {
-      appendChild: getOverwrittenAppendChildOrInsertBefore(
-        nativeAppendChild,
-        getSandboxConfig,
-        'head',
-        setSandboxConfig,
-      ),
-      insertBefore: getOverwrittenAppendChildOrInsertBefore(
-        nativeInsertBefore,
-        getSandboxConfig,
-        'head',
-        setSandboxConfig,
-      ),
-      removeChild: getNewRemoveChild(nativeRemoveChild, getSandboxConfig),
-    };
-    Object.assign(headElement, patchedHeadMethods);
+  const patchedHeadMethods = {
+    appendChild: getOverwrittenAppendChildOrInsertBefore(nativeAppendChild, getSandboxConfig, 'head', setSandboxConfig),
+    insertBefore: getOverwrittenAppendChildOrInsertBefore(
+      nativeInsertBefore,
+      getSandboxConfig,
+      'head',
+      setSandboxConfig,
+    ),
+    removeChild: getNewRemoveChild(nativeRemoveChild, getSandboxConfig),
   };
-  let containerHeadElement = getContainerHeadElement(container);
+  const patchedHeads = new Set<HTMLHeadElement>();
+  let released = false;
+  const ensureHeadPatched = (headElement: HTMLHeadElement) => {
+    // Repeated getters and observer delivery must preserve wrappers installed by the app.
+    if (released || patchedHeads.has(headElement)) return;
+    tagMountPoint(headElement);
+    Object.assign(headElement, patchedHeadMethods);
+    patchedHeads.add(headElement);
+  };
+  const containerHeadElement = getContainerHeadElement(container);
   let observer: MutationObserver | undefined;
   if (!containerHeadElement) {
-    // patch container head element after it is mounted
+    // Keep eager patching for head references obtained without the sandbox document getter.
     observer = new MutationObserver(() => {
-      containerHeadElement = getContainerHeadElement(container);
-      if (containerHeadElement) {
-        patchHeadElementMethod(containerHeadElement);
+      const headElement = getContainerHeadElement(container);
+      if (headElement) {
+        if (containerOwners.get(container) === compartment) ensureHeadPatched(headElement);
         observer?.disconnect();
       }
     });
     observer.observe(container, { subtree: true, childList: true });
   } else {
-    patchHeadElementMethod(containerHeadElement);
+    ensureHeadPatched(containerHeadElement);
   }
 
   const containerBodyElement = container;
@@ -305,20 +312,22 @@ function patchDocumentHeadAndBodyMethods(container: HTMLElement, compartment: Pl
   };
   Object.assign(containerBodyElement, patchedBodyMethods);
 
-  return () => {
+  const unpatch = () => {
+    released = true;
     observer?.disconnect();
-    if (containerHeadElement && patchedHeadMethods) {
-      if (containerHeadElement.appendChild === patchedHeadMethods.appendChild) {
-        Reflect.deleteProperty(containerHeadElement, 'appendChild');
+    patchedHeads.forEach((headElement) => {
+      if (headElement.appendChild === patchedHeadMethods.appendChild) {
+        Reflect.deleteProperty(headElement, 'appendChild');
       }
-      if (containerHeadElement.insertBefore === patchedHeadMethods.insertBefore) {
-        Reflect.deleteProperty(containerHeadElement, 'insertBefore');
+      if (headElement.insertBefore === patchedHeadMethods.insertBefore) {
+        Reflect.deleteProperty(headElement, 'insertBefore');
       }
-      if (containerHeadElement.removeChild === patchedHeadMethods.removeChild) {
-        Reflect.deleteProperty(containerHeadElement, 'removeChild');
+      if (headElement.removeChild === patchedHeadMethods.removeChild) {
+        Reflect.deleteProperty(headElement, 'removeChild');
       }
-      untagMountPoint(containerHeadElement);
-    }
+      untagMountPoint(headElement);
+    });
+    patchedHeads.clear();
 
     if (containerBodyElement.appendChild === patchedBodyMethods.appendChild) {
       Reflect.deleteProperty(containerBodyElement, 'appendChild');
@@ -331,6 +340,8 @@ function patchDocumentHeadAndBodyMethods(container: HTMLElement, compartment: Pl
     }
     untagMountPoint(containerBodyElement);
   };
+
+  return { ensureHeadPatched, unpatch };
 }
 
 function patchDOMPrototypeFns(): Unpatch {
