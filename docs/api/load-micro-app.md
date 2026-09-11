@@ -186,7 +186,7 @@ This named API manages only instances created by `loadMicroApp`. For registered 
 
 ## Example
 
-Resolve a container element, mount the app, then unmount it when you no longer need it.
+Resolve a container element, mount the app, then dispose of its generation when it is no longer needed.
 
 ```ts
 import { loadMicroApp } from 'qiankun';
@@ -208,8 +208,8 @@ const microApp = loadMicroApp(
 await microApp.mountPromise;
 console.log(microApp.getStatus()); // 'MOUNTED'
 
-// later, tear it down
-await microApp.unmount();
+// Dispose of this generation when it is no longer needed
+await microApp.unload();
 ```
 
 For a legacy app that cannot run under isolation, disable the sandbox:

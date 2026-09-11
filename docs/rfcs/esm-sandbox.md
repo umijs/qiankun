@@ -437,7 +437,7 @@ qiankun loader 在识别到 entry 是 `<script type="module">` 时，进入 ESM 
 ```ts
 let ns: Record<string, unknown>;
 try {
-  // 可选 timeout / abort：防止入口模块 TLA 永不 resolve，并支持快速 unmount 取消（见 §8 / Risks）
+  // 可选 timeout / abort：防止入口模块 TLA 永不 resolve，并支持 unload 取消加载等待（见 §8 / Risks）
   ns = await raceWithAbort(import(entryBlobUrl), loadController.signal);
 } catch (e) {
   // ESM 入口模块图中任一模块同步抛错或 TLA reject 都会到这里，
@@ -479,7 +479,7 @@ return {
 | mount | 引用计数 +1（命中复用，未命中新建） | 命中复用 | 激活 |
 | unmount | 保留 | 保留 | 失活但保留 |
 | remount | **复用同一个 blob URL** | 命中复用 | 重新激活 |
-| unload | 引用计数 -1，归零则 `revokeObjectURL` | 不动（全局 LRU 自管理） | GC |
+| unload | 引用计数 -1，归零则 `revokeObjectURL` | 使本代持有的缓存项失效；最后一个所有者释放时取消底层请求 | dispose 并撤销隔离膜 |
 
 blob URL 缓存 key 必须包含 instanceId；fetch LRU 可以继续按原始 URL 复用响应体。这样同一子应用的同一实例 remount 可复用 module namespace，而 unload 后重新加载会获得新的实例前缀与 blob URL，避免命中已退休的全局 import map 条目。
 
@@ -489,23 +489,25 @@ blob URL 缓存 key 必须包含 instanceId；fetch LRU 可以继续按原始 UR
 
 engine 的 `dispose()` 追踪**它创建过的每一个 blob URL**（runtime 模块、每个 module record、每次 redeclaration 重建产生的旧 blob、inline module——review 曾漏 inline/rebuilt），dispose 时全部 `revokeObjectURL` 并从 instance registry 注销（使退休实例的 globals view 不再可达）。
 
-接入点是 **single-spa 的 `unload` 生命周期**（parcelConfig 新增 `unload` 钩子），而**非 `unmount`**：
+接入点是 **single-spa 的 `unload` 生命周期**（parcelConfig 新增 `unload` 钩子），以及手动加载应用的 `unload()` / `unloadMicroApp`，普通 `unmount` 保留引擎：
 
 - `unmount` 只是失活，remount 要复用同一 engine 与其 module namespace（顶层不重跑），此时 dispose 会把 instance view/blob 清掉导致复用断裂——所以 unmount **不** dispose，与 classic sandbox「inactive 不销毁」一致。
 - `unload` 是「彻底卸载」，正是释放 instance view + blob 的时机；unload 后再次激活会重新走 loadApp → 全新 engine（新 instanceKey/新条目），与上面的不变量吻合。
 
-**已知限制**：`loadMicroApp` 手动加载的 parcel 没有 `unload` 语义（single-spa parcel 只有 unmount），其 engine 会随 parcel 一同滞留直到调用方释放引用；这与 classic sandbox 至今**没有 `destroy` 钩子**（`Sandbox.destroy` 仍是 TODO）是同一类既有缺口，不是 ESM 引入的新退化。长生命周期 shell 若需在 unmount 后立即回收，需等 sandbox 层引入统一 destroy。
+**实现状态**：`loadMicroApp` 句柄现已提供 `unload()`，并可通过 `unloadMicroApp(name, container)` 销毁当前同名、同容器的整代实例。两者与路由应用的 `unload` 共用沙箱 `dispose()` 路径，原 `Sandbox.destroy` TODO 已移除，统一使用 `dispose()`。销毁会使旧句柄失效、清除框架持有的模块引用、撤销 blob URL 并移除注入脚本；浏览器原生 import map 条目和模块注册表仍无法撤销，限制见 §11。
 
 **共享模块引用计数（v1 简化：blob 均为实例私有）**
 
 v1 已把共享依赖收缩为 source 级（见 §11）：blob 全部按 `instanceId + 原始 URL` 私有，本表的引用计数按实例记即可，不存在跨实例误 revoke。**若 v2 引入 namespace 级共享（多个实例指向同一份 shared blob）**，引用计数必须按 shared key 单独维护，否则实例 A unload 时会把仍被实例 B 引用的 shared blob `revokeObjectURL` 掉 → B 后续 `import()` 报错；那是一套全新的跨实例引用计数基础设施（现有 `module-resolver` 仅做 URL/版本匹配，无此计数），shared blob 的 revoke 必须等其所有引用实例都 unload——连同 realm 绑定问题一并作为 v2 前置条件（见 §11、Open Q9）。
 
-**快速 unmount / 切路由的取消语义（abort）**
+**加载期间的 unload 取消语义（abort）**
 
-ESM 管线是「并行 fetch 整个模块图 → 生成 blob → 注入 import map → `await import(entryBlobUrl)`」的长异步链。用户可能在 mount 完成前就切走路由触发 unmount。需引入 **per-load `AbortController`**：
-- unmount 时 abort 所有 in-flight 模块 fetch（避免浪费带宽、避免向已退休实例注入 import map 条目）；
-- `await import` 解析后检查实例是否仍 active，**已卸载则丢弃结果、不调用 `mount()`**（防 mount-after-unmount 对已清空容器调 mount）；
-- 配合入口 import 的 timeout（`Promise.race`），避免 TLA 永久 pending 时 unmount 也打断不了。
+ESM 管线是「并行 fetch 整个模块图 → 生成 blob → 注入 import map → `await import(entryBlobUrl)`」的长异步链。手动加载的应用不再需要时，可在挂载完成前调用 `unload()`，通过本代的 `AbortController` 取消加载：
+
+- 取消入口和模块请求、响应体读取及加载等待；仍有其他所有者的共享请求继续，自定义 fetch 必须透传 `init.signal` 才能取消底层请求。
+- 使本代句柄失效，阻止尚未进入的挂载，并释放框架拥有的资源；已经进入的用户生命周期钩子仍需等待完成。
+- 普通 `unmount()` 保留缓存，且会等待已开始的加载和挂载流程，不能用于中止悬挂加载。切换路由也不等于自动取消加载。
+- 取消等待不能抢占同步 JavaScript 或强制停止浏览器已开始的原生模块求值；已退休沙箱会撤销代理，但不承诺阻止持有原始 DOM 引用的尾随异步任务。
 
 **异步求值下的动态元素归属（dynamicAppend）**
 
@@ -828,7 +830,7 @@ Compartment Alignment RFC 落地后，classic 与 ESM 共用同一个 Compartmen
 - [ ] HTML 中的 `<script type="importmap">` 被 qiankun 解析并应用，不注入主文档，也不会与其他子应用的 import map 合并产生冲突
 - [ ] 现有 classic script 子应用行为**完全不变**（回归测试通过）
 - [ ] **ESM 入口模块图中任一模块抛错 / TLA reject 时，错误经 single-spa `addErrorHandler` 上抛**，不静默丢失、不产生 unhandledrejection
-- [ ] **加载未完成即 unmount**：不发生 mount-after-unmount，无悬挂 fetch（in-flight 请求被 abort）
+- [ ] **手动加载未完成即 unload**：阻止尚未进入的 mount，取消框架拥有的加载等待与请求；共享请求和原生求值的边界见 §8
 - [ ] **入口模块 TLA 永不 resolve 时**，加载在 timeout 内失败而非永久挂起
 - [ ] **Vite CSS-as-JS（及顶层 DOM 副作用）子应用：remount 后样式仍在**
 - [ ] **同一 app 两个实例并发加载**，各自动态创建的 `<style>` 互不串容器（dynamicAppend 归属正确）
@@ -883,7 +885,7 @@ Compartment Alignment RFC 落地后，classic 与 ESM 共用同一个 Compartmen
 | **realm 访问器跨应用越权** | 裸 `__qk_realm(...)` 不经 proxy、屏蔽只挡 `globalThis.__qk_realm`；且拷贝 non-configurable 全局使屏蔽从第 2 个 app 起失效。**v1 已修**：随机 key + 不可猜 token（token 仅内联在实例自身 runtime blob），屏蔽降为纵深且不再拷贝 `__qk_*`（§1、Open Q7） |
 | **CSS-as-JS / 顶层副作用 remount 后丢失** | remount 顶层不重跑 + 卸载清空虚拟 head → 样式永久消失。POC 选定 rebuildCSSRules 恢复 / remount 重求值例外（§6、§8） |
 | **错误传播与可观测性退化** | `await import` reject 需手动 plumb 回 single-spa；blob 帧无法定位。补错误分支 + 完整 source map（§7、§15） |
-| **快速 unmount 无 abort** | in-flight fetch 悬挂、mount-after-unmount。per-load AbortController + import timeout（§8） |
+| **加载期间不再需要实例** | 手动调用 `unload()` 通过本代 AbortController 取消加载等待和请求；普通 unmount 或切路由不提供这项保证，原生求值的取消边界见 §8 |
 | **异步求值下元素归属错配** | `__currentLockingSandbox__` 的同步单 sandbox 假设在并发 ESM 下失效。改为基于 proxy document 身份归属（§8） |
 | **Prefetch 对 ESM 失效** | 静态 HTML 只见 entry，~270 模块图发现不了。补 ESM prefetch 策略或声明仅预热 entry（见「ESM Prefetch 策略」） |
 | **Trusted Types 拦截 createObjectURL / importmap 注入** | `require-trusted-types-for 'script'` 下 blob→script、字符串→importmap 被 TT sink 拦截。需 qiankun 专用 TrustedTypePolicy 或声明不兼容（Migration CSP） |
@@ -895,7 +897,7 @@ Compartment Alignment RFC 落地后，classic 与 ESM 共用同一个 Compartmen
 |---|---|
 | **realm 访问器越权（三条路径）** | 裸标识符 / proxy 透传 / classic `with` 三路均可达真实全局访问器。**已修**：随机 key + 不可猜 token（§1、Open Q7） |
 | **多 qiankun 副本抢占单例 `__qk_realm` → 第二副本 `rt` undefined 崩溃** | **已修**：随机 key 每副本私有，各自 `token→realm` map，不再单例（§1） |
-| **`dispose` 从未调用 → realm/blob 泄漏、退休 realm 可达** | **已修**：`dispose` 覆盖全部 blob（含 inline/rebuilt）+ unregister realm，接入 single-spa `unload`；`loadMicroApp` parcel 无 unload 为已知限制（§8） |
+| **`dispose` 从未调用 → realm/blob 泄漏、退休 realm 可达** | **已修**：`dispose` 覆盖全部 blob（含 inline/rebuilt）+ unregister realm，同时接入 single-spa `unload` 与手动加载的 `unload()` / `unloadMicroApp`（§8） |
 | **classic app 混入非 entry module script 被 ESM 引擎劫持入口 / 失败炸全 app** | **已修**：无显式 entry 时按生命周期 namespace 选取、非入口失败只 warn、loadApp 二次回落 latestSetProp（§7） |
 | **多 module 入口非末位选错 namespace** | **已修**：优先选含生命周期导出的 namespace，而非「最后一个」（§7） |
 | **`export default { bootstrap, mount, unmount }` 生命周期不识别** | **已修**：`getLifecyclesFromExports` 增加 default 兜底（§7） |

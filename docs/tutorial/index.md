@@ -13,7 +13,7 @@ For the shortest path to a working project, follow [Getting started](/guide/gett
 flowchart LR
   A["main-app :7099"] -->|"loadMicroApp"| Q["qiankun"]
   Q -->|"load entry + mount"| B["sub-app :7101"]
-  A -->|"MicroApp.unmount()"| Q
+  A -->|"MicroApp.unload()"| Q
 ```
 
 The projects have separate dependencies, development servers, and builds. The only runtime connection is the sub-app's HTML entry URL.
@@ -50,6 +50,6 @@ The main app supplies:
 - an `entry` string that points to the micro-app's HTML;
 - a `container` that is an existing `HTMLElement`.
 
-The micro-app supplies `bootstrap`, `mount`, and `unmount`. qiankun connects the two sides and returns a handle to the main app. The main app must call that handle's `unmount()` method when the instance is no longer needed.
+The micro-app supplies `bootstrap`, `mount`, and `unmount`. qiankun connects the two sides and returns a handle to the main app. Call `unmount()` to remove the app temporarily while retaining its cache for remounting; call `unload()` when its generation is no longer needed, disposing of all instances sharing the same name and container.
 
 Start with [Step 1 — Build the micro-app](/tutorial/build-the-micro-app).

@@ -24,7 +24,7 @@ const reportApp = loadMicroApp({
 await reportApp.mountPromise;
 
 // When this part of the page is removed:
-await reportApp.unmount();
+await reportApp.unload();
 ```
 
 `loadMicroApp` returns immediately while loading and mounting continue asynchronously. Use `mountPromise` when later work depends on the app being visible, and handle promise rejections like any other network or rendering failure.
@@ -41,7 +41,7 @@ flowchart LR
   D --> E[mount into container]
   A --> F[MicroApp handle]
   F -. observe .-> E
-  F --> G[update or unmount]
+  F --> G[update, unmount, or unload]
 ```
 
 The HTML entry tells qiankun which scripts and styles belong to the app. The entry exposes the app's lifecycle functions; qiankun calls them and supplies the host-owned container. JavaScript isolation is enabled by default, while [style isolation](/concepts/style-isolation) is opt-in.
@@ -55,7 +55,7 @@ The HTML entry tells qiankun which scripts and styles belong to the app. The ent
 | Calling lifecycle functions in order | Disposing its framework root and external side effects |
 | Clearing the container during unmount | Treating mount and unmount as repeatable operations |
 
-Removing the container from the page does not replace lifecycle cleanup. Start `unmount()` before discarding the handle and always handle its Promise. Await completion before removing the container when the host flow allows it; framework cleanup callbacks that cannot await should attach a rejection handler.
+Removing the container does not replace lifecycle cleanup. Call `unmount()` to remove the view temporarily while retaining configuration and the sandbox for remounting; call `unload()` when its generation is no longer needed, disposing of all instances and caches sharing the same name and container. Await cleanup before removing the container when possible; framework cleanup callbacks that cannot await should attach a rejection handler. See [loadMicroApp](/api/load-micro-app#unload).
 
 ## Choose how activation is controlled
 

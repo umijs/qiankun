@@ -124,7 +124,7 @@ Vite serves CSS as JS modules that inject styles at the module top level. Becaus
 The ESM sandbox retains its module graph across mount/unmount, which changes one important assumption compared with the classic sandbox:
 
 - **Remount does not re-run top-level code.** `import(sameBlobUrl)` returns the *same* module namespace, so a module's top level executes exactly once — only `mount(props)` runs again. Any per-mount state (the app instance, a store, a router) must be created inside `mount()`, not at module scope. Classic applications should follow the same lifecycle discipline: qiankun also reuses their discovered lifecycle functions without re-running entry scripts on remount.
-- **`dispose()` is tied to single-spa's `unload`, not `unmount`.** Full teardown — revoking every blob URL the engine created and unregistering the realm — happens only on `unload`. Because `loadMicroApp` parcels have no `unload` semantics, their engine lingers until the caller drops the reference, the same gap the classic sandbox has with no explicit destroy hook.
+- **`unmount()` retains the engine; `unload()` disposes of it.** Manually loaded apps use the handle's `unload()` or `unloadMicroApp(name, container)` to retire their entire name/container generation; route applications use `unloadApplication`. The unified sandbox `dispose()` clears framework-held module graphs and configuration references, revokes blob URLs, unregisters the instance, and removes its injected import map scripts. Native browser import map entries and module registrations cannot be undone. Loading again creates a new engine and executes the entry afresh. See [loadMicroApp](/api/load-micro-app#unload).
 
 ```js [micro-app/src/index.js]
 let app;

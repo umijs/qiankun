@@ -184,7 +184,7 @@ function unloadMicroApp(name: string, container: HTMLElement): Promise<void>;
 
 ## 示例
 
-以下示例先获取 `container` 元素并挂载应用，在不再需要该应用时将其卸载。
+以下示例先获取 `container` 元素并挂载应用，在不再需要该代实例时将其销毁。
 
 ```ts
 import { loadMicroApp } from 'qiankun';
@@ -206,8 +206,8 @@ const microApp = loadMicroApp(
 await microApp.mountPromise;
 console.log(microApp.getStatus()); // 'MOUNTED'
 
-// 不再需要时卸载应用
-await microApp.unmount();
+// 不再需要时销毁该代实例
+await microApp.unload();
 ```
 
 如果旧应用无法在隔离环境中运行，可以关闭沙箱：

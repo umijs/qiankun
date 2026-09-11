@@ -1,6 +1,6 @@
 # 第 2 步：搭建主应用
 
-主应用负责页面外壳，并提供用于渲染微应用的元素。本步骤使用一个精简的 React 组件创建该元素、调用 `loadMicroApp`，并在组件清理时卸载对应实例。
+主应用负责页面外壳，并提供用于渲染微应用的元素。本步骤使用一个精简的 React 组件创建该元素、调用 `loadMicroApp`，并在组件清理时销毁对应实例。
 
 开始前，请确保[第 1 步](/zh-CN/tutorial/build-the-micro-app)创建的微应用仍运行在 `http://localhost:7101`。
 
@@ -60,8 +60,8 @@ function MicroAppSlot() {
     });
 
     return () => {
-      void microApp.unmount().catch((error: unknown) => {
-        console.error('sub-app 卸载失败：', error);
+      void microApp.unload().catch((error: unknown) => {
+        console.error('sub-app 销毁失败：', error);
       });
     };
   }, []);
@@ -89,14 +89,14 @@ export default function App() {
 1. React 创建 `<div>`，并通过 ref 取得对应的 `HTMLElement`。
 2. `loadMicroApp` 从 `7101` 端口加载 `sub-app`，并将其挂载到该元素。
 3. 返回的 `microApp` 句柄对应当前实例。主应用可通过 `mountPromise` 处理挂载失败。
-4. `MicroAppSlot` 从 React 组件树中卸载时，`useEffect` 的清理函数会调用 `microApp.unmount()` 卸载实例。
+4. `MicroAppSlot` 从 React 组件树中卸载时，`useEffect` 的清理函数会调用 `microApp.unload()`，先卸载已挂载的应用，再销毁该代实例。
 
 示例中的按钮仅用于演示生命周期。在实际应用中，组件的挂载状态通常由标签页、弹窗、框架路由或其他业务状态决定。
 
-::: warning 保留句柄，并用它完成卸载
-如果未保留 `loadMicroApp` 的返回值，主应用就没有办法再卸载该实例。每次调用 `loadMicroApp` 后，都应在所属组件销毁时调用一次 `unmount()`。
+::: warning 保留句柄，并用它完成清理
+保留 `loadMicroApp` 返回的句柄，并在所属组件销毁时调用 `unload()`。它会销毁同名应用在同一容器中的整代实例，使共享配置的旧句柄一并失效；再次加载会重新请求入口和执行脚本。仅需暂时移除应用、保留缓存供重新挂载时，应使用 `unmount()`。
 
-React 清理函数不能返回 Promise，因此本例只是发起 `unmount()` 调用，并捕获可能的失败。如果主应用的清理流程支持异步等待，则应在移除容器前等待该 Promise 完成。
+React 清理函数不能返回 Promise，因此本例只是发起 `unload()` 调用，并捕获可能的失败。如果主应用的清理流程支持异步等待，则应在移除容器前等待该 Promise 完成。未保留句柄时，也可按 [loadMicroApp](/zh-CN/api/load-micro-app#unload) 的说明调用 `unloadMicroApp(name, container)`。
 :::
 
 ## 路由驱动的编排方式
