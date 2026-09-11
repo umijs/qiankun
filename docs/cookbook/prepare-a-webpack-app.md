@@ -9,7 +9,7 @@ For Vite, see [Make a Vite app qiankun-ready](/cookbook/prepare-a-vite-app).
 Install the qiankun bundler plugin together with `html-webpack-plugin`:
 
 ```bash
-npm install --save-dev @qiankunjs/bundler-plugin@rc html-webpack-plugin
+npm install --save-dev @qiankunjs/bundler-plugin html-webpack-plugin
 ```
 
 `html-webpack-plugin` produces the HTML entry and lets the qiankun plugin identify its entry script.

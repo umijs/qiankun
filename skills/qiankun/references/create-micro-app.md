@@ -13,7 +13,7 @@ For a **new** app, start at step 1. To **convert an existing Vite app**, skip to
 2. Add the bundler plugin:
 
    ```bash
-   pnpm add -D @qiankunjs/bundler-plugin@rc
+   pnpm add -D @qiankunjs/bundler-plugin
    ```
 
 3. Edit `vite.config.ts` — register the plugin and pin the port:
