@@ -24,6 +24,13 @@ A clear and concise description of what the bug is.
 
 ## Context
 
-- **qiankun Version**:
+### qiankun version
+
+Select one version series, then provide the exact version below.
+
+- [ ] 2.x
+- [ ] 3.x (including prereleases)
+
+- **Exact qiankun version**:
 - **Platform Version**:
 - **Browser Version**:
