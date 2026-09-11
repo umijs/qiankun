@@ -54,6 +54,39 @@ void microApp.mountPromise.catch((error: unknown) => {
 
 Keep the `MicroApp` handle. Call `unmount()` to remove the view temporarily while retaining its cache for remounting; call `unload()` when its generation is no longer needed, disposing of all instances sharing the same name and container.
 
+## Handle loading timeouts {#load-timeout}
+
+When [`timeout`](/api/configuration#timeout) is enabled, a loading timeout produces a `LoadAppTimeoutError`. This class is exported from `qiankun`, extends `QiankunError`, and exposes these readonly fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `appName` | `string` | Name of the micro-app whose load timed out. |
+| `timeout` | `number` | Configured limit in milliseconds. |
+| `elapsed` | `number` | Actual time in milliseconds between starting the timer and triggering the timeout. |
+
+For manual loads, catch the handle Promise's rejection. Route applications can use the same type check inside a global error handler:
+
+```ts
+import { LoadAppTimeoutError, loadMicroApp } from 'qiankun';
+
+const app = loadMicroApp({ name, entry, container }, { timeout: 10_000 });
+
+try {
+  await app.mountPromise;
+} catch (error) {
+  if (error instanceof LoadAppTimeoutError) {
+    reportToMonitoring(error, {
+      app: error.appName,
+      timeout: error.timeout,
+      elapsed: error.elapsed,
+    });
+  }
+  showFallback(container, error);
+}
+```
+
+Before rejecting the timed-out load, qiankun cancels its loading work, removes partially written nodes and the sandbox, and releases the container. Retry by calling `loadMicroApp` again to create an instance; do not remount the failed handle. `timeout` covers loading preparation only, not the micro-app's `bootstrap`, `mount`, or `unmount` lifecycle.
+
 ## Handler responsibilities
 
 - Keep handlers defensive: report the error and return instead of throwing another error.

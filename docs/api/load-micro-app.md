@@ -54,6 +54,7 @@ Per-app options. All fields are optional; the defaults below are resolved intern
 | --- | --- | --- | --- |
 | `sandbox` | `boolean \| SandboxConfiguration` | `true` | Enables the Proxy-membrane [JS sandbox](/concepts/js-sandbox) and the [ESM sandbox](/concepts/esm-sandbox). Set `false` only for legacy apps that must run against the real global; pass an object to keep isolation on and configure it. |
 | `fetch` | `typeof window.fetch` | `window.fetch` | Custom fetch for the entry and loader-managed scripts, modules, and styles. |
+| `timeout` | `number` | `0` (disabled) | Loading timeout in milliseconds; inherits the `start` default when omitted, while `0` explicitly disables it. Container waits and mount lifecycles are excluded. See [AppConfiguration](/api/configuration#timeout). |
 | `streamTransformer` | `() => TransformStream<string, string>` | — | Optional transform piped into the HTML stream. |
 | `nodeTransformer` | `NodeTransformer` | internal default | Rewrites each script/link/style node before it hits live DOM. Override only for advanced cases. |
 
@@ -61,6 +62,7 @@ Per-app options. All fields are optional; the defaults below are resolved intern
 type AppConfiguration =
   Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
     sandbox?: boolean | SandboxConfiguration;
+    timeout?: number;
   };
 ```
 

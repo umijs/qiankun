@@ -21,7 +21,7 @@ import {
 import { concat, isFunction, mergeWith } from 'lodash';
 import type { ParcelConfigObject } from '@qiankunjs/single-spa';
 import getAddOns from '../addons';
-import { QiankunError } from '../error';
+import { LoadAppTimeoutError, QiankunError } from '../error';
 import type {
   AppConfiguration,
   LifeCycleFn,
@@ -40,6 +40,7 @@ import {
   withAbortSignal,
 } from '../utils';
 import { acquireContainer, isContainerHeld, type ContainerHold } from './containerOccupancy';
+import { validateLoadingTimeout } from './configuration';
 
 declare const __QIANKUN_VERSION__: string;
 
@@ -64,9 +65,11 @@ export default async function loadApp<T extends ObjectType>(
   const {
     fetch = window.fetch,
     sandbox = true,
+    timeout = 0,
     nodeTransformer = defaultNodeTransformer,
     ...restConfiguration
   } = configuration || {};
+  validateLoadingTimeout(timeout);
 
   const sandboxEnabled = sandbox !== false;
   const sandboxConfiguration: SandboxConfiguration = typeof sandbox === 'object' ? sandbox : {};
@@ -111,6 +114,13 @@ export default async function loadApp<T extends ObjectType>(
   let microAppDOMContainer: HTMLElement = container;
   const containerInitToken: ContainerInitToken = Symbol(appName);
   const holds = new Set<ContainerHold>();
+  let loadingTimer: ReturnType<typeof setTimeout> | undefined;
+  const clearLoadingTimer = () => {
+    if (loadingTimer !== undefined) {
+      clearTimeout(loadingTimer);
+      loadingTimer = undefined;
+    }
+  };
   const releaseHold = (hold: ContainerHold) => {
     holds.delete(hold);
     hold.release();
@@ -119,22 +129,29 @@ export default async function loadApp<T extends ObjectType>(
   const dispose = (reason: unknown = new QiankunError(`App ${appName} has been unloaded`)): Promise<void> => {
     if (!disposePromise) {
       disposePromise = (async () => {
+        clearLoadingTimer();
         abortController.abort(reason);
         control.signal?.removeEventListener('abort', abortFromCaller);
         try {
           await sandboxController?.dispose();
         } finally {
-          disposeCompartmentAssets(enhancedFetch);
-          enhancedFetch.invalidate();
-          if (initializedContainers.get(microAppDOMContainer) === containerInitToken) {
-            clearContainer(microAppDOMContainer);
+          try {
+            disposeCompartmentAssets(enhancedFetch);
+          } finally {
+            try {
+              enhancedFetch.invalidate();
+              if (initializedContainers.get(microAppDOMContainer) === containerInitToken) {
+                clearContainer(microAppDOMContainer);
+              }
+            } finally {
+              for (const hold of holds) hold.release();
+              holds.clear();
+              sandboxController = undefined;
+              sandboxInstance = undefined;
+              mountSandbox = async () => {};
+              unmountSandbox = async () => {};
+            }
           }
-          for (const hold of holds) hold.release();
-          holds.clear();
-          sandboxController = undefined;
-          sandboxInstance = undefined;
-          mountSandbox = async () => {};
-          unmountSandbox = async () => {};
         }
       })();
     }
@@ -161,6 +178,25 @@ export default async function loadApp<T extends ObjectType>(
   } catch (error) {
     await dispose(error).catch(() => undefined);
     throw error;
+  }
+  const startedAt = performance.now();
+  const checkLoadingDeadline = () => {
+    const elapsed = performance.now() - startedAt;
+    if (timeout > 0 && elapsed >= timeout) {
+      abortController.abort(new LoadAppTimeoutError(appName, timeout, elapsed));
+    }
+  };
+  if (timeout > 0) {
+    const checkDeadline = () => {
+      loadingTimer = undefined;
+      checkLoadingDeadline();
+      if (!signal.aborted) {
+        // Native timers clamp larger delays to a signed 32-bit integer. Re-check against the
+        // monotonic clock so any finite positive budget works without an early timeout.
+        loadingTimer = setTimeout(checkDeadline, Math.min(timeout - (performance.now() - startedAt), 2 ** 31 - 1));
+      }
+    };
+    checkDeadline();
   }
   // Flips when the mount hook adopts the still-open load hold as its mount hold ② (see the
   // mount chain below) — from then on the hold is the mount's to release, not the settle latch's.
@@ -240,9 +276,19 @@ export default async function loadApp<T extends ObjectType>(
    */
   let entryLifecyclesSettled = false;
   let domStreamSettled = false;
+  const domStreamFinished = new Deferred<void>();
+  let loadingSetupSettled = timeout === 0;
   const releaseLoadHoldWhenSettled = () => {
     // an adopted hold lives on as the mount hold ② and is no longer the latch's to release
-    if (entryLifecyclesSettled && domStreamSettled && !loadHoldAdoptedByMount && !signal.aborted) releaseHold(loadHold);
+    if (
+      entryLifecyclesSettled &&
+      domStreamSettled &&
+      loadingSetupSettled &&
+      !loadHoldAdoptedByMount &&
+      !signal.aborted
+    ) {
+      releaseHold(loadHold);
+    }
   };
   const markEntryLifecyclesSettled = () => {
     entryLifecyclesSettled = true;
@@ -257,6 +303,7 @@ export default async function loadApp<T extends ObjectType>(
           ...containerOpts,
           onDOMStreamSettled: () => {
             domStreamSettled = true;
+            domStreamFinished.resolve();
             releaseLoadHoldWhenSettled();
           },
         });
@@ -273,17 +320,28 @@ export default async function loadApp<T extends ObjectType>(
           concat((v1 ?? []) as LifeCycleFn<T>, (v2 ?? []) as LifeCycleFn<T>),
         );
         // FIXME Due to the asynchronous execution of loadEntry, the DOM of the sub-app is inserted synchronously through appendChild, and inline scripts are also executed synchronously. Therefore, the beforeLoad may need to rely on transformer configuration to coordinate and ensure the order of asynchronous operations.
-        await execHooksChain(toArray(beforeLoad), app, global);
+        await execHooksChain(toArray(beforeLoad), app, global, signal);
 
         const lifecycles = await lifecyclesPromise;
         signal.throwIfAborted();
-        return {
+        const resolvedLifecycles = {
           afterMount,
           afterUnmount,
           beforeMount,
           beforeUnmount,
           ...getLifecyclesFromExports(lifecycles, appName, global, sandboxInstance?.latestSetProp),
         };
+        // Opting into a timeout makes full entry streaming part of loading. Otherwise an early
+        // entry export could report success while its network tail still owns the container.
+        if (timeout > 0) await withAbortSignal(domStreamFinished.promise, signal);
+        // A long synchronous evaluation may have blocked the timer task. Enforce the elapsed
+        // budget here as well, before its completion microtasks can clear the timer.
+        checkLoadingDeadline();
+        signal.throwIfAborted();
+        clearLoadingTimer();
+        loadingSetupSettled = true;
+        releaseLoadHoldWhenSettled();
+        return resolvedLifecycles;
       } catch (error) {
         // beforeLoad may fail while the concurrently started entry pipeline is still pending.
         // Observe its eventual rejection, then permanently abort the sandbox without masking
@@ -556,9 +614,17 @@ function execHooksChain<T extends ObjectType>(
   hooks: Array<LifeCycleFn<T>>,
   app: LoadableApp<T>,
   global: WindowProxy = window,
+  signal?: AbortSignal,
 ): Promise<unknown> {
   if (hooks.length) {
-    return hooks.reduce((chain, hook) => chain.then(() => hook(app, global)), Promise.resolve());
+    return hooks.reduce(
+      (chain, hook) =>
+        chain.then(() => {
+          signal?.throwIfAborted();
+          return hook(app, global);
+        }),
+      Promise.resolve(),
+    );
   }
 
   return Promise.resolve();
