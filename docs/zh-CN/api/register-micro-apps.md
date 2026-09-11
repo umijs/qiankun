@@ -230,6 +230,31 @@ registerMicroApps([
 v3 不再提供 `initGlobalState`、`onGlobalStateChange` 和 `setGlobalState`。应用间共享状态时，应通过 `props` 向各应用传递自定义方法或状态容器。见[应用间共享状态与通信](/zh-CN/cookbook/communicate-between-apps)。
 :::
 
+## 销毁路由应用：unloadApplication {#unload-application}
+
+`unloadApplication` 由 qiankun 从内置的 `@qiankunjs/single-spa` 导出，用于卸载并销毁 `registerMicroApps` 注册的应用。它保留应用注册信息；`loadMicroApp` 创建的实例应使用 [loadMicroApp](/zh-CN/api/load-micro-app#unload) 页面说明的 `unload()` 或 `unloadMicroApp()`。
+
+### 函数签名
+
+```ts
+function unloadApplication(name: string, opts?: { waitForUnmount: boolean }): Promise<void>;
+```
+
+`waitForUnmount` 的默认值为 `false`：立即卸载并销毁应用。应用仍处于活跃路由时，single-spa 会立即重新加载和挂载它。若需保持应用关闭，应先离开其活跃路由。
+
+设为 `true` 时，等待应用因路由切换而卸载后再销毁；返回的 Promise 也会等待这一过程。应用注册仍然保留，再次进入对应路由时会重新加载。
+
+```ts
+import { unloadApplication } from 'qiankun';
+
+// 应用下一次因路由变化卸载时，释放已加载的配置和沙箱。
+const unloaded = unloadApplication('app1', { waitForUnmount: true });
+// 由主应用路由离开 app1 的 activeRule 范围后：
+await unloaded;
+```
+
+该函数沿用 single-spa 的错误语义，名称未注册时会抛错。沙箱、原生 ESM 注册表和 `sandbox: false` 的清理边界与 [loadMicroApp](/zh-CN/api/load-micro-app#unload) 一节相同。
+
 ## 相关内容
 
 - [start](/zh-CN/api/start)——激活已注册的应用。

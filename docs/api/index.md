@@ -11,8 +11,8 @@ const microApp = loadMicroApp({
   container: document.getElementById('subapp-container')!,
 });
 
-// Release the instance when it is no longer needed.
-await microApp.unmount();
+// Dispose of this generation when it is no longer needed.
+await microApp.unload();
 ```
 
 When an app must activate automatically with the URL, use [`registerMicroApps`](/api/register-micro-apps) with [`start`](/api/start). This is a route-driven alternative, not a prerequisite for `loadMicroApp`.
@@ -22,7 +22,9 @@ When an app must activate automatically with the URL, use [`registerMicroApps`](
 | Export | Purpose |
 | --- | --- |
 | [`loadMicroApp`](/api/load-micro-app) | Load and mount one micro-app immediately, returning a [`MicroApp`](/api/types) handle. |
+| [`unloadMicroApp`](/api/load-micro-app#unload) | Dispose of the current manually loaded generation by name and container. |
 | [`registerMicroApps`](/api/register-micro-apps) | Register micro-apps driven by URL `activeRule` values. |
+| [`unloadApplication`](/api/register-micro-apps#unload-application) | Dispose of a route application while keeping its registration; an active route triggers reloading. |
 | [`start`](/api/start) | Start route-driven registration mode. You normally do not call it when using `loadMicroApp` directly. |
 | [`setDefaultMountApp`](/api/effects) | Navigate to a default app route when no app is mounted. |
 | [`runAfterFirstMounted`](/api/effects) | Run a callback once after the first micro-app mounts. |
@@ -44,7 +46,7 @@ function loadMicroApp<T extends ObjectType>(
 ): MicroApp;
 ```
 
-The returned handle exposes `mount`, `unmount`, `getStatus`, and lifecycle promises. It exposes `update` only when the micro-app exports that optional lifecycle. Call `unmount()` for every instance you no longer use.
+The returned handle exposes `mount`, `unmount`, `unload`, `getStatus`, and lifecycle promises. It exposes `update` only when the micro-app exports that optional lifecycle. Call `unmount()` to hide the app temporarily, or `unload()` when you no longer need this generation.
 
 ### Route driven: `registerMicroApps` + `start`
 

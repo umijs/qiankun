@@ -29,4 +29,10 @@ export interface IsolationPlugin {
   bootstrap?: (context: IsolationPluginContext) => Free;
   /** Runs for every mount. Async setup must settle before application mount continues. */
   mount?: (context: IsolationPluginContext) => Free | Promise<Free>;
+  /**
+   * Runs once on terminal disposal, after active Free callbacks and before the Compartment
+   * is disposed. Release caches and retained views here; ordinary unmount keeps them for
+   * remount. Must also tolerate partially completed bootstrap setup.
+   */
+  dispose?: (context: IsolationPluginContext) => void;
 }
