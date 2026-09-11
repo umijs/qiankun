@@ -300,4 +300,55 @@ describe('loadApp container gate', () => {
     mockSettledLoadEntry();
     await loadApp(createApp('app-b', container));
   });
+  it('keeps an aborted load inside the gate until sandbox disposal finishes', async () => {
+    const container = document.createElement('div');
+    const abortController = new AbortController();
+    let completeDisposal!: () => void;
+    const disposal = new Promise<void>((resolve) => {
+      completeDisposal = resolve;
+    });
+    mocks.dispose.mockReturnValueOnce(disposal);
+    mocks.loadEntry.mockImplementationOnce((_entry: unknown, target: HTMLElement, opts: LoaderOpts) => {
+      target.textContent = 'partially streamed';
+      opts.signal?.addEventListener('abort', () => opts.onDOMStreamSettled?.(), { once: true });
+      return new Promise<MicroAppLifeCycles>(() => {});
+    });
+    const loading = loadApp(createApp('aborted-owner', container), undefined, undefined, {
+      signal: abortController.signal,
+    });
+    const rejected = expect(loading).rejects.toThrow('cancel owner');
+    await flushMicrotasks();
+    mockSettledLoadEntry();
+    const successor = loadApp(createApp('successor', container));
+    abortController.abort(new Error('cancel owner'));
+    await flushMicrotasks();
+    expect(mocks.loadEntry).toHaveBeenCalledTimes(1);
+    expect(mocks.dispose).toHaveBeenCalledTimes(1);
+    completeDisposal();
+    await rejected;
+    await successor;
+    expect(mocks.loadEntry).toHaveBeenCalledTimes(2);
+    expect(container.textContent).toBe('');
+  });
+
+  it('cancels a waiting load without disturbing the current container owner', async () => {
+    const container = document.createElement('div');
+    mockSettledLoadEntry();
+    const owner = (await loadApp(createApp('holder', container)))(container);
+    await runHooks(owner.mount);
+    container.textContent = 'holder remains';
+    const abortController = new AbortController();
+    const waiting = loadApp(createApp('cancelled-waiter', container), undefined, undefined, {
+      signal: abortController.signal,
+    });
+    const rejected = expect(waiting).rejects.toThrow('cancel waiter');
+    abortController.abort(new Error('cancel waiter'));
+    await rejected;
+    expect(container.textContent).toBe('holder remains');
+    expect(mocks.loadEntry).toHaveBeenCalledTimes(1);
+    await runHooks(owner.unmount);
+    mockSettledLoadEntry();
+    await loadApp(createApp('next-waiter', container));
+    expect(mocks.loadEntry).toHaveBeenCalledTimes(2);
+  });
 });

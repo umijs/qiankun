@@ -42,7 +42,7 @@ See [Migrate from qiankun 2.x](/cookbook/migrate-from-2x) for the full list.
 | `SandboxConfiguration` | `{ styleIsolation?; globals?; incubatorContext?; plugins?; …module hooks }` | The object form of `sandbox`. See [SandboxConfiguration](/api/configuration#sandboxconfiguration). |
 | `LifeCycleFn<T>` | `(app, global) => Promise<void>` | A single framework lifecycle hook. |
 | `LifeCycles<T>` | `{ beforeLoad?; beforeMount?; afterMount?; beforeUnmount?; afterUnmount? }` | Framework hooks. See [Lifecycle hooks](/api/lifecycles). |
-| `MicroApp` | single-spa `Parcel` | The handle returned by `loadMicroApp`. |
+| `MicroApp` | single-spa `Parcel & { unload() }` | The handle returned by `loadMicroApp`. |
 | `MicroAppLifeCycles` | `{ bootstrap; mount; unmount; update? }` | The lifecycle exports a micro-app itself provides. |
 | `PrefetchStrategy` | `boolean \| 'all' \| string[] \| fn` | Exported for legacy compatibility; unused by any v3 API. |
 
@@ -241,15 +241,16 @@ const lifeCycles: LifeCycles<Record<string, unknown>> = {
 
 ```ts
 import type { Parcel } from '@qiankunjs/single-spa';
-export type MicroApp = Parcel;
+export type MicroApp = Parcel & { unload(): Promise<void> };
 ```
 
-The handle returned by [`loadMicroApp`](/api/load-micro-app). It is a `Parcel` from `@qiankunjs/single-spa` — qiankun's vendored single-spa fork, already installed as a dependency — giving you imperative control plus promises for each phase. Import routing helpers from that package too, never from the separate `single-spa` package, which would set up a second, independent router.
+The handle returned by [`loadMicroApp`](/api/load-micro-app) extends the `Parcel` from qiankun's bundled `@qiankunjs/single-spa` with `unload()`. It provides instance controls and promises for each lifecycle phase. Import `unloadApplication` directly from `qiankun` and other routing helpers from `@qiankunjs/single-spa`. Do not install the separate `single-spa` package, which would create a second, independent router.
 
 | Member | Type | Description |
 | --- | --- | --- |
 | `mount()` | `() => Promise<null>` | Mount the app. |
-| `unmount()` | `() => Promise<null>` | Unmount the app. |
+| `unmount()` | `() => Promise<null>` | Unmount the app while retaining configuration for remounting. |
+| `unload()` | `() => Promise<void>` | Dispose of the entire generation sharing this name and container, invalidating its old handles. See [loadMicroApp](/api/load-micro-app#unload). |
 | `update?(props)` | `(props) => Promise<any>` | Push new props, when the app exports an `update` hook. |
 | `getStatus()` | `() => Status` | Current lifecycle status (union below). |
 | `loadPromise` | `Promise<null>` | Resolves when source code has loaded. |

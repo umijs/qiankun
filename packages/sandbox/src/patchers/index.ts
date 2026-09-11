@@ -5,7 +5,7 @@
 
 import { SandboxType } from '../core/sandbox/types';
 import { QiankunError } from '@qiankunjs/shared';
-import { patchStandardSandbox, reattachDynamicStylesheets } from './dynamicAppend';
+import { disposeStandardSandbox, patchStandardSandbox, reattachDynamicStylesheets } from './dynamicAppend';
 import patchHistoryListener from './historyListener';
 import patchInterval from './interval';
 import type { IsolationPlugin } from './types';
@@ -28,6 +28,7 @@ const historyListenerPlugin: IsolationPlugin = {
 
 const dynamicAppendPlugin: IsolationPlugin = {
   name: 'dynamicAppend',
+  dispose: ({ compartment }) => disposeStandardSandbox(compartment),
   bootstrap: (context) => patchStandardSandbox(context),
   mount: async (context) => {
     const container = context.getContainer();

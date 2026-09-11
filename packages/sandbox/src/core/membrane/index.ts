@@ -97,7 +97,14 @@ export class Membrane {
 
   readonly globalThisView: WindowProxy;
 
-  readonly target: MembraneTarget;
+  private targetStorage: MembraneTarget | undefined;
+
+  private readonly revoke: () => void;
+
+  get target(): MembraneTarget {
+    this.assertAlive();
+    return this.targetStorage!;
+  }
 
   latestSetProp: PropertyKey | undefined;
 
@@ -106,6 +113,7 @@ export class Membrane {
    * Used by the ESM sandbox engine to refresh the live dunder-global bindings of rewritten modules.
    */
   onModification(listener: (p: PropertyKey) => void): () => void {
+    this.assertAlive();
     this.modificationListeners.add(listener);
     return () => {
       this.modificationListeners.delete(listener);
@@ -142,10 +150,10 @@ export class Membrane {
     const propertiesWithGetter = new Map<PropertyKey, boolean>();
     const target = createMembraneTarget(globals);
 
-    this.target = target;
+    this.targetStorage = target;
     this.directGlobalKeys = new Set(keys(globals));
 
-    this.globalThisView = new Proxy(this.target, {
+    const { proxy, revoke } = Proxy.revocable(target, {
       set: (membraneTarget, p, value: never) => {
         if (!this.locking) {
           // sync the property to incubatorContext
@@ -345,7 +353,9 @@ export class Membrane {
       getPrototypeOf() {
         return Reflect.getPrototypeOf(incubatorContext);
       },
-    }) as unknown as WindowProxy;
+    });
+    this.globalThisView = proxy as unknown as WindowProxy;
+    this.revoke = revoke;
   }
 
   defineUnshadowableGlobals(
@@ -365,7 +375,23 @@ export class Membrane {
   }
 
   unlock() {
+    this.assertAlive();
     this.locking = false;
+  }
+
+  /** Retire retained global views and release even non-configurable app globals. */
+  dispose(): void {
+    this.revoke();
+    this.targetStorage = undefined;
+    this.modificationListeners.clear();
+    this.directGlobalKeys.clear();
+    this.modifications.clear();
+    this.latestSetProp = undefined;
+    this.locking = true;
+  }
+
+  private assertAlive(): void {
+    if (!this.targetStorage) throw new TypeError('Membrane has been disposed');
   }
 }
 

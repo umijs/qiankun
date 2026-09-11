@@ -42,7 +42,7 @@ import type {
 | `SandboxConfiguration` | `{ styleIsolation?; globals?; incubatorContext?; plugins?; …模块钩子 }` | `sandbox` 的对象形式，见 [SandboxConfiguration](/zh-CN/api/configuration#sandboxconfiguration)。 |
 | `LifeCycleFn<T>` | `(app, global) => Promise<void>` | 单个框架级生命周期钩子。 |
 | `LifeCycles<T>` | `{ beforeLoad?; beforeMount?; afterMount?; beforeUnmount?; afterUnmount? }` | 框架级钩子，见[生命周期钩子](/zh-CN/api/lifecycles)。 |
-| `MicroApp` | single-spa `Parcel` | `loadMicroApp` 返回的句柄。 |
+| `MicroApp` | single-spa `Parcel & { unload() }` | `loadMicroApp` 返回的句柄。 |
 | `MicroAppLifeCycles` | `{ bootstrap; mount; unmount; update? }` | 微应用自身导出的生命周期。 |
 | `PrefetchStrategy` | `boolean \| 'all' \| string[] \| fn` | 为向后兼容而导出，v3 的公共 API 不使用该类型。 |
 
@@ -241,15 +241,16 @@ const lifeCycles: LifeCycles<Record<string, unknown>> = {
 
 ```ts
 import type { Parcel } from '@qiankunjs/single-spa';
-export type MicroApp = Parcel;
+export type MicroApp = Parcel & { unload(): Promise<void> };
 ```
 
-[`loadMicroApp`](/zh-CN/api/load-micro-app) 返回的句柄，其类型是 `@qiankunjs/single-spa` 的 `Parcel`——qiankun 内置的 single-spa fork，已作为依赖随 qiankun 一同安装。该句柄提供实例控制方法和各生命周期阶段对应的 Promise。路由相关的辅助函数同样应从该包导入，不要再单独安装 `single-spa`，否则会引入第二个相互独立的路由器。
+[`loadMicroApp`](/zh-CN/api/load-micro-app) 返回的句柄，在 qiankun 内置 `@qiankunjs/single-spa` 的 `Parcel` 基础上扩展了 `unload()`。该句柄提供实例控制方法和各生命周期阶段对应的 Promise。`unloadApplication` 可直接从 `qiankun` 导入；其他路由辅助函数应从 `@qiankunjs/single-spa` 导入。不要再单独安装 `single-spa`，否则会引入第二个相互独立的路由器。
 
 | 成员 | 类型 | 说明 |
 | --- | --- | --- |
 | `mount()` | `() => Promise<null>` | 挂载应用。 |
-| `unmount()` | `() => Promise<null>` | 卸载应用。 |
+| `unmount()` | `() => Promise<null>` | 卸载应用，保留配置供重新挂载。 |
+| `unload()` | `() => Promise<void>` | 销毁同名应用在同一容器中的整代实例，旧句柄随之失效。详见 [loadMicroApp](/zh-CN/api/load-micro-app#unload)。 |
 | `update?(props)` | `(props) => Promise<any>` | 传递新的 props，仅在应用导出 `update` 钩子时可用。 |
 | `getStatus()` | `() => Status` | 返回当前生命周期状态，取值为下方的联合类型。 |
 | `loadPromise` | `Promise<null>` | 表示源码加载阶段完成的 Promise。 |

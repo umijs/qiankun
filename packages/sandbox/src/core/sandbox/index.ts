@@ -103,6 +103,66 @@ function releaseSideEffects(frees: readonly Free[]): {
   return { rebuilds, error: firstError };
 }
 
+function disposePlugins(
+  plugins: readonly IsolationPlugin[],
+  context: IsolationPluginContext,
+): CapturedError | undefined {
+  let firstError: CapturedError | undefined;
+  plugins.forEach((plugin) => {
+    try {
+      plugin.dispose?.(context);
+    } catch (error) {
+      firstError ??= { value: error };
+    }
+  });
+  return firstError;
+}
+
+/** A retained public handle must not retain the private controller's configuration closures. */
+class TerminalSandboxController implements SandboxController {
+  readonly instance: Sandbox;
+
+  readonly styleIsolation: StyleIsolationOpts | undefined;
+
+  private controller: SandboxController | undefined;
+
+  private disposal: Promise<void> | undefined;
+
+  constructor(controller: SandboxController) {
+    this.instance = controller.instance;
+    this.styleIsolation = controller.styleIsolation;
+    this.controller = controller;
+  }
+
+  readonly nodeTransformer: NodeTransformer = (node, opts) => {
+    if (!this.controller) throw this.disposedError();
+    return this.controller.nodeTransformer(node, opts);
+  };
+
+  readonly mount = (container?: HTMLElement): Promise<void> => {
+    return this.controller?.mount(container) ?? Promise.reject(this.disposedError());
+  };
+
+  readonly unmount = (): Promise<void> => {
+    return this.controller?.unmount() ?? Promise.resolve();
+  };
+
+  readonly dispose = (): Promise<void> => {
+    if (this.disposal) return this.disposal;
+    const controller = this.controller;
+    if (!controller) return Promise.resolve();
+    this.controller = undefined;
+    this.disposal = controller.dispose().finally(() => {
+      this.disposal = undefined;
+    });
+    return this.disposal;
+  };
+
+  private disposedError(): TypeError {
+    return new TypeError(`Sandbox container for ${this.instance.name} has been disposed`);
+  }
+}
+
 async function rebuildSideEffects(
   rebuilds: Rebuild[],
   container: HTMLElement | undefined,
@@ -117,6 +177,10 @@ async function rebuildSideEffects(
 
 /** Create a lifecycle controller around the standard browser sandbox preset. */
 export function createSandbox(appName: string, opts: CreateSandboxOptions = {}): SandboxController {
+  return new TerminalSandboxController(createSandboxController(appName, opts));
+}
+
+function createSandboxController(appName: string, opts: CreateSandboxOptions): SandboxController {
   const {
     compartmentOptions = {},
     container: containerOption,
@@ -257,9 +321,15 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
     });
   } catch (error) {
     releaseSideEffects(bootstrappingFrees);
+    disposePlugins(isolationPlugins, pluginContext);
     sandbox.inactive();
-    sandbox.dispose();
-    cleanupPreparedContainers();
+    try {
+      sandbox.dispose();
+    } catch {
+      // Preserve the bootstrap failure while still restoring the container protocol.
+    } finally {
+      cleanupPreparedContainers();
+    }
     throw error;
   }
 
@@ -316,13 +386,18 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
       bootstrappingFrees.length = 0;
       mountingFrees = [];
 
+      const pluginError = disposePlugins(isolationPlugins, pluginContext);
+      let firstError = bootstrappingRelease.error ?? mountingRelease.error ?? pluginError;
       sandbox.inactive();
-      sandbox.dispose();
-      cleanupPreparedContainers();
-      mountedContainer = undefined;
-      mounted = false;
-
-      const firstError = bootstrappingRelease.error ?? mountingRelease.error;
+      try {
+        sandbox.dispose();
+      } catch (error) {
+        firstError ??= { value: error };
+      } finally {
+        cleanupPreparedContainers();
+        mountedContainer = undefined;
+        mounted = false;
+      }
       if (firstError) {
         throw firstError.value;
       }

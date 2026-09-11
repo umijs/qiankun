@@ -25,6 +25,11 @@ export type E2EWindow = Window & {
     hookMetrics(key: string): { hookCalls: number; moduleFetches: number } | undefined;
     loadDetached(name: string, key?: string, containerKey?: string, props?: Record<string, unknown>): string;
     settle(key: string): Promise<string>;
+    mountOutcome(key: string): Promise<{ status: string; error?: string }>;
+    remount(key: string): Promise<string>;
+    unload(key: string): Promise<string>;
+    unloadNamed(name: string, containerKey: string): Promise<void>;
+    loadWithNetworkEntryStream(key: string, containerKey: string): Promise<string>;
     unmount(key: string): Promise<string>;
     resetContainer(key: string): void;
     status(key: string): string | undefined;
