@@ -284,21 +284,7 @@ This model is not suitable for hostile code. It does not harden objects, freeze 
 
 ## Content Security Policy
 
-The classic evaluator and ESM engine avoid `eval` and `new Function`, so they do not require `'unsafe-eval'`. They execute generated code through blob URLs instead.
-
-At minimum, the relevant CSP directives must account for:
-
-- `blob:` in `script-src` for classic and ESM execution;
-- permission for the inline `script[type="importmap"]` injected by the ESM engine;
-- the remote origins in `connect-src`, because external scripts and modules are fetched;
-- `blob:` in `style-src` when style isolation converts external stylesheets;
-- the page's nonce, hash, or inline-style policy for dynamically created `<style>` elements.
-
-```http
-Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline' blob:; connect-src 'self' https://widgets.example
-```
-
-This illustrative policy permits the runtime import map and widget-created inline styles. The exact policy depends on the execution path and widget, and cross-origin fetches must also satisfy CORS. Adding `'unsafe-eval'` does not fix a missing blob, inline-script, or network-source permission and is not required by this package.
+The Classic script evaluator and ESM engine do not rely on `eval` or `new Function`, so the framework itself does not require `'unsafe-eval'`. Blob URLs, inline import maps, styles, and cross-origin fetches have separate CSP requirements. See [Content Security Policy (CSP)](/guide/csp-requirements) for policy examples and the current nonce limitations.
 
 ## Production checklist
 

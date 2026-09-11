@@ -284,19 +284,7 @@ await sandbox.evaluateScript(`
 
 ## Content Security Policy
 
-Classic 脚本求值器和 ESM 引擎都不会调用 `eval` 或 `new Function`，因此无需在 CSP 中加入 `'unsafe-eval'`。生成后的代码通过 Blob URL 执行，需要为相关指令放行实际使用的资源：
-
-- `script-src` 需要允许 `blob:`；
-- ESM 引擎会动态插入内联的 `script[type="importmap"]`，脚本策略也要允许这类节点；
-- 远程脚本和模块会先通过 fetch 获取，相应源需要出现在 `connect-src` 中；
-- 外链样式经过隔离转换后可能使用 Blob URL，此时 `style-src` 也要允许 `blob:`；
-- 动态创建的 `<style>` 仍受页面现有的 nonce、hash 或内联样式策略约束。
-
-```http
-Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline' blob:; connect-src 'self' https://widgets.example
-```
-
-上面的示例同时放行了运行时 import map 和组件创建的内联样式。实际策略应根据所用执行路径和资源继续收紧，跨源 fetch 还必须满足 CORS。缺少 Blob、内联脚本或网络源权限时，添加 `'unsafe-eval'` 无法解决问题，也不是这个包的运行要求。
+Classic 脚本求值器和 ESM 引擎不依赖 `eval` 或 `new Function`，无需为框架本身放行 `'unsafe-eval'`。Blob URL、内联 import map、样式和跨源 fetch 各有对应的 CSP 要求，策略示例与当前 nonce 限制见[内容安全策略（CSP）](/zh-CN/guide/csp-requirements)。
 
 ## 上线前检查
 
