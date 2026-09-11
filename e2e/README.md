@@ -30,6 +30,7 @@ The main fixture serves two pages: `index.html` (imperative `loadMicroApp` playg
 Suites map to qiankun's core promises:
 
 - `lifecycle` — mount/unmount/remount, lifecycle caching (scripts must not re-execute on remount)
+- `unload` — terminal disposal of a name/container generation: queued-handle cancellation, fresh entry requests and evaluation on reload, native response-body cancellation, container handoff, and registered-application unload
 - `sandbox-js` — window pollution stays inside the sandbox, main-realm globals stay readable, leaked intervals reclaimed on unmount
 - `esm-sandbox` — ESM entry lifecycles, sandboxed module graph, namespace caching across remounts
 - `style-isolation` — `@scope` based CSS isolation, with a control test documenting the unisolated leak
@@ -39,6 +40,15 @@ Suites map to qiankun's core promises:
 - `router-mode` — route-driven mount/unmount/switch including history back
 - `container-gate` — container occupancy serialization: waiting takeover, cross-app remount handoff, no-await races, mount/unmount-failure fallback release
 - `standalone-sandbox` — direct package use without qiankun/loader, including the no-`unsafe-eval` CSP path
+
+## Fixture network controls
+
+`servers/serve.mjs` exposes these controls on each sub-app server; construct URLs from `ports.ts`:
+
+- `/__e2e__/request-count?path=<pathname>` returns `{ count }` for that decoded path; query strings do not create separate counters.
+- `/__e2e__/reset-request-count?path=<pathname>` removes that path's counter and responds with status 204. Both counter endpoints require `path` and respond with 400 if it is missing.
+- An HTML request with `?open-entry-stream=<key>` sends the entry through its lifecycle script but leaves the HTML tail and HTTP response open. Use a distinct key per case and unload the handle to cancel the native body.
+- `/__e2e__/entry-stream-state?key=<key>` returns `{ opened, closed }`; both are false before the stream opens, and `closed` becomes true when the response connection closes. Assert this with `expect.poll` to verify actual network cancellation rather than only a rejected application promise.
 
 ## Browser matrix
 

@@ -31,7 +31,7 @@ const apps = [
 await Promise.all(apps.map((app) => app.mountPromise));
 
 // 仪表盘关闭时
-await Promise.all(apps.map((app) => app.unmount()));
+await Promise.all(apps.map((app) => app.unload()));
 ```
 
 两个并行运行的实例不得共用同一容器。在同一位置切换应用时，应先等待当前实例的 `unmount()` 完成，再加载后续实例。
@@ -82,15 +82,15 @@ if (left.update) {
 
 如果主应用销毁原容器并再次调用 `loadMicroApp`，该调用会返回新的句柄。此时若同名应用有已卸载的实例，qiankun 会把它挂载到新容器，同样不会重新执行入口。主应用应单独保存和清理新句柄。移除容器 DOM 之前，仍须通过原句柄卸载原实例。
 
-## 每个句柄都必须卸载
+## 管理实例清理 {#每个句柄都必须卸载}
 
-主应用负责管理每次 `loadMicroApp` 调用返回的句柄，并在不再使用实例时执行卸载：
+主应用负责管理每次 `loadMicroApp` 调用返回的句柄。暂时移除应用时调用 `unmount()`；不再需要该代实例时调用 `unload()`：
 
 ```ts
-await Promise.all([left.unmount(), right.unmount()]);
+await Promise.all([left.unload(), right.unload()]);
 ```
 
-`unmount()` 会调用微应用的卸载生命周期，并清理由 qiankun 跟踪的容器内容和沙箱副作用。微应用仍须自行释放状态订阅、Worker、WebSocket、Observer 和 Portal 等外部资源。
+`unmount()` 会调用微应用的卸载生命周期，清理容器内容和可追踪的沙箱副作用，同时保留已加载配置。`unload()` 进一步销毁同名应用在同一容器中的整代实例，取消排队实例并使旧句柄失效；再次加载会重新请求入口和执行脚本。其他容器中的同名应用不受影响。微应用仍须在自己的 `unmount` 中释放状态订阅、Worker、WebSocket、Observer 和 Portal 等外部资源。详见 [loadMicroApp](/zh-CN/api/load-micro-app#unload)。
 
 ## 原生 ESM 注意事项
 

@@ -24,7 +24,7 @@ const reportApp = loadMicroApp({
 await reportApp.mountPromise;
 
 // 页面不再需要这个区域时：
-await reportApp.unmount();
+await reportApp.unload();
 ```
 
 `loadMicroApp` 会立即返回句柄，加载和挂载过程则异步执行。如果后续操作要求微应用已完成挂载，应先等待 `mountPromise`。网络请求或渲染过程中发生的异常也应按常规异步错误处理。
@@ -41,7 +41,7 @@ flowchart LR
   D --> E[挂载到容器]
   A --> F[返回 MicroApp 句柄]
   F -. 观察 .-> E
-  F --> G[update 或 unmount]
+  F --> G[update、unmount 或 unload]
 ```
 
 HTML 入口声明微应用所需的脚本和样式，并通过入口脚本导出生命周期函数。qiankun 负责调用这些函数，并将主应用提供的容器传入微应用。JavaScript 隔离默认开启；[样式隔离](/zh-CN/concepts/style-isolation)需要显式启用。
@@ -55,7 +55,7 @@ HTML 入口声明微应用所需的脚本和样式，并通过入口脚本导出
 | 按顺序调用生命周期 | 销毁框架根节点并清理外部副作用 |
 | 卸载时清空容器 | 确保应用可重复挂载和卸载 |
 
-直接从页面中移除容器不能替代生命周期清理。不再使用实例时，应先调用 `unmount()` 并处理其返回的 Promise，再丢弃句柄。条件允许时，应等待卸载完成后再移除容器；如果框架的清理回调无法等待异步操作，也应给返回的 Promise 挂上 `catch`，处理卸载失败的情况。
+直接移除容器不能替代生命周期清理。暂时移除视图时调用 `unmount()`，保留配置和沙箱供重新挂载；不再需要该代实例时调用 `unload()`，销毁同名应用在同一容器中的整代实例和缓存。条件允许时，应等待清理完成后再移除容器；如果框架的清理回调无法等待异步操作，也应给返回的 Promise 挂上 `catch`。详见 [loadMicroApp](/zh-CN/api/load-micro-app#unload)。
 
 ## 选择激活方式
 
