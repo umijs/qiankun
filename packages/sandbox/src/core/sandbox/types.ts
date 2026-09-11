@@ -7,7 +7,6 @@ import type { Compartment } from '../compartment';
 
 export enum SandboxType {
   Standard = 'Standard',
-  Snapshot = 'Snapshot',
 }
 
 export interface Sandbox extends Compartment {
