@@ -52,7 +52,7 @@ void microApp.mountPromise.catch((error: unknown) => {
 });
 ```
 
-Keep the `MicroApp` handle and call `unmount()` when a successfully mounted view is removed.
+Keep the `MicroApp` handle. Call `unmount()` to remove the view temporarily while retaining its cache for remounting; call `unload()` when its generation is no longer needed, disposing of all instances sharing the same name and container.
 
 ## Handler responsibilities
 

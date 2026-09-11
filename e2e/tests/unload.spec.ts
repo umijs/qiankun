@@ -18,7 +18,7 @@ test.describe('terminal unload', () => {
       const importMaps = page.locator('head > script[type="importmap"][data-qiankun="esm"]');
       await loadApp(page, name, undefined, 'first', undefined, 'shared');
       await expect(page.getByTestId(`${kind}-counters`)).toHaveText(counters);
-      if (name === 'sub-esm') expect(await importMaps.count()).toBeGreaterThan(0);
+      if (name === 'sub-esm') await expect(importMaps).not.toHaveCount(0);
 
       expect(await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.unload('first'))).toBe('NOT_LOADED');
       await expect(page.locator('#container-shared')).toBeEmpty();

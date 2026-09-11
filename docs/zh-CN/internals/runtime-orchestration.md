@@ -119,10 +119,10 @@ flowchart TD
 4. **流式加载入口。** `loadEntry` 使 HTML 依次经过流式处理和资源转译；Classic 脚本与模块脚本分别进入对应执行流程。模块脚本在流式处理阶段收集，输入流结束后再按文档顺序执行。
 5. **解析生命周期。** `getLifecyclesFromExports` 依次尝试从导出对象、`exports.default`、`global[latestSetProp]`（Classic）和 `window[appName]` 中解析 `{ bootstrap, mount, unmount, update }`。如果均不符合生命周期对象要求，则抛出异常；其中 `update` 为可选函数。详见[生命周期解析原理](/zh-CN/internals/lifecycle-resolution)。
 6. **组合内置扩展钩子和用户钩子。** 两个内置扩展钩子会在代理后的全局对象上设置 `__POWERED_BY_QIANKUN__` 和 `__INJECTED_PUBLIC_PATH_BY_QIANKUN__`。用户配置的[生命周期钩子](/zh-CN/api/lifecycles)（`beforeLoad`、`beforeMount`、`afterMount`、`beforeUnmount`、`afterUnmount`）会与内置逻辑组合。`beforeLoad` 在 `loadApp` 主体中执行，其余钩子分别加入 Parcel 的 `mount` 或 `unmount` 队列。
-7. **返回 Parcel 配置。** 工厂函数生成 single-spa 的 `ParcelConfigObject`。`mount` 阶段依次执行：初始化或重建容器、激活沙箱、`beforeMount`、应用 `mount({ ...props, container })`、`afterMount`。`unmount` 阶段依次执行：`beforeUnmount`、应用 `unmount(...)`、停用沙箱、`afterUnmount`、清空容器。`unload` 阶段仅在完整销毁时执行，届时 `EsmSandboxEngine.dispose()` 会撤销 blob URL 并释放 ESM 执行域。
+7. **返回 Parcel 配置。** 工厂函数生成 single-spa 的 `ParcelConfigObject`。`mount` 阶段依次执行：初始化或重建容器、激活沙箱、`beforeMount`、应用 `mount({ ...props, container })`、`afterMount`。`unmount` 阶段依次执行：`beforeUnmount`、应用 `unmount(...)`、停用沙箱、`afterUnmount`、清空容器。`unload` 阶段调用统一的沙箱 `dispose()`，清除框架持有的 ESM 引擎引用并撤销 blob URL；手动加载的句柄 `unload()` 和 `unloadMicroApp` 也调用该路径。
 
 ::: info `mount`、`unmount` 与 `unload`
-`unmount` 仅停用应用，同时保留沙箱和 ESM 模块命名空间，以降低重新挂载的开销。对于 ESM 应用，重新挂载只会再次调用 `mount(props)`，不会重新执行模块顶层代码。只有 single-spa 执行完整销毁时触发的 `unload` 才会释放 ESM 引擎及其 blob URL。因此，框架实例应在 `mount()` 中创建，而不应在模块顶层创建。
+`unmount` 仅停用应用，同时保留沙箱和 ESM 模块命名空间，以降低重新挂载的开销。对于 ESM 应用，重新挂载只会再次调用 `mount(props)`，不会重新执行模块顶层代码。手动加载的应用通过句柄 `unload()` 或 `unloadMicroApp(name, container)` 销毁同名应用在同一容器中的整代实例；路由应用通过 `unloadApplication` 触发销毁。两条路径都会清理 ESM 引擎的框架引用及 blob URL，但不能撤回浏览器原生模块注册。因此，框架实例应在 `mount()` 中创建，而不应在模块顶层创建。
 :::
 
 ## `start()` 的附加行为

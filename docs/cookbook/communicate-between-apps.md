@@ -52,7 +52,7 @@ export async function unmount() {
 
 Plain values in `props` describe the mount-time snapshot. Functions and objects are references owned by the host; pass them deliberately, with a small and documented interface.
 
-When the host no longer needs the app, call `await profileApp.unmount()`. Removing the container or dropping the variable is not a substitute for the micro-app lifecycle.
+Call `await profileApp.unmount()` to remove the app temporarily while keeping its cache for remounting; call `await profileApp.unload()` when its generation is no longer needed. Disposal invalidates all handles sharing the same name/container configuration. Removing the container or dropping the variable does not run micro-app cleanup.
 
 ## Push a new snapshot with `update`
 

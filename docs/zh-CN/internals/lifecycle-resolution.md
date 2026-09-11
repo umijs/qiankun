@@ -232,10 +232,10 @@ single-spa 的 `unmount` 用于停用应用并保留可复用的运行时状态�
 
 对于命中缓存的重新挂载（同一应用和同一容器），qiankun 还会将 `bootstrap` 替换为空操作，确保一次性初始化不会重复执行。
 
-**完整销毁（`unload`）**：只有进入 single-spa 的 `unload` 生命周期后，qiankun 才会销毁 ESM Realm。`EsmSandboxEngine.dispose()` 会撤销引擎创建的所有 blob URL，并注销当前实例的 Realm。后续再次激活时，`loadApp` 会使用新的引擎重新执行完整加载流程。`dispose()` 绑定到 `unload` 而非 `unmount`，因此已经卸载但尚未执行 `unload` 的 ESM 应用仍会在内存中保留 Realm 和模块命名空间。
+**完整销毁（`unload`）**：手动加载的应用通过句柄 `unload()` 或 `unloadMicroApp(name, container)` 销毁；路由应用通过 `unloadApplication` 进入 single-spa 的 `unload` 生命周期。两条路径最终调用统一的沙箱 `dispose()`，释放隔离膜、配置和框架持有的模块引用，撤销 ESM 引擎创建的 blob URL，并移除其注入的 import map 脚本。浏览器原生 import map 条目和模块注册表无法撤销。后续加载会创建新的沙箱和 ESM 引擎。
 
-::: info `loadMicroApp` 不提供 `unload`
-`loadMicroApp` 返回的公开句柄不包含 single-spa 的 `unload` 生命周期。不再使用实例时仍应调用 `unmount()`，但该操作不会完整销毁 ESM 引擎。详见[运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)。
+::: info 销毁范围为同名应用与同一容器的整代实例
+`unmount()` 保留缓存和沙箱状态，供后续重新挂载。`unload()` 会使共享同一代配置的旧句柄一并失效，并取消其中尚在排队的实例。同名应用在同一容器中再次调用 `loadMicroApp` 时会重新请求入口并执行脚本；其他容器中的实例不受影响。详见 [loadMicroApp](/zh-CN/api/load-micro-app#unload)。
 :::
 
 ## 延伸阅读
