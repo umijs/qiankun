@@ -3,9 +3,9 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
-import libraryConfig from '../../vite.library.config';
+import libraryConfig from './vite.library.config';
 
-const copyDeclarationsScript = fileURLToPath(new URL('../../scripts/copy-declarations.mjs', import.meta.url));
+const copyDeclarationsScript = fileURLToPath(new URL('./scripts/copy-declarations.mjs', import.meta.url));
 
 function finalizePackage(packageRoot: string): void {
   const commandOptions = { cwd: packageRoot, stdio: 'inherit' } as const;

@@ -25,7 +25,7 @@
   },
   "sideEffects": false,
   "scripts": {
-    "build": "rimraf dist && vite build --config ../shared/vite.config.exports.ts",
+    "build": "rimraf dist && vite build --config ../../vite.library.exports.config.ts",
     "bench": "pnpm run build && tachometer ./benchmarks/parser/tern/import-html-entry.html ./benchmarks/parser/tern/parser.html --timeout=1",
     "test": "vitest --run"
   },

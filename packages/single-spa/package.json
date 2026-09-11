@@ -25,7 +25,7 @@
   },
   "sideEffects": false,
   "scripts": {
-    "build": "rimraf dist && vite build --config ../shared/vite.config.exports.ts",
+    "build": "rimraf dist && vite build --config ../../vite.library.exports.config.ts",
     "test": "vitest --run"
   },
   "author": "Kuitos",
