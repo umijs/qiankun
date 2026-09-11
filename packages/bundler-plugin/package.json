@@ -40,7 +40,8 @@
         "types": "./dist/cjs/vite/index.d.ts",
         "default": "./dist/cjs/vite/index.js"
       }
-    }
+    },
+    "./package.json": "./package.json"
   },
   "scripts": {
     "build:webpack4": "cd ./tests/webpack4 && npm install && pnpm run build",
