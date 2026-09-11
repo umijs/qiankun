@@ -3,6 +3,8 @@ import type { AppConfiguration, MicroApp as MicroAppTypeDefinition, LifeCycles }
 import { loadMicroApp } from 'qiankun';
 import { omit } from 'lodash';
 
+export { isMicroAppLinkActive, navigateMicroAppLink, subscribeToMicroAppLinkLocation } from './link';
+
 export type MicroAppType = {
   _unmounting?: boolean;
   _updatingPromise?: Promise<null>;

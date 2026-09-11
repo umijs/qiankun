@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { MicroAppLink } from '@qiankunjs/vue';
 import { computed } from 'vue';
 import { appByPath, microApps, siblingShell } from './apps';
 import { locale, t, toggleLocale } from './i18n';
-import { currentPath, navigate } from './router';
+import { currentPath } from './router';
 import Dashboard from './Dashboard.vue';
 import Stage from './Stage.vue';
 
@@ -17,36 +18,34 @@ const loadingTag = { 'esm sandbox': 'esm', classic: 'classic', streamed: 'stream
 <template>
   <div class="shell">
     <aside>
-      <button type="button" class="brand" @click="navigate(home)">
+      <MicroAppLink :to="home" class-name="brand">
         <span class="seal" aria-hidden>乾坤</span>
         <span>
           <strong>qiankun</strong>
           <small class="mono">{{ t.shellSubtitle }}</small>
         </span>
-      </button>
+      </MicroAppLink>
 
       <nav>
-        <button
-          type="button"
+        <MicroAppLink
+          :to="home"
           :aria-current="currentPath === home ? 'page' : undefined"
           :class="{ active: currentPath === home }"
-          @click="navigate(home)"
         >
           <span>
             <span class="label">{{ t.dashboard }}</span>
             <span class="sub">{{ t.dashboardSub }}</span>
           </span>
-        </button>
+        </MicroAppLink>
 
         <p class="nav-group mono">{{ t.microApps }}</p>
 
-        <button
+        <MicroAppLink
           v-for="app in microApps"
           :key="app.name"
-          type="button"
+          :to="app.path"
           :aria-current="currentPath.startsWith(app.path) ? 'page' : undefined"
-          :class="{ active: currentPath.startsWith(app.path) }"
-          @click="navigate(app.path)"
+          active-class-name="active"
         >
           <span class="dot" :style="{ backgroundColor: app.accent }" />
           <span>
@@ -54,7 +53,7 @@ const loadingTag = { 'esm sandbox': 'esm', classic: 'classic', streamed: 'stream
             <span class="sub">{{ app.stack[locale] }}</span>
           </span>
           <span class="tag mono">{{ loadingTag[app.loadingPath] }}</span>
-        </button>
+        </MicroAppLink>
       </nav>
 
       <footer class="mono">
@@ -94,6 +93,8 @@ aside {
 }
 
 .brand {
+  color: inherit;
+  text-decoration: none;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -145,7 +146,8 @@ nav {
   padding: 16px 12px;
 }
 
-nav button {
+nav a {
+  text-decoration: none;
   position: relative;
   display: flex;
   align-items: center;
@@ -162,17 +164,17 @@ nav button {
   transition: background-color 150ms ease-out;
 }
 
-nav button:hover {
+nav a:hover {
   background: var(--paper);
 }
 
-nav button.active {
+nav a.active {
   background: color-mix(in srgb, var(--primary) 8%, transparent);
   color: var(--primary);
 }
 
 /* the amber rail marks the active route — one of the few places amber carries meaning */
-nav button.active::before {
+nav a.active::before {
   content: '';
   position: absolute;
   top: 8px;
@@ -204,7 +206,7 @@ nav button.active::before {
   border-radius: 50%;
 }
 
-nav button > span:not(.dot):not(.tag) {
+nav a > span:not(.dot):not(.tag) {
   flex: 1;
   line-height: 1.25;
 }
@@ -221,7 +223,7 @@ nav button > span:not(.dot):not(.tag) {
   color: var(--ink-soft);
 }
 
-nav button.active .sub {
+nav a.active .sub {
   color: color-mix(in srgb, var(--primary) 70%, transparent);
 }
 
