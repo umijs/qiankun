@@ -34,6 +34,7 @@ const MIME_TYPES = {
 // behavior — e.g. a modulepreload warm-up being reused from the browser preload cache
 // shows up as exactly one hit for the module path.
 const requestCounts = new Map();
+const entryStreams = new Map();
 
 const server = createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -85,6 +86,12 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  if (urlPath === '/__e2e__/entry-stream-state') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(entryStreams.get(url.searchParams.get('key')) ?? { opened: false, closed: false }));
+    return;
+  }
+
   requestCounts.set(urlPath, (requestCounts.get(urlPath) ?? 0) + 1);
   let filePath = normalize(join(root, urlPath));
   if (!filePath.startsWith(root)) {
@@ -99,6 +106,20 @@ const server = createServer(async (req, res) => {
   try {
     const content = await readFile(filePath);
     res.writeHead(200, { 'Content-Type': MIME_TYPES[extname(filePath)] ?? 'application/octet-stream' });
+    const streamKey = url.searchParams.get('open-entry-stream');
+    if (streamKey && extname(filePath) === '.html') {
+      const html = content.toString();
+      const tailOffset = html.lastIndexOf('</body>');
+      const state = { opened: true, closed: false };
+      entryStreams.set(streamKey, state);
+      res.on('close', () => {
+        state.closed = true;
+      });
+      // Flush the lifecycle script, but never send the HTML tail. Disposal must
+      // cancel the native fetch body and writable-dom's pending reader itself.
+      res.write(html.slice(0, tailOffset));
+      return;
+    }
     res.end(content);
   } catch {
     res.writeHead(404);

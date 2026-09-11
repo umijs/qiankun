@@ -230,6 +230,31 @@ For each field and its default, see [AppConfiguration](/api/configuration).
 v3 no longer ships `initGlobalState` / `onGlobalStateChange` / `setGlobalState`. To share state, pass your own methods or store to each app through `props`. See [Sharing state and communicating between apps](/cookbook/communicate-between-apps).
 :::
 
+## Dispose of a route application: unloadApplication {#unload-application}
+
+qiankun re-exports `unloadApplication` from its bundled `@qiankunjs/single-spa` to unmount and dispose of applications registered through `registerMicroApps`. The application remains registered. For instances created through `loadMicroApp`, use `unload()` or `unloadMicroApp()` as described on the [loadMicroApp](/api/load-micro-app#unload) page.
+
+### Signature
+
+```ts
+function unloadApplication(name: string, opts?: { waitForUnmount: boolean }): Promise<void>;
+```
+
+`waitForUnmount` defaults to `false`, which unmounts and disposes of the application immediately. If its route is still active, single-spa immediately reloads and mounts it. Navigate away from its active route first if the app should stay closed.
+
+Set it to `true` to wait until a route change unmounts the application before disposal. The returned Promise waits for this transition too. Registration is retained, so entering the app's route again triggers a fresh load.
+
+```ts
+import { unloadApplication } from 'qiankun';
+
+// Release loaded configuration and the sandbox when a route change next unmounts the app.
+const unloaded = unloadApplication('app1', { waitForUnmount: true });
+// After the host router navigates outside app1's activeRule:
+await unloaded;
+```
+
+This function keeps single-spa's error semantics and throws when the name is not registered. The cleanup boundaries for the sandbox, native ESM registrations, and `sandbox: false` are the same as those described under [loadMicroApp](/api/load-micro-app#unload).
+
 ## See also
 
 - [start](/api/start) — activate registered apps

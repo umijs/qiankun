@@ -7,10 +7,10 @@ import { AppOrParcelStatus, type ParcelConfigObject } from '@qiankunjs/single-sp
 import { type ParcelConfigObjectGetter } from '../../core/loadApp';
 import { type MicroApp } from '../../types';
 
-const mocks = vi.hoisted(() => ({ loadApp: vi.fn() }));
+const mocks = vi.hoisted(() => ({ loadApp: vi.fn(), dispose: vi.fn(async () => {}) }));
 vi.mock('../../core/loadApp', () => ({ default: mocks.loadApp }));
 
-import { loadMicroApp } from '../loadMicroApp';
+import { loadMicroApp, unloadMicroApp } from '../loadMicroApp';
 
 const bootstrap = vi.fn(async () => {});
 const mount = vi.fn(async (_props: { container: HTMLElement }) => {});
@@ -55,7 +55,10 @@ function containers(count: number) {
 describe('loadMicroApp instance reuse', () => {
   beforeEach(() => {
     appName = `app-${String(++appSequence)}`;
-    mocks.loadApp.mockImplementation(async () => getterOf());
+    mocks.loadApp.mockImplementation(async (_app, _configuration, _lifeCycles, control) => {
+      control.onDispose(mocks.dispose);
+      return getterOf();
+    });
   });
 
   afterEach(async () => {
@@ -306,7 +309,7 @@ describe('loadMicroApp instance reuse', () => {
     expect(mount).toHaveBeenLastCalledWith({ container: last });
   });
 
-  it('fails the queued newcomer when the draining predecessor fails to unmount', async () => {
+  it('still mounts the queued newcomer when the draining predecessor fails to unmount', async () => {
     const unmounting = new Deferred<void>();
     unmount.mockImplementationOnce(() => unmounting.promise);
     const [former, next] = containers(2);
@@ -317,18 +320,14 @@ describe('loadMicroApp instance reuse', () => {
     const second = load(next);
     await second.bootstrapPromise;
     await vi.waitFor(() => expect(second.getStatus()).toBe(AppOrParcelStatus.MOUNTING));
+    expect(mount).toHaveBeenCalledTimes(1);
     unmounting.reject(new Error('unmount failed'));
     await expect(firstUnmount).rejects.toThrow('unmount failed');
-    // The newcomer waits for its predecessor's unmountPromise, which rejects with that failure.
-    await expect(second.mountPromise).rejects.toThrow('unmount failed');
+    // The predecessor leaves the queue however its unmount ends, so the newcomer takes its turn.
+    await second.mountPromise;
+    expect(second.getStatus()).toBe(AppOrParcelStatus.MOUNTED);
     expect(mocks.loadApp).toHaveBeenCalledTimes(1);
-    expect(mount).toHaveBeenCalledTimes(1);
-
-    // Both left the queue, so the generation is idle again and the next element reuses it.
-    const [last] = containers(1);
-    await load(last).mountPromise;
-    expect(mocks.loadApp).toHaveBeenCalledTimes(1);
-    expect(mount).toHaveBeenLastCalledWith({ container: last });
+    expect(mount.mock.calls).toEqual([[{ container: former }], [{ container: next }]]);
   });
 
   it('keeps different app names in the same container separate', async () => {
@@ -402,5 +401,104 @@ describe('loadMicroApp instance reuse', () => {
     await third.mountPromise;
     expect(third.getStatus()).toBe(AppOrParcelStatus.MOUNTED);
     expect(mocks.loadApp).toHaveBeenCalledTimes(2);
+  });
+
+  it('unloads the whole cached generation and evaluates a fresh generation on reload', async () => {
+    const container = document.createElement('div');
+    const first = load(container);
+    await first.mountPromise;
+    await first.unload();
+    expect(unmount).toHaveBeenCalledTimes(1);
+    expect(mocks.dispose).toHaveBeenCalledTimes(1);
+    expect(first.getStatus()).toBe(AppOrParcelStatus.NOT_LOADED);
+    await expect(first.mount()).rejects.toThrow('has been unloaded');
+    await expect(first.unmount()).resolves.toBeNull();
+    await first.unload();
+    expect(mocks.dispose).toHaveBeenCalledTimes(1);
+    await load(container).mountPromise;
+    expect(mocks.loadApp).toHaveBeenCalledTimes(2);
+    expect(bootstrap).toHaveBeenCalledTimes(2);
+  });
+
+  it('cancels queued siblings without waiting for their mount promises', async () => {
+    const container = document.createElement('div');
+    const first = load(container);
+    await first.mountPromise;
+    const queued = load(container);
+    await queued.bootstrapPromise;
+    await vi.waitFor(() => expect(queued.getStatus()).toBe(AppOrParcelStatus.MOUNTING));
+    const rejected = expect(queued.mountPromise).rejects.toThrow('has been unloaded');
+    await first.unload();
+    await rejected;
+    expect(mount).toHaveBeenCalledTimes(1);
+    expect(unmount).toHaveBeenCalledTimes(1);
+    expect(queued.getStatus()).toBe(AppOrParcelStatus.NOT_LOADED);
+    await expect(queued.mount()).rejects.toThrow('has been unloaded');
+  });
+
+  it('unloads a pending initial load and ignores a late configuration getter', async () => {
+    const pending = new Deferred<ParcelConfigObjectGetter>();
+    mocks.loadApp.mockReturnValueOnce(pending.promise);
+    const container = document.createElement('div');
+    const first = load(container);
+    const rejected = expect(first.mountPromise).rejects.toThrow('has been unloaded');
+    await first.unload();
+    await rejected;
+    const getter = vi.fn(() => ({ bootstrap, mount, unmount }));
+    pending.resolve(getter);
+    await Promise.resolve();
+    expect(getter).not.toHaveBeenCalled();
+    await load(container).mountPromise;
+    expect(mocks.loadApp).toHaveBeenCalledTimes(2);
+  });
+
+  it('named unload targets one container and stale handles cannot evict its replacement', async () => {
+    const container = document.createElement('div');
+    const other = document.createElement('div');
+    const first = load(container);
+    const independent = load(other);
+    await Promise.all([first.mountPromise, independent.mountPromise]);
+    await unloadMicroApp(appName, container);
+    expect(independent.getStatus()).toBe(AppOrParcelStatus.MOUNTED);
+    const replacement = load(container);
+    await replacement.mountPromise;
+    await first.unload();
+    expect(replacement.getStatus()).toBe(AppOrParcelStatus.MOUNTED);
+    await replacement.unmount();
+    await load(container).mountPromise;
+    expect(mocks.loadApp).toHaveBeenCalledTimes(3);
+    await unloadMicroApp('unknown', container);
+  });
+
+  it('disposes and invalidates even when the application unmount fails', async () => {
+    const container = document.createElement('div');
+    const first = load(container);
+    await first.mountPromise;
+    unmount.mockRejectedValueOnce(new Error('unmount failed'));
+    await expect(first.unload()).rejects.toThrow('unmount failed');
+    expect(mocks.dispose).toHaveBeenCalledTimes(1);
+    await expect(first.mount()).rejects.toThrow('has been unloaded');
+    await load(container).mountPromise;
+    expect(mocks.loadApp).toHaveBeenCalledTimes(2);
+  });
+  it('drains an entered update before unmount and terminal disposal', async () => {
+    const updating = new Deferred<void>();
+    const update = vi.fn(() => updating.promise);
+    mocks.loadApp.mockImplementationOnce(async (_app, _configuration, _lifeCycles, control) => {
+      control.onDispose(mocks.dispose);
+      return () => ({ bootstrap, mount, unmount, update });
+    });
+    const app = load(document.createElement('div'));
+    await app.mountPromise;
+    const updatePromise = app.update!({});
+    await vi.waitFor(() => expect(update).toHaveBeenCalledTimes(1));
+    const unloading = app.unload();
+    expect(unmount).not.toHaveBeenCalled();
+    expect(mocks.dispose).not.toHaveBeenCalled();
+    updating.resolve();
+    await updatePromise;
+    await unloading;
+    expect(unmount).toHaveBeenCalledTimes(1);
+    expect(mocks.dispose).toHaveBeenCalledTimes(1);
   });
 });
