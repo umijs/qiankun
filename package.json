@@ -24,8 +24,6 @@
     "build:examples-site": "pnpm run build:packages && node scripts/build-examples-site.mjs",
     "check:lodash-imports": "node scripts/check-lodash-imports.mjs",
     "ci:version": "changeset version && node scripts/sanitize-pre-state.mjs",
-    "prerelease:alpha": "changeset pre enter alpha && changeset && pnpm ci:version",
-    "release:alpha": "pnpm run build && changeset publish && changeset pre exit",
     "eslint": "eslint packages/",
     "prettier": "prettier --write .",
     "prettier:check": "prettier -c .",
