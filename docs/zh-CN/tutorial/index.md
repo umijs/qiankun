@@ -13,7 +13,7 @@
 flowchart LR
   A["main-app :7099"] -->|"loadMicroApp"| Q["qiankun"]
   Q -->|"加载入口并挂载"| B["sub-app :7101"]
-  A -->|"MicroApp.unmount()"| Q
+  A -->|"MicroApp.unload()"| Q
 ```
 
 两个项目分别管理依赖、开发服务器和构建流程。两个项目在运行时仅通过微应用的 HTML 入口地址产生关联。
@@ -50,6 +50,6 @@ qiankun-tutorial/
 - 指向微应用 HTML 的 `entry` 字符串；
 - 一个已存在于页面中的 `HTMLElement`，作为 `container`。
 
-微应用需要提供 `bootstrap`、`mount` 和 `unmount`。qiankun 根据双方提供的信息创建实例，并向主应用返回句柄。实例不再使用时，主应用必须通过该句柄调用 `unmount()`。
+微应用需要提供 `bootstrap`、`mount` 和 `unmount`。qiankun 根据双方提供的信息创建实例，并向主应用返回句柄。暂时移除应用时可调用 `unmount()`，保留缓存供重新挂载；不再需要该代实例时调用 `unload()`，销毁同名应用在同一容器中的整代实例。
 
 首先完成[第 1 步：搭建微应用](/zh-CN/tutorial/build-the-micro-app)。
