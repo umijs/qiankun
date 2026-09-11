@@ -9,7 +9,7 @@ The package also exports [`MicroAppLink`](#micro-app-link) for host route naviga
 ## Installation
 
 ```bash
-npm install @qiankunjs/vue@rc qiankun@rc
+npm install @qiankunjs/vue qiankun
 ```
 
 `vue` is a peer dependency with the range `^2.0.0 || >=3.0.0`. Under Vue 2 you also need `@vue/composition-api` installed (the component uses the Composition API through `vue-demi`).
