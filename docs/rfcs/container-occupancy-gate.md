@@ -1,10 +1,10 @@
 # RFC: Container Occupancy Gate — Serialize DOM Writes for Micro Apps Sharing One Container
 
-- **Status**: Draft(已实现,见本分支:两段临界区 + FIFO 闸门 + 失败兜底,附闸门单测与 loadApp 集成单测)
+- **Status**: Accepted
 - **Author**: qiankun maintainers
 - **Created**: 2026-07-25
 - **Target Release**: qiankun v3.x
-- **Tracking Issue**: #3139
+- **Tracking Issue**: [#3139](https://github.com/umijs/qiankun/issues/3139) · [PR #3169](https://github.com/umijs/qiankun/pull/3169)
 - **Last Revision**: 2026-07-28(review 修订:①段释放信号覆盖 post-stream 求值、①→② 采纳、initializedContainers 归属令牌、兜底先 teardown、update/指示器纳入守护、预热按需触发,并新增 §已知限制)
 
 ## 背景
