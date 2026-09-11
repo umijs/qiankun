@@ -59,6 +59,36 @@ test.describe('container occupancy gate', () => {
     await expect(page.getByTestId('load-marker')).toHaveCSS('color', 'rgb(7, 8, 9)');
   });
 
+  test("a same-name cached waiter cannot adopt the mounted holder's open entry stream", async ({ page }) => {
+    expect(
+      await page.evaluate(() =>
+        (window as unknown as E2EWindow).__E2E__.loadWithOpenEntryStream('same-name-holder', 'same-name-shared'),
+      ),
+    ).toBe('MOUNTED');
+    await expect(page.getByTestId('classic-counters')).toHaveText('bootstrap:1,mount:1,unmount:0');
+
+    await page.evaluate(() =>
+      (window as unknown as E2EWindow).__E2E__.loadDetached('sub-classic', 'same-name-waiter', 'same-name-shared'),
+    );
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as E2EWindow).__E2E__.status('same-name-waiter')))
+      .toBe('MOUNTING');
+    // Both parcels use the same cached configuration getter. Its still-open load hold belongs
+    // to the mounted holder; the waiter must not adopt it and start wiping/replaying this DOM.
+    await expect(page.getByTestId('classic-title')).toBeVisible();
+    await expect(page.getByTestId('classic-counters')).toHaveText('bootstrap:1,mount:1,unmount:0');
+
+    await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.closeEntryStream('same-name-holder'));
+    await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.unmount('same-name-holder'));
+    expect(await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.settle('same-name-waiter'))).toBe(
+      'MOUNTED',
+    );
+    await expect(page.getByTestId('classic-counters')).toHaveText('bootstrap:1,mount:2,unmount:1');
+
+    await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.unmount('same-name-waiter'));
+    await expect(page.locator('#container-same-name-shared')).toBeEmpty();
+  });
+
   test('racing two loads into one container serializes FIFO — the first call mounts, the second takes over after unmount', async ({
     page,
   }) => {
