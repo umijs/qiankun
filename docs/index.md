@@ -51,12 +51,8 @@ features:
 Install qiankun in the main app:
 
 ```bash
-npm install qiankun@rc
+npm i qiankun
 ```
-
-::: tip v3 installs from the `rc` tag
-qiankun 3.0 is a release candidate, so npm's `latest` tag still resolves to 2.x. Ask for `@rc` explicitly to get v3.
-:::
 
 Mount after the container exists, then keep the returned handle for status and teardown:
 
