@@ -28,7 +28,9 @@ Note that [`isRuntimeCompatible()`](/api/is-runtime-compatible) only covers the 
 
 ## Firefox and native ESM
 
-The ESM sandbox relies on injecting multiple import maps dynamically, which Firefox does not yet enable by default. To support Firefox, deliver micro-apps as classic scripts instead (for example a Webpack build); the base runtime and style isolation are unaffected on Firefox.
+The ESM sandbox relies on injecting multiple import maps dynamically, which Firefox does not yet enable by default. qiankun 3.0 provides no ESM sandbox fallback, so ESM micro-apps require a browser with native support for dynamically injected multiple import maps. See the [ESM sandbox RFC](https://github.com/umijs/qiankun/blob/next/docs/rfcs/esm-sandbox.md) for the es-module-shims evaluation and the decision not to include it.
+
+To support Firefox, deliver micro-apps as classic scripts instead (for example a Webpack build); the base runtime and style isolation are unaffected on Firefox.
 
 ## Keep reading
 
