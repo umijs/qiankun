@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "groups": 81,
+  "positionCountsPerGroup": [
+    [6, 7, 7],
+    [7, 6, 7],
+    [7, 7, 6]
+  ],
+  "semanticsPassed": true,
+  "measuredCount": 1620,
+  "warmupCount": 162
+}
