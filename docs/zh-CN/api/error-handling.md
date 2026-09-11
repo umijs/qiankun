@@ -63,6 +63,23 @@ void microApp.mountPromise.catch((error: unknown) => {
 
 React 和 Vue 的 `<MicroApp>` 组件可通过各自的错误边界选项提供组件级错误界面。这些组件基于 `loadMicroApp`，因此应由组件自身处理实例错误，不能依赖全局处理器接收同一错误。
 
+## QiankunError
+
+qiankun 自身抛出的框架错误可通过顶层导出的 `QiankunError` 识别。该构造函数与 loader、沙箱及共享模块使用的实现相同，`code` 属性提供稳定错误码。
+
+```ts
+import { QiankunError } from 'qiankun';
+
+void microApp.mountPromise.catch((error: unknown) => {
+  if (error instanceof QiankunError) {
+    reportToMonitoring(error, { code: error.code });
+  }
+  showFallback(container, error);
+});
+```
+
+微应用自身抛出的错误、浏览器网络异常和 single-spa 错误不一定是 `QiankunError`，仍需处理。构造函数、错误码约定及各错误的排查方法见[错误码与解决办法](/zh-CN/errors/)。
+
 ## 相关内容
 
 - [处理微应用错误](/zh-CN/cookbook/handle-errors)——错误界面、诊断与重试建议。

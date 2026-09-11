@@ -11,6 +11,7 @@ const enNav = [
     text: 'More',
     items: [
       { text: 'FAQ', link: '/faq/' },
+      { text: 'Error codes and solutions', link: '/errors/' },
       { text: 'Runtime internals', link: '/internals/' },
       { text: 'Live examples', link: 'https://examples.qiankunjs.com' },
       { text: 'Releases', link: 'https://github.com/umijs/qiankun/releases' },
@@ -116,6 +117,7 @@ const enSidebar = {
       collapsed: true,
       items: [
         { text: 'Error handling', link: '/api/error-handling' },
+        { text: 'Error codes and solutions', link: '/errors/' },
         { text: 'Runtime compatibility', link: '/api/is-runtime-compatible' },
         { text: 'prefetchApps (deprecated)', link: '/api/prefetch-apps' },
       ],
@@ -148,6 +150,7 @@ const enSidebar = {
       ],
     },
   ],
+  '/errors/': [{ text: 'Errors', items: [{ text: 'Error codes and solutions', link: '/errors/' }] }],
   '/faq/': [{ text: 'Support', items: [{ text: 'FAQ', link: '/faq/' }] }],
 }
 
@@ -161,6 +164,7 @@ const zhNav = [
     text: '更多',
     items: [
       { text: '常见问题', link: '/zh-CN/faq/' },
+      { text: '错误码与解决办法', link: '/zh-CN/errors/' },
       { text: '运行时实现', link: '/zh-CN/internals/' },
       { text: '在线示例', link: 'https://examples.qiankunjs.com' },
       { text: '更新日志', link: 'https://github.com/umijs/qiankun/releases' },
@@ -266,6 +270,7 @@ const zhSidebar = {
       collapsed: true,
       items: [
         { text: '错误处理', link: '/zh-CN/api/error-handling' },
+        { text: '错误码与解决办法', link: '/zh-CN/errors/' },
         { text: '运行时兼容性', link: '/zh-CN/api/is-runtime-compatible' },
         { text: 'prefetchApps（已废弃）', link: '/zh-CN/api/prefetch-apps' },
       ],
@@ -298,6 +303,7 @@ const zhSidebar = {
       ],
     },
   ],
+  '/zh-CN/errors/': [{ text: '错误排查', items: [{ text: '错误码与解决办法', link: '/zh-CN/errors/' }] }],
   '/zh-CN/faq/': [{ text: '支持', items: [{ text: '常见问题', link: '/zh-CN/faq/' }] }],
 }
 
