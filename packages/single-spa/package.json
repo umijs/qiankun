@@ -4,7 +4,8 @@
   "description": "qiankun's vendored fork of single-spa (7.0 branch @ ce0f925a, v7.0.0-beta.13)",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/umijs/qiankun.git"
+    "url": "git+https://github.com/umijs/qiankun.git",
+    "directory": "packages/single-spa"
   },
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -17,9 +18,14 @@
   "author": "Kuitos",
   "license": "MIT",
   "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   },
   "files": [
     "dist"
-  ]
+  ],
+  "homepage": "https://www.qiankunjs.com",
+  "bugs": {
+    "url": "https://github.com/umijs/qiankun/issues"
+  }
 }

@@ -20,7 +20,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/umijs/qiankun.git"
+    "url": "git+https://github.com/umijs/qiankun.git",
+    "directory": "packages/qiankun"
   },
   "files": [
     "dist"
@@ -30,7 +31,7 @@
   "bugs": {
     "url": "https://github.com/umijs/qiankun/issues"
   },
-  "homepage": "https://github.com/umijs/qiankun#readme",
+  "homepage": "https://www.qiankunjs.com",
   "dependencies": {
     "@qiankunjs/loader": "workspace:^",
     "@qiankunjs/sandbox": "workspace:^",
@@ -39,6 +40,7 @@
     "@qiankunjs/single-spa": "workspace:^"
   },
   "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   }
 }

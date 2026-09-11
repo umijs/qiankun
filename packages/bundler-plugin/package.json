@@ -4,7 +4,8 @@
   "description": "Bundler plugins for qiankun micro-frontend framework",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/umijs/qiankun.git"
+    "url": "git+https://github.com/umijs/qiankun.git",
+    "directory": "packages/bundler-plugin"
   },
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -70,5 +71,14 @@
   "devDependencies": {
     "vite": "^8.1.5",
     "webpack": "^5.108.4"
-  }
+  },
+  "homepage": "https://www.qiankunjs.com",
+  "bugs": {
+    "url": "https://github.com/umijs/qiankun/issues"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "sideEffects": false
 }

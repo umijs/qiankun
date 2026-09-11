@@ -4,7 +4,8 @@
   "description": "internal shared package for qiankun",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/umijs/qiankun.git"
+    "url": "git+https://github.com/umijs/qiankun.git",
+    "directory": "packages/shared"
   },
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -25,6 +26,11 @@
     "dist"
   ],
   "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "homepage": "https://www.qiankunjs.com",
+  "bugs": {
+    "url": "https://github.com/umijs/qiankun/issues"
   }
 }

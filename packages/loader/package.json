@@ -1,10 +1,11 @@
 {
   "name": "@qiankunjs/loader",
   "version": "0.1.0-rc.22",
-  "description": "",
+  "description": "Streaming HTML-entry loader for qiankun",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/umijs/qiankun.git"
+    "url": "git+https://github.com/umijs/qiankun.git",
+    "directory": "packages/loader"
   },
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -26,9 +27,14 @@
     "tachometer": "^0.7.2"
   },
   "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   },
   "files": [
     "dist"
-  ]
+  ],
+  "homepage": "https://www.qiankunjs.com",
+  "bugs": {
+    "url": "https://github.com/umijs/qiankun/issues"
+  }
 }

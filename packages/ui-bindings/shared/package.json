@@ -24,10 +24,19 @@
     "qiankun": "^3.0.0-rc.15"
   },
   "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   },
   "files": [
     "dist"
   ],
-  "repository": "git@github.com:umijs/qiankun.git"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/umijs/qiankun.git",
+    "directory": "packages/ui-bindings/shared"
+  },
+  "homepage": "https://www.qiankunjs.com",
+  "bugs": {
+    "url": "https://github.com/umijs/qiankun/issues"
+  }
 }
