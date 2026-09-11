@@ -44,7 +44,7 @@ flowchart TD
   E --> F["native import(blobUrl) in document order"]
 ```
 
-1. **Fetch** the module through the decorated `fetch` (cacheable → retryable → throwable).
+1. **Fetch** the module through a separate response cache configured by `loadApp` (cacheable → retryable → throwable). Module sources do not consume the cache capacity reserved for HTML entries, Classic scripts, and styles.
 2. **Scan** it with [`es-module-lexer`](https://github.com/guybedford/es-module-lexer), a WASM lexer warmed once at `start()` time via `prepareEsmLexer()`.
 3. **Rewrite** the source so that:
    - references to sandboxed globals are destructured from the membrane view at the top of the module (`const { window, document, … } = __qk_view`);
@@ -120,6 +120,12 @@ Vite serves CSS as JS modules that inject styles at the module top level. Becaus
 :::
 
 ## Lifecycle and caching
+
+`loadApp` uses separate LRU response caches: 512 entries for module sources and the existing 50 entries for HTML entries, Classic scripts, and styles. Both key requests by canonical URL and effective `credentials`, cache in-flight Promises, clone responses for each reader, and discard failed responses.
+
+Application instances within one qiankun runtime copy share the module response cache. It lasts for the runtime's lifetime and is not cleared by an individual instance's `dispose()`, allowing new instances to reuse source responses without a typical 270-module Vite development graph evicting HTML entries and styles. The 512-entry limit bounds the number of responses, not their total bytes; least recently used entries are evicted at capacity. When using `createSandbox` or `Compartment` directly, response caching depends on the caller-provided `fetch`; `createSandbox` also accepts `moduleFetch` to configure module-source requests separately.
+
+The engine still owns each instance's descriptors, rewritten modules, and namespaces separately; membrane views are never shared across instances. The instance module graph is not limited to 512 entries. `dispose()` releases the instance caches and blob URLs.
 
 The ESM sandbox retains its module graph across mount/unmount, which changes one important assumption compared with the classic sandbox:
 

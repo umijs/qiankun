@@ -33,12 +33,23 @@ const getCacheKey = (input: Parameters<Fetch>[0], init?: Parameters<Fetch>[1]): 
   return JSON.stringify([getCanonicalRequestUrl(input), getEffectiveCredentials(input, init)]);
 };
 
-const getGlobalCache = once(() => {
+const getAssetCache = once(() => {
   return new LRUCache<string, Promise<Response>>(50);
 });
 
-export const makeFetchCacheable: (fetch: Fetch) => Fetch = (fetch) => {
-  const lruCache = getGlobalCache();
+// Keep module source responses separate from HTML, classic scripts, and styles:
+// a typical Vite development graph already exceeds the asset cache's 50 entries.
+// Both caches belong to this runtime copy, so new app instances can reuse source
+// responses without retaining another instance's rewritten modules or globals.
+const getModuleCache = once(() => {
+  return new LRUCache<string, Promise<Response>>(512);
+});
+
+export const makeFetchCacheable: (fetch: Fetch, cacheScope?: 'assets' | 'modules') => Fetch = (
+  fetch,
+  cacheScope = 'assets',
+) => {
+  const lruCache = cacheScope === 'modules' ? getModuleCache() : getAssetCache();
 
   const cachedFetch: Fetch = (input, init) => {
     const fetchInput = input;
