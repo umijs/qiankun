@@ -1,5 +1,5 @@
 import type { AppConfiguration, MicroApp } from 'qiankun';
-import { loadMicroApp, precompileModuleSource, unloadMicroApp } from 'qiankun';
+import { LoadAppTimeoutError, loadMicroApp, precompileModuleSource, start, unloadMicroApp } from 'qiankun';
 import { SUB_APP_ENTRIES } from '../../../ports';
 import { createLocalStoragePrefixPlugin } from './localStoragePrefixPlugin';
 
@@ -59,6 +59,10 @@ function resolveContainer(containerKey: string): HTMLElement {
 
 // Imperative test API driven by playwright via page.evaluate
 const testAPI = {
+  configureTimeout(timeout: number): void {
+    start({ timeout });
+  },
+
   /**
    * Load a sub app into a dedicated container. `key` allows multiple instances of the same app;
    * `containerKey` targets another key's container to drive cross-app shared-container scenarios.
@@ -105,14 +109,24 @@ const testAPI = {
     return app.getStatus();
   },
 
-  async mountOutcome(key: string): Promise<{ status: string; error?: string }> {
+  async mountOutcome(key: string): Promise<{
+    status: string;
+    error?: string;
+    timeoutError?: { appName: string; timeout: number; elapsed: number };
+  }> {
     const app = instances.get(key);
     if (!app) throw new Error(`no app instance for key ${key}`);
     try {
       await app.mountPromise;
       return { status: app.getStatus() };
     } catch (error) {
-      return { status: app.getStatus(), error: String(error) };
+      return {
+        status: app.getStatus(),
+        error: String(error),
+        ...(error instanceof LoadAppTimeoutError
+          ? { timeoutError: { appName: error.appName, timeout: error.timeout, elapsed: error.elapsed } }
+          : {}),
+      };
     }
   },
 
@@ -135,13 +149,24 @@ const testAPI = {
   },
 
   /** Real HTTP body stays open until this load scope aborts the connection. */
-  async loadWithNetworkEntryStream(key: string, containerKey: string): Promise<string> {
+  async loadWithNetworkEntryStream(
+    key: string,
+    containerKey: string,
+    configuration?: AppConfiguration,
+  ): Promise<string> {
     const entry = new URL(SUB_APP_ENTRIES['sub-classic']);
     entry.searchParams.set('open-entry-stream', key);
-    const app = loadMicroApp({ name: 'sub-classic', entry: entry.href, container: resolveContainer(containerKey) });
+    const app = loadMicroApp(
+      { name: 'sub-classic', entry: entry.href, container: resolveContainer(containerKey) },
+      configuration,
+    );
     instances.set(key, app);
     await app.mountPromise;
     return app.getStatus();
+  },
+
+  loadNetworkEntryDetached(key: string, containerKey: string, configuration?: AppConfiguration): void {
+    void this.loadWithNetworkEntryStream(key, containerKey, configuration).catch(() => undefined);
   },
 
   async loadWithStoragePlugin(prefix: string, key: string, value: string): Promise<string> {

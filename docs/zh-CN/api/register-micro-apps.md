@@ -201,7 +201,7 @@ export default function App() {
 
 ### 应用级配置
 
-v3 不支持通过 `start()` 传入框架级全局配置。`start()` 仅接收 single-spa 的 `{ urlRerouteOnly? }`。原有的全局框架选项，包括 `sandbox`、`styleIsolation` 和自定义 `fetch`，现在必须在 `RegistrableApp.configuration` 中**按应用**设置：
+`start()` 接收 single-spa 的 `{ urlRerouteOnly? }`，以及用于设置加载超时默认值的 `timeout`。应用级 `configuration.timeout` 优先，`0` 可关闭默认超时。原有的全局框架选项，包括 `sandbox`、`styleIsolation` 和自定义 `fetch`，必须在 `RegistrableApp.configuration` 中按应用设置：
 
 ```ts
 registerMicroApps([

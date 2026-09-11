@@ -54,6 +54,7 @@ type LoadableApp<T extends ObjectType> = {
 | --- | --- | --- | --- |
 | `sandbox` | `boolean \| SandboxConfiguration` | `true` | 启用基于 Proxy 隔离膜的 [JavaScript 隔离](/zh-CN/concepts/js-sandbox)和[原生 ESM 支持](/zh-CN/concepts/esm-sandbox)。仅当旧应用必须在真实全局对象中运行时，才应设为 `false`；传入对象则在保持隔离的同时配置沙箱。 |
 | `fetch` | `typeof window.fetch` | `window.fetch` | 用于请求入口，以及由加载器处理的脚本、模块和样式的自定义 fetch。 |
+| `timeout` | `number` | `0`（关闭） | 加载超时，单位为毫秒；省略时继承 `start` 默认值，`0` 显式关闭。计时不包含等待容器或挂载生命周期，详见 [AppConfiguration](/zh-CN/api/configuration#timeout)。 |
 | `streamTransformer` | `() => TransformStream<string, string>` | — | 用于自定义 HTML 流式处理过程的可选转换流。 |
 | `nodeTransformer` | `NodeTransformer` | 内部默认值 | 在 `<script>`、`<link>` 和 `<style>` 节点进入真实 DOM 前进行转换。仅高级扩展场景需要覆盖。 |
 
@@ -61,6 +62,7 @@ type LoadableApp<T extends ObjectType> = {
 type AppConfiguration =
   Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
     sandbox?: boolean | SandboxConfiguration;
+    timeout?: number;
   };
 ```
 

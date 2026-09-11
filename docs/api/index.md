@@ -29,6 +29,7 @@ When an app must activate automatically with the URL, use [`registerMicroApps`](
 | [`setDefaultMountApp`](/api/effects) | Navigate to a default app route when no app is mounted. |
 | [`runAfterFirstMounted`](/api/effects) | Run a callback once after the first micro-app mounts. |
 | [`addErrorHandler` / `removeErrorHandler`](/api/error-handling) | Add or remove a global error handler. |
+| [`LoadAppTimeoutError`](/api/error-handling#load-timeout) | Loading timeout error class carrying the app name, configured limit, and elapsed time. |
 | [`isRuntimeCompatible`](/api/is-runtime-compatible) | Probe whether the browser supports the qiankun v3 base runtime. |
 | [`prefetchApps`](/api/prefetch-apps) | Deprecated manual prefetch API. |
 
