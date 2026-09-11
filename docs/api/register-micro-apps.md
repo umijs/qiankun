@@ -199,9 +199,9 @@ When the entry script is correctly marked, qiankun resolves lifecycle functions 
 
 Only when the entry result does not contain a valid lifecycle object does qiankun make a final compatibility attempt at `global[appName]` on the app's own global context. The global key must match `name` if an app deliberately relies on that fallback, but the fallback is not the normal naming contract. For the full lookup order, see [Micro-app lifecycle and props](/concepts/lifecycle-and-props).
 
-### Per-app configuration is the only configuration entry point
+### Per-app configuration
 
-There is no framework-level global config injected through `start()` in v3. `start()` only takes single-spa's `{ urlRerouteOnly? }`. What used to be global framework options — `sandbox`, `styleIsolation`, a custom `fetch` — are now all set **per app** in `RegistrableApp.configuration`:
+`start()` accepts single-spa's `{ urlRerouteOnly? }` plus `timeout` as the loading timeout default. An app's `configuration.timeout` takes precedence, and `0` disables the default timeout. Previously global framework options — `sandbox`, `styleIsolation`, and custom `fetch` — must be set per app in `RegistrableApp.configuration`:
 
 ```ts
 registerMicroApps([

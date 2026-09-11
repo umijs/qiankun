@@ -3,12 +3,12 @@ import { noop } from 'lodash';
 import type { StartOpts } from '@qiankunjs/single-spa';
 import { registerApplication, start as startSingleSpa } from '@qiankunjs/single-spa';
 import loadApp from '../core/loadApp';
+import { frameworkConfiguration, resolveConfiguration, validateLoadingTimeout } from '../core/configuration';
 import type { AppConfiguration, LifeCycles, ObjectType, RegistrableApp } from '../types';
 
 export let started = false;
 
 export const microApps: Array<RegistrableApp<Record<string, unknown>>> = [];
-const frameworkConfiguration: AppConfiguration = {};
 
 const frameworkStartedDefer = new Deferred<void>();
 
@@ -31,11 +31,7 @@ export function registerMicroApps<T extends ObjectType>(apps: Array<RegistrableA
         // would run within the container hold ② but outside its failure fallback, and a throwing
         // indicator would leak the hold forever (single-spa never runs a broken app's chains).
         return (
-          await loadApp(
-            { name, entry, container, props, loader },
-            { ...frameworkConfiguration, ...configuration },
-            lifeCycles,
-          )
+          await loadApp({ name, entry, container, props, loader }, resolveConfiguration(configuration), lifeCycles)
         )(container);
       },
       activeWhen: activeRule,
@@ -44,9 +40,12 @@ export function registerMicroApps<T extends ObjectType>(apps: Array<RegistrableA
   });
 }
 
-export function start(opts: StartOpts = {}) {
+export function start(opts: StartOpts & Pick<AppConfiguration, 'timeout'> = {}) {
   if (!started) {
-    startSingleSpa(opts);
+    const { timeout, ...singleSpaOptions } = opts;
+    validateLoadingTimeout(timeout);
+    frameworkConfiguration.timeout = timeout;
+    startSingleSpa(singleSpaOptions);
     started = true;
 
     frameworkStartedDefer.resolve();
