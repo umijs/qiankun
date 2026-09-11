@@ -44,6 +44,15 @@ before resetting or migrating the release workflow.
 sub-package to npm, then `scripts/generate-release-notes.mjs` aggregates the published packages'
 `CHANGELOG.md` entries into one set of notes and `gh release create` posts a **single GitHub Release**.
 
+The release job uses `ci:version` and `ci:publish` for both prerelease and stable releases. The GitHub
+Release is marked as a prerelease when the qiankun version contains `-` (for example, `3.0.0-rc.22`);
+otherwise it is explicitly marked as **Latest** with `--latest`. The notes generator removes dependency
+update entries and any change subsection left without a `- ` item, then omits packages with no remaining
+change items.
+
+The workflow stays at `.github/workflows/changeset-prerelease.yml` even for stable releases: npm trusted
+publishing is bound to that filename and the `changeset-release` environment.
+
 In prerelease mode, `scripts/publish-packages.mjs` runs `changeset publish --tag <pre.json tag>` with
 `pre.json` set aside for the duration of the publish, then restores it. Both halves are needed: Changesets
 refuses `--tag` outright while the pre-state says `mode: "pre"`, yet its own tag choice in that mode sends a

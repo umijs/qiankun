@@ -69,9 +69,14 @@ jobs:
           # fact via the /release-changelog skill (gh release edit).
           node scripts/generate-release-notes.mjs '${{ steps.changesets.outputs.publishedPackages }}' > /tmp/release-notes.md
 
+          case "${VERSION}" in
+            *-*) RELEASE_FLAG="--prerelease" ;;
+            *) RELEASE_FLAG="--latest" ;;
+          esac
+
           gh release create "${TAG}" \
             --title "${TAG}" \
             --notes-file /tmp/release-notes.md \
-            --prerelease
+            "${RELEASE_FLAG}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
