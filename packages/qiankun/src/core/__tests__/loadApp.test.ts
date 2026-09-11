@@ -123,6 +123,7 @@ describe('loadApp sandbox cleanup', () => {
 
     const loading = loadApp(createApp());
     await expect(loading).rejects.toBeInstanceOf(QiankunError);
+    await expect(loading).rejects.toMatchObject({ code: 'lifecycle-missing' });
     await expect(loading).rejects.toThrowError('You need to export lifecycle functions');
     expect(mocks.dispose).toHaveBeenCalledOnce();
   });

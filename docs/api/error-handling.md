@@ -63,6 +63,23 @@ Keep the `MicroApp` handle and call `unmount()` when a successfully mounted view
 
 React and Vue `<MicroApp>` components provide component-level error UI through their own boundary options. They are built on `loadMicroApp`, so handle and report their instance failures through the component rather than relying on the global observer.
 
+## QiankunError
+
+Use the top-level `QiankunError` export to identify framework errors thrown by qiankun. The loader, sandbox, and shared modules use the same constructor. Its `code` property provides a stable error identifier.
+
+```ts
+import { QiankunError } from 'qiankun';
+
+void microApp.mountPromise.catch((error: unknown) => {
+  if (error instanceof QiankunError) {
+    reportToMonitoring(error, { code: error.code });
+  }
+  showFallback(container, error);
+});
+```
+
+Errors from micro-app code, browser networking, and single-spa are not necessarily instances of `QiankunError` and still need handling. See [Error codes and solutions](/errors/) for the constructor, code conventions, and troubleshooting guidance.
+
 ## Related
 
 - [Handle micro-app errors](/cookbook/handle-errors) — fallback UI, diagnosis, and retry guidance
