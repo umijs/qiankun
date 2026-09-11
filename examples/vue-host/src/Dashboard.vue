@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import { MicroAppLink } from '@qiankunjs/vue';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { microApps } from './apps';
 import { locale, t } from './i18n';
-import { navigate } from './router';
 
 /**
  * The host-side half of the sub apps' window probe: sub apps write
@@ -40,7 +40,7 @@ const realmBody = computed(() => t.value.hostRealmBody.split('{code}'));
       </div>
       <ul>
         <li v-for="app in microApps" :key="app.name">
-          <button type="button" @click="navigate(app.path)">
+          <MicroAppLink :to="app.path">
             <span class="dot" :style="{ backgroundColor: app.accent }" />
             <span class="identity">
               <span class="label">{{ app.label }}</span>
@@ -50,7 +50,7 @@ const realmBody = computed(() => t.value.hostRealmBody.split('{code}'));
             <span class="entry mono">{{ app.entry }}</span>
             <span class="pill mono" :class="{ esm: app.loadingPath === 'esm sandbox' }">{{ app.loadingPath }}</span>
             <span class="arrow">→</span>
-          </button>
+          </MicroAppLink>
         </li>
       </ul>
     </section>
@@ -161,7 +161,9 @@ const realmBody = computed(() => t.value.hostRealmBody.split('{code}'));
   border-bottom: 0;
 }
 
-.registry button {
+.registry a {
+  color: inherit;
+  text-decoration: none;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -175,7 +177,7 @@ const realmBody = computed(() => t.value.hostRealmBody.split('{code}'));
   transition: background-color 150ms ease-out;
 }
 
-.registry button:hover {
+.registry a:hover {
   background: var(--paper);
 }
 
@@ -242,7 +244,7 @@ const realmBody = computed(() => t.value.hostRealmBody.split('{code}'));
   transition: transform 150ms ease-out;
 }
 
-.registry button:hover .arrow {
+.registry a:hover .arrow {
   transform: translateX(2px);
 }
 
@@ -304,7 +306,7 @@ const realmBody = computed(() => t.value.hostRealmBody.split('{code}'));
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .registry button,
+  .registry a,
   .arrow {
     transition: none;
   }

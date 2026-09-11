@@ -4,6 +4,8 @@
 
 当 React 主应用需要在路由页面或局部面板中以组件形式使用微应用，而不希望通过 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 进行全局注册时，可使用该组件。
 
+包中还提供用于主应用路由导航的 [`MicroAppLink`](#micro-app-link)，其用法见下文。
+
 ## 安装
 
 ```bash
@@ -11,6 +13,46 @@ npm install @qiankunjs/react@rc qiankun@rc
 ```
 
 主应用必须安装 `react` 和 `react-dom`，两者的版本均需满足 `>=16.9.0`。
+
+## 路由导航：MicroAppLink {#micro-app-link}
+
+`MicroAppLink` 用于 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 路由模式下的主应用导航。主应用完成注册并调用 [`start`](/zh-CN/api/start) 后，点击链接即可通过 single-spa 的 `navigateToUrl` 切换 URL，由已注册的 `activeRule` 决定微应用的挂载与卸载。链接本身不加载微应用。
+
+```tsx
+import { MicroAppLink, type MicroAppLinkProps } from '@qiankunjs/react';
+import { useRef } from 'react';
+
+export default function Navigation() {
+  const linkRef = useRef<HTMLAnchorElement>(null);
+  const appLink: MicroAppLinkProps = {
+    to: '/app1',
+    className: 'nav-link',
+    activeClassName: 'is-active',
+  };
+
+  return (
+    <nav>
+      <MicroAppLink {...appLink} ref={linkRef}>应用一</MicroAppLink>
+      <MicroAppLink to="/app2/settings" replace>应用二设置</MicroAppLink>
+    </nav>
+  );
+}
+```
+
+| 属性 | 类型 | 说明 |
+| --- | --- | --- |
+| `to` | `string` | **必填。** 目标 URL，作为链接的 `href`。 |
+| `replace` | `boolean` | 是否替换当前历史记录。默认值为 `false`，导航时新增一条历史记录。 |
+| `className` | `string` | 链接的 CSS 类名。 |
+| `activeClassName` | `string` | 当前地址匹配目标地址前缀时追加的 CSS 类名。默认不追加。 |
+| `children` | `ReactNode` | 链接内容。 |
+| `ref` | `Ref<HTMLAnchorElement>` | 指向渲染出的 `<a>` 元素。 |
+
+`MicroAppLinkProps` 从包入口导出。除组件自身使用的属性外，`target`、`rel`、`download`、`aria-*`、`data-*`、事件处理函数等原生链接属性都会传递给 `<a>`；`href` 由 `to` 指定。
+
+组件先执行传入的 `onClick`，再判断是否接管导航。只有未被 `preventDefault()` 取消、未按下 Ctrl / Meta / Shift / Alt、目标为当前窗口（有效的 `target` 为空或为 `_self`，未设置时遵循页面的 `<base target>`）的同源 HTTP(S) 链接左键点击，才会阻止默认行为并在当前页面内导航。外链、下载链接、其他窗口目标及带修饰键的点击均保留浏览器行为。`replace` 为 `true` 时使用 `history.replaceState` 替换当前记录，并发送 `popstate` 通知路由更新。
+
+`activeClassName` 将目标 URL 解析后，以它的 `pathname + search + hash` 为前缀匹配当前地址的对应部分。例如，`to="/app1"` 会匹配 `/app1/settings`，也会匹配 `/app10`；`to="/"` 会匹配所有路径。查询参数和哈希若包含在 `to` 中，也参与前缀匹配。这是字符串前缀匹配，不解析路由参数；需要精确匹配时，可由主应用自行设置 `className` 和 `aria-current`。
 
 ## 基础用法
 

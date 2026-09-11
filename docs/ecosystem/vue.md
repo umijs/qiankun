@@ -4,6 +4,8 @@
 
 The component is built on [`vue-demi`](https://github.com/vueuse/vue-demi), so a single build runs under both Vue 2 and Vue 3.
 
+The package also exports [`MicroAppLink`](#micro-app-link) for host route navigation, documented below.
+
 ## Installation
 
 ```bash
@@ -15,6 +17,42 @@ npm install @qiankunjs/vue@rc qiankun@rc
 ::: tip Prerequisite
 The `MicroApp` component calls `loadMicroApp` directly, so you do not need `registerMicroApps` or `start` for it. You still need [`start`](/api/start) if you also use route-based registration elsewhere in the same app. See [Micro-app lifecycle and props](/concepts/lifecycle-and-props) for how mount and update map to single-spa.
 :::
+
+## Route navigation with MicroAppLink {#micro-app-link}
+
+`MicroAppLink` provides navigation for Vue 3 hosts using [`registerMicroApps`](/api/register-micro-apps). After the host registers its micro-apps and calls [`start`](/api/start), clicking a link changes the URL through single-spa's `navigateToUrl`. The registered `activeRule` determines which micro-apps mount or unmount. The link does not load micro-apps itself.
+
+```vue
+<script setup lang="ts">
+import { MicroAppLink, type MicroAppLinkProps } from '@qiankunjs/vue';
+
+const appLink: MicroAppLinkProps = {
+  to: '/app1',
+  className: 'nav-link',
+  activeClassName: 'is-active',
+};
+</script>
+
+<template>
+  <nav>
+    <MicroAppLink v-bind="appLink">App one</MicroAppLink>
+    <MicroAppLink to="/app2/settings" replace>App two settings</MicroAppLink>
+  </nav>
+</template>
+```
+
+| Prop | Type | Description |
+| --- | --- | --- |
+| `to` | `string` | **Required.** Target URL, rendered as the link's `href`. |
+| `replace` | `boolean` | Whether to replace the current history entry. Defaults to `false`, adding a new entry on navigation. |
+| `className` | `string` | CSS class for the link. Use `class-name` in templates if preferred. |
+| `activeClassName` | `string` | CSS class appended when the current URL matches the target URL prefix. Use `active-class-name` in templates if preferred. No class is appended by default. |
+
+The default slot provides the link content. `MicroAppLinkProps` is exported from the package entry point. Native anchor attributes other than those consumed by the component, including `class`, `target`, `rel`, `download`, `aria-*`, `data-*`, and event listeners, are forwarded to `<a>`. `to` supplies `href`.
+
+The component calls the provided `@click` listener first. It intercepts only a left click on a same-origin HTTP(S) link when the event has not been canceled with `preventDefault()`, no Ctrl / Meta / Shift / Alt modifier is pressed, and the effective `target` is empty or `_self` (an omitted target follows the page's `<base target>` setting). Such clicks navigate within the current page. External links, download links, other browsing targets, and modified clicks retain browser behavior. Use `@click.prevent` to cancel component navigation. With `replace`, the component uses `history.replaceState` and dispatches `popstate` to notify routing listeners.
+
+For `activeClassName`, the component resolves the target URL and compares its `pathname + search + hash` with the start of the corresponding current URL string. For example, `to="/app1"` matches both `/app1/settings` and `/app10`, and `to="/"` matches every path. Query parameters and hashes in `to` participate in the same prefix comparison. This is a string comparison without route parameter parsing. For exact matching, the host can set `className` and `aria-current` itself.
 
 ## Basic usage
 

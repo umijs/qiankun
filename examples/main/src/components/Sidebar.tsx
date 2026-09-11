@@ -1,6 +1,6 @@
+import { MicroAppLink } from '@qiankunjs/react';
 import { microApps, siblingShell } from '../apps';
 import { useLocale, useMessages } from '../i18n';
-import { navigate } from '../router';
 import Seal from './Seal';
 
 /** the short form of each loading path, for the tag on the right of a nav item */
@@ -16,9 +16,8 @@ export default function Sidebar({ activePath }: SidebarProps) {
 
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r border-hairline bg-surface">
-      <button
-        type="button"
-        onClick={() => navigate('/')}
+      <MicroAppLink
+        to="/"
         className="flex items-center gap-3 border-b border-hairline px-5 py-5 text-left"
       >
         <Seal size={36} />
@@ -26,14 +25,14 @@ export default function Sidebar({ activePath }: SidebarProps) {
           <span className="block font-display text-lg font-semibold tracking-[-0.01em] text-ink">qiankun</span>
           <span className="block font-mono text-[11px] text-ink-soft">{m.shellSubtitle}</span>
         </span>
-      </button>
+      </MicroAppLink>
 
       <nav className="flex-1 px-3 py-4">
         <NavItem
           label={m.dashboard}
           sub={m.dashboardSub}
           active={activePath === '/'}
-          onClick={() => navigate('/')}
+          to="/"
         />
 
         <p className="mt-6 mb-2 px-2 font-mono text-[10px] tracking-[0.18em] text-ink-soft uppercase">{m.microApps}</p>
@@ -45,7 +44,7 @@ export default function Sidebar({ activePath }: SidebarProps) {
             dot={app.accent}
             mono={loadingTag[app.loadingPath]}
             active={activePath.startsWith(app.path)}
-            onClick={() => navigate(app.path)}
+            to={app.path}
           />
         ))}
       </nav>
@@ -74,16 +73,15 @@ interface NavItemProps {
   label: string;
   sub: string;
   active: boolean;
-  onClick: () => void;
+  to: string;
   dot?: string;
   mono?: string;
 }
 
-function NavItem({ label, sub, active, onClick, dot, mono }: NavItemProps) {
+function NavItem({ label, sub, active, to, dot, mono }: NavItemProps) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <MicroAppLink
+      to={to}
       aria-current={active ? 'page' : undefined}
       className={`relative flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors duration-150 ${
         active ? 'bg-primary/8 text-primary' : 'text-ink hover:bg-paper'
@@ -96,6 +94,6 @@ function NavItem({ label, sub, active, onClick, dot, mono }: NavItemProps) {
         <span className={`block text-xs ${active ? 'text-primary/70' : 'text-ink-soft'}`}>{sub}</span>
       </span>
       {mono && <span className="font-mono text-[10px] text-ink-soft">{mono}</span>}
-    </button>
+    </MicroAppLink>
   );
 }

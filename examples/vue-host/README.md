@@ -10,8 +10,10 @@ Vue 3.5 + Vite 8 host for the qiankun examples: the second shell, and the one th
 - Slots: `#loader="{ loading }"` draws the stage veil and `#error-boundary="{ error }"` draws the
   mount-failed panel. The binding's wrapper is not positioned, so the shell positions it through
   `wrapper-class-name`.
-- Routing: `src/router.ts` is a reactive pathname that broadcasts its own navigations — qiankun only
-  starts single-spa with the first micro app, so before that a `pushState` emits no `popstate`.
+- Routing: the brand, sidebar, and dashboard use `<MicroAppLink>` from `@qiankunjs/vue`.
+  `src/main.ts` calls `start()` before mounting the shell so navigation works from the dashboard
+  before any micro app has loaded. `src/router.ts` keeps a reactive pathname in sync with browser
+  history and single-spa routing events; the active route still drives `<MicroApp>` mounting.
 - Deliberately slim: no dashboard, seal or trigram (see `examples/DESIGN.md`), plain scoped CSS over
   the shared tokens, and no `@qiankunjs/bundler-plugin` — this is a host, not a micro app.
 

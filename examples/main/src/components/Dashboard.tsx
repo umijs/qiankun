@@ -1,7 +1,7 @@
+import { MicroAppLink } from '@qiankunjs/react';
 import { useCallback, useEffect, useState } from 'react';
 import { microApps } from '../apps';
 import { useLocale, useMessages } from '../i18n';
-import { navigate } from '../router';
 
 export default function Dashboard() {
   const locale = useLocale();
@@ -37,9 +37,8 @@ export default function Dashboard() {
         <ul>
           {microApps.map((app) => (
             <li key={app.name} className="border-b border-hairline last:border-b-0">
-              <button
-                type="button"
-                onClick={() => navigate(app.path)}
+              <MicroAppLink
+                to={app.path}
                 className="group flex w-full items-center gap-4 px-5 py-4 text-left transition-colors duration-150 hover:bg-paper"
               >
                 <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: app.accent }} />
@@ -59,7 +58,7 @@ export default function Dashboard() {
                   {app.loadingPath}
                 </span>
                 <span className="text-ink-soft transition-transform duration-150 group-hover:translate-x-0.5">→</span>
-              </button>
+              </MicroAppLink>
             </li>
           ))}
         </ul>

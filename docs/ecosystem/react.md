@@ -4,6 +4,8 @@
 
 Use it when the host is a React SPA and you want to drop a micro-app in as an ordinary component (on a route, inside a panel) rather than registering it globally with [`registerMicroApps`](/api/register-micro-apps).
 
+The package also exports [`MicroAppLink`](#micro-app-link) for host route navigation, documented below.
+
 ## Installation
 
 ```bash
@@ -11,6 +13,46 @@ npm install @qiankunjs/react@rc qiankun@rc
 ```
 
 The peer dependencies are `react` and `react-dom`, both required at `>=16.9.0`.
+
+## Route navigation with MicroAppLink {#micro-app-link}
+
+`MicroAppLink` provides host navigation for apps registered with [`registerMicroApps`](/api/register-micro-apps). After the host registers its micro-apps and calls [`start`](/api/start), clicking a link changes the URL through single-spa's `navigateToUrl`. The registered `activeRule` determines which micro-apps mount or unmount. The link does not load micro-apps itself.
+
+```tsx
+import { MicroAppLink, type MicroAppLinkProps } from '@qiankunjs/react';
+import { useRef } from 'react';
+
+export default function Navigation() {
+  const linkRef = useRef<HTMLAnchorElement>(null);
+  const appLink: MicroAppLinkProps = {
+    to: '/app1',
+    className: 'nav-link',
+    activeClassName: 'is-active',
+  };
+
+  return (
+    <nav>
+      <MicroAppLink {...appLink} ref={linkRef}>App one</MicroAppLink>
+      <MicroAppLink to="/app2/settings" replace>App two settings</MicroAppLink>
+    </nav>
+  );
+}
+```
+
+| Prop | Type | Description |
+| --- | --- | --- |
+| `to` | `string` | **Required.** Target URL, rendered as the link's `href`. |
+| `replace` | `boolean` | Whether to replace the current history entry. Defaults to `false`, adding a new entry on navigation. |
+| `className` | `string` | CSS class for the link. |
+| `activeClassName` | `string` | CSS class appended when the current URL matches the target URL prefix. No class is appended by default. |
+| `children` | `ReactNode` | Link content. |
+| `ref` | `Ref<HTMLAnchorElement>` | Points to the rendered `<a>` element. |
+
+`MicroAppLinkProps` is exported from the package entry point. Native anchor props other than those consumed by the component, including `target`, `rel`, `download`, `aria-*`, `data-*`, and event handlers, are forwarded to `<a>`. `to` supplies `href`.
+
+The component calls the provided `onClick` first. It intercepts only a left click on a same-origin HTTP(S) link when the event has not been canceled with `preventDefault()`, no Ctrl / Meta / Shift / Alt modifier is pressed, and the effective `target` is empty or `_self` (an omitted target follows the page's `<base target>` setting). Such clicks navigate within the current page. External links, download links, other browsing targets, and modified clicks retain browser behavior. With `replace`, the component uses `history.replaceState` and dispatches `popstate` to notify routing listeners.
+
+For `activeClassName`, the component resolves the target URL and compares its `pathname + search + hash` with the start of the corresponding current URL string. For example, `to="/app1"` matches both `/app1/settings` and `/app10`, and `to="/"` matches every path. Query parameters and hashes in `to` participate in the same prefix comparison. This is a string comparison without route parameter parsing. For exact matching, the host can set `className` and `aria-current` itself.
 
 ## Basic usage
 
