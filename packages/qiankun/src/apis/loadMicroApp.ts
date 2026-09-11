@@ -1,13 +1,11 @@
-import type { ParcelConfigObject } from '@qiankunjs/single-spa';
-import { AppOrParcelStatus, mountRootParcel } from '@qiankunjs/single-spa';
-import type { ParcelConfigObjectGetter } from '../core/loadApp';
-import loadApp from '../core/loadApp';
-import type { AppConfiguration, LifeCycles, LoadableApp, MicroApp, ObjectType } from '../types';
-import { getContainerXPath, toArray } from '../utils';
+import { AppOrParcelStatus, mountRootParcel, type ParcelConfigObject } from '@qiankunjs/single-spa';
+import loadApp, { type ParcelConfigObjectGetter } from '../core/loadApp';
+import { type AppConfiguration, type LifeCycles, type LoadableApp, type MicroApp, type ObjectType } from '../types';
+import { toArray } from '../utils';
 import { start, started } from './registerMicroApps';
 
-const appConfigPromiseGetterMap = new Map<string, Promise<ParcelConfigObjectGetter>>();
-const containerMicroAppsMap = new Map<string, MicroApp[]>();
+const appConfigPromiseGetterMap = new WeakMap<HTMLElement, Map<string, Promise<ParcelConfigObjectGetter>>>();
+const containerMicroAppsMap = new WeakMap<HTMLElement, Map<string, MicroApp[]>>();
 
 export function loadMicroApp<T extends ObjectType>(
   app: LoadableApp<T>,
@@ -16,80 +14,61 @@ export function loadMicroApp<T extends ObjectType>(
 ): MicroApp {
   const { props, name, container } = app;
 
-  // Must compute the container xpath at beginning to keep it consist around app running
-  // If we compute it every time, the container dom structure most probably been changed and result in a different xpath value
-  const containerXPath = getContainerXPath(container);
-  const getContainerXPathKey = (xpath: string) => `${name}-${xpath}`;
+  let appConfigPromises = appConfigPromiseGetterMap.get(container);
+  if (!appConfigPromises) {
+    appConfigPromises = new Map();
+    appConfigPromiseGetterMap.set(container, appConfigPromises);
+  }
 
-  // null after unmount cleanup so the long-lived remount closures release the parcel for GC
+  let containerMicroApps = containerMicroAppsMap.get(container);
+  if (!containerMicroApps) {
+    containerMicroApps = new Map();
+    containerMicroAppsMap.set(container, containerMicroApps);
+  }
+  const microAppsRef = containerMicroApps.get(name) ?? [];
+  containerMicroApps.set(name, microAppsRef);
+
+  // Null after unmount cleanup so the long-lived remount closures release the parcel for GC.
   let microApp: MicroApp | null = null;
-  const wrapParcelConfigForRemount = (config: ParcelConfigObject): ParcelConfigObject => {
-    let microAppConfig = config;
-    if (containerXPath) {
-      const appContainerXPathKey = getContainerXPathKey(containerXPath);
-      const containerMicroApps = containerMicroAppsMap.get(appContainerXPathKey);
-      if (containerMicroApps?.length) {
-        const mount = [
-          async () => {
-            // While there are multiple micro apps mounted on the same container, we must wait until the prev instances all had unmounted
-            // Otherwise it will lead some concurrent issues
-            // this mount wrapper only runs after mountRootParcel below assigned the parcel
-            const prevLoadMicroApps = containerMicroApps.slice(0, containerMicroApps.indexOf(microApp as MicroApp));
-            const prevLoadMicroAppsWhichNotBroken = prevLoadMicroApps.filter(
-              (v) =>
-                v.getStatus() !== AppOrParcelStatus.LOAD_ERROR &&
-                v.getStatus() !== AppOrParcelStatus.SKIP_BECAUSE_BROKEN,
-            );
-            await Promise.all(prevLoadMicroAppsWhichNotBroken.map((v) => v.unmountPromise));
-          },
-          ...toArray(microAppConfig.mount),
-        ];
+  const wrapParcelConfigForRemount = (config: ParcelConfigObject): ParcelConfigObject => ({
+    ...config,
+    // A cached getter shares its original load hold. While the entry stream is still open,
+    // loadApp can adopt that hold for mount, so the container gate alone cannot serialize
+    // these same-name parcels. Wait for their predecessors before entering the mount chain.
+    mount: [
+      async () => {
+        const predecessors = microAppsRef.slice(0, microAppsRef.indexOf(microApp as MicroApp));
+        await Promise.all(
+          predecessors
+            .filter(
+              (previous) =>
+                previous.getStatus() !== AppOrParcelStatus.LOAD_ERROR &&
+                previous.getStatus() !== AppOrParcelStatus.SKIP_BECAUSE_BROKEN,
+            )
+            .map((previous) => previous.unmountPromise),
+        );
+      },
+      ...toArray(config.mount),
+    ],
+    // A cached micro app has already bootstrapped.
+    bootstrap: () => Promise.resolve(),
+  });
 
-        microAppConfig = {
-          ...config,
-          mount,
-        };
-      }
-    }
-
-    return {
-      ...microAppConfig,
-      // empty bootstrap hook which should not run twice while it calling from cached micro app
-      bootstrap: () => Promise.resolve(),
-    };
-  };
-
-  /**
-   * using name + container xpath as the micro app instance id,
-   * it means if you're rendering a micro app to a dom which have been rendered before,
-   * the micro app would not load and evaluate its lifecycles again
-   */
+  // Only the same name and the same element reuse evaluated lifecycles. A new element gets
+  // its own sandbox even if it occupies a former container's position in the document.
   const memorizedLoadingFn = async (): Promise<ParcelConfigObject> => {
-    const userConfiguration = configuration;
+    const cachedConfigGetter = appConfigPromises.get(name);
+    if (cachedConfigGetter) return wrapParcelConfigForRemount((await cachedConfigGetter)(container));
 
-    if (containerXPath) {
-      const appContainerXPathKey = getContainerXPathKey(containerXPath);
-      const parcelConfigGetterPromise = appConfigPromiseGetterMap.get(appContainerXPathKey);
-      if (parcelConfigGetterPromise) return wrapParcelConfigForRemount((await parcelConfigGetterPromise)(container));
+    const configGetterPromise = loadApp(app, configuration, lifeCycles);
+    appConfigPromises.set(name, configGetterPromise);
+    try {
+      const configGetter = await configGetterPromise;
+      return configGetter(container);
+    } catch (error) {
+      appConfigPromises.delete(name);
+      throw error;
     }
-
-    const parcelConfigObjectGetterPromise = loadApp(app, userConfiguration, lifeCycles);
-
-    let parcelConfigObjectGetter: ParcelConfigObjectGetter | undefined;
-
-    if (containerXPath) {
-      const appContainerXPathKey = getContainerXPathKey(containerXPath);
-      appConfigPromiseGetterMap.set(appContainerXPathKey, parcelConfigObjectGetterPromise);
-      try {
-        parcelConfigObjectGetter = await parcelConfigObjectGetterPromise;
-      } catch (e) {
-        appConfigPromiseGetterMap.delete(appContainerXPathKey);
-        throw e;
-      }
-    }
-
-    parcelConfigObjectGetter = parcelConfigObjectGetter || (await parcelConfigObjectGetterPromise);
-    return parcelConfigObjectGetter(container);
   };
 
   if (!started) {
@@ -105,23 +84,15 @@ export function loadMicroApp<T extends ObjectType>(
     ...props,
   });
   microApp = mountedApp;
+  microAppsRef.push(mountedApp);
 
-  if (containerXPath) {
-    const appContainerXPathKey = getContainerXPathKey(containerXPath);
-    // Store the microApps which they mounted on the same container
-    const microAppsRef = containerMicroAppsMap.get(appContainerXPathKey) || [];
-    microAppsRef.push(mountedApp);
-    containerMicroAppsMap.set(appContainerXPathKey, microAppsRef);
+  const cleanup = () => {
+    const index = microAppsRef.indexOf(mountedApp);
+    microAppsRef.splice(index, 1);
+    microApp = null;
+  };
 
-    const cleanup = () => {
-      const index = microAppsRef.indexOf(mountedApp);
-      microAppsRef.splice(index, 1);
-      microApp = null;
-    };
-
-    // gc after unmount
-    mountedApp.unmountPromise.then(cleanup).catch(cleanup);
-  }
+  mountedApp.unmountPromise.then(cleanup).catch(cleanup);
 
   return mountedApp;
 }
