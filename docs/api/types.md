@@ -24,7 +24,7 @@ Three shapes changed in ways that will produce type errors if you port 2.x code 
 
 - `entry` is a plain string (`HTMLEntry = string`). There is no object entry (`{ scripts, styles }`) and no `EntryOpts`.
 - `container` is an `HTMLElement`. A selector string such as `'#subapp-viewport'` is no longer accepted.
-- There is no `FrameworkConfiguration` type. Per-app configuration is `AppConfiguration`, and `start()` takes only single-spa's `StartOpts`.
+- There is no `FrameworkConfiguration` type. Per-app configuration is `AppConfiguration`; `start()` takes single-spa's `StartOpts` extended with `timeout` as the loading timeout default.
 
 See [Migrate from qiankun 2.x](/cookbook/migrate-from-2x) for the full list.
 :::
@@ -38,7 +38,7 @@ See [Migrate from qiankun 2.x](/cookbook/migrate-from-2x) for the full list.
 | `AppMetadata` | `{ name; entry }` | The minimal identity of a micro-app. |
 | `LoadableApp<T>` | `AppMetadata & { container; props? }` | Used with [`loadMicroApp`](/api/load-micro-app). `container` is an `HTMLElement`. |
 | `RegistrableApp<T>` | `LoadableApp<T> & { loader?; activeRule; configuration? }` | Used with [`registerMicroApps`](/api/register-micro-apps). |
-| `AppConfiguration` | loader options `& { sandbox? }` | Per-app runtime configuration. See [AppConfiguration](/api/configuration). |
+| `AppConfiguration` | loader options `& { sandbox?; timeout? }` | Per-app runtime configuration. See [AppConfiguration](/api/configuration). |
 | `SandboxConfiguration` | `{ styleIsolation?; globals?; incubatorContext?; plugins?; …module hooks }` | The object form of `sandbox`. See [SandboxConfiguration](/api/configuration#sandboxconfiguration). |
 | `LifeCycleFn<T>` | `(app, global) => Promise<void>` | A single framework lifecycle hook. |
 | `LifeCycles<T>` | `{ beforeLoad?; beforeMount?; afterMount?; beforeUnmount?; afterUnmount? }` | Framework hooks. See [Lifecycle hooks](/api/lifecycles). |
@@ -161,6 +161,7 @@ export type AppConfiguration = Partial<
   Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>
 > & {
   sandbox?: boolean | SandboxConfiguration;
+  timeout?: number;
 };
 ```
 
@@ -169,6 +170,7 @@ The per-app runtime configuration. It is the second argument to [`loadMicroApp`]
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `fetch` | `typeof window.fetch` | `window.fetch` | Custom fetch for the entry and loader-managed scripts, modules, and styles. |
+| `timeout` | `number` | `0` (disabled) | Loading timeout in milliseconds; inherits the `start` default when omitted, while an explicit `0` disables it. |
 | `streamTransformer` | `() => TransformStream<string, string>` | `undefined` | A transform piped into the HTML stream while it loads. |
 | `nodeTransformer` | `<T extends Node>(node: T, opts) => T` | internal default | Rewrites script / link / style nodes before they enter the container. |
 | `sandbox` | `boolean \| SandboxConfiguration` | `true` | Enables the [JS sandbox](/concepts/js-sandbox) membrane and, where applicable, the [ESM sandbox](/concepts/esm-sandbox). The object form also configures it. |

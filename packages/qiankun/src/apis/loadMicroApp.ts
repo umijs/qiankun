@@ -1,6 +1,7 @@
 import { AppOrParcelStatus, mountRootParcel, type Parcel, type ParcelConfigObject } from '@qiankunjs/single-spa';
 import { Deferred } from '@qiankunjs/shared';
 import loadApp, { type ParcelConfigObjectGetter } from '../core/loadApp';
+import { resolveConfiguration } from '../core/configuration';
 import { QiankunError } from '../error';
 import { type AppConfiguration, type LifeCycles, type LoadableApp, type MicroApp, type ObjectType } from '../types';
 import { toArray, withAbortSignal } from '../utils';
@@ -151,7 +152,7 @@ export function loadMicroApp<T extends ObjectType>(
     generation = owner;
     byName.set(name, owner);
     owner.config = observed(
-      loadApp(app, configuration, lifeCycles, {
+      loadApp(app, resolveConfiguration(configuration), lifeCycles, {
         signal: owner.loading.signal,
         onDispose: (dispose) => {
           owner.dispose = dispose;

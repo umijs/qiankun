@@ -11,6 +11,7 @@ export const FIREFOX_ESM_LIMITATION =
 
 export type E2EWindow = Window & {
   __E2E__: {
+    configureTimeout(timeout: number): void;
     load(
       name: string,
       configuration?: Record<string, unknown>,
@@ -25,11 +26,20 @@ export type E2EWindow = Window & {
     hookMetrics(key: string): { hookCalls: number; moduleFetches: number } | undefined;
     loadDetached(name: string, key?: string, containerKey?: string, props?: Record<string, unknown>): string;
     settle(key: string): Promise<string>;
-    mountOutcome(key: string): Promise<{ status: string; error?: string }>;
+    mountOutcome(key: string): Promise<{
+      status: string;
+      error?: string;
+      timeoutError?: { appName: string; timeout: number; elapsed: number };
+    }>;
     remount(key: string): Promise<string>;
     unload(key: string): Promise<string>;
     unloadNamed(name: string, containerKey: string): Promise<void>;
-    loadWithNetworkEntryStream(key: string, containerKey: string): Promise<string>;
+    loadWithNetworkEntryStream(
+      key: string,
+      containerKey: string,
+      configuration?: Record<string, unknown>,
+    ): Promise<string>;
+    loadNetworkEntryDetached(key: string, containerKey: string, configuration?: Record<string, unknown>): void;
     unmount(key: string): Promise<string>;
     resetContainer(key: string): void;
     status(key: string): string | undefined;
