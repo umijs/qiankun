@@ -1,2 +1,2 @@
-export { QiankunError } from './QiankunError';
+export { QiankunError, type QiankunErrorCode } from './QiankunError';
 export * from './logger';

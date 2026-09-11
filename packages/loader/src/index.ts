@@ -187,6 +187,7 @@ export async function loadEntry<T>(
             if (foundEntryScript) {
               throw new QiankunError(
                 `You should not include more than 1 entry scripts in a single HTML entry ${entryUrl} !`,
+                'entry-duplicate',
               );
             }
 
@@ -213,6 +214,7 @@ export async function loadEntry<T>(
                   entryScriptLoadedDeferred.reject(
                     new QiankunError(
                       `Entry ${entryUrl} load failed as entry script ${script.dataset.src || script.src} execution failed`,
+                      'entry-script-failed',
                     ),
                   );
                 }
@@ -291,5 +293,5 @@ export async function loadEntry<T>(
   }
 
   notifyDOMStreamSettled();
-  throw new QiankunError(`The response body of entry ${entryUrl} is empty!`);
+  throw new QiankunError(`The response body of entry ${entryUrl} is empty!`, 'entry-body-missing');
 }

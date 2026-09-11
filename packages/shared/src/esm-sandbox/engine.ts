@@ -147,28 +147,41 @@ const isValidModuleSource = (value: unknown): value is ModuleSource => {
 
 const assertModuleDescriptor = (specifier: string, descriptor: unknown): ModuleDescriptor => {
   if (descriptor === null || typeof descriptor !== 'object') {
-    throw new QiankunError(`module hook for ${specifier} did not return a module descriptor`);
+    throw new QiankunError(
+      `module hook for ${specifier} did not return a module descriptor`,
+      'module-descriptor-invalid',
+    );
   }
 
   const fields = ['source', 'namespace', 'specifier'].filter((field) => field in descriptor);
   if (fields.length !== 1) {
     throw new QiankunError(
       `module descriptor for ${specifier} must contain exactly one of source, namespace or specifier`,
+      'module-descriptor-invalid',
     );
   }
 
   const candidate = descriptor as Record<string, unknown>;
   if ('source' in candidate && typeof candidate.source !== 'string' && !isValidModuleSource(candidate.source)) {
-    throw new QiankunError(`module descriptor source for ${specifier} must be a string or ModuleSource`);
+    throw new QiankunError(
+      `module descriptor source for ${specifier} must be a string or ModuleSource`,
+      'module-descriptor-invalid',
+    );
   }
   if (
     'namespace' in candidate &&
     (candidate.namespace === null || typeof candidate.namespace !== 'object' || Array.isArray(candidate.namespace))
   ) {
-    throw new QiankunError(`module descriptor namespace for ${specifier} must be a module namespace object`);
+    throw new QiankunError(
+      `module descriptor namespace for ${specifier} must be a module namespace object`,
+      'module-descriptor-invalid',
+    );
   }
   if ('specifier' in candidate && (typeof candidate.specifier !== 'string' || candidate.specifier.length === 0)) {
-    throw new QiankunError(`module descriptor redirect for ${specifier} must be a non-empty specifier`);
+    throw new QiankunError(
+      `module descriptor redirect for ${specifier} must be a non-empty specifier`,
+      'module-descriptor-invalid',
+    );
   }
   return descriptor as ModuleDescriptor;
 };
@@ -236,7 +249,10 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
 
   constructor(opts: EsmSandboxEngineOpts) {
     if (opts.importHook && opts.loadHook && opts.importHook !== opts.loadHook) {
-      throw new QiankunError('importHook and loadHook must reference the same hook when both are provided');
+      throw new QiankunError(
+        'importHook and loadHook must reference the same hook when both are provided',
+        'module-hooks-conflict',
+      );
     }
 
     this.opts = opts;
@@ -300,7 +316,10 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
   registerDocumentModule(script: DocumentModule): void {
     this.assertAlive();
     if (this.sealed) {
-      throw new QiankunError(`document module registration for app ${this.opts.appName} is already sealed`);
+      throw new QiankunError(
+        `document module registration for app ${this.opts.appName} is already sealed`,
+        'module-registration-sealed',
+      );
     }
 
     const { isEntry } = script;
@@ -387,7 +406,10 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
 
   private assertAlive(): void {
     if (this.disposed) {
-      throw new QiankunError(`ESM sandbox engine of app ${this.opts.appName} has been disposed`);
+      throw new QiankunError(
+        `ESM sandbox engine of app ${this.opts.appName} has been disposed`,
+        'compartment-disposed',
+      );
     }
   }
 
@@ -404,6 +426,7 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
 
     throw new QiankunError(
       `failed to resolve the bare specifier '${specifier}' imported from ${referrer}: no import map entry found in app ${this.opts.appName}`,
+      'module-unresolved',
     );
   };
 
@@ -465,15 +488,22 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
     if (specifier.startsWith(esmInternalPrefix)) {
       throw new QiankunError(
         `synthetic specifier ${specifier} is not allowed in application code of ${this.opts.appName}`,
+        'module-specifier-reserved',
       );
     }
 
     const resolved = this.resolveHook(specifier, referrer);
     if (typeof resolved !== 'string' || resolved.length === 0) {
-      throw new QiankunError(`resolveHook for '${specifier}' imported from ${referrer} did not return a specifier`);
+      throw new QiankunError(
+        `resolveHook for '${specifier}' imported from ${referrer} did not return a specifier`,
+        'module-resolve-invalid',
+      );
     }
     if (resolved.startsWith(esmInternalPrefix)) {
-      throw new QiankunError(`resolveHook returned a reserved synthetic specifier ${resolved}`);
+      throw new QiankunError(
+        `resolveHook returned a reserved synthetic specifier ${resolved}`,
+        'module-specifier-reserved',
+      );
     }
     return resolved;
   }
@@ -533,7 +563,10 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
     loadContext: ModuleLoadContext = this.defaultModuleLoadContext,
   ): Promise<Module> {
     if (redirectTrail.includes(fullSpecifier)) {
-      throw new QiankunError(`module redirect cycle: ${[...redirectTrail, fullSpecifier].join(' -> ')}`);
+      throw new QiankunError(
+        `module redirect cycle: ${[...redirectTrail, fullSpecifier].join(' -> ')}`,
+        'module-redirect-cycle',
+      );
     }
 
     const cacheKey = this.getModuleCacheKey(fullSpecifier, loadContext);
@@ -851,7 +884,10 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
     this.assertAlive();
     const loadContext = this.moduleLoadContexts.get(credentialsKey as ModuleCredentialsKey);
     if (!loadContext) {
-      throw new QiankunError(`unknown module credentials context ${credentialsKey} in app ${this.opts.appName}`);
+      throw new QiankunError(
+        `unknown module credentials context ${credentialsKey} in app ${this.opts.appName}`,
+        'module-context-missing',
+      );
     }
     const spec = String(specifier);
     const baseUrl = typeof args[args.length - 1] === 'string' ? (args[args.length - 1] as string) : this.entryBaseUrl;

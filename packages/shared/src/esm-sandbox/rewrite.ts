@@ -89,7 +89,10 @@ export function rewriteModule(opts: RewriteModuleOpts): ModuleRewriteResult {
       if (specifier === undefined) continue;
       if (specifier.startsWith(esmInternalPrefix)) {
         // never pass through synthetic specifiers from user code, they could reach foreign runtime modules (RFC §1)
-        throw new QiankunError(`synthetic specifier ${specifier} is not allowed in module ${url}`);
+        throw new QiankunError(
+          `synthetic specifier ${specifier} is not allowed in module ${url}`,
+          'module-specifier-reserved',
+        );
       }
       const resolved = resolveSpecifier(specifier, url);
       // still rewrite the specifier to the synthetic form; the `with { type }` clause that follows the
@@ -198,7 +201,7 @@ export function rewriteModule(opts: RewriteModuleOpts): ModuleRewriteResult {
     if (editStack.length > 0) {
       const parent = editStack[editStack.length - 1];
       if (edit.end > parent.edit.end) {
-        throw new QiankunError(`partially overlapping module rewrite spans in ${url}`);
+        throw new QiankunError(`partially overlapping module rewrite spans in ${url}`, 'module-rewrite-invalid');
       }
       parent.children.push(node);
     } else {
@@ -214,7 +217,7 @@ export function rewriteModule(opts: RewriteModuleOpts): ModuleRewriteResult {
       parts.push(source.slice(cursor, edit.start));
       if (edit.kind === 'text') {
         if (children.length > 0) {
-          throw new QiankunError(`unexpected nested module rewrite span in ${url}`);
+          throw new QiankunError(`unexpected nested module rewrite span in ${url}`, 'module-rewrite-invalid');
         }
         parts.push(edit.replacement);
       } else {

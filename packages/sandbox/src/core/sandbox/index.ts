@@ -80,7 +80,10 @@ interface CapturedError {
 
 function normalizeModuleHook(importHook?: ImportHook, loadHook?: ImportHook): ImportHook | undefined {
   if (importHook && loadHook && importHook !== loadHook) {
-    throw new QiankunError('importHook and loadHook must reference the same hook when both are provided');
+    throw new QiankunError(
+      'importHook and loadHook must reference the same hook when both are provided',
+      'module-hooks-conflict',
+    );
   }
   return importHook ?? loadHook;
 }
@@ -134,7 +137,10 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
   } = opts;
   const hasContainer = containerOption !== undefined;
   if (styleIsolationEnabled && !hasContainer) {
-    throw new QiankunError(`Sandbox ${appName} requires a container when style isolation is enabled`);
+    throw new QiankunError(
+      `Sandbox ${appName} requires a container when style isolation is enabled`,
+      'container-required',
+    );
   }
 
   const hasTopLevelModuleHook = topLevelImportHook !== undefined || topLevelLoadHook !== undefined;
