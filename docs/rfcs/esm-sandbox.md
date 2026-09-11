@@ -605,14 +605,29 @@ qiankun 用全局单变量 `nativeGlobal.__currentLockingSandbox__` 把 `documen
 
 **浏览器兼容性**
 
-| 浏览器 | 多 import map 支持 | 版本 |
-|---|---|---|
-| Chrome / Edge | ✅ | 133+ |
-| Safari / iOS Safari | ✅ | 18.4+ |
-| Firefox | ⚠️ | 150 branch 已实现，但默认关闭；需开启 `dom.multiple_import_maps.enabled` |
+qiankun 3.0 的 ESM 沙箱要求浏览器原生支持动态注入多个 import map，不提供降级路径。具体要求以[浏览器支持](../zh-CN/guide/browser-support.md)为准。
 
-截至 RFC 时间（2026-04），Chromium 与 WebKit 已可依赖原生多 import map；Firefox 稳定版仍不能默认依赖。若运行环境需要 Firefox 或旧版本浏览器，必须把 [es-module-shims](https://github.com/guybedford/es-module-shims) 作为受支持路径，而不是可选兜底。
+**es-module-shims 评估与 3.0 决策**
 
+**结论：3.0 不接入 es-module-shims。** 保留 lexer 改写、实例前缀与隔离膜桥接后，接入 shim 求值后端在技术上可行；本次未发现它直接绕过隔离膜的证据。但循环依赖中的模块语义与原生执行存在差异，因此仅将其保留为 **3.x 的 opt-in 候选**，未来若提供，必须由使用者显式启用并明确声明限制。
+
+以下结果来自 es-module-shims 2.8.4 的独立模块探针（shim mode；Playwright Chromium 1228、Firefox 1532），以 A → B → A 的循环模块图比较原生与 shim 求值，未进行完整的 qiankun 沙箱接入：
+
+| 循环依赖场景 | 原生结果 | shim 结果 | 有效对照浏览器 |
+| --- | --- | --- | --- |
+| A 导出 `let value = 0`，执行 A 的递增函数后，由 B 读取该导入绑定 | `1` | 仍为 `0` | Chromium、Firefox |
+| B 在求值期间调用 A 导出的函数，依赖函数提升 | 返回 `42` | `TypeError` | Chromium |
+| B 在 A 的 `let value` 初始化前读取该绑定，触及暂时性死区 | `ReferenceError` | 成功返回 `undefined` | Chromium |
+
+Firefox 的原生函数提升、暂时性死区对照受到同页后续 import map 被忽略的影响，不作为这两项语义对照证据。
+
+根因是 shim 使用 shell module 的独立绑定打断循环，再在求值过程中特定时点复制真实模块的导出值。这些绑定既不能持续反映后续赋值，也不能完整保留原生模块实例化阶段的函数提升和暂时性死区行为。[官方说明](https://github.com/guybedford/es-module-shims#es-module-shims)同样记录了循环父模块的实时绑定限制，去环机制见[实现说明](https://github.com/guybedford/es-module-shims#implementation-details)。
+
+后续候选方案的最小接入边界如下；这些设计尚未实现，不属于 3.0 的兼容性保证：
+
+- **保留源码改写和隔离膜桥接。** 仅替换运行时 import map 注册与模块求值：将已改写的 blob 登记到 `importShim.addImportMap`，再调用 `importShim(blobUrl)`。按需加载固定版本的 shim mode 脚本，支持可配置地址和自托管，不加入核心运行时依赖；同一浏览器 realm 内协调后端选择。
+- **分离探测 importer 与求值 importer。** 重声明探测继续使用原生 importer：当前 probe 故意引用未映射说明符，原生解析器会先暴露重声明 `SyntaxError`，而 shim 会先报告说明符解析失败，遮蔽重声明错误。
+- **在独立 iframe 中检测能力。** `HTMLScriptElement.supports?.('importmap')` 不足以判断动态多 import map。可用一次性同源隐藏 iframe 验证“注入第一张 map 并执行模块，再追加第二张 map 并执行模块”，避免消耗主文档的单 map 配额。探测结束后释放 iframe 和 blob，并处理 CSP、超时与消息来源校验；iframe 仅用于特性检测，不承载微应用。参见[上游检测实现](https://github.com/guybedford/es-module-shims/blob/main/src/features.js)。
 
 **Import Map 大小与生命周期**
 
@@ -840,7 +855,7 @@ Compartment Alignment RFC 落地后，classic 与 ESM 共用同一个 Compartmen
 - [ ] **白名单外裸全局调用**的清理行为符合文档化预期（默认覆盖 / 已知逃逸，二选一并验证）
 - [ ] **Vite dev React 子应用**：`@vitejs/plugin-react` preamble 不抛 "can't detect preamble"，组件正常渲染
 - [ ] **生产 ESM 构建产物**（hashed chunks + 自带 importmap）子应用可正常 mount/unmount/remount
-- [ ] **Firefox（或目标旧浏览器）经 es-module-shims 路径**可正常加载 ESM 子应用
+- [ ] **浏览器限制已说明**：3.0 不提供 ESM 沙箱降级，Firefox 等不支持动态多 import map 的浏览器应使用 Classic 构建；shim 仅为 3.x opt-in 候选（§11）
 - [ ] JS 错误的 `error.stack` 可经 source map 映射回子应用原始文件（若 v1 不实现完整 source map，则文档化该局限并标注此项为已知不满足）
 - [ ] **顶层声明/导入与白名单重名**（如 `const history = ...`、`import { location } from ...`）的模块可正常加载（重名剔除 / SyntaxError 重试生效），且该标识符语义正确（引用本地绑定）
 - [ ] **主应用 CSP 不含 `'unsafe-eval'`**（仅 `script-src blob:` 等）时，ESM 子应用可正常加载（注入引导零 eval，见 §1）
@@ -878,7 +893,7 @@ Compartment Alignment RFC 落地后，classic 与 ESM 共用同一个 Compartmen
 | Import map 冲突导致模块解析失败 | **核心风险**：由于 import map 无法删除且冲突条目会被丢弃，长期运行或热更新可能导致 specifier 冲突。**对策**：app-private specifier 必须包含 instanceId；shared specifier（v2 引入 namespace 级共享后）必须由 qiankun registry 统一分配。 |
 | Import map 条目无法清理 | 子应用 unload 后死条目积累，但仅为纯字符串，内存影响极小；blob URL 可正常 revoke；重新加载时分配新的 instanceId，避免命中旧条目 |
 | Vite dev URL 查询参数影响缓存 | Vite `?t=` 参数（HMR 时间戳）和 `?v=` 参数（预构建 hash）需保留在缓存 key 中，确保版本正确性 |
-| 运行时 import map 需要多 import map 浏览器支持 | Chrome/Edge 133+、Safari/iOS Safari 18.4+；Firefox 150 branch 已实现但默认关闭。Firefox 与旧浏览器必须 fallback 到 es-module-shims |
+| 运行时 import map 需要多 import map 浏览器支持 | 3.0 不提供降级；使用原生支持动态多 import map 的浏览器，或改用 Classic 构建。浏览器要求以[浏览器支持](../zh-CN/guide/browser-support.md)为准；shim 评估见 §11 |
 | **注入模板 TDZ / CSP `unsafe-eval`（已修复）** | 引导曾先后采用 `globalThis.__qk_realm(...)`（同名 const TDZ，每模块首行 ReferenceError）与 `(0,eval)('globalThis')`（要求 CSP `unsafe-eval`，生产 shell 常不满足）。现改为 runtime 模块 import 引导：import 绑定先于模块体初始化（构造上无 TDZ）、零 eval（§1） |
 | **注入解构与顶层声明/导入重名 → SyntaxError** | `const history = ...` 等常见写法会砖掉整个模块图。按需过滤缩小碰撞面（p50=3 项）+ import 绑定名剔除 + SyntaxError 捕获重试兜底（§1） |
 | **共享 blob 烘焙 realm 绑定** | 跨实例复用改写产物会让 B 应用经 A 的 proxy 操作 DOM、并持有 A 已清理的 realm。v1 收缩为 source 级共享（与 classic 语义对齐）；namespace 级共享为 v2 前置课题（§11、Open Q9） |
@@ -909,7 +924,7 @@ Compartment Alignment RFC 落地后，classic 与 ESM 共用同一个 Compartmen
 | **importmap sentinel 重入 → `JSON.parse(注释)` 报错** | **已修**：`consumeImportMapScript` 按 `dataset.consumed` 幂等（§5） |
 | **redeclaration probe 120 字窗口漏检 → flush 后不可修的 SyntaxError** | **已修**：改为「解构集非空 ∧ 含声明关键字」不漏检（§1 防护 3/4） |
 | **cross-origin `use-credentials` 子应用 fetch 丢 cookie / 并发图串用响应** | **已修**：`transpileModuleScript` 把 `crossorigin` 绑定到每个 document task，JS 静态依赖与普通动态 import 图沿不可变上下文加载；每个上下文使用独立 runtime bridge，engine 模块缓存和 `makeFetchCacheable` 都按 credentials 分区（§8）。typed module 原生直连不在此保证内（§14）；**SRI `integrity` 逐模块校验**仍为已知限制（动态发现的模块图无法从 HTML 拿到各自 integrity） |
-| **动态 import 运行时追加 import map 在非最新浏览器失效** | **仍为已知限制**：Chrome 133+/Safari 18.4+ 支持运行时多 import map；Firefox、Safari<18.4、Chrome<133 需 **es-module-shims** 基座——v1 **未内置**，代码/浏览器兼容表已声明，作为独立工作项（§11） |
+| **动态 import 运行时追加 import map 在非最新浏览器失效** | **3.0 保留已知限制**：不接入 es-module-shims，不支持动态多 import map 的浏览器无法使用 ESM 沙箱；shim 仅为需显式声明循环语义限制的 3.x opt-in 候选（§11） |
 
 ## Alternatives Considered
 
@@ -918,7 +933,7 @@ Compartment Alignment RFC 落地后，classic 与 ESM 共用同一个 Compartmen
 | **iframe / Wujie 风格 realm** | 用户明确不接受 iframe 方向；与 qiankun 现有 DOM 模型差异大 |
 | **ShadowRealm / SES** | 浏览器支持度低；与 qiankun DOM 共享模型不兼容 |
 | **完全自定义 module loader（自己实现 loader 语义）** | 若**连依赖图/TLA/循环依赖语义都自己写**，工程量极大且易出语义偏差。但需澄清：本方案「改写 specifier + import map + blob」本身已是一种「保留原生 loader 的自定义 loader」，故此否决仅针对「连 loader 语义都自实现」，不应被读成「任何运行时接管都不可取」（见下行 es-module-shims） |
-| **基于 es-module-shims（作为基座）** | es-module-shims 已实现 fetch+lexer+rewrite-to-blob、import-map 管理、import.meta 改写、动态 import、`revokeBlobURLs`，并提供 `resolve`/`fetch`/`source`/`meta` 等 hook，天然支持 Firefox/旧浏览器。**本 RFC 应将其作为候选基座正式评估**（用 hook 注入顶部解构 + 映射 specifier），而非仅当 Firefox fallback。权衡需基于事实：① **循环依赖 live-binding**——它用 shell module 打破循环，官方文档承认「循环中首个未执行父模块 live binding 失效」，与本方案「零语义损失」目标冲突（这也正是「跳板模块」被否决的理由）；② 依赖面/控制权/包体积。不能以「会丢循环依赖/工程量」一句否决「自定义 loader」却不评估这个最成熟的实现 |
+| **基于 es-module-shims（作为基座）** | **已评估，3.0 不接入**。隔离膜桥接可以保留，但 shell module 去环会改变循环依赖的实时绑定、函数提升和暂时性死区语义，实测见 §11。保留为 3.x opt-in 候选，未来若提供，必须显式声明这些限制；探测 importer 与求值 importer 需分离，动态多 import map 能力应在独立 iframe 中检测。 |
 | **QuickJS / Boa WASM JS engine** | 性能差 1~2 个数量级；DOM 桥需自实现；体积大 |
 | **swc-wasm / oxc-wasm 做完整 AST** | 体积 +500KB~2MB；解析慢；本方案需求只需 lexer 级别即可 |
 | **构建期插件改写** | 违背"运行时支持"约束；不能解决 Vite dev 场景 |
