@@ -34,6 +34,31 @@ test.describe('multiple instances', () => {
     await expect(page.locator('#container-b [data-testid="classic-title"]')).toBeVisible();
   });
 
+  test('new tabs mount independently after removing an earlier sibling container', async ({ page }) => {
+    for (const key of ['tab-a', 'tab-b', 'tab-c']) {
+      expect(await loadApp(page, 'sub-classic', undefined, key)).toBe('MOUNTED');
+    }
+
+    await unmountApp(page, 'tab-a');
+    await page.locator('#container-tab-a').evaluate((container) => container.remove());
+
+    // The new third sibling occupies tab-c's original XPath, but it is a different element.
+    expect(await loadApp(page, 'sub-classic', undefined, 'tab-d')).toBe('MOUNTED');
+    await expect(page.locator('#containers > div')).toHaveCount(3);
+
+    for (const key of ['tab-b', 'tab-c', 'tab-d']) {
+      const container = page.locator(`#container-${key}`);
+      await expect(container.getByTestId('classic-title')).toBeVisible();
+      await expect(container.getByTestId('classic-counters')).toHaveText('bootstrap:1,mount:1,unmount:0');
+    }
+    expect(await readMainRealmGlobal(page, '__CLASSIC_POLLUTION__')).toBeUndefined();
+
+    for (const key of ['tab-b', 'tab-c', 'tab-d']) {
+      await unmountApp(page, key);
+      await expect(page.locator(`#container-${key}`)).toBeEmpty();
+    }
+  });
+
   test('classic and esm apps coexist and unmount independently', async ({ page, browserName }) => {
     test.fail(browserName === 'firefox', FIREFOX_ESM_LIMITATION);
     await loadApp(page, 'sub-classic');

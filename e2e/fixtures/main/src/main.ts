@@ -8,6 +8,7 @@ import { createLocalStoragePrefixPlugin } from './localStoragePrefixPlugin';
 
 const instances = new Map<string, MicroApp>();
 const hookMetrics = new Map<string, { hookCalls: number; moduleFetches: number }>();
+const entryStreamClosers = new Map<string, () => void>();
 
 const precompiledEntryUrl = new URL('/entry.js', SUB_APP_ENTRIES['sub-esm']).href;
 const precompiledDependencyUrl = new URL('/precompiled-dependency.js', precompiledEntryUrl).href;
@@ -115,6 +116,46 @@ const testAPI = {
       },
       key,
     );
+  },
+
+  /** Keep the entry's HTML tail pending after its lifecycle script has executed. */
+  async loadWithOpenEntryStream(key: string, containerKey: string): Promise<string> {
+    const nativeFetch = window.fetch.bind(window);
+    return this.load(
+      'sub-classic',
+      {
+        fetch: async (input, init) => {
+          const response = await nativeFetch(input, init);
+          if (String(input) !== SUB_APP_ENTRIES['sub-classic']) return response;
+
+          const html = await response.text();
+          const tailOffset = html.lastIndexOf('</body>');
+          const encoder = new TextEncoder();
+          return new Response(
+            new ReadableStream<Uint8Array>({
+              start(controller) {
+                controller.enqueue(encoder.encode(html.slice(0, tailOffset)));
+                entryStreamClosers.set(key, () => {
+                  controller.enqueue(encoder.encode(html.slice(tailOffset)));
+                  controller.close();
+                });
+              },
+            }),
+            { status: response.status, headers: response.headers },
+          );
+        },
+      },
+      key,
+      undefined,
+      containerKey,
+    );
+  },
+
+  closeEntryStream(key: string): void {
+    const close = entryStreamClosers.get(key);
+    if (!close) throw new Error(`no open entry stream for key ${key}`);
+    entryStreamClosers.delete(key);
+    close();
   },
 
   async loadWithPrecompiledHook(key: string): Promise<string> {

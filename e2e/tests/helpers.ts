@@ -19,6 +19,8 @@ export type E2EWindow = Window & {
       containerKey?: string,
     ): Promise<string>;
     loadWithStoragePlugin(prefix: string, key: string, value: string): Promise<string>;
+    loadWithOpenEntryStream(key: string, containerKey: string): Promise<string>;
+    closeEntryStream(key: string): void;
     loadWithPrecompiledHook(key: string): Promise<string>;
     hookMetrics(key: string): { hookCalls: number; moduleFetches: number } | undefined;
     loadDetached(name: string, key?: string, containerKey?: string, props?: Record<string, unknown>): string;
