@@ -32,7 +32,7 @@ const dynamicAppendPlugin: IsolationPlugin = {
   mount: async (context) => {
     const container = context.getContainer();
     if (!container) {
-      throw new QiankunError(`${context.appName} requires a container for DOM isolation`);
+      throw new QiankunError(`${context.appName} requires a container for DOM isolation`, 'container-required');
     }
     const free = patchStandardSandbox(context);
     try {

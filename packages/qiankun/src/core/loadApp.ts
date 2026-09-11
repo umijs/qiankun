@@ -536,6 +536,7 @@ function getLifecyclesFromExports(
     `You need to export lifecycle functions in ${appName} entry as neither globalLatestSetProp ${String(
       globalLatestSetProp,
     )} nor window['${appName}'] export correctly`,
+    'lifecycle-missing',
   );
 }
 
