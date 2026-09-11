@@ -30,6 +30,7 @@ const enSidebar = {
         { text: 'What is qiankun?', link: '/guide/what-is-qiankun' },
         { text: 'Get started in 5 minutes', link: '/guide/getting-started' },
         { text: 'Browser support', link: '/guide/browser-support' },
+        { text: 'Content Security Policy (CSP)', link: '/guide/csp-requirements' },
       ],
     },
     {
@@ -179,6 +180,7 @@ const zhSidebar = {
         { text: '什么是 qiankun', link: '/zh-CN/guide/what-is-qiankun' },
         { text: '快速上手', link: '/zh-CN/guide/getting-started' },
         { text: '浏览器支持', link: '/zh-CN/guide/browser-support' },
+        { text: '内容安全策略（CSP）', link: '/zh-CN/guide/csp-requirements' },
       ],
     },
     {
