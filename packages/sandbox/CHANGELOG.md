@@ -1,5 +1,17 @@
 # @qiankunjs/sandbox
 
+## 0.1.0-rc.19
+
+### Minor Changes
+
+- feat: add typed exports for published packages (#3189)
+
+### Patch Changes
+
+- fix(sandbox): patch virtual head before document access
+- Updated dependencies
+  - @qiankunjs/shared@0.1.0-rc.15
+
 ## 0.1.0-rc.18
 
 ### Minor Changes
