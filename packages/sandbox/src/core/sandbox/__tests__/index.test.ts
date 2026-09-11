@@ -477,6 +477,68 @@ describe('isolation plugin lifecycle', () => {
     expect(mountingFree).toHaveBeenCalledOnce();
   });
 
+  it('runs all terminal plugin hooks after frees and retains the first cleanup error', async () => {
+    const events: string[] = [];
+    const { container, controller } = createContainer([
+      {
+        name: 'first',
+        bootstrap: () => () => {
+          events.push('free');
+          throw new Error('free failed');
+        },
+        dispose: ({ compartment }) => {
+          expect(compartment.globalThis.document).toBe(document);
+          events.push('dispose:first');
+          throw new Error('dispose failed');
+        },
+      },
+      { name: 'second', dispose: () => events.push('dispose:second') },
+    ]);
+    const view = controller.instance.globalThis;
+    const transformer = controller.nodeTransformer;
+
+    await expect(controller.dispose()).rejects.toThrowError('free failed');
+    await controller.dispose();
+    await controller.unmount();
+
+    expect(events).toEqual(['free', 'dispose:first', 'dispose:second']);
+    expect(() => view.document).toThrow(TypeError);
+    expect(() => transformer(document.createElement('div'), {})).toThrowError('has been disposed');
+    await expect(controller.mount(container)).rejects.toThrowError('has been disposed');
+  });
+
+  it('keeps terminal hooks for disposal and never invokes them during warm unmounts', async () => {
+    const dispose = vi.fn();
+    const { container, controller } = createContainer([{ name: 'terminal', dispose }]);
+    const { mount, unmount, dispose: disposeController } = controller;
+    await mount(container);
+    await unmount();
+    await mount(container);
+    expect(dispose).not.toHaveBeenCalled();
+
+    await disposeController();
+    await disposeController();
+    expect(dispose).toHaveBeenCalledOnce();
+  });
+
+  it('runs terminal hooks after a partial bootstrap failure without replacing the original error', () => {
+    const dispose = vi.fn(() => {
+      throw new Error('terminal failure');
+    });
+    expect(() =>
+      createContainer([
+        { name: 'initialized', dispose },
+        {
+          name: 'broken',
+          bootstrap: () => {
+            throw new Error('bootstrap failed');
+          },
+        },
+      ]),
+    ).toThrowError('bootstrap failed');
+    expect(dispose).toHaveBeenCalledOnce();
+  });
+
   it('waits for an in-flight mount to roll back its effects before disposal completes', async () => {
     let resolveMount: (free: Free) => void = () => {
       throw new Error('mount resolver was not initialized');

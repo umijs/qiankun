@@ -8,6 +8,7 @@ import type { Sandbox, SandboxController } from '@qiankunjs/sandbox';
 import { createSandbox, markNodeForNativePassthrough, nativeGlobal } from '@qiankunjs/sandbox';
 import {
   Deferred,
+  disposeCompartmentAssets,
   defineProperty,
   hasOwnProperty,
   makeFetchCacheable,
@@ -36,6 +37,7 @@ import {
   performanceMark,
   performanceMeasure,
   toArray,
+  withAbortSignal,
 } from '../utils';
 import { acquireContainer, isContainerHeld, type ContainerHold } from './containerOccupancy';
 
@@ -43,10 +45,16 @@ declare const __QIANKUN_VERSION__: string;
 
 export type ParcelConfigObjectGetter = (remountContainer: HTMLElement) => ParcelConfigObject;
 
+export interface LoadAppControl {
+  signal?: AbortSignal;
+  onDispose?: (dispose: () => Promise<void>) => void;
+}
+
 export default async function loadApp<T extends ObjectType>(
   app: LoadableApp<T>,
   configuration?: AppConfiguration,
   lifeCycles?: LifeCycles<T>,
+  control: LoadAppControl = {},
 ): Promise<ParcelConfigObjectGetter> {
   const { name: appName, entry, container, loader } = app;
   const defaultNodeTransformer: AppConfiguration['nodeTransformer'] = (node, opts) => {
@@ -70,7 +78,12 @@ export default async function loadApp<T extends ObjectType>(
     ...compartmentHooks
   } = sandboxConfiguration;
 
-  const enhancedFetch = makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)));
+  const abortController = new AbortController();
+  const { signal } = abortController;
+  const abortFromCaller = () => abortController.abort(control.signal?.reason);
+  if (control.signal?.aborted) abortFromCaller();
+  else control.signal?.addEventListener('abort', abortFromCaller, { once: true });
+  const enhancedFetch = makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)), { signal });
 
   const markName = `[qiankun] App ${appName} Loading`;
   if (process.env.NODE_ENV === 'development') {
@@ -96,6 +109,38 @@ export default async function loadApp<T extends ObjectType>(
   let mountTimes = 1;
 
   let microAppDOMContainer: HTMLElement = container;
+  const containerInitToken: ContainerInitToken = Symbol(appName);
+  const holds = new Set<ContainerHold>();
+  const releaseHold = (hold: ContainerHold) => {
+    holds.delete(hold);
+    hold.release();
+  };
+  let disposePromise: Promise<void> | undefined;
+  const dispose = (reason: unknown = new QiankunError(`App ${appName} has been unloaded`)): Promise<void> => {
+    if (!disposePromise) {
+      disposePromise = (async () => {
+        abortController.abort(reason);
+        control.signal?.removeEventListener('abort', abortFromCaller);
+        try {
+          await sandboxController?.dispose();
+        } finally {
+          disposeCompartmentAssets(enhancedFetch);
+          enhancedFetch.invalidate();
+          if (initializedContainers.get(microAppDOMContainer) === containerInitToken) {
+            clearContainer(microAppDOMContainer);
+          }
+          for (const hold of holds) hold.release();
+          holds.clear();
+          sandboxController = undefined;
+          sandboxInstance = undefined;
+          mountSandbox = async () => {};
+          unmountSandbox = async () => {};
+        }
+      })();
+    }
+    return disposePromise;
+  };
+  control.onDispose?.(dispose);
 
   // Pre-warm the entry request only when the gate is about to make us wait: makeFetchCacheable
   // dedupes it with loadEntry's own fetch, so the network time overlaps the predecessor's
@@ -108,11 +153,18 @@ export default async function loadApp<T extends ObjectType>(
 
   // ① load-phase streaming critical section: acquired before the container wipe below, released
   // once both the entry lifecycles promise and the DOM stream have settled (see the gate RFC).
-  const loadHold = await acquireContainer(microAppDOMContainer, appName);
+  let loadHold: ContainerHold;
+  try {
+    loadHold = await acquireContainer(microAppDOMContainer, appName, signal);
+    holds.add(loadHold);
+    signal.throwIfAborted();
+  } catch (error) {
+    await dispose(error).catch(() => undefined);
+    throw error;
+  }
   // Flips when the mount hook adopts the still-open load hold as its mount hold ② (see the
   // mount chain below) — from then on the hold is the mount's to release, not the settle latch's.
   let loadHoldAdoptedByMount = false;
-  const containerInitToken: ContainerInitToken = Symbol(appName);
 
   try {
     initContainer(microAppDOMContainer, {
@@ -163,11 +215,11 @@ export default async function loadApp<T extends ObjectType>(
     // bootstrap error rethrown by createSandbox, the multi-instance chunk-cache sweep) would
     // otherwise leak the hold forever and starve every later acquirer of this container.
     try {
-      await sandboxController?.dispose();
+      await dispose(error);
     } catch {
       // The original failure is the actionable one and must retain precedence.
     }
-    loadHold.release();
+    releaseHold(loadHold);
     throw error;
   }
 
@@ -176,6 +228,7 @@ export default async function loadApp<T extends ObjectType>(
     fetch: enhancedFetch,
     nodeTransformer: resolvedNodeTransformer,
     ...restConfiguration,
+    signal,
   };
   /*
    * The load hold must not survive until unmount: single-spa re-checks shouldBeActive after load,
@@ -189,62 +242,74 @@ export default async function loadApp<T extends ObjectType>(
   let domStreamSettled = false;
   const releaseLoadHoldWhenSettled = () => {
     // an adopted hold lives on as the mount hold ② and is no longer the latch's to release
-    if (entryLifecyclesSettled && domStreamSettled && !loadHoldAdoptedByMount) loadHold.release();
+    if (entryLifecyclesSettled && domStreamSettled && !loadHoldAdoptedByMount && !signal.aborted) releaseHold(loadHold);
   };
   const markEntryLifecyclesSettled = () => {
     entryLifecyclesSettled = true;
     releaseLoadHoldWhenSettled();
   };
 
-  const lifecycleSetup = await (async () => {
-    let lifecyclesPromise: Promise<MicroAppLifeCycles | undefined> | undefined;
-    try {
-      lifecyclesPromise = loadEntry<MicroAppLifeCycles>(entry, microAppDOMContainer, {
-        ...containerOpts,
-        onDOMStreamSettled: () => {
-          domStreamSettled = true;
-          releaseLoadHoldWhenSettled();
-        },
-      });
-      void lifecyclesPromise.then(markEntryLifecyclesSettled, markEntryLifecyclesSettled);
-
-      const assetPublicPath = calcPublicPath(entry);
-      const {
-        beforeUnmount = [],
-        afterUnmount = [],
-        afterMount = [],
-        beforeMount = [],
-        beforeLoad = [],
-      } = mergeWith({}, getAddOns(global, assetPublicPath), lifeCycles, (v1, v2) =>
-        concat((v1 ?? []) as LifeCycleFn<T>, (v2 ?? []) as LifeCycleFn<T>),
-      );
-      // FIXME Due to the asynchronous execution of loadEntry, the DOM of the sub-app is inserted synchronously through appendChild, and inline scripts are also executed synchronously. Therefore, the beforeLoad may need to rely on transformer configuration to coordinate and ensure the order of asynchronous operations.
-      await execHooksChain(toArray(beforeLoad), app, global);
-
-      const lifecycles = await lifecyclesPromise;
-      return {
-        afterMount,
-        afterUnmount,
-        beforeMount,
-        beforeUnmount,
-        ...getLifecyclesFromExports(lifecycles, appName, global, sandboxInstance?.latestSetProp),
-      };
-    } catch (error) {
-      // beforeLoad may fail while the concurrently started entry pipeline is still pending.
-      // Observe its eventual rejection, then permanently abort the sandbox without masking
-      // the load/lifecycle error that caused this path.
-      void lifecyclesPromise?.catch(() => undefined);
+  const lifecycleSetup = await withAbortSignal(
+    (async () => {
+      let lifecyclesPromise: Promise<MicroAppLifeCycles | undefined> | undefined;
       try {
-        await sandboxController?.dispose();
-      } catch {
-        // The original load error is the actionable failure and must retain precedence.
+        lifecyclesPromise = loadEntry<MicroAppLifeCycles>(entry, microAppDOMContainer, {
+          ...containerOpts,
+          onDOMStreamSettled: () => {
+            domStreamSettled = true;
+            releaseLoadHoldWhenSettled();
+          },
+        });
+        void lifecyclesPromise.then(markEntryLifecyclesSettled, markEntryLifecyclesSettled);
+
+        const assetPublicPath = calcPublicPath(entry);
+        const {
+          beforeUnmount = [],
+          afterUnmount = [],
+          afterMount = [],
+          beforeMount = [],
+          beforeLoad = [],
+        } = mergeWith({}, getAddOns(global, assetPublicPath), lifeCycles, (v1, v2) =>
+          concat((v1 ?? []) as LifeCycleFn<T>, (v2 ?? []) as LifeCycleFn<T>),
+        );
+        // FIXME Due to the asynchronous execution of loadEntry, the DOM of the sub-app is inserted synchronously through appendChild, and inline scripts are also executed synchronously. Therefore, the beforeLoad may need to rely on transformer configuration to coordinate and ensure the order of asynchronous operations.
+        await execHooksChain(toArray(beforeLoad), app, global);
+
+        const lifecycles = await lifecyclesPromise;
+        signal.throwIfAborted();
+        return {
+          afterMount,
+          afterUnmount,
+          beforeMount,
+          beforeUnmount,
+          ...getLifecyclesFromExports(lifecycles, appName, global, sandboxInstance?.latestSetProp),
+        };
+      } catch (error) {
+        // beforeLoad may fail while the concurrently started entry pipeline is still pending.
+        // Observe its eventual rejection, then permanently abort the sandbox without masking
+        // the load/lifecycle error that caused this path.
+        void lifecyclesPromise?.catch(() => undefined);
+        try {
+          await dispose(error);
+        } catch {
+          // The original load error is the actionable failure and must retain precedence.
+        }
+        throw error;
       }
-      throw error;
+    })(),
+    signal,
+  ).catch(async (error: unknown) => {
+    try {
+      await dispose(error);
+    } catch {
+      // Keep the cancellation or original loading failure.
     }
-  })();
+    throw error;
+  });
   const { bootstrap, mount, unmount, update, beforeUnmount, afterUnmount, afterMount, beforeMount } = lifecycleSetup;
 
   return (mountContainer) => {
+    signal.throwIfAborted();
     // ② mount→unmount occupancy period. Regular release is the clearContainer step at the end of
     // the unmount chain, but single-spa marks an app SKIP_BECAUSE_BROKEN after a mount OR unmount
     // failure and never runs the rest of its chains — without the failure fallback below, the
@@ -266,13 +331,19 @@ export default async function loadApp<T extends ObjectType>(
       if (initializedContainers.get(mountContainer) === containerInitToken) {
         initializedContainers.delete(mountContainer);
       }
-      mountHold.release();
+      releaseHold(mountHold);
     };
-    const guardHooksWithMountHoldRelease = <F extends (...args: never[]) => Promise<unknown>>(hooks: F[]): F[] =>
+    const guardHooksWithMountHoldRelease = <F extends (...args: never[]) => Promise<unknown>>(
+      hooks: F[],
+      cancelOnAbort = false,
+    ): F[] =>
       hooks.map(
         (hook) =>
           (async (...args: Parameters<F>) => {
             try {
+              if (cancelOnAbort) signal.throwIfAborted();
+              // Framework gate/fetch/replay operations accept the signal themselves. An
+              // entered user lifecycle must finish before its container can be handed over.
               return await hook(...args);
             } catch (error) {
               // Tear the sandbox down while still holding ② — a broken chain never reaches its
@@ -289,6 +360,7 @@ export default async function loadApp<T extends ObjectType>(
           }) as F,
       );
 
+    let appMountStarted = false;
     const parcelConfig: ParcelConfigObject = {
       name: appName,
 
@@ -301,7 +373,10 @@ export default async function loadApp<T extends ObjectType>(
         // The indicator spans the whole chain — the gate wait included — and sits inside the
         // guard wrapping below, so a throwing user indicator releases the hold like any other
         // failing hook instead of leaking it.
-        async () => loader?.(true),
+        async () => {
+          signal.throwIfAborted();
+          loader?.(true);
+        },
         async () => {
           if (process.env.NODE_ENV === 'development') {
             const marks = performanceGetEntriesByName(markName, 'mark');
@@ -322,10 +397,12 @@ export default async function loadApp<T extends ObjectType>(
           } else {
             // acquired before the remount reload below — that reload is a DOM write and must sit
             // inside the critical section, or a loadMicroApp cross-app remount would still race
-            mountHold = await acquireContainer(mountContainer, appName);
+            mountHold = await acquireContainer(mountContainer, appName, signal);
+            holds.add(mountHold);
           }
         },
         async () => {
+          signal.throwIfAborted();
           microAppDOMContainer = mountContainer;
 
           // The entry html must be reloaded manually while remounting. mountTimes alone can not tell:
@@ -369,6 +446,7 @@ export default async function loadApp<T extends ObjectType>(
         // exec the chain after rendering to keep the behavior with beforeLoad
         async () => execHooksChain(toArray(beforeMount), app, global),
         async (props) => {
+          appMountStarted = true;
           await mount({ ...props, container: mountContainer });
         },
         // finish loading after app mounted
@@ -388,7 +466,8 @@ export default async function loadApp<T extends ObjectType>(
       unmount: [
         async () => execHooksChain(toArray(beforeUnmount), app, global),
         async (props) => {
-          await unmount({ ...props, container: mountContainer });
+          if (appMountStarted) await unmount({ ...props, container: mountContainer });
+          appMountStarted = false;
         },
         unmountSandbox,
         async () => execHooksChain(toArray(afterUnmount), app, global),
@@ -405,16 +484,12 @@ export default async function loadApp<T extends ObjectType>(
       // Registered-application unload = the app is fully torn down (not just deactivated), the
       // right time to release the Compartment module mechanism and blob URLs. Root parcels ignore
       // this extra lifecycle and keep the same module namespaces across their remount cache.
-      unload: [
-        async () => {
-          await sandboxController?.dispose();
-        },
-      ],
+      unload: [dispose],
     };
 
     // Both chains stop at their first rejection, so every hook gets the failure fallback — done
     // after construction to keep the literals' contextual typing intact.
-    parcelConfig.mount = guardHooksWithMountHoldRelease(toArray(parcelConfig.mount));
+    parcelConfig.mount = guardHooksWithMountHoldRelease(toArray(parcelConfig.mount), true);
     parcelConfig.unmount = guardHooksWithMountHoldRelease(toArray(parcelConfig.unmount));
 
     if (typeof update === 'function') {

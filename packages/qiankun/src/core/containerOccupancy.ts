@@ -38,7 +38,13 @@ const holdings = new WeakMap<HTMLElement, ContainerHolding>();
  */
 const WAITING_DIAGNOSIS_DELAY = 3_000;
 
-export function acquireContainer(container: HTMLElement, appName: string): Promise<ContainerHold> {
+export function acquireContainer(
+  container: HTMLElement,
+  appName: string,
+  signal?: AbortSignal,
+): Promise<ContainerHold> {
+  if (signal?.aborted)
+    return Promise.reject(signal.reason instanceof Error ? signal.reason : new Error(String(signal.reason)));
   let holding = holdings.get(container);
   if (!holding) {
     holding = { held: false, holderName: undefined, queue: [] };
@@ -51,7 +57,7 @@ export function acquireContainer(container: HTMLElement, appName: string): Promi
     return Promise.resolve(createHold(holding));
   }
 
-  return new Promise<ContainerHold>((resolve) => {
+  return new Promise<ContainerHold>((resolve, reject) => {
     let waitingDiagnosisTimer: ReturnType<typeof setTimeout> | undefined;
     if (process.env.NODE_ENV === 'development') {
       const holderName = holding.holderName;
@@ -62,13 +68,22 @@ export function acquireContainer(container: HTMLElement, appName: string): Promi
       }, WAITING_DIAGNOSIS_DELAY);
     }
 
-    holding.queue.push({
+    const cancel = () => {
+      const index = holding.queue.indexOf(waiter);
+      if (index >= 0) holding.queue.splice(index, 1);
+      if (waitingDiagnosisTimer !== undefined) clearTimeout(waitingDiagnosisTimer);
+      reject(signal?.reason instanceof Error ? signal.reason : new Error(String(signal?.reason)));
+    };
+    const waiter = {
       appName,
       grant: (hold) => {
+        signal?.removeEventListener('abort', cancel);
         if (waitingDiagnosisTimer !== undefined) clearTimeout(waitingDiagnosisTimer);
         resolve(hold);
       },
-    });
+    } satisfies ContainerHolding['queue'][number];
+    holding.queue.push(waiter);
+    signal?.addEventListener('abort', cancel, { once: true });
   });
 }
 

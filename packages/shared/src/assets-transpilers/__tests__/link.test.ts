@@ -133,7 +133,9 @@ describe('transpileLink', () => {
 
       await waitForBlobHref(link);
 
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:8000/styles/main.css');
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:8000/styles/main.css', {
+        signal: expect.any(AbortSignal),
+      });
       const css = await readBlobCss(link);
       expect(css).toContain('@scope ([data-name="test-app"])');
       expect(css).toContain('.container { margin: 0; }');

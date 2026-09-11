@@ -16,7 +16,7 @@ function loadMicroApp<T extends ObjectType>(
 ): MicroApp;
 ```
 
-`loadMicroApp` returns a `MicroApp` handle (a single-spa Parcel) that you use to observe status and to unmount the app. It does not wait — the load and mount run asynchronously; await the promises on the returned handle to observe completion.
+`loadMicroApp` returns a `MicroApp` handle that extends single-spa Parcel with an `unload()` method for disposal. Use it to observe status, unmount, and dispose of the app. Loading and mounting run asynchronously; await the promises on the returned handle to observe completion.
 
 ## Parameters
 
@@ -97,10 +97,10 @@ See [Lifecycle hooks](/api/lifecycles) for details.
 
 ## Return value
 
-`loadMicroApp` returns a `MicroApp`, which is a single-spa Parcel handle:
+The returned `MicroApp` extends the single-spa Parcel handle:
 
 ```ts
-type MicroApp = Parcel;
+type MicroApp = Parcel & { unload(): Promise<void> };
 
 type Parcel = {
   mount(): Promise<null>;
@@ -129,7 +129,8 @@ type Parcel = {
 | Member | Description |
 | --- | --- |
 | `mount()` | Mounts the parcel. loadMicroApp already mounts on load, so you rarely call this directly. |
-| `unmount()` | Unmounts the app, deactivates the sandbox, cleans up tracked side effects, and clears the container DOM. Always call this when you are done. |
+| `unmount()` | Unmounts the app, deactivates the sandbox, cleans up tracked side effects, and clears the container DOM. Retains the loaded configuration for remounting. |
+| `unload()` | Unmounts any mounted app, then disposes of the entire generation of instances and caches sharing its name and container. See below. |
 | `update?(props)` | Present only if the micro-app exports an `update` lifecycle. Pushes new props to the running app. |
 | `getStatus()` | Returns the current lifecycle status from the union above. |
 | `loadPromise` | Resolves when the source has finished loading. |
@@ -148,9 +149,40 @@ Observable behavior for callers:
 - **Loading and mounting start immediately.** You do not call `start()` first; await `mountPromise` when you need to know the app is visible.
 - **One container hosts one app at a time.** When apps are loaded into the same container in succession, the next instance waits for the previous one to unmount.
 - **The same name and container may reuse loaded work.** Do not rely on module top-level code running again on remount. Create per-mount state inside `mount()`.
-- **The caller owns teardown.** Call `unmount()` when the app is no longer shown so qiankun can clear the container and release side effects it tracks.
+- **The caller owns teardown.** Call `unmount()` to hide an app while retaining it for reuse, or `unload()` when you no longer need this generation of instances.
 
 See [Run multiple micro-app instances](/cookbook/run-multiple-instances) for the complete guidance on reuse and remounting.
+
+## Dispose of instances: unload and unloadMicroApp {#unload}
+
+`unmount()` retains lifecycle configuration and sandbox state for remounting. `unload()` disposes of those resources. A subsequent `loadMicroApp` with the same name and container element requests the entry and resources again and evaluates the scripts afresh.
+
+Disposal is scoped to an application name and container element. Every old handle sharing that configuration generation becomes invalid, including queued instances. Same-name apps in other containers remain unaffected. Mounted instances run `unmount` first; queued instances are cancelled without waiting for them to mount.
+
+```ts
+import { loadMicroApp, unloadMicroApp } from 'qiankun';
+
+const app = loadMicroApp({ name: 'app1', entry, container });
+await app.mountPromise;
+await app.unload();
+
+// Dispose of the current generation by name and container if you did not retain its handle.
+await unloadMicroApp('app1', container);
+```
+
+The `unloadMicroApp` signature requires the original container element:
+
+```ts
+function unloadMicroApp(name: string, container: HTMLElement): Promise<void>;
+```
+
+After disposal, old handles return `NOT_LOADED` from `getStatus()`. Their `mount()` and existing `update()` methods reject with a `QiankunError`; `unmount()` does nothing. Pending `mountPromise` values reject too. Repeating an old handle's `unload()` returns the same disposal result and cannot affect a newer generation. `unloadMicroApp` resolves immediately when no matching instance exists; otherwise, it always disposes of the current generation.
+
+Disposal clears container nodes (including `qiankun-head`), framework-tracked side effects, sandbox membrane and configuration references, ESM module caches, blob URLs, and the instance's injected import map scripts. It also invalidates cached entry and asset fetches. Shared requests still used by other instances remain active. Callers should release their own handles, props, and other references too.
+
+qiankun cannot undo native import map entries or module registrations already held by the browser. Removing injected scripts and revoking blob URLs does not clear the browser's module registry; reloading uses a new instance identifier. See [ESM sandbox RFC §11](https://github.com/umijs/qiankun/blob/next/docs/rfcs/esm-sandbox.md) for this limitation. With `sandbox: false`, qiankun also cannot automatically roll back micro-app writes to the real global object.
+
+This named API manages only instances created by `loadMicroApp`. For registered route applications, use `unloadApplication` as described on the [registerMicroApps](/api/register-micro-apps#unload-application) page.
 
 ## Example
 

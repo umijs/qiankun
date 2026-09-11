@@ -5,27 +5,59 @@
 import type { MatchResult } from '../module-resolver';
 import { warn } from '../reporter';
 import { resolveUrl } from '../utils';
-import { preTranspile as preTranspileScript } from './script';
+import { getAssetScope, getScopedReusingObjectUrl, preTranspile as preTranspileScript } from './script';
 import { transpileStyleText } from './style';
 import type { AssetsTranspilerOpts, BaseTranspilerOpts } from './types';
 import { Mode } from './types';
-import { createReusingObjectUrl } from './utils';
 
 // The @scope-wrapped CSS and the blob url carrying it, per (appName, scopeRoot) cache key
 type TranspiledStylesheet = {
   css: string;
   blobUrl: string;
+  owners: Set<object>;
 };
 
 // Stylesheet cache: URL -> { raw: string, transpiled: Map<cacheKey, TranspiledStylesheet> }
 type StylesheetCacheEntry = {
   raw: string;
   transpiled: Map<string, TranspiledStylesheet>;
+  owners: Set<object>;
 };
 const stylesheetCache = new Map<string, StylesheetCacheEntry>();
 
-// Pending fetch promises to avoid duplicate fetches for concurrent requests
-const pendingFetches = new Map<string, Promise<string>>();
+type StylesheetScope = {
+  generation: number;
+  pendingFetches: Map<string, Promise<string>>;
+  entries: Map<string, StylesheetCacheEntry>;
+};
+let stylesheetScopes = new WeakMap<object, StylesheetScope>();
+let cacheGeneration = 0;
+
+function getStylesheetScope(owner: object): StylesheetScope {
+  let scope = stylesheetScopes.get(owner);
+  if (!scope) {
+    scope = { generation: cacheGeneration, pendingFetches: new Map(), entries: new Map() };
+    stylesheetScopes.set(owner, scope);
+    const retainedEntries = scope.entries;
+    const pendingFetches = scope.pendingFetches;
+    getAssetScope(owner).cleanups.add(() => {
+      pendingFetches.clear();
+      for (const [url, entry] of retainedEntries) {
+        entry.owners.delete(owner);
+        for (const [key, transpiled] of entry.transpiled) {
+          transpiled.owners.delete(owner);
+          if (!transpiled.owners.size) {
+            URL.revokeObjectURL(transpiled.blobUrl);
+            entry.transpiled.delete(key);
+          }
+        }
+        if (!entry.owners.size && stylesheetCache.get(url) === entry) stylesheetCache.delete(url);
+      }
+      retainedEntries.clear();
+    });
+  }
+  return scope;
+}
 
 function getTranspiledStyleCacheKey(appName: string, scopeRoot: string): string {
   return `${appName}:${scopeRoot}`;
@@ -37,9 +69,11 @@ function getTranspiledStyleCacheKey(appName: string, scopeRoot: string): string 
 export function clearStylesheetCache(): void {
   stylesheetCache.forEach((entry) => {
     entry.transpiled.forEach(({ blobUrl }) => URL.revokeObjectURL(blobUrl));
+    entry.transpiled.clear();
   });
   stylesheetCache.clear();
-  pendingFetches.clear();
+  cacheGeneration += 1;
+  stylesheetScopes = new WeakMap();
 }
 
 /**
@@ -112,7 +146,7 @@ const postProcessPreloadLink = (link: HTMLLinkElement, baseURI: string, opts: As
         case Mode.REUSED_DEP_IN_SANDBOX:
         case Mode.REUSED_DEP: {
           const { url } = result;
-          link.href = createReusingObjectUrl(href, url, 'text/javascript');
+          link.href = getScopedReusingObjectUrl(opts.compartment ?? opts.fetch, href, url, 'text/javascript');
 
           break;
         }
@@ -128,7 +162,7 @@ const postProcessPreloadLink = (link: HTMLLinkElement, baseURI: string, opts: As
         case Mode.REUSED_DEP_IN_SANDBOX:
         case Mode.REUSED_DEP: {
           const { url } = result;
-          link.href = createReusingObjectUrl(href, url, 'text/css');
+          link.href = getScopedReusingObjectUrl(opts.compartment ?? opts.fetch, href, url, 'text/css');
           break;
         }
 
@@ -159,6 +193,14 @@ export default function transpileLink(
   baseURI: string,
   opts: AssetsTranspilerOpts,
 ): HTMLLinkElement | HTMLStyleElement {
+  const owner = opts.compartment ?? opts.fetch;
+  const assetScope = getAssetScope(owner);
+  assetScope.controller.signal.throwIfAborted();
+  assetScope.cleanups.add(() => {
+    link.onload = link.onerror = null;
+    link.remove();
+    link.removeAttribute('href');
+  });
   const hrefAttribute = link.getAttribute('href');
 
   /*
@@ -202,35 +244,57 @@ export default function transpileLink(
 
     const { appName, scopeRoot } = opts.styleIsolation;
     const cacheKey = getTranspiledStyleCacheKey(appName, scopeRoot);
+    const scope = getStylesheetScope(owner);
+    const assertActive = () => {
+      assetScope.controller.signal.throwIfAborted();
+      if (scope.generation !== cacheGeneration) throw new DOMException('Stylesheet cache cleared', 'AbortError');
+    };
+    const retainEntry = (entry: StylesheetCacheEntry) => {
+      entry.owners.add(owner);
+      scope.entries.set(resolvedHref, entry);
+    };
+    const scopedFetch: typeof window.fetch = (input, init) =>
+      opts.fetch(input, { ...init, signal: assetScope.controller.signal });
 
-    const applyTranspiled = ({ blobUrl }: TranspiledStylesheet) => {
+    const applyTranspiled = ({ blobUrl, owners }: TranspiledStylesheet) => {
+      assertActive();
+      owners.add(owner);
       link.setAttribute('href', blobUrl);
     };
     // no blob href is ever set on failure, thus the link would never emit a load/error event by
     // itself — dispatch the error manually so the blocked streaming walk and any app-attached
     // onerror handlers can settle
     const failLink = () => {
+      if (assetScope.controller.signal.aborted || scope.generation !== cacheGeneration) return;
       link.dispatchEvent(new Event('error'));
     };
     const transpileAndCache = async (cssText: string): Promise<TranspiledStylesheet> => {
-      const entry = stylesheetCache.get(resolvedHref);
+      assertActive();
+      const entry = stylesheetCache.get(resolvedHref)!;
+      retainEntry(entry);
       // a concurrent transpile for the same (url, app) pair may have landed first — reuse its blob
-      const existing = entry?.transpiled.get(cacheKey);
+      const existing = entry.transpiled.get(cacheKey);
       if (existing) return existing;
 
-      const result = transpileStyleText(cssText, { appName, scopeRoot, fetch: opts.fetch, baseURL: resolvedHref });
+      const result = transpileStyleText(cssText, { appName, scopeRoot, fetch: scopedFetch, baseURL: resolvedHref });
       const css = typeof result === 'string' ? result : await result;
+      assertActive();
+      // An asynchronous @import may have allowed another owner to populate this scope meanwhile.
+      const concurrentlyTranspiled = entry.transpiled.get(cacheKey);
+      if (concurrentlyTranspiled) return concurrentlyTranspiled;
       const transpiled: TranspiledStylesheet = {
         css,
         blobUrl: URL.createObjectURL(new Blob([css], { type: 'text/css' })),
+        owners: new Set([owner]),
       };
-      entry?.transpiled.set(cacheKey, transpiled);
+      entry.transpiled.set(cacheKey, transpiled);
       return transpiled;
     };
 
     // Check cache first
     const cached = stylesheetCache.get(resolvedHref);
     if (cached) {
+      retainEntry(cached);
       const transpiledFromCache = cached.transpiled.get(cacheKey);
       if (transpiledFromCache) {
         applyTranspiled(transpiledFromCache);
@@ -240,40 +304,48 @@ export default function transpileLink(
       void transpileAndCache(cached.raw)
         .then(applyTranspiled)
         .catch(() => {
-          warn(`Failed to transpile cached stylesheet "${resolvedHref}" for style isolation.`);
+          if (!assetScope.controller.signal.aborted && scope.generation === cacheGeneration) {
+            warn(`Failed to transpile cached stylesheet "${resolvedHref}" for style isolation.`);
+          }
           failLink();
         });
       return link;
     }
 
     // Check if there's already a pending fetch for this URL
-    let fetchPromise = pendingFetches.get(resolvedHref);
+    // Pending work belongs to one lifetime. The fetch decorator can share the actual network
+    // request across owners without one owner's cancellation rejecting another owner's work.
+    let fetchPromise = scope.pendingFetches.get(resolvedHref);
     if (!fetchPromise) {
       // Create new fetch promise
-      fetchPromise = opts
-        .fetch(resolvedHref)
+      fetchPromise = scopedFetch(resolvedHref)
         .then((res) => res.text())
         .then((cssText) => {
+          assertActive();
           // Cache the raw CSS
-          const entry: StylesheetCacheEntry = {
+          const entry: StylesheetCacheEntry = stylesheetCache.get(resolvedHref) ?? {
             raw: cssText,
             transpiled: new Map(),
+            owners: new Set(),
           };
           stylesheetCache.set(resolvedHref, entry);
-          return cssText;
+          retainEntry(entry);
+          return entry.raw;
         })
         .catch((error) => {
-          warn(
-            `Failed to fetch stylesheet "${resolvedHref}" for style isolation. The stylesheet is dropped to preserve isolation.`,
-          );
+          if (!assetScope.controller.signal.aborted && scope.generation === cacheGeneration) {
+            warn(
+              `Failed to fetch stylesheet "${resolvedHref}" for style isolation. The stylesheet is dropped to preserve isolation.`,
+            );
+          }
           throw error;
         })
         .finally(() => {
           // Clean up pending fetch
-          pendingFetches.delete(resolvedHref);
+          scope.pendingFetches.delete(resolvedHref);
         });
 
-      pendingFetches.set(resolvedHref, fetchPromise);
+      scope.pendingFetches.set(resolvedHref, fetchPromise);
     }
 
     // Use the shared fetch promise
@@ -303,7 +375,7 @@ export default function transpileLink(
       const { src, version, url } = result;
       link.dataset.href = src;
       link.dataset.version = version;
-      link.href = createReusingObjectUrl(src, url, 'text/css');
+      link.href = getScopedReusingObjectUrl(owner, src, url, 'text/css');
 
       return link;
     }

@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { transpileAssets } from '@qiankunjs/shared';
 import {
   Compartment,
   type CompartmentLoaderFacade,
@@ -234,6 +235,39 @@ describe('two-stage unshadowable globals', () => {
 });
 
 describe('host lifecycle facades', () => {
+  it('preserves globals across deactivation but makes disposal terminal', () => {
+    const sandbox = new StandardSandbox('terminal-global');
+    const view = sandbox.globalThis;
+    Reflect.set(view, 'state', { count: 1 });
+
+    sandbox.inactive();
+    sandbox.active();
+    expect(Reflect.get(view, 'state')).toEqual({ count: 1 });
+    sandbox.dispose();
+
+    expect(() => Reflect.get(view, 'state')).toThrow(TypeError);
+    expect(() => sandbox.active()).toThrowError('has been disposed');
+    expect(() => sandbox.defineUnshadowableGlobals({ late: { value: true } })).toThrowError('has been disposed');
+    expect(() => sandbox.onGlobalSet(() => {})).toThrowError('has been disposed');
+  });
+
+  it('revokes global views even when module URL cleanup throws', () => {
+    const compartment = new Compartment({
+      moduleHost: {
+        createModuleUrl: () => 'blob:throwing-cleanup',
+        revokeModuleUrl: () => {
+          throw new Error('URL cleanup failed');
+        },
+      },
+    });
+    const view = compartment.globalThis;
+    compartment.registerImportMap('{"imports":{}}', document.baseURI);
+
+    expect(() => compartment.dispose()).toThrowError('URL cleanup failed');
+    expect(() => Reflect.get(view, 'document')).toThrow(TypeError);
+    expect(() => compartment.dispose()).not.toThrow();
+  });
+
   it('exposes latest-set and modification subscription through Compartment', () => {
     const compartment = new Compartment();
     const listener = vi.fn();
@@ -252,6 +286,27 @@ describe('host lifecycle facades', () => {
 });
 
 describe('classic script evaluation', () => {
+  it('disposes directly owned transpiled assets without requiring a sandbox controller', async () => {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:direct-compartment-asset');
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    const compartment = new Compartment({ name: 'direct-asset-owner' });
+    const script = document.createElement('script');
+    script.src = 'https://compartment.test/entry.js';
+    transpileAssets(script, 'https://compartment.test/', {
+      compartment,
+      fetch: async () => new Response('window.directAsset = true;'),
+      classicScriptTransformer: (source, sourceURL) => compartment.transformClassicScript(source, sourceURL),
+    });
+    await vi.waitFor(() => expect(script.src).toBe('blob:direct-compartment-asset'));
+
+    compartment.dispose();
+
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:direct-compartment-asset');
+    expect(script.hasAttribute('src')).toBe(false);
+    window.dispatchEvent(new CustomEvent('q:bse', { detail: { s: script } }));
+    expect(script.hasAttribute('src')).toBe(false);
+  });
+
   it('keeps synchronous wrapping off the public instance API', () => {
     const compartment = new Compartment({ transforms: [(source) => `${source}\ntransformed();`] });
     const source = compartment.transformClassicScript('original();', 'https://app.test/entry.js');

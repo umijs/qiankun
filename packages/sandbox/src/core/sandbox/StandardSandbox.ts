@@ -118,9 +118,4 @@ export class StandardSandbox extends Compartment implements Sandbox {
 
     return globals;
   }
-
-  // TODO
-  // destroy() {
-  //
-  // }
 }

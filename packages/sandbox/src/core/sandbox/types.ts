@@ -16,7 +16,4 @@ export interface Sandbox extends Compartment {
   active(): void;
 
   inactive(): void;
-
-  // TODO for gc
-  // destroy(): void;
 }

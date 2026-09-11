@@ -139,7 +139,9 @@ For a custom HTML loading pipeline, use `controller.nodeTransformer`. It is the 
 
 - `mount(container?)` activates or rebuilds timer, listener, history, DOM, and user-plugin effects. The argument overrides the configured container for that mount.
 - `unmount()` releases active effects and records any state required for a later mount. It does not run an application's own unmount function or clear caller-owned DOM.
-- `dispose()` permanently releases plugin effects, generated module resources, global accessors, and container preparation. It is safe to call more than once.
+- `dispose()` permanently releases plugin effects, generated module resources, global accessors, and container preparation. Retained sandbox window and document proxies are revoked, and the controller releases its configuration and container references. It is safe to call more than once; use this inherited method for `StandardSandbox` too.
+
+Plugins may implement `dispose(context)` for resources that must survive ordinary unmounts, such as remount caches or retained views. This synchronous hook runs once after all active `Free` callbacks and before the Compartment is disposed. Every hook runs even if another cleanup throws; the first cleanup error is reported. Hooks must tolerate partial bootstrap setup because load failures also trigger terminal cleanup.
 
 Mount the controller before evaluating application code when its timers and listeners must participate in cleanup. Run the application's own teardown before `unmount()` or `dispose()`, and clear application DOM according to the host's ownership rules.
 
