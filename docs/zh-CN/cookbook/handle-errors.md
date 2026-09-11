@@ -6,7 +6,7 @@
 
 ## 处理当前实例的错误
 
-`loadMicroApp` 会在加载和挂载完成前返回实例句柄。应处理 `mountPromise` 被拒绝的情况，并在当前实例的容器中显示错误信息。主应用仍须保留句柄，以便在挂载成功后调用 `unmount()`：
+`loadMicroApp` 会在加载和挂载完成前返回实例句柄。应处理 `mountPromise` 被拒绝的情况，并在当前实例的容器中显示错误信息。主应用仍须保留句柄，以便在不再需要该代实例时调用 `unload()`：
 
 ```ts
 import { loadMicroApp } from 'qiankun';
@@ -20,27 +20,24 @@ const microApp = loadMicroApp({
   container,
 });
 
-const mountFinished = microApp.mountPromise
-  .then(() => true)
-  .catch(() => {
-    const message = document.createElement('p');
-    message.setAttribute('role', 'alert');
-    message.textContent = '当前内容暂时无法加载。';
-    container.replaceChildren(message);
-    return false;
-  });
+let disposed = false;
+void microApp.mountPromise.catch(() => {
+  if (disposed) return;
+  const message = document.createElement('p');
+  message.setAttribute('role', 'alert');
+  message.textContent = '当前内容暂时无法加载。';
+  container.replaceChildren(message);
+});
 
 export async function disposeMicroApp() {
-  const mounted = await mountFinished;
-  if (mounted) {
-    await microApp.unmount();
-  }
+  disposed = true;
+  await microApp.unload();
 }
 ```
 
-也可以使用 `await` 配合 `try...catch` 实现相同流程。处理 `mountPromise` 的错误不会改变主应用对实例生命周期的管理责任。挂载成功后，必须等待 `unmount()` 完成，才能移除容器或释放句柄。
+处理 `mountPromise` 的错误不会改变主应用对实例生命周期的管理责任。不再需要该代实例时，应等待 `unload()` 完成后再移除容器或释放句柄。示例中的 `disposed` 标记会阻止取消加载产生的拒绝再次写入错误界面；销毁无需先等待排队实例挂载。仅暂时移除视图并保留缓存时，使用 `unmount()`。
 
-主应用调用 `unmount()` 时，也应处理调用失败的情况。界面中的错误信息应简明且不包含内部实现细节，原始错误应由当前实例的 Promise 处理逻辑上报监控系统。
+主应用调用 `unmount()` 或 `unload()` 时，也应处理调用失败的情况。界面中的错误信息应简明且不包含内部实现细节，原始错误应由当前实例的 Promise 处理逻辑上报监控系统。
 
 ## 上报路由驱动应用的错误
 
@@ -91,7 +88,7 @@ React 和 Vue 的 `<MicroApp>` 组件封装了相同的实例级 Promise 处理�
 
 qiankun 增强后的 fetch 自带一个有限的自动重试额度，由同一个 fetch 封装实例共享。它不会区分故障是否临时，网络异常和无效 HTTP 响应都会消耗额度，因此不能假定每个失败请求都会被重试。请求最终失败时，相应的实例 Promise 会被拒绝。对于路由驱动应用，该错误还会通知全局处理器；`loadMicroApp` 调用方则应处理实例 Promise。不应在 `loadMicroApp` 之外增加递归重试或无上限重试。
 
-调用方仅应在故障可能具有临时性时提供额外的用户重试，并先等待上一次 `mountPromise` 结束。生命周期导出无效、入口脚本数量不正确、容器无效或 ESM 依赖无法解析等配置错误必须直接修正，无法通过重试解决。身份认证和网关逻辑应通过自定义 [`fetch`](/zh-CN/api/configuration) 实现。
+调用方仅应在故障可能具有临时性时提供额外的用户重试，并先等待旧句柄的 `unload()` 完成、清理上一代，再创建新实例。同名应用在同一容器中共享该代配置的其他句柄也会失效；详见 [loadMicroApp](/zh-CN/api/load-micro-app#unload)。生命周期导出无效、入口脚本数量不正确、容器无效或 ESM 依赖无法解析等配置错误必须直接修正，无法通过重试解决。身份认证和网关逻辑应通过自定义 [`fetch`](/zh-CN/api/configuration) 实现。
 
 ## 保留生产诊断能力
 

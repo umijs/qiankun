@@ -31,7 +31,7 @@ const apps = [
 await Promise.all(apps.map((app) => app.mountPromise));
 
 // When the dashboard closes:
-await Promise.all(apps.map((app) => app.unmount()));
+await Promise.all(apps.map((app) => app.unload()));
 ```
 
 Do not share one container between two live instances. To switch applications in one location, await the current instance's `unmount()` before loading the next one.
@@ -80,17 +80,17 @@ Each instance has its own handle. Do not mix update and unmount operations betwe
 
 After unmounting the same instance, you can call `mount()` on its handle again. qiankun reuses the lifecycles it already discovered instead of executing entry top-level code again. Create application instances, routers, and stores needed for every mount inside the micro-app's `mount()`.
 
-If the host destroys the old container and calls `loadMicroApp` for a new one, treat that as a new instance with its own cleanup path. Do not remove the DOM and discard the old handle.
+If the host destroys the old container and calls `loadMicroApp` for a new one, treat that as a new instance with its own cleanup path. Call `unload()` on the old handle to dispose of its container generation before removing the DOM.
 
-## Every handle must be unmounted
+## Manage instance cleanup {#every-handle-must-be-unmounted}
 
-The host owns every handle returned by `loadMicroApp` and the matching cleanup responsibility:
+The host owns every handle returned by `loadMicroApp`. Call `unmount()` to remove an app temporarily, or `unload()` when its generation is no longer needed:
 
 ```ts
-await Promise.all([left.unmount(), right.unmount()]);
+await Promise.all([left.unload(), right.unload()]);
 ```
 
-`unmount()` invokes the micro-app lifecycle and releases container and sandbox side effects qiankun can track. The micro-app must still release external resources such as store subscriptions, workers, WebSockets, observers, and portals.
+`unmount()` invokes the micro-app's cleanup lifecycle and releases container content and tracked sandbox effects while retaining loaded configuration. `unload()` also disposes of the entire name/container generation, cancels queued instances, and invalidates old handles; loading again requests the entry and executes scripts afresh. Same-name apps in other containers are unaffected. The micro-app must still release external resources such as store subscriptions, workers, WebSockets, observers, and portals in its own `unmount`. See [loadMicroApp](/api/load-micro-app#unload).
 
 ## Native ESM caveat
 

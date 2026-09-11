@@ -79,6 +79,25 @@ describe.sequential('dynamic append patch lifecycle', () => {
     expect(MutationObserver.prototype.observe).toBe(nativeObserve);
   });
 
+  it('revokes every retained document view only at terminal disposal', async () => {
+    const { container, controller } = createController();
+    const bootstrapDocument = controller.instance.globalThis.document;
+    await controller.mount(container);
+    await controller.unmount();
+    expect(bootstrapDocument.body).toBe(container);
+
+    await controller.mount(container);
+    const remountDocument = controller.instance.globalThis.document;
+    expect(remountDocument).toBe(bootstrapDocument);
+    expect(remountDocument.body).toBe(container);
+    await controller.dispose();
+
+    expect(() => bootstrapDocument.body).toThrow(TypeError);
+    expect(() => remountDocument.body).toThrow(TypeError);
+    expect(Object.hasOwn(container, 'appendChild')).toBe(false);
+    expect(document.body.contains(container)).toBe(true);
+  });
+
   it('rolls back the freshly installed mount patch when stylesheet reattachment fails', async () => {
     const nativeObserve = MutationObserver.prototype.observe;
     // head provisioning is the orchestrator's business here (qiankun's loader materializes it

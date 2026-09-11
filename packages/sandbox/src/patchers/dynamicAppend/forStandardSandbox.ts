@@ -123,21 +123,11 @@ const nativeAppendChild = Node.prototype.appendChild;
 const nativeInsertBefore = Node.prototype.insertBefore;
 const nativeRemoveChild = Node.prototype.removeChild;
 
-function patchDocument(
+function createDocumentView(
   compartment: PluginCompartment,
   appName: string,
   getContainer: IsolationPluginContext['getContainer'],
-): Unpatch {
-  const container = getRequiredContainer(getContainer, appName);
-  // dom container might be reused by multiple apps,
-  // thus we check its attached sandbox is same with current to avoid duplicate patch
-  if (containerOwners.get(container) === compartment) {
-    return () => {};
-  }
-
-  const { ensureHeadPatched, unpatch } = patchDocumentHeadAndBodyMethods(container, compartment);
-  activeHeadPatchers.set(compartment, ensureHeadPatched);
-
+): NonNullable<SandboxConfig['documentView']> {
   const getDocumentHeadElement = () => {
     const currentContainer = getRequiredContainer(getContainer, appName);
     const containerHeadElement = getContainerHeadElement(currentContainer);
@@ -159,7 +149,7 @@ function patchDocument(
     createElement?: typeof document.createElement;
     querySelector?: typeof document.querySelector;
   } = {};
-  const proxyDocument = new Proxy(document, {
+  return Proxy.revocable(document, {
     /**
      * Read and write must be paired, otherwise the write operation will leak to the global
      */
@@ -227,9 +217,27 @@ function patchDocument(
       return rebindTarget2Fn(target, value, receiver);
     },
   });
+}
+
+function patchDocument(
+  compartment: PluginCompartment,
+  appName: string,
+  getContainer: IsolationPluginContext['getContainer'],
+): Unpatch {
+  const container = getRequiredContainer(getContainer, appName);
+  // A bootstrap patch may still own the container on its first mount.
+  if (containerOwners.get(container) === compartment) return () => {};
+
+  const sandboxConfig = sandboxConfigs.get(compartment);
+  if (!sandboxConfig) throw new QiankunError(`${appName} DOM isolation configuration is unavailable`);
+  const { ensureHeadPatched, unpatch } = patchDocumentHeadAndBodyMethods(container, compartment);
+  activeHeadPatchers.set(compartment, ensureHeadPatched);
+  // The view resolves its container lazily, so one view spans every warm mount. Keeping a
+  // revoker for a newly-created view on each mount would otherwise retain every old view.
+  sandboxConfig.documentView ??= createDocumentView(compartment, appName, getContainer);
 
   compartment.defineUnshadowableGlobals({
-    document: { value: proxyDocument, writable: false, enumerable: true, configurable: true },
+    document: { value: sandboxConfig.documentView.proxy, writable: false, enumerable: true, configurable: true },
   });
 
   containerOwners.set(container, compartment);
@@ -515,6 +523,29 @@ export function patchStandardSandbox(context: IsolationPluginContext): Free {
       return attachRecordedStylesheets(appName, dynamicStyleSheetElements, container);
     };
   };
+}
+
+const disposedNodeTransformer: SandboxConfig['nodeTransformer'] = () => {
+  throw new QiankunError('The owning sandbox has been disposed');
+};
+const disposedFetch: SandboxConfig['fetch'] = () =>
+  Promise.reject(new QiankunError('The owning sandbox has been disposed'));
+
+/** Drop terminal DOM state without invalidating the views and ledgers needed by warm remounts. */
+export function disposeStandardSandbox(compartment: PluginCompartment): void {
+  activeHeadPatchers.delete(compartment);
+  const config = sandboxConfigs.get(compartment);
+  if (!config) return;
+  sandboxConfigs.delete(compartment);
+  config.documentView?.revoke();
+  config.documentView = undefined;
+  config.dynamicStyleSheetElements.length = 0;
+  config.dynamicExternalSyncScriptDeferredList.length = 0;
+  // Retained DOM elements may still reference this config through weak ownership metadata.
+  // Leave only inert state there, never the transformer's container/configuration closures.
+  config.nodeTransformer = disposedNodeTransformer;
+  config.fetch = disposedFetch;
+  config.styleIsolation = undefined;
 }
 
 async function attachRecordedStylesheets(

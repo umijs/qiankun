@@ -1,6 +1,6 @@
 # Step 2 — Build the main app
 
-The main app owns the page and the element where the micro-app will render. In this step, a small React component creates that element, calls `loadMicroApp`, and unmounts the returned instance during cleanup.
+The main app owns the page and the element where the micro-app will render. In this step, a small React component creates that element, calls `loadMicroApp`, and disposes of the returned instance during cleanup.
 
 Keep the micro-app from [Step 1](/tutorial/build-the-micro-app) running at `http://localhost:7101`.
 
@@ -60,8 +60,8 @@ function MicroAppSlot() {
     });
 
     return () => {
-      void microApp.unmount().catch((error: unknown) => {
-        console.error('Failed to unmount sub-app:', error);
+      void microApp.unload().catch((error: unknown) => {
+        console.error('Failed to dispose of sub-app:', error);
       });
     };
   }, []);
@@ -89,14 +89,14 @@ This is the complete ownership relationship:
 1. React creates the `<div>`, and the ref exposes it as an `HTMLElement`.
 2. `loadMicroApp` loads `sub-app` from port `7101` into that element.
 3. The returned `microApp` handle represents this instance. Its `mountPromise` can be observed for load failures.
-4. When `MicroAppSlot` leaves the React tree, the effect cleanup calls `microApp.unmount()` before the instance is discarded.
+4. When `MicroAppSlot` leaves the React tree, the effect cleanup calls `microApp.unload()` to unmount any mounted app and dispose of its generation.
 
 The button is only there to make the lifecycle visible in the tutorial. In an application, the same component might be controlled by a tab, a dialog, a framework router, or any other product state.
 
-::: warning Keep the handle, and unmount through it
-Calling `loadMicroApp` without retaining its result leaves the main app with no reliable way to release that instance. Pair each call with an `unmount()` in the owning component's cleanup path.
+::: warning Keep the handle and use it for cleanup
+Retain the handle returned by `loadMicroApp` and call `unload()` when its owning component is destroyed. This disposes of the entire name/container generation and invalidates old handles sharing its configuration; loading again requests the entry and executes scripts afresh. Use `unmount()` when you only want to remove the app temporarily while keeping its cache for remounting.
 
-React cleanup cannot return a Promise, so this example starts `unmount()` and handles rejection. In host workflows that can wait, await the Promise before removing the container.
+React cleanup cannot return a Promise, so this example starts `unload()` and handles rejection. In host workflows that can wait, await the Promise before removing the container. If the handle was not retained, use `unloadMicroApp(name, container)` as described under [loadMicroApp](/api/load-micro-app#unload).
 :::
 
 ## About route-driven orchestration

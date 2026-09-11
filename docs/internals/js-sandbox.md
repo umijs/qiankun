@@ -76,7 +76,7 @@ Beyond identity, the sandbox tracks stateful side effects through **isolation pl
 | `patchHistoryListener` | history-driven listeners | mount |
 | `patchStandardSandbox` (dynamicAppend) | `appendChild` / `insertBefore` for `<script>` / `<style>` / `<link>` — redirects them into the app's container instead of the real `document.head` | bootstrap **and** mount |
 
-Because every side effect is reverted through its `free()`, unmounting an app really does return the page to its pre-mount state — which is exactly why you **must** unmount. Skip it and you leak the timers, listeners, and injected DOM that `free()` was supposed to clean up, breaking remount and multi-instance.
+Call `unmount()` to remove an app temporarily, clean up tracked side effects, and retain configuration and sandbox state for remounting. Call `unload()` when its name/container generation is no longer needed, so the sandbox and caches are disposed of after unmounting. Dropping the handle or removing the container does not run these cleanup steps.
 
 ## What's let through on purpose
 
@@ -108,8 +108,8 @@ Each load takes an `instanceId` from a per-app counter (`genInstanceId(appName)`
 - The compartment's `<N>` counter guarantees each instance gets its own `__compartment_globalThis__<N>__` slot, so their wrapped classic scripts don't overwrite one another.
 - When `instanceId > 1`, qiankun clears that app's webpack chunk cache (`removeWebpackChunkCacheWhenAppHaveMultiInstance`), so the second instance re-executes the bundle in its own sandbox instead of reusing the modules the first instance already cached.
 
-::: danger Unmount every instance
-Multiple instances rely entirely on each patcher's `free()` to release listeners, timers, and injected DOM. Miss one instance and its side effects stay live, breaking the next mount. If you're holding a `loadMicroApp` handle, call `unmount()` on it.
+::: danger Manage instance cleanup
+Instance cleanup relies on each patcher's `free()`. Call `unmount()` to hide an instance temporarily, or `unload()` when its generation is no longer needed. `unload()` invalidates handles sharing the same name/container configuration without affecting instances in other containers.
 :::
 
 For the hands-on recipe, see [Running multiple micro-app instances](/cookbook/run-multiple-instances).
@@ -120,6 +120,7 @@ The sandbox follows single-spa's mount / unmount:
 
 - On **mount**, `sandbox.active()` **unlocks** the membrane. The rebuilds from the bootstrap phase are replayed, the mount-time patchers are installed, and dynamic stylesheets are reattached.
 - On **unmount**, each patcher's `free()` runs first (collecting the rebuilds for next time), then `sandbox.inactive()` **locks** the membrane. While locked, global writes from the app are ignored (with a warning in dev).
+- On **disposal**, the unified `dispose()` path releases retained plugin state, revokes the membrane, and releases configuration and ESM-engine references. A disposed sandbox cannot be reactivated.
 
 ::: info No snapshot diffing
 Some sandbox approaches snapshot every property on `window` at mount and diff it back at unmount. qiankun v3 does **not** do this. Isolation comes from never touching the real `window` in the first place, so there's nothing to diff back. A `SnapshotSandbox` type does exist in the enum, but it has no implementation — `createSandbox` always constructs a `StandardSandbox`, in both the `Proxy`-present and `Proxy`-absent branches. In practice the v3 sandbox **requires** `Proxy`; there's no fallback path.

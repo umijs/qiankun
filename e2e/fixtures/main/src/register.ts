@@ -1,4 +1,4 @@
-import { registerMicroApps, start } from 'qiankun';
+import { registerMicroApps, start, unloadApplication } from 'qiankun';
 import { SUB_APP_ENTRIES } from '../../../ports';
 
 const container = document.getElementById('register-root')!;
@@ -26,3 +26,11 @@ registerMicroApps([
 ]);
 
 start();
+
+declare global {
+  interface Window {
+    __ROUTE_E2E__: { unload: typeof unloadApplication };
+  }
+}
+
+window.__ROUTE_E2E__ = { unload: unloadApplication };

@@ -231,10 +231,10 @@ Because top-level code does not run again, a sub-app that instantiates its frame
 
 For a cached remount (same app, same container), qiankun also replaces `bootstrap` with a no-op so one-time setup never runs twice.
 
-**Unload (full teardown).** Only on single-spa's `unload` lifecycle does qiankun dispose the ESM realm: `EsmSandboxEngine.dispose()` revokes every blob URL the engine created and unregisters the instance's realm. After unload, the next activation re-runs `loadApp` from scratch with a fresh engine. `dispose()` is wired to `unload`, **not** `unmount` — so an unmounted-but-not-unloaded ESM app keeps its realm and namespaces resident.
+**Unload (full teardown).** Manually loaded apps use the handle's `unload()` or `unloadMicroApp(name, container)`; route applications use `unloadApplication` to enter single-spa's `unload` lifecycle. Both paths call the sandbox's unified `dispose()`, releasing its membrane, configuration, and framework-held module references, revoking ESM blob URLs, and removing its injected import map scripts. Native browser import map entries and module registrations cannot be undone. A subsequent load creates a new sandbox and ESM engine.
 
-::: info loadMicroApp exposes no unload
-The public handle returned by `loadMicroApp` does not expose single-spa's `unload` lifecycle. Always call `unmount()` on handles you no longer need, but do not treat it as full ESM-engine disposal. See [Run multiple micro-app instances](/cookbook/run-multiple-instances).
+::: info Disposal covers the entire name/container generation
+`unmount()` retains cached configuration and sandbox state for remounting. `unload()` invalidates all old handles sharing that generation and cancels queued instances. Calling `loadMicroApp` again with the same name and container requests the entry and executes scripts afresh; instances in other containers remain unaffected. See [loadMicroApp](/api/load-micro-app#unload).
 :::
 
 ## See also

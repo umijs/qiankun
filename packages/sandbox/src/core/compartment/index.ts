@@ -1,4 +1,10 @@
-import { EsmSandboxEngine, QiankunError, type DocumentModule, type ModuleNamespace } from '@qiankunjs/shared';
+import {
+  disposeCompartmentAssets,
+  EsmSandboxEngine,
+  QiankunError,
+  type DocumentModule,
+  type ModuleNamespace,
+} from '@qiankunjs/shared';
 import { nativeDocument, nativeGlobal } from '../../consts';
 import { markNodeForNativePassthrough } from '../nativePassthrough';
 import { esmDestructurableGlobals } from '../esm-globals';
@@ -57,7 +63,7 @@ export class Compartment implements CompartmentLoaderFacade {
 
   private readonly unscopables: Record<string, true>;
 
-  private readonly moduleEngineOptions: ConstructorParameters<typeof EsmSandboxEngine>[0];
+  private moduleEngineOptions: ConstructorParameters<typeof EsmSandboxEngine>[0] | undefined;
 
   private moduleEngine: EsmSandboxEngine | undefined;
 
@@ -140,6 +146,7 @@ export class Compartment implements CompartmentLoaderFacade {
 
   /** qiankun host extension for installing globals that app code must not shadow. */
   defineUnshadowableGlobals(globals: UnshadowableGlobals): void {
+    this.assertAlive();
     const names = this.membrane.defineUnshadowableGlobals(globals);
     const newlyDefinedNames = names.filter((name) => !this.definedUnshadowableGlobalNames.has(name));
     const newlyDefinedNameSet = new Set(newlyDefinedNames);
@@ -160,6 +167,7 @@ export class Compartment implements CompartmentLoaderFacade {
 
   /** Subscribe to global modifications made through this compartment. */
   onGlobalSet(listener: (p: PropertyKey) => void): () => void {
+    this.assertAlive();
     return this.membrane.onModification(listener);
   }
 
@@ -248,7 +256,7 @@ export class Compartment implements CompartmentLoaderFacade {
     this.getModuleEngine().registerImportMap(mapText, baseUrl);
   }
 
-  /** Release the module mechanism and its host-global bridges. */
+  /** Permanently revoke global views and release module, hook, and host references. */
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
@@ -257,8 +265,26 @@ export class Compartment implements CompartmentLoaderFacade {
     delete nativeGlobal[this.id];
     Array.from(this.pendingClassicEvaluations).forEach(({ cancel }) => cancel());
     this.pendingClassicEvaluations.clear();
-    this.moduleEngine?.dispose();
-    this.moduleEngine = undefined;
+    let cleanupError: { value: unknown } | undefined;
+    try {
+      disposeCompartmentAssets(this);
+    } catch (error) {
+      cleanupError = { value: error };
+    }
+    try {
+      this.moduleEngine?.dispose();
+    } catch (error) {
+      cleanupError ??= { value: error };
+    } finally {
+      this.moduleEngine = undefined;
+      this.moduleEngineOptions = undefined;
+      this.transforms.length = 0;
+      this.unshadowableGlobalNames = [];
+      this.definedUnshadowableGlobalNames.clear();
+      Object.keys(this.unscopables).forEach((key) => delete this.unscopables[key]);
+      this.membrane.dispose();
+    }
+    if (cleanupError) throw cleanupError.value;
   }
 
   /**
@@ -276,6 +302,7 @@ export class Compartment implements CompartmentLoaderFacade {
   }
 
   protected unlockGlobalThis(): void {
+    this.assertAlive();
     this.membrane.unlock();
   }
 
@@ -299,7 +326,7 @@ export class Compartment implements CompartmentLoaderFacade {
 
   private getModuleEngine(): EsmSandboxEngine {
     this.assertAlive();
-    this.moduleEngine ??= new EsmSandboxEngine(this.moduleEngineOptions);
+    this.moduleEngine ??= new EsmSandboxEngine(this.moduleEngineOptions!);
     return this.moduleEngine;
   }
 

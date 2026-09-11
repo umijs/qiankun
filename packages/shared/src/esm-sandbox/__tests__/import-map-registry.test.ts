@@ -41,4 +41,33 @@ describe('injectImportMapEntries', () => {
     // the conflicting entry must not be re-injected
     expect(readInjectedMaps()).toHaveLength(1);
   });
+
+  it('releases owned scripts independently and keeps entries still used by another owner', () => {
+    const releaseFirst = injectImportMapEntries({ shared: 'blob:shared', first: 'blob:first' });
+    const releaseSecond = injectImportMapEntries({ shared: 'blob:shared', second: 'blob:second' });
+
+    releaseFirst();
+    releaseFirst();
+    expect(readInjectedMaps()).toHaveLength(2);
+    injectImportMapEntries({ shared: 'blob:shared' })();
+    expect(readInjectedMaps()).toHaveLength(2);
+
+    releaseSecond();
+    expect(readInjectedMaps()).toEqual([]);
+  });
+
+  it('forgets released framework entries without releasing another injection', () => {
+    const releaseFirst = injectImportMapEntries({ first: 'blob:first' });
+    const releaseSecond = injectImportMapEntries({ second: 'blob:second' });
+    releaseFirst();
+    expect(readInjectedMaps()).toEqual([{ second: 'blob:second' }]);
+
+    // Reusing a native specifier is invalid in browsers; this checks only that
+    // framework bookkeeping no longer retains the disposed engine's entries.
+    const releaseReplacement = injectImportMapEntries({ first: 'blob:first' });
+    expect(readInjectedMaps()).toHaveLength(2);
+    releaseSecond();
+    expect(readInjectedMaps()).toEqual([{ first: 'blob:first' }]);
+    releaseReplacement();
+  });
 });

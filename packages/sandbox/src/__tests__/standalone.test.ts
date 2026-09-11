@@ -73,6 +73,25 @@ describe('standalone sandbox public journey', () => {
     await controller.dispose();
   });
 
+  it('releases classic asset blobs and execution listeners before revoking its global view', async () => {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:owned-classic-script');
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    const fetch = vi.fn(async () => new Response('window.lateAsset = true;'));
+    const controller = createSandbox('standalone-pending-asset', { fetch });
+    const script = document.createElement('script');
+    script.src = 'https://standalone.test/entry.js';
+    controller.nodeTransformer(script, { fetch });
+    await vi.waitFor(() => expect(script.src).toBe('blob:owned-classic-script'));
+    expect(revokeObjectURL).not.toHaveBeenCalled();
+
+    await controller.dispose();
+
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:owned-classic-script');
+    expect(script.hasAttribute('src')).toBe(false);
+    window.dispatchEvent(new CustomEvent('q:bse', { detail: { s: script } }));
+    expect(script.hasAttribute('src')).toBe(false);
+  });
+
   it('contains dynamic DOM and scopes styles after a container-backed mount', async () => {
     const container = appendContainer();
     const controller = createSandbox('standalone-dom', { container, styleIsolation: true });
@@ -222,6 +241,7 @@ describe('standalone sandbox public journey', () => {
     expect(fetch).toHaveBeenCalledWith('https://standalone.test/widget.js', {
       credentials: undefined,
       priority: 'high',
+      signal: expect.any(AbortSignal),
     });
     await vi.waitFor(() => expect(script.src).toBe('blob:standalone-dynamic-fetch'));
     await controller.dispose();

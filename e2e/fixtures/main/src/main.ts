@@ -1,5 +1,5 @@
 import type { AppConfiguration, MicroApp } from 'qiankun';
-import { loadMicroApp, precompileModuleSource } from 'qiankun';
+import { loadMicroApp, precompileModuleSource, unloadMicroApp } from 'qiankun';
 import { SUB_APP_ENTRIES } from '../../../ports';
 import { createLocalStoragePrefixPlugin } from './localStoragePrefixPlugin';
 
@@ -102,6 +102,45 @@ const testAPI = {
     const app = instances.get(key);
     if (!app) throw new Error(`no app instance for key ${key}`);
     await app.mountPromise.catch(() => undefined);
+    return app.getStatus();
+  },
+
+  async mountOutcome(key: string): Promise<{ status: string; error?: string }> {
+    const app = instances.get(key);
+    if (!app) throw new Error(`no app instance for key ${key}`);
+    try {
+      await app.mountPromise;
+      return { status: app.getStatus() };
+    } catch (error) {
+      return { status: app.getStatus(), error: String(error) };
+    }
+  },
+
+  async remount(key: string): Promise<string> {
+    const app = instances.get(key);
+    if (!app) throw new Error(`no app instance for key ${key}`);
+    await app.mount();
+    return app.getStatus();
+  },
+
+  async unload(key: string): Promise<string> {
+    const app = instances.get(key);
+    if (!app) throw new Error(`no app instance for key ${key}`);
+    await app.unload();
+    return app.getStatus();
+  },
+
+  async unloadNamed(name: string, containerKey: string): Promise<void> {
+    await unloadMicroApp(name, resolveContainer(containerKey));
+  },
+
+  /** Real HTTP body stays open until this load scope aborts the connection. */
+  async loadWithNetworkEntryStream(key: string, containerKey: string): Promise<string> {
+    const entry = new URL(SUB_APP_ENTRIES['sub-classic']);
+    entry.searchParams.set('open-entry-stream', key);
+    const app = loadMicroApp({ name: 'sub-classic', entry: entry.href, container: resolveContainer(containerKey) });
+    instances.set(key, app);
+    await app.mountPromise;
     return app.getStatus();
   },
 
