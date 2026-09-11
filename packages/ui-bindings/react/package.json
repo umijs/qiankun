@@ -30,10 +30,19 @@
     "react-dom": ">=16.9.0"
   },
   "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   },
   "files": [
     "dist"
   ],
-  "repository": "git@github.com:umijs/qiankun.git"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/umijs/qiankun.git",
+    "directory": "packages/ui-bindings/react"
+  },
+  "homepage": "https://www.qiankunjs.com",
+  "bugs": {
+    "url": "https://github.com/umijs/qiankun/issues"
+  }
 }
