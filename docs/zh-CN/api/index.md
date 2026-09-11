@@ -29,6 +29,7 @@ await microApp.unload();
 | [`setDefaultMountApp`](/zh-CN/api/effects) | 没有应用挂载时跳转到默认应用路由。 |
 | [`runAfterFirstMounted`](/zh-CN/api/effects) | 首个微应用挂载后执行一次回调。 |
 | [`addErrorHandler` / `removeErrorHandler`](/zh-CN/api/error-handling) | 注册或移除全局错误处理器。 |
+| [`LoadAppTimeoutError`](/zh-CN/api/error-handling#load-timeout) | 加载超时错误类，包含应用名称、配置时限和实际耗时。 |
 | [`isRuntimeCompatible`](/zh-CN/api/is-runtime-compatible) | 检查当前浏览器是否满足 qiankun v3 的基础运行条件。 |
 | [`prefetchApps`](/zh-CN/api/prefetch-apps) | 已废弃的手动预取 API。 |
 

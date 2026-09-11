@@ -1,6 +1,6 @@
 # AppConfiguration
 
-`AppConfiguration` 是单个微应用实例的运行时配置，包含 JavaScript 隔离、样式隔离、自定义 fetch 和高级加载转换钩子。
+`AppConfiguration` 是单个微应用实例的运行时配置，包含 JavaScript 隔离、样式隔离、加载超时、自定义 fetch 和高级加载转换钩子。
 
 使用 [`loadMicroApp`](/zh-CN/api/load-micro-app) 时，应将配置作为第二个参数传入。路由驱动应用通过 `registerMicroApps` 的 `configuration` 字段设置配置，`<MicroApp>` 组件则通过 `settings` 属性接收相同类型的配置。
 
@@ -16,6 +16,7 @@ import { type AppConfiguration } from 'qiankun';
 | --- | --- | --- | --- |
 | `sandbox` | `boolean \| SandboxConfiguration` | `true` | 隔离能力的统一入口。设为 `false` 时微应用在真实全局对象中运行；设为 `true` 时以默认配置启用沙箱；传入对象时启用沙箱并配置底层 Compartment。 |
 | `fetch` | `typeof window.fetch` | `window.fetch` | 用于请求入口，以及由加载器处理的脚本、模块和样式。图片等由浏览器直接发起的请求不一定经过该函数。 |
+| `timeout` | `number` | `0`（关闭） | 加载超时，单位为毫秒。省略时继承 `start({ timeout })` 设置的默认值；显式设为 `0` 可关闭。 |
 | `streamTransformer` | `() => TransformStream<string, string>` | `undefined` | 可选。用于自定义 HTML 入口的流式处理过程，接收解码后的 HTML 字符串流。 |
 | `nodeTransformer` | `<T extends Node>(node: T, opts) => T` | 内置资源转换器 | 在 `<script>`、`<link>` 和 `<style>` 节点进入容器前进行转换。仅用于高级扩展。 |
 
@@ -108,6 +109,25 @@ configuration: {
 
 自定义 `fetch` 通常用于携带身份凭据、添加请求头或使用代理。该函数必须保持标准 Fetch API 的响应格式和流式处理语义；qiankun 提供的校验、重试和缓存仍会生效。
 
+需要支持加载取消时，自定义实现必须将收到的 `init.signal` 传给实际请求，并在中止后停止读取响应流。
+
+### timeout
+
+加载超时默认关闭。未设置全局默认值时，省略 `timeout` 或设为 `0` 均不限制加载时长。正有限数表示超时毫秒数；负数、`NaN` 和 `Infinity` 属于无效配置，会产生 `QiankunError`。
+
+计时从应用取得容器的加载权限后开始，覆盖 `beforeLoad`、入口加载、加载器需要等待的资源处理、入口生命周期发现，以及 HTML 流完整结束。等待前一个实例释放容器的时间不计入；`bootstrap`、`mount`、`unmount` 和复用已加载配置的重新挂载不受此配置限制。
+
+启用超时后，qiankun 会等待入口生命周期就绪且 HTML 流结束，再进入挂载阶段。关闭超时时，仍保留生命周期就绪后即可挂载的流式行为。因此，始终不结束的 HTML 响应在启用超时后会加载失败，不会先挂载再因加载超时销毁。
+
+```ts
+const app = loadMicroApp({ name: 'app1', entry, container }, { timeout: 10_000 });
+await app.mountPromise;
+```
+
+超时会以 `LoadAppTimeoutError` 拒绝加载 Promise，并中止该实例的加载请求、清理已写入的容器节点和沙箱、释放容器占用。仍被其他实例使用的共享请求会继续运行。错误包含应用名称、配置时限和实际耗时；处理方式见 [addErrorHandler / removeErrorHandler](/zh-CN/api/error-handling#load-timeout)。
+
+该选项不限制后续所有原生 ESM 求值或应用异步任务。取消会停止请求和加载器的 DOM 写入，并使沙箱访问失效，但无法抢占同步 JavaScript、强制终止已经持有原始 DOM 引用的原生异步任务，也不能撤回浏览器 ESM 注册；清理边界见 [loadMicroApp](/zh-CN/api/load-micro-app#unload)。
+
 ### streamTransformer
 
 默认值为 `undefined`。配置后，返回的 `TransformStream<string, string>` 会参与 HTML 入口的流式处理，执行位置在字节解码之后、qiankun 转换标签之前。该转换器可在流式处理期间修改入口 HTML，例如插入或删除标记。常规应用通常无需配置此项。
@@ -143,18 +163,20 @@ React 和 Vue 的 `<MicroApp>` 组件通过 `settings` 接收相同类型的配�
 
 ## 优先级
 
-所有字段都按微应用实例生效。`start()` 不接收也不会合并全局的沙箱、样式或 fetch 配置。
+所有字段都按微应用实例生效。`timeout` 可通过首次 `start({ timeout })` 设置全局默认值，同时用于后续手动加载和路由应用。应用级 `timeout` 优先，显式设为 `0` 可关闭默认超时；省略或设为 `undefined` 时继承默认值。全局默认值不会改变已经缓存的配置。
+
+`start()` 不接收也不会合并全局的沙箱、样式或 fetch 配置。
 
 应用级的 `sandbox` 对象会整体覆盖外层配置：配置合并是一次浅展开，沙箱内部的各个字段不会被深合并。
 
 ## 从 v2 迁移
 
-v2 的对象形式沙箱配置、`start()` 全局配置和旧版样式隔离选项均不属于该类型。完整的替换关系见[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
+v2 的对象形式沙箱配置、通过 `start()` 设置的旧版沙箱或预取配置，以及旧版样式隔离选项均不属于该类型。完整的替换关系见[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
 
 ## 相关内容
 
 - [loadMicroApp](/zh-CN/api/load-micro-app)——将 `AppConfiguration` 作为第二个参数。
 - [registerMicroApps](/zh-CN/api/register-micro-apps)——路由驱动应用通过 `configuration` 设置同一类型。
-- [start](/zh-CN/api/start)——框架启动；注意它只接收 `{ urlRerouteOnly }`。
+- [start](/zh-CN/api/start)——框架启动与加载超时默认值。
 - [类型参考](/zh-CN/api/types)——完整的类型定义，包括 `RegistrableApp` 和 `LoadableApp`。
 - [样式隔离](/zh-CN/concepts/style-isolation)和 [JavaScript 隔离](/zh-CN/concepts/js-sandbox)——`styleIsolation` 与 `sandbox` 的工作原理和能力边界。
