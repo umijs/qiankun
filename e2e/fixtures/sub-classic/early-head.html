@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>sub-classic-early-head</title>
+  </head>
+  <script>
+    (function (global) {
+      // No external asset or async boundary may precede this first head access: the entire
+      // entry arrives in one stream chunk, before the head observer gets its first callback.
+      var head = document.head;
+      var patchedOnFirstAccess = ['appendChild', 'insertBefore', 'removeChild'].every(function (method) {
+        return Object.prototype.hasOwnProperty.call(head, method);
+      });
+      var style = document.createElement('style');
+      style.dataset.testid = 'early-head-style';
+      style.textContent = '#host-probe, .early-head-style-target { color: rgb(81, 82, 83) }';
+      head.appendChild(style);
+      var scopedOnAppend = style.textContent.trim().startsWith('@scope');
+
+      var link = document.createElement('link');
+      link.dataset.testid = 'early-head-link';
+      link.rel = 'stylesheet';
+      link.href = './early-head.css';
+      head.appendChild(link);
+
+      var bootstrapCount = 0;
+      var mountCount = 0;
+      global['sub-classic-early-head'] = {
+        bootstrap: function () {
+          bootstrapCount++;
+          return Promise.resolve();
+        },
+        mount: function () {
+          mountCount++;
+          var report = document.querySelector('[data-testid="early-head-status"]');
+          report.textContent =
+            'patched:' +
+            patchedOnFirstAccess +
+            ',scoped:' +
+            scopedOnAppend +
+            ',bootstrap:' +
+            bootstrapCount +
+            ',mount:' +
+            mountCount;
+          return Promise.resolve();
+        },
+        unmount: function () {
+          // qiankun owns stylesheet cleanup and restoration; app code never reinjects them.
+          return Promise.resolve();
+        },
+      };
+    })(window);
+  </script>
+  <body>
+    <p class="early-head-style-target" data-testid="early-head-style-target">inline style target</p>
+    <p class="early-head-link-target" data-testid="early-head-link-target">relative stylesheet target</p>
+    <p data-testid="early-head-status"></p>
+  </body>
+</html>
