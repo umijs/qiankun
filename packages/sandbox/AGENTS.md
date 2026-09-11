@@ -29,7 +29,7 @@ sandbox/
 | Proxy logic | `core/membrane/index.ts` | Write → local target; Read → local → configured globals → host window |
 | Compartment facade | `core/compartment/index.ts` | Owns the membrane, module facade, and CSP-safe blob classic evaluation |
 | Plugin protocol | `patchers/types.ts` | Public `IsolationPlugin`, context, `Free`, and `Rebuild` contracts |
-| Built-in plugins | `patchers/index.ts` | Data-driven Standard/Snapshot presets; user plugins append after these |
+| Built-in plugins | `patchers/index.ts` | Standard preset; user plugins append after these |
 | DOM interception | `patchers/dynamicAppend/forStandardSandbox.ts` | Redirects dynamic script/style/link to app container |
 | Side-effect cleanup | `patchers/*.ts` | Each patcher returns a `free()` called on unmount |
 | ESM globals contract | `core/esm-globals.ts` | Consumed by `shared/esm-sandbox` engine, passed as `globalsBaseSet` |
