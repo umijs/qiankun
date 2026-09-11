@@ -46,15 +46,6 @@ export function registerMicroApps<T extends ObjectType>(apps: Array<RegistrableA
 
 export function start(opts: StartOpts = {}) {
   if (!started) {
-    // frameworkConfiguration = { prefetch: true, singular: true, sandbox: true, ...opts };
-    // const { prefetch, urlRerouteOnly = defaultUrlRerouteOnly, ...importEntryOpts } = frameworkConfiguration;
-
-    // if (prefetch) {
-    //   doPrefetchStrategy(microApps, prefetch, importEntryOpts);
-    // }
-
-    // frameworkConfiguration = autoDowngradeForLowVersionBrowser(frameworkConfiguration);
-
     startSingleSpa(opts);
     started = true;
 

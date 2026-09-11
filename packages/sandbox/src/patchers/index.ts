@@ -52,11 +52,9 @@ const baseIsolationPlugins = [intervalPlugin, windowListenerPlugin, historyListe
 
 /**
  * Built-in presets retain the historical patch order. User plugins are appended by the container.
- * Snapshot remains a fallback preset and deliberately omits the standard DOM interception plugin.
  */
 export const defaultIsolationPlugins = {
   [SandboxType.Standard]: [...baseIsolationPlugins, dynamicAppendPlugin],
-  [SandboxType.Snapshot]: baseIsolationPlugins,
 } satisfies Record<SandboxType, readonly IsolationPlugin[]>;
 
 export function getDefaultIsolationPlugins(
