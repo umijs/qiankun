@@ -2,6 +2,7 @@
  * @vitest-environment happy-dom
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { QiankunError } from 'qiankun';
 import type { LoaderOpts } from '@qiankunjs/loader';
 import { isNativePassthroughNode, nativeGlobal } from '@qiankunjs/sandbox';
 import { createSandbox as createRealSandbox } from '../../../../sandbox/src/core/sandbox';
@@ -120,7 +121,9 @@ describe('loadApp sandbox cleanup', () => {
   it('aborts its sandbox when entry exports fail lifecycle validation', async () => {
     mocks.loadEntry.mockResolvedValue({});
 
-    await expect(loadApp(createApp())).rejects.toThrowError('You need to export lifecycle functions');
+    const loading = loadApp(createApp());
+    await expect(loading).rejects.toBeInstanceOf(QiankunError);
+    await expect(loading).rejects.toThrowError('You need to export lifecycle functions');
     expect(mocks.dispose).toHaveBeenCalledOnce();
   });
 
