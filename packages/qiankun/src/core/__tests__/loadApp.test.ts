@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { QiankunError } from 'qiankun';
 import type { LoaderOpts } from '@qiankunjs/loader';
 import { isNativePassthroughNode, nativeGlobal } from '@qiankunjs/sandbox';
+import type { ParcelConfigObject } from '@qiankunjs/single-spa';
 import { createSandbox as createRealSandbox } from '../../../../sandbox/src/core/sandbox';
 
 const mocks = vi.hoisted(() => ({
@@ -196,7 +197,7 @@ describe('loadApp sandbox cleanup', () => {
     );
   });
 
-  it('reuses a 270-module graph across disposed instances without evicting entry or stylesheet responses', async () => {
+  it('reuses a 270-module graph across live instances without evicting entry or stylesheet responses', async () => {
     const baseUrl = 'https://module-cache.test/';
     const entry = `${baseUrl}index.html`;
     const stylesheet = `${baseUrl}style.css`;
@@ -219,17 +220,20 @@ describe('loadApp sandbox cleanup', () => {
       return validLifecycles;
     });
 
+    const parcelConfigs: ParcelConfigObject[] = [];
     for (let instance = 0; instance < 2; instance++) {
       const container = document.createElement('div');
       const getParcelConfig = await loadApp({ ...createApp(container), entry }, { fetch });
-      await getParcelConfig(container).unload[0]();
+      parcelConfigs.push(getParcelConfig(container));
     }
 
-    // The second instance still links its own graph, but performs no new downloads.
+    // Both instances are still loaded: the second one links its own graph, but performs no new downloads.
     expect(fetch).toHaveBeenCalledTimes(272);
     for (const url of [entry, stylesheet, ...moduleUrls]) {
       expect(fetch.mock.calls.filter(([input]) => String(input) === url)).toHaveLength(1);
     }
+
+    await Promise.all(parcelConfigs.map((parcelConfig) => parcelConfig.unload[0]()));
   });
 
   it('marks sandbox-less streamed nodes for native passthrough', async () => {
