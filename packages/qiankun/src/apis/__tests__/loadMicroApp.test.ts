@@ -140,4 +140,24 @@ describe('loadMicroApp container identity', () => {
     expect(mocks.loadApp).toHaveBeenCalledTimes(2);
     expect(bootstrap).toHaveBeenCalledTimes(1);
   });
+
+  it.each([
+    ['attached', true],
+    ['detached', false],
+  ])('does not queue a later %s load behind a failed first load', async (_label, attached) => {
+    mocks.loadApp.mockRejectedValueOnce(new Error('entry fetch failed'));
+    const container = document.createElement('div');
+    if (attached) document.body.append(container);
+    const failed = load(container);
+    await Promise.allSettled([failed.loadPromise, failed.bootstrapPromise, failed.mountPromise]);
+
+    const retry = load(container);
+    await retry.mountPromise;
+    await retry.unmount();
+
+    const third = load(container);
+    await third.mountPromise;
+    expect(third.getStatus()).toBe(AppOrParcelStatus.MOUNTED);
+    expect(mocks.loadApp).toHaveBeenCalledTimes(2);
+  });
 });
