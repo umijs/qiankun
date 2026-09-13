@@ -100,6 +100,7 @@ export default async function loadApp<T extends ObjectType>(
   // this app's lifetime, so unload invalidates and cancels them together.
   const resourceFetch = makeFetchRetryable(makeFetchThrowable(fetch));
   const enhancedFetch = makeFetchCacheable(resourceFetch, { signal });
+  const moduleFetch = makeFetchCacheable(resourceFetch, { scope: 'modules', signal });
 
   const markName = `[qiankun] App ${appName} Loading`;
   if (process.env.NODE_ENV === 'development') {
@@ -142,6 +143,7 @@ export default async function loadApp<T extends ObjectType>(
         } finally {
           disposeCompartmentAssets(enhancedFetch);
           enhancedFetch.invalidate();
+          moduleFetch.invalidate();
           if (initializedContainers.get(microAppDOMContainer) === containerInitToken) {
             clearContainer(microAppDOMContainer);
           }
@@ -201,7 +203,7 @@ export default async function loadApp<T extends ObjectType>(
           moduleHost: {
             entryUrl: entry,
             // module sources get their own cache so a large module graph cannot evict entries and styles
-            fetch: makeFetchCacheable(resourceFetch, 'modules'),
+            fetch: moduleFetch,
             instanceId,
             materializeRedirect: (url) => defaultModuleResolver(url, microAppDOMContainer, document.head)?.url,
             isLifecycleNamespace: (namespace) =>

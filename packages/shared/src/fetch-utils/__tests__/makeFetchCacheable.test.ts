@@ -53,7 +53,7 @@ describe.each(['assets', 'modules'] as const)('%s cache', (cacheScope) => {
     const fetch = vi.fn(() => {
       return Promise.resolve(new Response(slogan, { status: 200, statusText: 'OK' }));
     });
-    const wrappedFetch = makeFetchCacheable(fetch, cacheScope);
+    const wrappedFetch = makeFetchCacheable(fetch, { scope: cacheScope });
     const url = 'https://success.qiankun.org';
     wrappedFetch(url);
     wrappedFetch(url);
@@ -66,7 +66,7 @@ describe.each(['assets', 'modules'] as const)('%s cache', (cacheScope) => {
     const fetch = vi.fn(() => {
       return Promise.resolve(new Response(slogan, { status: 200, statusText: 'OK' }));
     });
-    const wrappedFetch = makeFetchCacheable(fetch, cacheScope);
+    const wrappedFetch = makeFetchCacheable(fetch, { scope: cacheScope });
     const url = 'https://canonical-credentials.qiankun.org';
 
     wrappedFetch(url);
@@ -81,7 +81,7 @@ describe.each(['assets', 'modules'] as const)('%s cache', (cacheScope) => {
     const fetch = vi.fn(() => {
       return Promise.resolve(new Response(slogan, { status: 200, statusText: 'OK' }));
     });
-    const wrappedFetch = makeFetchCacheable(fetch, cacheScope);
+    const wrappedFetch = makeFetchCacheable(fetch, { scope: cacheScope });
     const url = 'https://request-credentials.qiankun.org/';
 
     wrappedFetch(new Request(url, { credentials: 'include' }), {
@@ -97,7 +97,7 @@ describe.each(['assets', 'modules'] as const)('%s cache', (cacheScope) => {
     const fetch = vi.fn(() => {
       return Promise.resolve(new Response(slogan, { status: 200, statusText: 'OK' }));
     });
-    const wrappedFetch = makeFetchCacheable(fetch, cacheScope);
+    const wrappedFetch = makeFetchCacheable(fetch, { scope: cacheScope });
 
     const url = 'https://stream.qiankun.org';
     const response1 = await wrappedFetch(url);
@@ -118,7 +118,7 @@ describe.each(['assets', 'modules'] as const)('%s cache', (cacheScope) => {
     const fetch = vi.fn(() => {
       return Promise.resolve(new Response(slogan, { status: 400 }));
     });
-    const wrappedFetch = makeFetchCacheable(fetch, cacheScope);
+    const wrappedFetch = makeFetchCacheable(fetch, { scope: cacheScope });
     const url = 'https://errorStatusCode.qiankun.org';
 
     const response1 = await wrappedFetch(url);
@@ -136,7 +136,7 @@ describe.each(['assets', 'modules'] as const)('%s cache', (cacheScope) => {
     const fetch = vi.fn(() => {
       return Promise.reject(new Error('error'));
     });
-    const wrappedFetch = makeFetchCacheable(fetch, cacheScope);
+    const wrappedFetch = makeFetchCacheable(fetch, { scope: cacheScope });
 
     const url = 'https://error.qiankun.org';
     await expect(wrappedFetch(url)).rejects.toThrow('error');
@@ -149,7 +149,7 @@ describe.each(['assets', 'modules'] as const)('%s cache', (cacheScope) => {
 it('uses the shared asset cache by default', async () => {
   const fetch = vi.fn(() => Promise.resolve(new Response(slogan)));
   const defaultFetch = makeFetchCacheable(fetch);
-  const assetFetch = makeFetchCacheable(fetch, 'assets');
+  const assetFetch = makeFetchCacheable(fetch, { scope: 'assets' });
   const url = 'https://default-assets.qiankun.org/entry.html';
 
   await defaultFetch(url);
@@ -161,8 +161,8 @@ it('uses the shared asset cache by default', async () => {
 it('reuses a 270-module graph across wrappers without evicting entry HTML or styles', async () => {
   const fetch = vi.fn(() => Promise.resolve(new Response(slogan)));
   const assetFetch = makeFetchCacheable(fetch);
-  const firstModuleFetch = makeFetchCacheable(fetch, 'modules');
-  const nextModuleFetch = makeFetchCacheable(fetch, 'modules');
+  const firstModuleFetch = makeFetchCacheable(fetch, { scope: 'modules' });
+  const nextModuleFetch = makeFetchCacheable(fetch, { scope: 'modules' });
   const entryUrl = 'https://large-graph.qiankun.org/entry.html';
   const styleUrl = 'https://large-graph.qiankun.org/style.css';
   const moduleUrls = Array.from({ length: 270 }, (_, index) => `https://large-graph.qiankun.org/${String(index)}.js`);
@@ -186,7 +186,7 @@ it('reuses a 270-module graph across wrappers without evicting entry HTML or sty
 it('does not let asset requests evict module responses or share a cache entry with them', async () => {
   const fetch = vi.fn(() => Promise.resolve(new Response(slogan)));
   const assetFetch = makeFetchCacheable(fetch);
-  const moduleFetch = makeFetchCacheable(fetch, 'modules');
+  const moduleFetch = makeFetchCacheable(fetch, { scope: 'modules' });
   const moduleUrl = 'https://asset-pressure.qiankun.org/module.js';
 
   await moduleFetch(moduleUrl);
@@ -206,7 +206,7 @@ it.each([
   ['modules', 512],
 ] as const)('bounds the %s cache at %i entries and retains recently used responses', async (cacheScope, capacity) => {
   const fetch = vi.fn(() => Promise.resolve(new Response(slogan)));
-  const cachedFetch = makeFetchCacheable(fetch, cacheScope);
+  const cachedFetch = makeFetchCacheable(fetch, { scope: cacheScope });
   const urls = Array.from(
     { length: capacity + 1 },
     (_, index) => `https://cache-capacity.qiankun.org/${String(index)}.js`,
@@ -556,4 +556,22 @@ it('does not abort or evict a shared download when a per-call signal aborts', as
   expect(await (await second).text()).toBe('shared');
   await app(url);
   expect(fetch).toHaveBeenCalledOnce();
+});
+
+it('keeps a replacement module generation when a stale module owner invalidates', async () => {
+  const fetch = vi
+    .fn<() => Promise<Response>>()
+    .mockResolvedValueOnce(new Response('failed', { status: 500 }))
+    .mockImplementation(async () => new Response('export {};', { status: 200 }));
+  const url = 'https://module-generation.qiankun.org/entry.js';
+  const stale = makeFetchCacheable(fetch, { scope: 'modules' });
+  const replacement = makeFetchCacheable(fetch, { scope: 'modules' });
+
+  // The failed response evicts the stale owner's generation before the replacement repopulates the key.
+  await (await stale(url)).text();
+  await (await replacement(url)).text();
+  stale.invalidate();
+  await (await replacement(url)).text();
+
+  expect(fetch).toHaveBeenCalledTimes(2);
 });
