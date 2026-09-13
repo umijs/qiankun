@@ -1,10 +1,4 @@
-import {
-  disposeCompartmentAssets,
-  EsmSandboxEngine,
-  QiankunError,
-  type DocumentModule,
-  type ModuleNamespace,
-} from '@qiankunjs/shared';
+import { EsmSandboxEngine, QiankunError, type DocumentModule, type ModuleNamespace } from '@qiankunjs/shared';
 import { nativeDocument, nativeGlobal } from '../../consts';
 import { markNodeForNativePassthrough } from '../nativePassthrough';
 import { esmDestructurableGlobals } from '../esm-globals';
@@ -256,7 +250,10 @@ export class Compartment implements CompartmentLoaderFacade {
     this.getModuleEngine().registerImportMap(mapText, baseUrl);
   }
 
-  /** Permanently revoke global views and release module, hook, and host references. */
+  /**
+   * Permanently revoke global views and release module, hook, and host references. Transpiled DOM
+   * assets keyed by this compartment belong to the host that transpiled them and are not released here.
+   */
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
@@ -265,16 +262,8 @@ export class Compartment implements CompartmentLoaderFacade {
     delete nativeGlobal[this.id];
     Array.from(this.pendingClassicEvaluations).forEach(({ cancel }) => cancel());
     this.pendingClassicEvaluations.clear();
-    let cleanupError: { value: unknown } | undefined;
-    try {
-      disposeCompartmentAssets(this);
-    } catch (error) {
-      cleanupError = { value: error };
-    }
     try {
       this.moduleEngine?.dispose();
-    } catch (error) {
-      cleanupError ??= { value: error };
     } finally {
       this.moduleEngine = undefined;
       this.moduleEngineOptions = undefined;
@@ -284,7 +273,6 @@ export class Compartment implements CompartmentLoaderFacade {
       Object.keys(this.unscopables).forEach((key) => delete this.unscopables[key]);
       this.membrane.dispose();
     }
-    if (cleanupError) throw cleanupError.value;
   }
 
   /**

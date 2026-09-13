@@ -223,13 +223,12 @@ function patchDocument(
   compartment: PluginCompartment,
   appName: string,
   getContainer: IsolationPluginContext['getContainer'],
+  sandboxConfig: SandboxConfig,
 ): Unpatch {
   const container = getRequiredContainer(getContainer, appName);
   // A bootstrap patch may still own the container on its first mount.
   if (containerOwners.get(container) === compartment) return () => {};
 
-  const sandboxConfig = sandboxConfigs.get(compartment);
-  if (!sandboxConfig) throw new QiankunError(`${appName} DOM isolation configuration is unavailable`);
   const { ensureHeadPatched, unpatch } = patchDocumentHeadAndBodyMethods(container, compartment);
   activeHeadPatchers.set(compartment, ensureHeadPatched);
   // The view resolves its container lazily, so one view spans every warm mount. Keeping a
@@ -497,7 +496,7 @@ export function patchStandardSandbox(context: IsolationPluginContext): Free {
   // all dynamic style sheets are stored in proxy container
   const { dynamicStyleSheetElements } = sandboxConfig;
 
-  const unpatchDocument = patchDocument(compartment, appName, getContainer);
+  const unpatchDocument = patchDocument(compartment, appName, getContainer, sandboxConfig);
   const unpatchDOMPrototype = patchDOMPrototypeFns();
   const unpatchCSSOM = styleIsolation ? patchCSSOM() : undefined;
 

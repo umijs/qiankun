@@ -6,6 +6,7 @@ import { nativeDocument, nativeGlobal, qiankunHeadTagName } from '../../consts';
 import { getDefaultIsolationPlugins } from '../../patchers';
 import type { Free, IsolationPlugin, IsolationPluginContext, Rebuild } from '../../patchers/types';
 import {
+  disposeCompartmentAssets,
   QiankunError,
   transpileAssets,
   type ImportHook,
@@ -103,18 +104,44 @@ function releaseSideEffects(frees: readonly Free[]): {
   return { rebuilds, error: firstError };
 }
 
+/**
+ * Terminal hooks run in reverse installation order: a plugin may rely on views owned by plugins
+ * installed before it (user plugins on the built-in document view), so those must outlive it.
+ */
 function disposePlugins(
   plugins: readonly IsolationPlugin[],
   context: IsolationPluginContext,
 ): CapturedError | undefined {
   let firstError: CapturedError | undefined;
-  plugins.forEach((plugin) => {
-    try {
-      plugin.dispose?.(context);
-    } catch (error) {
-      firstError ??= { value: error };
-    }
-  });
+  plugins
+    .slice()
+    .reverse()
+    .forEach((plugin) => {
+      try {
+        plugin.dispose?.(context);
+      } catch (error) {
+        firstError ??= { value: error };
+      }
+    });
+  return firstError;
+}
+
+/**
+ * The controller handed this compartment to the asset transpilers as their owner key, so it — not
+ * the Compartment — signals that owner terminal before the Compartment releases its own resources.
+ */
+function disposeCompartment(sandbox: Sandbox): CapturedError | undefined {
+  let firstError: CapturedError | undefined;
+  try {
+    disposeCompartmentAssets(sandbox);
+  } catch (error) {
+    firstError = { value: error };
+  }
+  try {
+    sandbox.dispose();
+  } catch (error) {
+    firstError ??= { value: error };
+  }
   return firstError;
 }
 
@@ -323,13 +350,9 @@ function createSandboxController(appName: string, opts: CreateSandboxOptions): S
     releaseSideEffects(bootstrappingFrees);
     disposePlugins(isolationPlugins, pluginContext);
     sandbox.inactive();
-    try {
-      sandbox.dispose();
-    } catch {
-      // Preserve the bootstrap failure while still restoring the container protocol.
-    } finally {
-      cleanupPreparedContainers();
-    }
+    // Cleanup failures are dropped to preserve the bootstrap failure while still restoring the container protocol.
+    disposeCompartment(sandbox);
+    cleanupPreparedContainers();
     throw error;
   }
 
@@ -387,17 +410,12 @@ function createSandboxController(appName: string, opts: CreateSandboxOptions): S
       mountingFrees = [];
 
       const pluginError = disposePlugins(isolationPlugins, pluginContext);
-      let firstError = bootstrappingRelease.error ?? mountingRelease.error ?? pluginError;
       sandbox.inactive();
-      try {
-        sandbox.dispose();
-      } catch (error) {
-        firstError ??= { value: error };
-      } finally {
-        cleanupPreparedContainers();
-        mountedContainer = undefined;
-        mounted = false;
-      }
+      const compartmentError = disposeCompartment(sandbox);
+      cleanupPreparedContainers();
+      mountedContainer = undefined;
+      mounted = false;
+      const firstError = bootstrappingRelease.error ?? mountingRelease.error ?? pluginError ?? compartmentError;
       if (firstError) {
         throw firstError.value;
       }
