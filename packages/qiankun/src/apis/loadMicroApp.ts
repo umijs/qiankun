@@ -88,10 +88,13 @@ export function loadMicroApp<T extends ObjectType>(
 
   const cleanup = () => {
     const index = microAppsRef.indexOf(mountedApp);
-    microAppsRef.splice(index, 1);
+    if (index >= 0) microAppsRef.splice(index, 1);
     microApp = null;
   };
 
+  // A source/bootstrap/mount failure never enters single-spa's unmount lifecycle. It must still
+  // leave this generation's predecessor queue, or a detached container retry can wait forever.
+  mountedApp.mountPromise.catch(cleanup);
   mountedApp.unmountPromise.then(cleanup).catch(cleanup);
 
   return mountedApp;
