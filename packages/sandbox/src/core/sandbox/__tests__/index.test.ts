@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { clearStylesheetCache, getStylesheetCacheStats } from '@qiankunjs/shared';
 import { nativeGlobal } from '../../../consts';
 import { Compartment } from '../../compartment';
 import { defaultIsolationPlugins } from '../../../patchers';
@@ -526,7 +527,7 @@ describe('isolation plugin lifecycle', () => {
     await controller.dispose();
     await controller.unmount();
 
-    expect(events).toEqual(['free', 'dispose:first', 'dispose:second']);
+    expect(events).toEqual(['free', 'dispose:second', 'dispose:first']);
     expect(() => view.document).toThrow(TypeError);
     expect(() => transformer(document.createElement('div'), {})).toThrowError('has been disposed');
     await expect(controller.mount(container)).rejects.toThrowError('has been disposed');
@@ -601,5 +602,108 @@ describe('isolation plugin lifecycle', () => {
     expect(mountingFree).toHaveBeenCalledOnce();
     expect(laterMount).not.toHaveBeenCalled();
     await expect(controller.mount(container)).rejects.toThrowError('has been disposed');
+  });
+});
+
+// Unlike the lifecycle suite above, these run with the real built-in plugin preset installed.
+describe('terminal disposal with built-in plugins', () => {
+  afterEach(() => {
+    clearStylesheetCache();
+    vi.restoreAllMocks();
+  });
+
+  it('keeps the built-in document view usable until every user dispose hook has run', async () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    let cleanupRan = false;
+    const controller = createSandbox(`terminal-document-${String(appSequence++)}`, {
+      container,
+      plugins: [
+        {
+          name: 'terminal-dom-cache',
+          dispose: ({ compartment }) => {
+            compartment.globalThis.document.body.querySelector('[data-plugin-owned]')?.remove();
+            cleanupRan = true;
+          },
+        },
+      ],
+    });
+    await controller.mount(container);
+    const sandboxDocument = controller.instance.globalThis.document;
+    const owned = sandboxDocument.createElement('span');
+    owned.dataset.pluginOwned = 'true';
+    sandboxDocument.body.appendChild(owned);
+    expect(owned.isConnected).toBe(true);
+
+    await expect(controller.dispose()).resolves.toBeUndefined();
+
+    expect(cleanupRan).toBe(true);
+    expect(owned.isConnected).toBe(false);
+    expect(() => controller.instance.globalThis.document).toThrow(TypeError);
+    container.remove();
+  });
+
+  it('runs user dispose hooks before built-in ones after a bootstrap failure', () => {
+    const container = document.createElement('div');
+    let documentUsable = false;
+    expect(() =>
+      createSandbox(`terminal-bootstrap-${String(appSequence++)}`, {
+        container,
+        plugins: [
+          {
+            name: 'document-reader',
+            dispose: ({ compartment }) => {
+              compartment.globalThis.document.createElement('span');
+              documentUsable = true;
+            },
+          },
+          {
+            name: 'broken',
+            bootstrap: () => {
+              throw new Error('bootstrap failed');
+            },
+          },
+        ],
+      }),
+    ).toThrowError('bootstrap failed');
+    expect(documentUsable).toBe(true);
+  });
+
+  it('releases transpiled stylesheet ownership when the DOM preset controller is disposed', async () => {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:controller-style');
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    const controller = createSandbox(`controller-style-${String(appSequence++)}`, {
+      container: document.createElement('div'),
+      fetch: async () => new Response('.probe { color: red; }'),
+      styleIsolation: true,
+    });
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://controller.test/style.css';
+    controller.nodeTransformer(link, {});
+    await vi.waitFor(() => expect(link.getAttribute('href')).toBe('blob:controller-style'));
+    expect(getStylesheetCacheStats().size).toBe(1);
+
+    await controller.dispose();
+
+    expect(getStylesheetCacheStats().size).toBe(0);
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:controller-style');
+  });
+
+  it('releases transpiled classic script ownership when the JS-only preset controller is disposed', async () => {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:js-only-script');
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    const controller = createSandbox(`js-only-assets-${String(appSequence++)}`, {
+      fetch: async () => new Response('window.jsOnlyAsset = true;'),
+    });
+    const script = document.createElement('script');
+    script.src = 'https://controller.test/entry.js';
+    controller.nodeTransformer(script, {});
+    await vi.waitFor(() => expect(script.src).toBe('blob:js-only-script'));
+
+    await controller.dispose();
+
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:js-only-script');
+    expect(script.hasAttribute('src')).toBe(false);
   });
 });

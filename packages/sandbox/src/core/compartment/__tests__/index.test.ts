@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { transpileAssets } from '@qiankunjs/shared';
+import {
+  clearStylesheetCache,
+  disposeCompartmentAssets,
+  getStylesheetCacheStats,
+  transpileAssets,
+} from '@qiankunjs/shared';
 import {
   Compartment,
   type CompartmentLoaderFacade,
@@ -286,25 +291,35 @@ describe('host lifecycle facades', () => {
 });
 
 describe('classic script evaluation', () => {
-  it('disposes directly owned transpiled assets without requiring a sandbox controller', async () => {
-    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:direct-compartment-asset');
+  it('leaves transpiled DOM asset ownership to the host that transpiled them', async () => {
+    clearStylesheetCache();
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:direct-compartment-style');
     const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
-    const compartment = new Compartment({ name: 'direct-asset-owner' });
-    const script = document.createElement('script');
-    script.src = 'https://compartment.test/entry.js';
-    transpileAssets(script, 'https://compartment.test/', {
+    const compartment = new Compartment({ name: 'direct-style-owner' });
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://compartment.test/style.css';
+    transpileAssets(link, 'https://compartment.test/', {
       compartment,
-      fetch: async () => new Response('window.directAsset = true;'),
-      classicScriptTransformer: (source, sourceURL) => compartment.transformClassicScript(source, sourceURL),
+      fetch: async () => new Response('.probe { color: red; }'),
+      styleIsolation: { appName: 'direct-style-owner', scopeRoot: '[data-name="direct-style-owner"]' },
     });
-    await vi.waitFor(() => expect(script.src).toBe('blob:direct-compartment-asset'));
+    await vi.waitFor(() => expect(link.getAttribute('href')).toBe('blob:direct-compartment-style'));
 
-    compartment.dispose();
+    try {
+      compartment.dispose();
 
-    expect(revokeObjectURL).toHaveBeenCalledWith('blob:direct-compartment-asset');
-    expect(script.hasAttribute('src')).toBe(false);
-    window.dispatchEvent(new CustomEvent('q:bse', { detail: { s: script } }));
-    expect(script.hasAttribute('src')).toBe(false);
+      expect(getStylesheetCacheStats().size).toBe(1);
+      expect(revokeObjectURL).not.toHaveBeenCalledWith('blob:direct-compartment-style');
+
+      // The caller that keyed the assets by this compartment signals the owner terminal itself.
+      disposeCompartmentAssets(compartment);
+
+      expect(getStylesheetCacheStats().size).toBe(0);
+      expect(revokeObjectURL).toHaveBeenCalledWith('blob:direct-compartment-style');
+    } finally {
+      clearStylesheetCache();
+    }
   });
 
   it('keeps synchronous wrapping off the public instance API', () => {

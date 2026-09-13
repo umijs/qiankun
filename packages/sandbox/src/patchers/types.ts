@@ -31,8 +31,10 @@ export interface IsolationPlugin {
   mount?: (context: IsolationPluginContext) => Free | Promise<Free>;
   /**
    * Runs once on terminal disposal, after active Free callbacks and before the Compartment
-   * is disposed. Release caches and retained views here; ordinary unmount keeps them for
-   * remount. Must also tolerate partially completed bootstrap setup.
+   * is disposed. Hooks run in reverse installation order (user plugins last-registered first,
+   * then built-ins), so views owned by earlier plugins stay usable here. Release caches and
+   * retained views here; ordinary unmount keeps them for remount. Must also tolerate partially
+   * completed bootstrap setup.
    */
   dispose?: (context: IsolationPluginContext) => void;
 }
