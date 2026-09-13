@@ -157,7 +157,7 @@ See [Run multiple micro-app instances](/cookbook/run-multiple-instances) for the
 
 `unmount()` retains lifecycle configuration and sandbox state for remounting. `unload()` disposes of those resources. A subsequent `loadMicroApp` with the same name and container element requests the entry and resources again and evaluates the scripts afresh.
 
-Disposal is scoped to an application name and container element. Every old handle sharing that configuration generation becomes invalid, including queued instances. Same-name apps in other containers remain unaffected. Mounted instances run `unmount` first; queued instances are cancelled without waiting for them to mount.
+Disposal is scoped to an application name and container element. Every old handle sharing that configuration generation becomes invalid, including queued instances. Same-name apps in other containers remain unaffected. Mounted instances run `unmount` first; queued instances are cancelled without waiting for them to mount. A `bootstrap`, `mount`, `unmount`, or `update` that has already started cannot be interrupted, so `unload()` waits for it to finish before disposing. An instance cancelled in the middle of mounting completes its compensating unmount and clears the container before the container is handed to the next instance.
 
 ```ts
 import { loadMicroApp, unloadMicroApp } from 'qiankun';

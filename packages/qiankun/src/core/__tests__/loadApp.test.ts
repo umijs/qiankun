@@ -139,6 +139,26 @@ describe('loadApp sandbox cleanup', () => {
     expect(mocks.dispose).toHaveBeenCalledOnce();
   });
 
+  it('does not turn single-spa unload props into the cancellation reason', async () => {
+    mocks.loadEntry.mockResolvedValue(validLifecycles);
+    const pendingFetch = vi.fn(
+      (_input: RequestInfo | URL, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(init.signal?.reason), { once: true });
+        }),
+    );
+    const container = document.createElement('div');
+    const getParcelConfig = await loadApp(createApp(container), { fetch: pendingFetch });
+    const { fetch: ownedFetch } = (mocks.createSandbox.mock.calls[0] as [string, { fetch: typeof fetch }])[1];
+    const request = ownedFetch('https://app.test/background.json').catch((error: unknown) => error);
+    const parcelConfig = getParcelConfig(container);
+    await parcelConfig.unload[0]({ name: 'app', mountParcel: () => undefined });
+
+    const reason = await request;
+    expect(reason).toBeInstanceOf(Error);
+    expect(String(reason)).toContain('has been unloaded');
+  });
+
   it('uses the public sandbox controller and shares its configured transformer with the loader', async () => {
     const controllerNodeTransformer = vi.fn(<T extends Node>(node: T) => node);
     const configuredNodeTransformer = vi.fn(<T extends Node>(node: T) => node);
