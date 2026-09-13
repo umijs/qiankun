@@ -6,7 +6,7 @@ This page covers entry and lifecycle failures. Errors from ordinary UI events or
 
 ## Handle the current instance first
 
-`loadMicroApp` returns before loading and mounting finish. Attach a rejection handler to `mountPromise`, show an error state for that instance, and keep ownership of `unmount()`:
+`loadMicroApp` returns before loading and mounting finish. Attach a rejection handler to `mountPromise`, show an error state for that instance, and retain the handle to call `unload()` when its generation is no longer needed:
 
 ```ts
 import { loadMicroApp } from 'qiankun';
@@ -20,27 +20,24 @@ const microApp = loadMicroApp({
   container,
 });
 
-const mountFinished = microApp.mountPromise
-  .then(() => true)
-  .catch(() => {
-    const message = document.createElement('p');
-    message.setAttribute('role', 'alert');
-    message.textContent = 'This section could not be loaded.';
-    container.replaceChildren(message);
-    return false;
-  });
+let disposed = false;
+void microApp.mountPromise.catch(() => {
+  if (disposed) return;
+  const message = document.createElement('p');
+  message.setAttribute('role', 'alert');
+  message.textContent = 'This section could not be loaded.';
+  container.replaceChildren(message);
+});
 
 export async function disposeMicroApp() {
-  const mounted = await mountFinished;
-  if (mounted) {
-    await microApp.unmount();
-  }
+  disposed = true;
+  await microApp.unload();
 }
 ```
 
-The same pattern can be written with `try` / `await`. The important part is that catching `mountPromise` does not transfer lifecycle ownership: do not discard a successfully mounted handle or remove its container without awaiting `unmount()`.
+Catching `mountPromise` does not transfer lifecycle ownership. When the generation is no longer needed, await `unload()` before removing the container or discarding the handle. The `disposed` flag prevents cancellation rejections from rendering fallback UI again; disposal does not require waiting for queued instances to mount. Use `unmount()` only to remove the view temporarily while retaining the cache.
 
-An `unmount()` rejection should also be handled by the host operation that initiated teardown. Keep the visible message generic and report the original error from the same instance-level error path.
+An `unmount()` or `unload()` rejection should also be handled by the host operation that initiated teardown. Keep the visible message generic and report the original error from the same instance-level error path.
 
 ## Report route-driven application errors globally
 
@@ -91,7 +88,7 @@ Avoid matching private runtime error strings in application logic. Messages may 
 
 qiankun's enhanced fetch has a limited automatic retry budget shared by that fetch wrapper. It does not classify failures as transient, so either a network error or an invalid HTTP response can consume the budget; callers must not assume that every failed request receives a retry. When a request ultimately fails, the corresponding instance promise is rejected. Route-driven application failures also enter the global handler; `loadMicroApp` callers should handle the instance promise directly. Do not add a recursive or unlimited retry loop around `loadMicroApp`.
 
-Offer an additional, user-triggered retry only when the failure may be transient, and wait for the previous `mountPromise` to settle first. Configuration errors—invalid exports, multiple entry scripts, an invalid container, or unresolved ESM dependencies—must be fixed rather than retried. Authentication and gateway requirements belong in a custom [`fetch`](/api/configuration).
+Offer an additional, user-triggered retry only when the failure may be transient, and await `unload()` on the old handle before creating a new instance. This also invalidates other handles sharing that name/container generation; see [loadMicroApp](/api/load-micro-app#unload). Configuration errors—invalid exports, multiple entry scripts, an invalid container, or unresolved ESM dependencies—must be fixed rather than retried. Authentication and gateway requirements belong in a custom [`fetch`](/api/configuration).
 
 ## Preserve production diagnostics
 

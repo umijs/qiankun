@@ -57,7 +57,9 @@ sandbox/
 
 The module engine in `@qiankunjs/shared` is an implementation detail behind `Compartment.import()`, `load()`, and `importDocumentModules()`. Cross-package consumers must depend on the structural Compartment facade, never `EsmSandboxEngine`.
 
-`createSandbox().dispose()` is the terminal owner cleanup: it frees active plugin effects, restores container protocol state, deactivates the sandbox, and idempotently disposes the Compartment. Initial load failures must call it without replacing the original loading error.
+`createSandbox().unmount()` releases active effects and retains rebuilds, module namespaces, and document views for warm remounts. `createSandbox().dispose()` is terminal: it drains pending controller operations, runs active `Free` callbacks, discards rebuilds, invokes plugin `dispose` hooks, signals the transpiled-asset owner terminal (`disposeCompartmentAssets(compartment)` — it handed the compartment to `shared/assets-transpilers` as the owner key, for both the JS-only and DOM presets), and disposes the Compartment. It also restores container protocol state and drops retained controller configuration. Cleanup attempts continue after a failure while preserving the first error. Initial load failures must call this path without replacing the original loading error.
+
+`Compartment.dispose()` cancels pending classic evaluations, removes its generated-script receiver, releases its ESM engine, clears hook/module references, and revokes the global membrane. It does not release transpiled DOM assets (stylesheet cache owners, style/script blobs) keyed by it: that terminal signal belongs to whoever passed the compartment to the asset transpilers — the controller, qiankun's loader on abort, or a direct Compartment user calling `disposeCompartmentAssets` itself. The DOM plugin separately revokes its cached document proxy and clears its ledgers on terminal disposal. Retained global/document proxies cannot be used after disposal; ordinary unmount must keep them available for remount. Import-map release only removes framework bookkeeping and owned script nodes; browser-native registrations cannot be retracted.
 
 `createSandbox(appName)` is the JS-only preset: interval, window-listener, and history cleanup are available without a container. Providing `container` enables dynamic DOM interception; `mount()` prepares standalone containers lazily (`provisionContainerHead`, default `true` — qiankun's loader passes `false` because the entry HTML materializes the head in-stream). The controller keeps **two views of one configured transformer**, split by call-site identity: the public `nodeTransformer` is the pipeline variant — its output is stamped for native passthrough (`core/nativePassthrough.ts`), so patched mount points insert it untouched and it never enters the dynamic ledger — while the dynamic-append patcher receives the bare variant through the plugin config, whose output must NOT carry the mark (re-inserted nodes depend on re-entering the pipeline for ledger bookkeeping).
 
@@ -68,6 +70,7 @@ const plugin: IsolationPlugin = {
   name: 'example',
   bootstrap: (ctx) => installBeforeAppCode(ctx),
   mount: async (ctx) => installForThisMount(ctx),
+  dispose: (ctx) => releaseRetainedPluginState(ctx),
 };
 
 const free = await plugin.mount?.(context);
@@ -79,7 +82,8 @@ if (free) {
 
 - `bootstrap` runs synchronously before any application script is evaluated.
 - `mount` runs on every mount and may asynchronously produce its `Free`.
-- Built-in plugins run in preset order; user plugins run afterward in registration order.
+- `dispose(context): void` is optional and synchronous. It runs once at terminal disposal, after active `Free` callbacks and before Compartment disposal, so cleanup can still use the compartment. Release retained plugin views/caches here; the hook must tolerate partially completed bootstrap setup. It is not called on ordinary unmount.
+- `bootstrap`/`mount`: built-in plugins run in preset order; user plugins run afterward in registration order. Terminal `dispose` hooks run in exactly the reverse order (last user plugin first, built-ins last), so a user hook can still use views a built-in owns (e.g. the dynamicAppend document view) — keep it that way on every terminal path, including bootstrap failure.
 - Prototype-level coordination belongs in browser-realm shared state with refcounts; it is not per-app context state. Use a stable `Symbol.for(...)` slot on `nativeGlobal` when independently bundled qiankun copies must coordinate the same prototype patch.
 - Code under `patchers/**` may use only the public Compartment surface. ESLint forbids imports from membrane internals.
 

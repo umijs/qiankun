@@ -367,6 +367,42 @@ describe('EsmSandboxEngine', () => {
     // every created blob (runtime + inline module + its dependency) is revoked, none leaked
     expect(world.revoked.length).toBeGreaterThanOrEqual(createdCount);
     expect(world.revoked).toHaveLength(revokedCount);
+    expect(readInjectedImports()).toEqual({});
+  });
+
+  it('disposes one engine without removing another engine import maps or runtime bridge', async () => {
+    const first = createWorld({ 'https://a.host/main.js': 'export const value = 1;' });
+    const second = createWorld({ 'https://a.host/main.js': 'export const value = 2;' });
+    await first.engine.import('./main.js');
+    await second.engine.import('./main.js');
+    const staleInstance = first.getInstance();
+    const secondImports = Object.fromEntries(
+      Object.entries(readInjectedImports()).filter(([specifier]) => specifier.startsWith(second.engine.instanceKey)),
+    );
+
+    first.engine.dispose();
+
+    expect(readInjectedImports()).toEqual(secondImports);
+    expect(instanceOf(second.engine.instanceHandle)).toBeDefined();
+    expect(() => staleInstance.view).toThrow('has been disposed');
+    expect(() => staleInstance.resolve('./main.js')).toThrow('has been disposed');
+    await expect(second.engine.import('./main.js')).resolves.toBeDefined();
+    second.engine.dispose();
+    expect(readInjectedImports()).toEqual({});
+  });
+
+  it('rejects an unresolved document entry immediately on disposal', async () => {
+    const importHook: ImportHook = vi.fn(() => new Promise<ModuleDescriptor>(() => {}));
+    const world = createWorld({}, { engine: { importHook } });
+    world.engine.registerDocumentModule({ url: 'https://a.host/main.js', baseUrl: 'https://a.host/', isEntry: true });
+    const entryPromise = world.engine.importDocumentModules();
+    await vi.waitFor(() => expect(importHook).toHaveBeenCalledOnce());
+    const rejection = expect(entryPromise).rejects.toThrow('has been disposed');
+
+    world.engine.dispose();
+
+    await rejection;
+    expect(instanceOf(world.engine.instanceHandle)).toBeUndefined();
   });
 
   it('does not materialize or execute a document module whose import hook settles after dispose', async () => {

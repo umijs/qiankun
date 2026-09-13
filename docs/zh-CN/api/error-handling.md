@@ -52,7 +52,7 @@ void microApp.mountPromise.catch((error: unknown) => {
 });
 ```
 
-应保留 `MicroApp` 句柄，并在移除已挂载的视图时调用 `unmount()`。
+应保留 `MicroApp` 句柄。暂时移除视图时调用 `unmount()`，保留缓存供重新挂载；不再需要该代实例时调用 `unload()`，销毁同名应用在同一容器中的整代实例。
 
 ## 处理器职责
 

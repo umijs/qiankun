@@ -70,8 +70,8 @@ export default function App() {
     });
 
     return () => {
-      void microApp.unmount().catch((error: unknown) => {
-        console.error('Failed to unmount sub-app:', error);
+      void microApp.unload().catch((error: unknown) => {
+        console.error('Failed to dispose of sub-app:', error);
       });
     };
   }, []);
@@ -88,7 +88,7 @@ The application description has three required fields:
 | `entry` | Points to its HTML entry; here, the server on port `7101`. |
 | `container` | The `HTMLElement` that receives the micro-app. |
 
-`loadMicroApp` returns a `MicroApp` handle. Keep that handle for as long as the instance is in use and call `unmount()` during cleanup. This lets qiankun run the micro-app's `unmount` lifecycle and release the instance cleanly. React effect cleanup cannot return a Promise, so the example starts unmounting and attaches a rejection handler; in an async host flow, await `unmount()` before removing the container.
+`loadMicroApp` returns a `MicroApp` handle. During component cleanup, call `unload()` to unmount any mounted app and dispose of the entire name/container generation and its caches. Use `unmount()` to remove the view temporarily while retaining the cache for remounting. React effect cleanup cannot return a Promise, so this example starts disposal and handles rejection; an asynchronous host flow should await `unload()` before removing the container. See [loadMicroApp](/api/load-micro-app#unload).
 
 ## What the micro-app provides
 

@@ -70,8 +70,21 @@ The engine may be imported by the sandbox implementation itself, but do not add 
 ### Higher-order fetch (decorator composition)
 
 ```typescript
-const enhancedFetch = makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)));
+const lifetime = new AbortController();
+const enhancedFetch = makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)), { signal: lifetime.signal });
+// Release this wrapper's cache ownership when the application is permanently unloaded.
+enhancedFetch.invalidate();
 ```
+
+`makeFetchCacheable(fetch, options?: { signal?: AbortSignal })` returns `CacheableFetch`, a callable fetch with `invalidate(): void`. Cache entries are shared by canonical URL and credentials in one LRU(50). A wrapper remembers only the keys it touched plus the downloads it is still waiting on or reading; it never strongly retains finished responses, so LRU eviction still frees them. Invalidation evicts the touched entries by identity (a stale owner cannot remove a newer entry under the same key), cancels this wrapper's pending waits and in-progress body reads, and aborts an underlying request/body only when its last owner releases it. Each caller receives its own body branch: a call-level `init.signal` rejects that caller's wait or body read with the signal's reason, like a raw fetch, without aborting or evicting a download other callers still use. Aborting `options.signal` invalidates the wrapper's ownership and rejects future calls; calling `invalidate()` alone leaves the wrapper reusable for new calls.
+
+### Terminal asset ownership
+
+`disposeCompartmentAssets(owner: object): void` is an idempotent owner-release operation exported through `assets-transpilers/index.ts`. Transpilers key their scope by `opts.compartment ?? opts.fetch`: the scope owns cancellation, pending script callbacks, reusable blob URLs, and registered cleanup callbacks. `attachChildAssetOwner(parent, child)` links a shorter-lived owner to a reusable one. Disposing the parent disposes its children. Disposing a child releases only that child and unregisters it from the parent, so the parent is not poisoned and does not keep released children. The loader uses it for its per-load fetch wrapper when no compartment is given. `link.ts` registers stylesheet-cache cleanup with that scope and revokes shared style blobs only after their last owner releases them. The actual script/style logic stays in `shared/assets-transpilers`; callers only signal that the owner is terminal. Ordinary unmount must preserve this scope for warm remounts.
+
+### Import-map ownership
+
+`injectImportMapEntries(entries, targetDocument?)` returns an idempotent `() => void` release function. The engine retains these functions and invokes them on disposal. Releases decrement entry ownership, drop framework bookkeeping when no owner remains, and remove an injected script once none of its entries remain owned. They cannot retract mappings or modules already registered by the browser. `resetImportMapRegistry()` is a test-only bookkeeping reset, not a runtime unload API.
 
 ### Deferred promise
 
@@ -88,4 +101,4 @@ await d.promise;
 
 ## EXPORTS
 
-`src/index.ts` re-exports everything: `./assets-transpilers`, `./utils`, `./common`, `./module-resolver`, `./reporter`, `./esm-sandbox`, the three `fetch-utils/make*`, and `./deferred-queue`. Notable named exports: `transpileAssets`, the Compartment-shaped module contracts, the internal `EsmSandboxEngine` mechanism, `moduleResolver`, `makeFetchCacheable`, `makeFetchRetryable`, `makeFetchThrowable`, `Deferred`, `QiankunError`, `warn`.
+`src/index.ts` re-exports everything: `./assets-transpilers`, `./utils`, `./common`, `./module-resolver`, `./reporter`, `./esm-sandbox`, the three `fetch-utils/make*`, and `./deferred-queue`. Notable named exports: `transpileAssets`, `disposeCompartmentAssets`, the Compartment-shaped module contracts, the internal `EsmSandboxEngine` mechanism, `moduleResolver`, `makeFetchCacheable`, `CacheableFetch`, `makeFetchRetryable`, `makeFetchThrowable`, `Deferred`, `QiankunError`, `warn`.

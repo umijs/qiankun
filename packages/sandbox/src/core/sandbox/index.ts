@@ -6,6 +6,7 @@ import { nativeDocument, nativeGlobal, qiankunHeadTagName } from '../../consts';
 import { getDefaultIsolationPlugins } from '../../patchers';
 import type { Free, IsolationPlugin, IsolationPluginContext, Rebuild } from '../../patchers/types';
 import {
+  disposeCompartmentAssets,
   QiankunError,
   transpileAssets,
   type ImportHook,
@@ -103,6 +104,92 @@ function releaseSideEffects(frees: readonly Free[]): {
   return { rebuilds, error: firstError };
 }
 
+/**
+ * Terminal hooks run in reverse installation order: a plugin may rely on views owned by plugins
+ * installed before it (user plugins on the built-in document view), so those must outlive it.
+ */
+function disposePlugins(
+  plugins: readonly IsolationPlugin[],
+  context: IsolationPluginContext,
+): CapturedError | undefined {
+  let firstError: CapturedError | undefined;
+  plugins
+    .slice()
+    .reverse()
+    .forEach((plugin) => {
+      try {
+        plugin.dispose?.(context);
+      } catch (error) {
+        firstError ??= { value: error };
+      }
+    });
+  return firstError;
+}
+
+/**
+ * The controller handed this compartment to the asset transpilers as their owner key, so it — not
+ * the Compartment — signals that owner terminal before the Compartment releases its own resources.
+ */
+function disposeCompartment(sandbox: Sandbox): CapturedError | undefined {
+  let firstError: CapturedError | undefined;
+  try {
+    disposeCompartmentAssets(sandbox);
+  } catch (error) {
+    firstError = { value: error };
+  }
+  try {
+    sandbox.dispose();
+  } catch (error) {
+    firstError ??= { value: error };
+  }
+  return firstError;
+}
+
+/** A retained public handle must not retain the private controller's configuration closures. */
+class TerminalSandboxController implements SandboxController {
+  readonly instance: Sandbox;
+
+  readonly styleIsolation: StyleIsolationOpts | undefined;
+
+  private controller: SandboxController | undefined;
+
+  private disposal: Promise<void> | undefined;
+
+  constructor(controller: SandboxController) {
+    this.instance = controller.instance;
+    this.styleIsolation = controller.styleIsolation;
+    this.controller = controller;
+  }
+
+  readonly nodeTransformer: NodeTransformer = (node, opts) => {
+    if (!this.controller) throw this.disposedError();
+    return this.controller.nodeTransformer(node, opts);
+  };
+
+  readonly mount = (container?: HTMLElement): Promise<void> => {
+    return this.controller?.mount(container) ?? Promise.reject(this.disposedError());
+  };
+
+  readonly unmount = (): Promise<void> => {
+    return this.controller?.unmount() ?? Promise.resolve();
+  };
+
+  readonly dispose = (): Promise<void> => {
+    if (this.disposal) return this.disposal;
+    const controller = this.controller;
+    if (!controller) return Promise.resolve();
+    this.controller = undefined;
+    this.disposal = controller.dispose().finally(() => {
+      this.disposal = undefined;
+    });
+    return this.disposal;
+  };
+
+  private disposedError(): TypeError {
+    return new TypeError(`Sandbox container for ${this.instance.name} has been disposed`);
+  }
+}
+
 async function rebuildSideEffects(
   rebuilds: Rebuild[],
   container: HTMLElement | undefined,
@@ -117,6 +204,10 @@ async function rebuildSideEffects(
 
 /** Create a lifecycle controller around the standard browser sandbox preset. */
 export function createSandbox(appName: string, opts: CreateSandboxOptions = {}): SandboxController {
+  return new TerminalSandboxController(createSandboxController(appName, opts));
+}
+
+function createSandboxController(appName: string, opts: CreateSandboxOptions): SandboxController {
   const {
     compartmentOptions = {},
     container: containerOption,
@@ -257,8 +348,10 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
     });
   } catch (error) {
     releaseSideEffects(bootstrappingFrees);
+    disposePlugins(isolationPlugins, pluginContext);
     sandbox.inactive();
-    sandbox.dispose();
+    // Cleanup failures are dropped to preserve the bootstrap failure while still restoring the container protocol.
+    disposeCompartment(sandbox);
     cleanupPreparedContainers();
     throw error;
   }
@@ -316,13 +409,13 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
       bootstrappingFrees.length = 0;
       mountingFrees = [];
 
+      const pluginError = disposePlugins(isolationPlugins, pluginContext);
       sandbox.inactive();
-      sandbox.dispose();
+      const compartmentError = disposeCompartment(sandbox);
       cleanupPreparedContainers();
       mountedContainer = undefined;
       mounted = false;
-
-      const firstError = bootstrappingRelease.error ?? mountingRelease.error;
+      const firstError = bootstrappingRelease.error ?? mountingRelease.error ?? pluginError ?? compartmentError;
       if (firstError) {
         throw firstError.value;
       }
