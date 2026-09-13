@@ -45,6 +45,23 @@ export function disposeCompartmentAssets(owner: object): void {
   if (errors.length) throw errors[0];
 }
 
+/**
+ * Tie a child owner's lifetime to a longer-lived parent owner: disposing the parent disposes the
+ * child, while disposing the child releases only its own assets and unregisters it from the parent,
+ * so a reusable parent (e.g. a shared fetch function) neither gets poisoned nor accumulates children
+ * that were already released. A child attached to a disposed parent is disposed immediately.
+ */
+export function attachChildAssetOwner(parent: object, child: object): void {
+  const parentScope = getAssetScope(parent);
+  if (parentScope.controller.signal.aborted) {
+    disposeCompartmentAssets(child);
+    return;
+  }
+  const disposeChild = () => disposeCompartmentAssets(child);
+  parentScope.cleanups.add(disposeChild);
+  getAssetScope(child).cleanups.add(() => parentScope.cleanups.delete(disposeChild));
+}
+
 /** Reuse placeholders live only as long as their owner, including preload consumers. */
 export function getScopedReusingObjectUrl(
   owner: object,
