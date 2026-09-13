@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type CompartmentModuleFacade } from '../../esm-sandbox';
 import { Deferred } from '../../utils';
 import transpileLink, { clearStylesheetCache, getStylesheetCacheStats } from '../link';
-import transpileScript, { disposeCompartmentAssets } from '../script';
+import transpileScript, { attachChildAssetOwner, disposeCompartmentAssets, getAssetScope } from '../script';
 
 const baseURI = 'https://micro.example/';
 const styleIsolation = { appName: 'app', scopeRoot: '[data-name="app"]' };
@@ -125,6 +125,49 @@ describe('classic asset disposal', () => {
     });
     await vi.waitFor(() => expect(onError).toHaveBeenCalledOnce());
     expect(URL.createObjectURL).not.toHaveBeenCalled();
+  });
+});
+
+describe('child asset owners', () => {
+  const reusedLink = () => {
+    const link = createLink();
+    link.href = `${baseURI}dep.css`;
+    return link;
+  };
+  const moduleResolver = () => ({ name: 'dep', version: '1.0.0', url: 'https://cdn.example/dep.css' });
+
+  it('disposes children with their parent, and a disposed child only unregisters itself', () => {
+    const parent = vi.fn<typeof window.fetch>();
+    const cancelled = vi.fn<typeof window.fetch>();
+    const live = vi.fn<typeof window.fetch>();
+    const baseline = getAssetScope(parent).cleanups.size;
+    attachChildAssetOwner(parent, cancelled);
+    attachChildAssetOwner(parent, live);
+    // disposal strips the link href, keep the owner-scoped blob urls around
+    const cancelledBlob = transpileLink(reusedLink(), baseURI, { fetch: cancelled, moduleResolver }).href;
+    const liveBlob = transpileLink(reusedLink(), baseURI, { fetch: live, moduleResolver }).href;
+
+    disposeCompartmentAssets(cancelled);
+    expect(URL.revokeObjectURL).toHaveBeenCalledExactlyOnceWith(cancelledBlob);
+    expect(getAssetScope(parent).cleanups.size).toBe(baseline + 1);
+    expect(getAssetScope(parent).controller.signal.aborted).toBe(false);
+    expect(() => transpileScript(createScript(), baseURI, { fetch: parent })).not.toThrow();
+
+    disposeCompartmentAssets(parent);
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith(liveBlob);
+    expect(getAssetScope(live).controller.signal.aborted).toBe(true);
+    expect(getAssetScope(parent).cleanups.size).toBe(0);
+  });
+
+  it('disposes a child attached to an already disposed parent', () => {
+    const parent = vi.fn<typeof window.fetch>();
+    const child = vi.fn<typeof window.fetch>();
+    disposeCompartmentAssets(parent);
+
+    attachChildAssetOwner(parent, child);
+    expect(() => transpileScript(createScript(), baseURI, { fetch: child })).toThrow(
+      'The asset owner has been disposed',
+    );
   });
 });
 
