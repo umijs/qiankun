@@ -5,7 +5,13 @@ import type {
   NodeTransformer,
   ScriptTranspilerOpts,
 } from '@qiankunjs/shared';
-import { Deferred, disposeCompartmentAssets, prepareDeferredQueue, QiankunError } from '@qiankunjs/shared';
+import {
+  attachChildAssetOwner,
+  Deferred,
+  disposeCompartmentAssets,
+  prepareDeferredQueue,
+  QiankunError,
+} from '@qiankunjs/shared';
 import { createTagTransformStream } from './TagTransformStream';
 import WritableDOMStream from './writable-dom';
 
@@ -64,28 +70,50 @@ export async function loadEntry<T>(
     ? (source: string, sourceURL?: string) => compartment.transformClassicScript(source, sourceURL)
     : undefined;
 
+  // Without a compartment the caller's fetch may be reused by other loads (window.fetch by default),
+  // so it cannot key this load's assets: cancelling would permanently dispose it for everyone. A
+  // per-load wrapper owns them instead, attached as a child so the caller's terminal
+  // disposeCompartmentAssets(fetch) still releases them.
+  const assetFetch: typeof window.fetch = compartment ? fetch : (...args) => fetch(...args);
+  if (!compartment) attachChildAssetOwner(fetch, assetFetch);
+  const assetOwner = compartment ?? assetFetch;
+
   let domStreamSettledNotified = false;
-  let stopDOMWrites: (() => void) | undefined;
+  let entryLifecycleSettled = false;
+  let cancelPendingWork: (() => void) | undefined;
   const aborted = new Deferred<never>();
   // Abort may happen after the entry lifecycle promise already resolved, while HTML tails stream.
   void aborted.promise.catch(() => undefined);
   const abortable = <V>(promise: Promise<V>): Promise<V> =>
     signal ? Promise.race([promise, aborted.promise]) : promise;
+  // The DOM-write phase and the entry lifecycle promise settle independently in either order (an
+  // async entry script may load after the tail was written), so cancellation stays armed until both.
+  const removeAbortListenerWhenSettled = () => {
+    if (domStreamSettledNotified && entryLifecycleSettled) signal?.removeEventListener('abort', onAbort);
+  };
   const notifyDOMStreamSettled = () => {
     if (domStreamSettledNotified) return;
     domStreamSettledNotified = true;
-    signal?.removeEventListener('abort', onAbort);
-    stopDOMWrites = undefined;
+    removeAbortListenerWhenSettled();
     onDOMStreamSettled?.();
+  };
+  const settleEntryLifecycle = () => {
+    entryLifecycleSettled = true;
+    removeAbortListenerWhenSettled();
+  };
+  // the stream never started (or never got wired), both phases are over at once
+  const settleWithoutStream = () => {
+    settleEntryLifecycle();
+    notifyDOMStreamSettled();
   };
   const onAbort = () => {
     try {
-      stopDOMWrites?.();
+      cancelPendingWork?.();
     } finally {
       // Stop asynchronous asset continuations before signaling settlement. The caller owns the
       // compartment: its controller must free plugins/patchers before revoking that membrane.
       try {
-        disposeCompartmentAssets(compartment ?? fetch);
+        disposeCompartmentAssets(assetOwner);
       } catch {
         // Preserve the cancellation reason; the owner also tears down its sandbox controller.
       }
@@ -120,7 +148,7 @@ export async function loadEntry<T>(
     signal?.throwIfAborted();
   } catch (e) {
     // the stream never started, but the DOM-write phase is over all the same
-    notifyDOMStreamSettled();
+    settleWithoutStream();
     throw e;
   }
 
@@ -161,7 +189,7 @@ export async function loadEntry<T>(
     } catch (e) {
       // wiring the stream failed synchronously (a throwing streamTransformer factory, a locked
       // body from a custom fetch) — the DOM-write phase is over without ever starting
-      notifyDOMStreamSettled();
+      settleWithoutStream();
       throw e;
     }
 
@@ -190,7 +218,7 @@ export async function loadEntry<T>(
           let transformerOpts: AssetsTranspilerOpts = {
             classicScriptTransformer,
             compartment,
-            fetch,
+            fetch: assetFetch,
           };
 
           let queueDeferScript: () => void = () => {};
@@ -351,7 +379,9 @@ export async function loadEntry<T>(
       })
       .finally(notifyDOMStreamSettled);
 
-    return abortable(entryScriptLoadedDeferred.promise);
+    const entryLifecycle = abortable(entryScriptLoadedDeferred.promise);
+    void entryLifecycle.then(settleEntryLifecycle, settleEntryLifecycle);
+    return entryLifecycle;
 
     function createAbortableDOMStream(
       target: HTMLElement,
@@ -360,7 +390,9 @@ export async function loadEntry<T>(
       // Use the fork's existing sink API. Its close waits for blocking assets; wrapping that
       // promise lets cancellation settle even if a script never dispatches load or error.
       const sink = WritableDOMStream(target, null, transform);
-      stopDOMWrites = () => {
+      // Also reachable after the DOM stream settled, while an async entry script is still pending:
+      // its handlers must be disarmed then too, but the finished sink is left alone.
+      cancelPendingWork = () => {
         for (const asset of pendingAssets) {
           asset.onload = asset.onerror = null;
           asset.remove();
@@ -371,7 +403,7 @@ export async function loadEntry<T>(
         }
         pendingAssets.clear();
         for (const finish of finishDeferExecutions) finish();
-        sink.abort(new DOMException('Entry loading aborted', 'AbortError'));
+        if (!domStreamSettledNotified) sink.abort(new DOMException('Entry loading aborted', 'AbortError'));
       };
       return new WritableStream<string>({
         write(chunk) {
@@ -379,11 +411,11 @@ export async function loadEntry<T>(
           sink.write(chunk);
         },
         close: () => abortable(sink.close()),
-        abort: () => stopDOMWrites?.(),
+        abort: () => cancelPendingWork?.(),
       });
     }
   }
 
-  notifyDOMStreamSettled();
+  settleWithoutStream();
   throw new QiankunError(`The response body of entry ${entryUrl} is empty!`, 'entry-body-missing');
 }
