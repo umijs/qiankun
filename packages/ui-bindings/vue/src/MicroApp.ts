@@ -217,7 +217,7 @@ export const MicroApp = defineComponent({
     });
 
     // The container is rendered before the slots on purpose: qiankun keys its parcel cache and its
-    // same-container serialization on the container's XPath, which counts same-tag siblings before
+    // same-container serialization on the container element identity, so same-tag siblings before
     // the element, so a conditionally rendered loader would split one app across two cache keys.
     return this.autoSetLoading || this.autoCaptureError || loaderSlot || errorBoundarySlot
       ? h(
