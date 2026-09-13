@@ -10,10 +10,13 @@ interface Instance {
   parcel?: Parcel;
   config?: ParcelConfigObject;
   props: ObjectType;
-  mountTask?: Promise<void>;
-  operation?: Promise<unknown>;
-  unmountTask?: Promise<void>;
-  updateTask?: Promise<unknown>;
+  /**
+   * Every operation requested through the handle or already entered by single-spa, mapped to
+   * whether its failure is a teardown failure that unload must report. Unload drains them all.
+   */
+  operations: Map<Promise<unknown>, boolean>;
+  /** The public mount in flight, so a repeated request joins it instead of queueing twice. */
+  mounting?: Promise<null>;
   active: boolean;
   done: Deferred<void>;
 }
@@ -46,6 +49,14 @@ function untilStopped<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
   return observed(withAbortSignal(promise, signal));
 }
 
+function track<T>(instance: Instance, operation: Promise<T>, teardown = false): Promise<T> {
+  instance.operations.set(operation, teardown);
+  // Registered before any drain awaits the operation, so a settled one is gone by then.
+  const settle = () => instance.operations.delete(operation);
+  void operation.then(settle, settle);
+  return operation;
+}
+
 function finish(instance: Instance, generation: Generation): void {
   instance.active = false;
   instance.done.resolve();
@@ -64,37 +75,36 @@ function unloadGeneration(generation: Generation): Promise<void> {
   generation.evict();
   generation.evict = () => {};
   generation.stopped.abort(unloadedError(generation.name));
+  // Framework waits (container gate, entry streaming, HTML replay) cancel right away. Entered
+  // application lifecycles cannot be pre-empted, so they are drained below instead.
+  generation.loading.abort(generation.stopped.signal.reason);
   generation.unloading = (async () => {
     let failure: unknown;
     try {
       for (const instance of generation.instances) {
         const parcel = instance.parcel;
         if (!parcel) continue;
-        if (instance.updateTask) await instance.updateTask.catch(() => undefined);
-        if (instance.mountTask) {
-          // The chain may still be waiting at loadApp's container gate or HTML replay.
-          // Abort those waits before draining a started mount and its failure cleanup.
-          generation.loading.abort(generation.stopped.signal.reason);
-          await instance.operation?.catch(() => undefined);
-        }
-        if (instance.unmountTask) {
-          await instance.unmountTask.catch((error: unknown) => {
-            failure ??= error;
+        // An entered bootstrap, a same-tick public unmount, or a retired handle's remount still
+        // owns the sandbox and container. Teardown starts only after all of them settle; queued
+        // siblings settle promptly because their predecessor waits observe the stopped signal.
+        while (instance.operations.size) {
+          const pending = [...instance.operations];
+          const results = await Promise.allSettled(pending.map(([operation]) => operation));
+          results.forEach((result, index) => {
+            if (result.status === 'rejected' && pending[index][1]) failure ??= result.reason;
           });
-        } else if (parcel.getStatus() === AppOrParcelStatus.MOUNTED) {
+        }
+        // A cancelled mount resolves as a no-op MOUNTED parcel; unmount it so single-spa drops
+        // it from the root parcel registry.
+        if (parcel.getStatus() === AppOrParcelStatus.MOUNTED) {
           try {
             await parcel.unmount();
           } catch (error) {
             failure ??= error;
           }
-        } else if (!instance.active) {
-          // A cancelled queued parcel completes its no-op mount, then removes itself from
-          // single-spa's root parcel registry. Do not wait for its mountPromise here.
-          void parcel.mountPromise.then(() => parcel.unmount()).catch(() => undefined);
         }
       }
     } finally {
-      generation.loading.abort(generation.stopped.signal.reason);
       try {
         await generation.dispose?.();
       } catch (error) {
@@ -104,7 +114,8 @@ function unloadGeneration(generation: Generation): Promise<void> {
           finish(instance, generation);
           instance.config = undefined;
           instance.parcel = undefined;
-          instance.operation = undefined;
+          instance.mounting = undefined;
+          instance.operations.clear();
           for (const key of Object.keys(instance.props)) delete instance.props[key];
         }
         generation.instances.clear();
@@ -167,7 +178,7 @@ export function loadMicroApp<T extends ObjectType>(
 }
 
 function createHandle(generation: Generation, container: HTMLElement, props: ObjectType, cached: boolean): MicroApp {
-  const instance: Instance = { props, active: false, done: new Deferred<void>() };
+  const instance: Instance = { props, operations: new Map(), active: false, done: new Deferred<void>() };
   generation.instances.add(instance);
   generation.queue.push(instance);
   const { signal } = generation.stopped;
@@ -181,29 +192,21 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
         if (!cached && !signal.aborted) await invoke(instance.config?.bootstrap, hookProps);
       },
       mount: async (hookProps) => {
-        try {
-          // Cached getters share an adoptable load hold. Serialize same-generation mounts
-          // before entering loadApp, including remounts through previously retained handles.
-          const predecessors = generation.queue.slice(0, generation.queue.indexOf(instance));
-          await untilStopped(Promise.all(predecessors.map((previous) => previous.done.promise)), signal);
-        } catch {
-          if (!signal.aborted) throw new QiankunError(`App ${generation.name} failed waiting for its container`);
-        }
+        // Cached getters share an adoptable load hold. Serialize same-generation mounts before
+        // entering loadApp, including remounts through previously retained handles. `done` only
+        // resolves, so this wait can end early solely through unload.
+        const predecessors = generation.queue.slice(0, generation.queue.indexOf(instance));
+        await untilStopped(Promise.all(predecessors.map((previous) => previous.done.promise)), signal).catch(
+          () => undefined,
+        );
         if (signal.aborted) return;
         instance.active = true;
-        instance.mountTask = invoke(instance.config?.mount, hookProps);
-        try {
-          await instance.mountTask;
-        } finally {
-          instance.mountTask = undefined;
-        }
+        await invoke(instance.config?.mount, hookProps);
       },
       unmount: async (hookProps) => {
-        instance.unmountTask = instance.active ? invoke(instance.config?.unmount, hookProps) : Promise.resolve();
         try {
-          await instance.unmountTask;
+          if (instance.active) await invoke(instance.config?.unmount, hookProps);
         } finally {
-          instance.unmountTask = undefined;
           finish(instance, generation);
         }
       },
@@ -218,7 +221,8 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
     };
   }, props);
   instance.parcel = parcel;
-  instance.operation = parcel.mountPromise;
+  // The initial chain covers an entered bootstrap, which unload must wait for as well.
+  void track(instance, parcel.mountPromise);
   // Failed initial loads and mounts must not leave a predecessor in the queue forever.
   void parcel.mountPromise.catch(() => finish(instance, generation));
   void observed(parcel.loadPromise);
@@ -236,27 +240,25 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
     unmountPromise: observed(parcel.unmountPromise),
     mount: async () => {
       signal.throwIfAborted();
-      if (instance.parcel!.getStatus() === AppOrParcelStatus.NOT_MOUNTED) {
+      if (instance.mounting) return instance.mounting;
+      if (instance.parcel!.getStatus() === AppOrParcelStatus.NOT_MOUNTED && !generation.queue.includes(instance)) {
         instance.done = new Deferred<void>();
         generation.queue.push(instance);
       }
-      const operation = instance.parcel!.mount();
-      instance.operation = operation;
+      const operation = track(instance, instance.parcel!.mount());
+      instance.mounting = operation;
+      const settle = () => {
+        if (instance.mounting === operation) instance.mounting = undefined;
+      };
+      void operation.then(settle, settle);
       return operation;
     },
-    unmount: () => (signal.aborted ? Promise.resolve(null) : instance.parcel!.unmount()),
+    unmount: () => (signal.aborted ? Promise.resolve(null) : track(instance, instance.parcel!.unmount(), true)),
     get update() {
       return instance.parcel?.update
         ? (nextProps: ObjectType) => {
             if (signal.aborted) return Promise.reject(unloadedError(generation.name));
-            const operation: Promise<unknown> = instance.parcel!.update!(nextProps);
-            instance.updateTask = operation;
-            void operation
-              .finally(() => {
-                if (instance.updateTask === operation) instance.updateTask = undefined;
-              })
-              .catch(() => undefined);
-            return operation;
+            return observed(track(instance, instance.parcel!.update!(nextProps)));
           }
         : undefined;
     },
