@@ -364,6 +364,11 @@ export default async function loadApp<T extends ObjectType>(
               // entered user lifecycle must finish before its container can be handed over.
               return await hook(...args);
             } catch (error) {
+              // A mount cancelled after acquiring ② keeps it: single-spa's compensating unmount
+              // runs the whole unmount chain, whose last step clears the container and releases
+              // the hold. Releasing here would let a successor in before that cleanup, which
+              // would then either leave the entry DOM behind or wipe the successor's DOM.
+              if (cancelOnAbort && signal.aborted && mountHold?.held) throw error;
               // Tear the sandbox down while still holding ② — a broken chain never reaches its
               // own unmountSandbox step, and the container must not enter a successor's tenure
               // with the dead app's instance-method patches and mount-point tag still on it.
@@ -504,7 +509,8 @@ export default async function loadApp<T extends ObjectType>(
       // Registered-application unload = the app is fully torn down (not just deactivated), the
       // right time to release the Compartment module mechanism and blob URLs. Root parcels ignore
       // this extra lifecycle and keep the same module namespaces across their remount cache.
-      unload: [dispose],
+      // single-spa passes lifecycle props here, which must not become the cancellation reason.
+      unload: [() => dispose()],
     };
 
     // Both chains stop at their first rejection, so every hook gets the failure fallback — done
