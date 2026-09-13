@@ -100,7 +100,7 @@ describe('MicroApp', () => {
 
     const wrapper = host.querySelector('.qiankun-micro-app-wrapper')!;
     const divs = Array.from(wrapper.children).filter((child) => child.tagName === 'DIV');
-    // qiankun keys its per-container caches on the container's XPath, which counts same-tag
+    // qiankun keys its per-container caches on the container element identity, so same-tag
     // siblings before it — the container must not move when a slot appears or disappears
     expect(divs[0].classList.contains('qiankun-micro-app-container')).toBe(true);
   });
