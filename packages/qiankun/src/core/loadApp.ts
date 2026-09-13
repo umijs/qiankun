@@ -70,7 +70,8 @@ export default async function loadApp<T extends ObjectType>(
     ...compartmentHooks
   } = sandboxConfiguration;
 
-  const enhancedFetch = makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)));
+  const resourceFetch = makeFetchRetryable(makeFetchThrowable(fetch));
+  const enhancedFetch = makeFetchCacheable(resourceFetch);
 
   const markName = `[qiankun] App ${appName} Loading`;
   if (process.env.NODE_ENV === 'development') {
@@ -141,6 +142,7 @@ export default async function loadApp<T extends ObjectType>(
         globals,
         incubatorContext,
         fetch: enhancedFetch,
+        moduleFetch: makeFetchCacheable(resourceFetch, 'modules'),
         nodeTransformer,
         plugins,
         styleIsolation: styleIsolationEnabled,

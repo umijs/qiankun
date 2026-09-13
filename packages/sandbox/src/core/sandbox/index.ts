@@ -51,6 +51,8 @@ export interface CreateSandboxOptions {
    */
   styleIsolation?: boolean;
   fetch?: typeof window.fetch;
+  /** Optional module-source transport; defaults to the shared asset fetch above. */
+  moduleFetch?: typeof window.fetch;
   nodeTransformer?: NodeTransformer;
   /**
    * Lower-level Compartment host configuration. Promoted top-level options take
@@ -121,6 +123,7 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
     compartmentOptions = {},
     container: containerOption,
     fetch: configuredFetch,
+    moduleFetch,
     globals = {},
     importHook: topLevelImportHook,
     incubatorContext = nativeGlobal,
@@ -191,7 +194,7 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
     resolveHook,
     moduleHost: {
       ...compartmentOptions.moduleHost,
-      fetch,
+      fetch: moduleFetch ?? fetch,
     },
   };
 

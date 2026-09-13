@@ -84,6 +84,33 @@ describe('isolation plugin lifecycle', () => {
     await controller.unmount();
   });
 
+  it.each([false, true])('selects the module fetch separately when explicitly configured: %s', async (separate) => {
+    const assetFetch = vi.fn(async () => new Response('export {};'));
+    const moduleFetch = vi.fn(async () => new Response('export {};'));
+    const controller = createSandbox(`module-fetch-${String(appSequence++)}`, {
+      fetch: assetFetch,
+      moduleFetch: separate ? moduleFetch : undefined,
+      compartmentOptions: {
+        moduleHost: {
+          entryUrl: 'https://module-fetch.test/',
+          createModuleUrl: () => 'blob:module-fetch-test',
+          revokeModuleUrl: () => {},
+        },
+      },
+      nodeTransformer: (node, options) => {
+        expect(options.fetch).toBe(assetFetch);
+        return node;
+      },
+    });
+    createdCompartments.push(controller.instance);
+    controller.nodeTransformer(document.createElement('script'), { fetch: assetFetch });
+    await controller.instance.load('./module.js');
+
+    expect(separate ? moduleFetch : assetFetch).toHaveBeenCalledOnce();
+    expect(separate ? assetFetch : moduleFetch).not.toHaveBeenCalled();
+    await controller.dispose();
+  });
+
   it('awaits async mount hooks sequentially', async () => {
     const events: string[] = [];
     let resolveFirstMount: (free: Free) => void = () => {

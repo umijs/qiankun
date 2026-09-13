@@ -4,6 +4,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LoaderOpts } from '@qiankunjs/loader';
 import { isNativePassthroughNode, nativeGlobal } from '@qiankunjs/sandbox';
+import type { ParcelConfigObject } from '@qiankunjs/single-spa';
 import { createSandbox as createRealSandbox } from '../../../../sandbox/src/core/sandbox';
 
 const mocks = vi.hoisted(() => ({
@@ -190,6 +191,45 @@ describe('loadApp sandbox cleanup', () => {
       container,
       expect.objectContaining({ nodeTransformer: controllerNodeTransformer }),
     );
+  });
+
+  it('reuses a 270-module graph across live instances without evicting entry or stylesheet responses', async () => {
+    const baseUrl = 'https://module-cache.test/';
+    const entry = `${baseUrl}index.html`;
+    const stylesheet = `${baseUrl}style.css`;
+    const moduleUrls = Array.from({ length: 270 }, (_, i) => `${baseUrl}${i}.js`);
+    const graph = moduleUrls
+      .slice(1)
+      .map((url) => `import '${url}';`)
+      .join('\n');
+    const fetch = vi.fn(
+      async (input: RequestInfo | URL) =>
+        new Response(String(input) === moduleUrls[0] ? graph : 'export {};', { status: 200 }),
+    );
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:module-cache-test');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    mocks.createSandbox.mockImplementation(createRealSandbox);
+    mocks.loadEntry.mockImplementation(async (_entry: string, _container: HTMLElement, opts: LoaderOpts) => {
+      if (!opts.fetch || !opts.compartment) throw new Error('missing loader inputs');
+      await Promise.all([opts.fetch(entry), opts.fetch(stylesheet)]);
+      await opts.compartment.load(moduleUrls[0]);
+      return validLifecycles;
+    });
+
+    const parcelConfigs: ParcelConfigObject[] = [];
+    for (let instance = 0; instance < 2; instance++) {
+      const container = document.createElement('div');
+      const getParcelConfig = await loadApp({ ...createApp(container), entry }, { fetch });
+      parcelConfigs.push(getParcelConfig(container));
+    }
+
+    // Both instances are still loaded: the second one links its own graph, but performs no new downloads.
+    expect(fetch).toHaveBeenCalledTimes(272);
+    for (const url of [entry, stylesheet, ...moduleUrls]) {
+      expect(fetch.mock.calls.filter(([input]) => String(input) === url)).toHaveLength(1);
+    }
+
+    await Promise.all(parcelConfigs.map((parcelConfig) => parcelConfig.unload[0]()));
   });
 
   it('marks sandbox-less streamed nodes for native passthrough', async () => {
