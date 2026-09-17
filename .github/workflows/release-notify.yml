@@ -4,12 +4,15 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: read
+
 jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
       - name: Send DingGroup1 Notify
-        uses: zcong1993/actions-ding@master
+        uses: zcong1993/actions-ding@d4587a67d30b6bf767cd4ed338d17d7237c18a74 # master
         with:
           dingToken: ${{ secrets.DING_GROUP_1_TOKEN }}
           secret: ${{ secrets.DING_GROUP_1_SIGN }}
@@ -23,7 +26,7 @@ jobs:
             }
 
       - name: Send DingGroup2 Notify
-        uses: zcong1993/actions-ding@master
+        uses: zcong1993/actions-ding@d4587a67d30b6bf767cd4ed338d17d7237c18a74 # master
         with:
           dingToken: ${{ secrets.DING_GROUP_2_TOKEN }}
           secret: ${{ secrets.DING_GROUP_2_SIGN }}
@@ -37,7 +40,7 @@ jobs:
             }
 
       - name: Send DingGroup3 Notify
-        uses: zcong1993/actions-ding@master
+        uses: zcong1993/actions-ding@d4587a67d30b6bf767cd4ed338d17d7237c18a74 # master
         with:
           dingToken: ${{ secrets.DING_GROUP_3_TOKEN }}
           secret: ${{ secrets.DING_GROUP_3_SIGN }}
@@ -51,7 +54,7 @@ jobs:
             }
 
       - name: Send DingGroup4 Notify
-        uses: zcong1993/actions-ding@master
+        uses: zcong1993/actions-ding@d4587a67d30b6bf767cd4ed338d17d7237c18a74 # master
         with:
           dingToken: ${{ secrets.DING_GROUP_4_TOKEN }}
           secret: ${{ secrets.DING_GROUP_4_SIGN }}
@@ -65,7 +68,7 @@ jobs:
             }
 
       - name: Send DingGroup5 Notify
-        uses: zcong1993/actions-ding@master
+        uses: zcong1993/actions-ding@d4587a67d30b6bf767cd4ed338d17d7237c18a74 # master
         with:
           dingToken: ${{ secrets.DING_GROUP_5_TOKEN }}
           secret: ${{ secrets.DING_GROUP_5_SIGN }}
@@ -79,7 +82,7 @@ jobs:
             }
 
       - name: Send DingGroup6 Notify
-        uses: zcong1993/actions-ding@master
+        uses: zcong1993/actions-ding@d4587a67d30b6bf767cd4ed338d17d7237c18a74 # master
         with:
           dingToken: ${{ secrets.DING_GROUP_6_TOKEN }}
           secret: ${{ secrets.DING_GROUP_6_SIGN }}
@@ -93,7 +96,7 @@ jobs:
             }
 
       - name: Send DingGroup7 Notify
-        uses: zcong1993/actions-ding@master
+        uses: zcong1993/actions-ding@d4587a67d30b6bf767cd4ed338d17d7237c18a74 # master
         with:
           dingToken: ${{ secrets.DING_GROUP_7_TOKEN }}
           secret: ${{ secrets.DING_GROUP_7_SIGN }}
@@ -107,7 +110,7 @@ jobs:
             }
 
       - name: Send DingGroupInc Notify
-        uses: zcong1993/actions-ding@master
+        uses: zcong1993/actions-ding@d4587a67d30b6bf767cd4ed338d17d7237c18a74 # master
         with:
           dingToken: ${{ secrets.DING_GROUP_INC_TOKEN }}
           secret: ${{ secrets.DING_GROUP_INC_SIGN }}
