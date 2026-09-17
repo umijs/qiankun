@@ -1,6 +1,6 @@
 {
   "name": "@qiankunjs/loader",
-  "version": "0.1.0-rc.22",
+  "version": "0.1.0-rc.23",
   "description": "Streaming HTML-entry loader for qiankun",
   "repository": {
     "type": "git",
