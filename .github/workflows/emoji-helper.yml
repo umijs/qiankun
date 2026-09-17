@@ -4,11 +4,20 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: write
+
 jobs:
   emoji:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions-cool/emoji-helper@v1.0.0
+      - uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
-          type: "release"
-          emoji: "+1, laugh, heart, hooray, rocket, eyes"
+          script: |
+            for (const content of ['+1', 'laugh', 'heart', 'hooray', 'rocket', 'eyes']) {
+              await github.rest.reactions.createForRelease({
+                ...context.repo,
+                release_id: context.payload.release.id,
+                content,
+              });
+            }
