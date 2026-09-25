@@ -23,6 +23,11 @@ interface Instance {
   lifecycle: Promise<unknown>;
   /** The latest lifecycle request; the initial mount counts as one. */
   lastRequest: 'mount' | 'unmount';
+  /**
+   * Why the latest mount attempt failed (its load, bootstrap or mount), cleared once a mount
+   * succeeds. An unmount with nothing to unmount carries it as the cause.
+   */
+  failure?: unknown;
   active: boolean;
   done: Deferred<void>;
   /** Tick of the latest unmount requested through the handle, to order draining generations. */
@@ -136,6 +141,14 @@ function findGeneration(name: string, entry: string, container: HTMLElement): Ge
 
 function unloadedError(name: string): QiankunError {
   return new QiankunError(`App ${name} has been unloaded; call loadMicroApp to create a new instance`, 'app-unloaded');
+}
+
+function notMountedError(name: string, failure: unknown): QiankunError {
+  return new QiankunError(
+    `App ${name} is not mounted, so there is nothing to unmount`,
+    'app-not-mounted',
+    failure === undefined ? undefined : { cause: failure },
+  );
 }
 
 /** Observe internal parcel promises while preserving their rejection for callers. */
@@ -382,6 +395,7 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
         instance.active = true;
         try {
           await invoke(instance.config?.mount, hookProps);
+          instance.failure = undefined;
         } catch (error) {
           // Unload cancels the framework waits inside the mount chain. Resolve as a no-op mount
           // instead of failing: unload unmounts the MOUNTED parcel right after, which clears the
@@ -389,6 +403,7 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
           // an application error.
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- unload aborts it meanwhile
           if (signal.aborted) return;
+          instance.failure = error;
           throw error;
         }
       },
@@ -414,7 +429,10 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
   // The initial chain covers an entered bootstrap, which unload must wait for as well.
   void track(instance, generation, parcel.mountPromise);
   // Failed initial loads and mounts must not leave a predecessor in the queue forever.
-  void parcel.mountPromise.catch(() => finish(instance, generation));
+  void parcel.mountPromise.catch((error: unknown) => {
+    instance.failure = error;
+    finish(instance, generation);
+  });
   void observed(parcel.loadPromise);
   void observed(parcel.bootstrapPromise);
   void observed(parcel.unmountPromise);
@@ -428,29 +446,45 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
     bootstrapPromise: untilStopped(parcel.bootstrapPromise, signal),
     mountPromise: untilStopped(parcel.mountPromise, signal),
     unmountPromise: observed(parcel.unmountPromise),
+    // Every request that cannot do what it was asked rejects, so a caller always learns about it.
     mount: async () => {
-      signal.throwIfAborted();
+      if (signal.aborted) throw unloadedError(generation.name);
       // Queued right away so the turn follows call order; an unmount still ahead of this request
       // takes the instance out again, and it rejoins once that unmount is done.
       rejoin(instance, generation);
       return request(instance, generation, 'mount', async () => {
-        // Unloaded before its turn: cancelled like a remount waiting inside the mount chain.
-        if (signal.aborted || instance.parcel!.getStatus() === AppOrParcelStatus.MOUNTED) return null;
+        if (signal.aborted) throw unloadedError(generation.name);
+        if (instance.parcel!.getStatus() === AppOrParcelStatus.MOUNTED) {
+          throw new QiankunError(`App ${generation.name} is already mounted`, 'app-already-mounted');
+        }
         rejoin(instance, generation);
-        return instance.parcel!.mount();
+        await instance.parcel!.mount();
+        // A remount that unload cancelled, or that failed: single-spa reports the failure to its
+        // error handlers and resolves, so it is surfaced here as well.
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- unload aborts it meanwhile
+        if (signal.aborted) throw unloadedError(generation.name);
+        if (instance.parcel!.getStatus() !== AppOrParcelStatus.MOUNTED) throw instance.failure;
+        return null;
       });
     },
     // Accepted while a mount is still in flight: it is recorded right away and runs once that mount
-    // settles. Unload tears down whatever is left, and a parcel that is not mounted (its mount
-    // failed, or an earlier unmount already ran) has nothing to undo.
+    // settles. A request that unload overtakes is carried out by unload; one that finds nothing
+    // mounted rejects, with the failed mount as the cause when that is the reason.
     unmount: () => {
-      if (signal.aborted) return Promise.resolve(null);
+      if (signal.aborted) return Promise.reject(unloadedError(generation.name));
       instance.unmountRequestedAt = ++idleTick;
-      return request(instance, generation, 'unmount', async () =>
-        signal.aborted || instance.parcel!.getStatus() !== AppOrParcelStatus.MOUNTED
-          ? null
-          : instance.parcel!.unmount(),
-      );
+      let handedToUnload = false;
+      const operation = request(instance, generation, 'unmount', async () => {
+        if (signal.aborted) {
+          handedToUnload = true;
+          return null;
+        }
+        if (instance.parcel!.getStatus() !== AppOrParcelStatus.MOUNTED) {
+          throw notMountedError(generation.name, instance.failure);
+        }
+        return instance.parcel!.unmount();
+      });
+      return operation.then((result) => (handedToUnload ? generation.unloading!.then(() => null) : result));
     },
     get update() {
       return instance.parcel?.update

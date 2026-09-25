@@ -21,6 +21,15 @@ describe('QiankunError', () => {
     expect(error.stack).toContain(error.message);
   });
 
+  it('carries the failure it stems from as a non-enumerable cause', () => {
+    const failure = new Error('mount failed');
+    const error = new QiankunError('App app is not mounted', 'app-not-mounted', { cause: failure });
+
+    expect(error.cause).toBe(failure);
+    expect(Object.keys(error)).not.toContain('cause');
+    expect('cause' in new QiankunError('App app is not mounted', 'app-not-mounted')).toBe(false);
+  });
+
   it.each(errorDocs)('documents every error code under $linkPrefix', ({ dir, linkPrefix }) => {
     const codes = [...qiankunErrorCodes].sort();
     const pages = readdirSync(dir)

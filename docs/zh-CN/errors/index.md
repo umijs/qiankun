@@ -59,3 +59,5 @@ declare class QiankunError extends Error {
 - [app-unloaded：微应用已销毁](/zh-CN/errors/app-unloaded)
 - [app-teardown-failed：微应用清理失败](/zh-CN/errors/app-teardown-failed)
 - [sandbox-mount-conflict：沙箱挂载状态冲突](/zh-CN/errors/sandbox-mount-conflict)
+- [app-not-mounted：微应用未挂载](/zh-CN/errors/app-not-mounted)
+- [app-already-mounted：微应用已挂载](/zh-CN/errors/app-already-mounted)

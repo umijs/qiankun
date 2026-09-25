@@ -6,6 +6,7 @@ import { Deferred } from '@qiankunjs/shared';
 import { addErrorHandler, AppOrParcelStatus, type ParcelConfigObject, removeErrorHandler } from '@qiankunjs/single-spa';
 import { type LoadAppControl, type ParcelConfigObjectGetter } from '../../core/loadApp';
 import { type MicroApp } from '../../types';
+import { type QiankunError } from '../../error';
 
 const mocks = vi.hoisted(() => ({ loadApp: vi.fn(), dispose: vi.fn(async () => {}) }));
 vi.mock('../../core/loadApp', () => ({ default: mocks.loadApp }));
@@ -276,7 +277,7 @@ describe('loadMicroApp instance reuse', () => {
     expect(mount.mock.calls).toEqual([[{ container: former }], [{ container: next }]]);
   });
 
-  it('settles an unmount requested during a mount that fails, and the newcomer still mounts', async () => {
+  it('rejects an unmount requested during a mount that fails, citing that failure', async () => {
     const mounting = new Deferred<void>();
     mount.mockImplementationOnce(() => mounting.promise);
     const [former, next] = containers(2);
@@ -287,9 +288,16 @@ describe('loadMicroApp instance reuse', () => {
     const second = load(next);
 
     mounting.reject(new Error('mount failed'));
-    await expect(first.mountPromise).rejects.toThrow('mount failed');
-    // Nothing was mounted, so there is nothing to unmount.
-    await expect(firstUnmount).resolves.toBeNull();
+    const mountFailure = await first.mountPromise.then(
+      () => undefined,
+      (error: unknown) => error,
+    );
+    expect(mountFailure).toBeInstanceOf(Error);
+    // Nothing was mounted, so there is nothing to unmount; the cause is the failure already reported.
+    const unmountFailure = (await firstUnmount.catch((error: unknown) => error)) as QiankunError;
+    expect(unmountFailure.code).toBe('app-not-mounted');
+    expect(unmountFailure.cause).toBe(mountFailure);
+    // The newcomer that queued behind the draining instance still mounts.
     await second.mountPromise;
     // Only single-spa's own cleanup of the failed mount; the request adds no second unmount.
     expect(unmount).toHaveBeenCalledTimes(1);
@@ -316,7 +324,7 @@ describe('loadMicroApp instance reuse', () => {
     expect(first.getStatus()).toBe(AppOrParcelStatus.NOT_LOADED);
   });
 
-  it('applies interleaved mount and unmount requests in order so the last one wins', async () => {
+  it('runs interleaved mount and unmount requests in call order', async () => {
     const mounting = new Deferred<void>();
     mount.mockImplementationOnce(() => mounting.promise);
     const [container] = containers(1);
@@ -324,18 +332,51 @@ describe('loadMicroApp instance reuse', () => {
     await app.bootstrapPromise;
     await vi.waitFor(() => expect(mount).toHaveBeenCalledTimes(1));
 
-    // mount → unmount → mount while the first mount is still in flight ends mounted.
-    const requests = [app.mount(), app.unmount(), app.mount()];
+    // The first mount() finds the initial mount already done; the unmount and remount follow it.
+    const requests = Promise.allSettled([app.mount(), app.unmount(), app.mount()]);
     mounting.resolve();
-    await Promise.all(requests);
+    const [repeated, unmounted, remounted] = await requests;
+    expect(repeated).toMatchObject({ status: 'rejected', reason: { code: 'app-already-mounted' } });
+    expect(unmounted.status).toBe('fulfilled');
+    expect(remounted.status).toBe('fulfilled');
     expect(app.getStatus()).toBe(AppOrParcelStatus.MOUNTED);
     expect(mount).toHaveBeenCalledTimes(2);
     expect(unmount).toHaveBeenCalledTimes(1);
 
-    // Repeated unmounts tear down once.
-    await Promise.all([app.unmount(), app.unmount()]);
-    expect(app.getStatus()).toBe(AppOrParcelStatus.NOT_MOUNTED);
+    // A second unmount has nothing left to do and says so instead of passing silently.
+    const [first, second] = await Promise.allSettled([app.unmount(), app.unmount()]);
+    expect(first.status).toBe('fulfilled');
+    expect(second).toMatchObject({ status: 'rejected', reason: { code: 'app-not-mounted' } });
+    expect((second as PromiseRejectedResult).reason).not.toHaveProperty('cause');
     expect(unmount).toHaveBeenCalledTimes(2);
+
+    // mount → unmount → mount on the retained handle takes effect one request at a time.
+    await Promise.all([app.mount(), app.unmount(), app.mount()]);
+    expect(app.getStatus()).toBe(AppOrParcelStatus.MOUNTED);
+    expect(mount).toHaveBeenCalledTimes(4);
+    expect(unmount).toHaveBeenCalledTimes(3);
+  });
+
+  it('rejects a failed remount and cites it when the next unmount finds nothing mounted', async () => {
+    const errors = vi.fn();
+    addErrorHandler(errors);
+    try {
+      const [container] = containers(1);
+      const app = load(container);
+      await app.mountPromise;
+      await app.unmount();
+
+      const failure = new Error('remount failed');
+      mount.mockRejectedValueOnce(failure);
+      // single-spa resolves a failed public mount after reporting it; the handle rejects instead.
+      await expect(app.mount()).rejects.toBe(failure);
+      expect(errors).toHaveBeenCalledTimes(1);
+      const unmountFailure = (await app.unmount().catch((error: unknown) => error)) as QiankunError;
+      expect(unmountFailure.code).toBe('app-not-mounted');
+      expect(unmountFailure.cause).toBe(failure);
+    } finally {
+      removeErrorHandler(errors);
+    }
   });
 
   it('prefers an idle instance over a draining one', async () => {
@@ -557,7 +598,7 @@ describe('loadMicroApp instance reuse', () => {
     expect(mocks.dispose).toHaveBeenCalledTimes(1);
     expect(first.getStatus()).toBe(AppOrParcelStatus.NOT_LOADED);
     await expect(first.mount()).rejects.toMatchObject({ code: 'app-unloaded' });
-    await expect(first.unmount()).resolves.toBeNull();
+    await expect(first.unmount()).rejects.toMatchObject({ code: 'app-unloaded' });
     await first.unload();
     expect(mocks.dispose).toHaveBeenCalledTimes(1);
     await load(container).mountPromise;
@@ -661,7 +702,7 @@ describe('loadMicroApp instance reuse', () => {
       const remount = app.mount();
       await remountEntered.promise;
       await app.unload();
-      await remount;
+      await expect(remount).rejects.toMatchObject({ code: 'app-unloaded' });
       await new Promise((resolve) => setTimeout(resolve));
       expect(errors).not.toHaveBeenCalled();
       expect(app.getStatus()).toBe(AppOrParcelStatus.NOT_LOADED);

@@ -4,7 +4,7 @@
 
 The micro app was disposed of with `unload()`, `unloadMicroApp()`, or `unloadApplication()`, but code still uses the disposed instance:
 
-- It calls `mount()` or `update()` on an invalidated handle.
+- It calls `mount()`, `unmount()`, or `update()` on an invalidated handle.
 - A `mountPromise` that was still pending during disposal is rejected.
 - An unfinished loading request of the instance is canceled.
 

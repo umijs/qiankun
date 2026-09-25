@@ -128,8 +128,8 @@ type Parcel = {
 
 | 成员 | 说明 |
 | --- | --- |
-| `mount()` | 挂载该 Parcel。`loadMicroApp` 会在加载时自动挂载，因此通常无需直接调用。 |
-| `unmount()` | 卸载应用、停用沙箱，并清理可追踪的副作用和容器 DOM。已加载的实例会保留，供重新挂载或同名应用复用。挂载尚未完成时也可以调用：请求会立即登记，等这次挂载结束后再卸载；应用未处于挂载状态时不做任何操作。多次交错调用 `mount()` 和 `unmount()` 时按调用顺序执行，以最后一次为准。 |
+| `mount()` | 挂载该 Parcel。`loadMicroApp` 会在加载时自动挂载，因此通常无需直接调用。与 `unmount()` 按调用顺序逐个执行；轮到执行时应用已经挂载，则以 [`app-already-mounted`](/zh-CN/errors/app-already-mounted) 拒绝；重新挂载失败时，以挂载错误拒绝。 |
+| `unmount()` | 卸载应用、停用沙箱，并清理可追踪的副作用和容器 DOM。已加载的实例会保留，供重新挂载或同名应用复用。挂载尚未完成时也可以调用：请求会立即登记，等这次挂载结束后再卸载。轮到执行时应用没有处于挂载状态，则以 [`app-not-mounted`](/zh-CN/errors/app-not-mounted) 拒绝；如果原因是前一次挂载失败，错误的 `cause` 就是那次挂载错误。 |
 | `unload()` | 先卸载已挂载的应用，再销毁该句柄所用的实例及其缓存，句柄随之失效。销毁范围见[下方说明](#unload)。 |
 | `update?(props)` | 仅当微应用导出 `update` 生命周期时存在，用于向运行中的应用传递新的 props。 |
 | `getStatus()` | 返回当前生命周期状态，取值范围为上述联合类型。 |
@@ -181,7 +181,7 @@ await unloadMicroApp('app1');
 function unloadMicroApp(name: string): Promise<void>;
 ```
 
-销毁后，失效句柄的 `getStatus()` 返回 `NOT_LOADED`；`mount()` 和已有的 `update()` 方法拒绝并返回 `QiankunError`，`unmount()` 不再执行操作。尚未完成的 `mountPromise` 也会拒绝。重复调用同一句柄的 `unload()` 会返回同一个销毁结果，不会影响之后新建的实例。没有对应实例时，`unloadMicroApp` 直接完成；某个实例清理失败时，它会等全部实例销毁结束，再以第一个错误拒绝。
+销毁后，失效句柄的 `getStatus()` 返回 `NOT_LOADED`；`mount()`、`unmount()` 和已有的 `update()` 方法以 `app-unloaded` 拒绝。尚未完成的 `mountPromise` 也会拒绝。销毁时还在排队的请求中，`unmount()` 由销毁流程代为完成，`mount()` 以 `app-unloaded` 拒绝。重复调用同一句柄的 `unload()` 会返回同一个销毁结果，不会影响之后新建的实例。没有对应实例时，`unloadMicroApp` 直接完成；某个实例清理失败时，它会等全部实例销毁结束，再以第一个错误拒绝。
 
 销毁会清理容器节点（包括 `qiankun-head`）、框架追踪的副作用、沙箱隔离膜和配置引用、ESM 模块缓存、blob URL，以及该实例注入的 import map 脚本。入口和资源的 fetch 缓存同时失效；仍被其他实例使用的共享请求不会被中止。调用方也应释放自己持有的句柄、props 和其他引用。
 

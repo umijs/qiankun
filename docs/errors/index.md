@@ -59,3 +59,5 @@ Codes use lowercase words separated by hyphens and describe the cause and remedy
 - [app-unloaded: Micro app unloaded](/errors/app-unloaded)
 - [app-teardown-failed: Micro app teardown failed](/errors/app-teardown-failed)
 - [sandbox-mount-conflict: Sandbox mount state conflict](/errors/sandbox-mount-conflict)
+- [app-not-mounted: Micro app not mounted](/errors/app-not-mounted)
+- [app-already-mounted: Micro app already mounted](/errors/app-already-mounted)
