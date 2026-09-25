@@ -16,8 +16,13 @@ interface Instance {
    * whether its failure is a teardown failure that unload must report. Unload drains them all.
    */
   operations: Map<Promise<unknown>, boolean>;
-  /** The public mount in flight, so a repeated request joins it instead of queueing twice. */
-  mounting?: Promise<null>;
+  /**
+   * Tail of the public mount and unmount requests, starting with the initial mount. Each request
+   * runs once the ones before it settled, so the last request decides the final state.
+   */
+  lifecycle: Promise<unknown>;
+  /** The latest lifecycle request; the initial mount counts as one. */
+  lastRequest: 'mount' | 'unmount';
   active: boolean;
   done: Deferred<void>;
   /** Tick of the latest unmount requested through the handle, to order draining generations. */
@@ -83,12 +88,12 @@ function isIdle(generation: Generation): boolean {
 }
 
 /**
- * Draining: loaded, not being unloaded, its entry no longer streaming, and every instance it
- * still tracks has only teardown in flight — each queued one was asked to unmount, none waits to
- * mount, and no mount or update is in flight. The unmounting predecessor may still hold its mount
- * hold ②; that is fine, since a newcomer targets another container and waits for the predecessor
- * in the generation queue anyway. An open load phase ① is not: the entry is still being written
- * into the old container.
+ * Draining: loaded, not being unloaded, its entry no longer streaming, and the last request of
+ * every instance it still tracks is an unmount — an instance still mounting counts once it was
+ * asked to unmount, since its unmount runs right after that mount. The unmounting predecessor may
+ * still hold its mount hold ②; that is fine, since a newcomer targets another container and waits
+ * for the predecessor in the generation queue anyway. An open load phase ① is not: the entry is
+ * still being written into the old container.
  */
 function isDraining(generation: Generation): boolean {
   return Boolean(
@@ -96,9 +101,7 @@ function isDraining(generation: Generation): boolean {
     !generation.unloading &&
     !generation.getter.loadPhaseOpen &&
     generation.instances.size &&
-    [...generation.instances].every(
-      ({ operations }) => operations.size && [...operations.values()].every((teardown) => teardown),
-    ),
+    [...generation.instances].every(({ lastRequest }) => lastRequest === 'unmount'),
   );
 }
 
@@ -164,6 +167,30 @@ function track<T>(instance: Instance, generation: Generation, operation: Promise
   return operation;
 }
 
+/** Put an unmounted instance back in its generation's queue for another mount. */
+function rejoin(instance: Instance, generation: Generation): void {
+  if (instance.parcel!.getStatus() !== AppOrParcelStatus.NOT_MOUNTED || generation.queue.includes(instance)) return;
+  instance.done = new Deferred<void>();
+  generation.queue.push(instance);
+}
+
+/**
+ * Chain a public mount or unmount behind every request made before it. Each one acts on the status
+ * its predecessors left, so a mount → unmount → mount sequence ends mounted and an unmount never
+ * runs twice.
+ */
+function request(
+  instance: Instance,
+  generation: Generation,
+  kind: Instance['lastRequest'],
+  run: () => Promise<null>,
+): Promise<null> {
+  instance.lastRequest = kind;
+  const operation = instance.lifecycle.then(run, run);
+  instance.lifecycle = operation.catch(() => undefined);
+  return track(instance, generation, operation, kind === 'unmount');
+}
+
 function finish(instance: Instance, generation: Generation): void {
   instance.active = false;
   instance.done.resolve();
@@ -221,7 +248,6 @@ function unloadGeneration(generation: Generation): Promise<void> {
           finish(instance, generation);
           instance.config = undefined;
           instance.parcel = undefined;
-          instance.mounting = undefined;
           instance.operations.clear();
           for (const key of Object.keys(instance.props)) delete instance.props[key];
         }
@@ -305,7 +331,15 @@ export function loadMicroApp<T extends ObjectType>(
 }
 
 function createHandle(generation: Generation, container: HTMLElement, props: ObjectType, cached: boolean): MicroApp {
-  const instance: Instance = { container, props, operations: new Map(), active: false, done: new Deferred<void>() };
+  const instance: Instance = {
+    container,
+    props,
+    operations: new Map(),
+    lifecycle: Promise.resolve(),
+    lastRequest: 'mount',
+    active: false,
+    done: new Deferred<void>(),
+  };
   generation.instances.add(instance);
   generation.queue.push(instance);
   const { signal } = generation.stopped;
@@ -376,6 +410,7 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
     };
   }, props);
   instance.parcel = parcel;
+  instance.lifecycle = parcel.mountPromise;
   // The initial chain covers an entered bootstrap, which unload must wait for as well.
   void track(instance, generation, parcel.mountPromise);
   // Failed initial loads and mounts must not leave a predecessor in the queue forever.
@@ -395,24 +430,27 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
     unmountPromise: observed(parcel.unmountPromise),
     mount: async () => {
       signal.throwIfAborted();
-      if (instance.mounting) return instance.mounting;
-      if (instance.parcel!.getStatus() === AppOrParcelStatus.NOT_MOUNTED && !generation.queue.includes(instance)) {
-        instance.done = new Deferred<void>();
-        generation.instances.add(instance);
-        generation.queue.push(instance);
-      }
-      const operation = track(instance, generation, instance.parcel!.mount());
-      instance.mounting = operation;
-      const settle = () => {
-        if (instance.mounting === operation) instance.mounting = undefined;
-      };
-      void operation.then(settle, settle);
-      return operation;
+      // Queued right away so the turn follows call order; an unmount still ahead of this request
+      // takes the instance out again, and it rejoins once that unmount is done.
+      rejoin(instance, generation);
+      return request(instance, generation, 'mount', async () => {
+        // Unloaded before its turn: cancelled like a remount waiting inside the mount chain.
+        if (signal.aborted || instance.parcel!.getStatus() === AppOrParcelStatus.MOUNTED) return null;
+        rejoin(instance, generation);
+        return instance.parcel!.mount();
+      });
     },
+    // Accepted while a mount is still in flight: it is recorded right away and runs once that mount
+    // settles. Unload tears down whatever is left, and a parcel that is not mounted (its mount
+    // failed, or an earlier unmount already ran) has nothing to undo.
     unmount: () => {
       if (signal.aborted) return Promise.resolve(null);
       instance.unmountRequestedAt = ++idleTick;
-      return track(instance, generation, instance.parcel!.unmount(), true);
+      return request(instance, generation, 'unmount', async () =>
+        signal.aborted || instance.parcel!.getStatus() !== AppOrParcelStatus.MOUNTED
+          ? null
+          : instance.parcel!.unmount(),
+      );
     },
     get update() {
       return instance.parcel?.update
