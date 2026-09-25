@@ -554,14 +554,43 @@ describe('loadMicroApp instance reuse', () => {
     expect(bootstrap).toHaveBeenCalledTimes(1);
   });
 
-  it('disposes of an instance whose bootstrap failed instead of mounting it unbootstrapped', async () => {
+  it('shares one bootstrap among the instances waiting on it and hands them all its failure', async () => {
+    const failure = new Error('bootstrap failed');
+    const bootstrapping = new Deferred<void>();
+    bootstrap.mockImplementationOnce(() => bootstrapping.promise);
+    const [container] = containers(1);
+    // Three calls on one element share one instance: one load, one bootstrap in flight.
+    const apps = [load(container), load(container), load(container)];
+    await vi.waitFor(() => expect(bootstrap).toHaveBeenCalledTimes(1));
+
+    bootstrapping.reject(failure);
+    const results = await Promise.allSettled(apps.map((app) => app.mountPromise));
+    // Every waiter gets the original error, not the app-unloaded that the teardown aborts with.
+    for (const result of results) expect((result as PromiseRejectedResult).reason).toBe(failure);
+    expect(mocks.loadApp).toHaveBeenCalledTimes(1);
+    expect(bootstrap).toHaveBeenCalledTimes(1);
+    expect(mount).not.toHaveBeenCalled();
+    // The failure unloads the instance; joining that unload lets it finish inside this test.
+    await apps[0].unload();
+    expect(mocks.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it('unloads an instance whose bootstrap failed and loads a fresh one on the next call', async () => {
     bootstrap.mockRejectedValueOnce(new Error('bootstrap failed'));
     const [container, next] = containers(2);
     const failed = load(container);
     const sibling = load(container);
     await expect(failed.mountPromise).rejects.toThrow('bootstrap failed');
     await expect(sibling.mountPromise).rejects.toThrow('bootstrap failed');
+    // The same unload a caller would get: already in progress, so this joins it.
+    await failed.unload();
     expect(mocks.dispose).toHaveBeenCalledTimes(1);
+    expect(failed.getStatus()).toBe(AppOrParcelStatus.NOT_LOADED);
+    expect(sibling.getStatus()).toBe(AppOrParcelStatus.NOT_LOADED);
+    const remount = (await sibling.mount().catch((error: unknown) => error)) as QiankunError;
+    expect(remount.code).toBe('app-unloaded');
+    expect(remount.cause).toBeInstanceOf(Error);
+    expect((remount.cause as Error).message).toContain('bootstrap failed');
 
     await load(next).mountPromise;
     expect(mocks.loadApp).toHaveBeenCalledTimes(2);

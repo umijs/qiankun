@@ -2,7 +2,7 @@
 
 ## Cause
 
-The micro app was disposed of with `unload()`, `unloadMicroApp()`, or `unloadApplication()`, but code still uses the disposed instance:
+The micro app was disposed of with `unload()`, `unloadMicroApp()`, or `unloadApplication()`, or by qiankun after its `bootstrap` failed (the error's `cause` is then that `bootstrap` error), but code still uses the disposed instance:
 
 - It calls `mount()`, `unmount()`, or `update()` on an invalidated handle.
 - A `mountPromise` that was still pending during disposal is rejected.
