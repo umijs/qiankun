@@ -70,7 +70,8 @@ export default async function loadApp<T extends ObjectType>(
     ...compartmentHooks
   } = sandboxConfiguration;
 
-  const enhancedFetch = makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)));
+  const resourceFetch = makeFetchRetryable(makeFetchThrowable(fetch));
+  const enhancedFetch = makeFetchCacheable(resourceFetch);
 
   const markName = `[qiankun] App ${appName} Loading`;
   if (process.env.NODE_ENV === 'development') {
@@ -132,6 +133,8 @@ export default async function loadApp<T extends ObjectType>(
         compartmentOptions: {
           moduleHost: {
             entryUrl: entry,
+            // module sources get their own cache so a large module graph cannot evict entries and styles
+            fetch: makeFetchCacheable(resourceFetch, 'modules'),
             instanceId,
             materializeRedirect: (url) => defaultModuleResolver(url, microAppDOMContainer, document.head)?.url,
             isLifecycleNamespace: (namespace) =>

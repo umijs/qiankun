@@ -13,7 +13,7 @@ shared/
 │   └── style.ts          # inline <style> → CSS @scope rewriting (runtime style isolation)
 ├── esm-sandbox/          # per-instance native-ESM execution engine (see below)
 ├── fetch-utils/          # higher-order fetch decorators
-│   ├── makeFetchCacheable.ts   # mini LRU, clones responses, prunes failures
+│   ├── makeFetchCacheable.ts   # two runtime-wide LRUs (assets 50 / modules 512), clones responses, prunes failures
 │   ├── makeFetchRetryable.ts   # automatic retries
 │   └── makeFetchThrowable.ts   # non-2xx → throw
 ├── module-resolver/      # shared-dependency canonicalization (semver via <script type="dependencymap">)
@@ -70,8 +70,13 @@ The engine may be imported by the sandbox implementation itself, but do not add 
 ### Higher-order fetch (decorator composition)
 
 ```typescript
-const enhancedFetch = makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)));
+// makeFetchCacheable(fetch, cacheScope: 'assets' | 'modules' = 'assets')
+const resourceFetch = makeFetchRetryable(makeFetchThrowable(fetch));
+const enhancedFetch = makeFetchCacheable(resourceFetch); // entries, classic scripts, styles
+const moduleSourceFetch = makeFetchCacheable(resourceFetch, 'modules'); // passed as moduleHost.fetch
 ```
+
+Each `cacheScope` maps to one LRU shared by the whole runtime copy: `assets` holds 50 responses and `modules` holds 512, so a large module graph cannot evict entries and styles. Both key requests by canonical URL and effective `credentials`, cache in-flight Promises, clone responses per reader, and drop failed responses. `loadApp` passes the module-scoped fetch as `compartmentOptions.moduleHost.fetch`, which the sandbox prefers over the top-level `fetch` for module sources.
 
 ### Deferred promise
 

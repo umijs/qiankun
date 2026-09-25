@@ -231,11 +231,11 @@ const controller = createSandbox(appName, {
 | `importHook` / `loadHook` | 返回自定义模块描述；两者为别名关系 |
 | `plugins` | 在内置插件之后追加隔离插件 |
 | `styleIsolation` | 开启运行时 CSS 作用域，需要同时配置容器 |
-| `fetch` | 替换 ESM 和动态资源共用的 fetch |
+| `fetch` | 替换动态资源使用的 fetch；未配置 `compartmentOptions.moduleHost.fetch` 时，模块源码也使用它 |
 | `nodeTransformer` | 替换默认的动态资源转换逻辑 |
 | `compartmentOptions` | 传递 `moduleHost` 等底层宿主选项 |
 
-若顶层模块配置与 `compartmentOptions` 重复，以顶层配置为准。控制器会公开标准化后的 `instance`、`nodeTransformer`、可选的 `styleIsolation`，以及 `mount`、`unmount`、`dispose` 三个生命周期方法。
+若顶层模块配置与 `compartmentOptions` 重复，以顶层配置为准。唯一的例外是 `moduleHost.fetch`：它只用于加载模块源码，范围更具体，因此加载模块源码时优先于顶层 `fetch`；动态资源仍使用顶层 `fetch`。控制器会公开标准化后的 `instance`、`nodeTransformer`、可选的 `styleIsolation`，以及 `mount`、`unmount`、`dispose` 三个生命周期方法。
 
 自定义 globals 和插件的写法见[用插件扩展沙箱](/zh-CN/cookbook/sandbox-plugins)。
 
