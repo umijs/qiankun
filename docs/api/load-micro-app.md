@@ -150,6 +150,7 @@ Observable behavior for callers:
 - **One container hosts one app at a time.** When apps are loaded into the same container in succession, the next instance waits for the previous one to unmount.
 - **An app name reuses its unmounted instances.** When you call it again with the same `name` and `entry` and that app has an idle, unmounted instance, qiankun mounts that instance into the container you pass, without loading the entry again or calling `bootstrap`. If none is idle, an instance whose `unmount()` has been called but has not finished (including one still mounting) is reused as well, and the new instance mounts once that unmount completes. Only instances mounted at the same time load separate copies. A `name` should therefore always refer to the same app, and per-mount state belongs in `mount()`.
 - **The caller owns teardown.** Call `unmount()` when the app is no longer shown, as the official `<MicroApp>` components do. Call `unload()` or `unloadMicroApp(name)` only when the loaded resources should be released.
+- **An instance whose `bootstrap` fails is disposed of.** Every call sharing that `bootstrap` rejects with the same error. Later calls on a retained handle reject with `app-unloaded`, whose `cause` is the `bootstrap` error. Calling `loadMicroApp` again loads the entry and runs `bootstrap` anew.
 
 See [Run multiple micro-app instances](/cookbook/run-multiple-instances) for the complete guidance on reuse and remounting.
 

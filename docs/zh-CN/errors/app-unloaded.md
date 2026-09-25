@@ -2,7 +2,7 @@
 
 ## 触发原因
 
-微应用已经通过 `unload()`、`unloadMicroApp()` 或 `unloadApplication()` 销毁，相关代码仍在使用已销毁的实例：
+微应用已经通过 `unload()`、`unloadMicroApp()` 或 `unloadApplication()` 销毁，或者因为 `bootstrap` 失败被 qiankun 销毁（此时错误的 `cause` 是那次 `bootstrap` 错误），相关代码仍在使用已销毁的实例：
 
 - 调用失效句柄的 `mount()`、`unmount()` 或 `update()`；
 - 销毁发生时仍在等待的 `mountPromise` 被拒绝；

@@ -47,6 +47,8 @@ interface Generation {
   getter?: ParcelConfigObjectGetter;
   /** Settles with the first instance's bootstrap; later instances share its outcome. */
   bootstrapped: Deferred<void>;
+  /** The bootstrap failure that unloaded this generation, if that is how it ended. */
+  failure?: unknown;
   /** Tick at which the queue last drained, so the most recently idle generation is reused first. */
   idleSince: number;
   stopped: AbortController;
@@ -139,8 +141,12 @@ function findGeneration(name: string, entry: string, container: HTMLElement): Ge
   ][0];
 }
 
-function unloadedError(name: string): QiankunError {
-  return new QiankunError(`App ${name} has been unloaded; call loadMicroApp to create a new instance`, 'app-unloaded');
+function unloadedError(name: string, cause?: unknown): QiankunError {
+  return new QiankunError(
+    `App ${name} has been unloaded; call loadMicroApp to create a new instance`,
+    'app-unloaded',
+    cause === undefined ? undefined : { cause },
+  );
 }
 
 function notMountedError(name: string, failure: unknown): QiankunError {
@@ -218,10 +224,14 @@ async function invoke(hooks: ParcelConfigObject['mount'] | undefined, props: Obj
   }
 }
 
-function unloadGeneration(generation: Generation): Promise<void> {
+/**
+ * `reason` is what every wait of the generation still pending rejects with: app-unloaded for an
+ * unload the caller asked for, the original error when a failed bootstrap unloads it.
+ */
+function unloadGeneration(generation: Generation, reason: unknown = unloadedError(generation.name)): Promise<void> {
   if (generation.unloading) return generation.unloading;
   evict(generation);
-  generation.stopped.abort(unloadedError(generation.name));
+  generation.stopped.abort(reason);
   // Framework waits (container gate, entry streaming, HTML replay) cancel right away. Entered
   // application lifecycles cannot be pre-empted, so they are drained below instead.
   generation.loading.abort(generation.stopped.signal.reason);
@@ -285,7 +295,9 @@ function unloadGeneration(generation: Generation): Promise<void> {
  * of them are torn down; rejects with the first teardown failure after every unload settled.
  */
 export async function unloadMicroApp(name: string): Promise<void> {
-  const results = await Promise.allSettled((generations.get(name) ?? []).slice().map(unloadGeneration));
+  const results = await Promise.allSettled(
+    (generations.get(name) ?? []).slice().map((generation) => unloadGeneration(generation)),
+  );
   const failure = results.find((result) => result.status === 'rejected');
   if (failure) throw failure.reason;
 }
@@ -374,11 +386,13 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
           await invoke(instance.config?.bootstrap, hookProps);
           generation.bootstrapped.resolve();
         } catch (error) {
-          // A generation that never bootstrapped can neither mount nor be reused: fail the
-          // siblings queued on it, and dispose of it now since no unload can reach it later.
+          // A generation that never bootstrapped can neither mount nor be reused: unload it. The
+          // unload reason is this error, so every sibling waiting on the generation — its
+          // bootstrap shared, its handle promises pending — rejects with it rather than with
+          // app-unloaded; later calls on the retained handles get app-unloaded caused by it.
+          generation.failure = error;
           generation.bootstrapped.reject(error);
-          evict(generation);
-          void generation.dispose?.().catch(() => undefined);
+          void unloadGeneration(generation, error).catch(() => undefined);
           throw error;
         }
       },
@@ -438,7 +452,7 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
   void observed(parcel.unmountPromise);
   return {
     get _parcel() {
-      if (!instance.parcel) throw unloadedError(generation.name);
+      if (!instance.parcel) throw unloadedError(generation.name, generation.failure);
       return instance.parcel._parcel;
     },
     getStatus: () => (signal.aborted ? AppOrParcelStatus.NOT_LOADED : instance.parcel!.getStatus()),
@@ -448,12 +462,12 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
     unmountPromise: observed(parcel.unmountPromise),
     // Every request that cannot do what it was asked rejects, so a caller always learns about it.
     mount: async () => {
-      if (signal.aborted) throw unloadedError(generation.name);
+      if (signal.aborted) throw unloadedError(generation.name, generation.failure);
       // Queued right away so the turn follows call order; an unmount still ahead of this request
       // takes the instance out again, and it rejoins once that unmount is done.
       rejoin(instance, generation);
       return request(instance, generation, 'mount', async () => {
-        if (signal.aborted) throw unloadedError(generation.name);
+        if (signal.aborted) throw unloadedError(generation.name, generation.failure);
         if (instance.parcel!.getStatus() === AppOrParcelStatus.MOUNTED) {
           throw new QiankunError(`App ${generation.name} is already mounted`, 'app-already-mounted');
         }
@@ -462,7 +476,7 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
         // A remount that unload cancelled, or that failed: single-spa reports the failure to its
         // error handlers and resolves, so it is surfaced here as well.
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- unload aborts it meanwhile
-        if (signal.aborted) throw unloadedError(generation.name);
+        if (signal.aborted) throw unloadedError(generation.name, generation.failure);
         if (instance.parcel!.getStatus() !== AppOrParcelStatus.MOUNTED) throw instance.failure;
         return null;
       });
@@ -471,7 +485,7 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
     // settles. A request that unload overtakes is carried out by unload; one that finds nothing
     // mounted rejects, with the failed mount as the cause when that is the reason.
     unmount: () => {
-      if (signal.aborted) return Promise.reject(unloadedError(generation.name));
+      if (signal.aborted) return Promise.reject(unloadedError(generation.name, generation.failure));
       instance.unmountRequestedAt = ++idleTick;
       let handedToUnload = false;
       const operation = request(instance, generation, 'unmount', async () => {
@@ -489,7 +503,7 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
     get update() {
       return instance.parcel?.update
         ? (nextProps: ObjectType) => {
-            if (signal.aborted) return Promise.reject(unloadedError(generation.name));
+            if (signal.aborted) return Promise.reject(unloadedError(generation.name, generation.failure));
             return observed(track(instance, generation, instance.parcel!.update!(nextProps)));
           }
         : undefined;
