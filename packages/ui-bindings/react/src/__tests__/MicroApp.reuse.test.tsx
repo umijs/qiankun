@@ -67,6 +67,37 @@ describe('MicroApp with qiankun instance reuse', () => {
     await settle();
   });
 
+  it('reports a failed bootstrap once', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const failure = new Error('bootstrap failed');
+    const getter = Object.defineProperties(
+      () => ({ bootstrap: async () => Promise.reject(failure), mount: async () => {}, unmount: async () => {} }),
+      { occupiesContainer: { get: () => false }, loadPhaseOpen: { get: () => false } },
+    );
+    mocks.loadApp.mockResolvedValue(getter);
+
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    await act(async () => {
+      root.render(
+        <MicroApp
+          name="failing-bootstrap"
+          entry="//localhost:7100"
+          errorBoundary={(error) => <p>{error.message}</p>}
+        />,
+      );
+    });
+    await settle();
+
+    expect(consoleError.mock.calls.map(([error]) => error as unknown)).toEqual([failure]);
+    expect(host.textContent).toContain('bootstrap failed');
+
+    act(() => root.unmount());
+    await settle();
+    consoleError.mockRestore();
+  });
+
   it('reports a mount that fails after a keyed swap asked it to unmount only once', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const bootstrap = vi.fn(async () => {});

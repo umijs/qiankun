@@ -110,13 +110,10 @@ export async function mountMicroApp({
       setLoading?.(false);
     });
 
+  // A load or bootstrap failure rejects mountPromise too, which reports it above; reporting these
+  // as well would hand the same failure to setError two or three times. Observed only.
   (['loadPromise', 'bootstrapPromise'] as const).forEach((key) => {
-    const promise = microApp[key];
-
-    promise.catch((e: Error) => {
-      setError?.(e);
-      setLoading?.(false);
-    });
+    microApp[key].catch(() => undefined);
   });
 
   return microApp;
