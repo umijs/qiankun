@@ -28,7 +28,7 @@ These are common managed effects, not a promise that every browser API is interc
 
 During `unmount`, qiankun removes the side effects it can track and deactivates that app's global view. App-owned globals remain isolated and may be reused on a later mount; they are never published to sibling apps.
 
-Call `unmount()` to remove an app temporarily while retaining cached configuration and sandbox state for remounting. Call `unload()` when its generation is no longer needed: it disposes of every instance sharing the same name and container, and future use requires a new `loadMicroApp` call. Dropping the handle does not replace cleanup. See [loadMicroApp](/api/load-micro-app#unload).
+Always call `unmount` when an app or app instance is no longer needed. Skipping it also skips the cleanup associated with that instance. The sandbox is kept after unmounting so the same app can remount into it; call `unload()` to release it completely. See [loadMicroApp](/api/load-micro-app#unload).
 
 ## What the micro-app still owns
 

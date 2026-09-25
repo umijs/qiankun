@@ -494,7 +494,7 @@ engine 的 `dispose()` 追踪**它创建过的每一个 blob URL**（runtime 模
 - `unmount` 只是失活，remount 要复用同一 engine 与其 module namespace（顶层不重跑），此时 dispose 会把 instance view/blob 清掉导致复用断裂——所以 unmount **不** dispose，与 classic sandbox「inactive 不销毁」一致。
 - `unload` 是「彻底卸载」，正是释放 instance view + blob 的时机；unload 后再次激活会重新走 loadApp → 全新 engine（新 instanceKey/新条目），与上面的不变量吻合。
 
-**实现状态**：`loadMicroApp` 句柄现已提供 `unload()`，并可通过 `unloadMicroApp(name, container)` 销毁当前同名、同容器的整代实例。两者与路由应用的 `unload` 共用沙箱 `dispose()` 路径，原 `Sandbox.destroy` TODO 已移除，统一使用 `dispose()`。销毁会使旧句柄失效、清除框架持有的模块引用、撤销 blob URL 并移除注入脚本；浏览器原生 import map 条目和模块注册表仍无法撤销，限制见 §11。
+**实现状态**：`loadMicroApp` 句柄现已提供 `unload()`，并可通过 `unloadMicroApp(name)` 销毁该名称下全部手动加载的实例。两者与路由应用的 `unload` 共用沙箱 `dispose()` 路径，原 `Sandbox.destroy` TODO 已移除，统一使用 `dispose()`。销毁会使旧句柄失效、清除框架持有的模块引用、撤销 blob URL 并移除注入脚本；浏览器原生 import map 条目和模块注册表仍无法撤销，限制见 §11。
 
 **共享模块引用计数（v1 简化：blob 均为实例私有）**
 

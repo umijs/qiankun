@@ -230,12 +230,12 @@ single-spa 的 `unmount` 用于停用应用并保留可复用的运行时状态�
 模块顶层代码不会在重新挂载时执行。因此，框架应用实例和视图状态应在 `mount()` 中创建，并在 `unmount()` 中销毁。
 :::
 
-对于命中缓存的重新挂载（同一应用和同一容器），qiankun 还会将 `bootstrap` 替换为空操作，确保一次性初始化不会重复执行。
+对于命中缓存的重新挂载（同名应用复用已加载的实例），qiankun 还会将 `bootstrap` 替换为空操作，确保一次性初始化不会重复执行。
 
-**完整销毁（`unload`）**：手动加载的应用通过句柄 `unload()` 或 `unloadMicroApp(name, container)` 销毁；路由应用通过 `unloadApplication` 进入 single-spa 的 `unload` 生命周期。两条路径最终调用统一的沙箱 `dispose()`，释放隔离膜、配置和框架持有的模块引用，撤销 ESM 引擎创建的 blob URL，并移除其注入的 import map 脚本。浏览器原生 import map 条目和模块注册表无法撤销。后续加载会创建新的沙箱和 ESM 引擎。
+**完整销毁（`unload`）**：手动加载的应用通过句柄 `unload()` 或 `unloadMicroApp(name)` 销毁；路由应用通过 `unloadApplication` 进入 single-spa 的 `unload` 生命周期。两条路径最终调用统一的沙箱 `dispose()`，释放隔离膜、配置和框架持有的模块引用，撤销 ESM 引擎创建的 blob URL，并移除其注入的 import map 脚本。浏览器原生 import map 条目和模块注册表无法撤销。后续加载会创建新的沙箱和 ESM 引擎。
 
-::: info 销毁范围为同名应用与同一容器的整代实例
-`unmount()` 保留缓存和沙箱状态，供后续重新挂载。`unload()` 会使共享同一代配置的旧句柄一并失效，并取消其中尚在排队的实例。同名应用在同一容器中再次调用 `loadMicroApp` 时会重新请求入口并执行脚本；其他容器中的实例不受影响。详见 [loadMicroApp](/zh-CN/api/load-micro-app#unload)。
+::: info 卸载不会销毁实例
+`unmount()` 保留缓存和沙箱状态，同名应用再次加载时直接复用。只有主动调用 `unload()` 或 `unloadMicroApp(name)` 才会销毁实例，销毁范围见 [loadMicroApp](/zh-CN/api/load-micro-app#unload)。
 :::
 
 ## 延伸阅读

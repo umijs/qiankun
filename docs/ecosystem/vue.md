@@ -243,7 +243,7 @@ import { MicroApp } from '@qiankunjs/vue';
 const microAppComp = ref();
 
 onMounted(() => {
-  // parcel handle: getStatus(), mountPromise, unmount(), update(), ...
+  // MicroApp handle: getStatus(), mountPromise, unmount(), update(), ...
   console.log(microAppComp.value?.microApp?.getStatus());
 });
 </script>
@@ -253,10 +253,12 @@ onMounted(() => {
 </template>
 ```
 
-The handle is a Parcel from `@qiankunjs/single-spa`, qiankun's vendored fork. Its `getStatus()` returns one of `NOT_LOADED`, `LOADING_SOURCE_CODE`, `NOT_BOOTSTRAPPED`, `BOOTSTRAPPING`, `NOT_MOUNTED`, `MOUNTING`, `MOUNTED`, `UPDATING`, `UNMOUNTING`, `UNLOADING`, `SKIP_BECAUSE_BROKEN`, or `LOAD_ERROR`. The full type is in the [Types reference](/api/types).
+The handle is the `MicroApp` returned by [`loadMicroApp`](/api/load-micro-app): a Parcel from `@qiankunjs/single-spa`, qiankun's vendored fork, plus `unload()`. Its `getStatus()` returns one of `NOT_LOADED`, `LOADING_SOURCE_CODE`, `NOT_BOOTSTRAPPED`, `BOOTSTRAPPING`, `NOT_MOUNTED`, `MOUNTING`, `MOUNTED`, `UPDATING`, `UNMOUNTING`, `UNLOADING`, `SKIP_BECAUSE_BROKEN`, or `LOAD_ERROR`. The full type is in the [Types reference](/api/types).
 
 ::: tip Let the component own the lifecycle
-Prefer driving the micro-app through props (`name`, `appProps`) rather than calling `unmount()`/`update()` on the handle yourself. The component serializes unmounts and guards concurrent updates internally; manual calls can race with that bookkeeping.
+Prefer driving the micro-app through props (`name`, `appProps`) rather than calling `unmount()`/`update()`/`unload()` on the handle yourself. The component serializes unmounts and guards concurrent updates internally; manual calls can race with that bookkeeping.
+
+When the component is destroyed it only calls `unmount()`. The loaded instance is kept and reused the next time a component with the same name renders. To release those resources, call [`unloadMicroApp(name)`](/api/load-micro-app#unload) after the component is gone.
 :::
 
 ## CSS hooks
