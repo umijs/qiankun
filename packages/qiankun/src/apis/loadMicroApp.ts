@@ -20,7 +20,7 @@ interface Instance {
   mounting?: Promise<null>;
   active: boolean;
   done: Deferred<void>;
-  /** Tick at which unmount was requested through the handle, if it was since the last mount. */
+  /** Tick of the latest unmount requested through the handle, to order draining generations. */
   unmountRequestedAt?: number;
 }
 
@@ -83,31 +83,28 @@ function isIdle(generation: Generation): boolean {
 }
 
 /**
- * Draining: loaded, not being unloaded, its entry no longer streaming, and every queued instance
- * mounted and asked to unmount — nothing waits to mount and no mount is in flight, only teardown
- * remains. The unmounting predecessor may still hold its mount hold ②; that is fine, since a
- * newcomer targets another container and waits for the predecessor in the generation queue
- * anyway. An open load phase ① is not: the entry is still being written into the old container.
+ * Draining: loaded, not being unloaded, its entry no longer streaming, and every instance it
+ * still tracks has only teardown in flight — each queued one was asked to unmount, none waits to
+ * mount, and no mount or update is in flight. The unmounting predecessor may still hold its mount
+ * hold ②; that is fine, since a newcomer targets another container and waits for the predecessor
+ * in the generation queue anyway. An open load phase ① is not: the entry is still being written
+ * into the old container.
  */
 function isDraining(generation: Generation): boolean {
   return Boolean(
     generation.getter &&
     !generation.unloading &&
     !generation.getter.loadPhaseOpen &&
-    generation.queue.length &&
-    generation.queue.every(({ parcel, unmountRequestedAt }) => {
-      const status = parcel?.getStatus();
-      return (
-        unmountRequestedAt !== undefined &&
-        (status === AppOrParcelStatus.MOUNTED || status === AppOrParcelStatus.UNMOUNTING)
-      );
-    }),
+    generation.instances.size &&
+    [...generation.instances].every(
+      ({ operations }) => operations.size && [...operations.values()].every((teardown) => teardown),
+    ),
   );
 }
 
-/** The latest unmount request among the queued instances of a draining generation. */
+/** The latest unmount request among the instances of a draining generation. */
 function drainingSince(generation: Generation): number {
-  return Math.max(...generation.queue.map(({ unmountRequestedAt }) => unmountRequestedAt ?? 0));
+  return Math.max(...[...generation.instances].map(({ unmountRequestedAt }) => unmountRequestedAt ?? 0));
 }
 
 /**
@@ -401,7 +398,6 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
       if (instance.mounting) return instance.mounting;
       if (instance.parcel!.getStatus() === AppOrParcelStatus.NOT_MOUNTED && !generation.queue.includes(instance)) {
         instance.done = new Deferred<void>();
-        instance.unmountRequestedAt = undefined;
         generation.instances.add(instance);
         generation.queue.push(instance);
       }
@@ -415,8 +411,6 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
     },
     unmount: () => {
       if (signal.aborted) return Promise.resolve(null);
-      // Recorded synchronously: single-spa only flips the status to UNMOUNTING a few ticks
-      // later, and a caller swapping elements loads into the new one right after that.
       instance.unmountRequestedAt = ++idleTick;
       return track(instance, generation, instance.parcel!.unmount(), true);
     },
