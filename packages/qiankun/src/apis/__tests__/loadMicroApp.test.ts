@@ -651,6 +651,24 @@ describe('loadMicroApp instance reuse', () => {
       await retry.mountPromise;
     });
 
+    it('starts a fresh instance right away once another instance of the app bootstrapped', async () => {
+      const [failing, healthy, fresh] = containers(3);
+      const pending = new Deferred<ParcelConfigObjectGetter>();
+      mocks.loadApp.mockReturnValueOnce(pending.promise);
+      const failed = load(failing);
+      // Started before the failure, so it is not held back, and it goes on to succeed.
+      const survivor = load(healthy);
+      await expect(failed.mountPromise).rejects.toThrow('entry fetch failed');
+      pending.resolve(getterOf());
+      await survivor.mountPromise;
+      expect(bootstrap).toHaveBeenCalledTimes(1);
+
+      // The app is healthy again, so the cooldown no longer applies.
+      const next = load(fresh);
+      expect(mocks.loadApp).toHaveBeenCalledTimes(3);
+      await next.mountPromise;
+    });
+
     it('cancels a retry unloaded during the cooldown without loading it', async () => {
       const [container] = containers(1);
       await fail(container);

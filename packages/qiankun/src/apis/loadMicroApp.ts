@@ -419,6 +419,8 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
         try {
           await invoke(instance.config?.bootstrap, hookProps);
           generation.bootstrapped.resolve();
+          // The app is healthy again: a fresh instance need not wait out an earlier failure.
+          failedAt.delete(failureKey(generation.name, generation.entry));
         } catch (error) {
           // A generation that never bootstrapped can neither mount nor be reused: unload it. The
           // unload reason is this error, so every sibling waiting on the generation — its
