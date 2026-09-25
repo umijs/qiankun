@@ -172,6 +172,12 @@ export function updateMicroApp({
   });
 }
 
+/**
+ * Ask the app to unmount. qiankun records the request right away, even while the app is still
+ * mounting, and runs it once that mount is done.
+ */
 export async function unmountMicroApp(microApp: MicroAppType) {
-  await microApp.mountPromise.then(() => microApp.unmount());
+  // 微应用 unmount 是异步的，中间的流转状态不能确定，所有需要一个标志位来确保 unmount 开始之后不会再触发 update
+  microApp._unmounting = true;
+  await microApp.unmount();
 }
