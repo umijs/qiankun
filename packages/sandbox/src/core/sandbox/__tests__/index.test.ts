@@ -82,14 +82,14 @@ describe('isolation plugin lifecycle', () => {
     await controller.unmount();
   });
 
-  it.each([false, true])('selects the module fetch separately when explicitly configured: %s', async (separate) => {
+  it.each([false, true])('prefers moduleHost.fetch for module sources when configured: %s', async (separate) => {
     const assetFetch = vi.fn(async () => new Response('export {};'));
     const moduleFetch = vi.fn(async () => new Response('export {};'));
     const controller = createSandbox(`module-fetch-${String(appSequence++)}`, {
       fetch: assetFetch,
-      moduleFetch: separate ? moduleFetch : undefined,
       compartmentOptions: {
         moduleHost: {
+          fetch: separate ? moduleFetch : undefined,
           entryUrl: 'https://module-fetch.test/',
           createModuleUrl: () => 'blob:module-fetch-test',
           revokeModuleUrl: () => {},
