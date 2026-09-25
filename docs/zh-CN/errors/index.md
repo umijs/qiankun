@@ -62,4 +62,4 @@ declare class QiankunError extends Error {
 - [app-not-mounted：微应用未挂载](/zh-CN/errors/app-not-mounted)
 - [app-already-mounted：微应用已挂载](/zh-CN/errors/app-already-mounted)
 - [load-timeout：微应用加载超时](/zh-CN/errors/load-timeout)
-- [timeout-invalid：加载超时配置无效](/zh-CN/errors/timeout-invalid)
+- [load-timeout-invalid：加载超时配置无效](/zh-CN/errors/load-timeout-invalid)

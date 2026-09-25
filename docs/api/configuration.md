@@ -113,7 +113,7 @@ To support loading cancellation, a custom fetch must forward the received `init.
 
 ### loadTimeout
 
-Loading timeouts are disabled by default: omitting `loadTimeout` or setting it to `0` leaves loading unrestricted. A positive finite number specifies milliseconds; negative values, `NaN`, and `Infinity` are invalid and produce a `QiankunError` with the `code` `timeout-invalid`.
+Loading timeouts are disabled by default: omitting `loadTimeout` or setting it to `0` leaves loading unrestricted. A positive finite number specifies milliseconds; negative values, `NaN`, and `Infinity` are invalid and produce a `QiankunError` with the `code` `load-timeout-invalid`.
 
 It only bounds the loading phase. The timer starts when the app acquires permission to load into its container. It covers `beforeLoad`, entry loading, resource work awaited by the loader, entry lifecycle discovery, and completion of the HTML stream. Time spent waiting for a previous instance to release the container is excluded. The duration of `bootstrap`, `mount`, and `unmount`, and remounts that reuse a loaded instance, are not limited by it.
 

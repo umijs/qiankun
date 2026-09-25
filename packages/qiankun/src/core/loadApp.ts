@@ -600,7 +600,7 @@ export default async function loadApp<T extends ObjectType>(
 
 function validateLoadTimeout(loadTimeout: number): void {
   if (!Number.isFinite(loadTimeout) || loadTimeout < 0) {
-    throw new QiankunError('loadTimeout must be a finite non-negative number', 'timeout-invalid');
+    throw new QiankunError('loadTimeout must be a finite non-negative number', 'load-timeout-invalid');
   }
 }
 

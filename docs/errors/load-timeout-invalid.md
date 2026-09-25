@@ -1,4 +1,4 @@
-# timeout-invalid: Invalid loading timeout
+# load-timeout-invalid: Invalid loading timeout
 
 ## Cause
 
@@ -16,4 +16,4 @@ Pass a finite non-negative number of milliseconds. Omitting it or passing `0` di
 ## Related
 
 - [Error codes and solutions](/errors/)
-- [timeout-invalid：加载超时配置无效](/zh-CN/errors/timeout-invalid)
+- [load-timeout-invalid：加载超时配置无效](/zh-CN/errors/load-timeout-invalid)

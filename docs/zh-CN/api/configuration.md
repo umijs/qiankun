@@ -113,7 +113,7 @@ configuration: {
 
 ### loadTimeout
 
-加载超时默认关闭：省略 `loadTimeout` 或设为 `0` 均不限制加载时长。正有限数表示超时毫秒数；负数、`NaN` 和 `Infinity` 属于无效配置，会产生 `code` 为 `timeout-invalid` 的 `QiankunError`。
+加载超时默认关闭：省略 `loadTimeout` 或设为 `0` 均不限制加载时长。正有限数表示超时毫秒数；负数、`NaN` 和 `Infinity` 属于无效配置，会产生 `code` 为 `load-timeout-invalid` 的 `QiankunError`。
 
 它只约束加载阶段。计时从应用取得容器的加载权限后开始，覆盖 `beforeLoad`、入口加载、加载器需要等待的资源处理、入口生命周期发现，以及 HTML 流完整结束。等待前一个实例释放容器的时间不计入；`bootstrap`、`mount`、`unmount` 的执行时长，以及复用已加载实例的重新挂载，都不受它限制。
 

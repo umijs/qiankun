@@ -1,4 +1,4 @@
-# timeout-invalid：加载超时配置无效
+# load-timeout-invalid：加载超时配置无效
 
 ## 触发原因
 
@@ -16,4 +16,4 @@
 ## 相关内容
 
 - [错误码与解决办法](/zh-CN/errors/)
-- [timeout-invalid: Invalid loading timeout](/errors/timeout-invalid)
+- [load-timeout-invalid: Invalid loading timeout](/errors/load-timeout-invalid)

@@ -25,7 +25,7 @@ export const qiankunErrorCodes = [
   'app-not-mounted',
   'app-already-mounted',
   'load-timeout',
-  'timeout-invalid',
+  'load-timeout-invalid',
 ] as const;
 
 export type QiankunErrorCode = (typeof qiankunErrorCodes)[number];
