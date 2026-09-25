@@ -125,7 +125,7 @@ function findGeneration(name: string, entry: string, container: HTMLElement): Ge
 }
 
 function unloadedError(name: string): QiankunError {
-  return new QiankunError(`App ${name} has been unloaded; call loadMicroApp to create a new instance`);
+  return new QiankunError(`App ${name} has been unloaded; call loadMicroApp to create a new instance`, 'app-unloaded');
 }
 
 /** Observe internal parcel promises while preserving their rejection for callers. */
@@ -214,7 +214,9 @@ function unloadGeneration(generation: Generation): Promise<void> {
         generation.dispose = undefined;
       }
     }
-    if (failure !== undefined) throw failure instanceof Error ? failure : new QiankunError('App teardown failed');
+    if (failure !== undefined) {
+      throw failure instanceof Error ? failure : new QiankunError('App teardown failed', 'app-teardown-failed');
+    }
   })();
   return generation.unloading;
 }

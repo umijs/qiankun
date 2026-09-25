@@ -133,7 +133,9 @@ export default async function loadApp<T extends ObjectType>(
     hold.release();
   };
   let disposePromise: Promise<void> | undefined;
-  const dispose = (reason: unknown = new QiankunError(`App ${appName} has been unloaded`)): Promise<void> => {
+  const dispose = (
+    reason: unknown = new QiankunError(`App ${appName} has been unloaded`, 'app-unloaded'),
+  ): Promise<void> => {
     if (!disposePromise) {
       disposePromise = (async () => {
         abortController.abort(reason);

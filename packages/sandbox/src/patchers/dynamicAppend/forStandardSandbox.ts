@@ -500,10 +500,10 @@ export function patchStandardSandbox(context: IsolationPluginContext): Free {
 }
 
 const disposedNodeTransformer: SandboxConfig['nodeTransformer'] = () => {
-  throw new QiankunError('The owning sandbox has been disposed');
+  throw new QiankunError('The owning sandbox has been disposed', 'compartment-disposed');
 };
 const disposedFetch: SandboxConfig['fetch'] = () =>
-  Promise.reject(new QiankunError('The owning sandbox has been disposed'));
+  Promise.reject(new QiankunError('The owning sandbox has been disposed', 'compartment-disposed'));
 
 /** Drop terminal DOM state without invalidating the views and ledgers needed by warm remounts. */
 export function disposeStandardSandbox(compartment: PluginCompartment): void {

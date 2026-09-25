@@ -19,6 +19,8 @@ export const qiankunErrorCodes = [
   'module-redirect-cycle',
   'module-context-missing',
   'module-rewrite-invalid',
+  'app-unloaded',
+  'app-teardown-failed',
 ] as const;
 
 export type QiankunErrorCode = (typeof qiankunErrorCodes)[number];
