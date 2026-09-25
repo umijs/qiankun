@@ -330,6 +330,49 @@ describe('loadMicroApp instance reuse', () => {
     expect(mount.mock.calls).toEqual([[{ container: former }], [{ container: next }]]);
   });
 
+  it('does not share an instance while a retained handle waits to remount on it', async () => {
+    const [left, right, last] = containers(3);
+    const first = load(left);
+    await first.mountPromise;
+    await first.unmount();
+    const second = load(right);
+    await second.mountPromise;
+    expect(mocks.loadApp).toHaveBeenCalledTimes(1);
+
+    // The retained handle queues behind `second`, so unmounting `second` still leaves a mount.
+    const remount = first.mount();
+    const secondUnmount = second.unmount();
+    const third = load(last);
+    expect(mocks.loadApp).toHaveBeenCalledTimes(2);
+
+    await Promise.all([remount, secondUnmount, third.mountPromise]);
+    expect(first.getStatus()).toBe(AppOrParcelStatus.MOUNTED);
+    expect(third.getStatus()).toBe(AppOrParcelStatus.MOUNTED);
+  });
+
+  it('unloads a newcomer queued behind a draining instance together with it', async () => {
+    const unmounting = new Deferred<void>();
+    unmount.mockImplementationOnce(() => unmounting.promise);
+    const [former, next] = containers(2);
+    const first = load(former);
+    await first.mountPromise;
+    const firstUnmount = first.unmount();
+    const second = load(next);
+    await second.bootstrapPromise;
+    await vi.waitFor(() => expect(second.getStatus()).toBe(AppOrParcelStatus.MOUNTING));
+
+    const rejected = expect(second.mountPromise).rejects.toThrow('has been unloaded');
+    const unloading = unloadMicroApp(appName);
+    unmounting.resolve();
+    await firstUnmount;
+    await unloading;
+    await rejected;
+    expect(mocks.loadApp).toHaveBeenCalledTimes(1);
+    expect(mount).toHaveBeenCalledTimes(1);
+    expect(mocks.dispose).toHaveBeenCalledTimes(1);
+    expect([...former.childNodes, ...next.childNodes]).toEqual([]);
+  });
+
   it('serializes a retained handle remount with the instance that took over its sandbox', async () => {
     const [left, right] = containers(2);
     const first = load(left);
