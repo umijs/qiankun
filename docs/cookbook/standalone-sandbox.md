@@ -231,11 +231,11 @@ const controller = createSandbox(appName, {
 | `importHook` / `loadHook` | Loads custom module descriptors; `loadHook` is an alias |
 | `plugins` | Appends custom isolation plugins after the built-in preset |
 | `styleIsolation` | Enables runtime CSS scoping; requires `container` |
-| `fetch` | Overrides the fetch used by ESM and dynamic assets |
+| `fetch` | Overrides the fetch used by dynamic assets; module sources also use it unless `compartmentOptions.moduleHost.fetch` is set |
 | `nodeTransformer` | Replaces the default dynamic asset transformation |
 | `compartmentOptions` | Provides lower-level host options such as `moduleHost` |
 
-Top-level module options take precedence over duplicate values in `compartmentOptions`. The controller exposes the normalized `instance`, `nodeTransformer`, optional `styleIsolation`, and the `mount`, `unmount`, and `dispose` lifecycle methods.
+Top-level module options take precedence over duplicate values in `compartmentOptions`. The one exception is `moduleHost.fetch`: it only loads module sources, so the more specific option takes precedence over the top-level `fetch` for them, while dynamic assets keep using the top-level `fetch`. The controller exposes the normalized `instance`, `nodeTransformer`, optional `styleIsolation`, and the `mount`, `unmount`, and `dispose` lifecycle methods.
 
 For custom globals and plugins, see [Extending sandbox isolation](/cookbook/sandbox-plugins).
 

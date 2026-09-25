@@ -133,6 +133,8 @@ export default async function loadApp<T extends ObjectType>(
         compartmentOptions: {
           moduleHost: {
             entryUrl: entry,
+            // module sources get their own cache so a large module graph cannot evict entries and styles
+            fetch: makeFetchCacheable(resourceFetch, 'modules'),
             instanceId,
             materializeRedirect: (url) => defaultModuleResolver(url, microAppDOMContainer, document.head)?.url,
             isLifecycleNamespace: (namespace) =>
@@ -142,7 +144,6 @@ export default async function loadApp<T extends ObjectType>(
         globals,
         incubatorContext,
         fetch: enhancedFetch,
-        moduleFetch: makeFetchCacheable(resourceFetch, 'modules'),
         nodeTransformer,
         plugins,
         styleIsolation: styleIsolationEnabled,
