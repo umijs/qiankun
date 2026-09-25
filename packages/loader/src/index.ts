@@ -177,7 +177,6 @@ export async function loadEntry<T>(
     // DOM-write phase the settle signal guards (collected in the walk callback below)
     const deferScriptExecutions: Array<Promise<void>> = [];
     const pendingAssets = new Set<HTMLScriptElement | HTMLLinkElement>();
-    const finishDeferExecutions = new Set<() => void>();
 
     let readableStream: ReadableStream<string>;
     try {
@@ -252,10 +251,8 @@ export async function loadEntry<T>(
                 const settleExecution = () => {
                   script.removeEventListener('load', settleExecution);
                   script.removeEventListener('error', settleExecution);
-                  finishDeferExecutions.delete(settleExecution);
                   resolve();
                 };
-                finishDeferExecutions.add(settleExecution);
                 script.addEventListener('load', settleExecution);
                 script.addEventListener('error', settleExecution);
               }),
@@ -402,7 +399,6 @@ export async function loadEntry<T>(
           }
         }
         pendingAssets.clear();
-        for (const finish of finishDeferExecutions) finish();
         if (!domStreamSettledNotified) sink.abort(new DOMException('Entry loading aborted', 'AbortError'));
       };
       return new WritableStream<string>({
