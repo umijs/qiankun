@@ -66,4 +66,51 @@ describe('MicroApp with qiankun instance reuse', () => {
     act(() => root.unmount());
     await settle();
   });
+
+  it('reports a mount that fails after a keyed swap asked it to unmount only once', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const bootstrap = vi.fn(async () => {});
+    const failure = new Error('mount failed');
+    let rejectFirstMount!: (error: Error) => void;
+    const mount = vi
+      .fn(async (_container: HTMLElement) => {})
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((_resolve, reject) => {
+            rejectFirstMount = reject;
+          }),
+      );
+    const getter = Object.defineProperties(
+      (container: HTMLElement) => ({ bootstrap, mount: async () => mount(container), unmount: async () => {} }),
+      { occupiesContainer: { get: () => false }, loadPhaseOpen: { get: () => false } },
+    );
+    mocks.loadApp.mockResolvedValue(getter);
+
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    const errorBoundary = (error: Error) => <p>{error.message}</p>;
+    await act(async () => {
+      root.render(<MicroApp key="1" name="failing-swap" entry="//localhost:7100" errorBoundary={errorBoundary} />);
+    });
+    await settle();
+    expect(mount).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      root.render(<MicroApp key="2" name="failing-swap" entry="//localhost:7100" errorBoundary={errorBoundary} />);
+    });
+    rejectFirstMount(failure);
+    await settle();
+
+    // The mount failure is reported once; the unmount that found nothing mounted is not.
+    const reported = consoleError.mock.calls.map(([error]) => error as unknown);
+    expect(reported).toEqual([failure]);
+    expect(mocks.loadApp).toHaveBeenCalledTimes(1);
+    expect(mount).toHaveBeenCalledTimes(2);
+    expect(mount.mock.calls[1][0]).toBe(host.querySelector('.qiankun-micro-app-container'));
+
+    act(() => root.unmount());
+    await settle();
+    consoleError.mockRestore();
+  });
 });
