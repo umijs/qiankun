@@ -21,6 +21,7 @@ export const qiankunErrorCodes = [
   'module-rewrite-invalid',
   'app-unloaded',
   'app-teardown-failed',
+  'sandbox-mount-conflict',
 ] as const;
 
 export type QiankunErrorCode = (typeof qiankunErrorCodes)[number];

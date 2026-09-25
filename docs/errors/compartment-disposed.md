@@ -7,6 +7,7 @@ Code attempted to use a Compartment or ESM execution instance after `dispose()`,
 - `dispose()` canceled an unfinished classic script evaluation.
 - The ESM entry module was still loading during `dispose()`, so its entry promise was rejected.
 - After the sandbox was disposed, code still used the resource transformer or `fetch` it had retained to insert scripts or styles or send requests, such as a callback that fires after the micro app unmounts.
+- `mount()` or `nodeTransformer` was called on a sandbox controller after its `dispose()`, or `mount()` was still running when `dispose()` happened.
 
 ## Troubleshooting
 

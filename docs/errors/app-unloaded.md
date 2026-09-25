@@ -2,15 +2,15 @@
 
 ## Cause
 
-The micro app was disposed of with `unload()`, `unloadMicroApp()`, or `unloadApplication()`, but code still uses that generation of instances:
+The micro app was disposed of with `unload()`, `unloadMicroApp()`, or `unloadApplication()`, but code still uses the disposed instance:
 
-- It calls `mount()` or `update()` on an old handle.
+- It calls `mount()` or `update()` on an invalidated handle.
 - A `mountPromise` that was still pending during disposal is rejected.
 - An unfinished loading request of the instance is canceled.
 
 ## Troubleshooting
 
-1. Use the stack trace to find code that still uses the old handle, such as a callback or timer that fires after a component unmounts.
+1. Use the stack trace to find code that still uses the invalidated handle, such as a callback or timer that fires after a component unmounts.
 2. Check the order of `unload()` relative to `mount()` and `update()` calls, and look for concurrent operations.
 3. If the error surfaces where `mountPromise` is awaited, check whether the cancellation is expected.
 

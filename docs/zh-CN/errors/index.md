@@ -58,3 +58,4 @@ declare class QiankunError extends Error {
 - [module-rewrite-invalid：模块改写区间异常](/zh-CN/errors/module-rewrite-invalid)
 - [app-unloaded：微应用已销毁](/zh-CN/errors/app-unloaded)
 - [app-teardown-failed：微应用清理失败](/zh-CN/errors/app-teardown-failed)
+- [sandbox-mount-conflict：沙箱挂载状态冲突](/zh-CN/errors/sandbox-mount-conflict)

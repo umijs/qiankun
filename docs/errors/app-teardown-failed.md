@@ -10,7 +10,7 @@ Even when this error is reported, disposal has completed and the old instance ca
 
 ## Troubleshooting
 
-1. Check the `dispose` hooks of custom sandbox plugins for code that throws a non-`Error` value.
+1. The error message includes the thrown value. Use it to find the code in the `dispose` hooks of custom sandbox plugins that throws that value.
 2. If a plugin calls another library's cleanup method in `dispose`, check whether that method throws strings or plain objects.
 
 ## Solution
