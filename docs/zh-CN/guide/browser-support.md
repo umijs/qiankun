@@ -28,7 +28,9 @@ if (isRuntimeCompatible()) {
 
 ## Firefox 与原生 ESM
 
-ESM 沙箱依赖动态注入多个 import map，Firefox 尚未默认启用该能力。需要支持 Firefox 时，微应用应改用 Classic 脚本方式交付（例如 Webpack 构建产物），基础运行时和样式隔离在 Firefox 上不受影响。
+ESM 沙箱依赖动态注入多个 import map，Firefox 尚未默认启用该能力。qiankun 3.0 不提供 ESM 沙箱降级，使用 ESM 微应用时，必须选择支持动态注入多个 import map 的浏览器。es-module-shims 的评估与不接入的原因见 [ESM 沙箱 RFC](https://github.com/umijs/qiankun/blob/next/docs/rfcs/esm-sandbox.md)。
+
+需要支持 Firefox 时，微应用应改用 Classic 脚本方式交付（例如 Webpack 构建产物），基础运行时和样式隔离在 Firefox 上不受影响。
 
 ## 继续阅读
 
