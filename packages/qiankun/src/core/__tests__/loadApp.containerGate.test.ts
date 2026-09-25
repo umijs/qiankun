@@ -279,6 +279,27 @@ describe('loadApp container gate', () => {
     expect(getParcelConfig.occupiesContainer).toBe(false);
   });
 
+  it('reports the load phase as open until the entry stream settles, adopted or not', async () => {
+    const container = document.createElement('div');
+    let settleStream: (() => void) | undefined;
+    mocks.loadEntry.mockImplementationOnce((_entry: unknown, _container: HTMLElement, opts: LoaderOpts) => {
+      settleStream = opts.onDOMStreamSettled;
+      return Promise.resolve(validLifecycles);
+    });
+    const getParcelConfig = await loadApp(createApp('app-a', container));
+    expect(getParcelConfig.loadPhaseOpen).toBe(true);
+
+    // The mount adopts the open ① as its ②; the load phase stays open until the stream is done.
+    const parcelConfig = getParcelConfig(container);
+    await runHooks(parcelConfig.mount);
+    expect(getParcelConfig.loadPhaseOpen).toBe(true);
+    settleStream!();
+    expect(getParcelConfig.loadPhaseOpen).toBe(false);
+    expect(getParcelConfig.occupiesContainer).toBe(true);
+    await runHooks(parcelConfig.unmount);
+    expect(getParcelConfig.occupiesContainer).toBe(false);
+  });
+
   it('replays the entry when another app initialized the container between load and mount', async () => {
     const container = document.createElement('div');
     mockSettledLoadEntry();
