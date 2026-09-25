@@ -56,12 +56,12 @@ void microApp.mountPromise.catch((error: unknown) => {
 
 ## 处理加载超时 {#load-timeout}
 
-启用 [`timeout`](/zh-CN/api/configuration#timeout) 后，加载超时会产生 `LoadAppTimeoutError`。该类从 `qiankun` 导出，继承 `QiankunError`，提供以下只读字段：
+启用 [`loadTimeout`](/zh-CN/api/configuration#loadtimeout) 后，加载超时会产生 `LoadAppTimeoutError`。该类从 `qiankun` 导出，继承 `QiankunError`，提供以下只读字段：
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
 | `appName` | `string` | 加载超时的微应用名称。 |
-| `timeout` | `number` | 配置的时限，单位为毫秒。 |
+| `loadTimeout` | `number` | 配置的时限，单位为毫秒。 |
 | `elapsed` | `number` | 从开始计时到超时触发的实际耗时，单位为毫秒。 |
 
 手动加载的应用应捕获句柄 Promise 的拒绝；路由应用可在全局错误处理器中使用相同的类型判断：
@@ -69,7 +69,7 @@ void microApp.mountPromise.catch((error: unknown) => {
 ```ts
 import { LoadAppTimeoutError, loadMicroApp } from 'qiankun';
 
-const app = loadMicroApp({ name, entry, container }, { timeout: 10_000 });
+const app = loadMicroApp({ name, entry, container }, { loadTimeout: 10_000 });
 
 try {
   await app.mountPromise;
@@ -77,7 +77,7 @@ try {
   if (error instanceof LoadAppTimeoutError) {
     reportToMonitoring(error, {
       app: error.appName,
-      timeout: error.timeout,
+      loadTimeout: error.loadTimeout,
       elapsed: error.elapsed,
     });
   }
@@ -85,7 +85,7 @@ try {
 }
 ```
 
-超时失败前，qiankun 会中止该次加载、清理部分写入的节点和沙箱，并释放容器。重试时应重新调用 `loadMicroApp` 创建实例；不要继续挂载已经失败的句柄。`timeout` 只限制加载准备，不限制微应用的 `bootstrap`、`mount` 或 `unmount` 生命周期。
+超时失败前，qiankun 会中止该次加载、清理部分写入的节点和沙箱，并释放容器。重试时应重新调用 `loadMicroApp` 创建实例；不要继续挂载已经失败的句柄。`loadTimeout` 只限制加载阶段，不限制微应用的 `bootstrap`、`mount` 或 `unmount` 生命周期。
 
 `LoadAppTimeoutError` 的 `code` 为 `load-timeout`，超时配置无效时则抛出 `code` 为 `timeout-invalid` 的 `QiankunError`。排查方法分别见 [load-timeout：微应用加载超时](/zh-CN/errors/load-timeout) 和 [timeout-invalid：加载超时配置无效](/zh-CN/errors/timeout-invalid)。
 

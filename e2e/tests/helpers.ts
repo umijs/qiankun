@@ -11,7 +11,6 @@ export const FIREFOX_ESM_LIMITATION =
 
 export type E2EWindow = Window & {
   __E2E__: {
-    configureTimeout(timeout: number): void;
     load(
       name: string,
       configuration?: Record<string, unknown>,
@@ -29,7 +28,7 @@ export type E2EWindow = Window & {
     mountOutcome(key: string): Promise<{
       status: string;
       error?: string;
-      timeoutError?: { appName: string; timeout: number; elapsed: number };
+      timeoutError?: { appName: string; loadTimeout: number; elapsed: number };
     }>;
     remount(key: string): Promise<string>;
     unload(key: string): Promise<string>;

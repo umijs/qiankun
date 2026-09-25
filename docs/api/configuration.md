@@ -16,7 +16,7 @@ Every field is optional. The table below lists the default behavior when a field
 | --- | --- | --- | --- |
 | `sandbox` | `boolean \| SandboxConfiguration` | `true` | The single umbrella switch for isolation. `false` runs the micro-app directly against the real global; `true` enables the sandbox with defaults; an object enables it and configures the underlying Compartment. |
 | `fetch` | `typeof window.fetch` | `window.fetch` | Fetch implementation for the entry and loader-managed scripts, modules, and styles. Browser-native requests such as images do not necessarily pass through it. |
-| `timeout` | `number` | `0` (disabled) | Loading timeout in milliseconds. When omitted, inherits the default set by `start({ timeout })`; an explicit `0` disables it. |
+| `loadTimeout` | `number` | `0` (disabled) | Timeout of the loading phase in milliseconds. It does not bound `bootstrap`, `mount`, or `unmount`. |
 | `streamTransformer` | `() => TransformStream<string, string>` | `undefined` | Optional transform spliced into the HTML entry streaming pipeline, operating on the decoded HTML string stream. |
 | `nodeTransformer` | `<T extends Node>(node: T, opts) => T` | built-in asset transformer | Rewrites script / link / style nodes before they enter the container. Advanced extensions only. |
 
@@ -111,16 +111,16 @@ Use a custom `fetch` to inject credentials, headers, or a proxy. It must preserv
 
 To support loading cancellation, a custom fetch must forward the received `init.signal` to the underlying request and stop reading its response stream after cancellation.
 
-### timeout
+### loadTimeout
 
-Loading timeouts are disabled by default. Without a global default, omitting `timeout` or setting it to `0` leaves loading unrestricted. A positive finite number specifies milliseconds; negative values, `NaN`, and `Infinity` are invalid and produce a `QiankunError`.
+Loading timeouts are disabled by default: omitting `loadTimeout` or setting it to `0` leaves loading unrestricted. A positive finite number specifies milliseconds; negative values, `NaN`, and `Infinity` are invalid and produce a `QiankunError` with the `code` `timeout-invalid`.
 
-The timer starts when the app acquires permission to load into its container. It covers `beforeLoad`, entry loading, resource work awaited by the loader, entry lifecycle discovery, and completion of the HTML stream. Time spent waiting for a previous instance to release the container is excluded. The setting does not limit `bootstrap`, `mount`, `unmount`, or remounts that reuse loaded configuration.
+It only bounds the loading phase. The timer starts when the app acquires permission to load into its container. It covers `beforeLoad`, entry loading, resource work awaited by the loader, entry lifecycle discovery, and completion of the HTML stream. Time spent waiting for a previous instance to release the container is excluded. The duration of `bootstrap`, `mount`, and `unmount`, and remounts that reuse a loaded instance, are not limited by it.
 
 With a timeout enabled, qiankun waits for both entry lifecycles and the complete HTML stream before starting the mount phase. With timeouts disabled, the existing streaming behavior still permits mounting as soon as lifecycles are ready. An HTML response that never finishes therefore fails during loading when a timeout is enabled; it is not mounted first and then destroyed by a loading timeout.
 
 ```ts
-const app = loadMicroApp({ name: 'app1', entry, container }, { timeout: 10_000 });
+const app = loadMicroApp({ name: 'app1', entry, container }, { loadTimeout: 10_000 });
 await app.mountPromise;
 ```
 
@@ -163,20 +163,18 @@ The React and Vue `<MicroApp>` components accept the same type through `settings
 
 ## Precedence
 
-Every field applies per micro-app instance. The first `start({ timeout })` call can set a global timeout default for subsequent manual and route-driven loads. An app's own `timeout` takes precedence; an explicit `0` disables the default timeout, while omission or `undefined` inherits it. The global default does not change configuration that is already cached.
-
-`start()` neither accepts nor merges global sandbox, style, or fetch configuration.
+Every field applies per micro-app instance. `start()` neither accepts nor merges global sandbox, style, fetch, or loading timeout configuration.
 
 A per-app `sandbox` object replaces any outer one wholesale — configurations are merged with a shallow spread, so individual sandbox fields are never deep-merged.
 
 ## Migrating from v2
 
-The v2 sandbox object, legacy sandbox or prefetch configuration through `start()`, and old style-isolation options are not part of this type. The complete replacement map is maintained only in [Migrate from qiankun 2.x](/cookbook/migrate-from-2x).
+The v2 sandbox object, global `start()` configuration, and legacy style-isolation options are not part of this type. The complete replacement map is maintained only in [Migrate from qiankun 2.x](/cookbook/migrate-from-2x).
 
 ## Related
 
 - [loadMicroApp](/api/load-micro-app) — takes `AppConfiguration` as its second argument.
 - [registerMicroApps](/api/register-micro-apps) — route-driven apps set the same type through `configuration`.
-- [start](/api/start) — framework startup and the loading timeout default.
+- [start](/api/start) — framework startup; note that it only accepts `{ urlRerouteOnly }`.
 - [Type reference](/api/types) — the full type surface, including `RegistrableApp` and `LoadableApp`.
 - [Style Isolation](/concepts/style-isolation) and [JS Sandbox](/concepts/js-sandbox) — the concepts behind `styleIsolation` and `sandbox`.

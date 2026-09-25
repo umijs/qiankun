@@ -40,7 +40,6 @@ import {
   withAbortSignal,
 } from '../utils';
 import { acquireContainer, isContainerHeld, type ContainerHold } from './containerOccupancy';
-import { validateLoadingTimeout } from './configuration';
 
 declare const __QIANKUN_VERSION__: string;
 
@@ -78,11 +77,11 @@ export default async function loadApp<T extends ObjectType>(
   const {
     fetch = window.fetch,
     sandbox = true,
-    timeout = 0,
+    loadTimeout = 0,
     nodeTransformer = defaultNodeTransformer,
     ...restConfiguration
   } = configuration || {};
-  validateLoadingTimeout(timeout);
+  validateLoadTimeout(loadTimeout);
 
   const sandboxEnabled = sandbox !== false;
   const sandboxConfiguration: SandboxConfiguration = typeof sandbox === 'object' ? sandbox : {};
@@ -202,18 +201,18 @@ export default async function loadApp<T extends ObjectType>(
   const startedAt = performance.now();
   const checkLoadingDeadline = () => {
     const elapsed = performance.now() - startedAt;
-    if (timeout > 0 && elapsed >= timeout) {
-      abortController.abort(new LoadAppTimeoutError(appName, timeout, elapsed));
+    if (loadTimeout > 0 && elapsed >= loadTimeout) {
+      abortController.abort(new LoadAppTimeoutError(appName, loadTimeout, elapsed));
     }
   };
-  if (timeout > 0) {
+  if (loadTimeout > 0) {
     const checkDeadline = () => {
       loadingTimer = undefined;
       checkLoadingDeadline();
       if (!signal.aborted) {
         // Native timers clamp larger delays to a signed 32-bit integer. Re-check against the
         // monotonic clock so any finite positive budget works without an early timeout.
-        loadingTimer = setTimeout(checkDeadline, Math.min(timeout - (performance.now() - startedAt), 2 ** 31 - 1));
+        loadingTimer = setTimeout(checkDeadline, Math.min(loadTimeout - (performance.now() - startedAt), 2 ** 31 - 1));
       }
     };
     checkDeadline();
@@ -299,7 +298,7 @@ export default async function loadApp<T extends ObjectType>(
   let entryLifecyclesSettled = false;
   let domStreamSettled = false;
   const domStreamFinished = new Deferred<void>();
-  let loadingSetupSettled = timeout === 0;
+  let loadingSetupSettled = loadTimeout === 0;
   const releaseLoadHoldWhenSettled = () => {
     // an adopted hold lives on as the mount hold ② and is no longer the latch's to release
     if (
@@ -353,9 +352,9 @@ export default async function loadApp<T extends ObjectType>(
           beforeUnmount,
           ...getLifecyclesFromExports(lifecycles, appName, global, sandboxInstance?.latestSetProp),
         };
-        // Opting into a timeout makes full entry streaming part of loading. Otherwise an early
+        // Opting into a load timeout makes full entry streaming part of loading. Otherwise an early
         // entry export could report success while its network tail still owns the container.
-        if (timeout > 0) await withAbortSignal(domStreamFinished.promise, signal);
+        if (loadTimeout > 0) await withAbortSignal(domStreamFinished.promise, signal);
         // A long synchronous evaluation may have blocked the timer task. Enforce the elapsed
         // budget here as well, before its completion microtasks can clear the timer.
         checkLoadingDeadline();
@@ -597,6 +596,12 @@ export default async function loadApp<T extends ObjectType>(
     occupiesContainer: { get: () => holds.size > 0 },
     loadPhaseOpen: { get: () => !(entryLifecyclesSettled && domStreamSettled) },
   }) as ParcelConfigObjectGetter;
+}
+
+function validateLoadTimeout(loadTimeout: number): void {
+  if (!Number.isFinite(loadTimeout) || loadTimeout < 0) {
+    throw new QiankunError('loadTimeout must be a finite non-negative number', 'timeout-invalid');
+  }
 }
 
 /** One loadApp invocation's identity as a container claimant. */
