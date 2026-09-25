@@ -129,7 +129,7 @@ type Parcel = {
 | Member | Description |
 | --- | --- |
 | `mount()` | Mounts the parcel. loadMicroApp already mounts on load, so you rarely call this directly. |
-| `unmount()` | Unmounts the app, deactivates the sandbox, cleans up tracked side effects, and clears the container DOM. The loaded instance is kept for remounting or reuse by the same app name. |
+| `unmount()` | Unmounts the app, deactivates the sandbox, cleans up tracked side effects, and clears the container DOM. The loaded instance is kept for remounting or reuse by the same app name. You may call it before the mount finishes: the request is recorded right away and the app unmounts once that mount ends; it does nothing when the app is not mounted. Interleaved `mount()` and `unmount()` calls run in call order, and the last one wins. |
 | `unload()` | Unmounts any mounted app, then disposes of the instance this handle uses and its caches; the handle becomes invalid. See [below](#unload) for the scope. |
 | `update?(props)` | Present only if the micro-app exports an `update` lifecycle. Pushes new props to the running app. |
 | `getStatus()` | Returns the current lifecycle status from the union above. |
@@ -148,7 +148,7 @@ Observable behavior for callers:
 
 - **Loading and mounting start immediately.** You do not call `start()` first; await `mountPromise` when you need to know the app is visible.
 - **One container hosts one app at a time.** When apps are loaded into the same container in succession, the next instance waits for the previous one to unmount.
-- **An app name reuses its unmounted instances.** When you call it again with the same `name` and `entry` and that app has an idle, unmounted instance, qiankun mounts that instance into the container you pass, without loading the entry again or calling `bootstrap`. If none is idle, an instance whose `unmount()` has been called but has not finished is reused as well, and the new instance mounts once that unmount completes. Only instances mounted at the same time load separate copies. A `name` should therefore always refer to the same app, and per-mount state belongs in `mount()`.
+- **An app name reuses its unmounted instances.** When you call it again with the same `name` and `entry` and that app has an idle, unmounted instance, qiankun mounts that instance into the container you pass, without loading the entry again or calling `bootstrap`. If none is idle, an instance whose `unmount()` has been called but has not finished (including one still mounting) is reused as well, and the new instance mounts once that unmount completes. Only instances mounted at the same time load separate copies. A `name` should therefore always refer to the same app, and per-mount state belongs in `mount()`.
 - **The caller owns teardown.** Call `unmount()` when the app is no longer shown, as the official `<MicroApp>` components do. Call `unload()` or `unloadMicroApp(name)` only when the loaded resources should be released.
 
 See [Run multiple micro-app instances](/cookbook/run-multiple-instances) for the complete guidance on reuse and remounting.

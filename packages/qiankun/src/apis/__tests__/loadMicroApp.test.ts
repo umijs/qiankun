@@ -237,24 +237,105 @@ describe('loadMicroApp instance reuse', () => {
     expect(bootstrap).toHaveBeenCalledTimes(2);
   });
 
-  it.each([
-    ['is still mounting', false],
-    ['was asked to unmount while still mounting', true],
-  ])('does not share an instance that %s', async (_label, requestUnmount) => {
+  it('does not share an instance that is still mounting', async () => {
     const mounting = new Deferred<void>();
     mount.mockImplementationOnce(() => mounting.promise);
     const [former, next] = containers(2);
     const first = load(former);
     await first.bootstrapPromise;
     await vi.waitFor(() => expect(mount).toHaveBeenCalledTimes(1));
-    const firstUnmount = requestUnmount ? first.unmount() : undefined;
 
     const second = load(next);
     expect(mocks.loadApp).toHaveBeenCalledTimes(2);
 
     mounting.resolve();
-    await Promise.all([first.mountPromise, second.mountPromise, firstUnmount]);
+    await Promise.all([first.mountPromise, second.mountPromise]);
     expect(bootstrap).toHaveBeenCalledTimes(2);
+  });
+
+  it('queues behind an instance asked to unmount while it is still mounting', async () => {
+    const mounting = new Deferred<void>();
+    mount.mockImplementationOnce(() => mounting.promise);
+    const [former, next] = containers(2);
+    const first = load(former);
+    await first.bootstrapPromise;
+    await vi.waitFor(() => expect(mount).toHaveBeenCalledTimes(1));
+
+    // The unmount is accepted mid-mount and runs once that mount is done.
+    const firstUnmount = first.unmount();
+    const second = load(next);
+    expect(mocks.loadApp).toHaveBeenCalledTimes(1);
+    expect(unmount).not.toHaveBeenCalled();
+
+    mounting.resolve();
+    await firstUnmount;
+    await second.mountPromise;
+    expect(first.getStatus()).toBe(AppOrParcelStatus.NOT_MOUNTED);
+    expect(bootstrap).toHaveBeenCalledTimes(1);
+    expect(unmount).toHaveBeenCalledTimes(1);
+    expect(mount.mock.calls).toEqual([[{ container: former }], [{ container: next }]]);
+  });
+
+  it('settles an unmount requested during a mount that fails, and the newcomer still mounts', async () => {
+    const mounting = new Deferred<void>();
+    mount.mockImplementationOnce(() => mounting.promise);
+    const [former, next] = containers(2);
+    const first = load(former);
+    await first.bootstrapPromise;
+    await vi.waitFor(() => expect(mount).toHaveBeenCalledTimes(1));
+    const firstUnmount = first.unmount();
+    const second = load(next);
+
+    mounting.reject(new Error('mount failed'));
+    await expect(first.mountPromise).rejects.toThrow('mount failed');
+    // Nothing was mounted, so there is nothing to unmount.
+    await expect(firstUnmount).resolves.toBeNull();
+    await second.mountPromise;
+    // Only single-spa's own cleanup of the failed mount; the request adds no second unmount.
+    expect(unmount).toHaveBeenCalledTimes(1);
+    expect(mocks.loadApp).toHaveBeenCalledTimes(1);
+    expect(mount).toHaveBeenLastCalledWith({ container: next });
+  });
+
+  it('lets unload take over an unmount requested while the instance was still mounting', async () => {
+    const mounting = new Deferred<void>();
+    mount.mockImplementationOnce(() => mounting.promise);
+    const [container] = containers(1);
+    const first = load(container);
+    await first.bootstrapPromise;
+    await vi.waitFor(() => expect(mount).toHaveBeenCalledTimes(1));
+    const firstUnmount = first.unmount();
+    const unloading = first.unload();
+
+    // The entered mount is drained, then unload unmounts once instead of the pending request.
+    mounting.resolve();
+    await unloading;
+    await expect(firstUnmount).resolves.toBeNull();
+    expect(unmount).toHaveBeenCalledTimes(1);
+    expect(mocks.dispose).toHaveBeenCalledTimes(1);
+    expect(first.getStatus()).toBe(AppOrParcelStatus.NOT_LOADED);
+  });
+
+  it('applies interleaved mount and unmount requests in order so the last one wins', async () => {
+    const mounting = new Deferred<void>();
+    mount.mockImplementationOnce(() => mounting.promise);
+    const [container] = containers(1);
+    const app = load(container);
+    await app.bootstrapPromise;
+    await vi.waitFor(() => expect(mount).toHaveBeenCalledTimes(1));
+
+    // mount → unmount → mount while the first mount is still in flight ends mounted.
+    const requests = [app.mount(), app.unmount(), app.mount()];
+    mounting.resolve();
+    await Promise.all(requests);
+    expect(app.getStatus()).toBe(AppOrParcelStatus.MOUNTED);
+    expect(mount).toHaveBeenCalledTimes(2);
+    expect(unmount).toHaveBeenCalledTimes(1);
+
+    // Repeated unmounts tear down once.
+    await Promise.all([app.unmount(), app.unmount()]);
+    expect(app.getStatus()).toBe(AppOrParcelStatus.NOT_MOUNTED);
+    expect(unmount).toHaveBeenCalledTimes(2);
   });
 
   it('prefers an idle instance over a draining one', async () => {
