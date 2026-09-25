@@ -195,14 +195,7 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
     },
   };
 
-  let sandbox: Sandbox;
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (window.Proxy) {
-    sandbox = new StandardSandbox(appName, globals, incubatorContext, standardSandboxOptions);
-  } else {
-    // TODO snapshot sandbox
-    sandbox = new StandardSandbox(appName, globals, incubatorContext, standardSandboxOptions);
-  }
+  const sandbox = new StandardSandbox(appName, globals, incubatorContext, standardSandboxOptions);
 
   const classicScriptTransformer = (source: string, sourceURL?: string) =>
     sandbox.transformClassicScript(source, sourceURL);
@@ -245,7 +238,7 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
       styleIsolation,
     },
   };
-  const isolationPlugins = [...getDefaultIsolationPlugins(sandbox.type, hasContainer), ...plugins];
+  const isolationPlugins = [...getDefaultIsolationPlugins(hasContainer), ...plugins];
 
   // Bootstrap plugins are installed before loadEntry starts evaluating application scripts.
   const bootstrappingFrees: Free[] = [];

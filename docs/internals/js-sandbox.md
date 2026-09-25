@@ -122,7 +122,7 @@ The sandbox follows single-spa's mount / unmount:
 - On **unmount**, each patcher's `free()` runs first (collecting the rebuilds for next time), then `sandbox.inactive()` **locks** the membrane. While locked, global writes from the app are ignored (with a warning in dev).
 
 ::: info No snapshot diffing
-Some sandbox approaches snapshot every property on `window` at mount and diff it back at unmount. qiankun v3 does **not** do this. Isolation comes from never touching the real `window` in the first place, so there's nothing to diff back. A `SnapshotSandbox` type does exist in the enum, but it has no implementation — `createSandbox` always constructs a `StandardSandbox`, in both the `Proxy`-present and `Proxy`-absent branches. In practice the v3 sandbox **requires** `Proxy`; there's no fallback path.
+Some sandbox approaches snapshot every property on `window` at mount and restore it on unmount by comparing differences. qiankun v3 stores global writes in an app-local object from the start, so there is no need to restore the real `window`. `createSandbox` always constructs a `StandardSandbox` and provides no legacy fallback. See [Browser support](/guide/browser-support) for runtime requirements.
 :::
 
 ## Boundaries and escape hatches

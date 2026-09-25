@@ -4,10 +4,8 @@ import { Compartment } from '../../compartment';
 import { defaultIsolationPlugins } from '../../../patchers';
 import type { Free, IsolationPlugin, IsolationPluginConfig, Rebuild } from '../../../patchers/types';
 import { createSandbox } from '..';
-import { SandboxType } from '../types';
 
-const standardDefaultPlugins = defaultIsolationPlugins[SandboxType.Standard];
-const originalStandardDefaultPlugins = standardDefaultPlugins.slice();
+const originalDefaultIsolationPlugins = defaultIsolationPlugins.slice();
 const identityNodeTransformer: IsolationPluginConfig['nodeTransformer'] = (node) => node;
 const noopRebuild: Rebuild = async () => {};
 const noopFree: Free = () => noopRebuild;
@@ -28,8 +26,8 @@ function createContainer(plugins: readonly IsolationPlugin[] = []) {
 }
 
 describe('default isolation plugins', () => {
-  it('retains the historical Standard preset order', () => {
-    expect(standardDefaultPlugins.map(({ name }) => name)).toEqual([
+  it('retains the historical default plugin order', () => {
+    expect(defaultIsolationPlugins.map(({ name }) => name)).toEqual([
       'interval',
       'windowListener',
       'historyListener',
@@ -40,11 +38,11 @@ describe('default isolation plugins', () => {
 
 describe('isolation plugin lifecycle', () => {
   beforeEach(() => {
-    standardDefaultPlugins.splice(0, standardDefaultPlugins.length);
+    defaultIsolationPlugins.splice(0, defaultIsolationPlugins.length);
   });
 
   afterEach(() => {
-    standardDefaultPlugins.splice(0, standardDefaultPlugins.length, ...originalStandardDefaultPlugins);
+    defaultIsolationPlugins.splice(0, defaultIsolationPlugins.length, ...originalDefaultIsolationPlugins);
     createdCompartments.splice(0).forEach((compartment) => compartment.dispose());
     vi.restoreAllMocks();
   });
@@ -72,7 +70,7 @@ describe('isolation plugin lifecycle', () => {
         return noopFree;
       },
     });
-    standardDefaultPlugins.push(plugin('default-a', true), plugin('default-b'));
+    defaultIsolationPlugins.push(plugin('default-a', true), plugin('default-b'));
 
     const { container, controller } = createContainer([plugin('user-a'), plugin('user-b')]);
 
@@ -170,7 +168,7 @@ describe('isolation plugin lifecycle', () => {
         };
       },
     });
-    standardDefaultPlugins.push(plugin('default'));
+    defaultIsolationPlugins.push(plugin('default'));
     const { container, controller } = createContainer([plugin('user')]);
 
     await controller.mount(container);
@@ -274,7 +272,7 @@ describe('isolation plugin lifecycle', () => {
   it('rolls back completed bootstrap hooks when a later hook throws', () => {
     const events: string[] = [];
     const dispose = vi.spyOn(Compartment.prototype, 'dispose');
-    standardDefaultPlugins.push(
+    defaultIsolationPlugins.push(
       {
         name: 'first',
         bootstrap: () => {
