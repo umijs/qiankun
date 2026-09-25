@@ -31,7 +31,7 @@ const apps = [
 await Promise.all(apps.map((app) => app.mountPromise));
 
 // When the dashboard closes:
-await Promise.all(apps.map((app) => app.unload()));
+await Promise.all(apps.map((app) => app.unmount()));
 ```
 
 Do not share one container between two live instances. To switch applications in one location, await the current instance's `unmount()` before loading the next one.
@@ -82,15 +82,15 @@ After unmounting the same instance, you can call `mount()` on its handle again. 
 
 If the host destroys the old container and calls `loadMicroApp` for a new one, the call returns a new handle. When the same app has an unmounted instance, qiankun mounts it into the new container without executing the entry again. Keep and clean up the new handle separately. Do not remove the DOM and discard the old handle.
 
-## Manage instance cleanup {#every-handle-must-be-unmounted}
+## Every handle must be unmounted
 
-The host owns every handle returned by `loadMicroApp`. Call `unmount()` to remove an app temporarily, or `unload()` when its generation is no longer needed:
+The host owns every handle returned by `loadMicroApp` and the matching cleanup responsibility:
 
 ```ts
-await Promise.all([left.unload(), right.unload()]);
+await Promise.all([left.unmount(), right.unmount()]);
 ```
 
-`unmount()` invokes the micro-app's cleanup lifecycle and releases container content and tracked sandbox effects while retaining loaded configuration. `unload()` also disposes of the entire name/container generation, cancels queued instances, and invalidates old handles; loading again requests the entry and executes scripts afresh. Same-name apps in other containers are unaffected. The micro-app must still release external resources such as store subscriptions, workers, WebSockets, observers, and portals in its own `unmount`. See [loadMicroApp](/api/load-micro-app#unload).
+`unmount()` invokes the micro-app lifecycle and releases container and sandbox side effects qiankun can track. The micro-app must still release external resources such as store subscriptions, workers, WebSockets, observers, and portals.
 
 ## Native ESM caveat
 

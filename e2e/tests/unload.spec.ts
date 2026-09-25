@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { SUB_APP_ENTRIES } from '../ports';
-import { type E2EWindow, FIREFOX_ESM_LIMITATION, loadApp, readMainRealmGlobal } from './helpers';
+import { countLiveCompartments, type E2EWindow, FIREFOX_ESM_LIMITATION, loadApp, readMainRealmGlobal } from './helpers';
 
 test.describe('terminal unload', () => {
   test.beforeEach(async ({ page }) => {
@@ -43,7 +43,7 @@ test.describe('terminal unload', () => {
     });
   }
 
-  test('named unload cancels queued siblings and retires every handle in that generation', async ({ page }) => {
+  test('named unload cancels queued siblings and retires every handle', async ({ page }) => {
     await loadApp(page, 'sub-classic', undefined, 'holder', undefined, 'shared');
     await page.evaluate(() => {
       const api = (window as unknown as E2EWindow).__E2E__;
@@ -54,7 +54,7 @@ test.describe('terminal unload', () => {
       .poll(() => page.evaluate(() => (window as unknown as E2EWindow).__E2E__.status('waiter-a')))
       .toBe('MOUNTING');
 
-    await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.unloadNamed('sub-classic', 'shared'));
+    await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.unloadNamed('sub-classic'));
 
     for (const key of ['waiter-a', 'waiter-b']) {
       const outcome = await page.evaluate(
@@ -78,25 +78,49 @@ test.describe('terminal unload', () => {
     await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.unload('waiter-a'));
     await expect(page.getByTestId('classic-counters')).toHaveText('bootstrap:1,mount:1,unmount:0');
     await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.unload('new-generation'));
-    await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.unloadNamed('sub-classic', 'shared'));
+    await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.unloadNamed('sub-classic'));
   });
 
-  test('unloading one container preserves an independent same-name instance', async ({ page }) => {
+  test('a handle unloads only its own instance while named unload also disposes of idle ones', async ({ page }) => {
     await loadApp(page, 'sub-classic', undefined, 'first');
     await loadApp(page, 'sub-classic', undefined, 'second');
+    expect(await countLiveCompartments(page)).toBe(2);
 
-    await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.unloadNamed('sub-classic', 'first'));
+    await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.unload('first'));
 
     await expect(page.locator('#container-first')).toBeEmpty();
     await expect(page.locator('#container-second').getByTestId('classic-counters')).toHaveText(
       'bootstrap:1,mount:1,unmount:0',
     );
+    expect(await countLiveCompartments(page)).toBe(1);
     await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.unmount('second'));
     expect(await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.remount('second'))).toBe('MOUNTED');
     await expect(page.locator('#container-second').getByTestId('classic-counters')).toHaveText(
       'bootstrap:1,mount:2,unmount:1',
     );
-    await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.unload('second'));
+
+    // Unmounted instances stay cached for reuse until the app is unloaded by name.
+    await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.unmount('second'));
+    await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.unloadNamed('sub-classic'));
+    expect(await countLiveCompartments(page)).toBe(0);
+    const staleMount = await page.evaluate(() =>
+      (window as unknown as E2EWindow).__E2E__.remount('second').then(
+        () => 'unexpected mount',
+        (error: unknown) => String(error),
+      ),
+    );
+    expect(staleMount).toContain('unloaded');
+
+    const entryRequest = page.waitForRequest(
+      (request) => request.url() === new URL(SUB_APP_ENTRIES['sub-classic']).href,
+    );
+    const reloaded = loadApp(page, 'sub-classic', undefined, 'third');
+    await entryRequest;
+    expect(await reloaded).toBe('MOUNTED');
+    await expect(page.locator('#container-third').getByTestId('classic-counters')).toHaveText(
+      'bootstrap:1,mount:1,unmount:0',
+    );
+    await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.unload('third'));
   });
 
   test('unload aborts an open native entry stream and releases the container for its waiter', async ({

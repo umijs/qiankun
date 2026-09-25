@@ -4,7 +4,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Deferred } from '@qiankunjs/shared';
 import type { LoaderOpts } from '@qiankunjs/loader';
-import { AppOrParcelStatus } from '@qiankunjs/single-spa';
+import { addErrorHandler, AppOrParcelStatus, removeErrorHandler } from '@qiankunjs/single-spa';
 import type { MicroApp, MicroAppLifeCycles } from '../../types';
 
 const mocks = vi.hoisted(() => ({ loadEntry: vi.fn() }));
@@ -189,6 +189,35 @@ describe('unload drains lifecycles that still own the container', () => {
     await b.mountPromise;
     expect(log).toEqual(['a:unmount:end', 'b:mount']);
     expect(container.querySelector('main')?.textContent).toBe('b:dom');
+  });
+});
+
+describe('unload cancelling a remount', () => {
+  it('does not report a remount cancelled at the container gate as an application error', async () => {
+    const errors = vi.fn();
+    addErrorHandler(errors);
+    try {
+      const lifecycles: MicroAppLifeCycles = { bootstrap: noop, mount: noop, unmount: noop };
+      const { container, load } = setup({ a: lifecycles, b: lifecycles });
+      const a = load('a');
+      await a.mountPromise;
+      await a.unmount();
+      const b = load('b');
+      await b.mountPromise;
+      const raw = a._parcel;
+      // b holds the container, so the remount waits at the gate inside loadApp's mount chain.
+      const remount = a.mount();
+      await vi.waitFor(() => expect(raw.status).toBe(AppOrParcelStatus.MOUNTING));
+      await a.unload();
+      await remount;
+      await new Promise((resolve) => setTimeout(resolve));
+      expect(errors).not.toHaveBeenCalled();
+      expect(a.getStatus()).toBe(AppOrParcelStatus.NOT_LOADED);
+      expect(b.getStatus()).toBe(AppOrParcelStatus.MOUNTED);
+      expect(container.querySelector('main')?.textContent).toBe('b:dom');
+    } finally {
+      removeErrorHandler(errors);
+    }
   });
 });
 
