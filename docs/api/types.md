@@ -244,13 +244,13 @@ import type { Parcel } from '@qiankunjs/single-spa';
 export type MicroApp = Parcel & { unload(): Promise<void> };
 ```
 
-The handle returned by [`loadMicroApp`](/api/load-micro-app) extends the `Parcel` from qiankun's bundled `@qiankunjs/single-spa` with `unload()`. It provides instance controls and promises for each lifecycle phase. Import `unloadApplication` directly from `qiankun` and other routing helpers from `@qiankunjs/single-spa`. Do not install the separate `single-spa` package, which would create a second, independent router.
+The handle returned by [`loadMicroApp`](/api/load-micro-app) extends the `Parcel` from qiankun's bundled `@qiankunjs/single-spa` with `unload()`. It provides instance controls and promises for each lifecycle phase. Import `unloadApplication`, `navigateToUrl`, `addErrorHandler`, and `removeErrorHandler` directly from `qiankun`, and other routing helpers from `@qiankunjs/single-spa`. Do not install the separate `single-spa` package, which would create a second, independent router.
 
 | Member | Type | Description |
 | --- | --- | --- |
 | `mount()` | `() => Promise<null>` | Mount the app. |
-| `unmount()` | `() => Promise<null>` | Unmount the app while retaining configuration for remounting. |
-| `unload()` | `() => Promise<void>` | Dispose of the entire generation sharing this name and container, invalidating its old handles. See [loadMicroApp](/api/load-micro-app#unload). |
+| `unmount()` | `() => Promise<null>` | Unmount the app while keeping the loaded instance for reuse. |
+| `unload()` | `() => Promise<void>` | Dispose of the instance this handle uses; the handle becomes invalid. See [loadMicroApp](/api/load-micro-app#unload) for the scope. |
 | `update?(props)` | `(props) => Promise<any>` | Push new props, when the app exports an `update` hook. |
 | `getStatus()` | `() => Status` | Current lifecycle status (union below). |
 | `loadPromise` | `Promise<null>` | Resolves when source code has loaded. |

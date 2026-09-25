@@ -97,6 +97,8 @@ export default function App() {
 如果未保留 `loadMicroApp` 的返回值，主应用就没有办法再卸载该实例。每次调用 `loadMicroApp` 后，都应在所属组件销毁时调用一次 `unmount()`。
 
 React 清理函数不能返回 Promise，因此本例只是发起 `unmount()` 调用，并捕获可能的失败。如果主应用的清理流程支持异步等待，则应在移除容器前等待该 Promise 完成。
+
+卸载后已加载的实例会保留，下次挂载 `sub-app` 时直接复用，不再重新执行入口。需要释放这些资源时，参见 [loadMicroApp](/zh-CN/api/load-micro-app#unload) 中的 `unload()`。
 :::
 
 ## 路由驱动的编排方式

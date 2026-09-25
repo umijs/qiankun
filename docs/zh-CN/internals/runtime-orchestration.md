@@ -122,7 +122,7 @@ flowchart TD
 7. **返回 Parcel 配置。** 工厂函数生成 single-spa 的 `ParcelConfigObject`。`mount` 阶段依次执行：初始化或重建容器、激活沙箱、`beforeMount`、应用 `mount({ ...props, container })`、`afterMount`。`unmount` 阶段依次执行：`beforeUnmount`、应用 `unmount(...)`、停用沙箱、`afterUnmount`、清空容器。`unload` 阶段调用统一的沙箱 `dispose()`，清除框架持有的 ESM 引擎引用并撤销 blob URL；手动加载的句柄 `unload()` 和 `unloadMicroApp` 也调用该路径。
 
 ::: info `mount`、`unmount` 与 `unload`
-`unmount` 仅停用应用，同时保留沙箱和 ESM 模块命名空间，以降低重新挂载的开销。对于 ESM 应用，重新挂载只会再次调用 `mount(props)`，不会重新执行模块顶层代码。手动加载的应用通过句柄 `unload()` 或 `unloadMicroApp(name, container)` 销毁同名应用在同一容器中的整代实例；路由应用通过 `unloadApplication` 触发销毁。两条路径都会清理 ESM 引擎的框架引用及 blob URL，但不能撤回浏览器原生模块注册。因此，框架实例应在 `mount()` 中创建，而不应在模块顶层创建。
+`unmount` 仅停用应用，同时保留沙箱和 ESM 模块命名空间，以降低重新挂载的开销。对于 ESM 应用，重新挂载只会再次调用 `mount(props)`，不会重新执行模块顶层代码。手动加载的应用通过句柄 `unload()` 或 `unloadMicroApp(name)` 销毁；路由应用通过 `unloadApplication` 触发销毁。两条路径都会清理 ESM 引擎的框架引用及 blob URL，但不能撤回浏览器原生模块注册。因此，框架实例应在 `mount()` 中创建，而不应在模块顶层创建。
 :::
 
 ## `start()` 的附加行为

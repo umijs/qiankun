@@ -88,7 +88,7 @@ The application description has three required fields:
 | `entry` | Points to its HTML entry; here, the server on port `7101`. |
 | `container` | The `HTMLElement` that receives the micro-app. |
 
-`loadMicroApp` returns a `MicroApp` handle. Keep that handle for as long as the instance is in use and call `unmount()` during cleanup. This lets qiankun run the micro-app's `unmount` lifecycle and release the instance cleanly. React effect cleanup cannot return a Promise, so the example starts unmounting and attaches a rejection handler; in an async host flow, await `unmount()` before removing the container.
+`loadMicroApp` returns a `MicroApp` handle. Keep that handle for as long as the instance is in use and call `unmount()` during cleanup. This lets qiankun run the micro-app's `unmount` lifecycle and release the instance cleanly. React effect cleanup cannot return a Promise, so the example starts unmounting and attaches a rejection handler; in an async host flow, await `unmount()` before removing the container. The loaded instance is kept after unmounting and reused when the same app loads again; to release it, see `unload()` in [loadMicroApp](/api/load-micro-app#unload).
 
 ## What the micro-app provides
 

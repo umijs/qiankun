@@ -244,13 +244,13 @@ import type { Parcel } from '@qiankunjs/single-spa';
 export type MicroApp = Parcel & { unload(): Promise<void> };
 ```
 
-[`loadMicroApp`](/zh-CN/api/load-micro-app) 返回的句柄，在 qiankun 内置 `@qiankunjs/single-spa` 的 `Parcel` 基础上扩展了 `unload()`。该句柄提供实例控制方法和各生命周期阶段对应的 Promise。`unloadApplication` 可直接从 `qiankun` 导入；其他路由辅助函数应从 `@qiankunjs/single-spa` 导入。不要再单独安装 `single-spa`，否则会引入第二个相互独立的路由器。
+[`loadMicroApp`](/zh-CN/api/load-micro-app) 返回的句柄，在 qiankun 内置 `@qiankunjs/single-spa` 的 `Parcel` 基础上扩展了 `unload()`。该句柄提供实例控制方法和各生命周期阶段对应的 Promise。`unloadApplication`、`navigateToUrl`、`addErrorHandler` 和 `removeErrorHandler` 可直接从 `qiankun` 导入；其他路由辅助函数应从 `@qiankunjs/single-spa` 导入。不要再单独安装 `single-spa`，否则会引入第二个相互独立的路由器。
 
 | 成员 | 类型 | 说明 |
 | --- | --- | --- |
 | `mount()` | `() => Promise<null>` | 挂载应用。 |
-| `unmount()` | `() => Promise<null>` | 卸载应用，保留配置供重新挂载。 |
-| `unload()` | `() => Promise<void>` | 销毁同名应用在同一容器中的整代实例，旧句柄随之失效。详见 [loadMicroApp](/zh-CN/api/load-micro-app#unload)。 |
+| `unmount()` | `() => Promise<null>` | 卸载应用，保留已加载的实例供复用。 |
+| `unload()` | `() => Promise<void>` | 销毁该句柄所用的实例，句柄随之失效。销毁范围见 [loadMicroApp](/zh-CN/api/load-micro-app#unload)。 |
 | `update?(props)` | `(props) => Promise<any>` | 传递新的 props，仅在应用导出 `update` 钩子时可用。 |
 | `getStatus()` | `() => Status` | 返回当前生命周期状态，取值为下方的联合类型。 |
 | `loadPromise` | `Promise<null>` | 表示源码加载阶段完成的 Promise。 |

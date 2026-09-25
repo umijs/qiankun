@@ -129,8 +129,8 @@ type Parcel = {
 | 成员 | 说明 |
 | --- | --- |
 | `mount()` | 挂载该 Parcel。`loadMicroApp` 会在加载时自动挂载，因此通常无需直接调用。 |
-| `unmount()` | 卸载应用、停用沙箱，并清理可追踪的副作用和容器 DOM。保留已加载的配置，供后续重新挂载。 |
-| `unload()` | 先卸载已挂载的应用，再销毁同名应用在同一容器中的整代实例和缓存。详见下方说明。 |
+| `unmount()` | 卸载应用、停用沙箱，并清理可追踪的副作用和容器 DOM。已加载的实例会保留，供重新挂载或同名应用复用。 |
+| `unload()` | 先卸载已挂载的应用，再销毁该句柄所用的实例及其缓存，句柄随之失效。销毁范围见[下方说明](#unload)。 |
 | `update?(props)` | 仅当微应用导出 `update` 生命周期时存在，用于向运行中的应用传递新的 props。 |
 | `getStatus()` | 返回当前生命周期状态，取值范围为上述联合类型。 |
 | `loadPromise` | 表示源码加载阶段完成的 Promise。 |
@@ -147,15 +147,22 @@ type Parcel = {
 - **调用后立即开始加载和挂载。** 无需预先调用 `start()`；如需等待应用完成渲染，应等待 `mountPromise`。
 - **一个容器在同一时刻只承载一个应用。** 如果连续向同一容器加载应用，后一个实例会等待前一个实例卸载。
 - **同名应用会复用已卸载的实例。** 以相同的 `name` 和 `entry` 再次调用时，如果该应用有已卸载、处于空闲状态的实例，qiankun 会把它挂载到本次传入的容器，不再重新加载入口，也不再调用 `bootstrap`。没有空闲实例时，已调用 `unmount()` 但尚未卸载完成的实例也会被复用，新实例等它卸载完成后再挂载。只有同时挂载的实例才会各自加载一份。因此同一 `name` 应始终指向同一个应用，每次挂载所需的状态应在 `mount()` 中初始化。
-- **调用方负责卸载或销毁。** 暂时隐藏应用并保留复用能力时调用 `unmount()`；不再需要这一代实例时调用 `unload()`。
+- **调用方负责卸载。** 不再展示应用时调用 `unmount()`，官方 `<MicroApp>` 组件也是这样做的。需要释放已加载的资源时，再调用 `unload()` 或 `unloadMicroApp(name)`。
 
 多实例、复用和重新挂载的完整建议见[运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)。
 
 ## 销毁实例：unload 和 unloadMicroApp {#unload}
 
-`unmount()` 保留生命周期配置和沙箱状态，重新挂载时可以复用。`unload()` 会销毁这些资源；同名应用在同一容器元素中再次调用 `loadMicroApp` 时，会重新请求入口和资源，并重新执行脚本。
+`unmount()` 之后，qiankun 仍保留已加载的实例，包括生命周期、沙箱和缓存。同名应用再次加载时直接复用这些实例，不重新执行入口。实例会一直保留到主应用主动销毁；需要释放时，调用句柄的 `unload()` 或 `unloadMicroApp(name)`。官方 `<MicroApp>` 组件销毁时只调用 `unmount()`，不会销毁实例。
 
-销毁以「应用名称 + 容器元素」为范围。同一代配置对应的所有旧句柄一并失效，包括尚在排队的实例；其他容器中的同名应用不受影响。已挂载的实例会先执行 `unmount`，排队实例则直接取消，无需等待它们挂载。已经开始执行的 `bootstrap`、`mount`、`unmount` 和 `update` 无法中途打断，`unload()` 会等它们结束后再销毁；挂载中途被取消的实例会先完成补偿卸载、清空容器，再把容器交给后续实例。
+两种方式的销毁范围不同：
+
+- **`unload()` 只销毁该句柄所用的那份实例。** 一份实例可能被多个句柄共用，例如在同一容器上排队的句柄，以及复用它的后续调用返回的句柄。这些句柄一并失效，其中尚在排队的直接取消。同名应用的其他实例不受影响。
+- **`unloadMicroApp(name)` 销毁该名称下全部手动加载的实例**，包括正在挂载的和卸载后闲置的。
+
+销毁后再次调用 `loadMicroApp`，会重新请求入口和资源，并重新执行脚本。
+
+已挂载的实例会先执行 `unmount`，排队实例则直接取消，无需等待它们挂载。已经开始执行的 `bootstrap`、`mount`、`unmount` 和 `update` 无法中途打断，销毁会等它们结束；挂载中途被取消的实例会先完成卸载、清空容器，再把容器交给后续实例。
 
 ```ts
 import { loadMicroApp, unloadMicroApp } from 'qiankun';
@@ -164,27 +171,29 @@ const app = loadMicroApp({ name: 'app1', entry, container });
 await app.mountPromise;
 await app.unload();
 
-// 未保留句柄时，可以按名称和容器销毁当前一代实例。
-await unloadMicroApp('app1', container);
+// 未保留句柄时，按名称销毁该应用的全部实例。
+await unloadMicroApp('app1');
 ```
 
-`unloadMicroApp` 的函数签名如下，`container` 必须传入原来的容器元素：
+`unloadMicroApp` 的函数签名如下：
 
 ```ts
-function unloadMicroApp(name: string, container: HTMLElement): Promise<void>;
+function unloadMicroApp(name: string): Promise<void>;
 ```
 
-销毁后，旧句柄的 `getStatus()` 返回 `NOT_LOADED`；`mount()` 和已有的 `update()` 方法拒绝并返回 `QiankunError`，`unmount()` 不再执行操作。尚未完成的 `mountPromise` 也会拒绝。重复调用同一旧句柄的 `unload()` 会返回同一个销毁结果，不会影响随后创建的新一代实例。`unloadMicroApp` 在没有对应实例时直接完成；有对应实例时始终销毁当前一代。
+销毁后，失效句柄的 `getStatus()` 返回 `NOT_LOADED`；`mount()` 和已有的 `update()` 方法拒绝并返回 `QiankunError`，`unmount()` 不再执行操作。尚未完成的 `mountPromise` 也会拒绝。重复调用同一句柄的 `unload()` 会返回同一个销毁结果，不会影响之后新建的实例。没有对应实例时，`unloadMicroApp` 直接完成；某个实例清理失败时，它会等全部实例销毁结束，再以第一个错误拒绝。
 
 销毁会清理容器节点（包括 `qiankun-head`）、框架追踪的副作用、沙箱隔离膜和配置引用、ESM 模块缓存、blob URL，以及该实例注入的 import map 脚本。入口和资源的 fetch 缓存同时失效；仍被其他实例使用的共享请求不会被中止。调用方也应释放自己持有的句柄、props 和其他引用。
 
+销毁会撤销隔离膜。销毁前已经排入队列的 `setTimeout`、`requestAnimationFrame` 和 Promise 回调如果在之后才执行，访问 `window` 等全局对象时会抛出 `TypeError`。微应用应在自己的 `unmount` 中清理这些挂起的异步回调。
+
 浏览器已经注册的原生 import map 条目及模块注册表无法通过 qiankun 撤销。移除注入脚本、撤销 blob URL 不等于清空浏览器模块注册表；重新加载会使用新的实例标识。机制限制见 [ESM 沙箱 RFC 第 11 节](https://github.com/umijs/qiankun/blob/next/docs/rfcs/esm-sandbox.md)。关闭沙箱（`sandbox: false`）时，微应用写入真实全局对象的状态也无法由 qiankun 自动回滚。
 
-该命名 API 仅管理 `loadMicroApp` 创建的实例。路由注册应用应使用 [registerMicroApps](/zh-CN/api/register-micro-apps#unload-application) 页面说明的 `unloadApplication`。
+`unloadMicroApp` 只管理 `loadMicroApp` 创建的实例。路由注册应用应使用 [registerMicroApps](/zh-CN/api/register-micro-apps#unload-application) 页面说明的 `unloadApplication`。
 
 ## 示例
 
-以下示例先获取 `container` 元素并挂载应用，在不再需要该代实例时将其销毁。
+以下示例先获取 `container` 元素并挂载应用，不再需要该应用时将其销毁。
 
 ```ts
 import { loadMicroApp } from 'qiankun';
@@ -206,7 +215,7 @@ const microApp = loadMicroApp(
 await microApp.mountPromise;
 console.log(microApp.getStatus()); // 'MOUNTED'
 
-// 不再需要时销毁该代实例
+// 不再需要时销毁实例
 await microApp.unload();
 ```
 

@@ -136,7 +136,7 @@ Vite 将 CSS 作为 JavaScript 模块加载，并在模块顶层注入样式。�
 ESM 沙箱会在挂载和卸载之间保留模块图：
 
 - **重新挂载不会执行模块顶层代码。** `import(sameBlobUrl)` 返回相同的模块命名空间对象，因此模块顶层只执行一次，重新挂载仅再次调用 `mount(props)`。每次挂载所需的应用实例、状态仓库和路由实例都应在 `mount()` 中创建，不应放在模块作用域。Classic 应用也应遵守相同的生命周期约定，因为重新挂载同样会复用已解析的生命周期函数。
-- **`unmount()` 保留引擎，`unload()` 销毁引擎。** 手动加载的应用通过句柄 `unload()` 或 `unloadMicroApp(name, container)` 销毁同名应用在同一容器中的整代实例；路由应用通过 `unloadApplication` 触发销毁。统一的沙箱 `dispose()` 会清除框架持有的模块图和配置引用、撤销 blob URL、注销实例，并移除其注入的 import map 脚本。浏览器原生 import map 条目和模块注册表仍无法撤销。销毁后再次加载会创建新引擎并重新执行入口。详见 [loadMicroApp](/zh-CN/api/load-micro-app#unload)。
+- **`unmount()` 保留引擎，`unload()` 销毁引擎。** 手动加载的应用通过句柄 `unload()` 或 `unloadMicroApp(name)` 销毁；路由应用通过 `unloadApplication` 触发销毁。统一的沙箱 `dispose()` 会清除框架持有的模块图和配置引用、撤销 blob URL、注销实例，并移除其注入的 import map 脚本。浏览器原生 import map 条目和模块注册表仍无法撤销。销毁后再次加载会创建新引擎并重新执行入口。详见 [loadMicroApp](/zh-CN/api/load-micro-app#unload)。
 
 ```js [micro-app/src/index.js]
 let app;

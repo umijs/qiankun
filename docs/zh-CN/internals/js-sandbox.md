@@ -76,7 +76,7 @@ flowchart TD
 | `patchHistoryListener` | History API 相关监听器 | 挂载 |
 | `patchStandardSandbox`（`dynamicAppend`） | 拦截 `<script>`、`<style>` 和 `<link>` 的 `appendChild`、`insertBefore`，并重定向到应用容器 | `bootstrap` 和挂载 |
 
-暂时移除微应用时应调用 `unmount()`，清理已追踪的副作用并保留重新挂载所需的缓存和沙箱状态。不再需要同名应用在同一容器中的这一代实例时，应调用 `unload()`，在卸载后销毁沙箱和缓存。直接丢弃句柄或移除容器不会执行这些清理。
+微应用实例不再使用时必须执行 `unmount()`。跳过卸载会使补丁模块的 `free()` 无法执行，导致定时器、事件监听器和动态插入的 DOM 节点继续存在，并影响重新挂载或多实例运行。卸载后沙箱会保留，供同名应用复用；需要彻底释放时调用 `unload()`。
 
 ## 有意共享的全局属性
 
@@ -108,8 +108,8 @@ const globalVariableWhiteList = ['System', '__cjsWrapper', /* + dev-only */];
 - 隔间的 `<N>` 计数器使每个实例使用不同的 `__compartment_globalThis__<N>__` 槽位，避免包装后的 Classic 脚本相互覆盖。
 - 当 `instanceId > 1` 时，`removeWebpackChunkCacheWhenAppHaveMultiInstance` 会清理该应用的 Webpack 代码分块缓存，使后续实例在自己的沙箱中重新执行构建代码，而不是复用首个实例的模块缓存。
 
-::: danger 管理实例清理
-多实例清理依赖各补丁模块的 `free()`。暂时隐藏实例时调用 `unmount()`；不再需要该代实例时调用 `unload()`。`unload()` 会使同名应用在同一容器中共享配置的句柄一并失效，不影响其他容器中的实例。
+::: danger 每个实例都必须卸载
+多实例清理依赖各补丁模块的 `free()`。如果遗漏某个实例的卸载，其事件监听器、定时器和动态 DOM 将继续存在，并可能影响后续挂载。通过 `loadMicroApp` 创建的每个实例都应使用对应句柄调用 `unmount()`。
 :::
 
 具体用法见[运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)。

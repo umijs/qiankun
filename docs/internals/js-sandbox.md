@@ -76,7 +76,7 @@ Beyond identity, the sandbox tracks stateful side effects through **isolation pl
 | `patchHistoryListener` | history-driven listeners | mount |
 | `patchStandardSandbox` (dynamicAppend) | `appendChild` / `insertBefore` for `<script>` / `<style>` / `<link>` — redirects them into the app's container instead of the real `document.head` | bootstrap **and** mount |
 
-Call `unmount()` to remove an app temporarily, clean up tracked side effects, and retain configuration and sandbox state for remounting. Call `unload()` when its name/container generation is no longer needed, so the sandbox and caches are disposed of after unmounting. Dropping the handle or removing the container does not run these cleanup steps.
+Because every side effect is reverted through its `free()`, unmounting an app really does return the page to its pre-mount state — which is exactly why you **must** unmount. Skip it and you leak the timers, listeners, and injected DOM that `free()` was supposed to clean up, breaking remount and multi-instance. The sandbox is kept after unmounting for reuse by the same app; call `unload()` to release it completely.
 
 ## What's let through on purpose
 
@@ -108,8 +108,8 @@ Each load takes an `instanceId` from a per-app counter (`genInstanceId(appName)`
 - The compartment's `<N>` counter guarantees each instance gets its own `__compartment_globalThis__<N>__` slot, so their wrapped classic scripts don't overwrite one another.
 - When `instanceId > 1`, qiankun clears that app's webpack chunk cache (`removeWebpackChunkCacheWhenAppHaveMultiInstance`), so the second instance re-executes the bundle in its own sandbox instead of reusing the modules the first instance already cached.
 
-::: danger Manage instance cleanup
-Instance cleanup relies on each patcher's `free()`. Call `unmount()` to hide an instance temporarily, or `unload()` when its generation is no longer needed. `unload()` invalidates handles sharing the same name/container configuration without affecting instances in other containers.
+::: danger Unmount every instance
+Multiple instances rely entirely on each patcher's `free()` to release listeners, timers, and injected DOM. Miss one instance and its side effects stay live, breaking the next mount. If you're holding a `loadMicroApp` handle, call `unmount()` on it.
 :::
 
 For the hands-on recipe, see [Running multiple micro-app instances](/cookbook/run-multiple-instances).

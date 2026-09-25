@@ -230,13 +230,14 @@ function Page() {
 
 ### The ref handle
 
-The handle is single-spa's Parcel interface:
+The handle is the `MicroApp` returned by [`loadMicroApp`](/api/load-micro-app): single-spa's Parcel interface plus `unload()`:
 
 | Member | Type | Description |
 | --- | --- | --- |
 | `getStatus()` | `() => Status` | The current lifecycle status (see below). |
 | `mount()` | `() => Promise<null>` | Mount the app. |
 | `unmount()` | `() => Promise<null>` | Unmount the app. |
+| `unload()` | `() => Promise<void>` | Dispose of the instance this handle uses and release its loaded resources. The component never calls it. |
 | `update?(props)` | `(props) => Promise<unknown>` | Push new props (present only if the app exports an `update` lifecycle). |
 | `loadPromise` | `Promise<null>` | Resolves when the source code has finished loading. |
 | `bootstrapPromise` | `Promise<null>` | Resolves when the app has finished bootstrapping. |
@@ -246,7 +247,9 @@ The handle is single-spa's Parcel interface:
 `getStatus()` returns one of: `NOT_LOADED`, `LOADING_SOURCE_CODE`, `NOT_BOOTSTRAPPED`, `BOOTSTRAPPING`, `NOT_MOUNTED`, `MOUNTING`, `MOUNTED`, `UPDATING`, `UNMOUNTING`, `UNLOADING`, `SKIP_BECAUSE_BROKEN`, `LOAD_ERROR`.
 
 ::: warning Let the component manage the lifecycle
-The ref is for reading status and awaiting promises. Don't call its `mount()`/`unmount()` yourself — the component owns mount / update / unmount, and it also guards against concurrent unmount and remount. Calling those by hand tends to corrupt that state.
+The ref is for reading status and awaiting promises. Don't call its `mount()`/`unmount()`/`unload()` yourself — the component owns mount / update / unmount, and it also guards against concurrent unmount and remount. Calling those by hand tends to corrupt that state.
+
+When the component is destroyed it only calls `unmount()`. The loaded instance is kept and reused the next time a component with the same name renders. To release those resources, call [`unloadMicroApp(name)`](/api/load-micro-app#unload) after the component is gone.
 :::
 
 ## Passing configuration
