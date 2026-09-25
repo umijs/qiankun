@@ -8,6 +8,7 @@ import { createLocalStoragePrefixPlugin } from './localStoragePrefixPlugin';
 
 const instances = new Map<string, MicroApp>();
 const hookMetrics = new Map<string, { hookCalls: number; moduleFetches: number }>();
+const entryStreamClosers = new Map<string, () => void>();
 
 const precompiledEntryUrl = new URL('/entry.js', SUB_APP_ENTRIES['sub-esm']).href;
 const precompiledDependencyUrl = new URL('/precompiled-dependency.js', precompiledEntryUrl).href;
@@ -117,6 +118,46 @@ const testAPI = {
     );
   },
 
+  /** Keep the entry's HTML tail pending after its lifecycle script has executed. */
+  async loadWithOpenEntryStream(key: string, containerKey: string): Promise<string> {
+    const nativeFetch = window.fetch.bind(window);
+    return this.load(
+      'sub-classic',
+      {
+        fetch: async (input, init) => {
+          const response = await nativeFetch(input, init);
+          if (String(input) !== SUB_APP_ENTRIES['sub-classic']) return response;
+
+          const html = await response.text();
+          const tailOffset = html.lastIndexOf('</body>');
+          const encoder = new TextEncoder();
+          return new Response(
+            new ReadableStream<Uint8Array>({
+              start(controller) {
+                controller.enqueue(encoder.encode(html.slice(0, tailOffset)));
+                entryStreamClosers.set(key, () => {
+                  controller.enqueue(encoder.encode(html.slice(tailOffset)));
+                  controller.close();
+                });
+              },
+            }),
+            { status: response.status, headers: response.headers },
+          );
+        },
+      },
+      key,
+      undefined,
+      containerKey,
+    );
+  },
+
+  closeEntryStream(key: string): void {
+    const close = entryStreamClosers.get(key);
+    if (!close) throw new Error(`no open entry stream for key ${key}`);
+    entryStreamClosers.delete(key);
+    close();
+  },
+
   async loadWithPrecompiledHook(key: string): Promise<string> {
     const metrics = { hookCalls: 0, moduleFetches: 0 };
     hookMetrics.set(key, metrics);
@@ -153,6 +194,20 @@ const testAPI = {
   },
 
   /**
+   * What a binding does when it swaps its container element: ask the old instance to unmount
+   * without waiting, then load into the new element right away. Resolves with the new instance's
+   * status once it mounted and the old unmount finished.
+   */
+  async swapContainer(name: keyof typeof SUB_APP_ENTRIES, key: string, nextKey: string): Promise<string> {
+    const app = instances.get(key);
+    if (!app) throw new Error(`no app instance for key ${key}`);
+    const unmounting = app.unmount();
+    const status = await this.load(name, undefined, nextKey);
+    await unmounting;
+    return status;
+  },
+
+  /**
    * Drop and recreate the container element (same id, same position), the way frameworks do
    * on a keyed re-render — e.g. the examples main app remounts a fresh container on retry.
    */
@@ -168,6 +223,11 @@ const testAPI = {
 
   status(key: string): string | undefined {
     return instances.get(key)?.getStatus();
+  },
+
+  /** Sandboxes still alive: each compartment keeps its global view on window until disposed. */
+  liveCompartments(): number {
+    return Object.keys(window).filter((key) => key.startsWith('__compartment_globalThis__')).length;
   },
 };
 

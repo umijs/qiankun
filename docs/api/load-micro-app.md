@@ -147,7 +147,7 @@ Observable behavior for callers:
 
 - **Loading and mounting start immediately.** You do not call `start()` first; await `mountPromise` when you need to know the app is visible.
 - **One container hosts one app at a time.** When apps are loaded into the same container in succession, the next instance waits for the previous one to unmount.
-- **The same name and container may reuse loaded work.** Do not rely on module top-level code running again on remount. Create per-mount state inside `mount()`.
+- **An app name reuses its unmounted instances.** When you call it again with the same `name` and `entry` and that app has an idle, unmounted instance, qiankun mounts that instance into the container you pass, without loading the entry again or calling `bootstrap`. If none is idle, an instance whose `unmount()` has been called but has not finished is reused as well, and the new instance mounts once that unmount completes. Only instances mounted at the same time load separate copies. A `name` should therefore always refer to the same app, and per-mount state belongs in `mount()`.
 - **The caller owns teardown.** Call `unmount()` when the app is no longer shown so qiankun can clear the container and release side effects it tracks.
 
 See [Run multiple micro-app instances](/cookbook/run-multiple-instances) for the complete guidance on reuse and remounting.
