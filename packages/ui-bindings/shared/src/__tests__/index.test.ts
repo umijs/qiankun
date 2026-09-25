@@ -158,6 +158,24 @@ describe('mountMicroApp', () => {
     expect(setError).toHaveBeenLastCalledWith(failure);
     expect(setLoading).toHaveBeenLastCalledWith(false);
   });
+
+  it.each([
+    ['load', ['loadPromise', 'bootstrapPromise', 'mountPromise']],
+    ['bootstrap', ['bootstrapPromise', 'mountPromise']],
+    ['mount', ['mountPromise']],
+  ] as const)('reports a failed %s once, however many of the handle promises reject', async (_stage, rejected) => {
+    const { parcel } = createParcel();
+    const failure = new Error('boom');
+    // A failure rejects the promise of its own stage and every later one, all with the same error.
+    const failing = Object.fromEntries(rejected.map((key) => [key, Promise.reject(failure)]));
+    loadMicroAppMock.mockReturnValue({ ...parcel, ...failing });
+    const setError = vi.fn();
+
+    await mountMicroApp({ container: container(), componentProps: { name: 'app', entry: 'e' }, setError });
+    await new Promise((resolve) => setTimeout(resolve));
+
+    expect(setError.mock.calls.filter(([error]) => error !== undefined)).toEqual([[failure]]);
+  });
 });
 
 describe('updateMicroApp', () => {
