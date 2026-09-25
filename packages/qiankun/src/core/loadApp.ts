@@ -41,7 +41,14 @@ import { acquireContainer, isContainerHeld, type ContainerHold } from './contain
 
 declare const __QIANKUN_VERSION__: string;
 
-export type ParcelConfigObjectGetter = (remountContainer: HTMLElement) => ParcelConfigObject;
+export interface ParcelConfigObjectGetter {
+  (mountContainer: HTMLElement): ParcelConfigObject;
+  /**
+   * Whether the app still holds any container occupancy — its load hold ① or a mount hold ②.
+   * An occupying app is still writing to (or mounted in) a container and must not be rebound.
+   */
+  readonly occupiesContainer: boolean;
+}
 
 export default async function loadApp<T extends ObjectType>(
   app: LoadableApp<T>,
@@ -109,7 +116,13 @@ export default async function loadApp<T extends ObjectType>(
 
   // ① load-phase streaming critical section: acquired before the container wipe below, released
   // once both the entry lifecycles promise and the DOM stream have settled (see the gate RFC).
+  const holds = new Set<ContainerHold>();
+  const releaseHold = (hold: ContainerHold) => {
+    holds.delete(hold);
+    hold.release();
+  };
   const loadHold = await acquireContainer(microAppDOMContainer, appName);
+  holds.add(loadHold);
   // Flips when the mount hook adopts the still-open load hold as its mount hold ② (see the
   // mount chain below) — from then on the hold is the mount's to release, not the settle latch's.
   let loadHoldAdoptedByMount = false;
@@ -170,7 +183,7 @@ export default async function loadApp<T extends ObjectType>(
     } catch {
       // The original failure is the actionable one and must retain precedence.
     }
-    loadHold.release();
+    releaseHold(loadHold);
     throw error;
   }
 
@@ -192,7 +205,7 @@ export default async function loadApp<T extends ObjectType>(
   let domStreamSettled = false;
   const releaseLoadHoldWhenSettled = () => {
     // an adopted hold lives on as the mount hold ② and is no longer the latch's to release
-    if (entryLifecyclesSettled && domStreamSettled && !loadHoldAdoptedByMount) loadHold.release();
+    if (entryLifecyclesSettled && domStreamSettled && !loadHoldAdoptedByMount) releaseHold(loadHold);
   };
   const markEntryLifecyclesSettled = () => {
     entryLifecyclesSettled = true;
@@ -247,7 +260,7 @@ export default async function loadApp<T extends ObjectType>(
   })();
   const { bootstrap, mount, unmount, update, beforeUnmount, afterUnmount, afterMount, beforeMount } = lifecycleSetup;
 
-  return (mountContainer) => {
+  const getParcelConfig = (mountContainer: HTMLElement): ParcelConfigObject => {
     // ② mount→unmount occupancy period. Regular release is the clearContainer step at the end of
     // the unmount chain, but single-spa marks an app SKIP_BECAUSE_BROKEN after a mount OR unmount
     // failure and never runs the rest of its chains — without the failure fallback below, the
@@ -269,7 +282,7 @@ export default async function loadApp<T extends ObjectType>(
       if (initializedContainers.get(mountContainer) === containerInitToken) {
         initializedContainers.delete(mountContainer);
       }
-      mountHold.release();
+      releaseHold(mountHold);
     };
     const guardHooksWithMountHoldRelease = <F extends (...args: never[]) => Promise<unknown>>(hooks: F[]): F[] =>
       hooks.map(
@@ -319,13 +332,16 @@ export default async function loadApp<T extends ObjectType>(
           // possibly forever (a hung chunked response) — must not queue behind itself: adopt ①
           // as the mount hold ② instead. Pre-gate such an app simply mounted while its stream
           // kept writing; the adoption keeps that shape without weakening cross-app exclusion.
-          if (loadHold.held && mountContainer === container) {
+          // Adoption happens at most once: a second getter call must never take over a hold that
+          // an earlier mount of this app already owns.
+          if (loadHold.held && !loadHoldAdoptedByMount && mountContainer === container) {
             loadHoldAdoptedByMount = true;
             mountHold = loadHold;
           } else {
             // acquired before the remount reload below — that reload is a DOM write and must sit
             // inside the critical section, or a loadMicroApp cross-app remount would still race
             mountHold = await acquireContainer(mountContainer, appName);
+            holds.add(mountHold);
           }
         },
         async () => {
@@ -429,6 +445,10 @@ export default async function loadApp<T extends ObjectType>(
 
     return parcelConfig;
   };
+
+  return Object.defineProperty(getParcelConfig, 'occupiesContainer', {
+    get: () => holds.size > 0,
+  }) as ParcelConfigObjectGetter;
 }
 
 /** One loadApp invocation's identity as a container claimant. */
