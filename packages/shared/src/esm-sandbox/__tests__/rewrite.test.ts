@@ -166,7 +166,9 @@ describe('rewriteModule', () => {
   });
 
   it('rejects synthetic specifiers in user code', () => {
-    expect(() => rewrite(`import '__qk_appB_2_2__/https://evil.host/x.js';`)).toThrowError(/synthetic specifier/);
+    const rewriteReservedSpecifier = () => rewrite(`import '__qk_appB_2_2__/https://evil.host/x.js';`);
+    expect(rewriteReservedSpecifier).toThrowError(/synthetic specifier/);
+    expect(rewriteReservedSpecifier).toThrowError(expect.objectContaining({ code: 'module-specifier-reserved' }));
   });
 
   it('injects no header for modules referencing nothing', () => {

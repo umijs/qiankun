@@ -244,7 +244,9 @@ describe('EsmSandboxEngine', () => {
 
     engine.registerDocumentModule({ url: 'https://a.host/main.js', baseUrl: 'https://a.host/', isEntry: true });
 
-    await expect(engine.importDocumentModules()).rejects.toThrowError(/bare specifier 'unresolvable-pkg'/);
+    const entryPromise = engine.importDocumentModules();
+    await expect(entryPromise).rejects.toThrowError(/bare specifier 'unresolvable-pkg'/);
+    await expect(entryPromise).rejects.toHaveProperty('code', 'module-unresolved');
   });
 
   it('runs the dynamic import pipeline with import map entries flushed beforehand', async () => {
@@ -815,7 +817,9 @@ export { history };`,
     const importHook: ImportHook = async () => descriptor as unknown as ModuleDescriptor;
     const world = createWorld({}, { engine: { importHook } });
 
-    await expect(world.engine.load('./main.js')).rejects.toThrowError(expected);
+    const loadPromise = world.engine.load('./main.js');
+    await expect(loadPromise).rejects.toThrowError(expected);
+    await expect(loadPromise).rejects.toHaveProperty('code', 'module-descriptor-invalid');
   });
 
   it('materializes one portable precompiled graph in multiple instances without mutating the descriptors', async () => {
