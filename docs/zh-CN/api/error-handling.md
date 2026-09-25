@@ -65,7 +65,7 @@ React 和 Vue 的 `<MicroApp>` 组件可通过各自的错误边界选项提供�
 
 ## QiankunError
 
-qiankun 自身抛出的框架错误可通过顶层导出的 `QiankunError` 识别。该构造函数与 loader、沙箱及共享模块使用的实现相同，`code` 属性提供稳定错误码。
+qiankun 自身抛出的框架错误可通过顶层导出的 `QiankunError` 识别。loader、沙箱及共享模块抛出的框架错误都是它的实例，只读的 `code` 属性提供稳定错误码。
 
 ```ts
 import { QiankunError } from 'qiankun';
@@ -78,7 +78,7 @@ void microApp.mountPromise.catch((error: unknown) => {
 });
 ```
 
-微应用自身抛出的错误、浏览器网络异常和 single-spa 错误不一定是 `QiankunError`，仍需处理。构造函数、错误码约定及各错误的排查方法见[错误码与解决办法](/zh-CN/errors/)。
+微应用自身抛出的错误、浏览器网络异常和 single-spa 错误不一定是 `QiankunError`，仍需处理。错误码约定及各错误的排查方法见[错误码与解决办法](/zh-CN/errors/)。
 
 ## 相关内容
 

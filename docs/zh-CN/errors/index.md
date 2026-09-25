@@ -1,6 +1,6 @@
 # 错误码与解决办法
 
-qiankun 自身抛出的 `QiankunError` 带有稳定的 `code` 属性，消息末尾附有对应解决方案的官网链接。开发和生产构建均保留完整错误消息及动态上下文，不压缩错误内容。
+qiankun 自身抛出的 `QiankunError` 带有稳定的 `code` 属性，消息末尾附有对应解决方案的官网链接。
 
 [English](/errors/)
 
@@ -20,30 +20,26 @@ void microApp.mountPromise.catch((error: unknown) => {
 });
 ```
 
-loader、沙箱和共享模块使用同一个 `QiankunError` 构造函数。微应用自身、浏览器或 single-spa 也可能抛出其他类型的错误，调用方应一并处理。
+loader、沙箱和共享模块抛出的框架错误都是同一个 `QiankunError` 类的实例。微应用自身、浏览器或 single-spa 也可能抛出其他类型的错误，调用方应一并处理。
 
-## 函数签名
+## 公开约定
 
 ```ts
 import { type QiankunErrorCode } from 'qiankun';
 
 declare class QiankunError extends Error {
   readonly code: QiankunErrorCode;
-  constructor(message: string, code?: QiankunErrorCode);
 }
 ```
 
-`code` 默认值为 `custom-error`，保留只传 `message` 的用法。实例上的 `code` 为只读属性；`message` 保留 `[qiankun]: ` 前缀，末尾追加换行和 `See https://www.qiankunjs.com/zh-CN/errors/<code>`。错误链接统一指向中文页，各页提供英文入口。
+对外承诺的只有两点：用 `instanceof QiankunError` 识别框架错误，以及只读的 `code` 属性。`QiankunError` 只由 qiankun 内部创建，构造函数不属于公开 API。`message` 末尾附有解决方案链接，链接统一指向中文页，各页提供英文入口。
 
 ## 错误码约定
 
-错误码使用小写英文单词和连字符，按触发原因与解决方法命名。同一原因在不同包出现时共用错误码；文件移动、文案调整或新增其他错误均不改变已有错误码。程序判断请使用 `error.code`，避免依赖完整错误消息。框架内部的抛错点均显式指定错误码；调用方未指定时使用 `custom-error`。
+错误码使用小写英文单词和连字符，按触发原因与解决方法命名。同一原因在不同包出现时共用错误码；文件移动、文案调整或新增其他错误均不改变已有错误码。程序判断请使用 `error.code`，避免依赖完整错误消息。
 
 ## 错误码索引
 
-<!-- code-index -->
-
-- [custom-error：调用方自定义错误](/zh-CN/errors/custom-error)
 - [lifecycle-missing：生命周期导出不完整](/zh-CN/errors/lifecycle-missing)
 - [entry-duplicate：入口脚本重复](/zh-CN/errors/entry-duplicate)
 - [entry-script-failed：入口脚本加载失败](/zh-CN/errors/entry-script-failed)
