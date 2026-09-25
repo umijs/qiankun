@@ -59,6 +59,8 @@ The module engine in `@qiankunjs/shared` is an implementation detail behind `Com
 
 `createSandbox().dispose()` is the terminal owner cleanup: it frees active plugin effects, restores container protocol state, deactivates the sandbox, and idempotently disposes the Compartment. Initial load failures must call it without replacing the original loading error.
 
+Fetch precedence in `createSandbox()` is "more specific wins": module sources use `compartmentOptions.moduleHost.fetch ?? fetch ?? native`, dynamic assets use `fetch ?? native`. This is the one exception to the rule that promoted top-level options beat `compartmentOptions`; qiankun relies on it to give module sources a separate response cache.
+
 `createSandbox(appName)` is the JS-only preset: interval, window-listener, and history cleanup are available without a container. Providing `container` enables dynamic DOM interception; `mount()` prepares standalone containers lazily (`provisionContainerHead`, default `true` — qiankun's loader passes `false` because the entry HTML materializes the head in-stream). The controller keeps **two views of one configured transformer**, split by call-site identity: the public `nodeTransformer` is the pipeline variant — its output is stamped for native passthrough (`core/nativePassthrough.ts`), so patched mount points insert it untouched and it never enters the dynamic ledger — while the dynamic-append patcher receives the bare variant through the plugin config, whose output must NOT carry the mark (re-inserted nodes depend on re-entering the pipeline for ledger bookkeeping).
 
 ### IsolationPlugin / Free pattern

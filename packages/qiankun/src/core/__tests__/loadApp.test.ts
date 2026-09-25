@@ -185,6 +185,7 @@ describe('loadApp sandbox cleanup', () => {
     expect(createOptions.compartmentOptions.moduleHost).toEqual(
       expect.objectContaining({
         entryUrl: 'https://sandbox-cleanup.test/index.html',
+        fetch: expect.any(Function),
         instanceId: expect.any(Number),
         isLifecycleNamespace: expect.any(Function),
         materializeRedirect: expect.any(Function),

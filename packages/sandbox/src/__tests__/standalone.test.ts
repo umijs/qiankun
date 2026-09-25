@@ -168,15 +168,15 @@ describe('standalone sandbox public journey', () => {
     await controller.dispose();
   });
 
-  it('uses the top-level fetch option for standalone ESM loading', async () => {
-    const fetch = vi.fn(async () => new Response('export const ready = true;', { status: 200 }));
-    const lowerLevelFetch = vi.fn(async () => new Response('export const ready = false;', { status: 200 }));
+  it('prefers moduleHost.fetch over the top-level fetch for standalone ESM loading', async () => {
+    const fetch = vi.fn(async () => new Response('export const ready = false;', { status: 200 }));
+    const moduleFetch = vi.fn(async () => new Response('export const ready = true;', { status: 200 }));
     const moduleImporter = vi.fn(async () => ({ ready: true }));
     const controller = createSandbox('standalone-fetch', {
       compartmentOptions: {
         moduleHost: {
           createModuleUrl: () => 'blob:standalone-fetch',
-          fetch: lowerLevelFetch,
+          fetch: moduleFetch,
           moduleImporter,
           revokeModuleUrl: () => {},
         },
@@ -185,8 +185,8 @@ describe('standalone sandbox public journey', () => {
     });
 
     await expect(controller.instance.import('https://standalone.test/entry.js')).resolves.toEqual({ ready: true });
-    expect(fetch).toHaveBeenCalledWith('https://standalone.test/entry.js', undefined);
-    expect(lowerLevelFetch).not.toHaveBeenCalled();
+    expect(moduleFetch).toHaveBeenCalledWith('https://standalone.test/entry.js', undefined);
+    expect(fetch).not.toHaveBeenCalled();
     expect(moduleImporter).toHaveBeenCalledWith('blob:standalone-fetch');
     await controller.dispose();
   });

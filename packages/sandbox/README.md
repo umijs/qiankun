@@ -52,6 +52,8 @@ sandbox.dispose();
 
 Relative module resolution defaults to `document.baseURI`. `StandardSandbox` accepts custom module tables and hooks through its fourth, Compartment-options argument; `createSandbox()` promotes `modules`, `resolveHook`, `importHook`, and `loadHook` to top-level options. See the [sandbox plugins guide](../../docs/cookbook/sandbox-plugins.md) for an advanced example.
 
+`createSandbox()` fetches dynamic assets and module sources with its top-level `fetch` option, which defaults to the native fetch. To give module sources their own transport, such as a separate response cache, set `compartmentOptions.moduleHost.fetch`. It is the only `compartmentOptions` field that takes precedence over a top-level option: the more specific module-source fetch wins when loading modules, while dynamic assets keep using the top-level `fetch`.
+
 ## Full browser sandbox
 
 Pass a container to `createSandbox()` to enable document virtualization and dynamic DOM interception. Set `styleIsolation: true` to scope application styles to that container.
