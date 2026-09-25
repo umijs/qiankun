@@ -56,3 +56,5 @@ declare class QiankunError extends Error {
 - [module-redirect-cycle：模块重定向循环](/zh-CN/errors/module-redirect-cycle)
 - [module-context-missing：模块加载上下文丢失](/zh-CN/errors/module-context-missing)
 - [module-rewrite-invalid：模块改写区间异常](/zh-CN/errors/module-rewrite-invalid)
+- [app-unloaded：微应用已销毁](/zh-CN/errors/app-unloaded)
+- [app-teardown-failed：微应用清理失败](/zh-CN/errors/app-teardown-failed)

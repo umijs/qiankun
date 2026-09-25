@@ -414,7 +414,9 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
     this.inlineModules.length = 0;
     this.moduleScriptTasks.length = 0;
     this.pendingImportMapEntries = {};
-    this.entryDeferred?.reject(new QiankunError(`ESM sandbox engine of app ${this.appName} has been disposed`));
+    this.entryDeferred?.reject(
+      new QiankunError(`ESM sandbox engine of app ${this.appName} has been disposed`, 'compartment-disposed'),
+    );
     this.entryDeferred = undefined;
     this.options = undefined;
     this.resolveHook = this.defaultResolveHook;

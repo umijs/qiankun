@@ -411,7 +411,7 @@ describe('loadMicroApp instance reuse', () => {
     expect(unmount).toHaveBeenCalledTimes(1);
     expect(mocks.dispose).toHaveBeenCalledTimes(1);
     expect(first.getStatus()).toBe(AppOrParcelStatus.NOT_LOADED);
-    await expect(first.mount()).rejects.toThrow('has been unloaded');
+    await expect(first.mount()).rejects.toMatchObject({ code: 'app-unloaded' });
     await expect(first.unmount()).resolves.toBeNull();
     await first.unload();
     expect(mocks.dispose).toHaveBeenCalledTimes(1);
@@ -481,6 +481,18 @@ describe('loadMicroApp instance reuse', () => {
     await load(container).mountPromise;
     expect(mocks.loadApp).toHaveBeenCalledTimes(2);
   });
+  it('reports a non-Error terminal cleanup failure with its stable code', async () => {
+    const container = document.createElement('div');
+    const first = load(container);
+    await first.mountPromise;
+    // single-spa already wraps lifecycle rejections into Errors; terminal disposal (for example a
+    // sandbox plugin dispose hook) is where a non-Error value can still surface.
+    // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- Simulate cleanup rejecting with a non-Error value.
+    mocks.dispose.mockImplementationOnce(() => Promise.reject('dispose failed'));
+    await expect(first.unload()).rejects.toMatchObject({ code: 'app-teardown-failed' });
+    expect(unmount).toHaveBeenCalledTimes(1);
+  });
+
   it('drains an entered update before unmount and terminal disposal', async () => {
     const updating = new Deferred<void>();
     const update = vi.fn(() => updating.promise);

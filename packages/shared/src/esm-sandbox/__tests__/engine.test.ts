@@ -387,6 +387,8 @@ describe('EsmSandboxEngine', () => {
     expect(readInjectedImports()).toEqual(secondImports);
     expect(instanceOf(second.engine.instanceHandle)).toBeDefined();
     expect(() => staleInstance.view).toThrow('has been disposed');
+    // The disposed guard must not recurse through the options getter it protects.
+    expect(() => staleInstance.view).toThrow(expect.objectContaining({ code: 'compartment-disposed' }));
     expect(() => staleInstance.resolve('./main.js')).toThrow('has been disposed');
     await expect(second.engine.import('./main.js')).resolves.toBeDefined();
     second.engine.dispose();
