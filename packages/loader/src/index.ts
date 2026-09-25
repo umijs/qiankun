@@ -5,7 +5,13 @@ import type {
   NodeTransformer,
   ScriptTranspilerOpts,
 } from '@qiankunjs/shared';
-import { Deferred, prepareDeferredQueue, QiankunError } from '@qiankunjs/shared';
+import {
+  attachChildAssetOwner,
+  Deferred,
+  disposeCompartmentAssets,
+  prepareDeferredQueue,
+  QiankunError,
+} from '@qiankunjs/shared';
 import { createTagTransformStream } from './TagTransformStream';
 import WritableDOMStream from './writable-dom';
 
@@ -21,6 +27,8 @@ type Entry = HTMLEntry;
 // };
 //
 export type LoaderOpts = {
+  /** Cancel entry fetching and streaming. Its owner must also dispose the compartment. */
+  signal?: AbortSignal;
   streamTransformer?: () => TransformStream<string, string>;
   nodeTransformer?: NodeTransformer;
   /**
@@ -57,25 +65,90 @@ export async function loadEntry<T>(
   container: HTMLElement,
   opts: LoaderOpts,
 ): Promise<T | undefined> {
-  const { fetch, streamTransformer, compartment, nodeTransformer, onDOMStreamSettled } = opts;
+  const { fetch, streamTransformer, compartment, nodeTransformer, onDOMStreamSettled, signal } = opts;
   const classicScriptTransformer = compartment
     ? (source: string, sourceURL?: string) => compartment.transformClassicScript(source, sourceURL)
     : undefined;
 
+  // Without a compartment the caller's fetch may be reused by other loads (window.fetch by default),
+  // so it cannot key this load's assets: cancelling would permanently dispose it for everyone. A
+  // per-load wrapper owns them instead, attached as a child so the caller's terminal
+  // disposeCompartmentAssets(fetch) still releases them.
+  const assetFetch: typeof window.fetch = compartment ? fetch : (...args) => fetch(...args);
+  if (!compartment) attachChildAssetOwner(fetch, assetFetch);
+  const assetOwner = compartment ?? assetFetch;
+
   let domStreamSettledNotified = false;
+  let entryLifecycleSettled = false;
+  let cancelPendingWork: (() => void) | undefined;
+  const aborted = new Deferred<never>();
+  // Abort may happen after the entry lifecycle promise already resolved, while HTML tails stream.
+  void aborted.promise.catch(() => undefined);
+  const abortable = <V>(promise: Promise<V>): Promise<V> =>
+    signal ? Promise.race([promise, aborted.promise]) : promise;
+  // The DOM-write phase and the entry lifecycle promise settle independently in either order (an
+  // async entry script may load after the tail was written), so cancellation stays armed until both.
+  const removeAbortListenerWhenSettled = () => {
+    if (domStreamSettledNotified && entryLifecycleSettled) signal?.removeEventListener('abort', onAbort);
+  };
   const notifyDOMStreamSettled = () => {
     if (domStreamSettledNotified) return;
     domStreamSettledNotified = true;
+    removeAbortListenerWhenSettled();
     onDOMStreamSettled?.();
   };
+  const settleEntryLifecycle = () => {
+    entryLifecycleSettled = true;
+    removeAbortListenerWhenSettled();
+  };
+  // the stream never started (or never got wired), both phases are over at once
+  const settleWithoutStream = () => {
+    settleEntryLifecycle();
+    notifyDOMStreamSettled();
+  };
+  const onAbort = () => {
+    try {
+      cancelPendingWork?.();
+    } finally {
+      // Stop asynchronous asset continuations before signaling settlement. The caller owns the
+      // compartment: its controller must free plugins/patchers before revoking that membrane.
+      try {
+        disposeCompartmentAssets(assetOwner);
+      } catch {
+        // Preserve the cancellation reason; the owner also tears down its sandbox controller.
+      }
+      aborted.reject(signal?.reason);
+      notifyDOMStreamSettled();
+    }
+  };
+  signal?.addEventListener('abort', onAbort, { once: true });
 
   const entryUrl = typeof entry === 'string' ? entry : entry.url;
   let res: Response;
   try {
-    res = typeof entry === 'string' ? await fetch(entry) : entry.res;
+    if (signal?.aborted) {
+      if (typeof entry !== 'string') void entry.res.body?.cancel(signal.reason).catch(() => undefined);
+      onAbort();
+      signal.throwIfAborted();
+    }
+    if (typeof entry === 'string') {
+      const fetching = signal ? fetch(entry, { signal }) : fetch(entry);
+      // A custom fetch can ignore the signal. Its eventual body must still be cancelled,
+      // although the public load promise has already rejected by then.
+      void fetching.then(
+        (response) => {
+          if (signal?.aborted) void response.body?.cancel(signal.reason).catch(() => undefined);
+        },
+        () => undefined,
+      );
+      res = await abortable(fetching);
+    } else {
+      res = entry.res;
+    }
+    signal?.throwIfAborted();
   } catch (e) {
     // the stream never started, but the DOM-write phase is over all the same
-    notifyDOMStreamSettled();
+    settleWithoutStream();
     throw e;
   }
 
@@ -84,6 +157,7 @@ export async function loadEntry<T>(
     let foundEsmEntryScript = false;
     const entryScriptLoadedDeferred = new Deferred<T | undefined>();
     const onEntryLoaded = () => {
+      if (signal?.aborted) return;
       // the latest set prop is the entry script exposed global variable
       if (compartment?.latestSetProp) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -102,18 +176,19 @@ export async function loadEntry<T>(
     // classic defer scripts evaluate after the stream ends — their completion is part of the
     // DOM-write phase the settle signal guards (collected in the walk callback below)
     const deferScriptExecutions: Array<Promise<void>> = [];
+    const pendingAssets = new Set<HTMLScriptElement | HTMLLinkElement>();
 
     let readableStream: ReadableStream<string>;
     try {
-      readableStream = res.body.pipeThrough(new TextDecoderStream());
+      readableStream = res.body.pipeThrough(new TextDecoderStream(), { signal });
 
       if (streamTransformer) {
-        readableStream = readableStream.pipeThrough(streamTransformer());
+        readableStream = readableStream.pipeThrough(streamTransformer(), { signal });
       }
     } catch (e) {
       // wiring the stream failed synchronously (a throwing streamTransformer factory, a locked
       // body from a custom fetch) — the DOM-write phase is over without ever starting
-      notifyDOMStreamSettled();
+      settleWithoutStream();
       throw e;
     }
 
@@ -125,9 +200,14 @@ export async function loadEntry<T>(
           // TODO support body replacement
           // { tag: 'body', alt: 'qiankun-body' },
         ]),
+        { signal },
       )
       .pipeTo(
-        new WritableDOMStream(container, null, (clone) => {
+        createAbortableDOMStream(container, (clone) => {
+          signal?.throwIfAborted();
+          if (clone.nodeName === 'SCRIPT' || clone.nodeName === 'LINK') {
+            pendingAssets.add(clone as unknown as HTMLScriptElement | HTMLLinkElement);
+          }
           /*
            * Every element the walk is about to insert flows through this callback (writable-dom
            * itself stays free of downstream knowledge) and gets routed through the caller-provided
@@ -137,7 +217,7 @@ export async function loadEntry<T>(
           let transformerOpts: AssetsTranspilerOpts = {
             classicScriptTransformer,
             compartment,
-            fetch,
+            fetch: assetFetch,
           };
 
           let queueDeferScript: () => void = () => {};
@@ -153,6 +233,7 @@ export async function loadEntry<T>(
           }
 
           const transformedNode = nodeTransformer ? nodeTransformer(clone, transformerOpts) : clone;
+          signal?.throwIfAborted();
 
           const script = transformedNode as unknown as HTMLScriptElement;
 
@@ -205,6 +286,7 @@ export async function loadEntry<T>(
               event: Event,
             ) => {
               script.onload = script.onerror = null;
+              if (signal?.aborted) return;
 
               // entryScriptLoadedDeferred not resolved or rejected yet
               if (!entryScriptLoadedDeferred.isSettled()) {
@@ -233,17 +315,20 @@ export async function loadEntry<T>(
 
           return transformedNode;
         }),
+        { signal },
       )
       .then(async () => {
+        signal?.throwIfAborted();
         // module scripts execute after the entry HTML finishes streaming (mirroring their native
         // deferred semantics), in document order, driven by the engine
-        const namespacePromise = compartment?.importDocumentModules() ?? Promise.resolve(undefined);
+        const namespacePromise = abortable(compartment?.importDocumentModules() ?? Promise.resolve(undefined));
 
         // while the entry html stream is finished but there is no entry script found
         // we could use the latest set prop in sandbox to resolve the entry promise as fallback
         if (!foundEntryScript) {
           namespacePromise.then(
             (namespace) => {
+              if (signal?.aborted) return;
               if (namespace !== undefined) {
                 entryScriptLoadedDeferred.resolve(namespace as T);
               } else {
@@ -269,7 +354,9 @@ export async function loadEntry<T>(
           // with it — observe their graph failures so they surface as a console error instead
           // of an unhandledrejection (see the ESM entry branch comment above).
           namespacePromise.catch((error: unknown) => {
-            console.error(`[qiankun] module scripts of entry ${entryUrl} failed to execute`, error);
+            if (!signal?.aborted) {
+              console.error(`[qiankun] module scripts of entry ${entryUrl} failed to execute`, error);
+            }
           });
         }
 
@@ -280,8 +367,8 @@ export async function loadEntry<T>(
         // after it and may still write into the container — dynamic style injection included.
         // The settle signal keys occupancy release, so it must outlast them, or a gated
         // successor would interleave with the tail writes.
-        await namespacePromise.catch(() => undefined);
-        await Promise.allSettled(deferScriptExecutions);
+        await abortable(namespacePromise.catch(() => undefined));
+        await abortable(Promise.allSettled(deferScriptExecutions));
       })
       .catch((e) => {
         entryScriptLoadedDeferred.reject(e);
@@ -289,9 +376,42 @@ export async function loadEntry<T>(
       })
       .finally(notifyDOMStreamSettled);
 
-    return entryScriptLoadedDeferred.promise;
+    const entryLifecycle = abortable(entryScriptLoadedDeferred.promise);
+    void entryLifecycle.then(settleEntryLifecycle, settleEntryLifecycle);
+    return entryLifecycle;
+
+    function createAbortableDOMStream(
+      target: HTMLElement,
+      transform: <N extends Node>(node: N) => N,
+    ): WritableStream<string> {
+      // Use the fork's existing sink API. Its close waits for blocking assets; wrapping that
+      // promise lets cancellation settle even if a script never dispatches load or error.
+      const sink = WritableDOMStream(target, null, transform);
+      // Also reachable after the DOM stream settled, while an async entry script is still pending:
+      // its handlers must be disarmed then too, but the finished sink is left alone.
+      cancelPendingWork = () => {
+        for (const asset of pendingAssets) {
+          asset.onload = asset.onerror = null;
+          asset.remove();
+          if (asset.tagName === 'SCRIPT') {
+            asset.setAttribute('type', 'text/plain');
+            asset.removeAttribute('src');
+          }
+        }
+        pendingAssets.clear();
+        if (!domStreamSettledNotified) sink.abort(new DOMException('Entry loading aborted', 'AbortError'));
+      };
+      return new WritableStream<string>({
+        write(chunk) {
+          signal?.throwIfAborted();
+          sink.write(chunk);
+        },
+        close: () => abortable(sink.close()),
+        abort: () => cancelPendingWork?.(),
+      });
+    }
   }
 
-  notifyDOMStreamSettled();
+  settleWithoutStream();
   throw new QiankunError(`The response body of entry ${entryUrl} is empty!`, 'entry-body-missing');
 }

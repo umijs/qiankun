@@ -76,7 +76,7 @@ Beyond identity, the sandbox tracks stateful side effects through **isolation pl
 | `patchHistoryListener` | history-driven listeners | mount |
 | `patchStandardSandbox` (dynamicAppend) | `appendChild` / `insertBefore` for `<script>` / `<style>` / `<link>` — redirects them into the app's container instead of the real `document.head` | bootstrap **and** mount |
 
-Because every side effect is reverted through its `free()`, unmounting an app really does return the page to its pre-mount state — which is exactly why you **must** unmount. Skip it and you leak the timers, listeners, and injected DOM that `free()` was supposed to clean up, breaking remount and multi-instance.
+Because every side effect is reverted through its `free()`, unmounting an app really does return the page to its pre-mount state — which is exactly why you **must** unmount. Skip it and you leak the timers, listeners, and injected DOM that `free()` was supposed to clean up, breaking remount and multi-instance. The sandbox is kept after unmounting for reuse by the same app; call `unload()` to release it completely.
 
 ## What's let through on purpose
 
@@ -120,6 +120,7 @@ The sandbox follows single-spa's mount / unmount:
 
 - On **mount**, `sandbox.active()` **unlocks** the membrane. The rebuilds from the bootstrap phase are replayed, the mount-time patchers are installed, and dynamic stylesheets are reattached.
 - On **unmount**, each patcher's `free()` runs first (collecting the rebuilds for next time), then `sandbox.inactive()` **locks** the membrane. While locked, global writes from the app are ignored (with a warning in dev).
+- On **disposal**, the unified `dispose()` path releases retained plugin state, revokes the membrane, and releases configuration and ESM-engine references. A disposed sandbox cannot be reactivated.
 
 ::: info No snapshot diffing
 Some sandbox approaches snapshot every property on `window` at mount and restore it on unmount by comparing differences. qiankun v3 stores global writes in an app-local object from the start, so there is no need to restore the real `window`. `createSandbox` always constructs a `StandardSandbox` and provides no legacy fallback. See [Browser support](/guide/browser-support) for runtime requirements.

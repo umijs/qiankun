@@ -143,6 +143,19 @@ describe('MicroApp', () => {
     expect(events).toEqual(['mount:a', 'unmount:a', 'mount:b']);
   });
 
+  it('asks the old app to unmount before a keyed swap loads the next element', async () => {
+    const key = ref('1');
+    app = createApp({ render: () => h(MicroApp, { key: key.value, name: 'app', entry: '//localhost:7100' }) });
+    app.mount(host);
+    await settle();
+
+    key.value = '2';
+    await settle();
+
+    // qiankun can only hand the old instance to the new element once the unmount is on record.
+    expect(events).toEqual(['mount:app', 'unmount:app', 'mount:app']);
+  });
+
   it('serializes rapid app switches', async () => {
     const name = ref('a');
     app = createApp({ render: () => h(MicroApp, { name: name.value, entry: '//localhost:7100' }) });

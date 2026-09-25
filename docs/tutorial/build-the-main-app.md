@@ -97,6 +97,8 @@ The button is only there to make the lifecycle visible in the tutorial. In an ap
 Calling `loadMicroApp` without retaining its result leaves the main app with no reliable way to release that instance. Pair each call with an `unmount()` in the owning component's cleanup path.
 
 React cleanup cannot return a Promise, so this example starts `unmount()` and handles rejection. In host workflows that can wait, await the Promise before removing the container.
+
+The loaded instance is kept after unmounting and reused the next time `sub-app` mounts, without executing the entry again. To release it, see `unload()` in [loadMicroApp](/api/load-micro-app#unload).
 :::
 
 ## About route-driven orchestration

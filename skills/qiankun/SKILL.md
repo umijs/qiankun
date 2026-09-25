@@ -42,7 +42,7 @@ These invariants shape every task below:
 - **Vite sub apps need no dedicated build mode.** qiankun 3 loads `<script type="module">` natively through its ESM sandbox — regular `vite dev` / `vite build` output is qiankun-ready as-is.
 - The JS sandbox is **on by default**. CSS isolation is opt-in per app via `styleIsolation: true` (runtime CSS `@scope`).
 - A sub app must stay **runnable standalone**: when not loaded by qiankun (`window.__POWERED_BY_QIANKUN__` is undefined) it renders itself directly.
-- **Always unmount** what you mount. `loadMicroApp` returns a handle whose `.unmount()` must be called when the app leaves; the `MicroApp` component bindings do this automatically on component unmount.
+- **Always unmount** what you mount. `loadMicroApp` returns a handle whose `.unmount()` must be called when the app leaves; the `MicroApp` component bindings do this automatically on component unmount. Unmounted instances stay cached for reuse by app name; only `.unload()` / `unloadMicroApp(name)` releases them, and the bindings never call those.
 - Webpack sub apps use `@qiankunjs/bundler-plugin/webpack` instead of the Vite plugin; see the docs.
 
 ## After any creation task

@@ -139,6 +139,26 @@ describe('loadApp sandbox cleanup', () => {
     expect(mocks.dispose).toHaveBeenCalledOnce();
   });
 
+  it('does not turn single-spa unload props into the cancellation reason', async () => {
+    mocks.loadEntry.mockResolvedValue(validLifecycles);
+    const pendingFetch = vi.fn(
+      (_input: RequestInfo | URL, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(init.signal?.reason), { once: true });
+        }),
+    );
+    const container = document.createElement('div');
+    const getParcelConfig = await loadApp(createApp(container), { fetch: pendingFetch });
+    const { fetch: ownedFetch } = (mocks.createSandbox.mock.calls[0] as [string, { fetch: typeof fetch }])[1];
+    const request = ownedFetch('https://app.test/background.json').catch((error: unknown) => error);
+    const parcelConfig = getParcelConfig(container);
+    await parcelConfig.unload[0]({ name: 'app', mountParcel: () => undefined });
+
+    const reason = await request;
+    expect(reason).toBeInstanceOf(Error);
+    expect(String(reason)).toContain('has been unloaded');
+  });
+
   it('uses the public sandbox controller and shares its configured transformer with the loader', async () => {
     const controllerNodeTransformer = vi.fn(<T extends Node>(node: T) => node);
     const configuredNodeTransformer = vi.fn(<T extends Node>(node: T) => node);
@@ -235,6 +255,101 @@ describe('loadApp sandbox cleanup', () => {
     }
 
     await Promise.all(parcelConfigs.map((parcelConfig) => parcelConfig.unload[0]()));
+  });
+
+  it('invalidates the asset and module caches together when an instance unloads', async () => {
+    const baseUrl = 'https://module-unload.test/';
+    const entry = `${baseUrl}index.html`;
+    const stylesheet = `${baseUrl}style.css`;
+    const moduleUrl = `${baseUrl}entry.js`;
+    const fetch = vi.fn(async () => new Response('export {};', { status: 200 }));
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:module-unload-test');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    mocks.createSandbox.mockImplementation(createRealSandbox);
+    mocks.loadEntry.mockImplementation(async (_entry: string, _container: HTMLElement, opts: LoaderOpts) => {
+      if (!opts.compartment) throw new Error('missing loader inputs');
+      await Promise.all([opts.fetch(entry), opts.fetch(stylesheet)]);
+      await opts.compartment.load(moduleUrl);
+      return validLifecycles;
+    });
+
+    for (let generation = 0; generation < 2; generation++) {
+      const container = document.createElement('div');
+      const getParcelConfig = await loadApp({ ...createApp(container), entry }, { fetch });
+      await getParcelConfig(container).unload[0]();
+    }
+
+    // Unload is terminal: the next load requests the entry, stylesheet, and module source again.
+    for (const url of [entry, stylesheet, moduleUrl]) {
+      expect(fetch.mock.calls.filter(([input]) => String(input) === url)).toHaveLength(2);
+    }
+  });
+
+  it('cancels an unfinished module download when its only instance unloads', async () => {
+    const moduleUrl = 'https://module-cancel.test/entry.js';
+    let moduleSignal: AbortSignal | undefined;
+    const fetch = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input) !== moduleUrl) return Promise.resolve(new Response('', { status: 200 }));
+      moduleSignal = init?.signal ?? undefined;
+      return new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(init.signal?.reason), { once: true });
+      });
+    });
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:module-cancel-test');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    mocks.createSandbox.mockImplementation(createRealSandbox);
+    let loading: Promise<unknown> | undefined;
+    mocks.loadEntry.mockImplementation(async (_entry: string, _container: HTMLElement, opts: LoaderOpts) => {
+      loading = opts.compartment?.load(moduleUrl).catch((error: unknown) => error);
+      return validLifecycles;
+    });
+
+    const container = document.createElement('div');
+    const getParcelConfig = await loadApp(createApp(container), { fetch });
+    await vi.waitFor(() => expect(moduleSignal).toBeDefined());
+    await getParcelConfig(container).unload[0]();
+
+    expect(moduleSignal?.aborted).toBe(true);
+    await loading;
+  });
+
+  it('keeps a module download shared with another live instance when one instance unloads', async () => {
+    const moduleUrl = 'https://module-shared.test/entry.js';
+    let resolveModule!: (response: Response) => void;
+    let moduleSignal: AbortSignal | undefined;
+    const fetch = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input) !== moduleUrl) return Promise.resolve(new Response('', { status: 200 }));
+      moduleSignal = init?.signal ?? undefined;
+      return new Promise<Response>((resolve) => {
+        resolveModule = resolve;
+      });
+    });
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:module-shared-test');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    mocks.createSandbox.mockImplementation(createRealSandbox);
+    const loads: Array<Promise<unknown>> = [];
+    mocks.loadEntry.mockImplementation(async (_entry: string, _container: HTMLElement, opts: LoaderOpts) => {
+      loads.push(
+        opts.compartment?.load(moduleUrl).then(
+          () => 'loaded',
+          (error: unknown) => error,
+        ) ?? Promise.resolve(),
+      );
+      return validLifecycles;
+    });
+
+    const first = document.createElement('div');
+    const second = document.createElement('div');
+    const getFirst = await loadApp(createApp(first), { fetch });
+    const getSecond = await loadApp(createApp(second), { fetch });
+    await vi.waitFor(() => expect(loads).toHaveLength(2));
+    await getFirst(first).unload[0]();
+
+    expect(moduleSignal?.aborted).toBe(false);
+    resolveModule(new Response('export const shared = true;', { status: 200 }));
+    await expect(loads[1]).resolves.toBe('loaded');
+    expect(fetch.mock.calls.filter(([input]) => String(input) === moduleUrl)).toHaveLength(1);
+    await getSecond(second).unload[0]();
   });
 
   it('marks sandbox-less streamed nodes for native passthrough', async () => {

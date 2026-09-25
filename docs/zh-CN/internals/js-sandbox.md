@@ -76,7 +76,7 @@ flowchart TD
 | `patchHistoryListener` | History API 相关监听器 | 挂载 |
 | `patchStandardSandbox`（`dynamicAppend`） | 拦截 `<script>`、`<style>` 和 `<link>` 的 `appendChild`、`insertBefore`，并重定向到应用容器 | `bootstrap` 和挂载 |
 
-微应用实例不再使用时必须执行 `unmount()`。跳过卸载会使补丁模块的 `free()` 无法执行，导致定时器、事件监听器和动态插入的 DOM 节点继续存在，并影响重新挂载或多实例运行。
+微应用实例不再使用时必须执行 `unmount()`。跳过卸载会使补丁模块的 `free()` 无法执行，导致定时器、事件监听器和动态插入的 DOM 节点继续存在，并影响重新挂载或多实例运行。卸载后沙箱会保留，供同名应用复用；需要彻底释放时调用 `unload()`。
 
 ## 有意共享的全局属性
 
@@ -120,6 +120,7 @@ const globalVariableWhiteList = ['System', '__cjsWrapper', /* + dev-only */];
 
 - **挂载时**，`sandbox.active()` 解锁隔离膜，重新执行 `bootstrap` 阶段收集的重建函数，并安装挂载阶段的补丁模块，同时恢复动态样式表。
 - **卸载时**，先调用各补丁模块的 `free()` 并保存下次挂载所需的重建函数，再由 `sandbox.inactive()` 锁定隔离膜。锁定期间，应用发起的全局写入会被忽略，开发环境中还会输出警告。
+- **销毁时**，统一的 `dispose()` 路径清理插件保留的状态并撤销隔离膜，释放配置和 ESM 引擎引用。已销毁的沙箱不能重新激活。
 
 ::: info v3 不使用快照差异比较
 部分沙箱会在挂载时记录 `window` 属性快照，并在卸载时通过差异比较恢复。qiankun v3 不采用此方式：全局写入从一开始就保存在应用本地对象中，因此无需恢复真实 `window`。`createSandbox` 始终创建 `StandardSandbox`，不提供旧版降级实现。运行环境要求见[浏览器支持](/zh-CN/guide/browser-support)。

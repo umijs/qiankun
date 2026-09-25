@@ -73,6 +73,7 @@ export const MicroApp: React.ForwardRefExoticComponent<Props & React.RefAttribut
     useImperativeHandle(componentRef, () => microAppRef.current);
 
     useEffect(() => {
+      let loaded: MicroAppType | undefined;
       const mounting = (lifecycleRef.current ?? Promise.resolve(undefined))
         .then((prevMicroApp) =>
           mountMicroApp({
@@ -85,6 +86,7 @@ export const MicroApp: React.ForwardRefExoticComponent<Props & React.RefAttribut
         )
         .then((app): MicroAppType | undefined => {
           microAppRef.current = app;
+          loaded = app;
           return app;
         });
 
@@ -94,11 +96,13 @@ export const MicroApp: React.ForwardRefExoticComponent<Props & React.RefAttribut
       });
 
       return () => {
+        // An app this effect already holds is asked to unmount right away instead of at its turn in
+        // the chain: a keyed swap loads the next element in the same commit, and qiankun only hands
+        // the old instance over to it once the unmount request is on record.
+        const requested = loaded ? unmountMicroApp(loaded) : undefined;
         const unmounting = mounting.then(async (microApp) => {
           if (microApp) {
-            // 微应用 unmount 是异步的，中间的流转状态不能确定，所有需要一个标志位来确保 unmount 开始之后不会再触发 update
-            microApp._unmounting = true;
-            await unmountMicroApp(microApp);
+            await (requested ?? unmountMicroApp(microApp));
           }
 
           microAppRef.current = undefined;

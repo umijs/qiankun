@@ -102,11 +102,12 @@ export const MicroApp = defineComponent({
     let lifecycle: Promise<MicroAppType | undefined> = Promise.resolve(undefined);
 
     const unmount = () => {
+      // An app already held is asked to unmount right away instead of at its turn in the chain, so
+      // a new element loading right after finds the request on record and can take the instance.
+      const held = microAppRef.value;
+      const requested = held && !held._unmounting ? unmountMicroApp(held) : undefined;
       const unmounting = lifecycle.then(async (microApp) => {
-        if (microApp) {
-          microApp._unmounting = true;
-          await unmountMicroApp(microApp);
-        }
+        await (requested ?? (microApp && unmountMicroApp(microApp)));
 
         microAppRef.value = undefined;
         return undefined;

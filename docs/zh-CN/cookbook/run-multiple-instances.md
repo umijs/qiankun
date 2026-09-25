@@ -92,6 +92,8 @@ await Promise.all([left.unmount(), right.unmount()]);
 
 `unmount()` 会调用微应用的卸载生命周期，并清理由 qiankun 跟踪的容器内容和沙箱副作用。微应用仍须自行释放状态订阅、Worker、WebSocket、Observer 和 Portal 等外部资源。
 
+卸载后已加载的实例会保留，同名应用再次加载时直接复用。需要释放这些资源时，调用句柄的 `unload()` 或 `unloadMicroApp(name)`，销毁范围见 [loadMicroApp](/zh-CN/api/load-micro-app#unload)。
+
 ## 原生 ESM 注意事项
 
 同一 ESM 应用的并发实例必须使用独立容器；测试时应覆盖模块首次求值、动态创建元素等场景。当前 ESM 实现对于同时求值的同源实例仍存在已知限制。若业务需要运行大量并发实例，应使用实际应用充分验证，或评估采用 Classic 脚本构建。

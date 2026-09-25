@@ -19,15 +19,26 @@ export const qiankunErrorCodes = [
   'module-redirect-cycle',
   'module-context-missing',
   'module-rewrite-invalid',
+  'app-unloaded',
+  'app-teardown-failed',
+  'sandbox-mount-conflict',
+  'app-not-mounted',
+  'app-already-mounted',
 ] as const;
 
 export type QiankunErrorCode = (typeof qiankunErrorCodes)[number];
 
 export class QiankunError extends Error {
   readonly code: QiankunErrorCode;
+  /** The failure this error stems from, set only when there is one. */
+  declare readonly cause?: unknown;
 
-  constructor(message: string, code: QiankunErrorCode) {
+  constructor(message: string, code: QiankunErrorCode, options?: { cause?: unknown }) {
     super(`[qiankun]: ${message}\nSee https://www.qiankunjs.com/zh-CN/errors/${code}`);
     this.code = code;
+    // Defined like the native `cause` option (non-enumerable); the ES2018 lib types lack it.
+    if (options && 'cause' in options) {
+      Object.defineProperty(this, 'cause', { value: options.cause, writable: true, configurable: true });
+    }
   }
 }

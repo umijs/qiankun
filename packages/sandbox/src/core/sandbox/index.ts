@@ -6,6 +6,7 @@ import { nativeDocument, nativeGlobal, qiankunHeadTagName } from '../../consts';
 import { getDefaultIsolationPlugins } from '../../patchers';
 import type { Free, IsolationPlugin, IsolationPluginContext, Rebuild } from '../../patchers/types';
 import {
+  disposeCompartmentAssets,
   QiankunError,
   transpileAssets,
   type ImportHook,
@@ -94,6 +95,12 @@ function normalizeModuleHook(importHook?: ImportHook, loadHook?: ImportHook): Im
   return importHook ?? loadHook;
 }
 
+/**
+ * Teardown — Free callbacks and terminal dispose hooks alike — runs in reverse installation order:
+ * a plugin may rely on views owned by plugins installed before it (user plugins on the built-in
+ * document view), so those must outlive it. The rebuilds come back in installation order, which
+ * is the order a remount replays them in.
+ */
 function releaseSideEffects(frees: readonly Free[]): {
   rebuilds: Rebuild[];
   error?: CapturedError;
@@ -101,15 +108,103 @@ function releaseSideEffects(frees: readonly Free[]): {
   const rebuilds: Rebuild[] = [];
   let firstError: CapturedError | undefined;
 
-  frees.forEach((free) => {
-    try {
-      rebuilds.push(free());
-    } catch (error) {
-      firstError ??= { value: error };
-    }
-  });
+  frees
+    .slice()
+    .reverse()
+    .forEach((free) => {
+      try {
+        rebuilds.unshift(free());
+      } catch (error) {
+        firstError ??= { value: error };
+      }
+    });
 
   return { rebuilds, error: firstError };
+}
+
+function disposePlugins(
+  plugins: readonly IsolationPlugin[],
+  context: IsolationPluginContext,
+): CapturedError | undefined {
+  let firstError: CapturedError | undefined;
+  plugins
+    .slice()
+    .reverse()
+    .forEach((plugin) => {
+      try {
+        plugin.dispose?.(context);
+      } catch (error) {
+        firstError ??= { value: error };
+      }
+    });
+  return firstError;
+}
+
+/**
+ * The controller handed this compartment to the asset transpilers as their owner key, so it — not
+ * the Compartment — signals that owner terminal before the Compartment releases its own resources.
+ */
+function disposeCompartment(sandbox: Sandbox): CapturedError | undefined {
+  let firstError: CapturedError | undefined;
+  try {
+    disposeCompartmentAssets(sandbox);
+  } catch (error) {
+    firstError = { value: error };
+  }
+  try {
+    sandbox.dispose();
+  } catch (error) {
+    firstError ??= { value: error };
+  }
+  return firstError;
+}
+
+const sandboxDisposedError = (appName: string): QiankunError =>
+  new QiankunError(`Sandbox container for ${appName} has been disposed`, 'compartment-disposed');
+
+/**
+ * A retained public handle must not retain the private controller's configuration closures. It
+ * forgets the private controller before disposing of it, so every later call ends here and the
+ * private one only has to guard operations that were already in flight.
+ */
+class TerminalSandboxController implements SandboxController {
+  readonly instance: Sandbox;
+
+  readonly styleIsolation: StyleIsolationOpts | undefined;
+
+  private controller: SandboxController | undefined;
+
+  private disposal: Promise<void> | undefined;
+
+  constructor(controller: SandboxController) {
+    this.instance = controller.instance;
+    this.styleIsolation = controller.styleIsolation;
+    this.controller = controller;
+  }
+
+  readonly nodeTransformer: NodeTransformer = (node, opts) => {
+    if (!this.controller) throw sandboxDisposedError(this.instance.name);
+    return this.controller.nodeTransformer(node, opts);
+  };
+
+  readonly mount = (container?: HTMLElement): Promise<void> => {
+    return this.controller?.mount(container) ?? Promise.reject(sandboxDisposedError(this.instance.name));
+  };
+
+  readonly unmount = (): Promise<void> => {
+    return this.controller?.unmount() ?? Promise.resolve();
+  };
+
+  readonly dispose = (): Promise<void> => {
+    if (this.disposal) return this.disposal;
+    const controller = this.controller;
+    if (!controller) return Promise.resolve();
+    this.controller = undefined;
+    this.disposal = controller.dispose().finally(() => {
+      this.disposal = undefined;
+    });
+    return this.disposal;
+  };
 }
 
 async function rebuildSideEffects(
@@ -126,6 +221,10 @@ async function rebuildSideEffects(
 
 /** Create a lifecycle controller around the standard browser sandbox preset. */
 export function createSandbox(appName: string, opts: CreateSandboxOptions = {}): SandboxController {
+  return new TerminalSandboxController(createSandboxController(appName, opts));
+}
+
+function createSandboxController(appName: string, opts: CreateSandboxOptions): SandboxController {
   const {
     compartmentOptions = {},
     container: containerOption,
@@ -262,8 +361,10 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
     });
   } catch (error) {
     releaseSideEffects(bootstrappingFrees);
+    disposePlugins(isolationPlugins, pluginContext);
     sandbox.inactive();
-    sandbox.dispose();
+    // Cleanup failures are dropped to preserve the bootstrap failure while still restoring the container protocol.
+    disposeCompartment(sandbox);
     cleanupPreparedContainers();
     throw error;
   }
@@ -278,71 +379,58 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
   let disposed = false;
   let mountingPromise: Promise<void> | undefined;
   let unmountingPromise: Promise<void> | undefined;
-  let disposePromise: Promise<void> | undefined;
 
-  const disposedError = () => new TypeError(`Sandbox container for ${appName} has been disposed`);
+  // Only operations already in flight can observe the flag; see TerminalSandboxController.
   const assertNotDisposed = () => {
-    if (disposed) throw disposedError();
+    if (disposed) throw sandboxDisposedError(appName);
   };
 
+  /** Runs once: the public controller forgets this one before calling it. */
   const dispose = async (): Promise<void> => {
-    if (disposePromise) return disposePromise;
-    if (disposed) return;
     disposed = true;
 
-    const pendingMount = mountingPromise;
-    const pendingUnmount = unmountingPromise;
-    const pendingDispose = (async () => {
-      // A mount hook can install effects before its promise yields the matching Free.
-      // Wait for that operation to observe `disposed`, roll back its local frees, and
-      // only then perform the terminal owner cleanup.
-      try {
-        await pendingMount;
-      } catch {
-        // The mount caller retains its own failure; disposal still has to finish.
-      }
-      try {
-        await pendingUnmount;
-      } catch {
-        // The unmount caller retains its own failure; disposal still has to finish.
-      }
-
-      const bootstrappingRelease = bootstrappingEffectsActive
-        ? releaseSideEffects(bootstrappingFrees)
-        : { rebuilds: [], error: undefined };
-      const mountingRelease = mountingEffectsActive
-        ? releaseSideEffects(mountingFrees)
-        : { rebuilds: [], error: undefined };
-
-      bootstrappingEffectsActive = false;
-      mountingEffectsActive = false;
-      bootstrappingRebuilds = [];
-      mountingRebuilds = [];
-      bootstrappingFrees.length = 0;
-      mountingFrees = [];
-
-      sandbox.inactive();
-      sandbox.dispose();
-      cleanupPreparedContainers();
-      mountedContainer = undefined;
-      mounted = false;
-
-      const firstError = bootstrappingRelease.error ?? mountingRelease.error;
-      if (firstError) {
-        throw firstError.value;
-      }
-    })();
-    disposePromise = pendingDispose;
-
+    // A mount hook can install effects before its promise yields the matching Free.
+    // Wait for that operation to observe `disposed`, roll back its local frees, and
+    // only then perform the terminal owner cleanup.
     try {
-      await pendingDispose;
-    } finally {
-      disposePromise = undefined;
+      await mountingPromise;
+    } catch {
+      // The mount caller retains its own failure; disposal still has to finish.
+    }
+    try {
+      await unmountingPromise;
+    } catch {
+      // The unmount caller retains its own failure; disposal still has to finish.
+    }
+
+    // Mount-phase effects were installed after the bootstrap ones, so they go first.
+    const mountingRelease = mountingEffectsActive
+      ? releaseSideEffects(mountingFrees)
+      : { rebuilds: [], error: undefined };
+    const bootstrappingRelease = bootstrappingEffectsActive
+      ? releaseSideEffects(bootstrappingFrees)
+      : { rebuilds: [], error: undefined };
+
+    bootstrappingEffectsActive = false;
+    mountingEffectsActive = false;
+    bootstrappingRebuilds = [];
+    mountingRebuilds = [];
+    bootstrappingFrees.length = 0;
+    mountingFrees = [];
+
+    const pluginError = disposePlugins(isolationPlugins, pluginContext);
+    sandbox.inactive();
+    const compartmentError = disposeCompartment(sandbox);
+    cleanupPreparedContainers();
+    mountedContainer = undefined;
+    mounted = false;
+    const firstError = mountingRelease.error ?? bootstrappingRelease.error ?? pluginError ?? compartmentError;
+    if (firstError) {
+      throw firstError.value;
     }
   };
 
   const mount = async (container: HTMLElement | undefined): Promise<void> => {
-    assertNotDisposed();
     if (hasContainer && container) prepareContainerForMount(container);
     /* ------------------------------------------ 因为有上下文依赖（window），以下代码执行顺序不能变 ------------------------------------------ */
 
@@ -379,10 +467,10 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
       // ALL bootstrap frees, including those whose effects were not rebuilt yet. This
       // relies on the Free contract: a Free must be safe to call (as a no-op) while its
       // effect is not currently installed, deriving what to undo from live state.
+      const mountingRelease = releaseSideEffects(installedMountingFrees);
       const bootstrappingRelease = bootstrappingEffectsActive
         ? releaseSideEffects(bootstrappingFrees)
         : { rebuilds: [], error: undefined };
-      const mountingRelease = releaseSideEffects(installedMountingFrees);
       bootstrappingRebuilds = bootstrappingRelease.rebuilds;
       mountingRebuilds = mountingRelease.rebuilds;
       mountingFrees = [];
@@ -394,8 +482,6 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
   };
 
   const unmount = async (): Promise<void> => {
-    if (disposed) return;
-
     try {
       await mountingPromise;
     } catch {
@@ -410,8 +496,8 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
     // Only overwrite the captured rebuilds when this call actually released live effects.
     // With inactive effects (a repeated unmount, or an unmount after a failed mount that
     // already rolled back), the rebuilds captured earlier must survive for the next mount.
-    const bootstrappingRelease = bootstrappingEffectsActive ? releaseSideEffects(bootstrappingFrees) : undefined;
     const mountingRelease = mountingEffectsActive ? releaseSideEffects(mountingFrees) : undefined;
+    const bootstrappingRelease = bootstrappingEffectsActive ? releaseSideEffects(bootstrappingFrees) : undefined;
 
     if (bootstrappingRelease) {
       bootstrappingRebuilds = bootstrappingRelease.rebuilds;
@@ -427,7 +513,7 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
     mountedContainer = undefined;
     mounted = false;
 
-    const firstError = bootstrappingRelease?.error ?? mountingRelease?.error;
+    const firstError = mountingRelease?.error ?? bootstrappingRelease?.error;
     if (firstError) {
       throw firstError.value;
     }
@@ -447,17 +533,17 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
      * 也可能是从 unmount 之后再次唤醒进入 mount
      */
     mount(container?: HTMLElement) {
-      if (disposed) {
-        return Promise.reject(disposedError());
-      }
-      if (mountingPromise) {
-        return Promise.reject(new TypeError(`Sandbox container for ${appName} is already mounting`));
-      }
-      if (unmountingPromise) {
-        return Promise.reject(new TypeError(`Sandbox container for ${appName} is currently unmounting`));
-      }
-      if (mounted) {
-        return Promise.reject(new TypeError(`Sandbox container for ${appName} is already mounted`));
+      const conflict = mountingPromise
+        ? 'is already mounting'
+        : unmountingPromise
+          ? 'is currently unmounting'
+          : mounted
+            ? 'is already mounted'
+            : undefined;
+      if (conflict) {
+        return Promise.reject(
+          new QiankunError(`Sandbox container for ${appName} ${conflict}`, 'sandbox-mount-conflict'),
+        );
       }
 
       mountedContainer = container ?? getConfiguredContainer();

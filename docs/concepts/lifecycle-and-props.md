@@ -90,6 +90,8 @@ qiankun deactivates the sandbox and clears the instance container after the micr
 
 Always observe the Promise returned by `unmount()`. Await it before removing the container when the owning flow can pause; when a framework cleanup callback cannot await, start unmounting and attach a rejection handler before dropping the handle. A well-formed lifecycle should tolerate repeated mount/unmount cycles without duplicated listeners or stale UI.
 
+The loaded instance is kept after unmounting for reuse by the same app; call `unload()` to release it. Disposal revokes the membrane, so the micro-app should also clear pending timers and asynchronous callbacks in `unmount`. See [loadMicroApp](/api/load-micro-app#unload).
+
 For URL-driven activation, [`registerMicroApps`](/api/register-micro-apps) uses the same micro-app contract but lets routing decide when mount and unmount occur.
 
 ## Continue reading

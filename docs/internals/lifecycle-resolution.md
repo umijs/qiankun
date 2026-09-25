@@ -229,12 +229,12 @@ qiankun distinguishes single-spa's `unmount` (hide the app, keep it warm) from `
 Because top-level code does not run again, a sub-app that instantiates its framework app or view state at the top level will not re-create it on remount. Create the app instance _inside_ `mount()` and dispose it in `unmount()`.
 :::
 
-For a cached remount (same app, same container), qiankun also replaces `bootstrap` with a no-op so one-time setup never runs twice.
+For a cached remount (the same app reusing its loaded instance), qiankun also replaces `bootstrap` with a no-op so one-time setup never runs twice.
 
-**Unload (full teardown).** Only on single-spa's `unload` lifecycle does qiankun dispose the ESM realm: `EsmSandboxEngine.dispose()` revokes every blob URL the engine created and unregisters the instance's realm. After unload, the next activation re-runs `loadApp` from scratch with a fresh engine. `dispose()` is wired to `unload`, **not** `unmount` — so an unmounted-but-not-unloaded ESM app keeps its realm and namespaces resident.
+**Unload (full teardown).** Manually loaded apps use the handle's `unload()` or `unloadMicroApp(name)`; route applications use `unloadApplication` to enter single-spa's `unload` lifecycle. Both paths call the sandbox's unified `dispose()`, releasing its membrane, configuration, and framework-held module references, revoking ESM blob URLs, and removing its injected import map scripts. Native browser import map entries and module registrations cannot be undone. A subsequent load creates a new sandbox and ESM engine.
 
-::: info loadMicroApp exposes no unload
-The public handle returned by `loadMicroApp` does not expose single-spa's `unload` lifecycle. Always call `unmount()` on handles you no longer need, but do not treat it as full ESM-engine disposal. See [Run multiple micro-app instances](/cookbook/run-multiple-instances).
+::: info Unmounting does not dispose of instances
+`unmount()` keeps cached configuration and sandbox state, and a later load of the same app reuses them. Only an explicit `unload()` or `unloadMicroApp(name)` disposes of instances; see [loadMicroApp](/api/load-micro-app#unload) for the scope.
 :::
 
 ## See also
