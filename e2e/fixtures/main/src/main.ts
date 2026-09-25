@@ -194,6 +194,20 @@ const testAPI = {
   },
 
   /**
+   * What a binding does when it swaps its container element: ask the old instance to unmount
+   * without waiting, then load into the new element right away. Resolves with the new instance's
+   * status once it mounted and the old unmount finished.
+   */
+  async swapContainer(name: keyof typeof SUB_APP_ENTRIES, key: string, nextKey: string): Promise<string> {
+    const app = instances.get(key);
+    if (!app) throw new Error(`no app instance for key ${key}`);
+    const unmounting = app.unmount();
+    const status = await this.load(name, undefined, nextKey);
+    await unmounting;
+    return status;
+  },
+
+  /**
    * Drop and recreate the container element (same id, same position), the way frameworks do
    * on a keyed re-render — e.g. the examples main app remounts a fresh container on retry.
    */

@@ -26,6 +26,7 @@ export type E2EWindow = Window & {
     loadDetached(name: string, key?: string, containerKey?: string, props?: Record<string, unknown>): string;
     settle(key: string): Promise<string>;
     unmount(key: string): Promise<string>;
+    swapContainer(name: string, key: string, nextKey: string): Promise<string>;
     resetContainer(key: string): void;
     status(key: string): string | undefined;
     liveCompartments(): number;
@@ -102,6 +103,15 @@ export async function readHookMetrics(
 }
 
 /** Drop and recreate the app container, the keyed re-render pattern main apps use on retry. */
+/** Unmount `key` without waiting and load `name` into `nextKey`'s container right away. */
+export async function swapContainer(page: Page, name: string, key: string, nextKey: string): Promise<string> {
+  return page.evaluate(
+    ([appName, instanceKey, nextInstanceKey]) =>
+      (window as unknown as E2EWindow).__E2E__.swapContainer(appName, instanceKey, nextInstanceKey),
+    [name, key, nextKey] as const,
+  );
+}
+
 export async function resetContainer(page: Page, key: string): Promise<void> {
   await page.evaluate((instanceKey) => (window as unknown as E2EWindow).__E2E__.resetContainer(instanceKey), key);
 }
