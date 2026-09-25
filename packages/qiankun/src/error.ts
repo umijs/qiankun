@@ -10,7 +10,7 @@ export class LoadAppTimeoutError extends QiankunError {
     public readonly timeout: number,
     public readonly elapsed: number,
   ) {
-    super(`App ${appName} loading timed out after ${Math.round(elapsed)} ms (timeout: ${timeout} ms)`);
+    super(`App ${appName} loading timed out after ${Math.round(elapsed)} ms (timeout: ${timeout} ms)`, 'load-timeout');
     this.name = 'LoadAppTimeoutError';
   }
 }
