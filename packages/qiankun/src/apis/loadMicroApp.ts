@@ -78,6 +78,32 @@ const generations = new Map<string, Generation[]>();
 /** Orders idle and draining generations by recency. */
 let idleTick = 0;
 
+/**
+ * How long an app whose load or bootstrap just failed waits before it is loaded again, so a render
+ * loop or a tight retry cannot hammer its entry. A throttle, not a debounce: the window starts at
+ * the failure and later calls do not extend it.
+ */
+const RETRY_COOLDOWN_MS = 1000;
+/** When each name and entry last failed to load or bootstrap. */
+const failedAt = new Map<string, number>();
+
+const failureKey = (name: string, entry: string): string => JSON.stringify([name, entry]);
+
+function recordFailure(generation: Generation): void {
+  failedAt.set(failureKey(generation.name, generation.entry), Date.now());
+}
+
+const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Milliseconds left before a fresh load of this name and entry may start. */
+function cooldownLeft(name: string, entry: string): number {
+  const key = failureKey(name, entry);
+  const left = (failedAt.get(key) ?? -Infinity) + RETRY_COOLDOWN_MS - Date.now();
+  if (left > 0) return left;
+  failedAt.delete(key);
+  return 0;
+}
+
 function evict(generation: Generation): void {
   const list = generations.get(generation.name);
   const index = list?.indexOf(generation) ?? -1;
@@ -331,20 +357,28 @@ export function loadMicroApp<T extends ObjectType>(
     list.push(owner);
     // Observed here: without queued siblings nobody else waits for a failed bootstrap.
     void owner.bootstrapped.promise.catch(() => undefined);
-    owner.config = observed(
+    const startLoad = () =>
       loadApp(app, configuration, lifeCycles, {
         signal: owner.loading.signal,
         onDispose: (dispose) => {
           owner.dispose = dispose;
         },
-      }).then(
+      });
+    // Right after a failure the load waits out the cooldown before loadApp starts; unload cancels
+    // the wait like any other load wait.
+    const cooldown = cooldownLeft(name, entry);
+    const loading = cooldown ? withAbortSignal(delay(cooldown), owner.loading.signal).then(startLoad) : startLoad();
+    owner.config = observed(
+      loading.then(
         (getter) => {
           owner.getter = getter;
           return getter;
         },
         (error: unknown) => {
-          // A failed load leaves nothing to reuse, so the same name can retry from scratch.
+          // A failed load leaves nothing to reuse, so the same name can retry from scratch, once
+          // the cooldown has passed. A load that unload cancelled did not fail.
           evict(owner);
+          if (!owner.stopped.signal.aborted) recordFailure(owner);
           throw error;
         },
       ),
@@ -391,6 +425,7 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
           // bootstrap shared, its handle promises pending — rejects with it rather than with
           // app-unloaded; later calls on the retained handles get app-unloaded caused by it.
           generation.failure = error;
+          recordFailure(generation);
           generation.bootstrapped.reject(error);
           void unloadGeneration(generation, error).catch(() => undefined);
           throw error;

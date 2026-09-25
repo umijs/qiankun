@@ -47,6 +47,11 @@ function load(container: HTMLElement, name = appName, entry = `https://example.t
   return parcel;
 }
 
+/** Moves the clock past the retry cooldown that a failed load or bootstrap starts. */
+function passRetryCooldown() {
+  vi.useFakeTimers({ toFake: ['Date'], now: Date.now() + 1000 });
+}
+
 function containers(count: number) {
   const elements = Array.from({ length: count }, () => document.createElement('div'));
   document.body.append(...elements);
@@ -63,6 +68,7 @@ describe('loadMicroApp instance reuse', () => {
   });
 
   afterEach(async () => {
+    vi.useRealTimers();
     for (const parcel of parcels) {
       if (parcel.getStatus() === AppOrParcelStatus.MOUNTED) await parcel.unmount();
     }
@@ -549,6 +555,7 @@ describe('loadMicroApp instance reuse', () => {
     const results = await Promise.allSettled([failed.loadPromise, failed.bootstrapPromise, failed.mountPromise]);
     expect(results.every((result) => result.status === 'rejected')).toBe(true);
 
+    passRetryCooldown();
     await load(container).mountPromise;
     expect(mocks.loadApp).toHaveBeenCalledTimes(2);
     expect(bootstrap).toHaveBeenCalledTimes(1);
@@ -576,6 +583,7 @@ describe('loadMicroApp instance reuse', () => {
   });
 
   it('unloads an instance whose bootstrap failed and loads a fresh one on the next call', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
     bootstrap.mockRejectedValueOnce(new Error('bootstrap failed'));
     const [container, next] = containers(2);
     const failed = load(container);
@@ -592,10 +600,84 @@ describe('loadMicroApp instance reuse', () => {
     expect(remount.cause).toBeInstanceOf(Error);
     expect((remount.cause as Error).message).toContain('bootstrap failed');
 
-    await load(next).mountPromise;
+    // The retry reloads and bootstraps again, once the cooldown the failure started has passed.
+    const fresh = load(next);
+    expect(mocks.loadApp).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1000);
+    await fresh.mountPromise;
     expect(mocks.loadApp).toHaveBeenCalledTimes(2);
     expect(bootstrap).toHaveBeenCalledTimes(2);
     expect(mount).toHaveBeenCalledTimes(1);
+  });
+
+  describe('after a failed load', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+      mocks.loadApp.mockRejectedValueOnce(new Error('entry fetch failed'));
+    });
+
+    async function fail(container: HTMLElement) {
+      await expect(load(container).mountPromise).rejects.toThrow('entry fetch failed');
+    }
+
+    it('waits out the cooldown before loading again, however many calls come in', async () => {
+      const [container, other] = containers(2);
+      await fail(container);
+
+      const retry = load(container);
+      // Calls on the same element join the pending retry; another element gets its own, which
+      // waits as well.
+      const joined = load(container);
+      const elsewhere = load(other);
+      await vi.advanceTimersByTimeAsync(999);
+      expect(mocks.loadApp).toHaveBeenCalledTimes(1);
+
+      // Counted from the failure, not pushed back by the calls made since.
+      await vi.advanceTimersByTimeAsync(1);
+      expect(mocks.loadApp).toHaveBeenCalledTimes(3);
+      await Promise.all([retry.mountPromise, elsewhere.mountPromise]);
+      await retry.unmount();
+      await joined.mountPromise;
+      expect(bootstrap).toHaveBeenCalledTimes(2);
+    });
+
+    it('loads right away once the cooldown has passed', async () => {
+      const [container] = containers(1);
+      await fail(container);
+      await vi.advanceTimersByTimeAsync(1000);
+
+      const retry = load(container);
+      expect(mocks.loadApp).toHaveBeenCalledTimes(2);
+      await retry.mountPromise;
+    });
+
+    it('cancels a retry unloaded during the cooldown without loading it', async () => {
+      const [container] = containers(1);
+      await fail(container);
+
+      const retry = load(container);
+      const rejected = expect(retry.mountPromise).rejects.toMatchObject({ code: 'app-unloaded' });
+      await retry.unload();
+      await rejected;
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(mocks.loadApp).toHaveBeenCalledTimes(1);
+    });
+
+    it('restarts the cooldown when the retry fails as well', async () => {
+      const [container] = containers(1);
+      await fail(container);
+      mocks.loadApp.mockRejectedValueOnce(new Error('entry fetch failed'));
+      const retry = load(container);
+      await vi.advanceTimersByTimeAsync(1000);
+      await expect(retry.mountPromise).rejects.toThrow('entry fetch failed');
+
+      const third = load(container);
+      await vi.advanceTimersByTimeAsync(999);
+      expect(mocks.loadApp).toHaveBeenCalledTimes(2);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(mocks.loadApp).toHaveBeenCalledTimes(3);
+      await third.mountPromise;
+    });
   });
 
   it.each([
@@ -608,6 +690,7 @@ describe('loadMicroApp instance reuse', () => {
     const failed = load(container);
     await Promise.allSettled([failed.loadPromise, failed.bootstrapPromise, failed.mountPromise]);
 
+    passRetryCooldown();
     const retry = load(container);
     await retry.mountPromise;
     await retry.unmount();
