@@ -210,6 +210,11 @@ const testAPI = {
   status(key: string): string | undefined {
     return instances.get(key)?.getStatus();
   },
+
+  /** Sandboxes still alive: each compartment keeps its global view on window until disposed. */
+  liveCompartments(): number {
+    return Object.keys(window).filter((key) => key.startsWith('__compartment_globalThis__')).length;
+  },
 };
 
 declare global {
