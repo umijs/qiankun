@@ -18,7 +18,7 @@ vi.mock('@qiankunjs/sandbox', async (importOriginal) => ({
   createSandbox: mocks.createSandbox,
 }));
 
-import { triggerAppChange } from '@qiankunjs/single-spa';
+import { addErrorHandler, removeErrorHandler, triggerAppChange } from '@qiankunjs/single-spa';
 import { registerMicroApps, start } from '../registerMicroApps';
 
 describe('registerMicroApps', () => {
@@ -59,5 +59,37 @@ describe('registerMicroApps', () => {
 
     expect(bootstrap).toHaveBeenCalledTimes(1);
     expect(mount).toHaveBeenCalledTimes(1);
+  });
+
+  it('applies the per-app loadTimeout of a registered application', async () => {
+    const errors: Error[] = [];
+    const handler = (error: Error) => void errors.push(error);
+    addErrorHandler(handler);
+    try {
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      registerMicroApps([
+        {
+          name: 'invalid-load-timeout-app',
+          entry: '/invalid-load-timeout.html',
+          container,
+          activeRule: () => true,
+          configuration: { loadTimeout: -1 },
+        },
+      ]);
+      start();
+      await triggerAppChange();
+
+      expect(mocks.loadEntry).not.toHaveBeenCalledWith(
+        '/invalid-load-timeout.html',
+        expect.anything(),
+        expect.anything(),
+      );
+      expect(errors.map((error) => error.message)).toContainEqual(
+        expect.stringContaining('loadTimeout must be a finite non-negative number'),
+      );
+    } finally {
+      removeErrorHandler(handler);
+    }
   });
 });

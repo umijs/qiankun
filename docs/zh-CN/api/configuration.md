@@ -16,7 +16,7 @@ import { type AppConfiguration } from 'qiankun';
 | --- | --- | --- | --- |
 | `sandbox` | `boolean \| SandboxConfiguration` | `true` | 隔离能力的统一入口。设为 `false` 时微应用在真实全局对象中运行；设为 `true` 时以默认配置启用沙箱；传入对象时启用沙箱并配置底层 Compartment。 |
 | `fetch` | `typeof window.fetch` | `window.fetch` | 用于请求入口，以及由加载器处理的脚本、模块和样式。图片等由浏览器直接发起的请求不一定经过该函数。 |
-| `timeout` | `number` | `0`（关闭） | 加载超时，单位为毫秒。省略时继承 `start({ timeout })` 设置的默认值；显式设为 `0` 可关闭。 |
+| `loadTimeout` | `number` | `0`（关闭） | 加载阶段的超时，单位为毫秒。不约束 `bootstrap`、`mount` 和 `unmount`。 |
 | `streamTransformer` | `() => TransformStream<string, string>` | `undefined` | 可选。用于自定义 HTML 入口的流式处理过程，接收解码后的 HTML 字符串流。 |
 | `nodeTransformer` | `<T extends Node>(node: T, opts) => T` | 内置资源转换器 | 在 `<script>`、`<link>` 和 `<style>` 节点进入容器前进行转换。仅用于高级扩展。 |
 
@@ -111,16 +111,16 @@ configuration: {
 
 需要支持加载取消时，自定义实现必须将收到的 `init.signal` 传给实际请求，并在中止后停止读取响应流。
 
-### timeout
+### loadTimeout
 
-加载超时默认关闭。未设置全局默认值时，省略 `timeout` 或设为 `0` 均不限制加载时长。正有限数表示超时毫秒数；负数、`NaN` 和 `Infinity` 属于无效配置，会产生 `QiankunError`。
+加载超时默认关闭：省略 `loadTimeout` 或设为 `0` 均不限制加载时长。正有限数表示超时毫秒数；负数、`NaN` 和 `Infinity` 属于无效配置，会产生 `code` 为 `timeout-invalid` 的 `QiankunError`。
 
-计时从应用取得容器的加载权限后开始，覆盖 `beforeLoad`、入口加载、加载器需要等待的资源处理、入口生命周期发现，以及 HTML 流完整结束。等待前一个实例释放容器的时间不计入；`bootstrap`、`mount`、`unmount` 和复用已加载配置的重新挂载不受此配置限制。
+它只约束加载阶段。计时从应用取得容器的加载权限后开始，覆盖 `beforeLoad`、入口加载、加载器需要等待的资源处理、入口生命周期发现，以及 HTML 流完整结束。等待前一个实例释放容器的时间不计入；`bootstrap`、`mount`、`unmount` 的执行时长，以及复用已加载实例的重新挂载，都不受它限制。
 
 启用超时后，qiankun 会等待入口生命周期就绪且 HTML 流结束，再进入挂载阶段。关闭超时时，仍保留生命周期就绪后即可挂载的流式行为。因此，始终不结束的 HTML 响应在启用超时后会加载失败，不会先挂载再因加载超时销毁。
 
 ```ts
-const app = loadMicroApp({ name: 'app1', entry, container }, { timeout: 10_000 });
+const app = loadMicroApp({ name: 'app1', entry, container }, { loadTimeout: 10_000 });
 await app.mountPromise;
 ```
 
@@ -163,20 +163,18 @@ React 和 Vue 的 `<MicroApp>` 组件通过 `settings` 接收相同类型的配�
 
 ## 优先级
 
-所有字段都按微应用实例生效。`timeout` 可通过首次 `start({ timeout })` 设置全局默认值，同时用于后续手动加载和路由应用。应用级 `timeout` 优先，显式设为 `0` 可关闭默认超时；省略或设为 `undefined` 时继承默认值。全局默认值不会改变已经缓存的配置。
-
-`start()` 不接收也不会合并全局的沙箱、样式或 fetch 配置。
+所有字段都按微应用实例生效。`start()` 不接收也不会合并全局的沙箱、样式、fetch 或加载超时配置。
 
 应用级的 `sandbox` 对象会整体覆盖外层配置：配置合并是一次浅展开，沙箱内部的各个字段不会被深合并。
 
 ## 从 v2 迁移
 
-v2 的对象形式沙箱配置、通过 `start()` 设置的旧版沙箱或预取配置，以及旧版样式隔离选项均不属于该类型。完整的替换关系见[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
+v2 的对象形式沙箱配置、`start()` 全局配置和旧版样式隔离选项均不属于该类型。完整的替换关系见[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。
 
 ## 相关内容
 
 - [loadMicroApp](/zh-CN/api/load-micro-app)——将 `AppConfiguration` 作为第二个参数。
 - [registerMicroApps](/zh-CN/api/register-micro-apps)——路由驱动应用通过 `configuration` 设置同一类型。
-- [start](/zh-CN/api/start)——框架启动与加载超时默认值。
+- [start](/zh-CN/api/start)——框架启动；注意它只接收 `{ urlRerouteOnly }`。
 - [类型参考](/zh-CN/api/types)——完整的类型定义，包括 `RegistrableApp` 和 `LoadableApp`。
 - [样式隔离](/zh-CN/concepts/style-isolation)和 [JavaScript 隔离](/zh-CN/concepts/js-sandbox)——`styleIsolation` 与 `sandbox` 的工作原理和能力边界。

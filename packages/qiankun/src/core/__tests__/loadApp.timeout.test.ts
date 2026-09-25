@@ -67,7 +67,7 @@ function deferred() {
   return { promise, resolve };
 }
 
-describe('loadApp timeout', () => {
+describe('loadApp loadTimeout', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date', 'performance'] });
     vi.resetAllMocks();
@@ -106,7 +106,7 @@ describe('loadApp timeout', () => {
       return validLifecycles;
     });
     const app = createApp();
-    const getConfig = await beginLoad(app, timeout === undefined ? undefined : { timeout });
+    const getConfig = await beginLoad(app, timeout === undefined ? undefined : { loadTimeout: timeout });
 
     expect(getConfig(app.container).name).toBe(app.name);
     expect(isContainerHeld(app.container)).toBe(true);
@@ -120,7 +120,10 @@ describe('loadApp timeout', () => {
     'rejects invalid timeout %s before starting work',
     async (timeout) => {
       const app = createApp();
-      await expect(beginLoad(app, { timeout })).rejects.toBeInstanceOf(QiankunError);
+      await expect(beginLoad(app, { loadTimeout: timeout })).rejects.toMatchObject({
+        code: 'timeout-invalid',
+        message: expect.stringContaining('errors/timeout-invalid'),
+      });
 
       expect(mocks.createSandbox).not.toHaveBeenCalled();
       expect(mocks.loadEntry).not.toHaveBeenCalled();
@@ -148,7 +151,7 @@ describe('loadApp timeout', () => {
       return validLifecycles;
     });
     const app = createApp();
-    const loading = beginLoad(app, { timeout: 100, fetch });
+    const loading = beginLoad(app, { loadTimeout: 100, fetch });
     const outcome = loading.catch((error: unknown) => error);
     await vi.advanceTimersByTimeAsync(0);
     expect(fetch).toHaveBeenCalled();
@@ -158,7 +161,7 @@ describe('loadApp timeout', () => {
     const error = await outcome;
     expect(error).toBeInstanceOf(LoadAppTimeoutError);
     expect(error).toBeInstanceOf(QiankunError);
-    expect(error).toMatchObject({ appName: app.name, timeout: 100, elapsed: 100 });
+    expect(error).toMatchObject({ appName: app.name, loadTimeout: 100, elapsed: 100 });
     expect(loaderSignal?.reason).toBe(error);
     expect(networkSignal?.aborted).toBe(true);
     expect(mocks.dispose).toHaveBeenCalledOnce();
@@ -180,10 +183,10 @@ describe('loadApp timeout', () => {
       await entry.promise;
       return validLifecycles;
     });
-    const firstLoading = beginLoad(first, { timeout: 100 });
+    const firstLoading = beginLoad(first, { loadTimeout: 100 });
     const firstOutcome = firstLoading.catch((error: unknown) => error);
     await vi.advanceTimersByTimeAsync(0);
-    const secondLoading = beginLoad(second, { timeout: 100 });
+    const secondLoading = beginLoad(second, { loadTimeout: 100 });
     mocks.loadEntry.mockImplementationOnce(async (_entry, target, opts) => {
       expect(target.childNodes).toHaveLength(0);
       target.innerHTML = '<p>second entry</p>';
@@ -214,7 +217,7 @@ describe('loadApp timeout', () => {
     });
     const app = createApp();
     const ready = vi.fn();
-    const loading = beginLoad(app, { timeout: 100 });
+    const loading = beginLoad(app, { loadTimeout: 100 });
     void loading.then(ready, () => undefined);
 
     await vi.advanceTimersByTimeAsync(99);
@@ -232,7 +235,7 @@ describe('loadApp timeout', () => {
     const beforeLoad = vi.fn(() => hook.promise);
     const laterHook = vi.fn(async () => {});
     const app = createApp();
-    const loading = beginLoad(app, { timeout: 100 }, { beforeLoad: [beforeLoad, laterHook] });
+    const loading = beginLoad(app, { loadTimeout: 100 }, { beforeLoad: [beforeLoad, laterHook] });
 
     await vi.advanceTimersByTimeAsync(99);
     expect(beforeLoad).toHaveBeenCalledOnce();
@@ -252,7 +255,7 @@ describe('loadApp timeout', () => {
     const hold = await acquireContainer(app.container, 'predecessor');
     finalizers.push(() => hold.release());
     mocks.loadEntry.mockImplementationOnce(async () => validLifecycles);
-    const loading = beginLoad(app, { timeout: 100 });
+    const loading = beginLoad(app, { loadTimeout: 100 });
 
     await vi.advanceTimersByTimeAsync(500);
     expect(mocks.loadEntry).not.toHaveBeenCalled();
@@ -265,7 +268,7 @@ describe('loadApp timeout', () => {
     expect(mocks.dispose).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
 
-    await expect(loading).rejects.toMatchObject({ appName: app.name, timeout: 100, elapsed: 100 });
+    await expect(loading).rejects.toMatchObject({ appName: app.name, loadTimeout: 100, elapsed: 100 });
     expect(isContainerHeld(app.container)).toBe(false);
     expect(vi.getTimerCount()).toBe(0);
   });
@@ -279,7 +282,7 @@ describe('loadApp timeout', () => {
       return validLifecycles;
     });
     const ready = vi.fn();
-    const loading = beginLoad(createApp(), { timeout: 100 });
+    const loading = beginLoad(createApp(), { loadTimeout: 100 });
     void loading.then(ready, () => undefined);
     await vi.advanceTimersByTimeAsync(50);
     expect(ready).not.toHaveBeenCalled();
@@ -297,7 +300,7 @@ describe('loadApp timeout', () => {
     const timeout = maximumTimerDelay + 500;
     mocks.loadEntry.mockImplementationOnce(async () => validLifecycles);
     const app = createApp();
-    const loading = beginLoad(app, { timeout });
+    const loading = beginLoad(app, { loadTimeout: timeout });
 
     await vi.advanceTimersByTimeAsync(maximumTimerDelay);
     expect(mocks.dispose).not.toHaveBeenCalled();
@@ -306,7 +309,7 @@ describe('loadApp timeout', () => {
     expect(mocks.dispose).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
 
-    await expect(loading).rejects.toMatchObject({ appName: app.name, timeout, elapsed: timeout });
+    await expect(loading).rejects.toMatchObject({ appName: app.name, loadTimeout: timeout, elapsed: timeout });
     expect(isContainerHeld(app.container)).toBe(false);
     expect(vi.getTimerCount()).toBe(0);
   });
@@ -318,9 +321,9 @@ describe('loadApp timeout', () => {
       vi.spyOn(performance, 'now').mockReturnValue(startedAt + 101);
     };
 
-    await expect(beginLoad(app, { timeout: 100 }, { beforeLoad })).rejects.toMatchObject({
+    await expect(beginLoad(app, { loadTimeout: 100 }, { beforeLoad })).rejects.toMatchObject({
       appName: app.name,
-      timeout: 100,
+      loadTimeout: 100,
       elapsed: 101,
     });
     expect(mocks.dispose).toHaveBeenCalledOnce();
@@ -336,7 +339,7 @@ describe('loadApp timeout', () => {
         container.innerHTML = '<p>partial entry</p>';
         return validLifecycles;
       });
-      const loading = beginLoad(app, { timeout: 100 });
+      const loading = beginLoad(app, { loadTimeout: 100 });
       await vi.advanceTimersByTimeAsync(0);
       const failCleanup = () => {
         throw new Error(`${stage} cleanup failed`);
@@ -349,7 +352,7 @@ describe('loadApp timeout', () => {
       expect(isContainerHeld(app.container)).toBe(false);
       expect(vi.getTimerCount()).toBe(0);
 
-      await expect(beginLoad(createApp(app.container), { timeout: 100 })).resolves.toBeTypeOf('function');
+      await expect(beginLoad(createApp(app.container), { loadTimeout: 100 })).resolves.toBeTypeOf('function');
       expect(app.container.childNodes).toHaveLength(0);
       expect(mocks.loadEntry).toHaveBeenCalledTimes(2);
     },
@@ -361,7 +364,7 @@ describe('loadApp timeout', () => {
     mocks.dispose.mockRejectedValueOnce(new Error('cleanup failed'));
     const app = createApp();
 
-    await expect(beginLoad(app, { timeout: 100 })).rejects.toBe(entryError);
+    await expect(beginLoad(app, { loadTimeout: 100 })).rejects.toBe(entryError);
     expect(mocks.dispose).toHaveBeenCalledOnce();
     expect(isContainerHeld(app.container)).toBe(false);
     expect(vi.getTimerCount()).toBe(0);
@@ -374,7 +377,7 @@ describe('loadApp timeout', () => {
     const cancellation = new Error('caller unloaded the app');
     mocks.loadEntry.mockImplementationOnce(async () => validLifecycles);
     const app = createApp();
-    const loading = beginLoad(app, { timeout: 100 }, undefined, { signal: controller.signal });
+    const loading = beginLoad(app, { loadTimeout: 100 }, undefined, { signal: controller.signal });
     await vi.advanceTimersByTimeAsync(50);
 
     controller.abort(cancellation);

@@ -23,7 +23,9 @@ test.describe('loading timeout', () => {
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.evaluate(
       ({ key, timeout }) => {
-        (window as unknown as E2EWindow).__E2E__.loadNetworkEntryDetached(key, 'timeout-shared', { timeout });
+        (window as unknown as E2EWindow).__E2E__.loadNetworkEntryDetached(key, 'timeout-shared', {
+          loadTimeout: timeout,
+        });
       },
       { key, timeout },
     );
@@ -40,7 +42,7 @@ test.describe('loading timeout', () => {
 
     const outcome = await page.evaluate((key) => (window as unknown as E2EWindow).__E2E__.mountOutcome(key), key);
     expect(outcome.error).toContain('timed out');
-    expect(outcome.timeoutError).toMatchObject({ appName: 'sub-classic', timeout });
+    expect(outcome.timeoutError).toMatchObject({ appName: 'sub-classic', loadTimeout: timeout });
     expect(outcome.timeoutError!.elapsed).toBeGreaterThanOrEqual(timeout);
     await expect
       .poll(async () => (await request.get(streamStateUrl(key))).json())
@@ -65,26 +67,24 @@ test.describe('loading timeout', () => {
     await expect(page.locator('#container-timeout-shared')).toBeEmpty();
   });
 
-  test('start timeout applies to manual loads and local zero preserves early streaming mount', async ({
+  test('a per-app load timeout expires on its own while an app without one keeps its early streaming mount', async ({
     page,
     request,
   }) => {
     const timeout = 1_000;
     await page.evaluate((timeout) => {
-      const api = (window as unknown as E2EWindow).__E2E__;
-      api.configureTimeout(timeout);
-      api.loadNetworkEntryDetached('default-timeout', 'default-timeout');
+      (window as unknown as E2EWindow).__E2E__.loadNetworkEntryDetached('default-timeout', 'default-timeout', {
+        loadTimeout: timeout,
+      });
     }, timeout);
 
     expect(
       await page.evaluate(() =>
-        (window as unknown as E2EWindow).__E2E__.loadWithNetworkEntryStream('timeout-disabled', 'timeout-disabled', {
-          timeout: 0,
-        }),
+        (window as unknown as E2EWindow).__E2E__.loadWithNetworkEntryStream('timeout-disabled', 'timeout-disabled'),
       ),
     ).toBe('MOUNTED');
     const outcome = await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.mountOutcome('default-timeout'));
-    expect(outcome.timeoutError).toMatchObject({ appName: 'sub-classic', timeout });
+    expect(outcome.timeoutError).toMatchObject({ appName: 'sub-classic', loadTimeout: timeout });
     await expect(page.locator('#container-default-timeout')).toBeEmpty();
     await expect(page.locator('#container-timeout-disabled').getByTestId('classic-title')).toBeVisible();
     expect(await (await request.get(streamStateUrl('timeout-disabled'))).json()).toEqual({
