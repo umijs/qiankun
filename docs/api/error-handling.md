@@ -65,7 +65,7 @@ React and Vue `<MicroApp>` components provide component-level error UI through t
 
 ## QiankunError
 
-Use the top-level `QiankunError` export to identify framework errors thrown by qiankun. The loader, sandbox, and shared modules use the same constructor. Its `code` property provides a stable error identifier.
+Use the top-level `QiankunError` export to identify framework errors thrown by qiankun. Framework errors from the loader, sandbox, and shared modules are all instances of it, and its read-only `code` property provides a stable error identifier.
 
 ```ts
 import { QiankunError } from 'qiankun';
@@ -78,7 +78,7 @@ void microApp.mountPromise.catch((error: unknown) => {
 });
 ```
 
-Errors from micro-app code, browser networking, and single-spa are not necessarily instances of `QiankunError` and still need handling. See [Error codes and solutions](/errors/) for the constructor, code conventions, and troubleshooting guidance.
+Errors from micro-app code, browser networking, and single-spa are not necessarily instances of `QiankunError` and still need handling. See [Error codes and solutions](/errors/) for code conventions and troubleshooting guidance.
 
 ## Related
 

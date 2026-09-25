@@ -1,6 +1,6 @@
 # Error codes and solutions
 
-Every `QiankunError` thrown by qiankun has a stable `code` property and a solution link at the end of its message. Development and production builds retain the full message and diagnostic context without compressing error messages.
+Every `QiankunError` thrown by qiankun has a stable `code` property and a solution link at the end of its message.
 
 [中文](/zh-CN/errors/)
 
@@ -20,30 +20,26 @@ void microApp.mountPromise.catch((error: unknown) => {
 });
 ```
 
-The loader, sandbox, and shared modules use the same `QiankunError` constructor. Micro-app code, the browser, and single-spa may also throw other error types, which callers still need to handle.
+Framework errors thrown by the loader, sandbox, and shared modules are all instances of the same `QiankunError` class. Micro-app code, the browser, and single-spa may also throw other error types, which callers still need to handle.
 
-## Signature
+## Public contract
 
 ```ts
 import { type QiankunErrorCode } from 'qiankun';
 
 declare class QiankunError extends Error {
   readonly code: QiankunErrorCode;
-  constructor(message: string, code?: QiankunErrorCode);
 }
 ```
 
-`code` defaults to `custom-error`, preserving message-only construction. The instance's `code` property is read-only. Its `message` retains the `[qiankun]: ` prefix and appends a newline followed by `See https://www.qiankunjs.com/zh-CN/errors/<code>`. Error links point to Chinese pages, each with an English counterpart.
+The public contract is limited to two things: identifying framework errors with `instanceof QiankunError`, and the read-only `code` property. Only qiankun creates `QiankunError` instances; the constructor is not public API. The `message` ends with a solution link. Links point to Chinese pages, each with an English counterpart.
 
 ## Code conventions
 
-Codes use lowercase words separated by hyphens and describe the cause and remedy. The same cause shares a code across packages. Moving files, rewording a message, or adding other errors does not change existing codes. Branch on `error.code` instead of comparing complete messages. Framework call sites specify their codes explicitly; callers that omit a code receive `custom-error`.
+Codes use lowercase words separated by hyphens and describe the cause and remedy. The same cause shares a code across packages. Moving files, rewording a message, or adding other errors does not change existing codes. Branch on `error.code` instead of comparing complete messages.
 
 ## Code index
 
-<!-- code-index -->
-
-- [custom-error: Caller-defined error](/errors/custom-error)
 - [lifecycle-missing: Missing lifecycle exports](/errors/lifecycle-missing)
 - [entry-duplicate: Duplicate entry scripts](/errors/entry-duplicate)
 - [entry-script-failed: Entry script failed to load](/errors/entry-script-failed)
