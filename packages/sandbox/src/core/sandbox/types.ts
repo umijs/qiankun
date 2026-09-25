@@ -5,13 +5,7 @@
 
 import type { Compartment } from '../compartment';
 
-export enum SandboxType {
-  Standard = 'Standard',
-}
-
 export interface Sandbox extends Compartment {
-  type: SandboxType;
-
   active(): void;
 
   inactive(): void;

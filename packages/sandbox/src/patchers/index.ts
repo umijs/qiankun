@@ -3,7 +3,6 @@
  * @since 2019-04-11
  */
 
-import { SandboxType } from '../core/sandbox/types';
 import { QiankunError } from '@qiankunjs/shared';
 import { patchStandardSandbox, reattachDynamicStylesheets } from './dynamicAppend';
 import patchHistoryListener from './historyListener';
@@ -51,17 +50,13 @@ const dynamicAppendPlugin: IsolationPlugin = {
 const baseIsolationPlugins = [intervalPlugin, windowListenerPlugin, historyListenerPlugin] as const;
 
 /**
- * Built-in presets retain the historical patch order. User plugins are appended by the container.
+ * Built-in plugins retain the historical patch order. User plugins are appended by the container.
+ * DOM isolation appends dynamicAppend to the JavaScript-only base plugins.
  */
-export const defaultIsolationPlugins = {
-  [SandboxType.Standard]: [...baseIsolationPlugins, dynamicAppendPlugin],
-} satisfies Record<SandboxType, readonly IsolationPlugin[]>;
+export const defaultIsolationPlugins: IsolationPlugin[] = [...baseIsolationPlugins, dynamicAppendPlugin];
 
-export function getDefaultIsolationPlugins(
-  sandboxType: SandboxType,
-  includeDomIsolation = true,
-): readonly IsolationPlugin[] {
-  return includeDomIsolation ? defaultIsolationPlugins[sandboxType] : baseIsolationPlugins;
+export function getDefaultIsolationPlugins(includeDomIsolation: boolean): readonly IsolationPlugin[] {
+  return includeDomIsolation ? defaultIsolationPlugins : baseIsolationPlugins;
 }
 
 export type { Free, IsolationPlugin, IsolationPluginConfig, IsolationPluginContext, Patch, Rebuild } from './types';

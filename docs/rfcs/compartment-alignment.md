@@ -31,7 +31,7 @@ qiankun v3 沙箱在设计上参考了 ShadowRealm / Compartment 等 ECMAScript 
 3. **模块子系统完全绕开 Compartment**。`EsmSandboxEngine`（fetch → lexer rewrite → synthetic specifier → import map → native import）是一条独立路径，内部的 `moduleResolver`、module record、synthetic specifier 概念与规范的 `resolveHook` / `importHook` / `ModuleSource` / `Module` 对不上——但**能力上是同构的**，只差接口形状。
 4. **classic / ESM 双求值路径割裂**。一条走 `with(this)` 包裹（Layer 3 Evaluators 的手写版），一条走 EsmSandboxEngine（Layer 0 Module 的手写版），仅靠 `getEsmGlobalsView` / `onGlobalSet` 回调共享同一个 Membrane 视图，没有统一门面。
 5. **术语漂移**。`Endowments` 类型实际对应规范的 `globals`；`addIntrinsics` 中的 "intrinsics" 与 TC39 intrinsic（`%Object.prototype%` 等）完全不是一回事，实际语义是「不可被 shadow 的固定 globals」；`realm-registry` 中的 "realm" 也非 TC39 Realm。
-6. **扩展点缺失**。patcher 在 `packages/sandbox/src/patchers/index.ts` 按 `SandboxType` 硬编码分派，无注册 API；`extraGlobals` 通道存在但 `loadApp.ts` 写死为 `{}` 未接线；外部无法注册自定义隔离能力。
+6. **扩展点缺失**。patcher 在 `packages/sandbox/src/patchers/index.ts` 按沙箱类型硬编码分派，无注册 API；`extraGlobals` 通道存在但 `loadApp.ts` 写死为 `{}` 未接线；外部无法注册自定义隔离能力。
 
 ### 目标
 
@@ -271,7 +271,7 @@ interface IsolationPlugin {
 #### 4.2 注册与默认插件
 
 - `createSandboxContainer(opts.plugins?: IsolationPlugin[])`，并经 `loadApp` 配置一路暴露到用户 API。
-- 内置 interval / windowListener / historyListener / dynamicAppend 改为**默认插件列表**，用户插件追加其后；`patchers/index.ts` 的硬编码分派**数据化**——默认列表按 `SandboxType` 提供 Standard / Snapshot 两套预设（Snapshot 路径本身维持现状，见 Non-Goals）。
+- 内置 interval / windowListener / historyListener / dynamicAppend 改为**默认插件列表**，用户插件追加其后；`patchers/index.ts` 的硬编码分派**数据化**——默认列表是一组固定插件，只有启用 DOM 隔离（提供容器）时才追加 dynamicAppend。v2 遗留的 Snapshot 降级路径和 `SandboxType` 枚举已在 3.0 前删除（见 Non-Goals）。
 - free 的编排逻辑（bootstrap frees 长驻、mounting frees 每次重建）保持现状，由容器统一调度。
 
 #### 4.3 dynamicAppend 吃狗粮
@@ -384,7 +384,7 @@ feature-detect（`typeof Compartment === 'function'` 时优先原生）留骨架
 - **不做 intrinsics 隔离、不做 callable boundary**——破坏 DOM/对象共享模型，且 ShadowRealm 已无实现动能。未来若有「强隔离不可信代码」需求，那是 Worker / iframe realm 方向的独立产品形态，不是本沙箱的演进。
 - **不实现 `lockdown()` / `harden()`**——Hardened JS 的冻结语义与微前端「子应用可自由使用宿主能力」的定位冲突；仅保留概念映射说明。
 - **不 all-in Layer 4 草案的精确签名**——Stage 1、冻结三年半、术语仍可能变；锚点是 ses 稳定面，草案术语（`loadHook`）以别名跟踪。
-- **不做 snapshot 沙箱的 Compartment 化**——`SandboxType.Snapshot` 路径维持现状（本就是降级路径）。
+- **不做 snapshot 沙箱的 Compartment 化**——snapshot 本就是 v2 的降级路径，3.0 前已随 `SandboxType` 枚举一并删除。
 
 ## Migration Path
 

@@ -238,7 +238,7 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
       styleIsolation,
     },
   };
-  const isolationPlugins = [...getDefaultIsolationPlugins(sandbox.type, hasContainer), ...plugins];
+  const isolationPlugins = [...getDefaultIsolationPlugins(hasContainer), ...plugins];
 
   // Bootstrap plugins are installed before loadEntry starts evaluating application scripts.
   const bootstrappingFrees: Free[] = [];

@@ -1,7 +1,7 @@
 import { hasOwnProperty } from '@qiankunjs/shared';
 import { Compartment, type CompartmentGlobals, type CompartmentOptions } from '../compartment';
 import { type MembraneTarget } from '../membrane';
-import { type Sandbox, SandboxType } from './types';
+import { type Sandbox } from './types';
 
 const standardUnshadowableGlobalNames = [
   'window',
@@ -24,8 +24,6 @@ const omitReservedGlobals = (globals: CompartmentGlobals): CompartmentGlobals =>
 };
 
 export class StandardSandbox extends Compartment implements Sandbox {
-  readonly type = SandboxType.Standard;
-
   constructor(
     name: string,
     globals: CompartmentGlobals = {},
