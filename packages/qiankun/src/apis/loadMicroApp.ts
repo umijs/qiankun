@@ -364,8 +364,8 @@ export function loadMicroApp<T extends ObjectType>(
           owner.dispose = dispose;
         },
       });
-    // Right after a failure the load waits out the cooldown before loadApp starts; unload cancels
-    // the wait like any other load wait.
+    // Right after a failure the load waits out the cooldown before loadApp starts, so the wait does
+    // not count against loadTimeout; unload cancels it like any other load wait.
     const cooldown = cooldownLeft(name, entry);
     const loading = cooldown ? withAbortSignal(delay(cooldown), owner.loading.signal).then(startLoad) : startLoad();
     owner.config = observed(
