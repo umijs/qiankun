@@ -87,6 +87,8 @@ try {
 
 超时失败前，qiankun 会中止该次加载、清理部分写入的节点和沙箱，并释放容器。重试时应重新调用 `loadMicroApp` 创建实例；不要继续挂载已经失败的句柄。`timeout` 只限制加载准备，不限制微应用的 `bootstrap`、`mount` 或 `unmount` 生命周期。
 
+`LoadAppTimeoutError` 的 `code` 为 `load-timeout`，超时配置无效时则抛出 `code` 为 `timeout-invalid` 的 `QiankunError`。排查方法分别见 [load-timeout：微应用加载超时](/zh-CN/errors/load-timeout) 和 [timeout-invalid：加载超时配置无效](/zh-CN/errors/timeout-invalid)。
+
 ## 处理器职责
 
 - 处理器在上报错误后应正常返回，避免再次抛出错误；
