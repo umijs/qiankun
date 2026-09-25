@@ -4,7 +4,7 @@
 
 微应用已经通过 `unload()`、`unloadMicroApp()` 或 `unloadApplication()` 销毁，相关代码仍在使用已销毁的实例：
 
-- 调用失效句柄的 `mount()` 或 `update()`；
+- 调用失效句柄的 `mount()`、`unmount()` 或 `update()`；
 - 销毁发生时仍在等待的 `mountPromise` 被拒绝；
 - 该实例尚未完成的加载请求被取消。
 

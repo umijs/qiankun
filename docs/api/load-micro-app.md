@@ -128,8 +128,8 @@ type Parcel = {
 
 | Member | Description |
 | --- | --- |
-| `mount()` | Mounts the parcel. loadMicroApp already mounts on load, so you rarely call this directly. |
-| `unmount()` | Unmounts the app, deactivates the sandbox, cleans up tracked side effects, and clears the container DOM. The loaded instance is kept for remounting or reuse by the same app name. You may call it before the mount finishes: the request is recorded right away and the app unmounts once that mount ends; it does nothing when the app is not mounted. Interleaved `mount()` and `unmount()` calls run in call order, and the last one wins. |
+| `mount()` | Mounts the parcel. loadMicroApp already mounts on load, so you rarely call this directly. Runs one at a time with `unmount()` in call order; rejects with [`app-already-mounted`](/errors/app-already-mounted) when the app is already mounted by its turn, and with the mount error when a remount fails. |
+| `unmount()` | Unmounts the app, deactivates the sandbox, cleans up tracked side effects, and clears the container DOM. The loaded instance is kept for remounting or reuse by the same app name. You may call it before the mount finishes: the request is recorded right away and the app unmounts once that mount ends. If the app is not mounted by its turn, it rejects with [`app-not-mounted`](/errors/app-not-mounted); when a failed mount is the reason, that mount error is the `cause`. |
 | `unload()` | Unmounts any mounted app, then disposes of the instance this handle uses and its caches; the handle becomes invalid. See [below](#unload) for the scope. |
 | `update?(props)` | Present only if the micro-app exports an `update` lifecycle. Pushes new props to the running app. |
 | `getStatus()` | Returns the current lifecycle status from the union above. |
@@ -183,7 +183,7 @@ The `unloadMicroApp` signature is:
 function unloadMicroApp(name: string): Promise<void>;
 ```
 
-After disposal, invalidated handles return `NOT_LOADED` from `getStatus()`. Their `mount()` and existing `update()` methods reject with a `QiankunError`; `unmount()` does nothing. Pending `mountPromise` values reject too. Repeating a handle's `unload()` returns the same disposal result and cannot affect instances created later. `unloadMicroApp` resolves immediately when no matching instance exists. When an instance fails to clean up, it waits for every disposal to finish and then rejects with the first error.
+After disposal, invalidated handles return `NOT_LOADED` from `getStatus()`. Their `mount()`, `unmount()`, and existing `update()` methods reject with `app-unloaded`. Pending `mountPromise` values reject too. Of the requests still queued at disposal, `unmount()` is carried out by the disposal and `mount()` rejects with `app-unloaded`. Repeating a handle's `unload()` returns the same disposal result and cannot affect instances created later. `unloadMicroApp` resolves immediately when no matching instance exists. When an instance fails to clean up, it waits for every disposal to finish and then rejects with the first error.
 
 Disposal clears container nodes (including `qiankun-head`), framework-tracked side effects, sandbox membrane and configuration references, ESM module caches, blob URLs, and the instance's injected import map scripts. It also invalidates cached entry and asset fetches. Shared requests still used by other instances remain active. Callers should release their own handles, props, and other references too.
 

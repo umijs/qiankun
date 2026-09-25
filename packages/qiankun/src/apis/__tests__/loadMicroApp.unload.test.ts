@@ -209,7 +209,8 @@ describe('unload cancelling a remount', () => {
       const remount = a.mount();
       await vi.waitFor(() => expect(raw.status).toBe(AppOrParcelStatus.MOUNTING));
       await a.unload();
-      await remount;
+      // The caller learns the remount did not happen; single-spa's error handlers do not.
+      await expect(remount).rejects.toMatchObject({ code: 'app-unloaded' });
       await new Promise((resolve) => setTimeout(resolve));
       expect(errors).not.toHaveBeenCalled();
       expect(a.getStatus()).toBe(AppOrParcelStatus.NOT_LOADED);
@@ -236,13 +237,13 @@ describe('unload with retained handles of one generation', () => {
       const remount = a.mount();
       if (waitUntilQueued) await vi.waitFor(() => expect(raw.status).toBe(AppOrParcelStatus.MOUNTING));
       await b.unload();
-      await remount;
+      await expect(remount).rejects.toMatchObject({ code: 'app-unloaded' });
       expect(raw.status).toBe(AppOrParcelStatus.NOT_MOUNTED);
       expect(a.getStatus()).toBe(AppOrParcelStatus.NOT_LOADED);
     },
   );
 
-  it('joins repeated mount requests so later same-generation mounts stay FIFO', async () => {
+  it('rejects a repeated mount request and keeps later same-generation mounts FIFO', async () => {
     const log: string[] = [];
     const idOf = (props: object) => String((props as { id?: string }).id);
     const lifecycles: MicroAppLifeCycles = {
@@ -254,7 +255,9 @@ describe('unload with retained handles of one generation', () => {
     const a = load('same-app', { id: 'a' });
     await a.mountPromise;
     await a.unmount();
-    await Promise.all([a.mount(), a.mount()]);
+    const [first, repeated] = await Promise.allSettled([a.mount(), a.mount()]);
+    expect(first.status).toBe('fulfilled');
+    expect(repeated).toMatchObject({ status: 'rejected', reason: { code: 'app-already-mounted' } });
     await a.unmount();
 
     log.length = 0;

@@ -72,7 +72,13 @@ test.describe('terminal unload', () => {
       ),
     );
     expect(staleMount).toContain('unloaded');
-    expect(await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.unmount('holder'))).toBe('NOT_LOADED');
+    const staleUnmount = await page.evaluate(() =>
+      (window as unknown as E2EWindow).__E2E__.unmount('holder').then(
+        () => 'unexpected unmount',
+        (error: unknown) => String(error),
+      ),
+    );
+    expect(staleUnmount).toContain('unloaded');
 
     await loadApp(page, 'sub-classic', undefined, 'new-generation', undefined, 'shared');
     await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.unload('waiter-a'));
