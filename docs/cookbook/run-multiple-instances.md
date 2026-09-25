@@ -80,7 +80,7 @@ Each instance has its own handle. Do not mix update and unmount operations betwe
 
 After unmounting the same instance, you can call `mount()` on its handle again. qiankun reuses the lifecycles it already discovered instead of executing entry top-level code again. Create application instances, routers, and stores needed for every mount inside the micro-app's `mount()`.
 
-If the host destroys the old container and calls `loadMicroApp` for a new one, treat that as a new instance with its own cleanup path. Do not remove the DOM and discard the old handle.
+If the host destroys the old container and calls `loadMicroApp` for a new one, the call returns a new handle. When the same app has an unmounted instance, qiankun mounts it into the new container without executing the entry again. Keep and clean up the new handle separately. Do not remove the DOM and discard the old handle.
 
 ## Every handle must be unmounted
 

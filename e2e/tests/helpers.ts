@@ -28,6 +28,7 @@ export type E2EWindow = Window & {
     unmount(key: string): Promise<string>;
     resetContainer(key: string): void;
     status(key: string): string | undefined;
+    liveCompartments(): number;
   };
 };
 
@@ -107,4 +108,8 @@ export async function resetContainer(page: Page, key: string): Promise<void> {
 
 export async function readMainRealmGlobal(page: Page, prop: string): Promise<unknown> {
   return page.evaluate((p) => (window as unknown as Record<string, unknown>)[p], prop);
+}
+
+export async function countLiveCompartments(page: Page): Promise<number> {
+  return page.evaluate(() => (window as unknown as E2EWindow).__E2E__.liveCompartments());
 }
