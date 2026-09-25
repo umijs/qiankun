@@ -98,7 +98,10 @@ export type LifeCycles<T extends ObjectType> = {
 };
 
 export type MicroApp = Parcel & {
-  /** Retire every handle sharing this name/container generation. Idempotent. */
+  /**
+   * Dispose of the loaded instance this handle uses, retiring every handle that shares it. Other
+   * instances of the same app are unaffected. Idempotent.
+   */
   unload(): Promise<void>;
 };
 

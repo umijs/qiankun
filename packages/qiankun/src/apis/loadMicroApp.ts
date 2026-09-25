@@ -35,6 +35,8 @@ interface Generation {
   container: HTMLElement;
   /** Set once the load succeeded. */
   getter?: ParcelConfigObjectGetter;
+  /** Settles with the first instance's bootstrap; later instances share its outcome. */
+  bootstrapped: Deferred<void>;
   /** Tick at which the queue last drained, so the most recently idle generation is reused first. */
   idleSince: number;
   stopped: AbortController;
@@ -42,6 +44,11 @@ interface Generation {
   config?: Promise<ParcelConfigObjectGetter>;
   dispose?: () => Promise<void>;
   unloading?: Promise<void>;
+  /**
+   * Instances that may still own work unload has to drain or unmount: queued ones and those with
+   * operations in flight. A retired handle drops out and rejoins when it is mounted again, so a
+   * generation reused across many containers does not accumulate every handle it ever served.
+   */
   instances: Set<Instance>;
   /**
    * Instances that are mounted or waiting to mount, in call order. A generation owns one sandbox
@@ -65,10 +72,13 @@ function evict(generation: Generation): void {
   if (index >= 0) list!.splice(index, 1);
 }
 
-/** Loaded, nothing mounted or waiting to mount, and no longer writing to any container. */
+/**
+ * Loaded, not being unloaded, no instance mounted, queued or with an operation in flight, and no
+ * longer writing to any container.
+ */
 function isIdle(generation: Generation): boolean {
   return Boolean(
-    generation.getter && !generation.unloading && !generation.queue.length && !generation.getter.occupiesContainer,
+    generation.getter && !generation.unloading && !generation.instances.size && !generation.getter.occupiesContainer,
   );
 }
 
@@ -138,10 +148,21 @@ function untilStopped<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
   return observed(withAbortSignal(promise, signal));
 }
 
-function track<T>(instance: Instance, operation: Promise<T>, teardown = false): Promise<T> {
+/** Drop an instance that neither waits for its turn nor has work in flight. */
+function retire(instance: Instance, generation: Generation): void {
+  if (instance.operations.size || generation.queue.includes(instance)) return;
+  generation.instances.delete(instance);
+  if (!generation.instances.size) generation.idleSince = ++idleTick;
+}
+
+function track<T>(instance: Instance, generation: Generation, operation: Promise<T>, teardown = false): Promise<T> {
+  generation.instances.add(instance);
   instance.operations.set(operation, teardown);
   // Registered before any drain awaits the operation, so a settled one is gone by then.
-  const settle = () => instance.operations.delete(operation);
+  const settle = () => {
+    instance.operations.delete(operation);
+    retire(instance, generation);
+  };
   void operation.then(settle, settle);
   return operation;
 }
@@ -150,9 +171,8 @@ function finish(instance: Instance, generation: Generation): void {
   instance.active = false;
   instance.done.resolve();
   const index = generation.queue.indexOf(instance);
-  if (index < 0) return;
-  generation.queue.splice(index, 1);
-  if (!generation.queue.length) generation.idleSince = ++idleTick;
+  if (index >= 0) generation.queue.splice(index, 1);
+  retire(instance, generation);
 }
 
 async function invoke(hooks: ParcelConfigObject['mount'] | undefined, props: ObjectType): Promise<void> {
@@ -215,16 +235,23 @@ function unloadGeneration(generation: Generation): Promise<void> {
       }
     }
     if (failure !== undefined) {
-      throw failure instanceof Error ? failure : new QiankunError('App teardown failed', 'app-teardown-failed');
+      if (failure instanceof Error) throw failure;
+      // A non-Error value has no better representation than its own string form.
+      // eslint-disable-next-line @typescript-eslint/no-base-to-string
+      throw new QiankunError(`App ${generation.name} teardown failed: ${String(failure)}`, 'app-teardown-failed');
     }
   })();
   return generation.unloading;
 }
 
-/** Permanently unload one manual application's entire name/container generation. */
-export function unloadMicroApp(name: string, container: HTMLElement): Promise<void> {
-  const generation = generations.get(name)?.find((candidate) => candidate.container === container);
-  return generation ? unloadGeneration(generation) : Promise.resolve();
+/**
+ * Permanently unload every instance of a manually loaded app, mounted or idle. Resolves once all
+ * of them are torn down; rejects with the first teardown failure after every unload settled.
+ */
+export async function unloadMicroApp(name: string): Promise<void> {
+  const results = await Promise.allSettled((generations.get(name) ?? []).slice().map(unloadGeneration));
+  const failure = results.find((result) => result.status === 'rejected');
+  if (failure) throw failure.reason;
 }
 
 export function loadMicroApp<T extends ObjectType>(
@@ -241,6 +268,7 @@ export function loadMicroApp<T extends ObjectType>(
       entry,
       container,
       idleSince: 0,
+      bootstrapped: new Deferred<void>(),
       stopped: new AbortController(),
       loading: new AbortController(),
       instances: new Set(),
@@ -253,6 +281,8 @@ export function loadMicroApp<T extends ObjectType>(
       generations.set(name, list);
     }
     list.push(owner);
+    // Observed here: without queued siblings nobody else waits for a failed bootstrap.
+    void owner.bootstrapped.promise.catch(() => undefined);
     owner.config = observed(
       loadApp(app, configuration, lifeCycles, {
         signal: owner.loading.signal,
@@ -289,19 +319,47 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
     return {
       name: generation.name,
       bootstrap: async (hookProps) => {
-        if (!cached && !signal.aborted) await invoke(instance.config?.bootstrap, hookProps);
+        if (signal.aborted) return;
+        if (cached) {
+          await untilStopped(generation.bootstrapped.promise, signal).catch((error: unknown) => {
+            if (!signal.aborted) throw error;
+          });
+          return;
+        }
+        try {
+          await invoke(instance.config?.bootstrap, hookProps);
+          generation.bootstrapped.resolve();
+        } catch (error) {
+          // A generation that never bootstrapped can neither mount nor be reused: fail the
+          // siblings queued on it, and dispose of it now since no unload can reach it later.
+          generation.bootstrapped.reject(error);
+          evict(generation);
+          void generation.dispose?.().catch(() => undefined);
+          throw error;
+        }
       },
       mount: async (hookProps) => {
-        // Cached getters share an adoptable load hold. Serialize same-generation mounts before
-        // entering loadApp, including remounts through previously retained handles. `done` only
-        // resolves, so this wait can end early solely through unload.
+        // Instances of one generation share one sandbox and one set of lifecycles, so they mount
+        // one at a time whichever container they target, remounts through retained handles
+        // included; the container gate only serializes a single element. `done` only resolves,
+        // so this wait can end early solely through unload.
         const predecessors = generation.queue.slice(0, generation.queue.indexOf(instance));
         await untilStopped(Promise.all(predecessors.map((previous) => previous.done.promise)), signal).catch(
           () => undefined,
         );
         if (signal.aborted) return;
         instance.active = true;
-        await invoke(instance.config?.mount, hookProps);
+        try {
+          await invoke(instance.config?.mount, hookProps);
+        } catch (error) {
+          // Unload cancels the framework waits inside the mount chain. Resolve as a no-op mount
+          // instead of failing: unload unmounts the MOUNTED parcel right after, which clears the
+          // container and releases its hold, and single-spa does not report the cancellation as
+          // an application error.
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- unload aborts it meanwhile
+          if (signal.aborted) return;
+          throw error;
+        }
       },
       unmount: async (hookProps) => {
         try {
@@ -322,12 +380,9 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
   }, props);
   instance.parcel = parcel;
   // The initial chain covers an entered bootstrap, which unload must wait for as well.
-  void track(instance, parcel.mountPromise);
+  void track(instance, generation, parcel.mountPromise);
   // Failed initial loads and mounts must not leave a predecessor in the queue forever.
   void parcel.mountPromise.catch(() => finish(instance, generation));
-  // A generation whose lifecycles never bootstrapped cannot be reused: a cached instance skips
-  // bootstrap. Load failures reject here as well and are already evicted above.
-  if (!cached) void parcel.bootstrapPromise.catch(() => evict(generation));
   void observed(parcel.loadPromise);
   void observed(parcel.bootstrapPromise);
   void observed(parcel.unmountPromise);
@@ -347,9 +402,10 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
       if (instance.parcel!.getStatus() === AppOrParcelStatus.NOT_MOUNTED && !generation.queue.includes(instance)) {
         instance.done = new Deferred<void>();
         instance.unmountRequestedAt = undefined;
+        generation.instances.add(instance);
         generation.queue.push(instance);
       }
-      const operation = track(instance, instance.parcel!.mount());
+      const operation = track(instance, generation, instance.parcel!.mount());
       instance.mounting = operation;
       const settle = () => {
         if (instance.mounting === operation) instance.mounting = undefined;
@@ -362,13 +418,13 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
       // Recorded synchronously: single-spa only flips the status to UNMOUNTING a few ticks
       // later, and a caller swapping elements loads into the new one right after that.
       instance.unmountRequestedAt = ++idleTick;
-      return track(instance, instance.parcel!.unmount(), true);
+      return track(instance, generation, instance.parcel!.unmount(), true);
     },
     get update() {
       return instance.parcel?.update
         ? (nextProps: ObjectType) => {
             if (signal.aborted) return Promise.reject(unloadedError(generation.name));
-            return observed(track(instance, instance.parcel!.update!(nextProps)));
+            return observed(track(instance, generation, instance.parcel!.update!(nextProps)));
           }
         : undefined;
     },

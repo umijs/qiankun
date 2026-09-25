@@ -28,7 +28,7 @@ export type E2EWindow = Window & {
     mountOutcome(key: string): Promise<{ status: string; error?: string }>;
     remount(key: string): Promise<string>;
     unload(key: string): Promise<string>;
-    unloadNamed(name: string, containerKey: string): Promise<void>;
+    unloadNamed(name: string): Promise<void>;
     loadWithNetworkEntryStream(key: string, containerKey: string): Promise<string>;
     unmount(key: string): Promise<string>;
     swapContainer(name: string, key: string, nextKey: string): Promise<string>;

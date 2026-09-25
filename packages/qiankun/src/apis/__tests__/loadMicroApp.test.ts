@@ -3,8 +3,8 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Deferred } from '@qiankunjs/shared';
-import { AppOrParcelStatus, type ParcelConfigObject } from '@qiankunjs/single-spa';
-import { type ParcelConfigObjectGetter } from '../../core/loadApp';
+import { addErrorHandler, AppOrParcelStatus, type ParcelConfigObject, removeErrorHandler } from '@qiankunjs/single-spa';
+import { type LoadAppControl, type ParcelConfigObjectGetter } from '../../core/loadApp';
 import { type MicroApp } from '../../types';
 
 const mocks = vi.hoisted(() => ({ loadApp: vi.fn(), dispose: vi.fn(async () => {}) }));
@@ -330,6 +330,24 @@ describe('loadMicroApp instance reuse', () => {
     expect(mount.mock.calls).toEqual([[{ container: former }], [{ container: next }]]);
   });
 
+  it('serializes a retained handle remount with the instance that took over its sandbox', async () => {
+    const [left, right] = containers(2);
+    const first = load(left);
+    await first.mountPromise;
+    await first.unmount();
+    const second = load(right);
+    await second.mountPromise;
+    expect(mocks.loadApp).toHaveBeenCalledTimes(1);
+
+    const remount = first.mount();
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(mount).toHaveBeenCalledTimes(2);
+    await second.unmount();
+    await remount;
+    expect(mount).toHaveBeenCalledTimes(3);
+    expect(mount).toHaveBeenLastCalledWith({ container: left });
+  });
+
   it('keeps different app names in the same container separate', async () => {
     const container = document.createElement('div');
     const first = load(container, `${appName}-a`);
@@ -371,11 +389,14 @@ describe('loadMicroApp instance reuse', () => {
     expect(bootstrap).toHaveBeenCalledTimes(1);
   });
 
-  it('evicts an instance whose bootstrap failed instead of mounting it unbootstrapped', async () => {
+  it('disposes of an instance whose bootstrap failed instead of mounting it unbootstrapped', async () => {
     bootstrap.mockRejectedValueOnce(new Error('bootstrap failed'));
     const [container, next] = containers(2);
     const failed = load(container);
+    const sibling = load(container);
     await expect(failed.mountPromise).rejects.toThrow('bootstrap failed');
+    await expect(sibling.mountPromise).rejects.toThrow('bootstrap failed');
+    expect(mocks.dispose).toHaveBeenCalledTimes(1);
 
     await load(next).mountPromise;
     expect(mocks.loadApp).toHaveBeenCalledTimes(2);
@@ -452,22 +473,78 @@ describe('loadMicroApp instance reuse', () => {
     expect(mocks.loadApp).toHaveBeenCalledTimes(2);
   });
 
-  it('named unload targets one container and stale handles cannot evict its replacement', async () => {
-    const container = document.createElement('div');
-    const other = document.createElement('div');
-    const first = load(container);
-    const independent = load(other);
-    await Promise.all([first.mountPromise, independent.mountPromise]);
-    await unloadMicroApp(appName, container);
-    expect(independent.getStatus()).toBe(AppOrParcelStatus.MOUNTED);
-    const replacement = load(container);
+  it('named unload disposes of every instance of the app, mounted or idle', async () => {
+    const [left, right, other] = containers(3);
+    const mounted = load(left);
+    const idle = load(right);
+    const unrelated = load(other, `${appName}-other`);
+    await Promise.all([mounted, idle, unrelated].map((app) => app.mountPromise));
+    await idle.unmount();
+
+    await unloadMicroApp(appName);
+    expect(mocks.dispose).toHaveBeenCalledTimes(2);
+    expect(mounted.getStatus()).toBe(AppOrParcelStatus.NOT_LOADED);
+    expect(idle.getStatus()).toBe(AppOrParcelStatus.NOT_LOADED);
+    expect(unrelated.getStatus()).toBe(AppOrParcelStatus.MOUNTED);
+    expect([...left.childNodes, ...right.childNodes]).toEqual([]);
+
+    await load(right).mountPromise;
+    expect(mocks.loadApp).toHaveBeenCalledTimes(4);
+    await unloadMicroApp('unknown');
+  });
+
+  it('a handle unloads only its own instance and a stale handle cannot unload the next one', async () => {
+    const [left, right] = containers(2);
+    const first = load(left);
+    const second = load(right);
+    await Promise.all([first.mountPromise, second.mountPromise]);
+    await first.unload();
+    expect(mocks.dispose).toHaveBeenCalledTimes(1);
+    expect(second.getStatus()).toBe(AppOrParcelStatus.MOUNTED);
+
+    await second.unmount();
+    const replacement = load(left);
     await replacement.mountPromise;
+    expect(mocks.loadApp).toHaveBeenCalledTimes(2);
     await first.unload();
     expect(replacement.getStatus()).toBe(AppOrParcelStatus.MOUNTED);
-    await replacement.unmount();
-    await load(container).mountPromise;
-    expect(mocks.loadApp).toHaveBeenCalledTimes(3);
-    await unloadMicroApp('unknown', container);
+  });
+
+  it('does not report a remount cancelled by unload as an application error', async () => {
+    const errors = vi.fn();
+    addErrorHandler(errors);
+    const remountEntered = new Deferred<void>();
+    mocks.loadApp.mockImplementationOnce(async (_app, _configuration, _lifeCycles, control: LoadAppControl) => {
+      control.onDispose!(mocks.dispose);
+      let mounts = 0;
+      return getterOf(() => ({
+        bootstrap,
+        unmount,
+        mount: async () => {
+          if (++mounts === 1) return;
+          remountEntered.resolve();
+          // loadApp rejects its gate, fetch and replay waits with the unload reason
+          await new Promise((_resolve, reject) => {
+            control.signal!.addEventListener('abort', () => reject(control.signal!.reason as Error));
+          });
+        },
+      }));
+    });
+    try {
+      const app = load(document.createElement('div'));
+      await app.mountPromise;
+      await app.unmount();
+      const remount = app.mount();
+      await remountEntered.promise;
+      await app.unload();
+      await remount;
+      await new Promise((resolve) => setTimeout(resolve));
+      expect(errors).not.toHaveBeenCalled();
+      expect(app.getStatus()).toBe(AppOrParcelStatus.NOT_LOADED);
+      expect(mocks.dispose).toHaveBeenCalledTimes(1);
+    } finally {
+      removeErrorHandler(errors);
+    }
   });
 
   it('disposes and invalidates even when the application unmount fails', async () => {
@@ -489,7 +566,10 @@ describe('loadMicroApp instance reuse', () => {
     // sandbox plugin dispose hook) is where a non-Error value can still surface.
     // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- Simulate cleanup rejecting with a non-Error value.
     mocks.dispose.mockImplementationOnce(() => Promise.reject('dispose failed'));
-    await expect(first.unload()).rejects.toMatchObject({ code: 'app-teardown-failed' });
+    await expect(first.unload()).rejects.toMatchObject({
+      code: 'app-teardown-failed',
+      message: expect.stringContaining('dispose failed'),
+    });
     expect(unmount).toHaveBeenCalledTimes(1);
   });
 

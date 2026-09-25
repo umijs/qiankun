@@ -130,8 +130,8 @@ const testAPI = {
     return app.getStatus();
   },
 
-  async unloadNamed(name: string, containerKey: string): Promise<void> {
-    await unloadMicroApp(name, resolveContainer(containerKey));
+  async unloadNamed(name: string): Promise<void> {
+    await unloadMicroApp(name);
   },
 
   /** Real HTTP body stays open until this load scope aborts the connection. */

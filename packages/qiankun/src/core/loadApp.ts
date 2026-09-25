@@ -368,10 +368,13 @@ export default async function loadApp<T extends ObjectType>(
               // entered user lifecycle must finish before its container can be handed over.
               return await hook(...args);
             } catch (error) {
-              // A mount cancelled after acquiring ② keeps it: single-spa's compensating unmount
-              // runs the whole unmount chain, whose last step clears the container and releases
-              // the hold. Releasing here would let a successor in before that cleanup, which
-              // would then either leave the entry DOM behind or wipe the successor's DOM.
+              // A mount cancelled after acquiring ② keeps it: the unload contract requires it.
+              // Unload tears the app down through the whole unmount chain (loadMicroApp unmounts
+              // the no-op mounted parcel, otherwise single-spa's compensating unmount runs it),
+              // whose last step clears the container and only then releases the hold. Releasing
+              // here would also evict our init token, so disposal could no longer clear the
+              // container, and a successor let in early would either inherit the entry DOM or
+              // have its own DOM wiped by that cleanup.
               if (cancelOnAbort && signal.aborted && mountHold?.held) throw error;
               // Tear the sandbox down while still holding ② — a broken chain never reaches its
               // own unmountSandbox step, and the container must not enter a successor's tenure
