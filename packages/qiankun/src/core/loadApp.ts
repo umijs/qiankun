@@ -48,6 +48,12 @@ export interface ParcelConfigObjectGetter {
    * An occupying app is still writing to (or mounted in) a container and must not be rebound.
    */
   readonly occupiesContainer: boolean;
+  /**
+   * Whether the load phase ① is still open: the entry is still streaming into the container it
+   * was loaded into, whether the load latch still holds ① or the first mount adopted it as ②.
+   * Until it closes the app's DOM is tied to that container and cannot move elsewhere.
+   */
+  readonly loadPhaseOpen: boolean;
 }
 
 export default async function loadApp<T extends ObjectType>(
@@ -446,8 +452,9 @@ export default async function loadApp<T extends ObjectType>(
     return parcelConfig;
   };
 
-  return Object.defineProperty(getParcelConfig, 'occupiesContainer', {
-    get: () => holds.size > 0,
+  return Object.defineProperties(getParcelConfig, {
+    occupiesContainer: { get: () => holds.size > 0 },
+    loadPhaseOpen: { get: () => !(entryLifecyclesSettled && domStreamSettled) },
   }) as ParcelConfigObjectGetter;
 }
 

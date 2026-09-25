@@ -5,6 +5,7 @@ import {
   loadApp,
   readMainRealmGlobal,
   resetContainer,
+  swapContainer,
   unmountApp,
 } from './helpers';
 
@@ -87,6 +88,25 @@ test.describe('multiple instances', () => {
       await resetContainer(page, 'route');
     }
     expect(await countLiveCompartments(page)).toBe(1);
+  });
+
+  test('a container swapped while the old one is still unmounting keeps one warm sandbox', async ({ page }) => {
+    // A binding whose element changes in one render asks the old instance to unmount and loads
+    // into the new element before that unmount has finished.
+    expect(await loadApp(page, 'sub-classic', undefined, 'before')).toBe('MOUNTED');
+    await expect(page.locator('#container-before').getByTestId('classic-counters')).toHaveText(
+      'bootstrap:1,mount:1,unmount:0',
+    );
+
+    expect(await swapContainer(page, 'sub-classic', 'before', 'after')).toBe('MOUNTED');
+    await expect(page.locator('#container-before')).toBeEmpty();
+    await expect(page.locator('#container-after').getByTestId('classic-counters')).toHaveText(
+      'bootstrap:1,mount:2,unmount:1',
+    );
+    expect(await countLiveCompartments(page)).toBe(1);
+
+    await unmountApp(page, 'after');
+    await expect(page.locator('#container-after')).toBeEmpty();
   });
 
   test('classic and esm apps coexist and unmount independently', async ({ page, browserName }) => {

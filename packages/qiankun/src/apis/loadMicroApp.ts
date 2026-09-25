@@ -7,6 +7,8 @@ import { start, started } from './registerMicroApps';
 interface Instance {
   container: HTMLElement;
   parcel?: MicroApp;
+  /** Tick at which unmount was requested through the handle, if it was. */
+  unmountRequestedAt?: number;
 }
 
 /**
@@ -36,6 +38,7 @@ interface Generation {
  * name keeps at most as many generations as it ever had instances mounted at the same time.
  */
 const generations = new Map<string, Generation[]>();
+/** Orders idle and draining generations by recency. */
 let idleTick = 0;
 
 function evict(generation: Generation): void {
@@ -57,11 +60,40 @@ function isIdle(generation: Generation): boolean {
 }
 
 /**
+ * Draining: loaded, its entry no longer streaming, and every queued instance already mounted and
+ * asked to unmount — nothing waits to mount and no mount is in flight, only teardown remains. The
+ * unmounting predecessor may still hold its mount hold ②; that is fine, since a newcomer targets
+ * another container and waits for the predecessor in the generation queue anyway. An open load
+ * phase ① is not: the entry is still being written into the old container.
+ */
+function isDraining(generation: Generation): boolean {
+  return Boolean(
+    generation.getter &&
+    !generation.getter.loadPhaseOpen &&
+    generation.queue.length &&
+    generation.queue.every(({ parcel, unmountRequestedAt }) => {
+      const status = parcel?.getStatus();
+      return (
+        unmountRequestedAt !== undefined &&
+        (status === AppOrParcelStatus.MOUNTED || status === AppOrParcelStatus.UNMOUNTING)
+      );
+    }),
+  );
+}
+
+/** The latest unmount request among the queued instances of a draining generation. */
+function drainingSince(generation: Generation): number {
+  return Math.max(...generation.queue.map(({ unmountRequestedAt }) => unmountRequestedAt ?? 0));
+}
+
+/**
  * Element identity serializes, the name reuses. A call joins the generation already working on
  * the same element (so it queues behind it instead of racing it), otherwise takes over the most
  * recently idle generation of the same app — a component that renders a fresh element on every
- * mount keeps its warm remount — and only loads from scratch when every copy is busy elsewhere.
- * A busy generation is never shared across elements: that would put one sandbox into two
+ * mount keeps its warm remount — then the most recently draining one, queueing behind its
+ * unmount (a caller that swaps elements unmounts the old one before loading into the new one),
+ * and only loads from scratch when every copy is busy elsewhere. A generation that stays mounted
+ * or is about to mount is never shared across elements: that would put one sandbox into two
  * containers at once.
  */
 function findGeneration(name: string, entry: string, container: HTMLElement): Generation | undefined {
@@ -71,7 +103,11 @@ function findGeneration(name: string, entry: string, container: HTMLElement): Ge
       generation.container === container || generation.queue.some((instance) => instance.container === container),
   );
   if (sameContainer) return sameContainer;
-  return candidates.filter(isIdle).sort((a, b) => b.idleSince - a.idleSince)[0];
+  // An idle generation mounts right away, so every idle one comes before any draining one.
+  return [
+    ...candidates.filter(isIdle).sort((a, b) => b.idleSince - a.idleSince),
+    ...candidates.filter(isDraining).sort((a, b) => drainingSince(b) - drainingSince(a)),
+  ][0];
 }
 
 export function loadMicroApp<T extends ObjectType>(
@@ -155,6 +191,13 @@ export function loadMicroApp<T extends ObjectType>(
     ...props,
   });
   instance.parcel = mountedApp;
+  // Recorded synchronously: single-spa only flips the status to UNMOUNTING a few ticks later, and
+  // a caller swapping elements loads into the new one right after asking the old to unmount.
+  const unmountParcel = mountedApp.unmount.bind(mountedApp);
+  mountedApp.unmount = () => {
+    instance.unmountRequestedAt = ++idleTick;
+    return unmountParcel();
+  };
 
   // A generation whose lifecycles never bootstrapped cannot be reused: a cached instance skips
   // bootstrap. Load failures reject here as well and are already evicted above.
