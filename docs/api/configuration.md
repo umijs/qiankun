@@ -1,6 +1,6 @@
 # AppConfiguration
 
-`AppConfiguration` is the runtime configuration for one micro-app instance. It covers JavaScript isolation, style isolation, custom fetch behavior, and advanced loading transforms.
+`AppConfiguration` is the runtime configuration for one micro-app instance. It covers JavaScript isolation, style isolation, loading timeouts, custom fetch behavior, and advanced loading transforms.
 
 Pass it as the second argument to [`loadMicroApp`](/api/load-micro-app) by default. Route-driven apps use the `configuration` field in `registerMicroApps`, and `<MicroApp>` components expose the same type through `settings`.
 
@@ -16,6 +16,7 @@ Every field is optional. The table below lists the default behavior when a field
 | --- | --- | --- | --- |
 | `sandbox` | `boolean \| SandboxConfiguration` | `true` | The single umbrella switch for isolation. `false` runs the micro-app directly against the real global; `true` enables the sandbox with defaults; an object enables it and configures the underlying Compartment. |
 | `fetch` | `typeof window.fetch` | `window.fetch` | Fetch implementation for the entry and loader-managed scripts, modules, and styles. Browser-native requests such as images do not necessarily pass through it. |
+| `loadTimeout` | `number` | `0` (disabled) | Timeout of the loading phase in milliseconds. It does not bound `bootstrap`, `mount`, or `unmount`. |
 | `streamTransformer` | `() => TransformStream<string, string>` | `undefined` | Optional transform spliced into the HTML entry streaming pipeline, operating on the decoded HTML string stream. |
 | `nodeTransformer` | `<T extends Node>(node: T, opts) => T` | built-in asset transformer | Rewrites script / link / style nodes before they enter the container. Advanced extensions only. |
 
@@ -108,6 +109,25 @@ Defaults to `window.fetch`. qiankun validates that response status is in the `20
 
 Use a custom `fetch` to inject credentials, headers, or a proxy. It must preserve standard Fetch API response and streaming semantics; the outer validation, retry, and cache behavior still applies.
 
+To support loading cancellation, a custom fetch must forward the received `init.signal` to the underlying request and stop reading its response stream after cancellation.
+
+### loadTimeout
+
+Loading timeouts are disabled by default: omitting `loadTimeout` or setting it to `0` leaves loading unrestricted. A positive finite number specifies milliseconds; negative values, `NaN`, and `Infinity` are invalid and produce a `QiankunError` with the `code` `load-timeout-invalid`.
+
+It only bounds the loading phase. The timer starts when the app acquires permission to load into its container. It covers `beforeLoad`, entry loading, resource work awaited by the loader, entry lifecycle discovery, and completion of the HTML stream. Time spent waiting for a previous instance to release the container is excluded. The duration of `bootstrap`, `mount`, and `unmount`, and remounts that reuse a loaded instance, are not limited by it.
+
+With a timeout enabled, qiankun waits for both entry lifecycles and the complete HTML stream before starting the mount phase. With timeouts disabled, the existing streaming behavior still permits mounting as soon as lifecycles are ready. An HTML response that never finishes therefore fails during loading when a timeout is enabled; it is not mounted first and then destroyed by a loading timeout.
+
+```ts
+const app = loadMicroApp({ name: 'app1', entry, container }, { loadTimeout: 10_000 });
+await app.mountPromise;
+```
+
+Expiry rejects the loading Promise with `LoadAppTimeoutError`, aborts the instance's loading requests, clears partially written container nodes and its sandbox, and releases the container. Shared requests still used by other instances continue. The error includes the app name, configured limit, and elapsed time; see [addErrorHandler / removeErrorHandler](/api/error-handling#load-timeout) for handling examples.
+
+The timeout does not cover all later native ESM evaluations or application asynchronous work. Cancellation stops requests and loader DOM writes and retires sandbox access; it cannot preempt synchronous JavaScript, forcibly stop native continuations that already hold raw DOM references, or undo browser ESM registrations. See [loadMicroApp](/api/load-micro-app#unload) for cleanup boundaries.
+
 ### streamTransformer
 
 Defaults to `undefined`. When provided, its `TransformStream<string, string>` is spliced into the HTML entry's streaming pipeline, after byte decoding and before qiankun rewrites the tags itself. Use it to rewrite the entry HTML mid-stream (for instance, to inject or strip some markup). Most apps won't need it.
@@ -143,7 +163,7 @@ The React and Vue `<MicroApp>` components accept the same type through `settings
 
 ## Precedence
 
-Every field applies per micro-app instance. `start()` neither accepts nor merges global sandbox, style, or fetch configuration.
+Every field applies per micro-app instance. `start()` neither accepts nor merges global sandbox, style, fetch, or loading timeout configuration.
 
 A per-app `sandbox` object replaces any outer one wholesale — configurations are merged with a shallow spread, so individual sandbox fields are never deep-merged.
 

@@ -4,7 +4,7 @@ export * from './apis/isRuntimeCompatible';
 export * from './apis/prefetch';
 export * from './apis/effects';
 export * from './apis/errorHandler';
-export { QiankunError, type QiankunErrorCode } from './error';
+export { QiankunError, LoadAppTimeoutError, type QiankunErrorCode } from './error';
 export type * from './types';
 export { precompileModuleSource } from '@qiankunjs/sandbox';
 export { navigateToUrl } from '@qiankunjs/single-spa';
