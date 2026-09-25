@@ -152,7 +152,10 @@ describe('isolation plugin lifecycle', () => {
     const { container, controller } = createContainer([{ name: 'single-mount', mount: mountHook }]);
 
     await controller.mount(container);
-    await expect(controller.mount(container)).rejects.toThrowError('is already mounted');
+    await expect(controller.mount(container)).rejects.toMatchObject({
+      code: 'sandbox-mount-conflict',
+      message: expect.stringContaining('is already mounted'),
+    });
     await controller.unmount();
 
     expect(mountHook).toHaveBeenCalledOnce();
@@ -165,7 +168,10 @@ describe('isolation plugin lifecycle', () => {
 
     await controller.mount(container);
     const unmounting = controller.unmount();
-    await expect(controller.mount(container)).rejects.toThrowError('is currently unmounting');
+    await expect(controller.mount(container)).rejects.toMatchObject({
+      code: 'sandbox-mount-conflict',
+      message: expect.stringContaining('is currently unmounting'),
+    });
     await unmounting;
 
     await controller.mount(container);
@@ -173,7 +179,7 @@ describe('isolation plugin lifecycle', () => {
     expect(mountHook).toHaveBeenCalledTimes(2);
   });
 
-  it('frees and rebuilds bootstrap and mount effects in registration order', async () => {
+  it('frees effects in reverse registration order and rebuilds them in registration order', async () => {
     const events: string[] = [];
     const plugin = (name: string): IsolationPlugin => ({
       name,
@@ -202,7 +208,7 @@ describe('isolation plugin lifecycle', () => {
     await controller.mount(container);
     events.length = 0;
     await controller.unmount();
-    expect(events).toEqual(['free:bootstrap:default', 'free:bootstrap:user', 'free:mount:default', 'free:mount:user']);
+    expect(events).toEqual(['free:mount:user', 'free:mount:default', 'free:bootstrap:user', 'free:bootstrap:default']);
 
     events.length = 0;
     await controller.mount(container);
@@ -338,7 +344,7 @@ describe('isolation plugin lifecycle', () => {
     );
 
     expect(() => createContainer()).toThrowError('bootstrap failure');
-    expect(events).toEqual(['bootstrap:first', 'bootstrap:second', 'bootstrap:failing', 'free:first', 'free:second']);
+    expect(events).toEqual(['bootstrap:first', 'bootstrap:second', 'bootstrap:failing', 'free:second', 'free:first']);
     expect(dispose).toHaveBeenCalledOnce();
   });
 
@@ -394,9 +400,9 @@ describe('isolation plugin lifecycle', () => {
       'mount:first',
       'mount:second',
       'mount:failing',
-      'free:bootstrap:first',
-      'free:first',
       'free:second',
+      'free:first',
+      'free:bootstrap:first',
     ]);
 
     const view = controller.instance.globalThis as unknown as Record<string, unknown>;
@@ -404,7 +410,7 @@ describe('isolation plugin lifecycle', () => {
     expect(view.writeAfterFailure).toBeUndefined();
   });
 
-  it('continues freeing later plugins and deactivates the sandbox when a free throws', async () => {
+  it('continues freeing earlier plugins and deactivates the sandbox when a free throws', async () => {
     const events: string[] = [];
     const { container, controller } = createContainer([
       {
@@ -427,7 +433,7 @@ describe('isolation plugin lifecycle', () => {
 
     await controller.mount(container);
     await expect(controller.unmount()).rejects.toThrowError('free failure');
-    expect(events).toEqual(['free:first', 'free:second']);
+    expect(events).toEqual(['free:second', 'free:first']);
 
     const view = controller.instance.globalThis as unknown as Record<string, unknown>;
     view.writeAfterFreeFailure = true;
@@ -480,7 +486,10 @@ describe('isolation plugin lifecycle', () => {
     expect(free).toHaveBeenCalledOnce();
     expect(revokeModuleUrl).toHaveBeenCalledOnce();
     expect(Reflect.has(nativeGlobal, createdAccessors[0])).toBe(false);
-    await expect(controller.mount(container)).rejects.toThrowError('has been disposed');
+    await expect(controller.mount(container)).rejects.toMatchObject({
+      code: 'compartment-disposed',
+      message: expect.stringContaining('has been disposed'),
+    });
   });
 
   it('does not free already inactive effects again when disposal follows unmount', async () => {
@@ -529,8 +538,13 @@ describe('isolation plugin lifecycle', () => {
 
     expect(events).toEqual(['free', 'dispose:second', 'dispose:first']);
     expect(() => view.document).toThrow(TypeError);
-    expect(() => transformer(document.createElement('div'), {})).toThrowError('has been disposed');
-    await expect(controller.mount(container)).rejects.toThrowError('has been disposed');
+    expect(() => transformer(document.createElement('div'), {})).toThrowError(
+      expect.objectContaining({ code: 'compartment-disposed' }),
+    );
+    await expect(controller.mount(container)).rejects.toMatchObject({
+      code: 'compartment-disposed',
+      message: expect.stringContaining('has been disposed'),
+    });
   });
 
   it('keeps terminal hooks for disposal and never invokes them during warm unmounts', async () => {
@@ -586,7 +600,10 @@ describe('isolation plugin lifecycle', () => {
     ]);
 
     const mounting = controller.mount(container);
-    const mountRejection = expect(mounting).rejects.toThrowError('has been disposed');
+    const mountRejection = expect(mounting).rejects.toMatchObject({
+      code: 'compartment-disposed',
+      message: expect.stringContaining('has been disposed'),
+    });
     let disposalCompleted = false;
     const disposing = controller.dispose().then(() => {
       disposalCompleted = true;
@@ -601,7 +618,10 @@ describe('isolation plugin lifecycle', () => {
 
     expect(mountingFree).toHaveBeenCalledOnce();
     expect(laterMount).not.toHaveBeenCalled();
-    await expect(controller.mount(container)).rejects.toThrowError('has been disposed');
+    await expect(controller.mount(container)).rejects.toMatchObject({
+      code: 'compartment-disposed',
+      message: expect.stringContaining('has been disposed'),
+    });
   });
 });
 
