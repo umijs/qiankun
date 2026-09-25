@@ -62,4 +62,4 @@ Codes use lowercase words separated by hyphens and describe the cause and remedy
 - [app-not-mounted: Micro app not mounted](/errors/app-not-mounted)
 - [app-already-mounted: Micro app already mounted](/errors/app-already-mounted)
 - [load-timeout: Micro app loading timed out](/errors/load-timeout)
-- [timeout-invalid: Invalid loading timeout](/errors/timeout-invalid)
+- [load-timeout-invalid: Invalid loading timeout](/errors/load-timeout-invalid)

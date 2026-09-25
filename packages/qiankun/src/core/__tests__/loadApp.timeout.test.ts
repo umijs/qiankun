@@ -121,8 +121,8 @@ describe('loadApp loadTimeout', () => {
     async (timeout) => {
       const app = createApp();
       await expect(beginLoad(app, { loadTimeout: timeout })).rejects.toMatchObject({
-        code: 'timeout-invalid',
-        message: expect.stringContaining('errors/timeout-invalid'),
+        code: 'load-timeout-invalid',
+        message: expect.stringContaining('errors/load-timeout-invalid'),
       });
 
       expect(mocks.createSandbox).not.toHaveBeenCalled();
