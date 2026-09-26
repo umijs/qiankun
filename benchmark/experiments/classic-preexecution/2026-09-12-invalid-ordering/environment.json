@@ -1,0 +1,124 @@
+{
+  "environment": {
+    "recordedAt": "2026-09-11T16:32:01.956Z",
+    "platform": "darwin",
+    "release": "25.6.0",
+    "arch": "arm64",
+    "cpu": "Apple M4",
+    "logicalCpus": 10,
+    "totalMemoryBytes": 17179869184,
+    "node": "v24.14.0",
+    "playwright": "1.61.1",
+    "revision": "187287e86d548ee3da9c0f123c9cd7b5b0b230db",
+    "sourceHash": "4ee0fef7aadf6cc7361becda43996c3e58e08e36538d81cdfcae4b895f0f7de2",
+    "hostBundleHash": "cdb1ffc9bee34695aa2447cb6042ede20d4ac86f5791666d76ccc05997b689f2",
+    "browserArgs": ["--site-per-process", "--enable-precise-memory-info"],
+    "context": {
+      "colorScheme": "light",
+      "deviceScaleFactor": 1,
+      "locale": "en-US",
+      "reducedMotion": "reduce",
+      "serviceWorkers": "block",
+      "timezoneId": "UTC",
+      "viewport": {
+        "height": 720,
+        "width": 1280
+      }
+    },
+    "command": "pnpm --filter @qiankunjs/benchmark run classic-preexecution --output=experiments/classic-preexecution/2026-09-12",
+    "measurement": {
+      "primary": "Real loadMicroApp: activation to mountPromise and styled core surviving two animation frames",
+      "interaction": "Scheduled main-thread task delay proxy, not a real input event or INP",
+      "trustedInput": "CDP mousePressed with sender timestamp, scheduled 50ms after preparation starts; handler delay and two-frame update, not Web Vitals INP",
+      "memory": "Sampled performance.memory.usedJSHeapSize high-water mark; not process RSS or an exact peak",
+      "preparation": "No business code runs; native blob classic registers a factory only"
+    },
+    "chromium": "149.0.7827.55"
+  },
+  "options": {
+    "samples": 20,
+    "trials": 3,
+    "warmup": 2,
+    "calibrationSamples": 20,
+    "calibrationSize": "1m",
+    "readyLeadMs": 250,
+    "pendingLeadMs": 10,
+    "latencyMs": 20,
+    "hostWorkMs": 30,
+    "interactionWindowMs": 500,
+    "inputDelayMs": 50,
+    "timeoutMs": 30000,
+    "seed": 20260912,
+    "sizes": ["100k", "1m", "5m"],
+    "scenarios": ["ready", "pending", "miss"],
+    "output": "/Users/kuitos/Codes/github.com/umijs/qiankun/.worktrees/cx-preexec/benchmark/experiments/classic-preexecution/2026-09-12"
+  },
+  "fixtures": [
+    {
+      "size": "100k",
+      "revision": "a",
+      "targetBytes": 102400,
+      "byteLength": 102467,
+      "sha256": "3b60edd874514b472b96eb5c741a3c5f5e20d6919b6f92fbea58609b079c8ee7",
+      "moduleCount": 202,
+      "expectedChecksum": 4121586591,
+      "entryPath": "/app/100k/a/index.html",
+      "scriptPath": "/app/100k/a/entry.js"
+    },
+    {
+      "size": "100k",
+      "revision": "b",
+      "targetBytes": 102400,
+      "byteLength": 102474,
+      "sha256": "ca7d55b7fc9d201e3effc4279fbd65a464b812013796e403a67a6cdbc9524d06",
+      "moduleCount": 202,
+      "expectedChecksum": 3118430646,
+      "entryPath": "/app/100k/b/index.html",
+      "scriptPath": "/app/100k/b/entry.js"
+    },
+    {
+      "size": "1m",
+      "revision": "a",
+      "targetBytes": 1048576,
+      "byteLength": 1048981,
+      "sha256": "10322c91adbd4a8da33b97b7aed9c90a79d09e690c11bf8b5baa091b99ac9a4b",
+      "moduleCount": 2073,
+      "expectedChecksum": 3586422538,
+      "entryPath": "/app/1m/a/index.html",
+      "scriptPath": "/app/1m/a/entry.js"
+    },
+    {
+      "size": "1m",
+      "revision": "b",
+      "targetBytes": 1048576,
+      "byteLength": 1048990,
+      "sha256": "67cc17a591f3148e7008ff9ae0dab3cfcd06d266d6bc02b6500e01b5320e4b40",
+      "moduleCount": 2073,
+      "expectedChecksum": 2294906417,
+      "entryPath": "/app/1m/b/index.html",
+      "scriptPath": "/app/1m/b/entry.js"
+    },
+    {
+      "size": "5m",
+      "revision": "a",
+      "targetBytes": 5242880,
+      "byteLength": 5242908,
+      "sha256": "3a8f6fe0b104b32302692d9258a0c1a488fadec3234ad7a1833503aa4e62cebe",
+      "moduleCount": 10314,
+      "expectedChecksum": 2406255948,
+      "entryPath": "/app/5m/a/index.html",
+      "scriptPath": "/app/5m/a/entry.js"
+    },
+    {
+      "size": "5m",
+      "revision": "b",
+      "targetBytes": 5242880,
+      "byteLength": 5242917,
+      "sha256": "91b1219258c8f64cc796a9178545c9a5225e93557726fac49253018ea21279aa",
+      "moduleCount": 10314,
+      "expectedChecksum": 973861886,
+      "entryPath": "/app/5m/b/index.html",
+      "scriptPath": "/app/5m/b/entry.js"
+    }
+  ]
+}
