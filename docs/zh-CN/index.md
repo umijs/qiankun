@@ -51,12 +51,8 @@ features:
 在主应用中安装 qiankun：
 
 ```bash
-npm install qiankun@rc
+npm i qiankun
 ```
-
-::: tip v3 目前发布在 `rc` 标签上
-qiankun 3.0 仍处于 RC 阶段，npm 的 `latest` 标签指向的仍是 2.x。安装时需显式指定 `@rc` 才能获得 v3。
-:::
 
 容器创建后即可加载微应用。记得保存返回的实例句柄，后续查询状态、卸载实例都要靠它：
 

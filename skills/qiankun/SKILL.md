@@ -27,13 +27,13 @@ Determine these, asking the user only when not inferable from context:
 3. **Framework** — React or Vue; TypeScript or JavaScript. Templates in the references are TS; strip types for JS.
 4. **Dev port** — must be fixed and unique per app, because the host hard-references it in `entry`. Convention: main app `7099`, sub apps `7101`, `7102`, …
 
-Package versions — until qiankun 3.0 stable ships, `rc` is the dist-tag for the core packages:
+Package versions — install stable releases from the default `latest` dist-tag; omit the tag in installation commands:
 
 | Package                               | Dist-tag | Goes in                                       |
 | ------------------------------------- | -------- | --------------------------------------------- |
-| `qiankun`                             | `rc`     | main app `dependencies`                       |
-| `@qiankunjs/react` / `@qiankunjs/vue` | `rc`     | main app `dependencies` (optional UI binding) |
-| `@qiankunjs/bundler-plugin`           | `rc`     | sub app `devDependencies`                     |
+| `qiankun`                             | `latest` | main app `dependencies`                       |
+| `@qiankunjs/react` / `@qiankunjs/vue` | `latest` | main app `dependencies` (optional UI binding) |
+| `@qiankunjs/bundler-plugin`           | `latest` | sub app `devDependencies`                     |
 
 ## Key facts
 

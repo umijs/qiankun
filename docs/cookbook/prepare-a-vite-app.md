@@ -11,7 +11,7 @@ The [Agent skill](/ecosystem/agent-skill) lets a coding agent generate this setu
 Install the bundler plugin in the Vite application:
 
 ```bash
-npm install --save-dev @qiankunjs/bundler-plugin@rc
+npm install --save-dev @qiankunjs/bundler-plugin
 ```
 
 Add `qiankun()` alongside the framework plugin and use a fixed development port:

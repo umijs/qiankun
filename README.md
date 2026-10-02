@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/qiankun"><img src="https://img.shields.io/npm/v/qiankun/rc.svg?style=flat-square" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/qiankun"><img src="https://img.shields.io/npm/v/qiankun/latest.svg?style=flat-square" alt="npm version" /></a>
   <a href="https://codecov.io/gh/umijs/qiankun"><img src="https://img.shields.io/codecov/c/github/umijs/qiankun.svg?style=flat-square" alt="coverage" /></a>
   <a href="https://www.npmjs.com/package/qiankun"><img src="https://img.shields.io/npm/dm/qiankun.svg?style=flat-square" alt="npm downloads" /></a>
   <a href="https://github.com/umijs/qiankun/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/umijs/qiankun/ci.yml?branch=next&style=flat-square" alt="build status" /></a>
@@ -70,7 +70,7 @@ Qiankun inherits the fundamentals of [single-spa](https://github.com/single-spa/
 
 > [!NOTE]
 >
-> v3 ships under the `rc` tag while `latest` still points at 2.x. Install with an explicit `@rc` to get it.
+> For qiankun 2.x, see the [v2 documentation](https://v2.qiankun.umijs.org).
 
 The fastest path is the agent skill — install it, then ask your coding agent (Claude Code, Cursor, …) to scaffold a host or a micro app wired up correctly:
 
@@ -81,7 +81,7 @@ npx skills add umijs/qiankun
 Or add qiankun to an existing host application:
 
 ```shell
-npm i qiankun@rc
+npm i qiankun
 ```
 
 Load a micro app into any container element, and keep the returned handle to unmount it:
@@ -140,15 +140,15 @@ This builds the workspace packages and starts every app in parallel — open htt
 
 | Package | Version (click for changelogs) | Description |
 | --- | :-- | --- |
-| [qiankun](packages/qiankun) | [![qiankun version](https://img.shields.io/npm/v/qiankun/rc.svg?style=flat-square)](packages/qiankun/CHANGELOG.md) | The framework: `registerMicroApps`, `loadMicroApp`, `start`, `prefetch` |
-| [@qiankunjs/loader](packages/loader) | [![loader version](https://img.shields.io/npm/v/@qiankunjs/loader/rc.svg?style=flat-square)](packages/loader/CHANGELOG.md) | Streaming HTML-entry loader |
-| [@qiankunjs/sandbox](packages/sandbox) | [![sandbox version](https://img.shields.io/npm/v/@qiankunjs/sandbox/rc.svg?style=flat-square)](packages/sandbox/CHANGELOG.md) | JS sandbox — usable standalone |
-| [@qiankunjs/shared](packages/shared) | [![shared version](https://img.shields.io/npm/v/@qiankunjs/shared/rc.svg?style=flat-square)](packages/shared/CHANGELOG.md) | Asset transpilers, fetch utilities, ESM-sandbox engine |
+| [qiankun](packages/qiankun) | [![qiankun version](https://img.shields.io/npm/v/qiankun/latest.svg?style=flat-square)](packages/qiankun/CHANGELOG.md) | The framework: `registerMicroApps`, `loadMicroApp`, `start`, `prefetch` |
+| [@qiankunjs/loader](packages/loader) | [![loader version](https://img.shields.io/npm/v/@qiankunjs/loader/latest.svg?style=flat-square)](packages/loader/CHANGELOG.md) | Streaming HTML-entry loader |
+| [@qiankunjs/sandbox](packages/sandbox) | [![sandbox version](https://img.shields.io/npm/v/@qiankunjs/sandbox/latest.svg?style=flat-square)](packages/sandbox/CHANGELOG.md) | JS sandbox — usable standalone |
+| [@qiankunjs/shared](packages/shared) | [![shared version](https://img.shields.io/npm/v/@qiankunjs/shared/latest.svg?style=flat-square)](packages/shared/CHANGELOG.md) | Asset transpilers, fetch utilities, ESM-sandbox engine |
 | [@qiankunjs/single-spa](packages/single-spa) | [![single-spa version](https://img.shields.io/npm/v/@qiankunjs/single-spa/latest.svg?style=flat-square)](packages/single-spa/CHANGELOG.md) | Vendored [single-spa](https://github.com/single-spa/single-spa) fork the framework builds on |
 | [@qiankunjs/react](packages/ui-bindings/react) | [![react version](https://img.shields.io/npm/v/@qiankunjs/react/latest.svg?style=flat-square)](packages/ui-bindings/react/CHANGELOG.md) | `<MicroApp />` for React |
 | [@qiankunjs/vue](packages/ui-bindings/vue) | [![vue version](https://img.shields.io/npm/v/@qiankunjs/vue/latest.svg?style=flat-square)](packages/ui-bindings/vue/CHANGELOG.md) | `<MicroApp />` for Vue |
 | [@qiankunjs/ui-shared](packages/ui-bindings/shared) | [![ui-shared version](https://img.shields.io/npm/v/@qiankunjs/ui-shared/latest.svg?style=flat-square)](packages/ui-bindings/shared/CHANGELOG.md) | Shared internals of the UI bindings |
-| [@qiankunjs/bundler-plugin](packages/bundler-plugin) | [![bundler-plugin version](https://img.shields.io/npm/v/@qiankunjs/bundler-plugin/rc.svg?style=flat-square)](packages/bundler-plugin/CHANGELOG.md) | webpack 4/5 and Vite plugins for micro apps |
+| [@qiankunjs/bundler-plugin](packages/bundler-plugin) | [![bundler-plugin version](https://img.shields.io/npm/v/@qiankunjs/bundler-plugin/latest.svg?style=flat-square)](packages/bundler-plugin/CHANGELOG.md) | webpack 4/5 and Vite plugins for micro apps |
 
 ## 📖 Documentation
 

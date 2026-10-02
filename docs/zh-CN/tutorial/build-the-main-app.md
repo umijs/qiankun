@@ -12,7 +12,7 @@
 npm create vite@latest main-app -- --template react-ts
 cd main-app
 npm install
-npm install qiankun@rc
+npm i qiankun
 ```
 
 ## 固定主应用端口

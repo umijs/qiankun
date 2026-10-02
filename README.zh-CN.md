@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/qiankun"><img src="https://img.shields.io/npm/v/qiankun/rc.svg?style=flat-square" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/qiankun"><img src="https://img.shields.io/npm/v/qiankun/latest.svg?style=flat-square" alt="npm version" /></a>
   <a href="https://codecov.io/gh/umijs/qiankun"><img src="https://img.shields.io/codecov/c/github/umijs/qiankun.svg?style=flat-square" alt="coverage" /></a>
   <a href="https://www.npmjs.com/package/qiankun"><img src="https://img.shields.io/npm/dm/qiankun.svg?style=flat-square" alt="npm downloads" /></a>
   <a href="https://github.com/umijs/qiankun/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/umijs/qiankun/ci.yml?branch=next&style=flat-square" alt="build status" /></a>
@@ -70,7 +70,7 @@ qiankun 继承了 [single-spa](https://github.com/single-spa/single-spa) 的基�
 
 > [!NOTE]
 >
-> v3 目前发布在 `rc` 标签上，npm 的 `latest` 仍指向 2.x。安装时需显式指定 `@rc`。
+> qiankun 2.x 用户请参阅 [v2 文档](https://v2.qiankun.umijs.org)。
 
 最快的方式是使用 agent skill——安装后，让你的 coding agent（Claude Code、Cursor 等）生成配置完整的主应用或微应用：
 
@@ -81,7 +81,7 @@ npx skills add umijs/qiankun
 也可以在现有主应用中直接安装：
 
 ```shell
-npm i qiankun@rc
+npm i qiankun
 ```
 
 把微应用加载到任意容器元素中，并保存返回的实例句柄用于卸载：
@@ -140,15 +140,15 @@ pnpm start:example
 
 | 包名 | 版本（点击查看更新日志） | 说明 |
 | --- | :-- | --- |
-| [qiankun](packages/qiankun) | [![qiankun version](https://img.shields.io/npm/v/qiankun/rc.svg?style=flat-square)](packages/qiankun/CHANGELOG.md) | 框架本体：`registerMicroApps`、`loadMicroApp`、`start`、`prefetch` |
-| [@qiankunjs/loader](packages/loader) | [![loader version](https://img.shields.io/npm/v/@qiankunjs/loader/rc.svg?style=flat-square)](packages/loader/CHANGELOG.md) | 流式 HTML 入口加载器 |
-| [@qiankunjs/sandbox](packages/sandbox) | [![sandbox version](https://img.shields.io/npm/v/@qiankunjs/sandbox/rc.svg?style=flat-square)](packages/sandbox/CHANGELOG.md) | JS 沙箱，可独立使用 |
-| [@qiankunjs/shared](packages/shared) | [![shared version](https://img.shields.io/npm/v/@qiankunjs/shared/rc.svg?style=flat-square)](packages/shared/CHANGELOG.md) | 资源转译器、fetch 工具、ESM 沙箱引擎 |
+| [qiankun](packages/qiankun) | [![qiankun version](https://img.shields.io/npm/v/qiankun/latest.svg?style=flat-square)](packages/qiankun/CHANGELOG.md) | 框架本体：`registerMicroApps`、`loadMicroApp`、`start`、`prefetch` |
+| [@qiankunjs/loader](packages/loader) | [![loader version](https://img.shields.io/npm/v/@qiankunjs/loader/latest.svg?style=flat-square)](packages/loader/CHANGELOG.md) | 流式 HTML 入口加载器 |
+| [@qiankunjs/sandbox](packages/sandbox) | [![sandbox version](https://img.shields.io/npm/v/@qiankunjs/sandbox/latest.svg?style=flat-square)](packages/sandbox/CHANGELOG.md) | JS 沙箱，可独立使用 |
+| [@qiankunjs/shared](packages/shared) | [![shared version](https://img.shields.io/npm/v/@qiankunjs/shared/latest.svg?style=flat-square)](packages/shared/CHANGELOG.md) | 资源转译器、fetch 工具、ESM 沙箱引擎 |
 | [@qiankunjs/single-spa](packages/single-spa) | [![single-spa version](https://img.shields.io/npm/v/@qiankunjs/single-spa/latest.svg?style=flat-square)](packages/single-spa/CHANGELOG.md) | 框架底座：内置维护的 [single-spa](https://github.com/single-spa/single-spa) 分支 |
 | [@qiankunjs/react](packages/ui-bindings/react) | [![react version](https://img.shields.io/npm/v/@qiankunjs/react/latest.svg?style=flat-square)](packages/ui-bindings/react/CHANGELOG.md) | React 版 `<MicroApp />` |
 | [@qiankunjs/vue](packages/ui-bindings/vue) | [![vue version](https://img.shields.io/npm/v/@qiankunjs/vue/latest.svg?style=flat-square)](packages/ui-bindings/vue/CHANGELOG.md) | Vue 版 `<MicroApp />` |
 | [@qiankunjs/ui-shared](packages/ui-bindings/shared) | [![ui-shared version](https://img.shields.io/npm/v/@qiankunjs/ui-shared/latest.svg?style=flat-square)](packages/ui-bindings/shared/CHANGELOG.md) | UI 绑定的共享内部实现 |
-| [@qiankunjs/bundler-plugin](packages/bundler-plugin) | [![bundler-plugin version](https://img.shields.io/npm/v/@qiankunjs/bundler-plugin/rc.svg?style=flat-square)](packages/bundler-plugin/CHANGELOG.md) | 微应用侧的 webpack 4/5 与 Vite 插件 |
+| [@qiankunjs/bundler-plugin](packages/bundler-plugin) | [![bundler-plugin version](https://img.shields.io/npm/v/@qiankunjs/bundler-plugin/latest.svg?style=flat-square)](packages/bundler-plugin/CHANGELOG.md) | 微应用侧的 webpack 4/5 与 Vite 插件 |
 
 ## 📖 文档
 

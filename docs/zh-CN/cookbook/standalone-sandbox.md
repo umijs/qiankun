@@ -10,7 +10,7 @@
 ## 安装
 
 ```bash
-pnpm add @qiankunjs/sandbox@rc
+pnpm add @qiankunjs/sandbox
 ```
 
 该包仅面向浏览器，运行时依赖 DOM、Blob URL 和动态 import map。不要在 Node.js 或 SSR 渲染阶段初始化沙箱。
