@@ -16,10 +16,12 @@
  */
 export const nativePassthroughNode = Symbol.for('qiankun.nativePassthroughNode');
 
+/** @internal */
 export function markNodeForNativePassthrough(node: Node): void {
   (node as unknown as Record<symbol, unknown>)[nativePassthroughNode] = true;
 }
 
+/** @internal */
 export function isNativePassthroughNode(node: Node): boolean {
   return !!(node as unknown as Record<symbol, unknown>)[nativePassthroughNode];
 }
