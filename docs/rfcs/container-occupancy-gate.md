@@ -65,6 +65,12 @@ Issue 原文的①段释放点是「`loadEntry` settle 即释放」。实现时�
 
 两个信号都无条件 settle(不依赖 mount/unmount 是否发生),①段的防饿死论证不受影响;唯一的例外类(悬挂的网络流)由采纳机制兜住应用自身、由 dev 等待诊断暴露后继排队。回调是通用的「DOM 写入阶段结束」信号,不携带 qiankun 语义。
 
+**取消语义**(unload 引入,实现时补记):
+
+- `acquireContainer(container, appName, signal?)` 新增可选的 `signal`。排队中的等待者在 signal abort 时出队,并以 abort reason 拒绝;已 abort 的 signal 直接拒绝,不入队。loadApp 把自身的取消信号传给①、②两处 acquire,unload 因此能立即取消停在闸门前的加载或挂载,不必等前任释放容器。
+- ①段:加载被取消时,settle 闩不再释放①,由 dispose 统一释放 loadApp 持有的全部 hold(同时清空仍属于自己的容器)。
+- ②段新增第三条退出路径:mount 链在**已持有②之后**被取消时,guard **保留②**,不走「任一 hook reject 即释放」的兜底。原因是 unload 契约要求销毁后容器为空:取消后的清理由完整的 unmount 链完成(loadMicroApp 把被取消的 mount 当作空操作 resolve,再由 unload 卸载这个 MOUNTED parcel;其余情况由 single-spa 的补偿卸载执行),链末尾先 `clearContainer` 再释放②。若在 guard 里提前释放,`dropMountHold` 会一并逐出初始化令牌,dispose 就不再清理容器,残留的入口 DOM 会被下一个持有者继承,或者后继已写入的 DOM 被这次迟到的清理抹掉。尚未拿到②就被取消(停在闸门前)的 mount 不持有②,照常走兜底。
+
 ### 归属令牌修订(2026-07-28,review 修订)
 
 `initializedContainers` 原为 app 无关的 `WeakSet<HTMLElement>`,存在两处漏洞:(a) 插队窗口内容器被**另一应用**初始化后,原应用 mount 时 `has(container)` 命中、跳过重放,直接挂到别人的 DOM 上;(b) mount 失败的兜底释放跳过了 `clearContainer`(teardown 须持有②),WeakSet 条目残留,重试时跳过重放、挂到坏 DOM 上。修订为 `WeakMap<HTMLElement, token>`:每次 `loadApp` 持有唯一令牌,initContainer 写入令牌,mount 仅在**自己的令牌仍在**时才可跳过重放;失败兜底(`dropMountHold`)在令牌仍属于自己时主动逐出(令牌已被后继覆盖则不动)。

@@ -97,7 +97,13 @@ export type LifeCycles<T extends ObjectType> = {
   afterUnmount?: LifeCycleFn<T> | Array<LifeCycleFn<T>>; // function after app unmount
 };
 
-export type MicroApp = Parcel;
+export type MicroApp = Parcel & {
+  /**
+   * Dispose of the loaded instance this handle uses, retiring every handle that shares it. Other
+   * instances of the same app are unaffected. Idempotent.
+   */
+  unload(): Promise<void>;
+};
 
 type ExtraProps = {
   container: HTMLElement;

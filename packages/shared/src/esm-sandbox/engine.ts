@@ -189,13 +189,20 @@ const assertModuleDescriptor = (specifier: string, descriptor: unknown): ModuleD
 export class EsmSandboxEngine implements CompartmentModuleFacade {
   readonly instanceKey: string;
 
-  private readonly opts: EsmSandboxEngineOpts;
+  private options: EsmSandboxEngineOpts | undefined;
+
+  private readonly appName: string;
+
+  private get opts(): EsmSandboxEngineOpts {
+    this.assertAlive();
+    return this.options!;
+  }
 
   private readonly globalsBaseSet: Set<string>;
 
-  private readonly resolveHook: ResolveHook;
+  private resolveHook: ResolveHook;
 
-  private readonly importHook: ImportHook | undefined;
+  private importHook: ImportHook | undefined;
 
   private readonly modules: Map<string, ModuleDescriptor>;
 
@@ -205,11 +212,11 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
 
   private readonly defaultModuleLoadContext: ModuleLoadContext;
 
-  private readonly moduleImporter: (moduleUrl: string) => Promise<ModuleNamespace>;
+  private moduleImporter: (moduleUrl: string) => Promise<ModuleNamespace>;
 
-  private readonly createModuleUrl: (code: string) => string;
+  private createModuleUrl: (code: string) => string;
 
-  private readonly revokeModuleUrl: (moduleUrl: string) => void;
+  private revokeModuleUrl: (moduleUrl: string) => void;
 
   private readonly createdModuleUrls = new Set<string>();
 
@@ -223,9 +230,11 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
 
   private pendingImportMapEntries: Record<string, string> = {};
 
+  private readonly releaseImportMaps = new Set<() => void>();
+
   private readonly moduleScriptTasks: ModuleScriptTask[] = [];
 
-  private readonly entryDeferred = new Deferred<ModuleNamespace | undefined>();
+  private entryDeferred: Deferred<ModuleNamespace | undefined> | undefined = new Deferred();
 
   private sealed = false;
 
@@ -233,7 +242,7 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
 
   private readonly liveBindingRefreshers = new Set<() => void>();
 
-  private readonly unsubscribeGlobalSets: (() => void) | undefined;
+  private unsubscribeGlobalSets: (() => void) | undefined;
 
   private inlineModuleSeq = 0;
 
@@ -255,7 +264,9 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
       );
     }
 
-    this.opts = opts;
+    this.options = opts;
+    this.appName = opts.appName;
+    this.entryDeferred!.promise.catch(noop);
     this.entryBaseUrl = normalizeBaseUrl(opts.entryUrl);
     this.instanceKey = `${esmInternalPrefix}${opts.appName.replace(/[^\w-]/g, '_')}_${
       opts.instanceId
@@ -268,9 +279,10 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
     this.createModuleUrl = opts.createModuleUrl ?? defaultCreateModuleUrl;
     this.revokeModuleUrl = opts.revokeModuleUrl ?? defaultRevokeModuleUrl;
 
+    const getGlobalsView = (): Record<string, unknown> => this.opts.getGlobalsView();
     const instance: EsmInstance = {
       get view() {
-        return opts.getGlobalsView();
+        return getGlobalsView();
       },
       resolve: (specifier, baseUrl) => this.resolveModuleSpecifier(specifier, baseUrl ?? this.entryBaseUrl),
       dynamicImport: (credentialsKey, specifier, ...args) => this.dynamicImport(credentialsKey, specifier, ...args),
@@ -355,17 +367,18 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
 
   importDocumentModules(): Promise<ModuleNamespace | undefined> {
     this.assertAlive();
+    const entryDeferred = this.entryDeferred!;
     if (!this.sealed) {
       this.sealed = true;
       if (this.moduleScriptTasks.length > 0) {
-        void this.executeModuleScripts().catch((e: unknown) => {
-          if (!this.entryDeferred.isSettled()) this.entryDeferred.reject(e);
+        void this.executeModuleScripts(entryDeferred).catch((e: unknown) => {
+          if (!entryDeferred.isSettled()) entryDeferred.reject(e);
         });
       } else {
-        this.entryDeferred.resolve(undefined);
+        entryDeferred.resolve(undefined);
       }
     }
-    return this.entryDeferred.promise;
+    return entryDeferred.promise;
   }
 
   async load(specifier: string): Promise<void> {
@@ -383,16 +396,34 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
     if (this.disposed) return;
     this.disposed = true;
     this.unsubscribeGlobalSets?.();
+    this.unsubscribeGlobalSets = undefined;
     this.liveBindingRefreshers.clear();
     this.namespaceDescriptors.clear();
     unregisterEsmInstance(this.instanceHandle.token);
     this.createdModuleUrls.forEach((moduleUrl) => this.revokeModuleUrl(moduleUrl));
     this.createdModuleUrls.clear();
+    this.releaseImportMaps.forEach((release) => release());
+    this.releaseImportMaps.clear();
+    this.globalsBaseSet.clear();
+    this.modules.clear();
+    this.appImportMap.clear();
+    this.moduleLoadContexts.clear();
+    this.excludedNames.clear();
     this.descriptorPromises.clear();
     this.modulePromises.clear();
     this.inlineModules.length = 0;
     this.moduleScriptTasks.length = 0;
     this.pendingImportMapEntries = {};
+    this.entryDeferred?.reject(
+      new QiankunError(`ESM sandbox engine of app ${this.appName} has been disposed`, 'compartment-disposed'),
+    );
+    this.entryDeferred = undefined;
+    this.options = undefined;
+    this.resolveHook = this.defaultResolveHook;
+    this.importHook = undefined;
+    this.moduleImporter = defaultModuleImporter;
+    this.createModuleUrl = defaultCreateModuleUrl;
+    this.revokeModuleUrl = defaultRevokeModuleUrl;
   }
 
   private track(moduleUrl: string): string {
@@ -406,10 +437,7 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
 
   private assertAlive(): void {
     if (this.disposed) {
-      throw new QiankunError(
-        `ESM sandbox engine of app ${this.opts.appName} has been disposed`,
-        'compartment-disposed',
-      );
+      throw new QiankunError(`ESM sandbox engine of app ${this.appName} has been disposed`, 'compartment-disposed');
     }
   }
 
@@ -485,6 +513,7 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
   }
 
   private resolveModuleSpecifier(specifier: string, referrer: string): string {
+    this.assertAlive();
     if (specifier.startsWith(esmInternalPrefix)) {
       throw new QiankunError(
         `synthetic specifier ${specifier} is not allowed in application code of ${this.opts.appName}`,
@@ -802,7 +831,7 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
     const entries = this.pendingImportMapEntries;
     if (keys(entries).length > 0) {
       this.pendingImportMapEntries = {};
-      injectImportMapEntries(entries);
+      this.releaseImportMaps.add(injectImportMapEntries(entries));
     }
   }
 
@@ -827,7 +856,7 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
     return namespace;
   }
 
-  private async executeModuleScripts(): Promise<void> {
+  private async executeModuleScripts(entryDeferred: Deferred<ModuleNamespace | undefined>): Promise<void> {
     const tasks = [...this.moduleScriptTasks];
     const explicitEntry = tasks.find((task) => task.explicitEntry);
     const executed: ModuleNamespace[] = [];
@@ -840,13 +869,13 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
         const namespace = await this.executeModule(module);
         this.assertAlive();
         executed.push(namespace);
-        if (task === explicitEntry && !this.entryDeferred.isSettled()) {
-          this.entryDeferred.resolve(namespace);
+        if (task === explicitEntry && !entryDeferred.isSettled()) {
+          entryDeferred.resolve(namespace);
         }
       } catch (e) {
         if (this.disposed) throw e;
-        if (task === explicitEntry && !this.entryDeferred.isSettled()) {
-          this.entryDeferred.reject(e);
+        if (task === explicitEntry && !entryDeferred.isSettled()) {
+          entryDeferred.reject(e);
         } else {
           console.error(
             `[qiankun] ESM module script ${task.url ?? '(inline)'} of app ${this.opts.appName} failed to execute`,
@@ -856,12 +885,12 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
       }
     }
 
-    if (!explicitEntry && !this.entryDeferred.isSettled()) {
+    if (!explicitEntry && !entryDeferred.isSettled()) {
       this.assertAlive();
       const { isLifecycleNamespace } = this.opts;
       const picked =
         (isLifecycleNamespace && executed.find((ns) => isLifecycleNamespace(ns))) ?? executed[executed.length - 1];
-      this.entryDeferred.resolve(picked);
+      entryDeferred.resolve(picked);
     }
   }
 

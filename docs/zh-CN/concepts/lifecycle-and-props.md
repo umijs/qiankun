@@ -90,6 +90,8 @@ await microApp.mount();
 
 必须处理 `unmount()` 返回的 Promise。如果当前流程允许等待，应在卸载完成后再移除容器；如果框架的清理回调无法等待异步操作，就先调用 `unmount()` 并给它的 Promise 挂上 `catch`，然后再释放句柄引用。生命周期实现应支持反复挂载和卸载，且不得产生重复监听或残留界面。
 
+卸载后已加载的实例会保留，供同名应用复用；需要释放时调用 `unload()`。销毁会撤销隔离膜，因此微应用还应在 `unmount` 中清理尚未执行的定时器和异步回调。详见 [loadMicroApp](/zh-CN/api/load-micro-app#unload)。
+
 如果需要根据 URL 自动激活微应用，可以使用 [`registerMicroApps`](/zh-CN/api/register-micro-apps)。此方式采用相同的微应用契约，但由路由决定挂载和卸载时机。
 
 ## 继续阅读

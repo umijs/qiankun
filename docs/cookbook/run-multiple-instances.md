@@ -92,6 +92,8 @@ await Promise.all([left.unmount(), right.unmount()]);
 
 `unmount()` invokes the micro-app lifecycle and releases container and sandbox side effects qiankun can track. The micro-app must still release external resources such as store subscriptions, workers, WebSockets, observers, and portals.
 
+The loaded instances are kept after unmounting and reused when the same app loads again. To release them, call the handle's `unload()` or `unloadMicroApp(name)`; see [loadMicroApp](/api/load-micro-app#unload) for the scope.
+
 ## Native ESM caveat
 
 Concurrent instances of one ESM application need separate containers and testing around initial evaluation and dynamically created elements. The current ESM implementation still has known limitations when same-origin instances evaluate concurrently. If the product depends heavily on many concurrent instances, validate the real application first or evaluate a Classic build.
