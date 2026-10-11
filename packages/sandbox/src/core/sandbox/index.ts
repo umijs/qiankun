@@ -50,11 +50,17 @@ export interface CreateSandboxOptions {
    * why style isolation requires a configured container.
    */
   styleIsolation?: boolean;
+  /**
+   * Fetch for dynamic assets (classic scripts, styles, stylesheet links). Module sources also use
+   * it unless `compartmentOptions.moduleHost.fetch` is provided. Defaults to the native fetch.
+   */
   fetch?: typeof window.fetch;
   nodeTransformer?: NodeTransformer;
   /**
-   * Lower-level Compartment host configuration. Promoted top-level options take
-   * precedence when the same field is supplied in both places.
+   * Lower-level Compartment host configuration. Promoted top-level options take precedence
+   * when the same field is supplied in both places. The one exception is `moduleHost.fetch`:
+   * it is the more specific, module-source-only transport, so it wins over the top-level
+   * `fetch` when loading module sources, while dynamic assets keep using the top-level `fetch`.
    */
   compartmentOptions?: Omit<CompartmentOptions, 'globals' | 'incubatorContext' | 'name'>;
 }
@@ -148,7 +154,7 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
     hasTopLevelModuleHook ? topLevelImportHook : compartmentOptions.importHook,
     hasTopLevelModuleHook ? topLevelLoadHook : compartmentOptions.loadHook,
   );
-  const fetch = configuredFetch ?? compartmentOptions.moduleHost?.fetch ?? nativeGlobal.fetch.bind(nativeGlobal);
+  const fetch = configuredFetch ?? nativeGlobal.fetch.bind(nativeGlobal);
   const styleIsolation = styleIsolationEnabled ? createStyleIsolationOpts(appName) : undefined;
   const containerNameCleanups = new Map<HTMLElement, () => void>();
   const containerHeadCleanups = new Map<HTMLElement, Array<() => void>>();
@@ -197,7 +203,7 @@ export function createSandbox(appName: string, opts: CreateSandboxOptions = {}):
     resolveHook,
     moduleHost: {
       ...compartmentOptions.moduleHost,
-      fetch,
+      fetch: compartmentOptions.moduleHost?.fetch ?? fetch,
     },
   };
 
