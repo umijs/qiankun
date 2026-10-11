@@ -30,7 +30,7 @@ flowchart TD
 
 ### 隔离膜（membrane）
 
-隔离膜（`core/membrane`）是包裹主应用 `window` 的 `Proxy`，内部将真实 `window` 称为孵化上下文（incubator context）。应用访问的 `window` 即该代理对象，读写操作的差异由 Proxy 拦截器（trap）实现。生命周期钩子接收的 `global` 参数也是此代理对象；`__POWERED_BY_QIANKUN__` 和 `__INJECTED_PUBLIC_PATH_BY_QIANKUN__` 等运行时标记同样设置在该对象上。
+隔离膜（`core/membrane`）是包裹主应用 `window` 的 `Proxy`，内部通过 `incubatorContext` 引用作为宿主全局对象的真实 `window`。应用访问的 `window` 即该代理对象，读写操作的差异由 Proxy 拦截器（trap）实现。生命周期钩子接收的 `global` 参数也是此代理对象；`__POWERED_BY_QIANKUN__` 和 `__INJECTED_PUBLIC_PATH_BY_QIANKUN__` 等运行时标记同样设置在该对象上。
 
 ### 隔间（compartment）
 

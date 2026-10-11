@@ -197,7 +197,7 @@ export type SandboxConfiguration = Pick<
 | --- | --- | --- | --- |
 | `styleIsolation` | `boolean` | `false` | 启用基于 CSS `@scope` 的运行时[样式隔离](/zh-CN/concepts/style-isolation)，作用域限制在应用容器内。 |
 | `globals` | `CompartmentGlobals` | `{}` | 安装到该应用 compartment 全局对象上的值或属性描述符。 |
-| `incubatorContext` | `WindowProxy` | `window` | 孵化该沙箱的宿主上下文。 |
+| `incubatorContext` | `WindowProxy` | `window` | 创建沙箱所用的宿主全局对象。 |
 | `plugins` | `readonly IsolationPlugin[]` | `[]` | 追加在内置插件之后的隔离插件。 |
 | `modules` / `resolveHook` / `importHook` / `loadHook` | Compartment 模块钩子 | `undefined` | 沙箱内 ESM 的模块解析与加载钩子。 |
 

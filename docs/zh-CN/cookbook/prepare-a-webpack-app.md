@@ -12,7 +12,7 @@
 npm install --save-dev @qiankunjs/bundler-plugin@rc html-webpack-plugin
 ```
 
-`html-webpack-plugin` 用于生成 HTML 入口，使 qiankun 插件能够识别对应的入口脚本。
+`html-webpack-plugin` 用于生成 HTML 入口，使 qiankun 插件能够为对应的脚本添加 `entry` 属性。
 
 ## 配置 Webpack
 
@@ -36,7 +36,7 @@ module.exports = {
 };
 ```
 
-插件会将构建产物配置为浏览器全局库，并在 `html-webpack-plugin` 生成的 HTML 中标记入口脚本。`output.library`、`output.libraryTarget`、`output.globalObject` 以及 Webpack 4 的 JSONP 函数这几个字段交由插件设置即可，不要在自己的 Webpack 配置里再手动指定。
+插件会将构建产物配置为浏览器全局库，并在 `html-webpack-plugin` 生成的 HTML 中为相应脚本添加 `entry` 属性。`output.library`、`output.libraryTarget`、`output.globalObject` 以及 Webpack 4 的 JSONP 函数这几个字段交由插件设置即可，不要在自己的 Webpack 配置里再手动指定。
 
 ### 选择稳定的 `packageName`
 
@@ -182,6 +182,6 @@ qiankun 从主应用所在的源请求入口 HTML 及其资源。`QiankunWebpack
 2. 直接打开部署后的 HTML 入口，确认独立运行仍然正常。
 3. 通过 `loadMicroApp` 加载该入口，并分别执行一次卸载和重新挂载。
 4. 确认入口 HTML、JavaScript 代码分块、CSS 和外部资源来自预期 URL，并带有必要的 CORS 响应头。
-5. 在不同版本之间保持 `packageName` 稳定，并确认构建产物仍然只有一个被标记的入口脚本。
+5. 在不同版本之间保持 `packageName` 稳定，并确认构建产物仍然只有一个标记为 `entry` 的脚本。
 
 插件的完整选项和 Webpack 版本差异见 [`@qiankunjs/bundler-plugin`](/zh-CN/ecosystem/bundler-plugin)。应用在卸载阶段需要完成的清理工作见[生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
