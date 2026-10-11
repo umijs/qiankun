@@ -54,6 +54,7 @@ Per-app options. All fields are optional; the defaults below are resolved intern
 | --- | --- | --- | --- |
 | `sandbox` | `boolean \| SandboxConfiguration` | `true` | Enables the Proxy-membrane [JS sandbox](/concepts/js-sandbox) and the [ESM sandbox](/concepts/esm-sandbox). Set `false` only for legacy apps that must run against the real global; pass an object to keep isolation on and configure it. |
 | `fetch` | `typeof window.fetch` | `window.fetch` | Custom fetch for the entry and loader-managed scripts, modules, and styles. |
+| `loadTimeout` | `number` | `0` (disabled) | Timeout of the loading phase in milliseconds. Container waits are excluded, and `bootstrap`, `mount`, and `unmount` are not bounded. See [AppConfiguration](/api/configuration#loadtimeout). |
 | `streamTransformer` | `() => TransformStream<string, string>` | — | Optional transform piped into the HTML stream. |
 | `nodeTransformer` | `NodeTransformer` | internal default | Rewrites each script/link/style node before it hits live DOM. Override only for advanced cases. |
 
@@ -61,6 +62,7 @@ Per-app options. All fields are optional; the defaults below are resolved intern
 type AppConfiguration =
   Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
     sandbox?: boolean | SandboxConfiguration;
+    loadTimeout?: number;
   };
 ```
 
@@ -151,7 +153,7 @@ Observable behavior for callers:
 - **An app name reuses its unmounted instances.** When you call it again with the same `name` and `entry` and that app has an idle, unmounted instance, qiankun mounts that instance into the container you pass, without loading the entry again or calling `bootstrap`. If none is idle, an instance whose `unmount()` has been called but has not finished (including one still mounting) is reused as well, and the new instance mounts once that unmount completes. Only instances mounted at the same time load separate copies. A `name` should therefore always refer to the same app, and per-mount state belongs in `mount()`.
 - **The caller owns teardown.** Call `unmount()` when the app is no longer shown, as the official `<MicroApp>` components do. Call `unload()` or `unloadMicroApp(name)` only when the loaded resources should be released.
 - **An instance whose `bootstrap` fails is disposed of.** Every call sharing that `bootstrap` rejects with the same error. Later calls on a retained handle reject with `app-unloaded`, whose `cause` is the `bootstrap` error. Calling `loadMicroApp` again loads the entry and runs `bootstrap` anew.
-- **An app that just failed is not reloaded right away.** After a load or `bootstrap` of the same `name` and `entry` fails, a `loadMicroApp` call within about a second is not rejected, but its load is deferred until that cooldown ends, so a render loop or tight retries cannot hammer the entry. The cooldown counts from the failure and later calls do not extend it; it ends as soon as an instance of the app loads and bootstraps successfully; calling `unload()` meanwhile cancels the load.
+- **An app that just failed is not reloaded right away.** After a load or `bootstrap` of the same `name` and `entry` fails, a `loadMicroApp` call within about a second is not rejected, but its load is deferred until that cooldown ends, so a render loop or tight retries cannot hammer the entry. The cooldown counts from the failure and later calls do not extend it; it ends as soon as an instance of the app loads and bootstraps successfully; the wait does not count toward `loadTimeout`, and calling `unload()` meanwhile cancels the load.
 
 See [Run multiple micro-app instances](/cookbook/run-multiple-instances) for the complete guidance on reuse and remounting.
 

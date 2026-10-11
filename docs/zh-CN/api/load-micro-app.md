@@ -54,6 +54,7 @@ type LoadableApp<T extends ObjectType> = {
 | --- | --- | --- | --- |
 | `sandbox` | `boolean \| SandboxConfiguration` | `true` | 启用基于 Proxy 隔离膜的 [JavaScript 隔离](/zh-CN/concepts/js-sandbox)和[原生 ESM 支持](/zh-CN/concepts/esm-sandbox)。仅当旧应用必须在真实全局对象中运行时，才应设为 `false`；传入对象则在保持隔离的同时配置沙箱。 |
 | `fetch` | `typeof window.fetch` | `window.fetch` | 用于请求入口，以及由加载器处理的脚本、模块和样式的自定义 fetch。 |
+| `loadTimeout` | `number` | `0`（关闭） | 加载阶段的超时，单位为毫秒。计时不包含等待容器，也不约束 `bootstrap`、`mount` 和 `unmount`，详见 [AppConfiguration](/zh-CN/api/configuration#loadtimeout)。 |
 | `streamTransformer` | `() => TransformStream<string, string>` | — | 用于自定义 HTML 流式处理过程的可选转换流。 |
 | `nodeTransformer` | `NodeTransformer` | 内部默认值 | 在 `<script>`、`<link>` 和 `<style>` 节点进入真实 DOM 前进行转换。仅高级扩展场景需要覆盖。 |
 
@@ -61,6 +62,7 @@ type LoadableApp<T extends ObjectType> = {
 type AppConfiguration =
   Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
     sandbox?: boolean | SandboxConfiguration;
+    loadTimeout?: number;
   };
 ```
 
@@ -149,7 +151,7 @@ type Parcel = {
 - **同名应用会复用已卸载的实例。** 以相同的 `name` 和 `entry` 再次调用时，如果该应用有已卸载、处于空闲状态的实例，qiankun 会把它挂载到本次传入的容器，不再重新加载入口，也不再调用 `bootstrap`。没有空闲实例时，已调用 `unmount()` 但尚未卸载完成的实例（包括仍在挂载中的实例）也会被复用，新实例等它卸载完成后再挂载。只有同时挂载的实例才会各自加载一份。因此同一 `name` 应始终指向同一个应用，每次挂载所需的状态应在 `mount()` 中初始化。
 - **调用方负责卸载。** 不再展示应用时调用 `unmount()`，官方 `<MicroApp>` 组件也是这样做的。需要释放已加载的资源时，再调用 `unload()` 或 `unloadMicroApp(name)`。
 - **`bootstrap` 失败的实例会被销毁。** 共用这次 `bootstrap` 的调用都以同一个错误拒绝；保留的句柄之后再调用，以 `app-unloaded` 拒绝，错误的 `cause` 是那次 `bootstrap` 错误。再次调用 `loadMicroApp` 会重新加载入口，并重新执行 `bootstrap`。
-- **刚失败的应用不会立即重新加载。** 同一 `name` 和 `entry` 的加载或 `bootstrap` 失败后，约 1 秒内再次调用 `loadMicroApp` 不会被拒绝，但加载会延后到这段冷却期结束再开始，避免重渲染循环或密集重试反复请求入口。冷却期从失败时开始计算，不因新的调用而延长；同一应用有实例加载并 `bootstrap` 成功后，冷却期随即结束；等待期间调用 `unload()` 会取消这次加载。
+- **刚失败的应用不会立即重新加载。** 同一 `name` 和 `entry` 的加载或 `bootstrap` 失败后，约 1 秒内再次调用 `loadMicroApp` 不会被拒绝，但加载会延后到这段冷却期结束再开始，避免重渲染循环或密集重试反复请求入口。冷却期从失败时开始计算，不因新的调用而延长；同一应用有实例加载并 `bootstrap` 成功后，冷却期随即结束；等待的时间不计入 `loadTimeout`，等待期间调用 `unload()` 会取消这次加载。
 
 多实例、复用和重新挂载的完整建议见[运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)。
 

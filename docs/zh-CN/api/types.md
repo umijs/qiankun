@@ -38,7 +38,7 @@ import type {
 | `AppMetadata` | `{ name; entry }` | 微应用的基本描述信息。 |
 | `LoadableApp<T>` | `AppMetadata & { container; props? }` | 配合 [`loadMicroApp`](/zh-CN/api/load-micro-app) 使用，`container` 是 `HTMLElement`。 |
 | `RegistrableApp<T>` | `LoadableApp<T> & { loader?; activeRule; configuration? }` | 配合 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 使用。 |
-| `AppConfiguration` | 加载器选项 `& { sandbox? }` | 单个应用的运行时配置，见 [AppConfiguration](/zh-CN/api/configuration)。 |
+| `AppConfiguration` | 加载器选项 `& { sandbox?; loadTimeout? }` | 单个应用的运行时配置，见 [AppConfiguration](/zh-CN/api/configuration)。 |
 | `SandboxConfiguration` | `{ styleIsolation?; globals?; incubatorContext?; plugins?; …模块钩子 }` | `sandbox` 的对象形式，见 [SandboxConfiguration](/zh-CN/api/configuration#sandboxconfiguration)。 |
 | `LifeCycleFn<T>` | `(app, global) => Promise<void>` | 单个框架级生命周期钩子。 |
 | `LifeCycles<T>` | `{ beforeLoad?; beforeMount?; afterMount?; beforeUnmount?; afterUnmount? }` | 框架级钩子，见[生命周期钩子](/zh-CN/api/lifecycles)。 |
@@ -161,6 +161,7 @@ export type AppConfiguration = Partial<
   Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>
 > & {
   sandbox?: boolean | SandboxConfiguration;
+  loadTimeout?: number;
 };
 ```
 
@@ -169,6 +170,7 @@ export type AppConfiguration = Partial<
 | 字段 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
 | `fetch` | `typeof window.fetch` | `window.fetch` | 用于请求入口，以及由加载器处理的脚本、模块和样式的自定义 fetch。 |
+| `loadTimeout` | `number` | `0`（关闭） | 加载阶段的超时毫秒数，不约束 `bootstrap`、`mount` 和 `unmount`。 |
 | `streamTransformer` | `() => TransformStream<string, string>` | `undefined` | 用于自定义 HTML 流式处理过程的转换器。 |
 | `nodeTransformer` | `<T extends Node>(node: T, opts) => T` | 内置默认值 | 在 `<script>`、`<link>` 和 `<style>` 节点进入容器前进行转换。 |
 | `sandbox` | `boolean \| SandboxConfiguration` | `true` | 启用基于隔离膜的 [JavaScript 隔离](/zh-CN/concepts/js-sandbox)，以及适用场景下的[原生 ESM 支持](/zh-CN/concepts/esm-sandbox)。传入对象形式还可对其进行配置。 |

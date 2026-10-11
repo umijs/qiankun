@@ -81,6 +81,12 @@ export type SandboxConfiguration = Pick<
 
 export type AppConfiguration = Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
   /**
+   * Loading budget in milliseconds, counted from acquiring the container until the entry is
+   * fully streamed and its lifecycles are resolved. It does not bound bootstrap, mount, or
+   * unmount. Zero disables it (default).
+   */
+  loadTimeout?: number;
+  /**
    * JS sandbox switch and configuration.
    * `false` disables isolation entirely; `true` (the default) enables it with defaults;
    * an object enables it and configures the underlying Compartment.
