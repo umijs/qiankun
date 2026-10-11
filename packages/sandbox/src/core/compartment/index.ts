@@ -203,6 +203,7 @@ export class Compartment implements CompartmentLoaderFacade {
           reject(
             new QiankunError(
               `Compartment ${this.name || '(anonymous)'} was disposed before classic script evaluation completed`,
+              'compartment-disposed',
             ),
           ),
         );
@@ -320,7 +321,7 @@ export class Compartment implements CompartmentLoaderFacade {
 
   private assertAlive(): void {
     if (this.disposed) {
-      throw new QiankunError(`Compartment ${this.name || '(anonymous)'} has been disposed`);
+      throw new QiankunError(`Compartment ${this.name || '(anonymous)'} has been disposed`, 'compartment-disposed');
     }
   }
 }

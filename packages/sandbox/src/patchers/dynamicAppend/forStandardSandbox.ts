@@ -26,7 +26,7 @@ type Unpatch = () => void;
 function getRequiredContainer(getContainer: IsolationPluginContext['getContainer'], appName: string): HTMLElement {
   const container = getContainer();
   if (!container) {
-    throw new QiankunError(`${appName} requires a container for DOM isolation`);
+    throw new QiankunError(`${appName} requires a container for DOM isolation`, 'container-required');
   }
   return container;
 }
@@ -142,7 +142,10 @@ function patchDocument(
     const currentContainer = getRequiredContainer(getContainer, appName);
     const containerHeadElement = getContainerHeadElement(currentContainer);
     if (!containerHeadElement) {
-      throw new QiankunError(`${appName} head element not existed while accessing document.head!`);
+      throw new QiankunError(
+        `${appName} head element not existed while accessing document.head!`,
+        'container-head-missing',
+      );
     }
     // A streamed head and the adjacent inline script can enter live DOM in the same
     // insertion batch, before MutationObserver delivery. Never expose an unpatched head.
@@ -480,7 +483,9 @@ export function patchStandardSandbox(context: IsolationPluginContext): Free {
     // the dynamic style sheet could be removed automatically while unmounting
     return (container?: HTMLElement) => {
       if (!container) {
-        return Promise.reject(new QiankunError(`${appName} requires a container while rebuilding DOM side effects`));
+        return Promise.reject(
+          new QiankunError(`${appName} requires a container while rebuilding DOM side effects`, 'container-required'),
+        );
       }
       return attachRecordedStylesheets(appName, dynamicStyleSheetElements, container);
     };
@@ -509,6 +514,7 @@ async function attachRecordedStylesheets(
                 if (!containerHeadElement) {
                   throw new QiankunError(
                     `${appName} container ${qiankunHeadTagName} element not ready while rebuilding!`,
+                    'container-head-missing',
                   );
                 }
                 return containerHeadElement;

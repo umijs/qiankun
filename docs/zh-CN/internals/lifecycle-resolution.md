@@ -70,7 +70,7 @@ flowchart TD
 5. **均不符合要求**：抛出 `QiankunError`，说明无法通过 `latestSetProp` 或 `window[appName]` 找到生命周期函数。
 
 ::: tip 正确配置 Classic 构建的全局库输出
-Classic 执行方式要求构建产物以 UMD 全局变量导出生命周期对象。[`@qiankunjs/bundler-plugin`](/zh-CN/ecosystem/bundler-plugin) 会标记入口脚本并修正 `output.library`。ESM 应用不需要此配置，其导出直接从模块命名空间中读取。
+Classic 执行方式要求构建产物以 UMD 全局变量导出生命周期对象。[`@qiankunjs/bundler-plugin`](/zh-CN/ecosystem/bundler-plugin) 会为导出生命周期的脚本添加 `entry` 属性，并修正 `output.library`。ESM 应用不需要此配置，其导出直接从模块命名空间中读取。
 :::
 
 ## 微应用生命周期与主应用钩子

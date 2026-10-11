@@ -201,7 +201,7 @@ registerMicroApps([
 
 ### Webpack
 
-插件会将输出库的全局对象配置为 `window`，并在 Webpack 4 中设置 `jsonpFunction`，同时为入口 `<script>` 添加加载器识别所需的 `entry` 属性。应将插件安装为开发依赖并加入 `plugins` 数组，同时保留 `html-webpack-plugin`，以便自动标记入口脚本。
+插件会将输出库的全局对象配置为 `window`，并在 Webpack 4 中设置 `jsonpFunction`，同时为入口 `<script>` 添加加载器识别所需的 `entry` 属性。应将插件安装为开发依赖并加入 `plugins` 数组，同时保留 `html-webpack-plugin`，以便自动为相应脚本添加 `entry` 属性。
 
 ::: code-group
 ```js [2.x webpack.config.js]
@@ -236,7 +236,7 @@ module.exports = {
 ```
 :::
 
-Webpack 插件仅接收可选字段 `packageName`，其默认值为 `package.json` 中的 `name`。该字段用于命名构建产物的全局库，与主应用中的应用 `name` 含义不同。启用默认沙箱且入口脚本正确标记时，两者无需使用相同值；设置 `sandbox: false` 并依赖 `window[appName]` 解析生命周期时，全局库的属性名必须与主应用名称相同，除非构建产物自行创建该属性。详见[接入 Webpack 应用](/zh-CN/cookbook/prepare-a-webpack-app)和[构建插件参考](/zh-CN/ecosystem/bundler-plugin)。
+Webpack 插件仅接收可选字段 `packageName`，其默认值为 `package.json` 中的 `name`。该字段用于命名构建产物的全局库，与主应用中的应用 `name` 含义不同。启用默认沙箱且导出生命周期的脚本带有 `entry` 属性时，两者无需使用相同值；设置 `sandbox: false` 并依赖 `window[appName]` 解析生命周期时，全局库的属性名必须与主应用名称相同，除非构建产物自行创建该属性。详见[接入 Webpack 应用](/zh-CN/cookbook/prepare-a-webpack-app)和[构建插件参考](/zh-CN/ecosystem/bundler-plugin)。
 
 ### Vite
 
@@ -260,7 +260,7 @@ export default defineConfig({
 
 ## 微应用入口：使用现代 API 渲染到 `props.container`
 
-生命周期仍由 `bootstrap`、`mount` 和 `unmount` 组成，但应使用现代框架 API 渲染到 `props.container`，即当前应用的容器子树，而不是全局 `document`。应用需要按照常规方式导出生命周期函数。对于 Webpack 构建，插件会以 `packageName` 命名全局库，并标记入口脚本；原生 ESM 构建则直接使用模块导出。
+生命周期仍由 `bootstrap`、`mount` 和 `unmount` 组成，但应使用现代框架 API 渲染到 `props.container`，即当前应用的容器子树，而不是全局 `document`。应用需要按照常规方式导出生命周期函数。对于 Webpack 构建，插件会以 `packageName` 命名全局库，并为相应脚本添加 `entry` 属性；原生 ESM 构建则直接使用模块导出。
 
 ::: code-group
 ```tsx [2.x main.tsx]
@@ -309,8 +309,8 @@ if (!window.__POWERED_BY_QIANKUN__) {
 
 Vue 的实现结构相同：在 `mount` 中调用 `createApp(...).mount(...)`，在 `unmount` 中调用 `app.unmount()`。Webpack 和原生 ESM 构建均导出相同的三个生命周期函数，对应的构建集成会将入口处理为 qiankun 所需的格式。详见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
 
-::: danger 入口脚本不得超过一个
-一份 HTML 入口中最多只能有一个带 `entry` 标记的脚本。若存在两个入口脚本，加载器会抛出 `QiankunError`。构建插件具有幂等性，只会标记一个入口脚本。
+::: danger `entry` 脚本不得超过一个
+一份 HTML 入口中最多只能有一个带 `entry` 标记的脚本。若存在两个 `entry` 脚本，加载器会抛出 `QiankunError`。构建插件具有幂等性，只会为一个脚本添加 `entry` 属性。
 
 :::
 

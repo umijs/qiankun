@@ -71,7 +71,7 @@ interface QiankunWebpackPluginOptions {
 | --- | --- | --- |
 | `packageName` | 当前 `package.json` 的 `name` | Classic 脚本构建输出的全局库名称。 |
 
-插件会将输出调整为浏览器全局库，并在 `html-webpack-plugin` 生成的 HTML 中标记入口脚本。应确保 `package.json` 中的名称保持稳定；如果插件无法读取该名称，则需要显式设置 `packageName`。
+插件会将输出调整为浏览器全局库，并在 `html-webpack-plugin` 生成的 HTML 中为相应脚本添加 `entry` 属性。应确保 `package.json` 中的名称保持稳定；如果插件无法读取该名称，则需要显式设置 `packageName`。
 
 Webpack 插件不会配置开发服务器的 CORS。开发服务器和生产静态服务器都需要允许主应用跨域获取 HTML、脚本和样式。
 

@@ -195,7 +195,7 @@ export default function App() {
 
 `name` 是 qiankun 和 single-spa 识别路由注册应用的标识，用于注册去重和运行时记录。不同应用不能共用同一名称，同一应用在多次注册时也应保持名称不变。
 
-入口脚本带有正确标记时，qiankun 会从入口执行结果中解析生命周期：ESM 应用读取模块导出，Classic 应用读取入口脚本的导出值。正常解析流程不要求 `name` 与 `packageName` 或 Webpack 的 `output.library.name` 相同。
+导出生命周期的脚本带有 `entry` 属性时，qiankun 会从入口执行结果中解析生命周期：ESM 应用读取模块导出，Classic 应用读取入口脚本的导出值。正常解析流程不要求 `name` 与 `packageName` 或 Webpack 的 `output.library.name` 相同。
 
 仅当入口结果中不存在有效的生命周期对象时，qiankun 才会进入兼容分支，并尝试从该应用自身全局对象上的 `global[appName]` 读取生命周期。如需依赖该兼容逻辑，全局变量的属性名必须与 `name` 相同；不应将其作为常规命名约定。完整查找顺序见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
 

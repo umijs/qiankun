@@ -63,7 +63,7 @@ qiankun 继承了 [single-spa](https://github.com/single-spa/single-spa) 的基�
 - 🛡 **样式隔离** —— 基于 CSS [`@scope`](https://developer.mozilla.org/docs/Web/CSS/@scope) 规则的运行时作用域方案（可选开启），外链样式表同样覆盖。不需要改写你的 CSS，也没有 Shadow DOM 的额外负担。
 - ⚡ **预加载** —— 在用户还停留在其他页面时提前加载微应用资源，切换时近乎即时。
 - 🧩 **UI 绑定** —— 面向 [React](packages/ui-bindings/react) 和 [Vue](packages/ui-bindings/vue) 的 `<MicroApp />` 组件，自带加载态和错误边界插槽，微应用用起来就像一个普通组件。
-- 🔧 **构建插件** —— [一个插件](packages/bundler-plugin)同时支持 webpack 4/5 与 Vite，自动标记入口脚本、修正产物库配置，替代过去手写的样板配置。
+- 🔧 **构建插件** —— [一个插件](packages/bundler-plugin)同时支持 webpack 4/5 与 Vite，自动为相应脚本添加 `entry` 属性、修正产物库配置，替代过去手写的样板配置。
 - 🔬 **独立沙箱** —— [`@qiankunjs/sandbox`](packages/sandbox) 可以脱离微前端框架单独使用，用来隔离任意第三方脚本。
 
 ## 🚀 快速上手
