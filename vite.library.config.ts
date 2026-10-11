@@ -55,13 +55,11 @@ function generatePackageSources(packageRoot: string, manifest: PackageManifest):
       browserNames.splice(insertAt === -1 ? browserNames.length : insertAt, 0, 'Intl');
     }
     const globalsFile = `// generated from https://github.com/sindresorhus/globals/blob/main/globals.json es2015 part
-// only init its values while Proxy is supported
-// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-export const globalsInES2015 = window.Proxy ? ${JSON.stringify(
+export const globalsInES2015 = ${JSON.stringify(
       es2015Names,
       null,
       2,
-    )}.filter(p => /* just keep the available properties in current window context */ p in window) : [];
+    )}.filter(p => /* just keep the available properties in current window context */ p in window);
 
 export const globalsInBrowser = ${JSON.stringify(browserNames, null, 2)};
   `;

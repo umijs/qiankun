@@ -1,7 +1,5 @@
 // generated from https://github.com/sindresorhus/globals/blob/main/globals.json es2015 part
-// only init its values while Proxy is supported
-// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-export const globalsInES2015 = window.Proxy ? [
+export const globalsInES2015 = [
   "Array",
   "ArrayBuffer",
   "Boolean",
@@ -52,7 +50,7 @@ export const globalsInES2015 = window.Proxy ? [
   "URIError",
   "WeakMap",
   "WeakSet"
-].filter(p => /* just keep the available properties in current window context */ p in window) : [];
+].filter(p => /* just keep the available properties in current window context */ p in window);
 
 export const globalsInBrowser = [
   "AbortController",

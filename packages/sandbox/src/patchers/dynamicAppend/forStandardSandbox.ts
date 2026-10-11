@@ -380,32 +380,6 @@ function patchDOMPrototypeFns(): Unpatch {
 
   state.refCount += 1;
 
-  // TODO https://github.com/umijs/qiankun/pull/2415 Not support yet as getCurrentRunningApp api is not reliable
-  // patch parentNode getter to avoid document === html.parentNode
-  // https://github.com/umijs/qiankun/issues/2408#issuecomment-1446229105
-  // const parentNodeDescriptor = Object.getOwnPropertyDescriptor(Node.prototype, 'parentNode');
-  // if (parentNodeDescriptor) {
-  //   const { get: parentNodeGetter, configurable } = parentNodeDescriptor;
-  //   if (parentNodeGetter && configurable) {
-  //     const patchedParentNodeDescriptor = {
-  //       ...parentNodeDescriptor,
-  //       get(this: Node) {
-  //         const parentNode = parentNodeGetter.call(this) as HTMLElement;
-  //         if (parentNode instanceof Document) {
-  //           const proxy = getCurrentRunningApp()?.window;
-  //           if (proxy) {
-  //             return proxy.document;
-  //           }
-  //         }
-  //
-  //         return parentNode;
-  //       },
-  //     };
-  //     Object.defineProperty(Node.prototype, 'parentNode', patchedParentNodeDescriptor);
-  //
-  //   }
-  // }
-
   let released = false;
   return () => {
     if (released) return;
@@ -423,10 +397,6 @@ function patchDOMPrototypeFns(): Unpatch {
     if (sharedState.domPrototypePatch === state) {
       delete sharedState.domPrototypePatch;
     }
-
-    // if (parentNodeDescriptor) {
-    //   Object.defineProperty(Node.prototype, 'parentNode', parentNodeDescriptor);
-    // }
   };
 }
 
