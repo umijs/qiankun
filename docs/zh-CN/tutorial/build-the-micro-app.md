@@ -12,7 +12,7 @@ qiankun 微应用仍是标准的前端应用，但入口模块需要额外导出
 npm create vite@latest sub-app -- --template react-ts
 cd sub-app
 npm install
-npm install --save-dev @qiankunjs/bundler-plugin@rc
+npm install --save-dev @qiankunjs/bundler-plugin
 ```
 
 ## 配置 Vite

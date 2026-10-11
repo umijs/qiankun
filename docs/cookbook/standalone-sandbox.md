@@ -10,7 +10,7 @@ The lower-level `Compartment` class is also public for hosts that need a Compart
 ## Install
 
 ```bash
-pnpm add @qiankunjs/sandbox@rc
+pnpm add @qiankunjs/sandbox
 ```
 
 The package is browser-only. It depends on DOM APIs, blob URLs, and dynamically injected import maps, so it must not be initialized during Node.js or SSR rendering.

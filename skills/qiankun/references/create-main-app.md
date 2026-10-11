@@ -6,7 +6,7 @@ Prerequisites: the shared facts in [SKILL.md](../SKILL.md) — app name, framewo
 
    ```bash
    pnpm create vite <main-app-name> --template react-ts
-   pnpm add qiankun@rc @qiankunjs/react@rc   # vue shell: @qiankunjs/vue@rc
+   pnpm add qiankun @qiankunjs/react   # vue shell: @qiankunjs/vue
    ```
 
    Pin the port in `vite.config.ts` (`server: { port: 7099, strictPort: true }`).

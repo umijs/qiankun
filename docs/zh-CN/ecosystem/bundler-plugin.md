@@ -7,7 +7,7 @@
 ## 安装
 
 ```bash
-npm install --save-dev @qiankunjs/bundler-plugin@rc
+npm install --save-dev @qiankunjs/bundler-plugin
 ```
 
 插件支持 Vite 5 及以上版本，以及 Webpack 4 和 Webpack 5。该包将 Vite 和 Webpack 声明为可选对等依赖（`peerDependencies`），项目只需安装实际使用的构建工具。

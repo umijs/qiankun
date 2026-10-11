@@ -9,7 +9,7 @@ The package also exports [`MicroAppLink`](#micro-app-link) for host route naviga
 ## Installation
 
 ```bash
-npm install @qiankunjs/react@rc qiankun@rc
+npm install @qiankunjs/react qiankun
 ```
 
 The peer dependencies are `react` and `react-dom`, both required at `>=16.9.0`.
