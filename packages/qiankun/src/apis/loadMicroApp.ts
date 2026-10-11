@@ -1,95 +1,180 @@
-import type { ParcelConfigObject } from '@qiankunjs/single-spa';
-import { AppOrParcelStatus, mountRootParcel } from '@qiankunjs/single-spa';
-import type { ParcelConfigObjectGetter } from '../core/loadApp';
-import loadApp from '../core/loadApp';
-import type { AppConfiguration, LifeCycles, LoadableApp, MicroApp, ObjectType } from '../types';
-import { getContainerXPath, toArray } from '../utils';
+import { AppOrParcelStatus, mountRootParcel, type ParcelConfigObject } from '@qiankunjs/single-spa';
+import loadApp, { type ParcelConfigObjectGetter } from '../core/loadApp';
+import { type AppConfiguration, type LifeCycles, type LoadableApp, type MicroApp, type ObjectType } from '../types';
+import { toArray } from '../utils';
 import { start, started } from './registerMicroApps';
 
-const appConfigPromiseGetterMap = new Map<string, Promise<ParcelConfigObjectGetter>>();
-const containerMicroAppsMap = new Map<string, MicroApp[]>();
+interface Instance {
+  container: HTMLElement;
+  parcel?: MicroApp;
+  /** Tick at which unmount was requested through the handle, if it was. */
+  unmountRequestedAt?: number;
+}
+
+/**
+ * One evaluated copy of an app: a single loadApp run and the sandbox it created. Its instances
+ * (one per loadMicroApp call) take turns mounting it, one container at a time.
+ */
+interface Generation {
+  name: string;
+  entry: string;
+  /** The container of the most recent instance. */
+  container: HTMLElement;
+  config: Promise<ParcelConfigObjectGetter>;
+  /** Set once the load succeeded. */
+  getter?: ParcelConfigObjectGetter;
+  /**
+   * Instances that are mounted or waiting to mount, in call order. A generation owns one sandbox
+   * and one set of lifecycles, so it can only be mounted into one container at a time; the
+   * container gate cannot serialize that, since two instances may target different elements.
+   */
+  queue: Instance[];
+  /** Tick at which the queue last drained, so the most recently idle generation is reused first. */
+  idleSince: number;
+}
+
+/**
+ * Generations stay cached until the page goes away, like the XPath-keyed cache before them. Each
+ * name keeps at most as many generations as it ever had instances mounted at the same time.
+ */
+const generations = new Map<string, Generation[]>();
+/** Orders idle and draining generations by recency. */
+let idleTick = 0;
+
+function evict(generation: Generation): void {
+  const list = generations.get(generation.name);
+  const index = list?.indexOf(generation) ?? -1;
+  if (index >= 0) list!.splice(index, 1);
+}
+
+function leaveQueue(generation: Generation, instance: Instance): void {
+  const index = generation.queue.indexOf(instance);
+  if (index < 0) return;
+  generation.queue.splice(index, 1);
+  if (!generation.queue.length) generation.idleSince = ++idleTick;
+}
+
+/** Loaded, nothing mounted or waiting to mount, and no longer writing to any container. */
+function isIdle(generation: Generation): boolean {
+  return Boolean(generation.getter && !generation.queue.length && !generation.getter.occupiesContainer);
+}
+
+/**
+ * Draining: loaded, its entry no longer streaming, and every queued instance already mounted and
+ * asked to unmount — nothing waits to mount and no mount is in flight, only teardown remains. The
+ * unmounting predecessor may still hold its mount hold ②; that is fine, since a newcomer targets
+ * another container and waits for the predecessor in the generation queue anyway. An open load
+ * phase ① is not: the entry is still being written into the old container.
+ */
+function isDraining(generation: Generation): boolean {
+  return Boolean(
+    generation.getter &&
+    !generation.getter.loadPhaseOpen &&
+    generation.queue.length &&
+    generation.queue.every(({ parcel, unmountRequestedAt }) => {
+      const status = parcel?.getStatus();
+      return (
+        unmountRequestedAt !== undefined &&
+        (status === AppOrParcelStatus.MOUNTED || status === AppOrParcelStatus.UNMOUNTING)
+      );
+    }),
+  );
+}
+
+/** The latest unmount request among the queued instances of a draining generation. */
+function drainingSince(generation: Generation): number {
+  return Math.max(...generation.queue.map(({ unmountRequestedAt }) => unmountRequestedAt ?? 0));
+}
+
+/**
+ * Element identity serializes, the name reuses. A call joins the generation already working on
+ * the same element (so it queues behind it instead of racing it), otherwise takes over the most
+ * recently idle generation of the same app — a component that renders a fresh element on every
+ * mount keeps its warm remount — then the most recently draining one, queueing behind its
+ * unmount (a caller that swaps elements unmounts the old one before loading into the new one),
+ * and only loads from scratch when every copy is busy elsewhere. A generation that stays mounted
+ * or is about to mount is never shared across elements: that would put one sandbox into two
+ * containers at once.
+ */
+function findGeneration(name: string, entry: string, container: HTMLElement): Generation | undefined {
+  const candidates = (generations.get(name) ?? []).filter((generation) => generation.entry === entry);
+  const sameContainer = candidates.find(
+    (generation) =>
+      generation.container === container || generation.queue.some((instance) => instance.container === container),
+  );
+  if (sameContainer) return sameContainer;
+  // An idle generation mounts right away, so every idle one comes before any draining one.
+  return [
+    ...candidates.filter(isIdle).sort((a, b) => b.idleSince - a.idleSince),
+    ...candidates.filter(isDraining).sort((a, b) => drainingSince(b) - drainingSince(a)),
+  ][0];
+}
 
 export function loadMicroApp<T extends ObjectType>(
   app: LoadableApp<T>,
   configuration?: AppConfiguration,
   lifeCycles?: LifeCycles<T>,
 ): MicroApp {
-  const { props, name, container } = app;
+  const { props, name, entry, container } = app;
 
-  // Must compute the container xpath at beginning to keep it consist around app running
-  // If we compute it every time, the container dom structure most probably been changed and result in a different xpath value
-  const containerXPath = getContainerXPath(container);
-  const getContainerXPathKey = (xpath: string) => `${name}-${xpath}`;
-
-  // null after unmount cleanup so the long-lived remount closures release the parcel for GC
-  let microApp: MicroApp | null = null;
-  const wrapParcelConfigForRemount = (config: ParcelConfigObject): ParcelConfigObject => {
-    let microAppConfig = config;
-    if (containerXPath) {
-      const appContainerXPathKey = getContainerXPathKey(containerXPath);
-      const containerMicroApps = containerMicroAppsMap.get(appContainerXPathKey);
-      if (containerMicroApps?.length) {
-        const mount = [
-          async () => {
-            // While there are multiple micro apps mounted on the same container, we must wait until the prev instances all had unmounted
-            // Otherwise it will lead some concurrent issues
-            // this mount wrapper only runs after mountRootParcel below assigned the parcel
-            const prevLoadMicroApps = containerMicroApps.slice(0, containerMicroApps.indexOf(microApp as MicroApp));
-            const prevLoadMicroAppsWhichNotBroken = prevLoadMicroApps.filter(
-              (v) =>
-                v.getStatus() !== AppOrParcelStatus.LOAD_ERROR &&
-                v.getStatus() !== AppOrParcelStatus.SKIP_BECAUSE_BROKEN,
-            );
-            await Promise.all(prevLoadMicroAppsWhichNotBroken.map((v) => v.unmountPromise));
-          },
-          ...toArray(microAppConfig.mount),
-        ];
-
-        microAppConfig = {
-          ...config,
-          mount,
-        };
-      }
-    }
-
-    return {
-      ...microAppConfig,
-      // empty bootstrap hook which should not run twice while it calling from cached micro app
-      bootstrap: () => Promise.resolve(),
+  let generation = findGeneration(name, entry, container);
+  const cached = Boolean(generation);
+  if (!generation) {
+    const created: Generation = {
+      name,
+      entry,
+      container,
+      config: loadApp(app, configuration, lifeCycles),
+      queue: [],
+      idleSince: 0,
     };
-  };
+    created.config.then(
+      (getter) => {
+        created.getter = getter;
+      },
+      // A failed load leaves nothing to reuse, so the same name can retry from scratch.
+      () => evict(created),
+    );
+    generation = created;
+    let list = generations.get(name);
+    if (!list) {
+      list = [];
+      generations.set(name, list);
+    }
+    list.push(created);
+  }
+  generation.container = container;
+  const owner = generation;
 
-  /**
-   * using name + container xpath as the micro app instance id,
-   * it means if you're rendering a micro app to a dom which have been rendered before,
-   * the micro app would not load and evaluate its lifecycles again
-   */
+  const instance: Instance = { container };
+  const wrapParcelConfigForRemount = (config: ParcelConfigObject): ParcelConfigObject => ({
+    ...config,
+    // Instances of one generation share one sandbox, so they must mount one after another. The
+    // container gate only serializes a single element, and a cached getter can still adopt its
+    // original load hold while the entry stream is open, so wait for the predecessors here.
+    mount: [
+      async () => {
+        const predecessors = owner.queue.slice(0, owner.queue.indexOf(instance));
+        await Promise.all(
+          predecessors
+            .filter(
+              ({ parcel }) =>
+                parcel &&
+                parcel.getStatus() !== AppOrParcelStatus.LOAD_ERROR &&
+                parcel.getStatus() !== AppOrParcelStatus.SKIP_BECAUSE_BROKEN,
+            )
+            .map(({ parcel }) => parcel!.unmountPromise),
+        );
+      },
+      ...toArray(config.mount),
+    ],
+    // A cached micro app has already bootstrapped.
+    bootstrap: () => Promise.resolve(),
+  });
+
   const memorizedLoadingFn = async (): Promise<ParcelConfigObject> => {
-    const userConfiguration = configuration;
-
-    if (containerXPath) {
-      const appContainerXPathKey = getContainerXPathKey(containerXPath);
-      const parcelConfigGetterPromise = appConfigPromiseGetterMap.get(appContainerXPathKey);
-      if (parcelConfigGetterPromise) return wrapParcelConfigForRemount((await parcelConfigGetterPromise)(container));
-    }
-
-    const parcelConfigObjectGetterPromise = loadApp(app, userConfiguration, lifeCycles);
-
-    let parcelConfigObjectGetter: ParcelConfigObjectGetter | undefined;
-
-    if (containerXPath) {
-      const appContainerXPathKey = getContainerXPathKey(containerXPath);
-      appConfigPromiseGetterMap.set(appContainerXPathKey, parcelConfigObjectGetterPromise);
-      try {
-        parcelConfigObjectGetter = await parcelConfigObjectGetterPromise;
-      } catch (e) {
-        appConfigPromiseGetterMap.delete(appContainerXPathKey);
-        throw e;
-      }
-    }
-
-    parcelConfigObjectGetter = parcelConfigObjectGetter || (await parcelConfigObjectGetterPromise);
-    return parcelConfigObjectGetter(container);
+    const getter = await owner.config;
+    return cached ? wrapParcelConfigForRemount(getter(container)) : getter(container);
   };
 
   if (!started) {
@@ -100,28 +185,30 @@ export function loadMicroApp<T extends ObjectType>(
     start();
   }
 
+  owner.queue.push(instance);
   const mountedApp = mountRootParcel(memorizedLoadingFn, {
     domElement: document.createElement('div'),
     ...props,
   });
-  microApp = mountedApp;
+  instance.parcel = mountedApp;
+  // Recorded synchronously: single-spa only flips the status to UNMOUNTING a few ticks later, and
+  // a caller swapping elements loads into the new one right after asking the old to unmount.
+  const unmountParcel = mountedApp.unmount.bind(mountedApp);
+  mountedApp.unmount = () => {
+    instance.unmountRequestedAt = ++idleTick;
+    return unmountParcel();
+  };
 
-  if (containerXPath) {
-    const appContainerXPathKey = getContainerXPathKey(containerXPath);
-    // Store the microApps which they mounted on the same container
-    const microAppsRef = containerMicroAppsMap.get(appContainerXPathKey) || [];
-    microAppsRef.push(mountedApp);
-    containerMicroAppsMap.set(appContainerXPathKey, microAppsRef);
+  // A generation whose lifecycles never bootstrapped cannot be reused: a cached instance skips
+  // bootstrap. Load failures reject here as well and are already evicted above.
+  if (!cached) mountedApp.bootstrapPromise.catch(() => evict(owner));
 
-    const cleanup = () => {
-      const index = microAppsRef.indexOf(mountedApp);
-      microAppsRef.splice(index, 1);
-      microApp = null;
-    };
+  const cleanup = () => leaveQueue(owner, instance);
 
-    // gc after unmount
-    mountedApp.unmountPromise.then(cleanup).catch(cleanup);
-  }
+  // A source/bootstrap/mount failure never enters single-spa's unmount lifecycle. It must still
+  // leave this generation's queue, or a later instance would wait for it forever.
+  mountedApp.mountPromise.catch(cleanup);
+  mountedApp.unmountPromise.then(cleanup).catch(cleanup);
 
   return mountedApp;
 }

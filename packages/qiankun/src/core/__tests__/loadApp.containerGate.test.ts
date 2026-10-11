@@ -236,6 +236,70 @@ describe('loadApp container gate', () => {
     expect(mocks.loadEntry).toHaveBeenCalledTimes(2);
   });
 
+  it('adopts its open load hold only once', async () => {
+    const container = document.createElement('div');
+    mocks.loadEntry.mockImplementationOnce(() => Promise.resolve(validLifecycles));
+    const getParcelConfig = await loadApp(createApp('app-a', container));
+    const first = getParcelConfig(container);
+    const second = getParcelConfig(container);
+
+    await runHooks(first.mount);
+    expect(mocks.mount).toHaveBeenCalledTimes(1);
+    // The second parcel must queue at the gate behind the first one's adopted hold.
+    const secondMount = runHooks(second.mount);
+    await flushMicrotasks();
+    expect(mocks.mount).toHaveBeenCalledTimes(1);
+
+    mockSettledLoadEntry();
+    await runHooks(first.unmount);
+    await secondMount;
+    expect(mocks.mount).toHaveBeenCalledTimes(2);
+    await runHooks(second.unmount);
+  });
+
+  it('reports whether the app still occupies a container', async () => {
+    const container = document.createElement('div');
+    let settleStream: (() => void) | undefined;
+    mocks.loadEntry.mockImplementationOnce((_entry: unknown, _container: HTMLElement, opts: LoaderOpts) => {
+      settleStream = opts.onDOMStreamSettled;
+      return Promise.resolve(validLifecycles);
+    });
+    const getParcelConfig = await loadApp(createApp('app-a', container));
+    // the load hold ① stays open while the entry stream writes
+    expect(getParcelConfig.occupiesContainer).toBe(true);
+    settleStream!();
+    expect(getParcelConfig.occupiesContainer).toBe(false);
+
+    const next = document.createElement('div');
+    const parcelConfig = getParcelConfig(next);
+    mockSettledLoadEntry();
+    await runHooks(parcelConfig.mount);
+    expect(getParcelConfig.occupiesContainer).toBe(true);
+    await runHooks(parcelConfig.unmount);
+    expect(getParcelConfig.occupiesContainer).toBe(false);
+  });
+
+  it('reports the load phase as open until the entry stream settles, adopted or not', async () => {
+    const container = document.createElement('div');
+    let settleStream: (() => void) | undefined;
+    mocks.loadEntry.mockImplementationOnce((_entry: unknown, _container: HTMLElement, opts: LoaderOpts) => {
+      settleStream = opts.onDOMStreamSettled;
+      return Promise.resolve(validLifecycles);
+    });
+    const getParcelConfig = await loadApp(createApp('app-a', container));
+    expect(getParcelConfig.loadPhaseOpen).toBe(true);
+
+    // The mount adopts the open ① as its ②; the load phase stays open until the stream is done.
+    const parcelConfig = getParcelConfig(container);
+    await runHooks(parcelConfig.mount);
+    expect(getParcelConfig.loadPhaseOpen).toBe(true);
+    settleStream!();
+    expect(getParcelConfig.loadPhaseOpen).toBe(false);
+    expect(getParcelConfig.occupiesContainer).toBe(true);
+    await runHooks(parcelConfig.unmount);
+    expect(getParcelConfig.occupiesContainer).toBe(false);
+  });
+
   it('replays the entry when another app initialized the container between load and mount', async () => {
     const container = document.createElement('div');
     mockSettledLoadEntry();
