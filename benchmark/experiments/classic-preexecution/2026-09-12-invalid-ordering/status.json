@@ -1,0 +1,7 @@
+{
+  "completed": false,
+  "samples": 1264,
+  "error": "Error: browserContext.close: Target page, context or browser has been closed",
+  "stack": "browserContext.close: Target page, context or browser has been closed\n    at async runSample (/Users/kuitos/Codes/github.com/umijs/qiankun/.worktrees/cx-preexec/benchmark/classic-preexecution.mjs:245:5)\n    at async file:///Users/kuitos/Codes/github.com/umijs/qiankun/.worktrees/cx-preexec/benchmark/classic-preexecution.mjs:284:15",
+  "invalidatedReason": "Agent interrupted before inspecting outcome summaries: LCG low-bit modulo shuffle biases three-arm ordering. Excluded from conclusions; raw records retained."
+}

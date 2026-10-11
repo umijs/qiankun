@@ -54,6 +54,32 @@ pnpm --filter @qiankunjs/benchmark exec playwright install chromium
 
 ## Suites
 
+### Isolated classic preparation experiment
+
+The classic preparation experiment is separate from the cold-loading suites below. It calls the built `loadMicroApp` through an experiment-only transformer; it does not change any runtime package. Its synthetic Webpack-style UMD bundles contain roughly 100 KiB, 1 MiB, and 5 MiB of executable module graphs. Every module executes branches and loops and contributes to a checked checksum. These are controlled initialization workloads, not production framework bundles.
+
+```bash
+pnpm run build:packages
+pnpm --filter @qiankunjs/benchmark run test:classic-preexecution
+pnpm --filter @qiankunjs/benchmark run typecheck
+
+# Plumbing only, all 27 variant/scenario/size cells; never use this sample count as evidence.
+pnpm --filter @qiankunjs/benchmark run classic-preexecution --samples=1 --trials=1 --warmup=0 --calibration-samples=2
+
+# Default experiment: three independent browser trials, 20 paired rounds, two retained warmups.
+pnpm --filter @qiankunjs/benchmark run classic-preexecution
+```
+
+Each attempt creates a new BrowserContext and page. Within each paired round it uses the existing mirrored, rotated balanced schedule for the order of **cold**, **fetch only**, and **fetch plus blob-classic factory registration**. The preparation scenarios are **ready** (prepare the activated entry), **pending** (activate while its resource request is pending), and **miss** (prepare a different URL/revision). Ready and miss use a common _minimum_ lead time of 250 ms and wait for preparation; pending uses 10 ms and shares in-flight fetches without waiting for factory registration. Actual lead times and factory hits are retained: pending may become a hit by the time the script is transformed. No business code executes during registration.
+
+The host performs 30 ms of synthetic work in 5 ms tasks. In addition to activation-to-`mountPromise` and activation-to-styled-core-paint (two animation frames), measurements retain host paint, preparation duration, a fixed 500 ms timer-delay observation window, and a trusted CDP pointer input. The runner schedules that input after receiving the page's experiment-start notification, with a configurable delay of 50 ms by default. `inputAtMs` records handler receipt time relative to the page's experiment start, including notification delivery, the configured delay, and input queueing. Input-handler delay and the subsequent two-frame button update are diagnostics, **not Web Vitals INP**. JS memory is a sampled `performance.memory.usedJSHeapSize` high-water mark, **not process RSS or an exact peak**, and the post-unmount value still includes preparation caches. Custom-fetch counts and decoded bytes are recorded separately from per-path server requests; decoded bytes do not measure transferred bytes or browser HTTP-cache hit rate.
+
+The runner writes `samples.jsonl`, `calibration.jsonl`, `environment.json`, `summary.json`, `report.md`, and `status.json` under `benchmark/results/classic-preexecution/<timestamp>/`. `--output=<directory>` selects a new directory and never overwrites earlier data. Partial samples and failure status survive an aborted run; failures are not retried or discarded. A/A fetch-versus-fetch pairs use a 1 MiB anchor and the existing calibration gate; the 100 KiB fixture's few-millisecond prepared mount is too small to serve as a stable relative-overhead anchor. Failed calibration or a diagnostic profile below three trials / 20 paired rounds / 20 calibration rounds sets `performanceEvidenceValid: false`; collecting all samples does not make an invalid run performance evidence. Paired comparisons use the existing hierarchical bootstrap over browser trials and rounds, with both absolute millisecond and relative 95% intervals.
+
+Options use `--name=value`: `samples`, `trials`, `warmup`, `calibration-samples`, `calibration-size`, `ready-lead`, `pending-lead`, `latency` (per-request delay, default 20 ms), `host-work`, `interaction-window`, `input-delay`, `timeout`, `seed`, `sizes` (`100k,1m,5m`), and `scenarios` (`ready,pending,miss`). Keep these parameters, the recorded host bundle/source hashes, browser version, and fixture hashes with any comparison. Run this experiment and the existing cold benchmark serially, without tracing or other CPU-intensive work during measurements.
+
+See [the classic preparation RFC](../docs/rfcs/classic-preexecution.md) for the design and recorded results.
+
 Suites are explicit and independent; adding an ecosystem framework does not alter the frozen core schedule.
 
 | Suite | Cells | Purpose |

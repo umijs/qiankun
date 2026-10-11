@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="script-src 'self' blob: http://127.0.0.1:*; object-src 'none'; base-uri 'self'"
+    />
+    <title>qiankun classic preparation experiment</title>
+    <link rel="stylesheet" href="/src/host.css" />
+  </head>
+  <body>
+    <button
+      id="experiment-input"
+      type="button"
+      style="position: fixed; top: 8px; left: 8px; width: 120px; height: 32px; z-index: 1000"
+    >
+      Input probe
+    </button>
+    <main id="experiment-host"></main>
+    <div id="micro-app-container"></div>
+    <script type="module" src="/src/classic-preexecution.ts"></script>
+  </body>
+</html>
