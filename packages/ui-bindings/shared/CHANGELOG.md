@@ -1,5 +1,17 @@
 # @qiankunjs/ui-shared
 
+## 0.1.0-rc.3
+
+### Minor Changes
+
+- feat(ui-bindings): add MicroAppLink navigation components (#3195)
+- feat: add typed exports for published packages (#3189)
+
+### Patch Changes
+
+- Updated dependencies
+  - @qiankunjs/single-spa@0.1.0-rc.2
+
 ## 0.1.0-rc.2
 
 ### Minor Changes

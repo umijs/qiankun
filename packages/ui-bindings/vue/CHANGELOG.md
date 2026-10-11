@@ -1,5 +1,18 @@
 # @qiankunjs/vue
 
+## 0.1.0-rc.4
+
+### Minor Changes
+
+- feat(ui-bindings): add MicroAppLink navigation components (#3195)
+- feat: add typed exports for published packages (#3189)
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies
+  - @qiankunjs/ui-shared@0.1.0-rc.3
+
 ## 0.0.1-rc.3
 
 ### Patch Changes

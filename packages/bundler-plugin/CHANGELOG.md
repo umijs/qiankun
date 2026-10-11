@@ -1,5 +1,11 @@
 # @qiankunjs/webpack-plugin
 
+## 0.1.0-rc.3
+
+### Minor Changes
+
+- feat: add typed exports for published packages (#3189)
+
 ## 0.0.1-rc.2
 
 ### Patch Changes
