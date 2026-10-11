@@ -1,5 +1,22 @@
 # @qiankunjs/loader
 
+## 0.1.0-rc.23
+
+### Minor Changes
+
+- feat: add typed exports for published packages (#3189)
+- feat: add stable qiankun error codes and solution links (#3199)
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @qiankunjs/sandbox@0.1.0-rc.19
+  - @qiankunjs/shared@0.1.0-rc.15
+
 ## 0.1.0-rc.22
 
 ### Minor Changes

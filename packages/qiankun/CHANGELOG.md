@@ -1,5 +1,28 @@
 # qiankun
 
+## 3.0.0-rc.23
+
+### Minor Changes
+
+- feat(ui-bindings): add MicroAppLink navigation components (#3195)
+- feat: export the shared QiankunError from qiankun (#3198)
+- feat: add typed exports for published packages (#3189)
+- feat: add stable qiankun error codes and solution links (#3199)
+
+### Patch Changes
+
+- perf(esm-sandbox): isolate module source fetch cache (#3196)
+- refactor: narrow the public qiankun API surface (#3200)
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @qiankunjs/sandbox@0.1.0-rc.19
+  - @qiankunjs/shared@0.1.0-rc.15
+  - @qiankunjs/loader@0.1.0-rc.23
+  - @qiankunjs/single-spa@0.1.0-rc.2
+
 ## 3.0.0-rc.22
 
 ### Minor Changes
