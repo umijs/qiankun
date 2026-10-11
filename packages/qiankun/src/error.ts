@@ -1,1 +1,1 @@
-export { QiankunError } from '@qiankunjs/shared';
+export { QiankunError, type QiankunErrorCode } from '@qiankunjs/shared';
