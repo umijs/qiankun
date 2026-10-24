@@ -54,6 +54,41 @@ void microApp.mountPromise.catch((error: unknown) => {
 
 Keep the `MicroApp` handle and call `unmount()` when a successfully mounted view is removed.
 
+## Handle loading timeouts {#load-timeout}
+
+When [`loadTimeout`](/api/configuration#loadtimeout) is enabled, a loading timeout produces a `LoadAppTimeoutError`. This class is exported from `qiankun`, extends `QiankunError`, and exposes these readonly fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `appName` | `string` | Name of the micro-app whose load timed out. |
+| `loadTimeout` | `number` | Configured limit in milliseconds. |
+| `elapsed` | `number` | Actual time in milliseconds between starting the timer and triggering the timeout. |
+
+For manual loads, catch the handle Promise's rejection. Route applications can use the same type check inside a global error handler:
+
+```ts
+import { LoadAppTimeoutError, loadMicroApp } from 'qiankun';
+
+const app = loadMicroApp({ name, entry, container }, { loadTimeout: 10_000 });
+
+try {
+  await app.mountPromise;
+} catch (error) {
+  if (error instanceof LoadAppTimeoutError) {
+    reportToMonitoring(error, {
+      app: error.appName,
+      loadTimeout: error.loadTimeout,
+      elapsed: error.elapsed,
+    });
+  }
+  showFallback(container, error);
+}
+```
+
+Before rejecting the timed-out load, qiankun cancels its loading work, removes partially written nodes and the sandbox, and releases the container. Retry by calling `loadMicroApp` again to create an instance; do not remount the failed handle. `loadTimeout` covers the loading phase only, not the micro-app's `bootstrap`, `mount`, or `unmount` lifecycle.
+
+A `LoadAppTimeoutError` has the `code` `load-timeout`. An invalid timeout configuration throws a `QiankunError` with the `code` `load-timeout-invalid`. See [load-timeout: Micro app loading timed out](/errors/load-timeout) and [load-timeout-invalid: Invalid loading timeout](/errors/load-timeout-invalid) for troubleshooting.
+
 ## Handler responsibilities
 
 - Keep handlers defensive: report the error and return instead of throwing another error.

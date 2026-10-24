@@ -62,7 +62,7 @@ describe('loadMicroApp real sandbox reclamation', () => {
     vi.resetAllMocks();
   });
 
-  it('releases the host global bridge on expiry and cold-loads a previously unmounted handle', async () => {
+  it.each([0, 1_000])('reclaims and cold-loads an unmounted handle with loadTimeout %s', async (loadTimeout) => {
     const baseline = liveBridges();
     const container = document.createElement('div');
     document.body.append(container);
@@ -72,7 +72,7 @@ describe('loadMicroApp real sandbox reclamation', () => {
       container,
       props: { accountId: '42', container, entry: 'prop-entry' },
     };
-    const app = loadMicroApp(descriptor);
+    const app = loadMicroApp(descriptor, { loadTimeout });
     handles.push(app);
     await app.mountPromise;
     expect(liveBridges()).toHaveLength(baseline.length + 1);
