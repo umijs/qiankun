@@ -99,9 +99,54 @@ jobs:
             echo "No benchmark-relevant changes; performance gate skipped." >> "$GITHUB_STEP_SUMMARY"
           fi
 
+  fixture:
+    name: Build benchmark fixture
+    needs: changes
+    if: ${{ needs.changes.outputs.run == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.x
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm run build:packages
+
+      - name: Validate and build benchmark fixture
+        working-directory: benchmark
+        run: |
+          pnpm run test:unit
+          pnpm run typecheck
+          pnpm run build:fixture
+
+      # All shards must measure identical bytes, including the Vite manifest used by the fingerprint.
+      - name: Upload benchmark fixture
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: benchmark-fixture
+          path: benchmark/fixtures/host/dist/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
   shard:
     name: Benchmark shard ${{ matrix.shard }}
-    needs: changes
+    needs:
+      - changes
+      - fixture
     if: ${{ needs.changes.outputs.run == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
@@ -129,17 +174,17 @@ jobs:
       - name: Install Chromium
         run: pnpm --filter @qiankunjs/benchmark exec playwright install --with-deps chromium
 
-      - name: Build packages
-        run: pnpm run build:packages
+      - name: Download benchmark fixture
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: benchmark-fixture
+          path: benchmark/fixtures/host/dist
 
       - name: Run benchmark shard
         env:
           CI: "true"
         working-directory: benchmark
         run: |
-          pnpm run test:unit
-          pnpm run typecheck
-          pnpm run build:fixture
           node runner.mjs --suite=ci-basic --trials=2 --samples=100 --warmup=5 \
             --calibration-samples=100 --chunk-interval=50 \
             --calibration-gate=false --comparison-gate=false \

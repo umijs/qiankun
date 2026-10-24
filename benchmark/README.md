@@ -118,6 +118,8 @@ Per-trial A/A results are reported as diagnostics only: requiring every independ
 
 Hosted-runner noise has two layers, and the gate accounts for both. Browser-session state drifts between trials on one machine, which multiple independent trials absorb. Machines themselves additionally bias the sandbox-versus-native comparison by several percentage points — the two architectures stress different browser subsystems, so VM differences do not cancel in that ratio the way they do for qiankun-versus-qiankun cells. The CI workflow therefore runs **six shards on independent runner VMs, each with two browser trials and its own seed**, and a final job pools every shard's raw samples (`aggregate-shards.mjs`): shard trials are re-tagged into globally unique trial ids and judged by the same hierarchical bootstrap, so between-VM variance is part of the reported intervals. The local `pnpm benchmark:ci-basic` profile runs three trials on one machine and cannot capture the between-VM layer.
 
+The workflow validates and builds the host fixture once, then distributes that artifact, including its Vite manifest, to every shard. Independent builds can produce different chunk graphs; sharing the artifact ensures every VM measures the same bytes while retaining the strict host-bundle fingerprint check.
+
 Each trial uses five warmups, 100 paired samples per product cell, and 100 samples per A/A arm. Every sample must still satisfy the complete measurement contract, including visible styled content, lifecycle settlement, error-free loading, and cleanup. The aggregated paired-bootstrap 95% confidence-interval upper bounds must satisfy:
 
 - sandbox versus no isolation: no greater than `+10%` and no greater than `+5ms` absolute — this is the sandbox-overhead budget proper;
