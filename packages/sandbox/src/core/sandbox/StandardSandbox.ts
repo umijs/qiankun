@@ -3,18 +3,10 @@ import { Compartment, type CompartmentGlobals, type CompartmentOptions } from '.
 import { type MembraneTarget } from '../membrane';
 import { type Sandbox } from './types';
 
-const standardUnshadowableGlobalNames = [
-  'window',
-  'self',
-  'globalThis',
-  'hasOwnProperty',
-  'eval',
-  'top',
-  'parent',
-  'document',
-];
-
-const testOnlyUnshadowableGlobalNames = ['mockSafariTop', 'mockTop', 'mockGlobalThis'];
+import {
+  standardClassicGlobalNames as standardUnshadowableGlobalNames,
+  testOnlyClassicGlobalNames as testOnlyUnshadowableGlobalNames,
+} from '../compartment/classic-script';
 
 const omitReservedGlobals = (globals: CompartmentGlobals): CompartmentGlobals => {
   const reservedNames = new Set(

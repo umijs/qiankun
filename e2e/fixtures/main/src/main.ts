@@ -1,5 +1,12 @@
-import type { AppConfiguration, MicroApp } from 'qiankun';
-import { LoadAppTimeoutError, QiankunError, loadMicroApp, precompileModuleSource, unloadMicroApp } from 'qiankun';
+import type { AppConfiguration, MicroApp, ClassicPreparation, ClassicPreparationOptions } from 'qiankun';
+import {
+  LoadAppTimeoutError,
+  QiankunError,
+  loadMicroApp,
+  precompileModuleSource,
+  unloadMicroApp,
+  prepareClassicApps,
+} from 'qiankun';
 import { SUB_APP_ENTRIES } from '../../../ports';
 import { createLocalStoragePrefixPlugin } from './localStoragePrefixPlugin';
 
@@ -7,6 +14,7 @@ import { createLocalStoragePrefixPlugin } from './localStoragePrefixPlugin';
 (window as unknown as Record<string, unknown>).__MAIN_GLOBAL__ = 'value-from-main';
 
 const instances = new Map<string, MicroApp>();
+const classicPreparations = new Map<string, ClassicPreparation>();
 const hookMetrics = new Map<string, { hookCalls: number; moduleFetches: number }>();
 const entryStreamClosers = new Map<string, () => void>();
 
@@ -59,6 +67,29 @@ function resolveContainer(containerKey: string): HTMLElement {
 
 // Imperative test API driven by playwright via page.evaluate
 const testAPI = {
+  async prepareClassic(
+    key: string,
+    name: keyof typeof SUB_APP_ENTRIES = 'sub-classic',
+    options?: ClassicPreparationOptions,
+  ) {
+    const handle = prepareClassicApps([{ name, entry: SUB_APP_ENTRIES[name] }], options);
+    classicPreparations.set(key, handle);
+    return handle.ready;
+  },
+  classicPreparationStats(key: string) {
+    return classicPreparations.get(key)?.getStats();
+  },
+  disposeClassic(key: string) {
+    classicPreparations.get(key)?.dispose();
+  },
+  loadPrepared(
+    name: keyof typeof SUB_APP_ENTRIES,
+    preparationKey: string,
+    key: string,
+    configuration: AppConfiguration = {},
+  ) {
+    return this.load(name, { classicPreparation: classicPreparations.get(preparationKey), ...configuration }, key);
+  },
   /**
    * Load a sub app into a dedicated container. `key` allows multiple instances of the same app;
    * `containerKey` targets another key's container to drive cross-app shared-container scenarios.

@@ -31,6 +31,7 @@ await microApp.unmount();
 | [`addErrorHandler` / `removeErrorHandler`](/zh-CN/api/error-handling) | 注册或移除全局错误处理器。 |
 | [`LoadAppTimeoutError`](/zh-CN/api/error-handling#load-timeout) | 加载超时错误类，包含应用名称、配置时限和实际耗时。 |
 | [`isRuntimeCompatible`](/zh-CN/api/is-runtime-compatible) | 检查当前浏览器是否满足 qiankun v3 的基础运行条件。 |
+| [`prepareClassicApps`](/zh-CN/api/prepare-classic-apps) | 显式准备 classic 脚本工厂，提供预算、取消和释放；默认关闭。 |
 | [`prefetchApps`](/zh-CN/api/prefetch-apps) | 已废弃的手动预取 API。 |
 
 ## 两种加载方式

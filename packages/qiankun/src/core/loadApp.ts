@@ -21,6 +21,7 @@ import {
 import { concat, isFunction, mergeWith } from 'lodash';
 import type { ParcelConfigObject } from '@qiankunjs/single-spa';
 import getAddOns from '../addons';
+import { getClassicPreparation } from '../apis/prepareClassicApps';
 import { LoadAppTimeoutError, QiankunError } from '../error';
 import type {
   AppConfiguration,
@@ -83,6 +84,7 @@ export default async function loadApp<T extends ObjectType>(
   const {
     fetch = window.fetch,
     sandbox = true,
+    classicPreparation,
     loadTimeout = 0,
     nodeTransformer = defaultNodeTransformer,
     ...restConfiguration
@@ -107,7 +109,16 @@ export default async function loadApp<T extends ObjectType>(
   // Assets and module sources keep separate LRU pools over one transport; both caches belong to
   // this app's lifetime, so unload invalidates and cancels them together.
   const resourceFetch = makeFetchRetryable(makeFetchThrowable(fetch));
-  const enhancedFetch = makeFetchCacheable(resourceFetch, { signal });
+  // Custom pipelines, globals, plugins, and incubator realms cannot consume default-profile
+  // prepared scripts. Incompatible configurations retain the original cached path; ESM sources
+  // continue to use their module-specific cache.
+  const preparationCompatible =
+    sandboxEnabled &&
+    !configuration?.nodeTransformer &&
+    !configuration?.streamTransformer &&
+    Object.keys(sandboxConfiguration).every((key) => key === 'styleIsolation');
+  const preparation = preparationCompatible ? getClassicPreparation(classicPreparation, fetch, entry) : undefined;
+  const enhancedFetch = preparation?.bindFetch(resourceFetch, signal) ?? makeFetchCacheable(resourceFetch, { signal });
   const moduleFetch = makeFetchCacheable(resourceFetch, { scope: 'modules', signal });
 
   const markName = `[qiankun] App ${appName} Loading`;
@@ -243,6 +254,7 @@ export default async function loadApp<T extends ObjectType>(
         // its <qiankun-head>) — the entry decides whether a head exists, the sandbox provisions none
         provisionContainerHead: false,
         compartmentOptions: {
+          classicPreparation: preparation,
           moduleHost: {
             entryUrl: entry,
             // module sources get their own cache so a large module graph cannot evict entries and styles

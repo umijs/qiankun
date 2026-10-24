@@ -51,6 +51,10 @@ Provide a custom `fetch` only when authentication, proxying, or observability re
 
 See [`AppConfiguration.fetch`](/api/configuration) for the complete field reference.
 
+## Prepare classic bundles explicitly
+
+When measurements identify classic parsing and compilation on the activation critical path, call [prepareClassicApps](/api/prepare-classic-apps) and pass its handle as `classicPreparation`. Preparation runs no business code and misses use the original path. It is disabled by default; assess lead time, prediction hit rate, host contention, and release behavior alongside bundle size and HTTP caching.
+
 ## Do not port 2.x prefetch configuration
 
 - Do not call `start({ prefetch: ... })`; v3 `start()` does not accept that configuration.

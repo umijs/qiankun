@@ -31,6 +31,7 @@ When an app must activate automatically with the URL, use [`registerMicroApps`](
 | [`addErrorHandler` / `removeErrorHandler`](/api/error-handling) | Add or remove a global error handler. |
 | [`LoadAppTimeoutError`](/api/error-handling#load-timeout) | Loading timeout error class carrying the app name, configured limit, and elapsed time. |
 | [`isRuntimeCompatible`](/api/is-runtime-compatible) | Probe whether the browser supports the qiankun v3 base runtime. |
+| [`prepareClassicApps`](/api/prepare-classic-apps) | Explicitly prepare classic script factories with budgets, cancellation, and release; disabled by default. |
 | [`prefetchApps`](/api/prefetch-apps) | Deprecated manual prefetch API. |
 
 ## Two loading modes

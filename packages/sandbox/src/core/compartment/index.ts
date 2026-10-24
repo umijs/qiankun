@@ -1,8 +1,25 @@
-import { EsmSandboxEngine, QiankunError, type DocumentModule, type ModuleNamespace } from '@qiankunjs/shared';
+import {
+  EsmSandboxEngine,
+  QiankunError,
+  type DocumentModule,
+  type ModuleNamespace,
+  esmInternalPrefix,
+} from '@qiankunjs/shared';
 import { nativeDocument, nativeGlobal } from '../../consts';
 import { markNodeForNativePassthrough } from '../nativePassthrough';
 import { esmDestructurableGlobals } from '../esm-globals';
-import { globalsInES2015 } from '../globals';
+import {
+  classicScriptBody,
+  defaultClassicGlobalNames,
+  type ClassicScriptFactory,
+  type ClassicScriptPreparation,
+} from './classic-script';
+export {
+  precompileScriptSource,
+  type ScriptSource,
+  type ClassicScriptFactory,
+  type ClassicScriptPreparation,
+} from './classic-script';
 import { Membrane, type MembraneTarget } from '../membrane';
 import { array2TruthyObject } from '../utils';
 import {
@@ -31,7 +48,7 @@ type PendingClassicEvaluation = {
   cancel: () => void;
 };
 
-const defaultUnshadowableGlobalNames = globalsInES2015.concat(['requestAnimationFrame', 'cancelAnimationFrame']);
+const defaultUnshadowableGlobalNames = defaultClassicGlobalNames;
 
 declare global {
   interface Window {
@@ -54,6 +71,14 @@ export class Compartment implements CompartmentLoaderFacade {
   private readonly membrane: Membrane;
 
   private readonly transforms: CompartmentTransform[];
+
+  private classicPreparation: ClassicScriptPreparation | undefined;
+
+  private readonly preparedCalls = new Map<number, ClassicScriptFactory>();
+
+  private preparedCallCounter = 0;
+
+  private readonly classicBridge: string;
 
   private readonly unscopables: Record<string, true>;
 
@@ -82,11 +107,13 @@ export class Compartment implements CompartmentLoaderFacade {
       importHook,
       loadHook,
       transforms = [],
+      classicPreparation,
       incubatorContext = window,
       moduleHost = {},
     } = options;
     this.name = name;
     this.transforms = transforms.slice();
+    this.classicPreparation = classicPreparation;
     this.unscopables = array2TruthyObject(defaultUnshadowableGlobalNames);
     this.membrane = new Membrane(incubatorContext, this.unscopables, { globals });
 
@@ -97,6 +124,18 @@ export class Compartment implements CompartmentLoaderFacade {
     const compartmentId = compartmentCounter++;
     this.id = getCompartmentGlobalId(compartmentId);
     nativeGlobal[this.id] = this.membrane.globalThisView;
+    // Use the existing shielded internal namespace. Application globals cannot read this bridge.
+    this.classicBridge = `${esmInternalPrefix}classic_${this.id}${classicPreparation ? `_${nativeGlobal.crypto.getRandomValues(new Uint32Array(4)).join('_')}` : ''}`;
+    if (classicPreparation)
+      Object.defineProperty(nativeGlobal, this.classicBridge, {
+        configurable: true,
+        value: (token: number) => {
+          this.assertAlive();
+          const factory = this.preparedCalls.get(token);
+          this.preparedCalls.delete(token);
+          if (factory) factory(this.globalThis).call(this.globalThis);
+        },
+      });
 
     const defaultFetch = nativeGlobal.fetch.bind(nativeGlobal);
     const {
@@ -170,10 +209,19 @@ export class Compartment implements CompartmentLoaderFacade {
    * Resolution only indicates that the browser finished executing the blob script.
    */
   async evaluateScript(source: string, options: EvaluateScriptOptions = {}): Promise<void> {
-    const code = this.transformClassicScript(source, options.sourceURL);
+    let releasePrepared = () => {};
+    const code = this.transformClassicScript(source, options.sourceURL, (cleanup) => {
+      releasePrepared = cleanup;
+    });
     this.warnAboutUnsafeClassicSelfReference();
     const script = nativeDocument.createElement('script');
-    const blobUrl = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
+    let blobUrl: string;
+    try {
+      blobUrl = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
+    } catch (error) {
+      releasePrepared();
+      throw error;
+    }
 
     // The script is already transformed. Prevent the dynamic-append pipeline from
     // fetching and wrapping this internal blob a second time.
@@ -187,6 +235,7 @@ export class Compartment implements CompartmentLoaderFacade {
       };
       const cleanup = () => {
         this.pendingClassicEvaluations.delete(pending);
+        releasePrepared();
         script.onload = null;
         script.onerror = null;
         script.remove();
@@ -261,6 +310,9 @@ export class Compartment implements CompartmentLoaderFacade {
     // Revoke the generated-script receiver first: even if later cleanup fails,
     // already queued classic scripts can no longer fall through to the host global.
     delete nativeGlobal[this.id];
+    Reflect.deleteProperty(nativeGlobal, this.classicBridge);
+    this.preparedCalls.clear();
+    this.classicPreparation = undefined;
     Array.from(this.pendingClassicEvaluations).forEach(({ cancel }) => cancel());
     this.pendingClassicEvaluations.clear();
     try {
@@ -281,9 +333,9 @@ export class Compartment implements CompartmentLoaderFacade {
    * script node. Unlike evaluateScript(), this prepares code without scheduling
    * a second script element.
    */
-  transformClassicScript(source: string, sourceURL?: string): string {
+  transformClassicScript(source: string, sourceURL?: string, registerCleanup?: (cleanup: () => void) => void): string {
     this.assertAlive();
-    return this.prepareClassicScript(source, sourceURL);
+    return this.prepareClassicScript(source, sourceURL, registerCleanup);
   }
 
   protected lockGlobalThis(): void {
@@ -299,18 +351,28 @@ export class Compartment implements CompartmentLoaderFacade {
     return this.membrane.modifications;
   }
 
-  private prepareClassicScript(source: string, sourceURL?: string): string {
+  private prepareClassicScript(
+    source: string,
+    sourceURL?: string,
+    registerCleanup?: (cleanup: () => void) => void,
+  ): string {
     const transformedSource = this.transforms.reduce((result, transform) => transform(result), source);
-    const sourceMapURL = sourceURL ? `//# sourceURL=${sourceURL}\n` : '';
-    const globalObjectOptimizer = this.unshadowableGlobalNames.length
-      ? `const {${this.unshadowableGlobalNames.join(',')}} = this;`
-      : '';
-
-    // Resolve the compartment view before entering the non-strict `with` wrapper. Calling that
-    // wrapper with an absent receiver would coerce `this` to the real window, so disposal must
-    // fail closed for scripts the browser had already queued.
-    // eslint-disable-next-line max-len
-    return `;(function(compartmentGlobalThis){if(!compartmentGlobalThis){return;}(function(){with(this){${globalObjectOptimizer}${transformedSource}\n${sourceMapURL}}}).call(compartmentGlobalThis);})(window.${this.id});`;
+    const prepared =
+      this.transforms.length === 0 && sourceURL
+        ? this.classicPreparation?.get(source, sourceURL, this.unshadowableGlobalNames)
+        : undefined;
+    if (prepared) {
+      const token = this.preparedCallCounter++;
+      this.preparedCalls.set(token, prepared);
+      registerCleanup?.(() => {
+        this.preparedCalls.delete(token);
+      });
+      // The bridge pins only this queued evaluation. Cache disposal cannot invalidate a script
+      // already scheduled by the loader; compartment disposal clears both bridge and pins.
+      return `;(function(view){if(view&&typeof window[${JSON.stringify(this.classicBridge)}]==='function'){window[${JSON.stringify(this.classicBridge)}](${String(token)});}})(window.${this.id});`;
+    }
+    // Resolve the receiver before entering with: a missing receiver must never become the host.
+    return `;(function(compartmentGlobalThis){if(!compartmentGlobalThis){return;}(function(){${classicScriptBody(transformedSource, sourceURL, this.unshadowableGlobalNames)}}).call(compartmentGlobalThis);})(window.${this.id});`;
   }
 
   private getModuleEngine(): EsmSandboxEngine {
