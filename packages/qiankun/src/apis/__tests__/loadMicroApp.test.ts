@@ -32,6 +32,8 @@ function getterOf(
 ) {
   const getter = (container: HTMLElement) => config(container);
   return Object.defineProperties(getter, {
+    dispose: { value: mocks.dispose },
+    loadPhaseSettled: { value: Promise.resolve() },
     occupiesContainer: { get: occupied },
     loadPhaseOpen: { get: loadPhaseOpen },
   }) as ParcelConfigObjectGetter;
@@ -72,6 +74,7 @@ describe('loadMicroApp instance reuse', () => {
     for (const parcel of parcels) {
       if (parcel.getStatus() === AppOrParcelStatus.MOUNTED) await parcel.unmount();
     }
+    for (const parcel of parcels) await parcel.unload().catch(() => undefined);
     parcels.length = 0;
     document.body.replaceChildren();
     vi.resetAllMocks();
@@ -868,12 +871,50 @@ describe('loadMicroApp instance reuse', () => {
     expect(unmount).toHaveBeenCalledTimes(1);
   });
 
+  it('waits for an entered update before unmounting and handing the instance to a new container', async () => {
+    const entered = new Deferred<void>();
+    const updating = new Deferred<void>();
+    mocks.loadApp.mockImplementationOnce(async () =>
+      getterOf(() => ({
+        bootstrap,
+        mount,
+        unmount,
+        update: async () => {
+          entered.resolve();
+          await updating.promise;
+        },
+      })),
+    );
+    const [former, next] = containers(2);
+    const first = load(former);
+    await first.mountPromise;
+    const updatePromise = first.update!({});
+    await entered.promise;
+    expect(first.getStatus()).toBe(AppOrParcelStatus.UPDATING);
+
+    const firstUnmount = first.unmount();
+    const second = load(next);
+    await second.bootstrapPromise;
+    expect(unmount).not.toHaveBeenCalled();
+    expect(mount).toHaveBeenCalledTimes(1);
+
+    updating.resolve();
+    await updatePromise;
+    await expect(firstUnmount).resolves.toBeNull();
+    await second.mountPromise;
+    expect(first.getStatus()).toBe(AppOrParcelStatus.NOT_MOUNTED);
+    expect(second.getStatus()).toBe(AppOrParcelStatus.MOUNTED);
+    expect(unmount).toHaveBeenCalledTimes(1);
+    expect(mocks.loadApp).toHaveBeenCalledTimes(1);
+    expect(mount).toHaveBeenCalledTimes(2);
+  });
+
   it('drains an entered update before unmount and terminal disposal', async () => {
     const updating = new Deferred<void>();
     const update = vi.fn(() => updating.promise);
     mocks.loadApp.mockImplementationOnce(async (_app, _configuration, _lifeCycles, control) => {
       control.onDispose(mocks.dispose);
-      return () => ({ bootstrap, mount, unmount, update });
+      return getterOf(() => ({ bootstrap, mount, unmount, update }));
     });
     const app = load(document.createElement('div'));
     await app.mountPromise;

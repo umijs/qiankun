@@ -37,13 +37,13 @@ The entry should declare only resources needed by this app and contain at most o
 
 ### 3. Keep app names stable
 
-When the same app mounts again, qiankun reuses an unmounted instance by `name`: even into a newly created container node, it does not load and execute the entry again. A `name` should therefore always refer to the same app; do not generate a different name for the same app on every render.
+When the same app mounts again, qiankun looks for a reusable instance by `name` and `entry`. A cache hit skips entry execution and `bootstrap`, even with a newly created container node; if the cache entry was reclaimed and no other instance can be reused, qiankun reloads the app. A `name` should always refer to the same app; do not generate a different name on every render. See [Run multiple micro-app instances](/cookbook/run-multiple-instances) for idle pool capacity and time limits.
 
 For concurrent instances, give every instance its own container and follow the [multiple-instances guide](/cookbook/run-multiple-instances).
 
 ### 4. Create per-mount state inside `mount`
 
-Do not rely on module top-level code running again on remount. Create the application instance, router, and per-instance store inside `mount()`, then destroy them in `unmount()`. Reusing loaded work will then not preserve stale state or lose mount-time effects.
+A remount may reuse a cached instance or reload after reclamation. Create the application instance, router, and per-instance store inside `mount()`, then destroy them in `unmount()`, rather than depending on how many times module top-level code executes. Reusing loaded work will then not preserve stale state or lose mount-time effects.
 
 ### 5. Override `fetch` carefully
 

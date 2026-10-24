@@ -137,3 +137,7 @@ export async function readMainRealmGlobal(page: Page, prop: string): Promise<unk
 export async function countLiveCompartments(page: Page): Promise<number> {
   return page.evaluate(() => (window as unknown as E2EWindow).__E2E__.liveCompartments());
 }
+
+export async function remountApp(page: Page, key: string): Promise<string> {
+  return page.evaluate((key) => (window as E2EWindow).__E2E__.remount(key), key);
+}

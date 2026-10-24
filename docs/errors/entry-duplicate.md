@@ -17,4 +17,4 @@ Keep the `entry` attribute only on the actual app entry. Other scripts can remai
 ## Related
 
 - [Error codes and solutions](/errors/)
-- [entry-duplicate：入口脚本重复](/zh-CN/errors/entry-duplicate)
+- [entry-duplicate：`entry` 脚本重复](/zh-CN/errors/entry-duplicate)

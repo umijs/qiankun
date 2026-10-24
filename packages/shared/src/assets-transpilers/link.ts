@@ -188,6 +188,30 @@ const postProcessPreloadLink = (link: HTMLLinkElement, baseURI: string, opts: As
   }
 };
 
+/** Pending links need terminal cancellation, but must not keep detached DOM alive. */
+function trackPendingLink(link: HTMLLinkElement, owner: object): void {
+  const scope = getAssetScope(owner);
+  const reference = new WeakRef(link);
+  const settled = () => {
+    scope.cleanups.delete(cancel);
+    const element = reference.deref();
+    element?.removeEventListener('load', settled);
+    element?.removeEventListener('error', settled);
+  };
+  const cancel = () => {
+    settled();
+    const element = reference.deref();
+    if (element) {
+      element.onload = element.onerror = null;
+      element.remove();
+      element.removeAttribute('href');
+    }
+  };
+  scope.cleanups.add(cancel);
+  link.addEventListener('load', settled);
+  link.addEventListener('error', settled);
+}
+
 export default function transpileLink(
   link: HTMLLinkElement,
   baseURI: string,
@@ -196,11 +220,7 @@ export default function transpileLink(
   const owner = opts.compartment ?? opts.fetch;
   const assetScope = getAssetScope(owner);
   assetScope.controller.signal.throwIfAborted();
-  assetScope.cleanups.add(() => {
-    link.onload = link.onerror = null;
-    link.remove();
-    link.removeAttribute('href');
-  });
+  trackPendingLink(link, owner);
   const hrefAttribute = link.getAttribute('href');
 
   /*

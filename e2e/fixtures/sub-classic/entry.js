@@ -7,6 +7,7 @@
   var bootstrapCount = 0;
   var mountCount = 0;
   var unmountCount = 0;
+  var bootstrapContext;
 
   // pollute the sandboxed window; must never be visible from the main realm
   global.__CLASSIC_POLLUTION__ = 'from-sub-classic';
@@ -37,8 +38,9 @@
   }
 
   global['sub-classic'] = {
-    bootstrap: function () {
+    bootstrap: function (context) {
       bootstrapCount++;
+      bootstrapContext = context;
       return Promise.resolve();
     },
     mount: function (props) {
@@ -69,6 +71,15 @@
         '<p data-testid="storage-plugin-meta-result">' +
         String(global.__E2E_STORAGE_META_RESULT__ ?? 'missing') +
         '</p>';
+      var probe = document.createElement('p');
+      probe.dataset.testid = 'classic-bootstrap-context';
+      probe.textContent = JSON.stringify({
+        keys: Object.keys(bootstrapContext).sort(),
+        name: bootstrapContext.name,
+        entry: bootstrapContext.entry,
+        frozen: Object.isFrozen(bootstrapContext),
+      });
+      root.appendChild(probe);
       return Promise.resolve();
     },
     unmount: function () {

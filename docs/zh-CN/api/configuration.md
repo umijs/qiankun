@@ -60,7 +60,7 @@ type SandboxConfiguration = Pick<
 | --- | --- | --- | --- |
 | `styleIsolation` | `boolean` | `false` | 启用运行时 CSS 隔离，使用 CSS `@scope` 将微应用样式的作用域限制在应用容器内。 |
 | `globals` | `Record<string, unknown \| PropertyDescriptor>` | `{}` | 安装到该应用 compartment 全局对象上的值或属性描述符，不会修改宿主 `window`。 |
-| `incubatorContext` | `WindowProxy` | `window` | 孵化该沙箱的宿主上下文，即沙箱未遮蔽的属性所透读的全局对象。 |
+| `incubatorContext` | `WindowProxy` | `window` | 创建沙箱所用的宿主全局对象；沙箱中未被遮蔽的属性从该对象读取。 |
 | `plugins` | `readonly IsolationPlugin[]` | `[]` | 追加在 qiankun 内置插件之后的隔离插件。 |
 | `modules` / `resolveHook` / `importHook` / `loadHook` | Compartment 模块钩子 | `undefined` | 沙箱内 ESM 的模块解析与加载钩子，属于高级用法。 |
 
@@ -93,7 +93,7 @@ configuration: {
 
 ### sandbox.incubatorContext
 
-默认值为 `window`，表示孵化该沙箱的宿主上下文，即沙箱未遮蔽的属性所透读的全局对象。该命名沿用 ShadowRealm 提案中的「incubator realm」。常规的单窗口场景无需配置此项；当宿主环境的基础执行域不是顶层 `window` 时，可通过此项指定相应的全局对象。
+默认值为 `window`，表示创建沙箱所用的宿主全局对象；沙箱中未被遮蔽的属性从该对象读取。该命名沿用 ShadowRealm 提案中的「incubator realm」。常规的单窗口场景无需配置此项；当宿主环境的基础执行域不是顶层 `window` 时，可通过此项指定相应的全局对象。
 
 ### sandbox.plugins
 

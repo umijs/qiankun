@@ -27,8 +27,8 @@ describe('registerMicroApps', () => {
   // the classic `bootstrap` lifecycle must have it invoked on the registerMicroApps path, where
   // upstream v7 would silently ignore it.
   it('invokes a micro app bootstrap lifecycle on the registerMicroApps path', async () => {
-    const bootstrap = vi.fn(async (): Promise<void> => {});
-    const mount = vi.fn(async (): Promise<void> => {});
+    const bootstrap = vi.fn(async (_context: unknown): Promise<void> => {});
+    const mount = vi.fn(async (_props: unknown): Promise<void> => {});
     const unmount = vi.fn(async (): Promise<void> => {});
 
     mocks.createSandbox.mockReturnValue({
@@ -51,6 +51,7 @@ describe('registerMicroApps', () => {
         name: 'legacy-bootstrap-app',
         entry: '/legacy-bootstrap.html',
         container,
+        props: { accountId: '42', entry: 'prop-entry', container: document.createElement('div') },
         activeRule: () => true,
       },
     ]);
@@ -58,7 +59,10 @@ describe('registerMicroApps', () => {
     await triggerAppChange();
 
     expect(bootstrap).toHaveBeenCalledTimes(1);
+    expect(bootstrap.mock.calls[0][0]).toEqual({ name: 'legacy-bootstrap-app', entry: '/legacy-bootstrap.html' });
+    expect(Object.isFrozen(bootstrap.mock.calls[0][0])).toBe(true);
     expect(mount).toHaveBeenCalledTimes(1);
+    expect(mount.mock.calls[0][0]).toMatchObject({ accountId: '42', container });
   });
 
   it('applies the per-app loadTimeout of a registered application', async () => {

@@ -49,7 +49,7 @@ type RegistrableApp<T extends ObjectType> = {
 | `entry` | `string` | 是 | 微应用 HTML 入口的 URL，例如 `//localhost:7100`。v3 仅支持字符串形式的 HTML 地址，不再支持 2.x 的 `{ scripts, styles }` 对象形式。 |
 | `container` | `HTMLElement` | 是 | 用于挂载微应用的实际 DOM 元素，不能使用选择器字符串。可传入框架 ref 对应的节点，或 `document.getElementById(...)` 的返回值。 |
 | `activeRule` | `string \| ActivityFn \| Array<string \| ActivityFn>` | 是 | 应用的激活条件，将直接传递给 single-spa 的 `activeWhen`。字符串表示路径前缀；函数 `(location) => boolean` 可自定义匹配逻辑；数组中的任意一项匹配即可激活应用。 |
-| `props` | `T` | 否 | 每次调用生命周期（`bootstrap`、`mount`、`unmount`、`update`）时传给微应用的数据。 |
+| `props` | `T` | 否 | 传递给 `mount`、`unmount` 和可选 `update` 的业务数据；`bootstrap` 仅接收稳定的 `name` 和 `entry`。 |
 | `loader` | `(loading: boolean) => void` | 否 | 报告加载状态。资源开始加载或应用开始挂载时收到 `true`，挂载完成后收到 `false`。调用方应根据参数值更新当前加载状态，不应根据回调次数推断状态。 |
 | `configuration` | `AppConfiguration` | 否 | 单个应用的运行时配置：`sandbox`、`styleIsolation`、`fetch` 等。见 [AppConfiguration](/zh-CN/api/configuration) 和[应用级配置](#应用级配置)。 |
 
@@ -195,7 +195,7 @@ export default function App() {
 
 `name` 是 qiankun 和 single-spa 识别路由注册应用的标识，用于注册去重和运行时记录。不同应用不能共用同一名称，同一应用在多次注册时也应保持名称不变。
 
-入口脚本带有正确标记时，qiankun 会从入口执行结果中解析生命周期：ESM 应用读取模块导出，Classic 应用读取入口脚本的导出值。正常解析流程不要求 `name` 与 `packageName` 或 Webpack 的 `output.library.name` 相同。
+导出生命周期的脚本带有 `entry` 属性时，qiankun 会从入口执行结果中解析生命周期：ESM 应用读取模块导出，Classic 应用读取入口脚本的导出值。正常解析流程不要求 `name` 与 `packageName` 或 Webpack 的 `output.library.name` 相同。
 
 仅当入口结果中不存在有效的生命周期对象时，qiankun 才会进入兼容分支，并尝试从该应用自身全局对象上的 `global[appName]` 读取生命周期。如需依赖该兼容逻辑，全局变量的属性名必须与 `name` 相同；不应将其作为常规命名约定。完整查找顺序见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
 

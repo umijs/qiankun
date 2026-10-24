@@ -15,6 +15,7 @@ import type {
   LifeCycles,
   MicroApp,
   MicroAppLifeCycles,
+  BootstrapContext,
   PrefetchStrategy,
 } from 'qiankun';
 ```
@@ -43,6 +44,7 @@ See [Migrate from qiankun 2.x](/cookbook/migrate-from-2x) for the full list.
 | `LifeCycleFn<T>` | `(app, global) => Promise<void>` | A single framework lifecycle hook. |
 | `LifeCycles<T>` | `{ beforeLoad?; beforeMount?; afterMount?; beforeUnmount?; afterUnmount? }` | Framework hooks. See [Lifecycle hooks](/api/lifecycles). |
 | `MicroApp` | single-spa `Parcel & { unload() }` | The handle returned by `loadMicroApp`. |
+| `BootstrapContext` | `Readonly<AppMetadata>` | Stable initialization context for `bootstrap`, containing only `name` and `entry`. |
 | `MicroAppLifeCycles` | `{ bootstrap; mount; unmount; update? }` | The lifecycle exports a micro-app itself provides. |
 | `PrefetchStrategy` | `boolean \| 'all' \| string[] \| fn` | Exported for legacy compatibility; unused by any v3 API. |
 
@@ -102,7 +104,7 @@ The descriptor for an app you mount imperatively with [`loadMicroApp`](/api/load
 | `name` | `string` | Application identifier. Separate `loadMicroApp` instances may reuse it when they use different containers. |
 | `entry` | `HTMLEntry` | HTML entry URL. |
 | `container` | `HTMLElement` | The DOM element the app mounts into. Must be an element, not a selector. |
-| `props` | `T` (optional) | Props forwarded to the micro-app's lifecycle exports. |
+| `props` | `T` (optional) | Business data passed to `mount`, `unmount`, and optional `update`, excluding `bootstrap`. |
 
 ```ts
 import { loadMicroApp } from 'qiankun';
@@ -285,25 +287,36 @@ console.log(app.getStatus()); // 'MOUNTED'
 await app.unmount();
 ```
 
+## BootstrapContext
+
+```ts
+export type BootstrapContext = Readonly<AppMetadata>;
+// { readonly name: string; readonly entry: HTMLEntry }
+```
+
+qiankun snapshots and freezes this identity when loading an app. It contains no business props, `container`, `domElement`, `mountParcel`, or `unmountSelf`. Warm reuse skips `bootstrap`; a cold load after cache reclamation creates a new initialization context.
+
 ## MicroAppLifeCycles
 
 ```ts
 type ExtraProps = { container: HTMLElement };
-export type MicroAppLifeCycles = FlattenArrayValue<ParcelLifeCycles<ExtraProps>>;
+export type MicroAppLifeCycles = Omit<FlattenArrayValue<ParcelLifeCycles<ExtraProps>>, 'bootstrap'> & {
+  bootstrap: (context: BootstrapContext) => Promise<unknown>;
+};
 ```
 
 The shape of the lifecycle object a micro-app exports for qiankun to drive it. After flattening single-spa's array form, it resolves to:
 
 ```ts
 type MicroAppLifeCycles = {
-  bootstrap: (props) => Promise<void>;
+  bootstrap: (context: BootstrapContext) => Promise<unknown>;
   mount: (props) => Promise<void>;
   unmount: (props) => Promise<void>;
   update?: (props) => Promise<void>;
 };
 ```
 
-Every lifecycle receives the data passed through `props`. qiankun additionally injects `container: HTMLElement` only when it calls `mount` and `unmount`; `bootstrap` and `update` should not rely on that field. A micro-app's entry exports these:
+`bootstrap` receives only the stable initialization context above. Business props are passed to `mount`, `unmount`, and optional `update`; qiankun additionally injects `container: HTMLElement` only for `mount` and `unmount`. A micro-app's entry exports these:
 
 ```ts
 let root: { unmount(): void } | null = null;

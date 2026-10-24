@@ -94,7 +94,7 @@ React 绑定会将 `<MicroApp>` 上的附加 prop 传递给微应用，Vue 绑�
 
 ### `settings`（AppConfiguration）
 
-`settings` 与 [`loadMicroApp`](/zh-CN/api/load-micro-app) 的第二个参数结构相同。完整定义参见 [AppConfiguration](/zh-CN/api/configuration)，字段为 `fetch`、`streamTransformer`、`nodeTransformer` 和 `sandbox`（默认值为 `true`）。样式隔离、额外全局变量、孵化上下文和隔离插件均位于 `sandbox` 对象内部。
+`settings` 与 [`loadMicroApp`](/zh-CN/api/load-micro-app) 的第二个参数结构相同。完整定义参见 [AppConfiguration](/zh-CN/api/configuration)，字段为 `fetch`、`streamTransformer`、`nodeTransformer` 和 `sandbox`（默认值为 `true`）。样式隔离、额外全局变量、宿主全局对象（`incubatorContext`）和隔离插件均位于 `sandbox` 对象内部。
 
 ```vue
 <template>
@@ -125,7 +125,7 @@ const appProps = reactive({ userId: 42, theme: 'dark' });
 </template>
 ```
 
-这些数据会作为 `props` 参数传给微应用导出的生命周期函数：
+这些数据会作为 `props` 参数传给微应用的 `mount`、`unmount` 和可选的 `update`；`bootstrap` 只接收稳定的初始化上下文：
 
 ```ts
 // 微应用内部

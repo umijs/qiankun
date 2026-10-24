@@ -24,6 +24,7 @@ import getAddOns from '../addons';
 import { LoadAppTimeoutError, QiankunError } from '../error';
 import type {
   AppConfiguration,
+  BootstrapContext,
   LifeCycleFn,
   LifeCycles,
   LoadableApp,
@@ -44,7 +45,9 @@ import { acquireContainer, isContainerHeld, type ContainerHold } from './contain
 declare const __QIANKUN_VERSION__: string;
 
 export interface ParcelConfigObjectGetter {
-  (mountContainer: HTMLElement): ParcelConfigObject;
+  (mountContainer: HTMLElement, mountApp?: LoadableApp<ObjectType>): ParcelConfigObject;
+  readonly loadPhaseSettled: Promise<void>;
+  dispose(): Promise<void>;
   /**
    * Whether the app still holds any container occupancy — its load hold ① or a mount hold ②.
    * An occupying app is still writing to (or mounted in) a container and must not be rebound.
@@ -70,6 +73,9 @@ export default async function loadApp<T extends ObjectType>(
   control: LoadAppControl = {},
 ): Promise<ParcelConfigObjectGetter> {
   const { name: appName, entry, container, loader } = app;
+  // Snapshot only the evaluated instance's identity. Never forward Parcel custom props or
+  // per-mount capabilities to one-time initialization, even if their names collide.
+  const bootstrapContext: BootstrapContext = Object.freeze({ name: appName, entry });
   const defaultNodeTransformer: AppConfiguration['nodeTransformer'] = (node, opts) => {
     const moduleResolver = (url: string) => defaultModuleResolver(url, microAppDOMContainer, document.head);
     return transpileAssets(node, entry, { ...opts, moduleResolver });
@@ -297,9 +303,11 @@ export default async function loadApp<T extends ObjectType>(
    */
   let entryLifecyclesSettled = false;
   let domStreamSettled = false;
+  const loadPhaseSettled = new Deferred<void>();
   const domStreamFinished = new Deferred<void>();
   let loadingSetupSettled = loadTimeout === 0;
   const releaseLoadHoldWhenSettled = () => {
+    if (entryLifecyclesSettled && domStreamSettled) loadPhaseSettled.resolve();
     // an adopted hold lives on as the mount hold ② and is no longer the latch's to release
     if (
       entryLifecyclesSettled &&
@@ -387,8 +395,9 @@ export default async function loadApp<T extends ObjectType>(
   });
   const { bootstrap, mount, unmount, update, beforeUnmount, afterUnmount, afterMount, beforeMount } = lifecycleSetup;
 
-  const getParcelConfig = (mountContainer: HTMLElement): ParcelConfigObject => {
+  const getParcelConfig = (mountContainer: HTMLElement, mountApp = app): ParcelConfigObject => {
     signal.throwIfAborted();
+    const hookApp = { ...mountApp, container: mountContainer };
     // ② mount→unmount occupancy period. Regular release is the clearContainer step at the end of
     // the unmount chain, but single-spa marks an app SKIP_BECAUSE_BROKEN after a mount OR unmount
     // failure and never runs the rest of its chains — without the failure fallback below, the
@@ -451,10 +460,9 @@ export default async function loadApp<T extends ObjectType>(
     const parcelConfig: ParcelConfigObject = {
       name: appName,
 
-      // MicroAppLifeCycles types every lifecycle with `container` props, but single-spa only
-      // passes it to the mount/unmount wrappers below (via closure); bootstrap runs before any
-      // container exists, so its narrower props type is asserted away here
-      bootstrap: bootstrap as ParcelConfigObject['bootstrap'],
+      bootstrap: async () => {
+        await bootstrap(bootstrapContext);
+      },
 
       mount: [
         // The indicator spans the whole chain — the gate wait included — and sits inside the
@@ -533,13 +541,13 @@ export default async function loadApp<T extends ObjectType>(
           await mountSandbox(mountContainer);
         },
         // exec the chain after rendering to keep the behavior with beforeLoad
-        async () => execHooksChain(toArray(beforeMount), app, global),
+        async () => execHooksChain(toArray(beforeMount), hookApp, global),
         async (props) => {
           appMountStarted = true;
           await mount({ ...props, container: mountContainer });
         },
         // finish loading after app mounted
-        async () => execHooksChain(toArray(afterMount), app, global),
+        async () => execHooksChain(toArray(afterMount), hookApp, global),
         async () => {
           if (process.env.NODE_ENV === 'development') {
             const measureName = `[qiankun] App ${appName} Loading Consuming`;
@@ -553,13 +561,13 @@ export default async function loadApp<T extends ObjectType>(
       ],
 
       unmount: [
-        async () => execHooksChain(toArray(beforeUnmount), app, global),
+        async () => execHooksChain(toArray(beforeUnmount), hookApp, global),
         async (props) => {
           if (appMountStarted) await unmount({ ...props, container: mountContainer });
           appMountStarted = false;
         },
         unmountSandbox,
-        async () => execHooksChain(toArray(afterUnmount), app, global),
+        async () => execHooksChain(toArray(afterUnmount), hookApp, global),
         async () => {
           // only while still holding ②: after a fallback release the container may belong to a
           // later app already, and clearing it here would destroy that app's live DOM
@@ -585,7 +593,7 @@ export default async function loadApp<T extends ObjectType>(
     if (typeof update === 'function') {
       // Guarded like the chains above: single-spa marks a parcel whose update rejects
       // SKIP_BECAUSE_BROKEN and refuses to unmount it, so nothing downstream would release ②.
-      // Same props-type mismatch as bootstrap above: update receives parcel customProps at runtime.
+      // Unlike mount/unmount, update receives parcel customProps without an injected container.
       parcelConfig.update = guardHooksWithMountHoldRelease(toArray(update))[0] as ParcelConfigObject['update'];
     }
 
@@ -593,6 +601,8 @@ export default async function loadApp<T extends ObjectType>(
   };
 
   return Object.defineProperties(getParcelConfig, {
+    loadPhaseSettled: { value: loadPhaseSettled.promise },
+    dispose: { value: dispose },
     occupiesContainer: { get: () => holds.size > 0 },
     loadPhaseOpen: { get: () => !(entryLifecyclesSettled && domStreamSettled) },
   }) as ParcelConfigObjectGetter;

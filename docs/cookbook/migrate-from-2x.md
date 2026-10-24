@@ -260,7 +260,9 @@ For a new project, the [Agent skill](/ecosystem/agent-skill) lets a coding agent
 
 ## Micro-app entry: render into props.container with a modern API
 
-The lifecycle contract is unchanged — still `bootstrap`, `mount`, `unmount` — but render with a modern API and mount into `props.container` (the app's own container subtree), not the global document. Export the lifecycle functions normally. The bundler plugin exposes a webpack build under its `packageName` and marks the entry script; native ESM builds use the module exports directly.
+The lifecycle names remain `bootstrap`, `mount`, and `unmount`. Render with a modern API and mount into `props.container` (the app's own container subtree), not the global document. Export the lifecycle functions normally. The bundler plugin exposes a webpack build under its `packageName` and marks the entry script; native ESM builds use the module exports directly.
+
+`bootstrap` now receives only a readonly `{ name, entry }`, without business props or a container. Move user data, route state, and DOM initialization from an existing bootstrap into `mount`, release resources in `unmount`, and handle subsequent data changes through `update`. See [Micro-app lifecycle and props](/concepts/lifecycle-and-props).
 
 ::: code-group
 ```tsx [2.x main.tsx]

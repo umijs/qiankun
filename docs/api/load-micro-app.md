@@ -29,7 +29,7 @@ Describes which micro-app to load and where to mount it.
 | `name` | `string` | yes | Micro-app name. Multiple instances may reuse it; concurrently mounted instances still need separate containers. |
 | `entry` | `string` | yes | URL of the micro-app's HTML entry. Always a string — the 2.x object form (`{ scripts, styles }`) does not exist in v3. |
 | `container` | `HTMLElement` | yes | The DOM element to render into. Must be an actual element, not a CSS-selector string. |
-| `props` | `T` | no | Data passed through to the micro-app's lifecycle functions. |
+| `props` | `T` | no | Business data passed to `mount`, `unmount`, and optional `update`, excluding `bootstrap`. |
 
 ```ts
 type ObjectType = Record<string, unknown>;
@@ -43,7 +43,9 @@ type LoadableApp<T extends ObjectType> = {
 ```
 
 ::: warning `container` must be an element
+
 In qiankun v3, `container` is an `HTMLElement`, not a `string | HTMLElement`. Resolve the element yourself (`document.getElementById(...)`, a framework ref, etc.) before passing it. A selector string is a type error and will not work at runtime.
+
 :::
 
 ### `configuration?: AppConfiguration`
@@ -59,11 +61,10 @@ Per-app options. All fields are optional; the defaults below are resolved intern
 | `nodeTransformer` | `NodeTransformer` | internal default | Rewrites each script/link/style node before it hits live DOM. Override only for advanced cases. |
 
 ```ts
-type AppConfiguration =
-  Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
-    sandbox?: boolean | SandboxConfiguration;
-    loadTimeout?: number;
-  };
+type AppConfiguration = Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
+  sandbox?: boolean | SandboxConfiguration;
+  loadTimeout?: number;
+};
 ```
 
 `sandbox` is the single umbrella for isolation. Its object form carries `styleIsolation`, `globals`, `incubatorContext`, `plugins`, and the Compartment module hooks:
@@ -131,7 +132,7 @@ type Parcel = {
 | Member | Description |
 | --- | --- |
 | `mount()` | Mounts the parcel. loadMicroApp already mounts on load, so you rarely call this directly. Runs one at a time with `unmount()` in call order; rejects with [`app-already-mounted`](/errors/app-already-mounted) when the app is already mounted by its turn, and with the mount error when a remount fails. |
-| `unmount()` | Unmounts the app, deactivates the sandbox, cleans up tracked side effects, and clears the container DOM. The loaded instance is kept for remounting or reuse by the same app name. You may call it before the mount finishes: the request is recorded right away and the app unmounts once that mount ends. If the app is not mounted by its turn, it rejects with [`app-not-mounted`](/errors/app-not-mounted); when a failed mount is the reason, that mount error is the `cause`. |
+| `unmount()` | Unmounts the app, deactivates the sandbox, cleans up tracked side effects, and clears the container DOM. The loaded instance enters a bounded idle pool for remounting or reuse by the same app name. You may call it before the mount finishes: the request is recorded right away and the app unmounts once that mount ends. If the app is not mounted by its turn, it rejects with [`app-not-mounted`](/errors/app-not-mounted); when a failed mount is the reason, that mount error is the `cause`. |
 | `unload()` | Unmounts any mounted app, then disposes of the instance this handle uses and its caches; the handle becomes invalid. See [below](#unload) for the scope. |
 | `update?(props)` | Present only if the micro-app exports an `update` lifecycle. Pushes new props to the running app. |
 | `getStatus()` | Returns the current lifecycle status from the union above. |
@@ -140,8 +141,12 @@ type Parcel = {
 | `mountPromise` | Resolves when mount has finished. Await this to know the app is on screen. |
 | `unmountPromise` | Resolves when unmount has finished. |
 
+The four promises retain single-spa Parcel's one-shot semantics: they describe the first load, bootstrap, mount, and unmount and are not replaced on remount. For subsequent `mount()` and `unmount()` calls, await the promise returned by the method; already-settled `mountPromise` and `unmountPromise` do not track later cycles.
+
 ::: warning Handle rejections
+
 The promises reject if loading or mounting fails. Attach a `.catch` (or wrap in `try/await`) so failures do not surface as unhandled rejections.
+
 :::
 
 ## Behavior {#behavior}
@@ -151,6 +156,8 @@ Observable behavior for callers:
 - **Loading and mounting start immediately.** You do not call `start()` first; await `mountPromise` when you need to know the app is visible.
 - **One container hosts one app at a time.** When apps are loaded into the same container in succession, the next instance waits for the previous one to unmount.
 - **An app name reuses its unmounted instances.** When you call it again with the same `name` and `entry` and that app has an idle, unmounted instance, qiankun mounts that instance into the container you pass, without loading the entry again or calling `bootstrap`. If none is idle, an instance whose `unmount()` has been called but has not finished (including one still mounting) is reused as well, and the new instance mounts once that unmount completes. Only instances mounted at the same time load separate copies. A `name` should therefore always refer to the same app, and per-mount state belongs in `mount()`.
+- **Idle instances have capacity and time limits.** qiankun keeps at most 2 idle instances per `name` and `entry`, and 8 globally. Excess instances are reclaimed in least-recently-used order; instances idle for 5 minutes also expire. Loading, mounted, queued, and unmounting instances are excluded.
+- **Retained handles can remount after reclamation.** A cache hit reuses the sandbox; after reclamation, if no other instance can be reused, qiankun reloads the entry and runs `bootstrap`. An explicit `unload()` invalidates the handle and requires a new `loadMicroApp` call.
 - **The caller owns teardown.** Call `unmount()` when the app is no longer shown, as the official `<MicroApp>` components do. Call `unload()` or `unloadMicroApp(name)` only when the loaded resources should be released.
 - **An instance whose `bootstrap` fails is disposed of.** Every call sharing that `bootstrap` rejects with the same error. Later calls on a retained handle reject with `app-unloaded`, whose `cause` is the `bootstrap` error. Calling `loadMicroApp` again loads the entry and runs `bootstrap` anew.
 - **An app that just failed is not reloaded right away.** After a load or `bootstrap` of the same `name` and `entry` fails, a `loadMicroApp` call within about a second is not rejected, but its load is deferred until that cooldown ends, so a render loop or tight retries cannot hammer the entry. The cooldown counts from the failure and later calls do not extend it; it ends as soon as an instance of the app loads and bootstraps successfully; the wait does not count toward `loadTimeout`, and calling `unload()` meanwhile cancels the load.
@@ -159,7 +166,7 @@ See [Run multiple micro-app instances](/cookbook/run-multiple-instances) for the
 
 ## Dispose of instances: unload and unloadMicroApp {#unload}
 
-After `unmount()`, qiankun keeps the loaded instance, including its lifecycles, sandbox, and caches. A later load of the same app name reuses it directly without executing the entry again. Instances are kept until the host disposes of them; call the handle's `unload()` or `unloadMicroApp(name)` to release them. The official `<MicroApp>` components only call `unmount()` when they are destroyed and never dispose of instances.
+After `unmount()`, qiankun keeps the loaded instance, including its lifecycles, sandbox, and caches. A later load of the same app name reuses it directly without executing the entry again. The idle pool reclaims instances according to its capacity and time limits; call the handle's `unload()` or `unloadMicroApp(name)` to release them explicitly. The official `<MicroApp>` components only call `unmount()` when they are destroyed and never dispose of instances.
 
 The two calls differ in scope:
 
@@ -228,14 +235,13 @@ await microApp.unload();
 For a legacy app that cannot run under isolation, disable the sandbox:
 
 ```ts
-const microApp = loadMicroApp(
-  { name: 'legacy-app', entry: 'http://localhost:7200', container },
-  { sandbox: false },
-);
+const microApp = loadMicroApp({ name: 'legacy-app', entry: 'http://localhost:7200', container }, { sandbox: false });
 ```
 
 ::: tip React and Vue wrappers
+
 If the host uses React or Vue, the corresponding [`<MicroApp>`](/ecosystem/react) component can manage the container ref, prop updates, and unmount. These wrappers use the same `loadMicroApp` instance model.
+
 :::
 
 ## Related

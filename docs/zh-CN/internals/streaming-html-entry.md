@@ -124,7 +124,7 @@ HTML 入口可能包含多个脚本，其中负责导出 `bootstrap`、`mount` �
 
   > `QiankunError: You should not include more than 1 entry scripts in a single HTML entry`
 
-- **只有外部脚本可以作为 `entry`。** 脚本必须包含 `src` 或 `data-src`；没有这些属性的内联脚本不能作为入口。
+- **只有外部脚本可以作为 `entry`。** 脚本必须包含 `src` 或 `data-src`；没有这些属性的内联脚本不能作为 `entry` 脚本。
 
 相关分类函数如下：
 
@@ -134,7 +134,7 @@ HTML 入口可能包含多个脚本，其中负责导出 `bootstrap`、`mount` �
 | `isEntryScript` | 属于外部脚本，且包含 `entry` 属性 |
 | `isDeferScript` | 属于外部脚本，且包含 `defer` 属性 |
 
-通常无需手动添加 `entry`。[`@qiankunjs/bundler-plugin`](/zh-CN/ecosystem/bundler-plugin) 会为受支持的 Webpack 和 Vite 构建自动标记正确的入口脚本。
+通常无需手动添加 `entry`。[`@qiankunjs/bundler-plugin`](/zh-CN/ecosystem/bundler-plugin) 会在受支持的 Webpack 和 Vite 构建中，自动为相应脚本添加 `entry` 属性。
 
 ::: tip `entry` 属性的位置
 Webpack UMD 构建会在 `runtime` 或 `main` 构建产物对应的脚本上添加 `entry`，Vite ESM 构建则在 `<script type="module">` 上添加该属性。两种情况均由插件处理，无需修改生成后的 `index.html`。
@@ -142,7 +142,7 @@ Webpack UMD 构建会在 `runtime` 或 `main` 构建产物对应的脚本上添�
 
 ### Classic 与 ESM 的入口处理
 
-每个入口脚本根据自身类型进入相应流程：
+标记为 `entry` 的脚本根据自身类型进入相应流程：
 
 - **Classic**（`<script src="..." entry>`，UMD／全局构建）：qiankun 为脚本绑定 `onload` 和 `onerror`。加载完成后，从沙箱中解析入口导出。
 - **ESM**（`<script type="module" ... entry>`）：转译后添加 `data-esm="true"`，并移除 `src`，避免浏览器直接执行。脚本由 `EsmSandboxEngine` 处理，执行结果通过 `entryNamespacePromise` 返回。模块获取、改写和求值过程见 [ESM 沙箱实现](/zh-CN/internals/esm-sandbox)。
@@ -159,7 +159,7 @@ Webpack UMD 构建会在 `runtime` 或 `main` 构建产物对应的脚本上添�
 
 脚本执行完成后，两种执行方式通过不同来源返回生命周期对象：
 
-- **Classic**：UMD 入口脚本将生命周期对象赋值给全局变量，例如 `window.<libraryName> = { bootstrap, mount, unmount }`。沙箱隔离膜使用 `latestSetProp` 记录脚本最后设置的全局属性。Classic 入口触发 `load` 事件时，`onEntryLoaded()` 以 `sandbox.globalThis[sandbox.latestSetProp]` 的值完成加载器 Promise。qiankun 会在调用应用自行注册的监听器前读取 `latestSetProp`，避免该值被后续写入覆盖。
+- **Classic**：UMD 入口脚本将生命周期对象赋值给全局变量，例如 `window.<libraryName> = { bootstrap, mount, unmount }`。沙箱隔离膜使用 `latestSetProp` 记录脚本最后设置的全局属性。标记为 `entry` 的非 ESM 脚本触发 `load` 事件时，`onEntryLoaded()` 以 `sandbox.globalThis[sandbox.latestSetProp]` 的值完成加载器 Promise。qiankun 会在调用应用自行注册的监听器前读取 `latestSetProp`，避免该值被后续写入覆盖。
 - **ESM**：入口模块命名空间即生命周期导出的来源。引擎使用具名导出 `bootstrap`、`mount`、`unmount`，或 `export default { ... }`，以该模块命名空间完成 `entryNamespacePromise`。
 
 如果输入流结束后没有找到显式 `entry` 脚本，加载器采用以下默认规则：
@@ -199,4 +199,4 @@ makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)));
 - [ESM 沙箱实现](/zh-CN/internals/esm-sandbox)：`type="module"` 入口的获取、改写和执行。
 - [样式隔离实现](/zh-CN/internals/style-isolation)：流式加载中 `<link>` 和 `<style>` 节点的转换。
 - [生命周期解析原理](/zh-CN/internals/lifecycle-resolution)：入口导出的解析规则。
-- [`@qiankunjs/bundler-plugin`](/zh-CN/ecosystem/bundler-plugin)：构建阶段的入口脚本标记。
+- [`@qiankunjs/bundler-plugin`](/zh-CN/ecosystem/bundler-plugin)：构建阶段的 `entry` 属性标记。

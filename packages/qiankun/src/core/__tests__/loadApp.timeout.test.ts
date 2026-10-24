@@ -288,7 +288,9 @@ describe('loadApp loadTimeout', () => {
     expect(ready).not.toHaveBeenCalled();
 
     finishStream();
-    await expect(loading).resolves.toBeTypeOf('function');
+    const getConfig = await loading;
+    await expect(getConfig.loadPhaseSettled).resolves.toBeUndefined();
+    expect(getConfig.loadPhaseOpen).toBe(false);
     expect(vi.getTimerCount()).toBe(0);
     await vi.advanceTimersByTimeAsync(100);
     expect(loaderSignal?.aborted).toBe(false);

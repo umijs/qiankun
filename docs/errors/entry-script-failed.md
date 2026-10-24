@@ -19,4 +19,4 @@ Correct the resource URL, server response, cross-origin access, or CSP configura
 ## Related
 
 - [Error codes and solutions](/errors/)
-- [entry-script-failed：入口脚本加载失败](/zh-CN/errors/entry-script-failed)
+- [entry-script-failed：`entry` 脚本加载失败](/zh-CN/errors/entry-script-failed)

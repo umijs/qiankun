@@ -49,7 +49,7 @@ type RegistrableApp<T extends ObjectType> = {
 | `entry` | `string` | Yes | The URL of the micro-app's HTML entry, e.g. `//localhost:7100`. In v3 `entry` is always a string (an HTML address); the 2.x `{ scripts, styles }` object form is gone. |
 | `container` | `HTMLElement` | Yes | The DOM element the micro-app mounts into — a real element, not a selector string. Pass a node obtained from a ref, or `document.getElementById(...)`. |
 | `activeRule` | `string \| ActivityFn \| Array<string \| ActivityFn>` | Yes | When the app activates; forwarded as-is to single-spa's `activeWhen`. A string is a path prefix; a function `(location) => boolean` gives you full control; an array activates when any entry matches. |
-| `props` | `T` | No | Data passed to the micro-app on every lifecycle call (`bootstrap` / `mount` / `unmount` / `update`). |
+| `props` | `T` | No | Business data passed to `mount`, `unmount`, and optional `update`; `bootstrap` receives only the stable `name` and `entry`. |
 | `loader` | `(loading: boolean) => void` | No | Reports loading state. It receives `true` while source loading or mounting begins and `false` after mounting completes. Treat the value as state: consecutive `true` notifications are possible. |
 | `configuration` | `AppConfiguration` | No | Per-app runtime configuration: `sandbox`, `styleIsolation`, `fetch`, and so on. See [AppConfiguration](/api/configuration) and [Per-app configuration is the only configuration entry point](#per-app-configuration-is-the-only-configuration-entry-point). |
 
