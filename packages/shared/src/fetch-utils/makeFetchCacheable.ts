@@ -64,8 +64,9 @@ export const makeFetchCacheable = (
 ): CacheableFetch => {
   const pool = options.scope === 'modules' ? getModuleCache() : getAssetCache();
   const owner = Symbol('fetch-cache-owner');
-  // Only keys are remembered, so a finished response stays collectable once the LRU drops it.
-  const touchedKeys = new Set<string>();
+  // Keep ownership metadata independently of the LRU, never the responses. Another owner can
+  // evict a shared entry before we release it, even while our response is still unread.
+  const leases = new Set<CacheLease>();
   // Leases this wrapper is still waiting on or reading a body from, with the number of such uses.
   const inFlight = new Map<CacheLease, number>();
   // Aborted by every invalidation, cancelling whatever this wrapper still has in flight.
@@ -74,6 +75,7 @@ export const makeFetchCacheable = (
   const isCached = (lease: CacheLease): boolean => pool.get(lease.key)?.lease === lease;
 
   const release = (lease: CacheLease): void => {
+    leases.delete(lease);
     lease.owners.delete(owner);
     // A shared download (including its response body) remains live until its
     // final owner releases it. Disposing one app must not abort another app.
@@ -188,16 +190,11 @@ export const makeFetchCacheable = (
   };
 
   const invalidate = (): void => {
-    const released = new Set(inFlight.keys());
-    touchedKeys.forEach((key) => {
-      const entry = pool.get(key);
+    const released = [...leases];
+    released.forEach((lease) => {
       // Evict by identity: the key may since hold a newer generation this wrapper never touched.
-      if (entry?.lease.owners.has(owner)) {
-        pool.delete(key);
-        released.add(entry.lease);
-      }
+      if (isCached(lease)) pool.delete(lease.key);
     });
-    touchedKeys.clear();
 
     const expired = epoch;
     epoch = new AbortController();
@@ -235,7 +232,7 @@ export const makeFetchCacheable = (
     }
     const { promise, lease } = entry;
     lease.owners.add(owner);
-    touchedKeys.add(cacheKey);
+    leases.add(lease);
 
     return new Promise<Response>((resolve, reject) => {
       const settle = hold(lease, [epoch.signal, requestSignal], (reason) => {

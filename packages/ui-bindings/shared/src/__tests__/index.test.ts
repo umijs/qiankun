@@ -234,8 +234,8 @@ describe('unmountMicroApp', () => {
     return Object.assign(new Error('App app is not mounted'), { code: 'app-not-mounted' }, cause ? { cause } : {});
   }
 
-  it('asks an app to unmount while its mount is still under way', async () => {
-    const app = appWith('MOUNTING', undefined, () => Promise.resolve(null));
+  it.each(['MOUNTING', 'UPDATING'])('asks an app in %s to unmount', async (status) => {
+    const app = appWith(status, undefined, () => Promise.resolve(null));
     const unmounting = unmountMicroApp(app);
     expect(app.unmount).toHaveBeenCalledTimes(1);
     expect(app._unmounting).toBe(true);
