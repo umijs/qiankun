@@ -137,11 +137,8 @@ export const MicroApp: React.ForwardRefExoticComponent<Props & React.RefAttribut
       : 'qiankun-micro-app-wrapper';
     const microAppClassName = className ? `${className} qiankun-micro-app-container` : 'qiankun-micro-app-container';
 
-    // The container comes first inside the wrapper on purpose: qiankun keys its parcel cache and
-    // its same-container serialization on the container's XPath, which counts same-tag siblings
-    // *before* the element. A loader or error panel that renders conditionally would otherwise
-    // shift that index between mounts and silently split one app into two cache entries. Slots
-    // rendering after the container also paint above it without needing a z-index.
+    // The container comes first inside the wrapper, so the loader and error slots rendered after
+    // it paint above it without needing a z-index.
     return microAppLoader || microAppErrorBoundary ? (
       <div style={{ position: 'relative' }} className={microAppWrapperClassName}>
         <div ref={containerRef} className={microAppClassName} />

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { SUB_APP_ENTRIES } from '../ports';
 import { FIREFOX_ESM_LIMITATION } from './helpers';
 
 test.describe('registerMicroApps + activeRule routing', () => {
@@ -13,6 +14,14 @@ test.describe('registerMicroApps + activeRule routing', () => {
       location.hash = '#/classic';
     });
     await expect(page.getByTestId('classic-title')).toBeVisible();
+    await expect(page.getByTestId('classic-bootstrap-context')).toHaveText(
+      JSON.stringify({
+        keys: ['entry', 'name'],
+        name: 'sub-classic',
+        entry: SUB_APP_ENTRIES['sub-classic'],
+        frozen: true,
+      }),
+    );
 
     await page.evaluate(() => {
       location.hash = '#/none';
@@ -36,6 +45,9 @@ test.describe('registerMicroApps + activeRule routing', () => {
       location.hash = '#/esm';
     });
     await expect(page.getByTestId('esm-title')).toBeVisible();
+    await expect(page.getByTestId('esm-bootstrap-context')).toHaveText(
+      JSON.stringify({ keys: ['entry', 'name'], name: 'sub-esm', entry: SUB_APP_ENTRIES['sub-esm'], frozen: true }),
+    );
     await expect(page.getByTestId('classic-title')).toHaveCount(0);
 
     await page.goBack();

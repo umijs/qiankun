@@ -94,7 +94,7 @@ qiankun 会等待 `beforeLoad` 完成，再使用从入口解析出的生命周�
 
 ## 主应用钩子与微应用生命周期
 
-主应用的 `LifeCycles` 接收 `(app, global)`，用于观察实例的状态转换。微应用导出的 `bootstrap`、`mount`、`unmount` 和可选的 `update` 接收 props，负责渲染应用并完成清理。主应用钩子不能替代微应用导出的生命周期函数。
+主应用的 `LifeCycles` 接收 `(app, global)`，用于观察实例的状态转换。微应用导出的 `bootstrap` 接收稳定的初始化上下文，`mount`、`unmount` 和可选的 `update` 接收业务 props，负责渲染应用并完成清理。主应用钩子不能替代微应用导出的生命周期函数。
 
 应用侧契约见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
 

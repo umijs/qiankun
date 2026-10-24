@@ -31,10 +31,13 @@ export async function update(props) {
 
 Internally qiankun validates the shape with `isLifecycleObject`, which requires `bootstrap`, `mount`, and `unmount` to all be functions. `update` is optional and is only attached to the running parcel when it is actually a function.
 
-Each lifecycle is a `(props) => Promise<void>`. The full type is `MicroAppLifeCycles` in `packages/qiankun/src/types.ts`:
+`bootstrap` receives a stable `BootstrapContext`; the other lifecycles receive mount or update props. The full type is `MicroAppLifeCycles` in `packages/qiankun/src/types.ts`:
 
 ```ts
-type MicroAppLifeCycles = FlattenArrayValue<ParcelLifeCycles<{ container: HTMLElement }>>;
+type BootstrapContext = Readonly<AppMetadata>;
+type MicroAppLifeCycles = Omit<FlattenArrayValue<ParcelLifeCycles<{ container: HTMLElement }>>, 'bootstrap'> & {
+  bootstrap: (context: BootstrapContext) => Promise<unknown>;
+};
 // => { bootstrap; mount; unmount; update? }
 ```
 
@@ -178,7 +181,7 @@ const micro = loadMicroApp({
 
 :::
 
-Those `props` become single-spa `customProps`, injected into every lifecycle call. On top of that, qiankun always injects `container: HTMLElement` — the DOM node the sub-app should render into — into the props passed to `mount` and `unmount`. So each lifecycle receives your `customProps` merged with single-spa's standard props (`name`, `singleSpa`, `mountParcel`, …) and qiankun's `container`:
+Host `props` become single-spa `customProps` for `mount`, `unmount`, and optional `update`. qiankun additionally injects the actual `container: HTMLElement` for `mount` and `unmount`. `loadApp` wraps `bootstrap` separately, discarding single-spa's argument and passing only a frozen `{ name, entry }` snapshot constructed at load time. Dynamic props, containers, and mount capabilities therefore cannot enter the initialization context. Use mount props as follows:
 
 ```ts
 export async function mount(props) {

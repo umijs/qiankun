@@ -108,7 +108,7 @@ Every prop the component owns — `name`, `entry`, `settings`, `lifeCycles`, `au
 
 ## Passing props to the micro-app {#passing-props-to-the-micro-app}
 
-Any non-reserved prop is forwarded to the micro-app and delivered to its `bootstrap`/`mount`/`update` lifecycles.
+Any non-reserved prop is forwarded to the micro-app and delivered to its `mount`, `unmount`, and optional `update` lifecycles. `bootstrap` receives only the stable initialization context.
 
 ```tsx
 <MicroApp
@@ -121,7 +121,7 @@ Any non-reserved prop is forwarded to the micro-app and delivered to its `bootst
 />
 ```
 
-Inside the micro-app, these values show up on the `props` of each lifecycle:
+Inside the micro-app, these values appear in the props of `mount`, `unmount`, and optional `update`:
 
 ```ts
 export async function mount(props) {

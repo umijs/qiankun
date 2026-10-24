@@ -9,8 +9,11 @@ import { readSelfFlag } from './modules/flags.js';
 window.__ESM_POLLUTION__ = 'from-sub-esm';
 
 let mountCount = 0;
+let bootstrapContext;
 
-export async function bootstrap() {}
+export async function bootstrap(context) {
+  bootstrapContext = context;
+}
 
 export async function mount(props) {
   mountCount += 1;
@@ -28,6 +31,17 @@ export async function mount(props) {
     // readSelfFlag() reads a flag written after its own module bindings were created
     `<p data-testid="esm-flags">runtime:${__RUNTIME_FLAG__},self:${readSelfFlag()}</p>`,
   ].join('');
+  if (bootstrapContext) {
+    const probe = document.createElement('p');
+    probe.dataset.testid = 'esm-bootstrap-context';
+    probe.textContent = JSON.stringify({
+      keys: Object.keys(bootstrapContext).sort(),
+      name: bootstrapContext.name,
+      entry: bootstrapContext.entry,
+      frozen: Object.isFrozen(bootstrapContext),
+    });
+    root.appendChild(probe);
+  }
 }
 
 export async function unmount(props) {

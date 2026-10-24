@@ -125,7 +125,7 @@ const appProps = reactive({ userId: 42, theme: 'dark' });
 </template>
 ```
 
-这些数据会作为 `props` 参数传给微应用导出的生命周期函数：
+这些数据会作为 `props` 参数传给微应用的 `mount`、`unmount` 和可选的 `update`；`bootstrap` 只接收稳定的初始化上下文：
 
 ```ts
 // 微应用内部

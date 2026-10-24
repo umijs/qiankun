@@ -94,7 +94,7 @@ For the route-driven alternative, pass one `LifeCycles` object as the second arg
 
 ## Host hooks vs. micro-app lifecycles
 
-Host `LifeCycles` receive `(app, global)` and observe transitions around an instance. The micro-app's own `bootstrap`, `mount`, `unmount`, and optional `update` receive props, render the app, and perform its cleanup. Host hooks do not replace those exports.
+Host `LifeCycles` receive `(app, global)` and observe transitions around an instance. The micro-app's own `bootstrap` receives stable initialization context; `mount`, `unmount`, and optional `update` receive business props, render the app, and perform its cleanup. Host hooks do not replace those exports.
 
 See [Micro-app lifecycle and props](/concepts/lifecycle-and-props) for the application-side contract.
 
