@@ -19,8 +19,8 @@ vi.mock('@qiankunjs/sandbox', async (importOriginal) => ({
 
 import { loadMicroApp } from '../loadMicroApp';
 
-const bootstrap = vi.fn(async () => {});
-const mount = vi.fn(async () => {});
+const bootstrap = vi.fn(async (_context: unknown) => {});
+const mount = vi.fn(async (_props: ObjectType) => {});
 const unmount = vi.fn(async () => {});
 const parcels: MicroApp[] = [];
 let sequence = 0;
@@ -73,7 +73,7 @@ describe('loadMicroApp lifecycle hook context', () => {
       name: `hook-context-${String(++sequence)}`,
       entry: 'https://hook-context.test/index.html',
       container: former,
-      props: { route: 'first' },
+      props: { route: 'first', name: 'prop-name', entry: 'prop-entry', container: next },
     };
     const secondApp = { ...firstApp, container: next, props };
     const unmountStarted = new Deferred<void>();
@@ -128,9 +128,14 @@ describe('loadMicroApp lifecycle hook context', () => {
     expect(hooks.beforeLoad).toHaveBeenCalledExactlyOnceWith(firstApp, window);
     expect(hooks.beforeMount.mock.calls[1][0].props).toBe(props);
     expect(firstApp.container).toBe(former);
-    expect(firstApp.props).toEqual({ route: 'first' });
+    expect(firstApp.props?.route).toBe('first');
     expect(mocks.createSandbox).toHaveBeenCalledTimes(1);
     expect(bootstrap).toHaveBeenCalledTimes(1);
+    const context = bootstrap.mock.calls[0][0];
+    expect(context).toEqual({ name: firstApp.name, entry: firstApp.entry });
+    expect(Object.isFrozen(context)).toBe(true);
+    expect(mount.mock.calls[0][0]).toMatchObject({ route: 'first', container: former });
+    expect(mount.mock.calls[1][0]).toMatchObject({ ...props, container: next });
     expect(mount).toHaveBeenCalledTimes(2);
     expect(unmount).toHaveBeenCalledTimes(2);
   });

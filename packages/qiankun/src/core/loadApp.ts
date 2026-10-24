@@ -23,6 +23,7 @@ import getAddOns from '../addons';
 import { QiankunError } from '../error';
 import type {
   AppConfiguration,
+  BootstrapContext,
   LifeCycleFn,
   LifeCycles,
   LoadableApp,
@@ -64,6 +65,9 @@ export default async function loadApp<T extends ObjectType>(
   lifeCycles?: LifeCycles<T>,
 ): Promise<ParcelConfigObjectGetter> {
   const { name: appName, entry, container, loader } = app;
+  // Snapshot only the evaluated instance's identity. Never forward Parcel custom props or
+  // per-mount capabilities to one-time initialization, even if their names collide.
+  const bootstrapContext: BootstrapContext = Object.freeze({ name: appName, entry });
   const defaultNodeTransformer: AppConfiguration['nodeTransformer'] = (node, opts) => {
     const moduleResolver = (url: string) => defaultModuleResolver(url, microAppDOMContainer, document.head);
     return transpileAssets(node, entry, { ...opts, moduleResolver });
@@ -321,10 +325,9 @@ export default async function loadApp<T extends ObjectType>(
     const parcelConfig: ParcelConfigObject = {
       name: appName,
 
-      // MicroAppLifeCycles types every lifecycle with `container` props, but single-spa only
-      // passes it to the mount/unmount wrappers below (via closure); bootstrap runs before any
-      // container exists, so its narrower props type is asserted away here
-      bootstrap: bootstrap as ParcelConfigObject['bootstrap'],
+      bootstrap: async () => {
+        await bootstrap(bootstrapContext);
+      },
 
       mount: [
         // The indicator spans the whole chain — the gate wait included — and sits inside the
@@ -452,7 +455,7 @@ export default async function loadApp<T extends ObjectType>(
     if (typeof update === 'function') {
       // Guarded like the chains above: single-spa marks a parcel whose update rejects
       // SKIP_BECAUSE_BROKEN and refuses to unmount it, so nothing downstream would release ②.
-      // Same props-type mismatch as bootstrap above: update receives parcel customProps at runtime.
+      // Unlike mount/unmount, update receives parcel customProps without an injected container.
       parcelConfig.update = guardHooksWithMountHoldRelease(toArray(update))[0] as ParcelConfigObject['update'];
     }
 

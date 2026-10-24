@@ -30,7 +30,7 @@ vi.mock('@qiankunjs/sandbox', async (importOriginal) => {
 import { loadMicroApp } from '../../apis/loadMicroApp';
 import { defaultIdleCachePolicy } from '../idleInstanceCache';
 
-const bootstrap = vi.fn(async () => {});
+const bootstrap = vi.fn(async (_context: unknown) => {});
 const mount = vi.fn(async (_props: { container: HTMLElement }) => {});
 const unmount = vi.fn(async () => {});
 const handles: MicroApp[] = [];
@@ -66,11 +66,13 @@ describe('loadMicroApp real sandbox reclamation', () => {
     const baseline = liveBridges();
     const container = document.createElement('div');
     document.body.append(container);
-    const app = loadMicroApp({
+    const descriptor = {
       name: `real-cache-${String(++sequence)}`,
       entry: 'https://real-cache.test/',
       container,
-    });
+      props: { accountId: '42', container, entry: 'prop-entry' },
+    };
+    const app = loadMicroApp(descriptor);
     handles.push(app);
     await app.mountPromise;
     expect(liveBridges()).toHaveLength(baseline.length + 1);
@@ -81,6 +83,11 @@ describe('loadMicroApp real sandbox reclamation', () => {
     await app.mount();
     expect(liveBridges()).toHaveLength(baseline.length + 1);
     expect(bootstrap).toHaveBeenCalledTimes(2);
+    for (const [context] of bootstrap.mock.calls) {
+      expect(context).toEqual({ name: descriptor.name, entry: descriptor.entry });
+      expect(Object.isFrozen(context)).toBe(true);
+    }
+    expect(bootstrap.mock.calls[1][0]).not.toBe(bootstrap.mock.calls[0][0]);
     expect(mount).toHaveBeenLastCalledWith(expect.objectContaining({ container }));
   });
 

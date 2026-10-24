@@ -29,7 +29,7 @@ Describes which micro-app to load and where to mount it.
 | `name` | `string` | yes | Micro-app name. Multiple instances may reuse it; concurrently mounted instances still need separate containers. |
 | `entry` | `string` | yes | URL of the micro-app's HTML entry. Always a string — the 2.x object form (`{ scripts, styles }`) does not exist in v3. |
 | `container` | `HTMLElement` | yes | The DOM element to render into. Must be an actual element, not a CSS-selector string. |
-| `props` | `T` | no | Data passed through to the micro-app's lifecycle functions. |
+| `props` | `T` | no | Business data passed to `mount`, `unmount`, and optional `update`, excluding `bootstrap`. |
 
 ```ts
 type ObjectType = Record<string, unknown>;

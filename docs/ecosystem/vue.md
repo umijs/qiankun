@@ -125,7 +125,7 @@ const appProps = reactive({ userId: 42, theme: 'dark' });
 </template>
 ```
 
-These reach the micro-app as the `props` argument of its exported lifecycles:
+These reach `mount`, `unmount`, and optional `update` as business props. `bootstrap` receives only the stable initialization context:
 
 ```ts
 // inside the micro-app

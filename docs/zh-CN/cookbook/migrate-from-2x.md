@@ -262,6 +262,8 @@ export default defineConfig({
 
 生命周期仍由 `bootstrap`、`mount` 和 `unmount` 组成，但应使用现代框架 API 渲染到 `props.container`，即当前应用的容器子树，而不是全局 `document`。应用需要按照常规方式导出生命周期函数。对于 Webpack 构建，插件会以 `packageName` 命名全局库，并为相应脚本添加 `entry` 属性；原生 ESM 构建则直接使用模块导出。
 
+`bootstrap` 的参数已收紧为只读的 `{ name, entry }`，不再传入业务 props 或容器。如果旧实现依赖用户数据、路由状态或 DOM 初始化，应将这部分逻辑移到 `mount`，并在 `unmount` 中释放资源；后续数据变更通过 `update` 处理。参见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
+
 ::: code-group
 ```tsx [2.x main.tsx]
 import ReactDOM from 'react-dom';

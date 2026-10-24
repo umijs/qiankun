@@ -31,10 +31,13 @@ export async function update(props) {
 
 qiankun 使用 `isLifecycleObject` 校验对象结构，要求 `bootstrap`、`mount` 和 `unmount` 均为函数。`update` 为可选项，且仅在其类型为函数时才会添加到运行中的 Parcel。
 
-生命周期函数的签名为 `(props) => Promise<void>`。完整类型定义位于 `packages/qiankun/src/types.ts`：
+`bootstrap` 接收稳定的 `BootstrapContext`，其余生命周期接收挂载或更新参数。完整类型定义位于 `packages/qiankun/src/types.ts`：
 
 ```ts
-type MicroAppLifeCycles = FlattenArrayValue<ParcelLifeCycles<{ container: HTMLElement }>>;
+type BootstrapContext = Readonly<AppMetadata>;
+type MicroAppLifeCycles = Omit<FlattenArrayValue<ParcelLifeCycles<{ container: HTMLElement }>>, 'bootstrap'> & {
+  bootstrap: (context: BootstrapContext) => Promise<unknown>;
+};
 // => { bootstrap; mount; unmount; update? }
 ```
 
@@ -179,7 +182,7 @@ registerMicroApps([
 
 :::
 
-配置中的 `props` 会作为 single-spa `customProps` 传入每次生命周期调用。调用 `mount` 和 `unmount` 时，qiankun 还会注入 `container: HTMLElement`，即微应用应使用的 DOM 容器。生命周期函数最终收到的参数由自定义 props、single-spa 标准 props（如 `name`、`singleSpa` 和 `mountParcel`）以及 qiankun 注入的 `container` 合并而成：
+配置中的 `props` 作为 single-spa `customProps` 传给 `mount`、`unmount` 和可选的 `update`。调用 `mount` 和 `unmount` 时，qiankun 还会注入实际的 `container: HTMLElement`。`loadApp` 单独包装 `bootstrap`，丢弃 single-spa 传入的参数，仅传入在加载时构造并冻结的 `{ name, entry }`。因此，动态 props、容器和挂载能力不会进入初始化上下文。挂载参数的用法如下：
 
 ```ts
 export async function mount(props) {

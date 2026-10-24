@@ -29,7 +29,7 @@ function loadMicroApp<T extends ObjectType>(
 | `name` | `string` | 是 | 微应用名称。多个实例可以复用名称；只有并发挂载的实例需要使用不同容器。 |
 | `entry` | `string` | 是 | 微应用 HTML 入口的 URL。仅支持字符串；v3 不再支持 2.x 的对象形式（`{ scripts, styles }`）。 |
 | `container` | `HTMLElement` | 是 | 用于渲染微应用的 DOM 元素。必须传入实际元素，不能使用 CSS 选择器字符串。 |
-| `props` | `T` | 否 | 传递给微应用生命周期函数的数据。 |
+| `props` | `T` | 否 | 传递给 `mount`、`unmount` 和可选 `update` 的业务数据，不传入 `bootstrap`。 |
 
 ```ts
 type ObjectType = Record<string, unknown>;

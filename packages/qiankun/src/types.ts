@@ -99,6 +99,9 @@ export type LifeCycles<T extends ObjectType> = {
 
 export type MicroApp = Parcel;
 
+/** Stable identity of one evaluated app instance; excludes per-mount props and container. */
+export type BootstrapContext = Readonly<AppMetadata>;
+
 type ExtraProps = {
   container: HTMLElement;
 };
@@ -107,4 +110,6 @@ type FlattenArrayValue<T> = {
   [P in keyof T]: FlattenArray<T[P]>;
 };
 
-export type MicroAppLifeCycles = FlattenArrayValue<ParcelLifeCycles<ExtraProps>>;
+export type MicroAppLifeCycles = Omit<FlattenArrayValue<ParcelLifeCycles<ExtraProps>>, 'bootstrap'> & {
+  bootstrap: (context: BootstrapContext) => Promise<unknown>;
+};
