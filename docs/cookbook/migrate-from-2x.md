@@ -21,7 +21,9 @@ This page is the single source of truth for moving a qiankun 2.x integration to 
 | Global state store | `initGlobalState` / `onGlobalStateChange` / `setGlobalState` | Removed — pass your own store through props |
 | Micro-app build | Hand-written UMD / `libraryTarget` / `jsonpFunction` / `chunkLoadingGlobal` | `@qiankunjs/bundler-plugin` (webpack) or `qiankun()` (Vite) |
 | Prefetch | `prefetch: 'all' \| string[] \| fn` on `start()` | The streaming loader prefetches automatically; `prefetchApps` is deprecated |
-| Runtime floor | Older toolchains and browsers | Node `>=20.19`; `Proxy` + `TransformStream` + `URL.createObjectURL` |
+| Browser compatibility | Includes legacy browser paths | Modern browsers, without a snapshot sandbox fallback; see [Browser support](/guide/browser-support) |
+| Error handling | `addGlobalUncaughtErrorHandler` / `removeGlobalUncaughtErrorHandler` | `addErrorHandler` / `removeErrorHandler` for route apps; handle promises for manually loaded apps |
+| Instance disposal | `unmount()` retains loaded instances | Bounded idle cache; new `unload()`, `unloadMicroApp()`, and `unloadApplication()` APIs |
 
 Each row is expanded below.
 
@@ -119,7 +121,7 @@ start(); // no qiankun-specific options here
 ```
 :::
 
-Current per-app fields are `sandbox`, `fetch`, `streamTransformer`, and `nodeTransformer`; `styleIsolation`, `globals`, `incubatorContext`, and `plugins` live inside the `sandbox` object. Defaults and advanced contracts are maintained in the [AppConfiguration reference](/api/configuration).
+Current per-app fields are `sandbox`, `fetch`, `loadTimeout`, `streamTransformer`, and `nodeTransformer`; `styleIsolation`, `globals`, `incubatorContext`, `plugins`, `modules`, `resolveHook`, `importHook`, and `loadHook` live inside the `sandbox` object. Defaults and advanced contracts are maintained in the [AppConfiguration reference](/api/configuration).
 
 v3 has no `FrameworkConfiguration` type, no `getPublicPath` / `getTemplate` / `excludeAssetFilter`, and no `singular`.
 
@@ -311,17 +313,81 @@ if (!window.__POWERED_BY_QIANKUN__) {
 
 Vue follows the same structure: `createApp(...).mount(...)` in `mount`, `app.unmount()` in `unmount`. Export the same three lifecycle functions for both webpack and native ESM builds; their bundler integrations take care of exposing the entry in the form qiankun expects. See [Micro-app lifecycles and props](/concepts/lifecycle-and-props).
 
-::: danger Exactly one entry script
+`mount` and `unmount` receive the current mount’s `props.container`; optional `update` receives the caller’s business props without an automatically injected container. Save any framework root or container reference needed for updates in `mount`, and release it in `unmount`.
+
+::: danger At most one entry script
 An HTML entry may mark at most one script as the `entry`. Two entry scripts make the loader throw a `QiankunError`. The bundler plugin is idempotent and tags a single entry script for you.
 
 :::
 
+## Instance reuse and disposal: unmount versus unload
+
+Review every `loadMicroApp` call during migration: calling it again does not necessarily reload the scripts.
+
+- Calls with the same `name` and `entry` can reuse the instance on the same container, or an idle or unmounting instance from another container. Mounts on one container queue; concurrent mounts on different containers use independent instances.
+- Cache hits do not re-execute entry scripts, module top-level code, or `bootstrap`. The current business props go to `mount`, where container- and user-dependent initialization belongs.
+- The idle cache retains at most 2 instances per `name` and `entry`, 8 globally, and reclaims instances after 5 minutes idle. This is an internal policy, not an `AppConfiguration` option. A retained handle can still call `mount()` to load again after cache reclamation.
+- Reused instances retain their original configuration and host lifecycle hooks. Passing a different `configuration` does not rebuild an existing sandbox. Dispose of the old instance first to change its configuration or force fresh code loading.
+
+`unmount()` temporarily removes the view; the loaded instance may still be reused. To release the sandbox, resources, and caches, use:
+
+| Loading mode | Disposal API | Scope |
+| --- | --- | --- |
+| `loadMicroApp` | `await app.unload()` | Disposes of the instance behind this handle; other handles sharing it also become invalid |
+| `loadMicroApp` | `await unloadMicroApp(name)` | Disposes of all manually loaded instances with this name |
+| `registerMicroApps` | `await unloadApplication(name, { waitForUnmount: true })` | Disposes after a route-driven unmount; preserves registration and reloads on a later active route |
+
+```ts
+import { loadMicroApp } from 'qiankun';
+
+const app = loadMicroApp({ name: 'account-app', entry, container });
+await app.mountPromise;
+
+// Temporarily hide the app, allowing reuse.
+await app.unmount();
+await app.mount();
+
+// Dispose when no longer needed; call loadMicroApp for a new handle later.
+await app.unload();
+```
+
+`mountPromise` and `unmountPromise` describe only the first mount and unmount. Await the promises returned by `mount()` and `unmount()` for later operations. Explicit `unload()` differs from automatic cache reclamation: explicit disposal invalidates old handles, so they cannot mount again.
+
+After a load or `bootstrap` failure, call `loadMicroApp` again to reload; the same `name` and `entry` have an approximately one-second failure cooldown. Do not retry by repeatedly mounting a failed handle. Disposal cannot preempt application lifecycles already in progress or clear the browser’s native ESM module registry. See [loadMicroApp](/api/load-micro-app) for the full behavior and cleanup limits, and [registerMicroApps](/api/register-micro-apps#unload-application) for route apps.
+
+## Error handling and load timeouts
+
+v3 no longer exports `addGlobalUncaughtErrorHandler` or `removeGlobalUncaughtErrorHandler`. Migrate error handling according to the loading mode:
+
+- **Route apps**: use `addErrorHandler` / `removeErrorHandler` for single-spa loading and lifecycle errors; remove a handler with the same function reference.
+- **Manually loaded apps**: handle rejections from the returned handle’s promises; await `mountPromise` for the initial mount. Global `addErrorHandler` does not receive these initial loading and lifecycle errors.
+- **Other page errors**: use the browser’s `error` / `unhandledrejection` events for uncaught errors outside qiankun, and clean up listeners in the host.
+
+Identify framework errors with `QiankunError` imported from `qiankun` and its stable `code`, rather than matching message text. Business, network, and single-spa errors are not necessarily instances of this class.
+
+The new `loadTimeout` defaults to `0` (disabled). Timing begins after acquiring the container for loading and covers `beforeLoad`, entry loading, resource processing, lifecycle discovery, and completion of the HTML stream. It excludes container waits and the failure cooldown, and does not bound `bootstrap`, `mount`, `unmount`, or cached remounts.
+
+```ts
+import { loadMicroApp, QiankunError } from 'qiankun';
+
+const app = loadMicroApp({ name, entry, container }, { loadTimeout: 10_000 });
+try {
+  await app.mountPromise;
+} catch (error) {
+  if (error instanceof QiankunError) {
+    console.error(error.code, error);
+  } else {
+    console.error(error);
+  }
+}
+```
+
+With a timeout enabled, mounting waits for both entry lifecycles and the end of the HTML stream. With the default disabled, mounting can still begin before the stream ends. A timeout produces `LoadAppTimeoutError` (`code: 'load-timeout'`); qiankun aborts loading and cleans up inserted nodes and the sandbox. Custom fetch implementations must forward `init.signal` and stop reading response streams on abort. See [AppConfiguration](/api/configuration#loadtimeout) and [addErrorHandler / removeErrorHandler](/api/error-handling).
+
 ## Runtime and toolchain floor
 
-v3 raises the minimum environment.
-
-- **Node**: building and running the toolchain (Vite and friends) needs `>=20.19`.
-- **Browser**: the runtime needs `Proxy`, `TransformStream`, and `URL.createObjectURL`. Style isolation additionally needs native CSS `@scope`.
+- **Development toolchain**: this repository requires Node `^22.15.0 || >=24.0.0` and `pnpm@11.13.1`. Integrating projects must also meet their own build tools’ requirements; this is not a browser runtime dependency on Node.
+- **Browsers**: follow [Browser support](/guide/browser-support), assessing the base runtime, native ESM, and style isolation separately. v3 does not support IE or automatically fall back to a snapshot sandbox.
 
 Before `start()`, gate on capability with the new v3 [`isRuntimeCompatible`](/api/is-runtime-compatible):
 
@@ -339,19 +405,25 @@ if (isRuntimeCompatible()) {
 `isRuntimeCompatible()` returns `true` only when all three of `Proxy`, `TransformStream`, and `URL.createObjectURL` are present.
 
 ::: info Firefox and ESM apps
-Firefox doesn't support dynamically injected import maps, which natively loaded (Vite) micro-apps depend on to make the ESM sandbox work. Classic (webpack) apps are unaffected. See [ESM sandbox](/concepts/esm-sandbox).
+`isRuntimeCompatible()` checks only the base runtime, not the ESM sandbox or CSS `@scope`. Before the first sandboxed ESM load, qiankun probes dynamic multiple import maps: unsupported behavior rejects with `esm-unsupported`; a CSP-blocked or timed-out probe rejects with `esm-capability-check-failed`. Firefox does not enable this ESM path by default; provide a Classic build entry when Firefox support is required. See [Browser support](/guide/browser-support).
 
 :::
+
+## CSP: review script and style policies
+
+v3’s script executor does not use `eval` or `new Function`, but transformed external Classic scripts and ESM execute through Blob URLs. A script policy allowing only the original asset origins is insufficient. Configure the host response’s `script-src`, `style-src`, and `connect-src` for the resources used. The current ESM path also inserts inline import maps and has no unified nonce propagation setting; adding a nonce to the entry script alone does not authorize it. Review [Content Security Policy (CSP)](/guide/csp-requirements) for your script, style, and cross-origin deployment paths.
 
 ## Other v3 APIs worth adopting
 
 - [`isRuntimeCompatible`](/api/is-runtime-compatible) — probe browser support before starting.
-- The per-app [`configuration`](/api/configuration) on `RegistrableApp` (and the second argument of `loadMicroApp`) — `sandbox` (with `styleIsolation`, `globals`, `incubatorContext`, `plugins` inside it) and `fetch` all live here now.
+- The per-app [`configuration`](/api/configuration) on `RegistrableApp` (and the second argument of `loadMicroApp`) — `sandbox` (including style isolation and module hooks), `fetch`, and `loadTimeout` live here now.
+
+`setDefaultMountApp` and `runAfterFirstMounted` remain exported from `qiankun`. Route navigation can use the top-level `navigateToUrl` export without adding another copy of single-spa.
 
 For new integrations, start with `loadMicroApp`; the [API overview](/api/) owns the complete current export list.
 
 ::: warning prefetchApps is deprecated
-The streaming loader prefetches assets as it parses the entry HTML, so explicit prefetching is rarely needed. `prefetchApps` still exists but is deprecated in 3.0; the whole `prefetch` strategy from 2.x's `start()` is gone. For loading tuning, see [Optimizing loading and prefetch](/cookbook/optimize-loading).
+The streaming loader preloads assets while parsing the current entry HTML; this does not prefetch other, unloaded apps before activation. `prefetchApps` still exists but is deprecated in 3.0; the whole `prefetch` strategy from 2.x's `start()` is gone. For loading tuning, see [Optimizing loading and prefetch](/cookbook/optimize-loading).
 
 :::
 
@@ -366,3 +438,7 @@ The streaming loader prefetches assets as it parses the entry HTML, so explicit 
 7. Change the micro-app entry to render into `props.container` with `createRoot` / `app.mount`.
 8. Drop the `prefetch` strategy and rely on streaming auto-prefetch.
 9. Gate browser startup with `isRuntimeCompatible()` to confirm the core runtime capabilities are present.
+10. Move business-prop- or container-dependent `bootstrap` logic into `mount`; do not rely on an automatically injected container in `update`.
+11. Check instance reuse and cold loading after cache reclamation; distinguish temporary unmounting from explicit disposal and await each operation’s returned promise.
+12. Migrate error handling for each loading mode, configure `loadTimeout` if needed, and forward cancellation signals in custom fetch implementations.
+13. Review the host CSP for the ESM, style-isolation, and cross-origin resource paths actually used.

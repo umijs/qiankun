@@ -21,7 +21,9 @@ qiankun 3.0 的公开 API 更精简，约束也更明确。本指南通过迁移
 | 全局状态管理 | `initGlobalState` / `onGlobalStateChange` / `setGlobalState` | 已移除；通过 `props` 传入自有状态容器 |
 | 微应用构建 | 手动配置 UMD / `libraryTarget` / `jsonpFunction` / `chunkLoadingGlobal` | 使用 `@qiankunjs/bundler-plugin`（Webpack）或 `qiankun()`（Vite） |
 | 预加载 | `start()` 上的 `prefetch: 'all' \| string[] \| fn` | 流式加载器自动预加载；`prefetchApps` 已废弃 |
-| 运行环境下限 | 较旧的工具链与浏览器 | Node `>=20.19`；`Proxy` + `TransformStream` + `URL.createObjectURL` |
+| 浏览器兼容 | 包含旧浏览器兼容路径 | 面向现代浏览器，不提供快照沙箱退化；见[浏览器支持](/zh-CN/guide/browser-support) |
+| 错误处理 | `addGlobalUncaughtErrorHandler` / `removeGlobalUncaughtErrorHandler` | 路由应用使用 `addErrorHandler` / `removeErrorHandler`；手动加载应用处理句柄 Promise |
+| 实例释放 | `unmount()` 卸载后保留已加载实例 | 空闲实例有数量和时间限制；新增 `unload()`、`unloadMicroApp()` 和 `unloadApplication()` |
 
 以下各节详细说明这些差异。
 
@@ -119,7 +121,7 @@ start(); // 此处不再接收 qiankun 专用选项
 ```
 :::
 
-当前的应用级字段为 `sandbox`、`fetch`、`streamTransformer` 和 `nodeTransformer`；`styleIsolation`、`globals`、`incubatorContext` 和 `plugins` 位于 `sandbox` 对象内部。默认值和高级用法见 [AppConfiguration 参考](/zh-CN/api/configuration)。
+当前的应用级字段为 `sandbox`、`fetch`、`loadTimeout`、`streamTransformer` 和 `nodeTransformer`；`styleIsolation`、`globals`、`incubatorContext`、`plugins`、`modules`、`resolveHook`、`importHook` 和 `loadHook` 位于 `sandbox` 对象内部。默认值和高级用法见 [AppConfiguration 参考](/zh-CN/api/configuration)。
 
 v3 已移除 `FrameworkConfiguration` 类型、`getPublicPath`、`getTemplate`、`excludeAssetFilter` 和 `singular`。
 
@@ -311,17 +313,81 @@ if (!window.__POWERED_BY_QIANKUN__) {
 
 Vue 的实现结构相同：在 `mount` 中调用 `createApp(...).mount(...)`，在 `unmount` 中调用 `app.unmount()`。Webpack 和原生 ESM 构建均导出相同的三个生命周期函数，对应的构建集成会将入口处理为 qiankun 所需的格式。详见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
 
+`mount` 和 `unmount` 会收到本次挂载的 `props.container`；可选的 `update` 只接收调用方传入的业务 props，不会自动注入容器。若更新时需要访问框架根节点或容器，应在 `mount` 中保存引用，在 `unmount` 中释放。
+
 ::: danger `entry` 脚本不得超过一个
 一份 HTML 入口中最多只能有一个带 `entry` 标记的脚本。若存在两个 `entry` 脚本，加载器会抛出 `QiankunError`。构建插件具有幂等性，只会为一个脚本添加 `entry` 属性。
 
 :::
 
+## 实例复用与销毁：区分 unmount 和 unload
+
+迁移时应检查所有 `loadMicroApp` 调用，避免把再次调用函数等同于重新加载脚本：
+
+- 以相同的 `name` 和 `entry` 加载时，可复用同一容器上的实例，或其他容器中已空闲、正在卸载的实例。同一容器上的挂载会排队；在不同容器中同时挂载时，各自使用独立实例。
+- 命中缓存时，入口脚本、模块顶层代码和 `bootstrap` 不会再次执行；本次业务 props 由 `mount` 接收。与挂载位置或用户状态有关的初始化应放在 `mount` 中。
+- 同一 `name` 和 `entry` 最多保留 2 份空闲实例，全局最多 8 份，连续空闲 5 分钟后回收。这是内置策略，不是 `AppConfiguration` 配置项。缓存回收后，旧句柄仍可通过 `mount()` 重新加载。
+- 复用实例时沿用创建它时的配置和主应用生命周期钩子；再次传入不同的 `configuration` 不会重建已有沙箱。需要更换配置或强制获取新代码时，应先销毁旧实例。
+
+`unmount()` 用于暂时移除视图，已加载实例仍可能被复用。需要释放沙箱、资源和缓存时，改用以下 API：
+
+| 加载方式 | 销毁方式 | 范围 |
+| --- | --- | --- |
+| `loadMicroApp` | `await app.unload()` | 销毁该句柄所用的实例，共用它的句柄一并失效 |
+| `loadMicroApp` | `await unloadMicroApp(name)` | 销毁该名称下全部手动加载的实例 |
+| `registerMicroApps` | `await unloadApplication(name, { waitForUnmount: true })` | 等待路由卸载后销毁；保留注册，后续进入活跃路由会重新加载 |
+
+```ts
+import { loadMicroApp } from 'qiankun';
+
+const app = loadMicroApp({ name: 'account-app', entry, container });
+await app.mountPromise;
+
+// 暂时隐藏，之后仍可能复用。
+await app.unmount();
+await app.mount();
+
+// 不再使用时销毁；之后须重新调用 loadMicroApp 获取句柄。
+await app.unload();
+```
+
+`mountPromise` 和 `unmountPromise` 只表示首次挂载和首次卸载；后续操作应等待 `mount()`、`unmount()` 各自返回的 Promise。主动 `unload()` 与缓存自动回收不同：主动销毁后旧句柄失效，不能再挂载。
+
+加载或 `bootstrap` 失败后，重新调用 `loadMicroApp` 可以重新加载；同一 `name` 和 `entry` 有约 1 秒的失败冷却期。不要通过反复挂载失败句柄重试。销毁无法抢占已经进入的应用生命周期，也无法清空浏览器原生 ESM 模块注册表。完整行为与清理边界见 [loadMicroApp](/zh-CN/api/load-micro-app)；路由应用见 [registerMicroApps](/zh-CN/api/register-micro-apps#unload-application)。
+
+## 错误处理与加载超时
+
+v3 不再导出 `addGlobalUncaughtErrorHandler` 和 `removeGlobalUncaughtErrorHandler`。应按加载方式迁移错误处理：
+
+- **路由应用**：用 `addErrorHandler` / `removeErrorHandler` 处理 single-spa 的加载和生命周期错误；移除时传入同一函数引用。
+- **手动加载应用**：处理返回句柄的 Promise 拒绝，首次挂载可等待 `mountPromise`。全局 `addErrorHandler` 不会接收这些首次加载及生命周期错误。
+- **普通页面异常**：如需监听与 qiankun 无关的未捕获错误，使用浏览器的 `error` / `unhandledrejection` 事件，并由主应用管理监听器清理。
+
+框架错误可通过从 `qiankun` 导入的 `QiankunError` 及其稳定 `code` 识别；业务错误、网络异常和 single-spa 错误不一定属于该类型，不应通过匹配错误消息判断。
+
+新增的 `loadTimeout` 默认值为 `0`，表示关闭。它从取得容器的加载权限后开始计时，覆盖 `beforeLoad`、入口加载、资源处理、生命周期发现和 HTML 流结束；不包含容器等待、失败冷却期，也不限制 `bootstrap`、`mount`、`unmount` 或缓存命中后的重新挂载。
+
+```ts
+import { loadMicroApp, QiankunError } from 'qiankun';
+
+const app = loadMicroApp({ name, entry, container }, { loadTimeout: 10_000 });
+try {
+  await app.mountPromise;
+} catch (error) {
+  if (error instanceof QiankunError) {
+    console.error(error.code, error);
+  } else {
+    console.error(error);
+  }
+}
+```
+
+启用超时后，入口生命周期就绪且 HTML 流结束才会进入挂载；默认关闭时仍可在 HTML 流结束前挂载。超时产生 `LoadAppTimeoutError`（`code` 为 `load-timeout`），框架会中止加载并清理已写入的节点和沙箱。自定义 `fetch` 应转发 `init.signal`，并在中止后停止读取响应流。详见 [AppConfiguration](/zh-CN/api/configuration#loadtimeout) 和 [addErrorHandler / removeErrorHandler](/zh-CN/api/error-handling)。
+
 ## 运行环境与工具链下限
 
-v3 提高了最低环境要求。
-
-- **Node**：构建和运行 Vite 等工具链需要 Node `>=20.19`。
-- **浏览器**：运行时需要支持 `Proxy`、`TransformStream` 和 `URL.createObjectURL`。样式隔离还要求浏览器原生支持 CSS `@scope`。
+- **开发工具链**：本仓库要求 Node `^22.15.0 || >=24.0.0` 和 `pnpm@11.13.1`。接入项目还应满足其构建工具的要求；这不是浏览器运行时的 Node 依赖。
+- **浏览器**：以[浏览器支持](/zh-CN/guide/browser-support)为准，分别评估基础运行时、原生 ESM 和样式隔离。v3 不支持 IE，也不会自动退化成快照沙箱。
 
 调用 `start()` 之前，应先使用 v3 新增的 [`isRuntimeCompatible`](/zh-CN/api/is-runtime-compatible) 检查所需的运行时能力：
 
@@ -339,19 +405,25 @@ if (isRuntimeCompatible()) {
 仅当环境同时支持 `Proxy`、`TransformStream` 和 `URL.createObjectURL` 时，`isRuntimeCompatible()` 才返回 `true`。
 
 ::: info Firefox 与 ESM 应用
-Firefox 不支持动态注入 import map，而以原生 ESM 方式加载的 Vite 微应用依赖该能力。Classic 脚本模式的 Webpack 应用不受影响。详见 [ESM 沙箱](/zh-CN/concepts/esm-sandbox)。
+`isRuntimeCompatible()` 只检测基础运行时，不检测 ESM 沙箱或 CSS `@scope`。qiankun 会在首次加载沙箱 ESM 前检测动态多 import map：不支持时以 `esm-unsupported` 拒绝，检测被 CSP 拦截或超时等情况以 `esm-capability-check-failed` 拒绝。Firefox 默认不支持该 ESM 路径；需要支持 Firefox 时应提供 Classic 构建入口。详见[浏览器支持](/zh-CN/guide/browser-support)。
 
 :::
+
+## CSP：重新检查脚本和样式策略
+
+v3 的脚本执行器不依赖 `eval` 或 `new Function`，但转换后的外链 Classic 脚本和 ESM 通过 Blob URL 执行，不能直接沿用仅允许原始资源域名的脚本策略。应在主应用响应上配置相应的 `script-src`、`style-src` 和 `connect-src`。当前 ESM 路径还会动态插入内联 import map，没有统一的 nonce 传递配置；只给入口脚本加 nonce 不足以授权该路径。按实际使用的脚本、样式和跨源部署方式核对[内容安全策略（CSP）](/zh-CN/guide/csp-requirements)。
 
 ## 其他 v3 API
 
 - [`isRuntimeCompatible`](/zh-CN/api/is-runtime-compatible)——在启动前检查浏览器兼容性
-- 应用级 [`configuration`](/zh-CN/api/configuration)——可通过 `RegistrableApp.configuration` 或 `loadMicroApp` 的第二个参数设置 `sandbox`（`styleIsolation`、`globals`、`incubatorContext`、`plugins` 均在其内部）和 `fetch` 等选项
+- 应用级 [`configuration`](/zh-CN/api/configuration)——可通过 `RegistrableApp.configuration` 或 `loadMicroApp` 的第二个参数设置 `sandbox`（包括样式隔离和模块钩子）、`fetch`、`loadTimeout` 等选项
+
+`setDefaultMountApp` 和 `runAfterFirstMounted` 仍从 `qiankun` 导出；路由导航可使用同样从顶层导出的 `navigateToUrl`，无需为此额外引入另一份 single-spa。
 
 新项目应优先使用 `loadMicroApp`。完整的公开导出列表见 [API 总览](/zh-CN/api/)。
 
 ::: warning prefetchApps 已废弃
-流式加载器会在解析入口 HTML 的过程中自动预加载资源，因此大多数场景无需显式预取。`prefetchApps` 仍保留，但已在 3.0 中废弃；2.x 中 `start()` 的 `prefetch` 策略已移除。加载优化见[优化加载与预加载](/zh-CN/cookbook/optimize-loading)。
+流式加载器会在本次入口 HTML 的解析过程中自动预加载资源；这不等同于在应用激活前预取尚未加载的其他应用。`prefetchApps` 仍保留，但已在 3.0 中废弃；2.x 中 `start()` 的 `prefetch` 策略已移除。加载优化见[优化微应用加载](/zh-CN/cookbook/optimize-loading)。
 
 :::
 
@@ -366,3 +438,7 @@ Firefox 不支持动态注入 import map，而以原生 ESM 方式加载的 Vite
 7. 在微应用入口中使用 `createRoot` 或 `app.mount` 渲染到 `props.container`。
 8. 移除 `prefetch` 策略，使用流式加载器的自动预加载能力。
 9. 在启动前调用 `isRuntimeCompatible()`，确认浏览器具备核心运行时能力。
+10. 将依赖业务 props 或容器的 `bootstrap` 逻辑移到 `mount`；`update` 不依赖自动注入的容器。
+11. 核对实例复用和回收后的冷加载；区分临时卸载与主动销毁，并等待每次操作返回的 Promise。
+12. 按加载方式迁移错误处理，按需设置 `loadTimeout`，并为自定义 fetch 转发取消信号。
+13. 根据实际使用的 ESM、样式隔离和跨源资源重新核对主应用 CSP。
