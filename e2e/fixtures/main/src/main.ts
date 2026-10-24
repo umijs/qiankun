@@ -193,6 +193,13 @@ const testAPI = {
     return app.getStatus();
   },
 
+  async remount(key: string): Promise<string> {
+    const app = instances.get(key);
+    if (!app) throw new Error(`no app instance for key ${key}`);
+    await app.mount();
+    return app.getStatus();
+  },
+
   /**
    * What a binding does when it swaps its container element: ask the old instance to unmount
    * without waiting, then load into the new element right away. Resolves with the new instance's

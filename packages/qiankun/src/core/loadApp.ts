@@ -43,6 +43,8 @@ declare const __QIANKUN_VERSION__: string;
 
 export interface ParcelConfigObjectGetter {
   (mountContainer: HTMLElement, mountApp?: LoadableApp<ObjectType>): ParcelConfigObject;
+  readonly loadPhaseSettled: Promise<void>;
+  dispose(): Promise<void>;
   /**
    * Whether the app still holds any container occupancy — its load hold ① or a mount hold ②.
    * An occupying app is still writing to (or mounted in) a container and must not be rebound.
@@ -209,7 +211,9 @@ export default async function loadApp<T extends ObjectType>(
    */
   let entryLifecyclesSettled = false;
   let domStreamSettled = false;
+  const loadPhaseSettled = new Deferred<void>();
   const releaseLoadHoldWhenSettled = () => {
+    if (entryLifecyclesSettled && domStreamSettled) loadPhaseSettled.resolve();
     // an adopted hold lives on as the mount hold ② and is no longer the latch's to release
     if (entryLifecyclesSettled && domStreamSettled && !loadHoldAdoptedByMount) releaseHold(loadHold);
   };
@@ -456,6 +460,12 @@ export default async function loadApp<T extends ObjectType>(
   };
 
   return Object.defineProperties(getParcelConfig, {
+    loadPhaseSettled: { value: loadPhaseSettled.promise },
+    dispose: {
+      value: async () => {
+        await sandboxController?.dispose();
+      },
+    },
     occupiesContainer: { get: () => holds.size > 0 },
     loadPhaseOpen: { get: () => !(entryLifecyclesSettled && domStreamSettled) },
   }) as ParcelConfigObjectGetter;

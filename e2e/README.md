@@ -29,7 +29,8 @@ The main fixture serves two pages: `index.html` (imperative `loadMicroApp` playg
 
 Suites map to qiankun's core promises:
 
-- `lifecycle` — mount/unmount/remount, lifecycle caching (scripts must not re-execute on remount)
+- `lifecycle` — mount/unmount/remount, lifecycle caching (scripts must not re-execute on a warm remount)
+- `instance-cache` — idle expiry releases real sandboxes, old handles cold-load after reclamation, and disposal preserves a successor's DOM
 - `sandbox-js` — window pollution stays inside the sandbox, main-realm globals stay readable, leaked intervals reclaimed on unmount
 - `esm-sandbox` — ESM entry lifecycles, sandboxed module graph, namespace caching across remounts
 - `style-isolation` — `@scope` based CSS isolation, with a control test documenting the unisolated leak

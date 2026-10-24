@@ -26,6 +26,7 @@ export type E2EWindow = Window & {
     loadDetached(name: string, key?: string, containerKey?: string, props?: Record<string, unknown>): string;
     settle(key: string): Promise<string>;
     unmount(key: string): Promise<string>;
+    remount(key: string): Promise<string>;
     swapContainer(name: string, key: string, nextKey: string): Promise<string>;
     resetContainer(key: string): void;
     status(key: string): string | undefined;
@@ -73,6 +74,10 @@ export async function loadAppExpectError(
 
 export async function unmountApp(page: Page, key: string): Promise<string> {
   return page.evaluate((instanceKey) => (window as unknown as E2EWindow).__E2E__.unmount(instanceKey), key);
+}
+
+export async function remountApp(page: Page, key: string): Promise<string> {
+  return page.evaluate((instanceKey) => (window as unknown as E2EWindow).__E2E__.remount(instanceKey), key);
 }
 
 export async function loadAppWithStoragePlugin(

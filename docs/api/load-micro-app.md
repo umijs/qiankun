@@ -43,7 +43,9 @@ type LoadableApp<T extends ObjectType> = {
 ```
 
 ::: warning `container` must be an element
+
 In qiankun v3, `container` is an `HTMLElement`, not a `string | HTMLElement`. Resolve the element yourself (`document.getElementById(...)`, a framework ref, etc.) before passing it. A selector string is a type error and will not work at runtime.
+
 :::
 
 ### `configuration?: AppConfiguration`
@@ -58,10 +60,9 @@ Per-app options. All fields are optional; the defaults below are resolved intern
 | `nodeTransformer` | `NodeTransformer` | internal default | Rewrites each script/link/style node before it hits live DOM. Override only for advanced cases. |
 
 ```ts
-type AppConfiguration =
-  Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
-    sandbox?: boolean | SandboxConfiguration;
-  };
+type AppConfiguration = Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
+  sandbox?: boolean | SandboxConfiguration;
+};
 ```
 
 `sandbox` is the single umbrella for isolation. Its object form carries `styleIsolation`, `globals`, `incubatorContext`, `plugins`, and the Compartment module hooks:
@@ -97,7 +98,7 @@ See [Lifecycle hooks](/api/lifecycles) for details.
 
 ## Return value
 
-`loadMicroApp` returns a `MicroApp`, which is a single-spa Parcel handle:
+`loadMicroApp` returns a `MicroApp` handle compatible with the single-spa Parcel interface:
 
 ```ts
 type MicroApp = Parcel;
@@ -137,8 +138,12 @@ type Parcel = {
 | `mountPromise` | Resolves when mount has finished. Await this to know the app is on screen. |
 | `unmountPromise` | Resolves when unmount has finished. |
 
+The four promises retain single-spa Parcel's one-shot semantics: they describe the first load, bootstrap, mount, and unmount and are not replaced on remount. For subsequent `mount()` and `unmount()` calls, await the promise returned by the method; already-settled `mountPromise` and `unmountPromise` do not track later cycles.
+
 ::: warning Handle rejections
+
 The promises reject if loading or mounting fails. Attach a `.catch` (or wrap in `try/await`) so failures do not surface as unhandled rejections.
+
 :::
 
 ## Behavior {#behavior}
@@ -147,7 +152,9 @@ Observable behavior for callers:
 
 - **Loading and mounting start immediately.** You do not call `start()` first; await `mountPromise` when you need to know the app is visible.
 - **One container hosts one app at a time.** When apps are loaded into the same container in succession, the next instance waits for the previous one to unmount.
-- **An app name reuses its unmounted instances.** When you call it again with the same `name` and `entry` and that app has an idle, unmounted instance, qiankun mounts that instance into the container you pass, without loading the entry again or calling `bootstrap`. If none is idle, an instance whose `unmount()` has been called but has not finished is reused as well, and the new instance mounts once that unmount completes. Only instances mounted at the same time load separate copies. A `name` should therefore always refer to the same app, and per-mount state belongs in `mount()`.
+- **An app name prefers existing instances.** Calls with the same `name` and `entry` reuse an idle instance without executing the entry or `bootstrap` again. If none is idle, a suitable unmounting instance can be reused after its teardown finishes. When no instance can be reused, qiankun loads a new copy. A `name` should always refer to the same app, and per-mount state belongs in `mount()`.
+- **Idle instances have capacity and time limits.** qiankun retains at most 2 idle instances per `name` and `entry`, and 8 globally. Exceeding either limit evicts the least recently used idle instance; 5 minutes of continuous idle time also triggers reclamation. Loading, mounting, queued, and unmounting instances are excluded. Reclamation does not clear the separate resource request cache.
+- **Old handles can mount again after reclamation.** After `unmount()`, call the same handle's `mount()` to reuse a cached sandbox. If its cache entry was reclaimed and no other instance can be reused, qiankun reloads and executes the entry, `bootstrap`, and `mount`. Do not depend on module top-level code always running, or never running, on every mount.
 - **The caller owns teardown.** Call `unmount()` when the app is no longer shown so qiankun can clear the container and release side effects it tracks.
 
 See [Run multiple micro-app instances](/cookbook/run-multiple-instances) for the complete guidance on reuse and remounting.
@@ -183,14 +190,13 @@ await microApp.unmount();
 For a legacy app that cannot run under isolation, disable the sandbox:
 
 ```ts
-const microApp = loadMicroApp(
-  { name: 'legacy-app', entry: 'http://localhost:7200', container },
-  { sandbox: false },
-);
+const microApp = loadMicroApp({ name: 'legacy-app', entry: 'http://localhost:7200', container }, { sandbox: false });
 ```
 
 ::: tip React and Vue wrappers
+
 If the host uses React or Vue, the corresponding [`<MicroApp>`](/ecosystem/react) component can manage the container ref, prop updates, and unmount. These wrappers use the same `loadMicroApp` instance model.
+
 :::
 
 ## Related

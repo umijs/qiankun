@@ -43,7 +43,9 @@ type LoadableApp<T extends ObjectType> = {
 ```
 
 ::: warning `container` 必须是元素
+
 在 qiankun v3 中，`container` 的类型为 `HTMLElement`，不再接受 `string | HTMLElement`。调用前应通过 `document.getElementById(...)` 或框架提供的 ref 获取实际元素。传入选择器字符串会导致类型错误，运行时也无法正常挂载。
+
 :::
 
 ### `configuration?: AppConfiguration`
@@ -58,10 +60,9 @@ type LoadableApp<T extends ObjectType> = {
 | `nodeTransformer` | `NodeTransformer` | 内部默认值 | 在 `<script>`、`<link>` 和 `<style>` 节点进入真实 DOM 前进行转换。仅高级扩展场景需要覆盖。 |
 
 ```ts
-type AppConfiguration =
-  Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
-    sandbox?: boolean | SandboxConfiguration;
-  };
+type AppConfiguration = Partial<Pick<LoaderOpts, 'fetch' | 'streamTransformer' | 'nodeTransformer'>> & {
+  sandbox?: boolean | SandboxConfiguration;
+};
 ```
 
 `sandbox` 是隔离能力的统一入口。它的对象形式承载 `styleIsolation`、`globals`、`incubatorContext`、`plugins` 以及 Compartment 模块钩子：
@@ -97,7 +98,7 @@ type LifeCycles<T extends ObjectType> = {
 
 ## 返回值
 
-`loadMicroApp` 返回 `MicroApp`，即 single-spa 的 Parcel 句柄：
+`loadMicroApp` 返回兼容 single-spa Parcel 接口的 `MicroApp` 句柄：
 
 ```ts
 type MicroApp = Parcel;
@@ -126,26 +127,32 @@ type Parcel = {
 };
 ```
 
-| 成员 | 说明 |
-| --- | --- |
-| `mount()` | 挂载该 Parcel。`loadMicroApp` 会在加载时自动挂载，因此通常无需直接调用。 |
-| `unmount()` | 卸载应用、停用沙箱，并清理可追踪的副作用和容器 DOM。不再使用应用时必须调用。 |
-| `update?(props)` | 仅当微应用导出 `update` 生命周期时存在，用于向运行中的应用传递新的 props。 |
-| `getStatus()` | 返回当前生命周期状态，取值范围为上述联合类型。 |
-| `loadPromise` | 表示源码加载阶段完成的 Promise。 |
-| `bootstrapPromise` | 表示 bootstrap 阶段完成的 Promise。 |
-| `mountPromise` | 表示挂载阶段完成的 Promise。可等待该 Promise，以确认应用已完成渲染。 |
-| `unmountPromise` | 表示卸载阶段完成的 Promise。 |
+| 成员               | 说明                                                                         |
+| ------------------ | ---------------------------------------------------------------------------- |
+| `mount()`          | 挂载该 Parcel。`loadMicroApp` 会在加载时自动挂载，因此通常无需直接调用。     |
+| `unmount()`        | 卸载应用、停用沙箱，并清理可追踪的副作用和容器 DOM。不再使用应用时必须调用。 |
+| `update?(props)`   | 仅当微应用导出 `update` 生命周期时存在，用于向运行中的应用传递新的 props。   |
+| `getStatus()`      | 返回当前生命周期状态，取值范围为上述联合类型。                               |
+| `loadPromise`      | 表示源码加载阶段完成的 Promise。                                             |
+| `bootstrapPromise` | 表示 bootstrap 阶段完成的 Promise。                                          |
+| `mountPromise`     | 表示挂载阶段完成的 Promise。可等待该 Promise，以确认应用已完成渲染。         |
+| `unmountPromise`   | 表示卸载阶段完成的 Promise。                                                 |
+
+句柄上的四个 Promise 保持 single-spa Parcel 的单次语义，分别对应首次加载、首次 bootstrap、首次挂载和首次卸载，不会在重新挂载时替换。后续调用 `mount()`、`unmount()` 时，应等待方法返回的 Promise；已完成的 `mountPromise`、`unmountPromise` 不能用于等待后续轮次。
 
 ::: warning 处理 Promise 拒绝
+
 加载或挂载失败时，这些 Promise 会被拒绝。应通过 `.catch` 或 `try...catch` 处理错误，避免产生未处理的 Promise 拒绝。
+
 :::
 
 ## 行为 {#behavior}
 
 - **调用后立即开始加载和挂载。** 无需预先调用 `start()`；如需等待应用完成渲染，应等待 `mountPromise`。
 - **一个容器在同一时刻只承载一个应用。** 如果连续向同一容器加载应用，后一个实例会等待前一个实例卸载。
-- **同名应用会复用已卸载的实例。** 以相同的 `name` 和 `entry` 再次调用时，如果该应用有已卸载、处于空闲状态的实例，qiankun 会把它挂载到本次传入的容器，不再重新加载入口，也不再调用 `bootstrap`。没有空闲实例时，已调用 `unmount()` 但尚未卸载完成的实例也会被复用，新实例等它卸载完成后再挂载。只有同时挂载的实例才会各自加载一份。因此同一 `name` 应始终指向同一个应用，每次挂载所需的状态应在 `mount()` 中初始化。
+- **同名应用优先复用已有实例。** 以相同的 `name` 和 `entry` 再次调用时，qiankun 优先复用空闲实例，不再执行入口和 `bootstrap`。没有空闲实例时，也可以等待满足复用条件的卸载中实例；没有可复用实例时则重新加载。同一 `name` 应始终指向同一个应用，每次挂载所需的状态应在 `mount()` 中初始化。
+- **空闲实例有数量和时间限制。** 同一 `name` 和 `entry` 最多保留 2 份空闲实例，全局最多保留 8 份；超限时淘汰最久未使用的空闲实例，连续空闲 5 分钟后也会回收。正在加载、挂载、排队或卸载的实例不参与淘汰。回收不清空独立的资源请求缓存。
+- **回收后旧句柄仍可重新挂载。** `unmount()` 后可以再次调用原句柄的 `mount()`；命中缓存时复用沙箱，缓存已回收且没有其他可复用实例时，重新加载并执行入口、`bootstrap` 和 `mount`。不应依赖模块顶层代码在每次挂载时必定执行或必定不执行。
 - **调用方负责卸载。** 不再展示应用时应调用 `unmount()`，以便 qiankun 清空容器并释放能够追踪的资源和副作用。
 
 多实例、复用和重新挂载的完整建议见[运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)。
@@ -181,14 +188,13 @@ await microApp.unmount();
 如果旧应用无法在隔离环境中运行，可以关闭沙箱：
 
 ```ts
-const microApp = loadMicroApp(
-  { name: 'legacy-app', entry: 'http://localhost:7200', container },
-  { sandbox: false },
-);
+const microApp = loadMicroApp({ name: 'legacy-app', entry: 'http://localhost:7200', container }, { sandbox: false });
 ```
 
 ::: tip React 和 Vue 组件
+
 如果主应用使用 React 或 Vue，也可以使用对应的 [`<MicroApp>`](/zh-CN/ecosystem/react) 组件管理容器引用、props 更新和实例卸载。组件内部采用与 `loadMicroApp` 相同的实例模型。
+
 :::
 
 ## 相关内容

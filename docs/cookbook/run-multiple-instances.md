@@ -78,9 +78,11 @@ Each instance has its own handle. Do not mix update and unmount operations betwe
 
 ## Remounting and container reuse
 
-After unmounting the same instance, you can call `mount()` on its handle again. qiankun reuses the lifecycles it already discovered instead of executing entry top-level code again. Create application instances, routers, and stores needed for every mount inside the micro-app's `mount()`.
+After unmounting an instance, you can call `mount()` on its handle again. A cache hit reuses the discovered lifecycles; if the cache entry was reclaimed and no other instance can be reused, qiankun reloads and executes the entry and `bootstrap` again. Create application instances, routers, and stores inside the micro-app's `mount()` rather than depending on how many times module top-level code executes.
 
-If the host destroys the old container and calls `loadMicroApp` for a new one, the call returns a new handle. When the same app has an unmounted instance, qiankun mounts it into the new container without executing the entry again. Keep and clean up the new handle separately. Do not remove the DOM and discard the old handle.
+If the host destroys the old container and calls `loadMicroApp` for a new one, the call returns a new handle. When an instance with the same name and entry can be reused, qiankun mounts it into the new container without executing the entry again. Keep and clean up the new handle separately. Do not remove the DOM and discard the old handle.
+
+The idle pool retains at most 2 instances per `name` and `entry`, and 8 globally. Exceeding either limit evicts the least recently used idle instance; 5 minutes of continuous idle time also triggers reclamation. Running instances and those waiting to mount or unmount are excluded.
 
 ## Every handle must be unmounted
 

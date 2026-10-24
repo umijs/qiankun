@@ -31,6 +31,8 @@ function getterOf(
 ) {
   const getter = (container: HTMLElement) => config(container);
   return Object.defineProperties(getter, {
+    dispose: { value: vi.fn(async () => {}) },
+    loadPhaseSettled: { value: Promise.resolve() },
     occupiesContainer: { get: occupied },
     loadPhaseOpen: { get: loadPhaseOpen },
   }) as ParcelConfigObjectGetter;
@@ -324,10 +326,10 @@ describe('loadMicroApp instance reuse', () => {
     expect(mocks.loadApp).toHaveBeenCalledTimes(1);
     expect(mount).toHaveBeenCalledTimes(1);
 
-    // Both left the queue, so the generation is idle again and the next element reuses it.
+    // A failed teardown is retired rather than returned to the idle pool.
     const [last] = containers(1);
     await load(last).mountPromise;
-    expect(mocks.loadApp).toHaveBeenCalledTimes(1);
+    expect(mocks.loadApp).toHaveBeenCalledTimes(2);
     expect(mount).toHaveBeenLastCalledWith({ container: last });
   });
 

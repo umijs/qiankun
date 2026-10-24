@@ -77,7 +77,7 @@ await microApp.mount();
 - `unmount` 必须清理由 `mount` 创建的所有可见内容和副作用；
 - `update`（如果已导出）将主应用提供的新 props 应用于已挂载实例。
 
-重新挂载时，qiankun 会重建入口 DOM 并再次调用 `mount`，但同一实例不会重新执行入口脚本或模块顶层代码。因此，应在 `mount` 中创建可销毁的框架根节点和视图状态，并在 `unmount` 中将其销毁，不要依赖顶层代码再次执行。
+重新挂载时，qiankun 会重建入口 DOM 并再次调用 `mount`。命中实例缓存时，入口脚本和模块顶层代码不会再次执行；缓存回收后重新加载则会再次执行入口和 `bootstrap`。因此，应在 `mount` 中创建可销毁的框架根节点和视图状态，并在 `unmount` 中将其销毁，不要依赖顶层代码的执行次数。缓存策略见[运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)。
 
 ## 清理是双方共同的责任
 
