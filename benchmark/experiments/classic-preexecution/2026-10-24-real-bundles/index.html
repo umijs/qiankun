@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Classic preparation verification</title>
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' blob:; object-src 'none'" />
+    <style>
+      body {
+        margin: 0;
+      }
+      #experiment-input {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 150px;
+        height: 40px;
+        z-index: 99;
+      }
+      #micro-app-container {
+        width: 960px;
+        min-height: 480px;
+      }
+      #experiment-host {
+        padding-top: 45px;
+      }
+    </style>
+  </head>
+  <body>
+    <button id="experiment-input">Input</button>
+    <div id="experiment-host"></div>
+    <div id="micro-app-container"></div>
+    <script type="module" src="./host.ts"></script>
+  </body>
+</html>

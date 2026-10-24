@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-24T15:19:45.841Z",
+  "platform": "darwin",
+  "release": "25.6.0",
+  "cpu": "Apple M4",
+  "memory": 17179869184,
+  "node": "v24.14.0",
+  "revision": "43969119a0b66579246c13fd684d00f676ae6ac9",
+  "bundles": [
+    {
+      "name": "mermaid",
+      "bytes": 3566316,
+      "sha256": "227fb889b4aec146ea788346fccac1242f3b9733f598aa3225d8b9b0a06e0c2d",
+      "mermaid": "11.16.0",
+      "adaptation": "export bridge only",
+      "expectedChecksum": 24
+    },
+    {
+      "name": "react-cytoscape",
+      "bytes": 629457,
+      "sha256": "595d9d5e2b6210fa04848b1fdd188869d1ca83edf6bdc2790fc61a2f2d325e2a",
+      "react": "19.2.7",
+      "cytoscape": "3.34.0",
+      "expectedChecksum": 80
+    }
+  ],
+  "mode": "formal",
+  "args": ["--site-per-process", "--enable-precise-memory-info"],
+  "formalProfile": {
+    "trials": 3,
+    "rounds": 20,
+    "warmups": 2,
+    "cpus": [1, 4],
+    "arms": ["a", "b", "factory"],
+    "readyLead": 250,
+    "AA": {
+      "maxAbsoluteDeltaPercent": 3,
+      "maxIntervalWidthPercentPoints": 10
+    }
+  },
+  "measurement": "Untraced timing; fresh BrowserContext per sample; new Chromium per trial; CPU throttling affects renderer, not whole physical device; two stable painted frames after mount plus PR core check; JS heap sampled not RSS",
+  "browser": "149.0.7827.55"
+}

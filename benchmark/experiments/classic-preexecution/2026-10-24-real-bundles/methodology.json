@@ -1,0 +1,37 @@
+{
+  "runtime": "current checkout source via explicit aliases; no package dist from other checkout",
+  "preparation": "PR 3208 host.ts copy with import targets, phase marks and mounted-render paint completion instrumentation",
+  "formal": "Untraced. No forced eager compile hint or engine flag. Two identical fetch arms plus factory arm. 3 trials x 20 rounds x 2 workloads x 2 CPU profiles; 2 warmups per arm per cell. No post-hoc removal or threshold changes.",
+  "trace": "Separate Chrome process per workload/arm, V8 function event logging plus CDP Tracing. Timings in these traces are diagnostic only. Nested event durations must not be summed as exclusive CPU time.",
+  "limitations": [
+    "Representative application fixtures using real published dependencies, not a deployed business application",
+    "One machine and Chromium; CPU throttle is not a physical slow device",
+    "Ready state deliberately tests complete preparation; does not establish hit rate",
+    "HTTP resources use fixed 20ms latency with no bandwidth throttle",
+    "Host workload is synthetic 30ms; fixed input at 50ms does not validate all interaction phases",
+    "Heap is sampled JS heap and includes preparation caches before release; not stable RSS"
+  ],
+  "files": {
+    "build.mjs": "a4bbb7d4c991b46ae875d9119832238af3587aad71ef9fa6959583a93227279b",
+    "run.mjs": "8c8f48e9589a0510afb1d4f01829d3bddbcb8fc75cee2f642ce82c265e3329d4",
+    "host.ts": "708d0e5fed8fc23b7a807b0c7ac5fdd25cc8e9b465a9f8c0459899e65205093a",
+    "index.html": "a1867430d9c99461240b7a2f72cf865839760f7b8077a6f8890895f23459abb2",
+    "stats.mjs": "05dfbe46fd575b1fe88454bfdb345c2b228eb1bccc71798eacfdab2b28f0b233",
+    "schedule.mjs": "786ded2576ad76b8775aa3cdefad2f54abd4e67c583f95db512efd69a5bd8bc6",
+    "synthetic-fixture.mjs": "01e60d3a70d5a26392e12176cfd9959f10fe78399f5ee20714332e88b5d8b7bf",
+    "analyze-trace.py": "8c46060d12c19a20f1163802549b223711dec870e4c09f7976a433330d9432c1",
+    "analyze-results.mjs": "d784b4395694aef1292d3bbba4f4e34a0112fb2e8243c462f7ba3d98b0427e2d"
+  },
+  "validatedOutcome": {
+    "formalSamples": 792,
+    "measured": 720,
+    "warmups": 72,
+    "trials": 3,
+    "AAConditionsPassed": 4,
+    "activationMetricsCalibrated": 8,
+    "semanticsPassed": true,
+    "runtimeRevision": "43969119a0b66579246c13fd684d00f676ae6ac9",
+    "tracedV8Version": "14.9.207.21",
+    "recommendation": "Continue the opt-in classic preparation investigation; demonstrated hit-case activation improvement, not sufficient evidence for default scheduling or public API rollout."
+  }
+}

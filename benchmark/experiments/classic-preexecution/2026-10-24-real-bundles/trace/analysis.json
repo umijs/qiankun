@@ -1,0 +1,871 @@
+[
+  {
+    "workload": "synthetic-5m",
+    "arm": "a",
+    "scriptId": "22",
+    "payloadMaxPosition": 5243823,
+    "functionEvents": {
+      "preparation": {
+        "counts": {},
+        "eventDurationMs": {},
+        "earlyInterpreters": []
+      },
+      "activation_and_later": {
+        "counts": {
+          "full-parse": 10323,
+          "preparse-resolution": 20637,
+          "interpreter": 10324,
+          "parse-function": 10319,
+          "first-execution": 1,
+          "maglev": 1,
+          "first-execution-MAGLEV": 1,
+          "turbofan": 1,
+          "first-execution-TURBOFAN_JS": 1,
+          "baseline": 1
+        },
+        "eventDurationMs": {
+          "full-parse": 157.846,
+          "preparse-resolution": 79.634,
+          "interpreter": 24.132,
+          "parse-function": 77.51,
+          "first-execution": 0.0,
+          "maglev": 0.0,
+          "first-execution-MAGLEV": 0.0,
+          "turbofan": 0.597,
+          "first-execution-TURBOFAN_JS": 0.0,
+          "baseline": 0.005
+        },
+        "earlyInterpreters": []
+      }
+    },
+    "trace": {
+      "prepare": {
+        "V8.CompileCode": {
+          "ms": 0.712,
+          "count": 26,
+          "mainThreadMs": 0.712
+        },
+        "V8.ParseFunction": {
+          "ms": 0.408,
+          "count": 23,
+          "mainThreadMs": 0.408
+        },
+        "V8.PreParse": {
+          "ms": 0.0,
+          "count": 0,
+          "mainThreadMs": 0.0
+        },
+        "V8.CompileIgnition": {
+          "ms": 0.091,
+          "count": 26,
+          "mainThreadMs": 0.091
+        },
+        "v8.parseOnBackground": {
+          "ms": 0.0,
+          "count": 0,
+          "mainThreadMs": 0.0
+        },
+        "v8.compile": {
+          "ms": 0.0,
+          "count": 0,
+          "mainThreadMs": 0.0
+        },
+        "V8.CompileCodeBackground": {
+          "ms": 0.0,
+          "count": 0,
+          "mainThreadMs": 0.0
+        }
+      },
+      "activation_to_paint": {
+        "V8.CompileCode": {
+          "ms": 167.773,
+          "count": 10638,
+          "mainThreadMs": 167.773
+        },
+        "V8.ParseFunction": {
+          "ms": 106.528,
+          "count": 10638,
+          "mainThreadMs": 106.528
+        },
+        "V8.PreParse": {
+          "ms": 54.291,
+          "count": 1,
+          "mainThreadMs": 0.0
+        },
+        "V8.CompileIgnition": {
+          "ms": 19.032,
+          "count": 10645,
+          "mainThreadMs": 19.013
+        },
+        "v8.parseOnBackground": {
+          "ms": 55.462,
+          "count": 1,
+          "mainThreadMs": 0.0
+        },
+        "v8.compile": {
+          "ms": 1.284,
+          "count": 1,
+          "mainThreadMs": 1.284
+        },
+        "V8.CompileCodeBackground": {
+          "ms": 0.063,
+          "count": 1,
+          "mainThreadMs": 0.0
+        }
+      }
+    },
+    "marks": {
+      "experiment-start": 3723100863039,
+      "activation-start": 3723101120060,
+      "stable-paint": 3723101379433
+    }
+  },
+  {
+    "workload": "synthetic-5m",
+    "arm": "factory",
+    "scriptId": "22",
+    "payloadMaxPosition": 5243732,
+    "functionEvents": {
+      "preparation": {
+        "counts": {
+          "full-parse": 3,
+          "preparse-resolution": 10319,
+          "interpreter": 4
+        },
+        "eventDurationMs": {
+          "full-parse": 100.859,
+          "preparse-resolution": 73.232,
+          "interpreter": 0.043
+        },
+        "earlyInterpreters": [
+          {
+            "start": 0,
+            "end": 5243732,
+            "name": ""
+          },
+          {
+            "start": 94,
+            "end": 5243729,
+            "name": ""
+          },
+          {
+            "start": 169,
+            "end": 5243726,
+            "name": ""
+          },
+          {
+            "start": 770,
+            "end": 839,
+            "name": ""
+          }
+        ]
+      },
+      "activation_and_later": {
+        "counts": {
+          "preparse-resolution": 10318,
+          "full-parse": 10319,
+          "parse-function": 10319,
+          "interpreter": 10319,
+          "first-execution": 1,
+          "maglev": 1,
+          "first-execution-MAGLEV": 1,
+          "turbofan": 1,
+          "first-execution-TURBOFAN_JS": 1,
+          "baseline": 1
+        },
+        "eventDurationMs": {
+          "preparse-resolution": 1.099,
+          "full-parse": 54.771,
+          "parse-function": 82.793,
+          "interpreter": 24.073,
+          "first-execution": 0.0,
+          "maglev": 0.0,
+          "first-execution-MAGLEV": 0.0,
+          "turbofan": 0.59,
+          "first-execution-TURBOFAN_JS": 0.0,
+          "baseline": 0.004
+        },
+        "earlyInterpreters": []
+      }
+    },
+    "trace": {
+      "prepare": {
+        "V8.CompileCode": {
+          "ms": 0.925,
+          "count": 32,
+          "mainThreadMs": 0.925
+        },
+        "V8.ParseFunction": {
+          "ms": 0.527,
+          "count": 29,
+          "mainThreadMs": 0.527
+        },
+        "V8.PreParse": {
+          "ms": 50.382,
+          "count": 1,
+          "mainThreadMs": 0.0
+        },
+        "V8.CompileIgnition": {
+          "ms": 0.135,
+          "count": 36,
+          "mainThreadMs": 0.12
+        },
+        "v8.parseOnBackground": {
+          "ms": 51.252,
+          "count": 1,
+          "mainThreadMs": 0.0
+        },
+        "v8.compile": {
+          "ms": 1.097,
+          "count": 1,
+          "mainThreadMs": 1.097
+        },
+        "V8.CompileCodeBackground": {
+          "ms": 0.058,
+          "count": 1,
+          "mainThreadMs": 0.0
+        }
+      },
+      "activation_to_paint": {
+        "V8.CompileCode": {
+          "ms": 174.75,
+          "count": 10639,
+          "mainThreadMs": 174.75
+        },
+        "V8.ParseFunction": {
+          "ms": 112.942,
+          "count": 10639,
+          "mainThreadMs": 112.942
+        },
+        "V8.PreParse": {
+          "ms": 0.0,
+          "count": 0,
+          "mainThreadMs": 0.0
+        },
+        "V8.CompileIgnition": {
+          "ms": 19.231,
+          "count": 10645,
+          "mainThreadMs": 19.216
+        },
+        "v8.parseOnBackground": {
+          "ms": 0.09,
+          "count": 1,
+          "mainThreadMs": 0.0
+        },
+        "v8.compile": {
+          "ms": 0.044,
+          "count": 1,
+          "mainThreadMs": 0.044
+        },
+        "V8.CompileCodeBackground": {
+          "ms": 0.028,
+          "count": 1,
+          "mainThreadMs": 0.0
+        }
+      }
+    },
+    "marks": {
+      "experiment-start": 3723101711456,
+      "registration-start": 3723101805762,
+      "registration-end": 3723101864495,
+      "activation-start": 3723101968449,
+      "stable-paint": 3723102179489
+    }
+  },
+  {
+    "workload": "mermaid",
+    "arm": "a",
+    "scriptId": "22",
+    "payloadMaxPosition": 3567095,
+    "functionEvents": {
+      "preparation": {
+        "counts": {},
+        "eventDurationMs": {},
+        "earlyInterpreters": []
+      },
+      "activation_and_later": {
+        "counts": {
+          "full-parse": 1442,
+          "parse": 6629,
+          "preparse-resolution": 11181,
+          "interpreter": 1786,
+          "parse-function": 1711,
+          "first-execution": 683,
+          "maglev": 138,
+          "baseline": 604,
+          "first-execution-BASELINE": 408,
+          "first-execution-MAGLEV": 119,
+          "first-execution-BUILTIN": 8,
+          "turbofan": 1,
+          "first-execution-TURBOFAN_JS": 1
+        },
+        "eventDurationMs": {
+          "full-parse": 161.842,
+          "parse": 142.224,
+          "preparse-resolution": 47.364,
+          "interpreter": 5.053,
+          "parse-function": 15.633,
+          "first-execution": 0.0,
+          "maglev": 0.0,
+          "baseline": 3.427,
+          "first-execution-BASELINE": 0.0,
+          "first-execution-MAGLEV": 0.0,
+          "first-execution-BUILTIN": 0.0,
+          "turbofan": 2.53,
+          "first-execution-TURBOFAN_JS": 0.0
+        },
+        "earlyInterpreters": []
+      }
+    },
+    "trace": {
+      "prepare": {
+        "V8.CompileCode": {
+          "ms": 0.69,
+          "count": 26,
+          "mainThreadMs": 0.69
+        },
+        "V8.ParseFunction": {
+          "ms": 0.372,
+          "count": 23,
+          "mainThreadMs": 0.372
+        },
+        "V8.PreParse": {
+          "ms": 0.0,
+          "count": 0,
+          "mainThreadMs": 0.0
+        },
+        "V8.CompileIgnition": {
+          "ms": 0.083,
+          "count": 26,
+          "mainThreadMs": 0.083
+        },
+        "v8.parseOnBackground": {
+          "ms": 0.0,
+          "count": 0,
+          "mainThreadMs": 0.0
+        },
+        "v8.compile": {
+          "ms": 0.0,
+          "count": 0,
+          "mainThreadMs": 0.0
+        },
+        "V8.CompileCodeBackground": {
+          "ms": 0.0,
+          "count": 0,
+          "mainThreadMs": 0.0
+        }
+      },
+      "activation_to_paint": {
+        "V8.CompileCode": {
+          "ms": 41.447,
+          "count": 2035,
+          "mainThreadMs": 41.447
+        },
+        "V8.ParseFunction": {
+          "ms": 27.282,
+          "count": 2035,
+          "mainThreadMs": 27.282
+        },
+        "V8.PreParse": {
+          "ms": 34.893,
+          "count": 7208,
+          "mainThreadMs": 0.286
+        },
+        "V8.CompileIgnition": {
+          "ms": 5.135,
+          "count": 2112,
+          "mainThreadMs": 4.743
+        },
+        "v8.parseOnBackground": {
+          "ms": 78.451,
+          "count": 1,
+          "mainThreadMs": 0.0
+        },
+        "v8.compile": {
+          "ms": 2.467,
+          "count": 1,
+          "mainThreadMs": 2.467
+        },
+        "V8.CompileCodeBackground": {
+          "ms": 0.835,
+          "count": 1,
+          "mainThreadMs": 0.0
+        }
+      }
+    },
+    "marks": {
+      "experiment-start": 3723102549530,
+      "activation-start": 3723102806972,
+      "business-start": 3723102922825,
+      "business-end": 3723102945087,
+      "render-start": 3723102946953,
+      "render-end": 3723103004444,
+      "stable-paint": 3723103012855
+    }
+  },
+  {
+    "workload": "mermaid",
+    "arm": "factory",
+    "scriptId": "22",
+    "payloadMaxPosition": 3567009,
+    "functionEvents": {
+      "preparation": {
+        "counts": {
+          "parse": 4940,
+          "preparse-resolution": 10755,
+          "full-parse": 113,
+          "interpreter": 5
+        },
+        "eventDurationMs": {
+          "parse": 120.896,
+          "preparse-resolution": 41.881,
+          "full-parse": 141.221,
+          "interpreter": 0.612
+        },
+        "earlyInterpreters": [
+          {
+            "start": 0,
+            "end": 3567009,
+            "name": ""
+          },
+          {
+            "start": 99,
+            "end": 3567006,
+            "name": ""
+          },
+          {
+            "start": 174,
+            "end": 3567003,
+            "name": ""
+          },
+          {
+            "start": 1014,
+            "end": 3563675,
+            "name": ""
+          },
+          {
+            "start": 3553065,
+            "end": 3553090,
+            "name": "<static_initializer>"
+          }
+        ]
+      },
+      "activation_and_later": {
+        "counts": {
+          "parse": 1689,
+          "parse-function": 1711,
+          "interpreter": 1780,
+          "first-execution": 683,
+          "maglev": 138,
+          "first-execution-MAGLEV": 120,
+          "baseline": 604,
+          "first-execution-BASELINE": 404,
+          "full-parse": 1328,
+          "preparse-resolution": 426,
+          "first-execution-BUILTIN": 8,
+          "turbofan": 1,
+          "first-execution-TURBOFAN_JS": 1
+        },
+        "eventDurationMs": {
+          "parse": 10.031,
+          "parse-function": 16.995,
+          "interpreter": 4.783,
+          "first-execution": 0.0,
+          "maglev": 0.0,
+          "first-execution-MAGLEV": 0.0,
+          "baseline": 3.452,
+          "first-execution-BASELINE": 0.0,
+          "full-parse": 6.273,
+          "preparse-resolution": 0.429,
+          "first-execution-BUILTIN": 0.0,
+          "turbofan": 2.285,
+          "first-execution-TURBOFAN_JS": 0.0
+        },
+        "earlyInterpreters": []
+      }
+    },
+    "trace": {
+      "prepare": {
+        "V8.CompileCode": {
+          "ms": 0.874,
+          "count": 32,
+          "mainThreadMs": 0.874
+        },
+        "V8.ParseFunction": {
+          "ms": 0.528,
+          "count": 29,
+          "mainThreadMs": 0.528
+        },
+        "V8.PreParse": {
+          "ms": 30.715,
+          "count": 7084,
+          "mainThreadMs": 0.0
+        },
+        "V8.CompileIgnition": {
+          "ms": 0.513,
+          "count": 37,
+          "mainThreadMs": 0.114
+        },
+        "v8.parseOnBackground": {
+          "ms": 71.0,
+          "count": 1,
+          "mainThreadMs": 0.0
+        },
+        "v8.compile": {
+          "ms": 2.372,
+          "count": 1,
+          "mainThreadMs": 2.372
+        },
+        "V8.CompileCodeBackground": {
+          "ms": 0.853,
+          "count": 1,
+          "mainThreadMs": 0.0
+        }
+      },
+      "activation_to_paint": {
+        "V8.CompileCode": {
+          "ms": 39.882,
+          "count": 2036,
+          "mainThreadMs": 39.882
+        },
+        "V8.ParseFunction": {
+          "ms": 26.197,
+          "count": 2036,
+          "mainThreadMs": 26.197
+        },
+        "V8.PreParse": {
+          "ms": 0.319,
+          "count": 124,
+          "mainThreadMs": 0.319
+        },
+        "V8.CompileIgnition": {
+          "ms": 4.467,
+          "count": 2111,
+          "mainThreadMs": 4.455
+        },
+        "v8.parseOnBackground": {
+          "ms": 0.086,
+          "count": 1,
+          "mainThreadMs": 0.0
+        },
+        "v8.compile": {
+          "ms": 0.035,
+          "count": 1,
+          "mainThreadMs": 0.035
+        },
+        "V8.CompileCodeBackground": {
+          "ms": 0.024,
+          "count": 1,
+          "mainThreadMs": 0.0
+        }
+      }
+    },
+    "marks": {
+      "experiment-start": 3723103312434,
+      "registration-start": 3723103405513,
+      "registration-end": 3723103485986,
+      "activation-start": 3723103571890,
+      "business-start": 3723103586664,
+      "business-end": 3723103611370,
+      "render-start": 3723103613427,
+      "render-end": 3723103669301,
+      "stable-paint": 3723103679496
+    }
+  },
+  {
+    "workload": "react-cytoscape",
+    "arm": "a",
+    "scriptId": "22",
+    "payloadMaxPosition": 630385,
+    "functionEvents": {
+      "preparation": {
+        "counts": {},
+        "eventDurationMs": {},
+        "earlyInterpreters": []
+      },
+      "activation_and_later": {
+        "counts": {
+          "full-parse": 1532,
+          "parse": 41,
+          "preparse-resolution": 3580,
+          "interpreter": 911,
+          "parse-function": 901,
+          "first-execution": 654,
+          "baseline": 454,
+          "first-execution-BUILTIN": 15,
+          "first-execution-BASELINE": 394,
+          "maglev": 152,
+          "first-execution-MAGLEV": 145,
+          "turbofan": 1
+        },
+        "eventDurationMs": {
+          "full-parse": 33.037,
+          "parse": 20.692,
+          "preparse-resolution": 11.365,
+          "interpreter": 4.155,
+          "parse-function": 10.996,
+          "first-execution": 0.0,
+          "baseline": 3.234,
+          "first-execution-BUILTIN": 0.0,
+          "first-execution-BASELINE": 0.0,
+          "maglev": 0.0,
+          "first-execution-MAGLEV": 0.0,
+          "turbofan": 4.737
+        },
+        "earlyInterpreters": []
+      }
+    },
+    "trace": {
+      "prepare": {
+        "V8.CompileCode": {
+          "ms": 0.636,
+          "count": 26,
+          "mainThreadMs": 0.636
+        },
+        "V8.ParseFunction": {
+          "ms": 0.358,
+          "count": 23,
+          "mainThreadMs": 0.358
+        },
+        "V8.PreParse": {
+          "ms": 0.0,
+          "count": 0,
+          "mainThreadMs": 0.0
+        },
+        "V8.CompileIgnition": {
+          "ms": 0.087,
+          "count": 26,
+          "mainThreadMs": 0.087
+        },
+        "v8.parseOnBackground": {
+          "ms": 0.0,
+          "count": 0,
+          "mainThreadMs": 0.0
+        },
+        "v8.compile": {
+          "ms": 0.0,
+          "count": 0,
+          "mainThreadMs": 0.0
+        },
+        "V8.CompileCodeBackground": {
+          "ms": 0.0,
+          "count": 0,
+          "mainThreadMs": 0.0
+        }
+      },
+      "activation_to_paint": {
+        "V8.CompileCode": {
+          "ms": 26.126,
+          "count": 1190,
+          "mainThreadMs": 26.126
+        },
+        "V8.ParseFunction": {
+          "ms": 17.076,
+          "count": 1190,
+          "mainThreadMs": 17.076
+        },
+        "V8.PreParse": {
+          "ms": 8.369,
+          "count": 1839,
+          "mainThreadMs": 0.258
+        },
+        "V8.CompileIgnition": {
+          "ms": 3.976,
+          "count": 1202,
+          "mainThreadMs": 3.631
+        },
+        "v8.parseOnBackground": {
+          "ms": 14.369,
+          "count": 1,
+          "mainThreadMs": 0.0
+        },
+        "v8.compile": {
+          "ms": 0.068,
+          "count": 1,
+          "mainThreadMs": 0.068
+        },
+        "V8.CompileCodeBackground": {
+          "ms": 0.521,
+          "count": 1,
+          "mainThreadMs": 0.0
+        }
+      }
+    },
+    "marks": {
+      "experiment-start": 3723104086923,
+      "activation-start": 3723104343822,
+      "business-start": 3723104367309,
+      "business-end": 3723104377967,
+      "render-start": 3723104379885,
+      "render-end": 3723104419682,
+      "stable-paint": 3723104434196
+    }
+  },
+  {
+    "workload": "react-cytoscape",
+    "arm": "factory",
+    "scriptId": "22",
+    "payloadMaxPosition": 630307,
+    "functionEvents": {
+      "preparation": {
+        "counts": {
+          "parse": 19,
+          "preparse-resolution": 2846,
+          "full-parse": 3,
+          "interpreter": 5
+        },
+        "eventDurationMs": {
+          "parse": 15.789,
+          "preparse-resolution": 10.123,
+          "full-parse": 24.696,
+          "interpreter": 0.488
+        },
+        "earlyInterpreters": [
+          {
+            "start": 0,
+            "end": 630307,
+            "name": ""
+          },
+          {
+            "start": 107,
+            "end": 630304,
+            "name": ""
+          },
+          {
+            "start": 182,
+            "end": 630301,
+            "name": ""
+          },
+          {
+            "start": 940,
+            "end": 628463,
+            "name": ""
+          },
+          {
+            "start": 367389,
+            "end": 385961,
+            "name": ""
+          }
+        ]
+      },
+      "activation_and_later": {
+        "counts": {
+          "parse": 22,
+          "parse-function": 901,
+          "interpreter": 905,
+          "first-execution": 654,
+          "full-parse": 1528,
+          "preparse-resolution": 734,
+          "baseline": 454,
+          "first-execution-BUILTIN": 15,
+          "first-execution-BASELINE": 400,
+          "maglev": 155,
+          "first-execution-MAGLEV": 148,
+          "turbofan": 1
+        },
+        "eventDurationMs": {
+          "parse": 5.543,
+          "parse-function": 15.115,
+          "interpreter": 4.465,
+          "first-execution": 0.0,
+          "full-parse": 8.443,
+          "preparse-resolution": 0.549,
+          "baseline": 3.567,
+          "first-execution-BUILTIN": 0.0,
+          "first-execution-BASELINE": 0.0,
+          "maglev": 0.0,
+          "first-execution-MAGLEV": 0.0,
+          "turbofan": 3.062
+        },
+        "earlyInterpreters": []
+      }
+    },
+    "trace": {
+      "prepare": {
+        "V8.CompileCode": {
+          "ms": 0.877,
+          "count": 32,
+          "mainThreadMs": 0.877
+        },
+        "V8.ParseFunction": {
+          "ms": 0.527,
+          "count": 29,
+          "mainThreadMs": 0.527
+        },
+        "V8.PreParse": {
+          "ms": 7.462,
+          "count": 1722,
+          "mainThreadMs": 0.0
+        },
+        "V8.CompileIgnition": {
+          "ms": 0.444,
+          "count": 37,
+          "mainThreadMs": 0.114
+        },
+        "v8.parseOnBackground": {
+          "ms": 13.315,
+          "count": 1,
+          "mainThreadMs": 0.0
+        },
+        "v8.compile": {
+          "ms": 0.065,
+          "count": 1,
+          "mainThreadMs": 0.065
+        },
+        "V8.CompileCodeBackground": {
+          "ms": 0.528,
+          "count": 1,
+          "mainThreadMs": 0.0
+        }
+      },
+      "activation_to_paint": {
+        "V8.CompileCode": {
+          "ms": 40.387,
+          "count": 1191,
+          "mainThreadMs": 40.387
+        },
+        "V8.ParseFunction": {
+          "ms": 24.814,
+          "count": 1191,
+          "mainThreadMs": 24.814
+        },
+        "V8.PreParse": {
+          "ms": 0.42,
+          "count": 117,
+          "mainThreadMs": 0.42
+        },
+        "V8.CompileIgnition": {
+          "ms": 4.816,
+          "count": 1201,
+          "mainThreadMs": 4.799
+        },
+        "v8.parseOnBackground": {
+          "ms": 0.113,
+          "count": 1,
+          "mainThreadMs": 0.0
+        },
+        "v8.compile": {
+          "ms": 0.056,
+          "count": 1,
+          "mainThreadMs": 0.056
+        },
+        "V8.CompileCodeBackground": {
+          "ms": 0.032,
+          "count": 1,
+          "mainThreadMs": 0.0
+        }
+      }
+    },
+    "marks": {
+      "experiment-start": 3723104812993,
+      "registration-start": 3723104900345,
+      "registration-end": 3723104915205,
+      "activation-start": 3723105070700,
+      "business-start": 3723105085109,
+      "business-end": 3723105103846,
+      "render-start": 3723105106422,
+      "render-end": 3723105138822,
+      "stable-paint": 3723105152326
+    }
+  }
+]
