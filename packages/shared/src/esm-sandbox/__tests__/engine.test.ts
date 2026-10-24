@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+// happy-dom cannot execute the native module/import-map capability probe.
+vi.mock('../capability', () => ({ assertEsmSupport: vi.fn(async () => {}) }));
+
 import { EsmSandboxEngine, type EsmSandboxEngineOpts } from '../engine';
+import { assertEsmSupport } from '../capability';
+import { QiankunError } from '../../reporter/QiankunError';
 import { resetImportMapRegistry } from '../import-map-registry';
 import type { EsmInstance, InstanceHandle } from '../instance-registry';
 import { moduleSourceInstanceKeyPlaceholder, precompileModuleSource } from '../precompile';
@@ -128,6 +134,42 @@ afterEach(() => {
 });
 
 describe('EsmSandboxEngine', () => {
+  it.each([true, false])(
+    'rejects an unsupported ESM document before loading modules (explicit entry: %s)',
+    async (isEntry) => {
+      const error = new QiankunError('Native dynamic import maps are unavailable', 'esm-unsupported');
+      vi.mocked(assertEsmSupport).mockRejectedValueOnce(error).mockRejectedValueOnce(error);
+      const world = createWorld({});
+      world.engine.registerDocumentModule({ url: 'https://a.host/main.js', baseUrl: 'https://a.host/', isEntry });
+      await expect(world.engine.importDocumentModules()).rejects.toBe(error);
+      expect(world.fetchMock).not.toHaveBeenCalled();
+      expect(world.importerMock).not.toHaveBeenCalled();
+      expect(readInjectedImports()).toEqual({});
+      world.engine.dispose();
+    },
+  );
+
+  it.each(['load', 'import'] as const)(
+    'checks direct Compartment %s before fetching or evaluating a module',
+    async (operation) => {
+      const error = new QiankunError('Probe blocked', 'esm-capability-check-failed');
+      vi.mocked(assertEsmSupport).mockRejectedValueOnce(error);
+      const world = createWorld({});
+      await expect(world.engine[operation]('./main.js')).rejects.toBe(error);
+      expect(world.fetchMock).not.toHaveBeenCalled();
+      expect(world.importerMock).not.toHaveBeenCalled();
+      world.engine.dispose();
+    },
+  );
+
+  it('does not probe documents without module scripts', async () => {
+    vi.mocked(assertEsmSupport).mockClear();
+    const world = createWorld({});
+    await expect(world.engine.importDocumentModules()).resolves.toBeUndefined();
+    expect(assertEsmSupport).not.toHaveBeenCalled();
+    world.engine.dispose();
+  });
+
   it('transpiles the module graph, injects the import map and resolves the entry namespace', async () => {
     const world = createWorld({
       'https://a.host/main.js': `import { inc } from './dep.js';\nconsole.log(window);\nexport function mount() { return inc(); }`,
@@ -172,7 +214,7 @@ describe('EsmSandboxEngine', () => {
     expect(executedSourceUrls).toEqual(['https://a.host/first.js', 'https://a.host/main.js']);
   });
 
-  it('starts loading external document modules as soon as they are registered', async () => {
+  it('starts loading external document modules after the capability check, before sealing', async () => {
     const importHook: ImportHook = vi.fn(async () => ({ source: `export const mount = true;` }));
     const world = createWorld({}, { engine: { importHook } });
 
@@ -181,9 +223,7 @@ describe('EsmSandboxEngine', () => {
       baseUrl: 'https://a.host/',
       isEntry: true,
     });
-    await Promise.resolve();
-
-    expect(importHook).toHaveBeenCalledWith('https://a.host/main.js');
+    await vi.waitFor(() => expect(importHook).toHaveBeenCalledWith('https://a.host/main.js'));
     await expect(world.engine.importDocumentModules()).resolves.toBeDefined();
   });
 

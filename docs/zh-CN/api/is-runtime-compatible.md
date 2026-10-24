@@ -59,6 +59,8 @@ if (!isRuntimeCompatible()) {
 
 原生 ESM 执行路径需要动态注入多个 import map。即使 `isRuntimeCompatible()` 返回 `true`，Firefox 默认也不支持该能力。需要支持 Firefox 时，应改用 Classic 脚本方式交付（例如 Webpack 构建产物）。
 
+ESM 沙箱会在首次加载模块前单独执行异步能力检测，通过 `mountPromise` 报告失败；该检测不改变本函数的返回值。检测方式见[浏览器支持](/zh-CN/guide/browser-support#esm-加载前检测)。
+
 ## 相关内容
 
 - [`loadMicroApp`](/zh-CN/api/load-micro-app)。

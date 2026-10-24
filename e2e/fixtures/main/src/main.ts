@@ -1,5 +1,5 @@
 import type { AppConfiguration, MicroApp } from 'qiankun';
-import { LoadAppTimeoutError, loadMicroApp, precompileModuleSource, unloadMicroApp } from 'qiankun';
+import { LoadAppTimeoutError, QiankunError, loadMicroApp, precompileModuleSource, unloadMicroApp } from 'qiankun';
 import { SUB_APP_ENTRIES } from '../../../ports';
 import { createLocalStoragePrefixPlugin } from './localStoragePrefixPlugin';
 
@@ -108,6 +108,7 @@ const testAPI = {
   async mountOutcome(key: string): Promise<{
     status: string;
     error?: string;
+    frameworkError?: { code: string };
     timeoutError?: { appName: string; loadTimeout: number; elapsed: number };
   }> {
     const app = instances.get(key);
@@ -119,6 +120,7 @@ const testAPI = {
       return {
         status: app.getStatus(),
         error: String(error),
+        ...(error instanceof QiankunError ? { frameworkError: { code: error.code } } : {}),
         ...(error instanceof LoadAppTimeoutError
           ? { timeoutError: { appName: error.appName, loadTimeout: error.loadTimeout, elapsed: error.elapsed } }
           : {}),

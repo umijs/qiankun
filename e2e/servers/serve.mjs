@@ -68,6 +68,13 @@ const server = createServer(async (req, res) => {
     );
   }
 
+  if (url.searchParams.has('csp-no-inline-script')) {
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self'; script-src 'self' blob:; style-src 'self' 'unsafe-inline' blob:; connect-src 'self' http://localhost:*; img-src 'self' data: blob:",
+    );
+  }
+
   if (urlPath === '/__e2e__/request-count' || urlPath === '/__e2e__/reset-request-count') {
     const targetPath = url.searchParams.get('path');
     if (!targetPath) {

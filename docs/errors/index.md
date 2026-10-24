@@ -63,3 +63,5 @@ Codes use lowercase words separated by hyphens and describe the cause and remedy
 - [app-already-mounted: Micro app already mounted](/errors/app-already-mounted)
 - [load-timeout: Micro app loading timed out](/errors/load-timeout)
 - [load-timeout-invalid: Invalid loading timeout](/errors/load-timeout-invalid)
+- [esm-unsupported: Required ESM sandbox capabilities are unavailable](/errors/esm-unsupported)
+- [esm-capability-check-failed: ESM capability check could not complete](/errors/esm-capability-check-failed)

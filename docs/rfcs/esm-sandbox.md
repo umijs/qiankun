@@ -625,11 +625,11 @@ Firefox 的原生函数提升、暂时性死区对照受到同页后续 import m
 
 根因是 shim 使用 shell module 的独立绑定打断循环，再在求值过程中特定时点复制真实模块的导出值。这些绑定既不能持续反映后续赋值，也不能完整保留原生模块实例化阶段的函数提升和暂时性死区行为。[官方说明](https://github.com/guybedford/es-module-shims#es-module-shims)同样记录了循环父模块的实时绑定限制，去环机制见[实现说明](https://github.com/guybedford/es-module-shims#implementation-details)。
 
-后续候选方案的最小接入边界如下；这些设计尚未实现，不属于 3.0 的兼容性保证：
+后续 shim 候选方案的最小接入边界如下；shim 后端尚未实现，不属于 3.0 的兼容性保证。动态多 import map 的独立 iframe 检测已用于原生 ESM 加载前校验：
 
 - **保留源码改写和隔离膜桥接。** 仅替换运行时 import map 注册与模块求值：将已改写的 blob 登记到 `importShim.addImportMap`，再调用 `importShim(blobUrl)`。按需加载固定版本的 shim mode 脚本，支持可配置地址和自托管，不加入核心运行时依赖；同一浏览器 realm 内协调后端选择。
 - **分离探测 importer 与求值 importer。** 重声明探测继续使用原生 importer：当前 probe 故意引用未映射说明符，原生解析器会先暴露重声明 `SyntaxError`，而 shim 会先报告说明符解析失败，遮蔽重声明错误。
-- **在独立 iframe 中检测能力。** `HTMLScriptElement.supports?.('importmap')` 不足以判断动态多 import map。可用一次性同源隐藏 iframe 验证“注入第一张 map 并执行模块，再追加第二张 map 并执行模块”，避免消耗主文档的单 map 配额。探测结束后释放 iframe 和 blob，并处理 CSP、超时与消息来源校验；iframe 仅用于特性检测，不承载微应用。参见[上游检测实现](https://github.com/guybedford/es-module-shims/blob/main/src/features.js)。
+- **在独立 iframe 中检测能力（已实现）。** `HTMLScriptElement.supports?.('importmap')` 不足以判断动态多 import map。可用一次性同源隐藏 iframe 验证“注入第一张 map 并执行模块，再追加第二张 map 并执行模块”，避免消耗主文档的单 map 配额。探测结束后释放 iframe 和 blob，并处理 CSP、超时与消息来源校验；iframe 仅用于特性检测，不承载微应用。参见[上游检测实现](https://github.com/guybedford/es-module-shims/blob/main/src/features.js)。
 
 **Import Map 大小与生命周期**
 

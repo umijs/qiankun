@@ -29,6 +29,7 @@ shared/
 
 | File | Responsibility |
 | --- | --- |
+| `capability.ts` | Cached per-document dynamic import-map probe in a disposable same-origin iframe; rejects with `esm-unsupported` or `esm-capability-check-failed` before module loading |
 | `engine.ts` | `EsmSandboxEngine` — module-graph orchestration, redeclaration probing, in-order eval, dynamic `import()` |
 | `types.ts` | Public structural module contracts: hooks, descriptors, `ModuleSource`, Compartment facade |
 | `lexer.ts` | CSP-safe `es-module-lexer/js` wrapper; preparation Promise is already resolved |

@@ -5,6 +5,7 @@ import { noop } from 'lodash';
 import type { Fetch } from '../fetch-utils/utils';
 import { QiankunError } from '../reporter/QiankunError';
 import { Deferred, keys } from '../utils';
+import { assertEsmSupport } from './capability';
 import { isLiveBindableDunderName } from './identifier-scan';
 import { injectImportMapEntries } from './import-map-registry';
 import {
@@ -340,6 +341,8 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
     const loadContext = this.getModuleLoadContext(script.credentials);
 
     const modulePromise = (async (): Promise<Module> => {
+      await assertEsmSupport();
+      this.assertAlive();
       let module: Module;
       if (url !== undefined) {
         const fullSpecifier = this.resolveModuleSpecifier(url, baseUrl);
@@ -839,6 +842,8 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
     fullSpecifier: string,
     loadContext: ModuleLoadContext = this.defaultModuleLoadContext,
   ): Promise<Module> {
+    await assertEsmSupport();
+    this.assertAlive();
     const module = await this.ensureModule(fullSpecifier, [], loadContext);
     this.assertAlive();
     const graph = await this.collectGraph(module);
@@ -857,6 +862,9 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
   }
 
   private async executeModuleScripts(entryDeferred: Deferred<ModuleNamespace | undefined>): Promise<void> {
+    // A capability failure is an app loading error even without an explicitly marked entry.
+    await assertEsmSupport();
+    this.assertAlive();
     const tasks = [...this.moduleScriptTasks];
     const explicitEntry = tasks.find((task) => task.explicitEntry);
     const executed: ModuleNamespace[] = [];

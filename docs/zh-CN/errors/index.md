@@ -63,3 +63,5 @@ declare class QiankunError extends Error {
 - [app-already-mounted：微应用已挂载](/zh-CN/errors/app-already-mounted)
 - [load-timeout：微应用加载超时](/zh-CN/errors/load-timeout)
 - [load-timeout-invalid：加载超时配置无效](/zh-CN/errors/load-timeout-invalid)
+- [esm-unsupported：ESM 沙箱所需能力不可用](/zh-CN/errors/esm-unsupported)
+- [esm-capability-check-failed：ESM 能力检测未完成](/zh-CN/errors/esm-capability-check-failed)
