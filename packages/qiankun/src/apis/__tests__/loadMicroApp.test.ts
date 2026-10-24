@@ -32,6 +32,8 @@ function getterOf(
 ) {
   const getter = (container: HTMLElement) => config(container);
   return Object.defineProperties(getter, {
+    dispose: { value: mocks.dispose },
+    loadPhaseSettled: { value: Promise.resolve() },
     occupiesContainer: { get: occupied },
     loadPhaseOpen: { get: loadPhaseOpen },
   }) as ParcelConfigObjectGetter;
@@ -72,6 +74,7 @@ describe('loadMicroApp instance reuse', () => {
     for (const parcel of parcels) {
       if (parcel.getStatus() === AppOrParcelStatus.MOUNTED) await parcel.unmount();
     }
+    for (const parcel of parcels) await parcel.unload().catch(() => undefined);
     parcels.length = 0;
     document.body.replaceChildren();
     vi.resetAllMocks();
@@ -873,7 +876,7 @@ describe('loadMicroApp instance reuse', () => {
     const update = vi.fn(() => updating.promise);
     mocks.loadApp.mockImplementationOnce(async (_app, _configuration, _lifeCycles, control) => {
       control.onDispose(mocks.dispose);
-      return () => ({ bootstrap, mount, unmount, update });
+      return getterOf(() => ({ bootstrap, mount, unmount, update }));
     });
     const app = load(document.createElement('div'));
     await app.mountPromise;

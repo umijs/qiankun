@@ -9,14 +9,17 @@ Implementation details about export resolution and hook ordering live in [Lifecy
 Every micro-app exposes `bootstrap`, `mount`, and `unmount`. `update` is optional:
 
 ```ts
+import type { BootstrapContext } from 'qiankun';
+
 type HostProps = {
   accountId: string;
 };
 
 type MountProps = HostProps & { container: HTMLElement };
 
-export async function bootstrap() {
-  // One-time setup before the first mount.
+export async function bootstrap(context: BootstrapContext) {
+  // context contains only this evaluated instance's name and entry, without business props or a container.
+  // Initialize code that does not depend on the mount location or user state here.
 }
 
 export async function mount(props: MountProps) {
@@ -60,9 +63,13 @@ await microApp.mount();
 
 The `update` method is present only when the micro-app exports `update`. If the application does not support in-place updates, unmount it and create or mount the appropriate instance instead.
 
+## Bootstrap initialization context
+
+`bootstrap` receives only `BootstrapContext`, a readonly `{ name, entry }` object. qiankun constructs and freezes it separately, without business props, a container, or single-spa mount capabilities. It initializes one evaluated copy of the application, independently of any particular mount. Read changing user, route, and theme data in `mount` or `update`; create framework roots, router instances, and view state in `mount`, and destroy them in `unmount`.
+
 ## Props, the container, and host hooks
 
-The host's `props` are passed to the micro-app lifecycles. For `mount` and `unmount`, qiankun also supplies `props.container`, the actual `HTMLElement` owned by this instance.
+The host's `props` are passed to the micro-app's `mount`, `unmount`, and optional `update`. For `mount` and `unmount`, qiankun also supplies `props.container`, the actual `HTMLElement` owned by this instance.
 
 Render and query within that container. Do not mount through a page-global selector: it breaks multiple instances and couples the micro-app to the host's document structure. Treat the container as instance-scoped; the micro-app must stop using it after unmount, even if the host later reuses it.
 
@@ -72,12 +79,12 @@ Host lifecycle hooks (`beforeLoad`, `beforeMount`, `afterMount`, `beforeUnmount`
 
 ## Mount, unmount, and remount
 
-- `bootstrap` runs during initial loading before the first mount, not on remount.
+- `bootstrap` runs once before the first mount of each evaluated app instance. Warm reuse skips it; a cold load after cache reclamation runs it again.
 - `mount` creates the visible application and may run more than once.
 - `unmount` must reverse every user-visible effect created by `mount`.
 - `update`, when exported, applies new host props to an already mounted instance.
 
-On remount, qiankun rebuilds the entry DOM and calls `mount` again. It does not re-run the entry scripts or top-level module code for the same instance. Create disposable framework roots and view state inside `mount`, then destroy them inside `unmount`; do not depend on top-level code running again.
+On remount, qiankun rebuilds the entry DOM and calls `mount` again. A cache hit does not re-run entry scripts or module top-level code; reloading after cache reclamation runs the entry and `bootstrap` again. Create disposable framework roots and view state inside `mount`, then destroy them inside `unmount`, rather than depending on how many times top-level code executes. See [Run multiple micro-app instances](/cookbook/run-multiple-instances) for the cache policy.
 
 ## Cleanup is a shared responsibility
 

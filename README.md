@@ -63,7 +63,7 @@ Qiankun inherits the fundamentals of [single-spa](https://github.com/single-spa/
 - 🛡 **Style isolation** — opt-in runtime scoping built on the CSS [`@scope`](https://developer.mozilla.org/docs/Web/CSS/@scope) at-rule, including external stylesheets. No rewriting your CSS, no Shadow DOM tax.
 - ⚡ **Prefetch** — warm a micro app's assets while the user is still elsewhere, so the switch feels instant.
 - 🧩 **UI bindings** — `<MicroApp />` components for [React](packages/ui-bindings/react) and [Vue](packages/ui-bindings/vue), with loader and error-boundary slots, so a micro app is just another component.
-- 🔧 **Bundler plugins** — [one plugin](packages/bundler-plugin) for webpack 4/5 and Vite that marks the entry script and fixes the output library, replacing the boilerplate you used to hand-write.
+- 🔧 **Bundler plugins** — [one plugin](packages/bundler-plugin) for webpack 4/5 and Vite that adds the `entry` attribute to the appropriate script and fixes the output library, replacing the boilerplate you used to hand-write.
 - 🔬 **Standalone sandbox** — [`@qiankunjs/sandbox`](packages/sandbox) is usable on its own to contain any third-party script, with no micro-frontend framework attached.
 
 ## 🚀 Getting started

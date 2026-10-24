@@ -9,14 +9,17 @@
 每个微应用都必须导出 `bootstrap`、`mount` 和 `unmount`，也可以选择导出 `update`：
 
 ```ts
+import type { BootstrapContext } from 'qiankun';
+
 type HostProps = {
   accountId: string;
 };
 
 type MountProps = HostProps & { container: HTMLElement };
 
-export async function bootstrap() {
-  // 第一次挂载前执行的一次性初始化。
+export async function bootstrap(context: BootstrapContext) {
+  // context 仅含这一代应用的 name 和 entry，不含业务 props 或 container。
+  // 在此执行与挂载位置、用户状态无关的初始化。
 }
 
 export async function mount(props: MountProps) {
@@ -60,9 +63,13 @@ await microApp.mount();
 
 只有微应用导出 `update` 后，句柄才会提供 `update` 方法。如果微应用不支持直接更新，应先将其卸载，再创建或挂载符合当前状态的实例。
 
+## bootstrap 的初始化上下文
+
+`bootstrap` 只接收 `BootstrapContext`，即只读的 `{ name, entry }`。qiankun 会单独构造并冻结该对象，不传入业务 props、容器或 single-spa 的挂载能力。它用于初始化一份已加载的应用代码，不绑定某次挂载。用户、路由、主题等可变数据应在 `mount` 或 `update` 中读取；框架根节点、路由实例和视图状态应在 `mount` 中创建，并在 `unmount` 中销毁。
+
 ## props、容器与主应用钩子
 
-主应用提供的 `props` 会传入微应用生命周期函数。调用 `mount` 和 `unmount` 时，qiankun 还会提供 `props.container`，即当前实例所使用的 `HTMLElement`。
+主应用提供的 `props` 会传入微应用的 `mount`、`unmount` 和可选的 `update`。调用 `mount` 和 `unmount` 时，qiankun 还会提供 `props.container`，即当前实例所使用的 `HTMLElement`。
 
 渲染和 DOM 查询都应限定在该容器内。不要通过页面级全局选择器挂载，否则会破坏多实例能力，并使微应用依赖主应用的文档结构。容器仅归当前实例使用；微应用卸载后必须停止访问该容器，即使主应用后续会复用此节点。
 
@@ -72,12 +79,12 @@ await microApp.mount();
 
 ## 挂载、卸载与重新挂载
 
-- `bootstrap` 在应用初次加载且首次挂载前执行，重新挂载时不再执行；
+- `bootstrap` 在每一代应用加载后、首次挂载前执行一次；温复用时不再执行，缓存回收后冷加载则会重新执行；
 - `mount` 创建可见的应用，并且可能执行多次；
 - `unmount` 必须清理由 `mount` 创建的所有可见内容和副作用；
 - `update`（如果已导出）将主应用提供的新 props 应用于已挂载实例。
 
-重新挂载时，qiankun 会重建入口 DOM 并再次调用 `mount`，但同一实例不会重新执行入口脚本或模块顶层代码。因此，应在 `mount` 中创建可销毁的框架根节点和视图状态，并在 `unmount` 中将其销毁，不要依赖顶层代码再次执行。
+重新挂载时，qiankun 会重建入口 DOM 并再次调用 `mount`。命中实例缓存时，入口脚本和模块顶层代码不会再次执行；缓存回收后重新加载则会再次执行入口和 `bootstrap`。因此，应在 `mount` 中创建可销毁的框架根节点和视图状态，并在 `unmount` 中将其销毁，不要依赖顶层代码的执行次数。缓存策略见[运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)。
 
 ## 清理是双方共同的责任
 

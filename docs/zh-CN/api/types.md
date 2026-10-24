@@ -15,6 +15,7 @@ import type {
   LifeCycles,
   MicroApp,
   MicroAppLifeCycles,
+  BootstrapContext,
   PrefetchStrategy,
 } from 'qiankun';
 ```
@@ -43,6 +44,7 @@ import type {
 | `LifeCycleFn<T>` | `(app, global) => Promise<void>` | 单个框架级生命周期钩子。 |
 | `LifeCycles<T>` | `{ beforeLoad?; beforeMount?; afterMount?; beforeUnmount?; afterUnmount? }` | 框架级钩子，见[生命周期钩子](/zh-CN/api/lifecycles)。 |
 | `MicroApp` | single-spa `Parcel & { unload() }` | `loadMicroApp` 返回的句柄。 |
+| `BootstrapContext` | `Readonly<AppMetadata>` | `bootstrap` 的稳定初始化上下文，仅含 `name` 和 `entry`。 |
 | `MicroAppLifeCycles` | `{ bootstrap; mount; unmount; update? }` | 微应用自身导出的生命周期。 |
 | `PrefetchStrategy` | `boolean \| 'all' \| string[] \| fn` | 为向后兼容而导出，v3 的公共 API 不使用该类型。 |
 
@@ -102,7 +104,7 @@ export type LoadableApp<T extends ObjectType> = AppMetadata & {
 | `name` | `string` | 应用标识。不同容器中的多个 `loadMicroApp` 实例可以复用同一个名称。 |
 | `entry` | `HTMLEntry` | HTML 入口地址。 |
 | `container` | `HTMLElement` | 用于挂载应用的实际 DOM 元素，不能使用选择器字符串。 |
-| `props` | `T`（可选） | 传递给微应用生命周期导出函数的 props。 |
+| `props` | `T`（可选） | 传递给 `mount`、`unmount` 和可选 `update` 的业务数据，不传入 `bootstrap`。 |
 
 ```ts
 import { loadMicroApp } from 'qiankun';
@@ -197,7 +199,7 @@ export type SandboxConfiguration = Pick<
 | --- | --- | --- | --- |
 | `styleIsolation` | `boolean` | `false` | 启用基于 CSS `@scope` 的运行时[样式隔离](/zh-CN/concepts/style-isolation)，作用域限制在应用容器内。 |
 | `globals` | `CompartmentGlobals` | `{}` | 安装到该应用 compartment 全局对象上的值或属性描述符。 |
-| `incubatorContext` | `WindowProxy` | `window` | 孵化该沙箱的宿主上下文。 |
+| `incubatorContext` | `WindowProxy` | `window` | 创建沙箱所用的宿主全局对象。 |
 | `plugins` | `readonly IsolationPlugin[]` | `[]` | 追加在内置插件之后的隔离插件。 |
 | `modules` / `resolveHook` / `importHook` / `loadHook` | Compartment 模块钩子 | `undefined` | 沙箱内 ESM 的模块解析与加载钩子。 |
 
@@ -283,25 +285,36 @@ console.log(app.getStatus()); // 'MOUNTED'
 await app.unmount();
 ```
 
+## BootstrapContext
+
+```ts
+export type BootstrapContext = Readonly<AppMetadata>;
+// { readonly name: string; readonly entry: HTMLEntry }
+```
+
+qiankun 在加载时根据应用身份单独构造并冻结该对象。它不包含业务 props、`container`、`domElement`、`mountParcel` 或 `unmountSelf`。温复用不会再次调用 `bootstrap`；缓存回收后的冷加载会创建新的初始化上下文。
+
 ## MicroAppLifeCycles
 
 ```ts
 type ExtraProps = { container: HTMLElement };
-export type MicroAppLifeCycles = FlattenArrayValue<ParcelLifeCycles<ExtraProps>>;
+export type MicroAppLifeCycles = Omit<FlattenArrayValue<ParcelLifeCycles<ExtraProps>>, 'bootstrap'> & {
+  bootstrap: (context: BootstrapContext) => Promise<unknown>;
+};
 ```
 
 微应用需要导出该生命周期对象，以便 qiankun 驱动应用。将 single-spa 支持的生命周期函数数组归一化为单个函数后，其结构如下：
 
 ```ts
 type MicroAppLifeCycles = {
-  bootstrap: (props) => Promise<void>;
+  bootstrap: (context: BootstrapContext) => Promise<unknown>;
   mount: (props) => Promise<void>;
   unmount: (props) => Promise<void>;
   update?: (props) => Promise<void>;
 };
 ```
 
-各生命周期函数都会接收主应用通过 `props` 传入的数据。qiankun 只会在调用 `mount` 和 `unmount` 时额外注入用于渲染的 `container: HTMLElement`；`bootstrap` 和 `update` 不应依赖该字段。微应用可按以下方式导出生命周期函数：
+`bootstrap` 只接收上述稳定初始化上下文。业务 props 供 `mount`、`unmount` 和可选的 `update` 使用；qiankun 仅为 `mount` 和 `unmount` 额外注入用于渲染的 `container: HTMLElement`。微应用可按以下方式导出生命周期函数：
 
 ```ts
 let root: { unmount(): void } | null = null;

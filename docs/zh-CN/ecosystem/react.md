@@ -119,7 +119,7 @@ export type Props = SharedProps & SharedSlots<React.ReactNode> & Record<string, 
 />
 ```
 
-微应用可通过生命周期函数的 `props` 参数读取这些值：
+微应用可在 `mount`、`unmount` 和可选 `update` 的 `props` 参数中读取这些值；`bootstrap` 只接收稳定的初始化上下文：
 
 ```ts
 export async function mount(props) {

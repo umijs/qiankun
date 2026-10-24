@@ -41,8 +41,8 @@ declare class QiankunError extends Error {
 ## 错误码索引
 
 - [lifecycle-missing：生命周期导出不完整](/zh-CN/errors/lifecycle-missing)
-- [entry-duplicate：入口脚本重复](/zh-CN/errors/entry-duplicate)
-- [entry-script-failed：入口脚本加载失败](/zh-CN/errors/entry-script-failed)
+- [entry-duplicate：`entry` 脚本重复](/zh-CN/errors/entry-duplicate)
+- [entry-script-failed：`entry` 脚本加载失败](/zh-CN/errors/entry-script-failed)
 - [entry-body-missing：入口响应缺少正文流](/zh-CN/errors/entry-body-missing)
 - [container-required：缺少应用容器](/zh-CN/errors/container-required)
 - [container-head-missing：容器内缺少 head 节点](/zh-CN/errors/container-head-missing)

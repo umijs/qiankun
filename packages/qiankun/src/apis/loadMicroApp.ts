@@ -1,5 +1,6 @@
 import { AppOrParcelStatus, mountRootParcel, type Parcel, type ParcelConfigObject } from '@qiankunjs/single-spa';
-import { Deferred } from '@qiankunjs/shared';
+import { Deferred, warn } from '@qiankunjs/shared';
+import { IdleInstanceCache } from '../core/idleInstanceCache';
 import loadApp, { type ParcelConfigObjectGetter } from '../core/loadApp';
 import { QiankunError } from '../error';
 import { type AppConfiguration, type LifeCycles, type LoadableApp, type MicroApp, type ObjectType } from '../types';
@@ -42,7 +43,9 @@ interface Generation {
   name: string;
   entry: string;
   /** The container of the most recent instance. */
-  container: HTMLElement;
+  container?: HTMLElement;
+  /** Reclamation allows retained handles to cold-load; explicit unload remains terminal. */
+  reclaimed?: boolean;
   /** Set once the load succeeded. */
   getter?: ParcelConfigObjectGetter;
   /** Settles with the first instance's bootstrap; later instances share its outcome. */
@@ -71,12 +74,21 @@ interface Generation {
 }
 
 /**
- * Generations stay cached until they are unloaded. Each name keeps at most as many generations
- * as it ever had instances mounted at the same time.
+ * Active generations are retained; idle generations follow the bounded cache policy.
  */
 const generations = new Map<string, Generation[]>();
 /** Orders idle and draining generations by recency. */
 let idleTick = 0;
+const idleCache = new IdleInstanceCache<Generation>((generation) => {
+  generation.reclaimed = true;
+  void unloadGeneration(generation).catch((error: unknown) => {
+    warn(`failed to dispose cached app ${generation.name}`, error);
+  });
+});
+
+function refresh(generation: Generation): void {
+  if (isIdle(generation)) idleCache.add(generation);
+}
 
 /**
  * How long an app whose load or bootstrap just failed waits before it is loaded again, so a render
@@ -105,9 +117,11 @@ function cooldownLeft(name: string, entry: string): number {
 }
 
 function evict(generation: Generation): void {
+  idleCache.delete(generation);
   const list = generations.get(generation.name);
   const index = list?.indexOf(generation) ?? -1;
   if (index >= 0) list!.splice(index, 1);
+  if (!list?.length) generations.delete(generation.name);
 }
 
 /**
@@ -116,7 +130,11 @@ function evict(generation: Generation): void {
  */
 function isIdle(generation: Generation): boolean {
   return Boolean(
-    generation.getter && !generation.unloading && !generation.instances.size && !generation.getter.occupiesContainer,
+    generation.getter &&
+    !generation.unloading &&
+    !generation.instances.size &&
+    !generation.getter.loadPhaseOpen &&
+    !generation.getter.occupiesContainer,
   );
 }
 
@@ -197,10 +215,16 @@ function untilStopped<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
 function retire(instance: Instance, generation: Generation): void {
   if (instance.operations.size || generation.queue.includes(instance)) return;
   generation.instances.delete(instance);
-  if (!generation.instances.size) generation.idleSince = ++idleTick;
+  if (!generation.instances.size) {
+    generation.idleSince = ++idleTick;
+    refresh(generation);
+  }
+  // Retained handles keep their props and identity, never the released lifecycle closures.
+  if (!instance.active) instance.config = undefined;
 }
 
 function track<T>(instance: Instance, generation: Generation, operation: Promise<T>, teardown = false): Promise<T> {
+  idleCache.delete(generation);
   generation.instances.add(instance);
   instance.operations.set(operation, teardown);
   // Registered before any drain awaits the operation, so a settled one is gone by then.
@@ -303,6 +327,8 @@ function unloadGeneration(generation: Generation, reason: unknown = unloadedErro
         generation.instances.clear();
         generation.queue.length = 0;
         generation.config = undefined;
+        generation.getter = undefined;
+        generation.container = undefined;
         generation.dispose = undefined;
       }
     }
@@ -333,7 +359,52 @@ export function loadMicroApp<T extends ObjectType>(
   configuration?: AppConfiguration,
   lifeCycles?: LifeCycles<T>,
 ): MicroApp {
+  let mountApp = app;
+  let cycle = loadMicroAppCycle(mountApp, configuration, lifeCycles);
+  const { loadPromise, bootstrapPromise, mountPromise, unmountPromise } = cycle.handle;
+  const update = async (props: ObjectType): Promise<unknown> => {
+    if (!cycle.handle.update) throw new TypeError(`App ${app.name} is not mounted with an update lifecycle`);
+    const result: unknown = await cycle.handle.update(props);
+    mountApp = { ...mountApp, props: props as T };
+    return result;
+  };
+  // Public phase promises describe the first cycle, including when cache reclamation requires
+  // another private parcel. mount()/unmount() always describe their own request.
+  return {
+    get _parcel() {
+      return cycle.handle._parcel;
+    },
+    getStatus: () => (cycle.generation.reclaimed ? AppOrParcelStatus.NOT_MOUNTED : cycle.handle.getStatus()),
+    loadPromise,
+    bootstrapPromise,
+    mountPromise,
+    unmountPromise,
+    mount: () => {
+      idleCache.prune();
+      if (cycle.generation.reclaimed) {
+        cycle = loadMicroAppCycle(mountApp, configuration, lifeCycles);
+        return cycle.handle.mountPromise;
+      }
+      return cycle.handle.mount();
+    },
+    unmount: () => cycle.handle.unmount(),
+    get update() {
+      return cycle.handle.update ? update : undefined;
+    },
+    unload: () => {
+      cycle.generation.reclaimed = false;
+      return cycle.handle.unload();
+    },
+  };
+}
+
+function loadMicroAppCycle<T extends ObjectType>(
+  app: LoadableApp<T>,
+  configuration?: AppConfiguration,
+  lifeCycles?: LifeCycles<T>,
+): { handle: MicroApp; generation: Generation } {
   const { props, name, entry, container } = app;
+  idleCache.prune();
   let generation = findGeneration(name, entry, container);
   const cached = Boolean(generation);
   if (!generation) {
@@ -371,7 +442,10 @@ export function loadMicroApp<T extends ObjectType>(
     owner.config = observed(
       loading.then(
         (getter) => {
+          owner.loading.signal.throwIfAborted();
           owner.getter = getter;
+          owner.dispose ??= () => getter.dispose();
+          void getter.loadPhaseSettled.then(() => refresh(owner));
           return getter;
         },
         (error: unknown) => {
@@ -384,12 +458,22 @@ export function loadMicroApp<T extends ObjectType>(
       ),
     );
   }
+  idleCache.delete(generation);
   generation.container = container;
   if (!started) start();
-  return createHandle(generation, container, { domElement: document.createElement('div'), ...props }, cached);
+  return {
+    generation,
+    handle: createHandle(generation, app, { domElement: document.createElement('div'), ...props }, cached),
+  };
 }
 
-function createHandle(generation: Generation, container: HTMLElement, props: ObjectType, cached: boolean): MicroApp {
+function createHandle(
+  generation: Generation,
+  app: LoadableApp<ObjectType>,
+  props: ObjectType,
+  cached: boolean,
+): MicroApp {
+  const { container } = app;
   const instance: Instance = {
     container,
     props,
@@ -403,9 +487,8 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
   generation.queue.push(instance);
   const { signal } = generation.stopped;
   const parcel = mountRootParcel(async () => {
-    const getter = await untilStopped(generation.config!, signal);
+    instance.config = (await untilStopped(generation.config!, signal))(container, app);
     signal.throwIfAborted();
-    instance.config = getter(container);
     return {
       name: generation.name,
       bootstrap: async (hookProps) => {
@@ -509,6 +592,7 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
           throw new QiankunError(`App ${generation.name} is already mounted`, 'app-already-mounted');
         }
         rejoin(instance, generation);
+        instance.config = generation.getter!(container, app);
         await instance.parcel!.mount();
         // A remount that unload cancelled, or that failed: single-spa reports the failure to its
         // error handlers and resolves, so it is surfaced here as well.
@@ -541,7 +625,19 @@ function createHandle(generation: Generation, container: HTMLElement, props: Obj
       return instance.parcel?.update
         ? (nextProps: ObjectType) => {
             if (signal.aborted) return Promise.reject(unloadedError(generation.name, generation.failure));
-            return observed(track(instance, generation, instance.parcel!.update!(nextProps)));
+            if (instance.parcel!.getStatus() !== AppOrParcelStatus.MOUNTED) {
+              return Promise.reject(new TypeError(`App ${generation.name} is not mounted`));
+            }
+            return observed(track(instance, generation, instance.parcel!.update!(nextProps)))
+              .then((result: unknown) => {
+                app = { ...app, props: nextProps };
+                return result;
+              })
+              .catch((error: unknown) => {
+                finish(instance, generation);
+                void unloadGeneration(generation).catch(() => undefined);
+                throw error;
+              });
           }
         : undefined;
     },

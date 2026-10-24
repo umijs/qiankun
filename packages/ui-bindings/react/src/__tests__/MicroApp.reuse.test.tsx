@@ -37,7 +37,12 @@ describe('MicroApp with qiankun instance reuse', () => {
     const unmount = vi.fn(async () => {});
     const getter = Object.defineProperties(
       (container: HTMLElement) => ({ bootstrap, mount: async () => mount(container), unmount }),
-      { occupiesContainer: { get: () => false }, loadPhaseOpen: { get: () => false } },
+      {
+        dispose: { value: async () => {} },
+        loadPhaseSettled: { value: Promise.resolve() },
+        occupiesContainer: { get: () => false },
+        loadPhaseOpen: { get: () => false },
+      },
     );
     mocks.loadApp.mockResolvedValue(getter);
 
@@ -72,7 +77,12 @@ describe('MicroApp with qiankun instance reuse', () => {
     const failure = new Error('bootstrap failed');
     const getter = Object.defineProperties(
       () => ({ bootstrap: async () => Promise.reject(failure), mount: async () => {}, unmount: async () => {} }),
-      { occupiesContainer: { get: () => false }, loadPhaseOpen: { get: () => false } },
+      {
+        dispose: { value: async () => {} },
+        loadPhaseSettled: { value: Promise.resolve() },
+        occupiesContainer: { get: () => false },
+        loadPhaseOpen: { get: () => false },
+      },
     );
     mocks.loadApp.mockResolvedValue(getter);
 
@@ -113,7 +123,12 @@ describe('MicroApp with qiankun instance reuse', () => {
       );
     const getter = Object.defineProperties(
       (container: HTMLElement) => ({ bootstrap, mount: async () => mount(container), unmount: async () => {} }),
-      { occupiesContainer: { get: () => false }, loadPhaseOpen: { get: () => false } },
+      {
+        dispose: { value: async () => {} },
+        loadPhaseSettled: { value: Promise.resolve() },
+        occupiesContainer: { get: () => false },
+        loadPhaseOpen: { get: () => false },
+      },
     );
     mocks.loadApp.mockResolvedValue(getter);
 

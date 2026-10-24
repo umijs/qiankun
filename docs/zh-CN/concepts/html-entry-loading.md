@@ -12,7 +12,7 @@ HTML 文档可以作为微应用资源的唯一描述文件。构建产物更新
 
 ## 入口约定
 
-入口应返回合法且非空的 HTML 文档。使用官方构建插件时，生产构建会自动将一个外部脚本标记为生命周期入口：
+入口应返回合法且非空的 HTML 文档。使用官方构建插件时，生产构建会自动为导出生命周期的外部脚本添加 `entry` 属性：
 
 ```html
 <!doctype html>
@@ -27,7 +27,7 @@ HTML 文档可以作为微应用资源的唯一描述文件。构建产物更新
 </html>
 ```
 
-一份 HTML 文档中不能包含多个带有 `entry` 属性的脚本。入口必须是包含 `src` 或 `data-src` 的外部脚本，内联脚本不能作为生命周期入口。[`@qiankunjs/bundler-plugin`](/zh-CN/ecosystem/bundler-plugin) 会自动标记 Vite 生产构建和 Webpack 构建的入口。Vite 开发环境可以不包含显式标记，此时 ESM 引擎会根据生命周期导出选择入口。建议优先使用插件，不要手动修改生成后的 HTML。
+一份 HTML 文档中不能包含多个带有 `entry` 属性的脚本。`entry` 脚本必须是包含 `src` 或 `data-src` 的外部脚本，不能是内联脚本。[`@qiankunjs/bundler-plugin`](/zh-CN/ecosystem/bundler-plugin) 会自动为 Vite 生产构建和 Webpack 构建中的相应脚本添加 `entry` 属性。Vite 开发环境可以不包含显式标记，此时 ESM 引擎会根据生命周期导出选择入口。建议优先使用插件，不要手动修改生成后的 HTML。
 
 文档中仍可包含其他脚本。`entry` 标记仅用于指定负责导出[微应用生命周期](/zh-CN/concepts/lifecycle-and-props)的脚本。
 
@@ -43,7 +43,7 @@ qiankun 在接收响应的同时处理 HTML，无需等待整个文档下载完�
 
 ## Classic 与 ESM 入口
 
-两种格式采用相同的 HTML 入口和生命周期模型，可根据微应用的构建工具选择。
+Classic 指非 ESM 脚本。两种格式采用相同的 HTML 入口和生命周期模型，可根据微应用的构建工具选择。
 
 | | Classic 脚本 | 原生 ESM |
 | --- | --- | --- |

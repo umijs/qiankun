@@ -80,7 +80,7 @@ React 和 Vue 的 `<MicroApp>` 组件封装了相同的实例级 Promise 处理�
 | --- | --- | --- |
 | 入口或资源请求失败、发生意外重定向，或者返回空响应 | HTML 入口和每项资源的请求状态、最终 URL、身份认证与 CORS 配置 | 修正部署 URL 并允许主应用来源访问；需要携带凭据时配置自定义 [`fetch`](/zh-CN/api/configuration) |
 | 入口加载完成，但应用没有进入 `mount` | 入口是否按照对应构建格式导出了 `bootstrap`、`mount` 和 `unmount` | 按 [Vite](/zh-CN/cookbook/prepare-a-vite-app) 或 [Webpack](/zh-CN/cookbook/prepare-a-webpack-app) 接入指南改造应用 |
-| HTML 入口因存在多个入口脚本而被拒绝 | 生成的 `index.html` 与构建插件产物 | 最多保留一个带有 `entry` 属性的外部脚本；Vite 开发环境可以不含显式标记 |
+| HTML 入口因包含多个 `entry` 脚本而加载失败 | 生成的 `index.html` 与构建插件产物 | 最多保留一个带有 `entry` 属性的外部脚本；Vite 开发环境可以不含显式标记 |
 | 挂载目标无效，或应用渲染到了错误位置 | 传入的 `container`，以及 `props.container` 内部使用的选择器 | 传入页面中有效的 `HTMLElement`，而不是选择器字符串，并且仅在该元素内部查询 |
 | ESM 应用在挂载前失败 | 失败的模块请求、无法解析的裸模块导入、导入映射（import map）、MIME 类型和 CORS | 使用 Vite 生成基于 URL 的导入，或为应用提供有效的模块映射；修复异常的模块响应 |
 | 启用样式隔离后，应用可以渲染但没有样式 | 网络（Network）面板中的外部样式表请求 | 为 CSS 启用 CORS 并确认样式表 URL；参见[样式隔离](/zh-CN/cookbook/enable-style-isolation) |
@@ -91,7 +91,7 @@ React 和 Vue 的 `<MicroApp>` 组件封装了相同的实例级 Promise 处理�
 
 qiankun 增强后的 fetch 自带一个有限的自动重试额度，由同一个 fetch 封装实例共享。它不会区分故障是否临时，网络异常和无效 HTTP 响应都会消耗额度，因此不能假定每个失败请求都会被重试。请求最终失败时，相应的实例 Promise 会被拒绝。对于路由驱动应用，该错误还会通知全局处理器；`loadMicroApp` 调用方则应处理实例 Promise。不应在 `loadMicroApp` 之外增加递归重试或无上限重试。
 
-调用方仅应在故障可能具有临时性时提供额外的用户重试，并先等待上一次 `mountPromise` 结束。生命周期导出无效、入口脚本数量不正确、容器无效或 ESM 依赖无法解析等配置错误必须直接修正，无法通过重试解决。身份认证和网关逻辑应通过自定义 [`fetch`](/zh-CN/api/configuration) 实现。
+调用方仅应在故障可能具有临时性时提供额外的用户重试，并先等待上一次 `mountPromise` 结束。生命周期导出无效、带有 `entry` 属性的脚本数量不正确、容器无效或 ESM 依赖无法解析等配置错误必须直接修正，无法通过重试解决。身份认证和网关逻辑应通过自定义 [`fetch`](/zh-CN/api/configuration) 实现。
 
 ## 保留生产诊断能力
 
