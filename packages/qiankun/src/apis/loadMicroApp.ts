@@ -174,7 +174,8 @@ export function loadMicroApp<T extends ObjectType>(
 
   const memorizedLoadingFn = async (): Promise<ParcelConfigObject> => {
     const getter = await owner.config;
-    return cached ? wrapParcelConfigForRemount(getter(container)) : getter(container);
+    const config = getter(container, app);
+    return cached ? wrapParcelConfigForRemount(config) : config;
   };
 
   if (!started) {

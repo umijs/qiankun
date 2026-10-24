@@ -42,7 +42,7 @@ import { acquireContainer, isContainerHeld, type ContainerHold } from './contain
 declare const __QIANKUN_VERSION__: string;
 
 export interface ParcelConfigObjectGetter {
-  (mountContainer: HTMLElement): ParcelConfigObject;
+  (mountContainer: HTMLElement, mountApp?: LoadableApp<ObjectType>): ParcelConfigObject;
   /**
    * Whether the app still holds any container occupancy — its load hold ① or a mount hold ②.
    * An occupying app is still writing to (or mounted in) a container and must not be rebound.
@@ -266,7 +266,10 @@ export default async function loadApp<T extends ObjectType>(
   })();
   const { bootstrap, mount, unmount, update, beforeUnmount, afterUnmount, afterMount, beforeMount } = lifecycleSetup;
 
-  const getParcelConfig = (mountContainer: HTMLElement): ParcelConfigObject => {
+  const getParcelConfig = (mountContainer: HTMLElement, mountApp = app): ParcelConfigObject => {
+    // Each handle owns its hook context. A successor can request its config while the previous
+    // handle is still unmounting, so updating the load-time app would corrupt that teardown.
+    const hookApp = { ...mountApp, container: mountContainer };
     // ② mount→unmount occupancy period. Regular release is the clearContainer step at the end of
     // the unmount chain, but single-spa marks an app SKIP_BECAUSE_BROKEN after a mount OR unmount
     // failure and never runs the rest of its chains — without the failure fallback below, the
@@ -392,12 +395,12 @@ export default async function loadApp<T extends ObjectType>(
           await mountSandbox(mountContainer);
         },
         // exec the chain after rendering to keep the behavior with beforeLoad
-        async () => execHooksChain(toArray(beforeMount), app, global),
+        async () => execHooksChain(toArray(beforeMount), hookApp, global),
         async (props) => {
           await mount({ ...props, container: mountContainer });
         },
         // finish loading after app mounted
-        async () => execHooksChain(toArray(afterMount), app, global),
+        async () => execHooksChain(toArray(afterMount), hookApp, global),
         async () => {
           if (process.env.NODE_ENV === 'development') {
             const measureName = `[qiankun] App ${appName} Loading Consuming`;
@@ -411,12 +414,12 @@ export default async function loadApp<T extends ObjectType>(
       ],
 
       unmount: [
-        async () => execHooksChain(toArray(beforeUnmount), app, global),
+        async () => execHooksChain(toArray(beforeUnmount), hookApp, global),
         async (props) => {
           await unmount({ ...props, container: mountContainer });
         },
         unmountSandbox,
-        async () => execHooksChain(toArray(afterUnmount), app, global),
+        async () => execHooksChain(toArray(afterUnmount), hookApp, global),
         async () => {
           // only while still holding ②: after a fallback release the container may belong to a
           // later app already, and clearing it here would destroy that app's live DOM
