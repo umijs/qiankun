@@ -53,6 +53,8 @@ Vite 可能通过模块顶层代码注入 CSS。由于重新挂载时不会再�
 
 ## 兼容性与诊断
 
+qiankun 会在首次加载 ESM 模块前自动检测动态多 import map。检测失败时，宿主可通过 `mountPromise` 捕获专用 `QiankunError`；检测方式、缓存范围及错误码见[浏览器支持](/zh-CN/guide/browser-support#esm-加载前检测)。
+
 - 较新版本的 Chromium、Edge 与 Safari 已支持所需能力，具体版本矩阵见[浏览器支持](/zh-CN/guide/browser-support)。Firefox 默认未启用相关能力；如果需要支持 Firefox，请采用 Classic/Webpack 构建。
 - 内容安全策略需要允许 `blob:` 脚本；qiankun 的 ESM 路径不要求 `'unsafe-eval'`。
 - 模块及其资源必须返回正确的 CORS 响应头和 MIME 类型。JSON、CSS、WASM 等带类型的 import（`with { type: … }`）可能仍采用浏览器原生的页面级共享方式，无法实现完整的应用级隔离。

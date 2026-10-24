@@ -19,6 +19,8 @@ export const qiankunErrorCodes = [
   'module-redirect-cycle',
   'module-context-missing',
   'module-rewrite-invalid',
+  'esm-unsupported',
+  'esm-capability-check-failed',
   'app-unloaded',
   'app-teardown-failed',
   'sandbox-mount-conflict',

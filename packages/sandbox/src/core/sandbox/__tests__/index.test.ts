@@ -1,4 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+// happy-dom cannot execute the native module/import-map capability probe.
+vi.mock('../../../../../shared/src/esm-sandbox/capability', () => ({ assertEsmSupport: vi.fn(async () => {}) }));
+
 import { clearStylesheetCache, getStylesheetCacheStats } from '@qiankunjs/shared';
 import { nativeGlobal } from '../../../consts';
 import { Compartment } from '../../compartment';

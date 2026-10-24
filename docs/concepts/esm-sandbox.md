@@ -53,6 +53,8 @@ See [Prepare a Vite app](/cookbook/prepare-a-vite-app) for the supported setup a
 
 ## Compatibility and diagnostics
 
+qiankun automatically checks dynamic multiple-import-map support before loading ESM modules. The host can catch a dedicated `QiankunError` through `mountPromise`; see [Browser support](/guide/browser-support#esm-loading-capability-check) for the probe, caching scope, and error codes.
+
 - Recent Chromium/Edge and Safari releases support the required browser capability; see [Browser support](/guide/browser-support) for the version matrix. Firefox does not enable it by default, so use the Classic/Webpack delivery path when Firefox support is required.
 - A Content Security Policy must allow `blob:` scripts. qiankun's ESM path does not require `'unsafe-eval'`.
 - Modules and their assets must be served with correct CORS headers and MIME types. JSON, CSS, and WASM imports with type attributes (`with { type: … }`) may retain native, shared-page behavior rather than full per-app isolation.

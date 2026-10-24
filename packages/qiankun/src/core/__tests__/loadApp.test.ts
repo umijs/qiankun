@@ -2,6 +2,10 @@
  * @vitest-environment happy-dom
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+// happy-dom cannot execute the native module/import-map capability probe.
+vi.mock('../../../../shared/src/esm-sandbox/capability', () => ({ assertEsmSupport: vi.fn(async () => {}) }));
+
 import { QiankunError } from 'qiankun';
 import type { LoaderOpts } from '@qiankunjs/loader';
 import { isNativePassthroughNode, nativeGlobal } from '@qiankunjs/sandbox';

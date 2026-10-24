@@ -24,7 +24,28 @@ if (isRuntimeCompatible()) {
 }
 ```
 
-Note that [`isRuntimeCompatible()`](/api/is-runtime-compatible) only covers the three base-runtime features — it does **not** check dynamic import maps or CSS `@scope`. Whether to enable native ESM or style isolation must be evaluated separately against the table above.
+Note that [`isRuntimeCompatible()`](/api/is-runtime-compatible) only covers the three base-runtime features — it does **not** check dynamic import maps or CSS `@scope`. Evaluate style isolation separately against the table above. qiankun automatically checks dynamic multiple-import-map support before loading the first sandboxed ESM module; no additional detection API call is needed.
+
+## ESM loading capability check
+
+In a separate same-origin `about:blank` iframe, qiankun injects an import map and executes a module, then adds a second map and executes another module. This avoids changing the host document's mappings. The probe uses local blobs without fetching external resources. Its result is reused within the host document; Classic scripts do not trigger the check. The synchronous behavior of `isRuntimeCompatible()` stays the same.
+
+Handle check failures through `mountPromise`:
+
+```ts
+import { loadMicroApp, QiankunError } from 'qiankun';
+
+const app = loadMicroApp({ name, entry, container });
+void app.mountPromise.catch((error: unknown) => {
+  if (error instanceof QiankunError && error.code === 'esm-unsupported') {
+    // Ask the user to use a supported browser, or select a Classic build entry.
+    return;
+  }
+  console.error(error);
+});
+```
+
+[esm-unsupported: Required ESM sandbox capabilities are unavailable](/errors/esm-unsupported) means a probe module could not use its map. An inaccessible iframe, initialization failure, enforced CSP restriction on probe scripts, or a check exceeding five seconds produces [esm-capability-check-failed: ESM capability check could not complete](/errors/esm-capability-check-failed). The latter does not establish whether the browser supports the ESM sandbox. The check does not replace CSP, CORS, or network checks for micro-app resources.
 
 ## Firefox and native ESM
 

@@ -59,6 +59,8 @@ The result only covers the three core runtime APIs above. It does not verify:
 
 In particular, the native ESM path requires multiple dynamically injected import maps. Firefox does not enable that behavior by default, even when `isRuntimeCompatible()` returns `true`; ship classic scripts instead (for example, Webpack builds) when Firefox support is required.
 
+The ESM sandbox performs a separate asynchronous capability check before loading its first module and reports failures through `mountPromise`. This does not change this function's return value. See [Browser support](/guide/browser-support#esm-loading-capability-check).
+
 ## Related
 
 - [`loadMicroApp`](/api/load-micro-app)
