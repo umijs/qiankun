@@ -169,7 +169,7 @@ export function updateMicroApp({
   });
 }
 
-/** Statuses of an app whose mount is still under way (loading, bootstrapping, mounting) or done. */
+/** An app still mounting or already mounted, including one running an update. */
 const unmountableStatuses: readonly string[] = [
   AppOrParcelStatus.LOADING_SOURCE_CODE,
   AppOrParcelStatus.NOT_BOOTSTRAPPED,
@@ -177,6 +177,7 @@ const unmountableStatuses: readonly string[] = [
   AppOrParcelStatus.NOT_MOUNTED,
   AppOrParcelStatus.MOUNTING,
   AppOrParcelStatus.MOUNTED,
+  AppOrParcelStatus.UPDATING,
 ];
 
 /**

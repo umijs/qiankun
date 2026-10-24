@@ -2,6 +2,8 @@
  * @vitest-environment happy-dom
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { Deferred } from '@qiankunjs/shared';
+import { unloadMicroApp } from 'qiankun';
 
 // The real loadMicroApp with only the entry loading stubbed, so the binding drives qiankun's
 // instance reuse end to end.
@@ -70,6 +72,64 @@ describe('MicroApp with qiankun instance reuse', () => {
 
     act(() => root.unmount());
     await settle();
+  });
+
+  it('waits for an async update before handing a keyed replacement the same instance', async () => {
+    const entered = new Deferred<void>();
+    const resume = new Deferred<void>();
+    const bootstrap = vi.fn(async () => {});
+    const mount = vi.fn(async (_container: HTMLElement) => {});
+    const unmount = vi.fn(async () => {});
+    const getter = Object.defineProperties(
+      (container: HTMLElement) => ({
+        bootstrap,
+        mount: async () => mount(container),
+        unmount,
+        update: async () => {
+          entered.resolve();
+          await resume.promise;
+        },
+      }),
+      {
+        dispose: { value: async () => {} },
+        loadPhaseSettled: { value: Promise.resolve() },
+        occupiesContainer: { get: () => false },
+        loadPhaseOpen: { get: () => false },
+      },
+    );
+    mocks.loadApp.mockResolvedValue(getter);
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    try {
+      await act(async () => {
+        root.render(<MicroApp key="1" name="updating-swap" entry="//localhost:7100" step={1} />);
+      });
+      await settle();
+      await act(async () => {
+        root.render(<MicroApp key="1" name="updating-swap" entry="//localhost:7100" step={2} />);
+      });
+      await entered.promise;
+      await act(async () => {
+        root.render(<MicroApp key="2" name="updating-swap" entry="//localhost:7100" step={3} />);
+      });
+      await settle();
+      expect(mocks.loadApp).toHaveBeenCalledTimes(1);
+      expect(unmount).not.toHaveBeenCalled();
+      expect(mount).toHaveBeenCalledTimes(1);
+
+      resume.resolve();
+      await settle();
+      expect(unmount).toHaveBeenCalledTimes(1);
+      expect(mount).toHaveBeenCalledTimes(2);
+      expect(bootstrap).toHaveBeenCalledTimes(1);
+      expect(mount.mock.calls[1][0]).toBe(host.querySelector('.qiankun-micro-app-container'));
+    } finally {
+      resume.resolve();
+      act(() => root.unmount());
+      await settle();
+      await unloadMicroApp('updating-swap');
+    }
   });
 
   it('reports a failed bootstrap once', async () => {

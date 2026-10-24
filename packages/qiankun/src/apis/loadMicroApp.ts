@@ -614,7 +614,10 @@ function createHandle(
           handedToUnload = true;
           return null;
         }
-        if (instance.parcel!.getStatus() !== AppOrParcelStatus.MOUNTED) {
+        const status = instance.parcel!.getStatus();
+        // single-spa waits for its current update before unmounting. UPDATING still owns a
+        // mounted app; rejecting it here would leave that app mounted after the update settles.
+        if (status !== AppOrParcelStatus.MOUNTED && status !== AppOrParcelStatus.UPDATING) {
           throw notMountedError(generation.name, instance.failure);
         }
         return instance.parcel!.unmount();

@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
-    "lib": ["es2018", "dom"],
+    "lib": ["es2018", "es2021.weakref", "dom"],
     "declaration": true,
     "importHelpers": false,
     "strict": true,

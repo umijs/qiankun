@@ -172,6 +172,46 @@ describe('child asset owners', () => {
 });
 
 describe('stylesheet ownership', () => {
+  it.each(['load', 'error'])('releases completed link cleanup callbacks on %s across warm mounts', (event) => {
+    const compartment = createCompartment();
+    const fetch = vi.fn<typeof window.fetch>();
+    const scope = getAssetScope(compartment);
+    const baseline = scope.cleanups.size;
+    for (let round = 0; round < 100; round++) {
+      const link = createLink();
+      const listener = vi.fn();
+      link.addEventListener(event, listener);
+      transpileLink(link, baseURI, { compartment, fetch });
+      link.dispatchEvent(new Event(event));
+      link.remove();
+      expect(listener).toHaveBeenCalledOnce();
+    }
+    expect(scope.cleanups.size).toBe(baseline);
+    disposeCompartmentAssets(compartment);
+  });
+
+  it('disarms and detaches a pending link on terminal disposal', () => {
+    const compartment = createCompartment();
+    const link = createLink();
+    const onLoad = vi.fn();
+    const onError = vi.fn();
+    link.onload = onLoad;
+    link.onerror = onError;
+    transpileLink(link, baseURI, { compartment, fetch: vi.fn() });
+    // Attach without starting a native stylesheet fetch in happy-dom.
+    const container = document.createElement('div');
+    container.append(link);
+
+    disposeCompartmentAssets(compartment);
+    expect(link.parentElement).toBeNull();
+    expect(link.hasAttribute('href')).toBe(false);
+    link.dispatchEvent(new Event('load'));
+    link.dispatchEvent(new Event('error'));
+    expect(onLoad).not.toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
+    expect(getAssetScope(compartment).cleanups.size).toBe(0);
+  });
+
   it('retains shared stylesheet blobs until their last owner is disposed, then refetches', async () => {
     const first = createCompartment();
     const second = createCompartment();

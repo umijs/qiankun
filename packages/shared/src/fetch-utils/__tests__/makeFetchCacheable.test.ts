@@ -332,6 +332,59 @@ it('keeps a shared download live until every wrapper releases it', async () => {
   expect(networkSignal?.aborted).toBe(true);
 });
 
+it.each(['assets', 'modules'] as const)(
+  'releases an unread shared %s download after both owners unload',
+  async (scope) => {
+    const transport = createStreamingTransport();
+    const firstLifetime = new AbortController();
+    const secondLifetime = new AbortController();
+    const first = makeFetchCacheable(transport.fetch, { scope, signal: firstLifetime.signal });
+    const second = makeFetchCacheable(transport.fetch, { scope, signal: secondLifetime.signal });
+    const url = `https://unread-owner-release.qiankun.org/${scope}`;
+    const [firstResponse, secondResponse] = await Promise.all([first(url), second(url)]);
+
+    firstLifetime.abort();
+    expect(transport.networkSignal()?.aborted).toBe(false);
+    secondLifetime.abort();
+
+    expect(transport.networkSignal()?.aborted).toBe(true);
+    expect(firstResponse.bodyUsed).toBe(false);
+    expect(secondResponse.bodyUsed).toBe(false);
+    expect(await settle(secondResponse.text())).toEqual({ status: 'rejected', reason: secondLifetime.signal.reason });
+    expect(transport.fetch).toHaveBeenCalledOnce();
+  },
+);
+
+it('releases a finished shared download after its cache entry was invalidated by another owner', async () => {
+  const transport = createStreamingTransport();
+  const first = makeFetchCacheable(transport.fetch);
+  const second = makeFetchCacheable(transport.fetch);
+  const url = 'https://finished-owner-release.qiankun.org/';
+  const responses = await Promise.all([first(url), second(url)]);
+  transport.close();
+  await Promise.all(responses.map((response) => response.text()));
+
+  first.invalidate();
+  expect(transport.networkSignal()?.aborted).toBe(false);
+  second.invalidate();
+  expect(transport.networkSignal()?.aborted).toBe(true);
+});
+
+it('releases an unread download after LRU eviction', async () => {
+  const transport = createStreamingTransport();
+  const app = makeFetchCacheable(transport.fetch);
+  await app('https://evicted-unread-owner.qiankun.org/');
+  const networkSignal = transport.networkSignal();
+  const other = makeFetchCacheable(async () => new Response('other'));
+  for (let index = 0; index < 50; index++) {
+    await (await other(`https://unread-cache-pressure.qiankun.org/${String(index)}`)).text();
+  }
+
+  app.invalidate();
+  expect(networkSignal?.aborted).toBe(true);
+  other.invalidate();
+});
+
 it('aborts a sole scope response body even after the response headers were delivered', async () => {
   const transport = createStreamingTransport();
   const scope = new AbortController();
