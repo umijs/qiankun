@@ -8,7 +8,7 @@ import { type MicroApp, type ObjectType } from '../../types';
 
 const mocks = vi.hoisted(() => ({ loadApp: vi.fn() }));
 vi.mock('../../core/loadApp', () => ({ default: mocks.loadApp }));
-import { loadMicroApp } from '../loadMicroApp';
+import { loadMicroApp, unloadMicroApp } from '../loadMicroApp';
 
 function loaded(open = false) {
   const settled = new Deferred<void>();
@@ -249,18 +249,20 @@ describe('loadMicroApp idle cache and durable handles', () => {
       expect.objectContaining({ props: { route: 'latest' } }),
       undefined,
       undefined,
+      expect.objectContaining({ signal: expect.any(AbortSignal), onDispose: expect.any(Function) }),
     );
   });
 
-  it('coalesces repeated unmount requests without retiring a healthy sandbox', async () => {
+  it('rejects a repeated unmount after the queued teardown without retiring a healthy sandbox', async () => {
     const app = load();
     await app.mountPromise;
     const finished = new Deferred<void>();
     copies[0].unmount.mockImplementationOnce(() => finished.promise);
     const first = app.unmount();
-    expect(app.unmount()).toBe(first);
+    const second = expect(app.unmount()).rejects.toMatchObject({ code: 'app-not-mounted' });
     finished.resolve();
     await first;
+    await second;
     await app.mount();
     expect(copies).toHaveLength(1);
     expect(copies[0].bootstrap).toHaveBeenCalledTimes(1);
@@ -275,6 +277,39 @@ describe('loadMicroApp idle cache and durable handles', () => {
     expect(copies[0].dispose).toHaveBeenCalledTimes(1);
     await load().mountPromise;
     expect(copies).toHaveLength(2);
+  });
+
+  it('keeps explicit unload terminal after a reclaimed handle cold-loads again', async () => {
+    const app = load();
+    await idle(app);
+    await vi.advanceTimersByTimeAsync(ttl);
+    await app.mount();
+    await app.unload();
+    expect(copies.map((copy) => copy.dispose.mock.calls.length)).toEqual([1, 1]);
+    expect(app.getStatus()).toBe(AppOrParcelStatus.NOT_LOADED);
+    await expect(app.mount()).rejects.toMatchObject({ code: 'app-unloaded' });
+    await expect(app.unmount()).rejects.toMatchObject({ code: 'app-unloaded' });
+  });
+
+  it('explicitly unloads an idle copy before expiry without disposing it twice', async () => {
+    const app = load();
+    await idle(app);
+    await unloadMicroApp(name);
+    await vi.advanceTimersByTimeAsync(ttl);
+    expect(copies[0].dispose).toHaveBeenCalledTimes(1);
+    await expect(app.mount()).rejects.toMatchObject({ code: 'app-unloaded' });
+    await load().mountPromise;
+    expect(copies).toHaveLength(2);
+  });
+
+  it('can permanently invalidate a handle whose cached copy was already reclaimed', async () => {
+    const app = load();
+    await idle(app);
+    await vi.advanceTimersByTimeAsync(ttl);
+    await app.unload();
+    await expect(app.mount()).rejects.toMatchObject({ code: 'app-unloaded' });
+    expect(copies[0].dispose).toHaveBeenCalledTimes(1);
+    expect(copies).toHaveLength(1);
   });
 
   it('removes a generation from lookup before disposal invokes another load', async () => {

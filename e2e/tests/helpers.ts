@@ -25,8 +25,12 @@ export type E2EWindow = Window & {
     hookMetrics(key: string): { hookCalls: number; moduleFetches: number } | undefined;
     loadDetached(name: string, key?: string, containerKey?: string, props?: Record<string, unknown>): string;
     settle(key: string): Promise<string>;
-    unmount(key: string): Promise<string>;
+    mountOutcome(key: string): Promise<{ status: string; error?: string }>;
     remount(key: string): Promise<string>;
+    unload(key: string): Promise<string>;
+    unloadNamed(name: string): Promise<void>;
+    loadWithNetworkEntryStream(key: string, containerKey: string): Promise<string>;
+    unmount(key: string): Promise<string>;
     swapContainer(name: string, key: string, nextKey: string): Promise<string>;
     resetContainer(key: string): void;
     status(key: string): string | undefined;
@@ -76,10 +80,6 @@ export async function unmountApp(page: Page, key: string): Promise<string> {
   return page.evaluate((instanceKey) => (window as unknown as E2EWindow).__E2E__.unmount(instanceKey), key);
 }
 
-export async function remountApp(page: Page, key: string): Promise<string> {
-  return page.evaluate((instanceKey) => (window as unknown as E2EWindow).__E2E__.remount(instanceKey), key);
-}
-
 export async function loadAppWithStoragePlugin(
   page: Page,
   prefix: string,
@@ -127,4 +127,8 @@ export async function readMainRealmGlobal(page: Page, prop: string): Promise<unk
 
 export async function countLiveCompartments(page: Page): Promise<number> {
   return page.evaluate(() => (window as unknown as E2EWindow).__E2E__.liveCompartments());
+}
+
+export async function remountApp(page: Page, key: string): Promise<string> {
+  return page.evaluate((key) => (window as E2EWindow).__E2E__.remount(key), key);
 }

@@ -243,7 +243,7 @@ import { MicroApp } from '@qiankunjs/vue';
 const microAppComp = ref();
 
 onMounted(() => {
-  // Parcel 句柄：getStatus()、mountPromise、unmount()、update() 等
+  // MicroApp 句柄：getStatus()、mountPromise、unmount()、update() 等
   console.log(microAppComp.value?.microApp?.getStatus());
 });
 </script>
@@ -253,10 +253,12 @@ onMounted(() => {
 </template>
 ```
 
-该句柄是 `@qiankunjs/single-spa`（qiankun 内置的 single-spa fork）的 Parcel。`getStatus()` 返回 `NOT_LOADED`、`LOADING_SOURCE_CODE`、`NOT_BOOTSTRAPPED`、`BOOTSTRAPPING`、`NOT_MOUNTED`、`MOUNTING`、`MOUNTED`、`UPDATING`、`UNMOUNTING`、`UNLOADING`、`SKIP_BECAUSE_BROKEN` 或 `LOAD_ERROR`。完整类型参见[类型参考](/zh-CN/api/types)。
+该句柄即 [`loadMicroApp`](/zh-CN/api/load-micro-app) 返回的 `MicroApp`：`@qiankunjs/single-spa`（qiankun 内置的 single-spa fork）的 Parcel，外加 `unload()`。`getStatus()` 返回 `NOT_LOADED`、`LOADING_SOURCE_CODE`、`NOT_BOOTSTRAPPED`、`BOOTSTRAPPING`、`NOT_MOUNTED`、`MOUNTING`、`MOUNTED`、`UPDATING`、`UNMOUNTING`、`UNLOADING`、`SKIP_BECAUSE_BROKEN` 或 `LOAD_ERROR`。完整类型参见[类型参考](/zh-CN/api/types)。
 
 ::: tip 由组件管理生命周期
-应优先通过 prop（`name`、`appProps`）管理微应用，而不是直接调用句柄上的 `unmount()` 或 `update()`。组件会按顺序执行卸载，并协调并发更新；直接调用句柄方法可能与组件的内部状态发生冲突。
+应优先通过 prop（`name`、`appProps`）管理微应用，而不是直接调用句柄上的 `unmount()`、`update()` 或 `unload()`。组件会按顺序执行卸载，并协调并发更新；直接调用句柄方法可能与组件的内部状态发生冲突。
+
+组件销毁时只调用 `unmount()`，已加载的实例会保留，再次渲染同名组件时直接复用。需要释放这些资源时，在组件销毁后调用 [`unloadMicroApp(name)`](/zh-CN/api/load-micro-app#unload)。
 :::
 
 ## CSS 钩子

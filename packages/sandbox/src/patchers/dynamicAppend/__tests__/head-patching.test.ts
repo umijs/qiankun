@@ -131,13 +131,13 @@ describe.sequential('virtual head patching', () => {
     await controller.mount(container);
     await controller.unmount();
 
-    // Accessing a retired proxy must not restore released methods.
+    // Accessing the retained proxy while unmounted must not restore released methods.
     expect(sandboxDocument.head).toBe(firstHead);
     expect(Object.hasOwn(firstHead, 'appendChild')).toBe(false);
     await controller.mount(container);
     const secondHead = document.createElement('qiankun-head');
     firstHead.replaceWith(secondHead);
-    // ESM modules can keep the original document binding after the mount installs a new proxy.
+    // ESM modules can keep the original document binding across subsequent mounts.
     expect(sandboxDocument.head).toBe(secondHead);
     expect(Object.hasOwn(secondHead, 'appendChild')).toBe(true);
     const style = sandboxDocument.createElement('style');
@@ -145,7 +145,7 @@ describe.sequential('virtual head patching', () => {
     expect(nodeTransformer).toHaveBeenCalledTimes(1);
 
     await controller.dispose();
-    expect(sandboxDocument.head).toBe(secondHead);
+    expect(() => sandboxDocument.head).toThrow(TypeError);
     expect(Object.hasOwn(secondHead, 'appendChild')).toBe(false);
   });
 

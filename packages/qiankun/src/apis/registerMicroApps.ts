@@ -52,3 +52,6 @@ export function start(opts: StartOpts = {}) {
     frameworkStartedDefer.resolve();
   }
 }
+
+// Keep registration: an application whose route remains active may reload immediately.
+export { unloadApplication } from '@qiankunjs/single-spa';

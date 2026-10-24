@@ -22,7 +22,9 @@ await microApp.unmount();
 | 导出 | 用途 |
 | --- | --- |
 | [`loadMicroApp`](/zh-CN/api/load-micro-app) | 立即加载并挂载一个微应用，返回 [`MicroApp`](/zh-CN/api/types) 句柄。 |
+| [`unloadMicroApp`](/zh-CN/api/load-micro-app#unload) | 按名称销毁手动加载应用的全部实例，释放已加载的资源。 |
 | [`registerMicroApps`](/zh-CN/api/register-micro-apps) | 注册由 URL `activeRule` 驱动的微应用。 |
+| [`unloadApplication`](/zh-CN/api/register-micro-apps#unload-application) | 销毁路由应用，保留注册；活跃路由会触发重新加载。 |
 | [`start`](/zh-CN/api/start) | 启动路由驱动的注册模式。直接使用 `loadMicroApp` 时通常不需要调用。 |
 | [`setDefaultMountApp`](/zh-CN/api/effects) | 没有应用挂载时跳转到默认应用路由。 |
 | [`runAfterFirstMounted`](/zh-CN/api/effects) | 首个微应用挂载后执行一次回调。 |
@@ -44,7 +46,7 @@ function loadMicroApp<T extends ObjectType>(
 ): MicroApp;
 ```
 
-返回值提供 `mount`、`unmount`、`getStatus` 和各阶段的 Promise。只有微应用导出 `update` 生命周期时，句柄才提供 `update` 方法。不再使用实例时，应调用 `unmount()`。
+返回值提供 `mount`、`unmount`、`unload`、`getStatus` 和各阶段的 Promise。只有微应用导出 `update` 生命周期时，句柄才提供 `update` 方法。不再使用实例时，应调用 `unmount()`；需要释放已加载的资源时，再调用 `unload()`。
 
 ### 路由驱动：`registerMicroApps` + `start`
 

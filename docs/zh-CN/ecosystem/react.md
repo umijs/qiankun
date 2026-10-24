@@ -228,13 +228,14 @@ function Page() {
 
 ### ref 句柄
 
-该句柄实现 single-spa 的 Parcel 接口：
+该句柄即 [`loadMicroApp`](/zh-CN/api/load-micro-app) 返回的 `MicroApp`，在 single-spa 的 Parcel 接口上增加了 `unload()`：
 
 | 成员 | 类型 | 说明 |
 | --- | --- | --- |
 | `getStatus()` | `() => Status` | 返回当前生命周期状态，取值见下文。 |
 | `mount()` | `() => Promise<null>` | 挂载应用。 |
 | `unmount()` | `() => Promise<null>` | 卸载应用。 |
+| `unload()` | `() => Promise<void>` | 销毁该句柄所用的实例，释放已加载的资源。组件不会调用它。 |
 | `update?(props)` | `(props) => Promise<unknown>` | 传入新的 props。仅当应用导出 `update` 生命周期时存在。 |
 | `loadPromise` | `Promise<null>` | 表示源代码加载阶段完成的 Promise。 |
 | `bootstrapPromise` | `Promise<null>` | 表示 `bootstrap` 阶段完成的 Promise。 |
@@ -244,7 +245,9 @@ function Page() {
 `getStatus()` 返回以下状态之一：`NOT_LOADED`、`LOADING_SOURCE_CODE`、`NOT_BOOTSTRAPPED`、`BOOTSTRAPPING`、`NOT_MOUNTED`、`MOUNTING`、`MOUNTED`、`UPDATING`、`UNMOUNTING`、`UNLOADING`、`SKIP_BECAUSE_BROKEN`、`LOAD_ERROR`。
 
 ::: warning 由组件管理生命周期
-ref 主要用于查询状态和等待生命周期 Promise。不应通过 ref 直接调用 `mount()` 或 `unmount()`。组件会统一处理挂载、更新和卸载；绕过组件调用这些方法可能破坏内部状态。
+ref 主要用于查询状态和等待生命周期 Promise。不应通过 ref 直接调用 `mount()`、`unmount()` 或 `unload()`。组件会统一处理挂载、更新和卸载；绕过组件调用这些方法可能破坏内部状态。
+
+组件销毁时只调用 `unmount()`，已加载的实例会保留，再次渲染同名组件时直接复用。需要释放这些资源时，在组件销毁后调用 [`unloadMicroApp(name)`](/zh-CN/api/load-micro-app#unload)。
 :::
 
 ## 传递配置

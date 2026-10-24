@@ -53,6 +53,14 @@ isDeferScript; // external + [defer]  → ordered via shared prepareDeferredQueu
 
 Nodes are parsed/transformed in a detached document first, then moved to live DOM — this prevents premature script execution before the transpiler has rewritten the node.
 
+### Cancellation and owner cleanup
+
+`LoaderOpts.signal` cancels entry fetching, response streaming, pending blocking-asset waits, and subsequent loader writes. The wrapper around the existing writable-dom sink disarms pending asset handlers on abort; keep this cancellation code in `index.ts`, outside the vendored fork. Custom fetch implementations must forward `init.signal` to cancel their underlying request; if one ignores the signal, the loader still rejects its wait and cancels an eventual response body.
+
+Transpiled assets are owned by `compartment` when one is given. Without a compartment, `fetch` may be shared by other loads (`window.fetch` by default), so each `loadEntry` wraps it in a per-load fetch function. Transformers receive that wrapper as `opts.fetch`, and it is attached to the caller's fetch with `attachChildAssetOwner`. Cancellation disposes only this load's owner and never poisons the caller's fetch. The caller's terminal `disposeCompartmentAssets(fetch)` still releases every load attached to it.
+
+The DOM-write phase and the entry promise settle independently and in either order: an async entry script can load after the tail was written. The abort listener stays registered until both have settled. On abort, the loader disposes the load's asset owner, disarms pending asset handlers, rejects a still-pending entry promise with `signal.reason`, and notifies `onDOMStreamSettled` exactly once. This also covers an entry promise that already resolved while the HTML tail remains open. The browser cannot pre-empt a native script that is already running. The caller still owns sandbox teardown and container cleanup: free controller/plugin effects before revoking the Compartment, and release container occupancy after that cleanup. Do not call `compartment.dispose()` from the loader; that would revoke globals before plugin cleanup can use them.
+
 ### writable-dom fork discipline
 
 `writable-dom/` is vendored from marko-js/writable-dom and periodically re-synced; every deviation carries a `[qiankun]` comment so syncs can re-apply them mechanically. Changes there demand deliberate thought and must stay **generic**: general-purpose hooks or upstream bug fixes only — never qiankun-specific semantics coupled to other packages (no `@qiankunjs/*` imports, no sandbox marks, no downstream contract knowledge). The fork's one integration seam is the `assetTransformer` callback (every element passes through it right before insertion); caller bookkeeping belongs in the callback `loadEntry` provides (`index.ts`), on the caller's side of that seam. The loader itself carries no sandbox semantics either: a sandbox-provided `nodeTransformer` stamps its own output (e.g. the native-passthrough mark its patcher consumes) — the loader just routes every element through whatever transformer it was given.
@@ -67,8 +75,8 @@ Nodes are parsed/transformed in a detached document first, then moved to live DO
 
 ```typescript
 export { loadEntry, type LoaderOpts } from './index';
-// LoaderOpts = { fetch, compartment?, nodeTransformer?, streamTransformer?, onDOMStreamSettled? } & BaseTranspilerOpts
+// LoaderOpts = { fetch, compartment?, nodeTransformer?, streamTransformer?, signal?, onDOMStreamSettled? } & BaseTranspilerOpts
 // onDOMStreamSettled: notified exactly once when the DOM-write phase is over (stream piped, errored,
-// or never started) — distinct from the returned promise, which can settle at the entry script's
+// aborted, or never started) — distinct from the returned promise, which can settle at the entry script's
 // onload while tail nodes are still streaming; qiankun's container gate keys its release on it
 ```

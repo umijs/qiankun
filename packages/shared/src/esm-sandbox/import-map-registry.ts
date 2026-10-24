@@ -9,35 +9,61 @@
  */
 import { keys } from '../utils';
 
-const injectedEntries = new Map<string, string>();
+type Injection = { script: HTMLScriptElement; activeEntries: number };
+type InjectedEntry = { target: string; owners: number; injection: Injection };
 
-export function injectImportMapEntries(entries: Record<string, string>, targetDocument: Document = document): void {
+const injectedEntries = new Map<string, InjectedEntry>();
+
+/** Release only framework bookkeeping and owned DOM nodes; native mappings are irrevocable. */
+export function injectImportMapEntries(
+  entries: Record<string, string>,
+  targetDocument: Document = document,
+): () => void {
   const fresh: Record<string, string> = {};
-  let freshCount = 0;
+  const acquired = new Map<string, InjectedEntry>();
+  let injection: Injection | undefined;
 
   keys(entries).forEach((specifier) => {
     const target = entries[specifier];
     const existing = injectedEntries.get(specifier);
     if (existing !== undefined) {
-      if (existing !== target) {
+      if (existing.target !== target) {
         console.error(
-          `[qiankun] import map entry ${specifier} -> ${target} conflicts with the injected ${existing}, the browser keeps the first one (first-wins). This indicates an instance key collision, please file an issue.`,
+          `[qiankun] import map entry ${specifier} -> ${target} conflicts with the injected ${existing.target}, the browser keeps the first one (first-wins). This indicates an instance key collision, please file an issue.`,
         );
+      } else {
+        existing.owners++;
+        acquired.set(specifier, existing);
       }
       return;
     }
-    injectedEntries.set(specifier, target);
+    injection ??= { script: targetDocument.createElement('script'), activeEntries: 0 };
+    injection.activeEntries++;
+    const entry = { target, owners: 1, injection };
+    injectedEntries.set(specifier, entry);
+    acquired.set(specifier, entry);
     fresh[specifier] = target;
-    freshCount++;
   });
 
-  if (!freshCount) return;
+  if (injection) {
+    const { script } = injection;
+    script.type = 'importmap';
+    script.dataset.qiankun = 'esm';
+    script.textContent = JSON.stringify({ imports: fresh });
+    targetDocument.head.appendChild(script);
+  }
 
-  const script = targetDocument.createElement('script');
-  script.type = 'importmap';
-  script.dataset.qiankun = 'esm';
-  script.textContent = JSON.stringify({ imports: fresh });
-  targetDocument.head.appendChild(script);
+  return () => {
+    acquired.forEach((entry, specifier) => {
+      entry.owners--;
+      if (entry.owners === 0) {
+        if (injectedEntries.get(specifier) === entry) injectedEntries.delete(specifier);
+        entry.injection.activeEntries--;
+        if (entry.injection.activeEntries === 0) entry.injection.script.remove();
+      }
+    });
+    acquired.clear();
+  };
 }
 
 /**

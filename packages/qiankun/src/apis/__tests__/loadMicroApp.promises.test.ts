@@ -195,10 +195,11 @@ describe('loadMicroApp Parcel promise compatibility', () => {
     });
     const remounting = app.mount();
     const duplicate = app.mount();
-    await expect(duplicate).rejects.toThrow('Cannot mount');
+    const rejected = expect(duplicate).rejects.toMatchObject({ code: 'app-already-mounted' });
     await started.promise;
     finish.resolve();
     expect(await remounting).toBeNull();
+    await rejected;
     expect(bootstrap).toHaveBeenCalledTimes(1);
     expect(mount).toHaveBeenCalledTimes(2);
   });

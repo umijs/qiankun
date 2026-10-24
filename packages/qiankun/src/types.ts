@@ -97,7 +97,13 @@ export type LifeCycles<T extends ObjectType> = {
   afterUnmount?: LifeCycleFn<T> | Array<LifeCycleFn<T>>; // function after app unmount
 };
 
-export type MicroApp = Parcel;
+export type MicroApp = Parcel & {
+  /**
+   * Dispose of the loaded instance this handle uses, retiring every handle that shares it. Other
+   * instances of the same app are unaffected. Idempotent.
+   */
+  unload(): Promise<void>;
+};
 
 /** Stable identity of one evaluated app instance; excludes per-mount props and container. */
 export type BootstrapContext = Readonly<AppMetadata>;

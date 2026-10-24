@@ -88,7 +88,7 @@ export default function App() {
 | `entry` | 微应用的 HTML 入口。本例指向运行在 `7101` 端口的开发服务器。 |
 | `container` | 用于挂载微应用的 `HTMLElement`。 |
 
-`loadMicroApp` 返回一个 `MicroApp` 实例句柄。在实例存续期间应保留该句柄，并在清理时调用 `unmount()`，以便 qiankun 执行微应用的 `unmount` 生命周期并完成卸载。`useEffect` 的清理函数不能返回 Promise，因此本例只是发起卸载，并捕获可能的失败。如果主应用的清理流程支持异步等待，则应在移除容器前等待 `unmount()` 完成。
+`loadMicroApp` 返回一个 `MicroApp` 实例句柄。在实例存续期间应保留该句柄，并在清理时调用 `unmount()`，以便 qiankun 执行微应用的 `unmount` 生命周期并完成卸载。`useEffect` 的清理函数不能返回 Promise，因此本例只是发起卸载，并捕获可能的失败。如果主应用的清理流程支持异步等待，则应在移除容器前等待 `unmount()` 完成。卸载后已加载的实例会保留，同名应用再次加载时直接复用；需要释放这些资源时，参见 [loadMicroApp](/zh-CN/api/load-micro-app#unload) 中的 `unload()`。
 
 ## 微应用的接入要求
 

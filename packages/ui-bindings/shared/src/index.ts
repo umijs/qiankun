@@ -110,13 +110,10 @@ export async function mountMicroApp({
       setLoading?.(false);
     });
 
+  // A load or bootstrap failure rejects mountPromise too, which reports it above; reporting these
+  // as well would hand the same failure to setError two or three times. Observed only.
   (['loadPromise', 'bootstrapPromise'] as const).forEach((key) => {
-    const promise = microApp[key];
-
-    promise.catch((e: Error) => {
-      setError?.(e);
-      setLoading?.(false);
-    });
+    microApp[key].catch(() => undefined);
   });
 
   return microApp;
@@ -172,6 +169,40 @@ export function updateMicroApp({
   });
 }
 
+/** Statuses of an app whose mount is still under way (loading, bootstrapping, mounting) or done. */
+const unmountableStatuses: readonly string[] = [
+  AppOrParcelStatus.LOADING_SOURCE_CODE,
+  AppOrParcelStatus.NOT_BOOTSTRAPPED,
+  AppOrParcelStatus.BOOTSTRAPPING,
+  AppOrParcelStatus.NOT_MOUNTED,
+  AppOrParcelStatus.MOUNTING,
+  AppOrParcelStatus.MOUNTED,
+];
+
+/**
+ * Ask the app to unmount. qiankun records the request right away, even while the app is still
+ * mounting, and runs it once that mount is done. An app whose load or mount already failed, or
+ * that was unloaded, has nothing to unmount; its failure went through `mountPromise`.
+ */
 export async function unmountMicroApp(microApp: MicroAppType) {
-  await microApp.mountPromise.then(() => microApp.unmount());
+  if (!unmountableStatuses.includes(microApp.getStatus())) return;
+  // 微应用 unmount 是异步的，中间的流转状态不能确定，所有需要一个标志位来确保 unmount 开始之后不会再触发 update
+  microApp._unmounting = true;
+  try {
+    await microApp.unmount();
+  } catch (error) {
+    // The mount failed after the request was made: nothing to unmount, and mountMicroApp has
+    // already reported that very failure. Anything else is a real unmount failure.
+    if (!(await isReportedMountFailure(microApp, error))) throw error;
+  }
+}
+
+async function isReportedMountFailure(microApp: MicroAppType, error: unknown): Promise<boolean> {
+  if (!(error instanceof Error) || !('code' in error) || error.code !== 'app-not-mounted') return false;
+  if (!('cause' in error) || error.cause === undefined) return false;
+  const mountFailure = await microApp.mountPromise.then(
+    () => undefined,
+    (failure: unknown) => failure,
+  );
+  return error.cause === mountFailure;
 }

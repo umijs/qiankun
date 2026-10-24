@@ -10,6 +10,7 @@ export type SandboxConfig = {
   compartment: IsolationPluginContext['compartment'];
   dynamicStyleSheetElements: Array<HTMLStyleElement | HTMLLinkElement>;
   dynamicExternalSyncScriptDeferredList: Array<Deferred<void>>;
+  documentView?: { proxy: Document; revoke: () => void };
   nodeTransformer: NodeTransformer;
   styleIsolation?: StyleIsolationOpts;
 } & BaseLoaderOpts;

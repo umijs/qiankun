@@ -1,6 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { Membrane } from '..';
 
+describe('terminal membrane disposal', () => {
+  it('revokes retained views even when app globals are non-configurable', () => {
+    const sharedHostObject = { value: 'host' };
+    const host = { sharedHostObject } as unknown as WindowProxy;
+    const membrane = new Membrane(host, {});
+    const view = membrane.globalThisView;
+    Object.defineProperty(view, 'appState', { value: { largeState: true }, configurable: false });
+
+    membrane.dispose();
+    membrane.dispose();
+
+    expect(() => Reflect.get(view, 'appState')).toThrow(TypeError);
+    expect(() => Reflect.get(view, 'sharedHostObject')).toThrow(TypeError);
+    expect(() => Reflect.set(view, 'lateWrite', true)).toThrow(TypeError);
+    expect(() => membrane.target).toThrow('Membrane has been disposed');
+    expect(() => membrane.unlock()).toThrow('Membrane has been disposed');
+    expect(host.sharedHostObject).toBe(sharedHostObject);
+  });
+});
+
 function createCountedGlobal() {
   const rawGlobal: Record<string, unknown> = {};
   for (let index = 0; index < 128; index++) {
