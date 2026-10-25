@@ -16,6 +16,7 @@ Every field is optional. The table below lists the default behavior when a field
 | --- | --- | --- | --- |
 | `sandbox` | `boolean \| SandboxConfiguration` | `true` | The single umbrella switch for isolation. `false` runs the micro-app directly against the real global; `true` enables the sandbox with defaults; an object enables it and configures the underlying Compartment. |
 | `fetch` | `typeof window.fetch` | `window.fetch` | Fetch implementation for the entry and loader-managed scripts, modules, and styles. Browser-native requests such as images do not necessarily pass through it. |
+| `classicPreparation` | `ClassicPreparation` | `undefined` | Explicit preparation handle; disabled by default. See [prepareClassicApps](/api/prepare-classic-apps). |
 | `loadTimeout` | `number` | `0` (disabled) | Timeout of the loading phase in milliseconds. It does not bound `bootstrap`, `mount`, or `unmount`. |
 | `streamTransformer` | `() => TransformStream<string, string>` | `undefined` | Optional transform spliced into the HTML entry streaming pipeline, operating on the decoded HTML string stream. |
 | `nodeTransformer` | `<T extends Node>(node: T, opts) => T` | built-in asset transformer | Rewrites script / link / style nodes before they enter the container. Advanced extensions only. |

@@ -308,8 +308,11 @@ function createSandboxController(appName: string, opts: CreateSandboxOptions): S
 
   const sandbox = new StandardSandbox(appName, globals, incubatorContext, standardSandboxOptions);
 
-  const classicScriptTransformer = (source: string, sourceURL?: string) =>
-    sandbox.transformClassicScript(source, sourceURL);
+  const classicScriptTransformer = (
+    source: string,
+    sourceURL?: string,
+    registerCleanup?: (cleanup: () => void) => void,
+  ) => sandbox.transformClassicScript(source, sourceURL, registerCleanup);
   const baseNodeTransformer: NodeTransformer =
     configuredNodeTransformer ??
     ((node, transformerOpts) => transpileAssets(node, nativeDocument.baseURI, transformerOpts));

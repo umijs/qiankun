@@ -8,3 +8,10 @@ export { QiankunError, LoadAppTimeoutError, type QiankunErrorCode } from './erro
 export type * from './types';
 export { precompileModuleSource } from '@qiankunjs/sandbox';
 export { navigateToUrl } from '@qiankunjs/single-spa';
+
+export {
+  prepareClassicApps,
+  type ClassicPreparation,
+  type ClassicPreparationOptions,
+  type ClassicPreparationResult,
+} from './apis/prepareClassicApps';

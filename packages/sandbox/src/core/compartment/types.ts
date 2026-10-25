@@ -1,3 +1,4 @@
+import { type ClassicScriptPreparation } from './classic-script';
 import type { CompartmentModuleFacade, ImportHook, ModuleNamespace, Modules, ResolveHook } from '@qiankunjs/shared';
 
 /**
@@ -23,7 +24,7 @@ export type CompartmentTransform = (source: string) => string;
 export interface CompartmentLoaderFacade extends CompartmentModuleFacade {
   readonly globalThis: WindowProxy;
   readonly latestSetProp: PropertyKey | undefined;
-  transformClassicScript(source: string, sourceURL?: string): string;
+  transformClassicScript(source: string, sourceURL?: string, registerCleanup?: (cleanup: () => void) => void): string;
 }
 
 /** qiankun host inputs used by the replaceable ESM mechanism. */
@@ -48,6 +49,8 @@ export interface CompartmentOptions {
   /** Layer-4 terminology alias for importHook. */
   loadHook?: ImportHook;
   transforms?: CompartmentTransform[];
+  /** Optional instance-independent classic source preparation; misses use the original wrapper. */
+  classicPreparation?: ClassicScriptPreparation;
   /** qiankun host extension: the global object the membrane reads through to. */
   incubatorContext?: WindowProxy;
   /** qiankun host extension: browser loader inputs, not part of the SES-shaped surface. */

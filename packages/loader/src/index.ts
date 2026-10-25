@@ -67,7 +67,8 @@ export async function loadEntry<T>(
 ): Promise<T | undefined> {
   const { fetch, streamTransformer, compartment, nodeTransformer, onDOMStreamSettled, signal } = opts;
   const classicScriptTransformer = compartment
-    ? (source: string, sourceURL?: string) => compartment.transformClassicScript(source, sourceURL)
+    ? (source: string, sourceURL?: string, registerCleanup?: (cleanup: () => void) => void) =>
+        compartment.transformClassicScript(source, sourceURL, registerCleanup)
     : undefined;
 
   // Without a compartment the caller's fetch may be reused by other loads (window.fetch by default),

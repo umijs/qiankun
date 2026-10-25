@@ -214,7 +214,21 @@ export default function transpileScript(
             const beforeScriptExecuteEvent = 'q:bse';
             const beforeExecutedListenerScript = `;(function(){var s=document.currentScript;var e=new CustomEvent('${beforeScriptExecuteEvent}',{detail:{s:s}});window.dispatchEvent(e);})();`;
 
-            const codeFactory = beforeExecutedListenerScript + classicScriptTransformer!(code, src);
+            const codeFactory =
+              beforeExecutedListenerScript +
+              classicScriptTransformer!(code, src, (release) => {
+                // A compiled factory pinned for a queued script must also be released when native
+                // execution fails (for example CSP rejection), not only when its bridge is called.
+                const cleanup = () => {
+                  release();
+                  scope.cleanups.delete(cleanup);
+                  script.removeEventListener('load', cleanup);
+                  script.removeEventListener('error', cleanup);
+                };
+                scope.cleanups.add(cleanup);
+                script.addEventListener('load', cleanup, { once: true });
+                script.addEventListener('error', cleanup, { once: true });
+              });
 
             if (syncMode) {
               // if it's a sync script and there is a previous sync script(mainly there are multiple defer scripts), we should wait it until loaded to consistent with the browser behavior

@@ -98,6 +98,7 @@ const enSidebar = {
       items: [
         { text: 'API overview', link: '/api/' },
         { text: 'loadMicroApp', link: '/api/load-micro-app' },
+        { text: 'prepareClassicApps', link: '/api/prepare-classic-apps' },
         { text: 'AppConfiguration', link: '/api/configuration' },
         { text: 'Lifecycle hooks', link: '/api/lifecycles' },
         { text: 'Types', link: '/api/types' },
@@ -251,6 +252,7 @@ const zhSidebar = {
       items: [
         { text: 'API 总览', link: '/zh-CN/api/' },
         { text: 'loadMicroApp', link: '/zh-CN/api/load-micro-app' },
+        { text: 'prepareClassicApps', link: '/zh-CN/api/prepare-classic-apps' },
         { text: 'AppConfiguration', link: '/zh-CN/api/configuration' },
         { text: '生命周期钩子', link: '/zh-CN/api/lifecycles' },
         { text: '类型参考', link: '/zh-CN/api/types' },

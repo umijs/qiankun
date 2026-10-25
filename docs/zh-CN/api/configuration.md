@@ -16,6 +16,7 @@ import { type AppConfiguration } from 'qiankun';
 | --- | --- | --- | --- |
 | `sandbox` | `boolean \| SandboxConfiguration` | `true` | 隔离能力的统一入口。设为 `false` 时微应用在真实全局对象中运行；设为 `true` 时以默认配置启用沙箱；传入对象时启用沙箱并配置底层 Compartment。 |
 | `fetch` | `typeof window.fetch` | `window.fetch` | 用于请求入口，以及由加载器处理的脚本、模块和样式。图片等由浏览器直接发起的请求不一定经过该函数。 |
+| `classicPreparation` | `ClassicPreparation` | `undefined` | 显式传入准备句柄；默认关闭，详见 [prepareClassicApps](/zh-CN/api/prepare-classic-apps)。 |
 | `loadTimeout` | `number` | `0`（关闭） | 加载阶段的超时，单位为毫秒。不约束 `bootstrap`、`mount` 和 `unmount`。 |
 | `streamTransformer` | `() => TransformStream<string, string>` | `undefined` | 可选。用于自定义 HTML 入口的流式处理过程，接收解码后的 HTML 字符串流。 |
 | `nodeTransformer` | `<T extends Node>(node: T, opts) => T` | 内置资源转换器 | 在 `<script>`、`<link>` 和 `<style>` 节点进入容器前进行转换。仅用于高级扩展。 |

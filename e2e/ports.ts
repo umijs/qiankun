@@ -13,6 +13,7 @@ export const PORTS = {
 export const SUB_APP_ENTRIES = {
   'sub-classic': `http://localhost:${PORTS['sub-classic']}`,
   // same server, dedicated pages exercising classic script streaming semantics
+  'sub-classic-prepared': `http://localhost:${PORTS['sub-classic']}/prepared.html`,
   'sub-classic-multiscript': `http://localhost:${PORTS['sub-classic']}/multiscript.html`,
   // explicit <head>, intentionally no <body>: exercises the fragment parsing + sandbox body facade
   'sub-classic-bodyless': `http://localhost:${PORTS['sub-classic']}/bodyless.html`,

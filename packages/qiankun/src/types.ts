@@ -4,6 +4,7 @@
  */
 import type { LoaderOpts } from '@qiankunjs/loader';
 import type { CreateSandboxOptions } from '@qiankunjs/sandbox';
+import { type ClassicPreparation } from './apis/prepareClassicApps';
 import type { LifeCycles as ParcelLifeCycles, Parcel, RegisterApplicationConfig } from '@qiankunjs/single-spa';
 
 export type {
@@ -92,6 +93,8 @@ export type AppConfiguration = Partial<Pick<LoaderOpts, 'fetch' | 'streamTransfo
    * an object enables it and configures the underlying Compartment.
    */
   sandbox?: boolean | SandboxConfiguration;
+  /** Explicit classic preparation handle. Default: disabled; incompatible configurations fall back. */
+  classicPreparation?: ClassicPreparation;
 };
 
 export type LifeCycleFn<T extends ObjectType> = (app: LoadableApp<T>, global: WindowProxy) => Promise<void>;
