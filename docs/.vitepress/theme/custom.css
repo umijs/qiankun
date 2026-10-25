@@ -6,15 +6,12 @@
    ============================================================================= */
 
 :root {
-  /* Reserved by the version banner rendered in the layout-top slot; remove
-     together with the banner in theme/index.js once 3.0 is `latest`. */
-  --vp-layout-top-height: 32px;
-
   /* ---- brand fonts ---- */
   --qk-font-display: 'Space Grotesk', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   --qk-font-ornament: 'Songti SC', 'STSong', 'Songti TC', serif;
 
-  --vp-font-family-base: 'IBM Plex Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', -apple-system, sans-serif;
+  --vp-font-family-base:
+    'IBM Plex Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', -apple-system, sans-serif;
   --vp-font-family-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
   /* ---- brand color ---- */
@@ -222,7 +219,7 @@
 
 @media (min-width: 960px) {
   .VPHero {
-    padding-top: calc(var(--vp-nav-height) + var(--vp-layout-top-height, 0px) + 88px);
+    padding-top: calc(var(--vp-nav-height) + 88px);
     padding-bottom: 72px;
   }
   .VPHero .container {
@@ -418,41 +415,4 @@
 }
 ::selection {
   background: var(--vp-c-brand-soft);
-}
-
-/* ---- version banner (layout-top slot) ---- */
-.qk-version-banner {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: var(--vp-layout-top-height, 32px);
-  padding: 0 12px;
-  background: var(--vp-c-brand-1);
-  color: #fff;
-  font-size: 12.5px;
-  line-height: 1;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.qk-version-banner code {
-  margin: 0 2px;
-  padding: 2px 5px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.16);
-  color: #fff;
-  font-family: var(--vp-font-family-mono);
-  font-size: 11.5px;
-}
-
-.qk-version-banner a {
-  color: #fff;
-  text-decoration: underline;
-  text-underline-offset: 2px;
 }
