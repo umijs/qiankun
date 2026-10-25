@@ -55,6 +55,10 @@ Suites map to qiankun's core promises:
 
 PRs run chromium only (`ci.yml`). The full chromium + webkit + firefox matrix runs nightly and on demand via the `E2E Full Browser Matrix` workflow.
 
+Nightly runs check out `next`; manual runs test the selected branch or tag at the dispatched commit, so PR changes can be validated before merging.
+
+Both E2E workflows use Ubuntu 24.04. The shared setup action keys browser caches by distribution version, architecture, and Playwright version: WebKit binaries for different Ubuntu releases can share a revision directory but require different system libraries. Keep `playwright install --with-deps` running even on cache hits so each runner installs its system dependencies.
+
 Known engine limitation: the ESM sandbox relies on dynamically injected import maps, which **Firefox does not support yet**. Every test that mounts `sub-esm` carries a `test.fail(browserName === 'firefox', FIREFOX_ESM_LIMITATION)` annotation — an _expected failure_, not a skip. The day Firefox starts passing, playwright reports "passed unexpectedly" so we know to lift the annotations.
 
 ## Running

@@ -13,12 +13,14 @@ permissions:
 
 jobs:
   e2e-full-matrix:
-    runs-on: ubuntu-latest
+    # Keep browser binaries and system libraries stable across runner image rollouts.
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          ref: next
+          # Manual runs test the selected commit; nightly runs track next.
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || 'next' }}
 
       - name: Setup e2e environment
         uses: ./.github/actions/setup-e2e

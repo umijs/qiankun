@@ -30,17 +30,21 @@ runs:
       run: pnpm run build
       shell: bash
 
-    - name: Get Playwright version
+    - name: Get Playwright environment
       id: playwright-version
       working-directory: e2e
-      run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      run: |
+        echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+        . /etc/os-release
+        echo "platform=${ID}-${VERSION_ID}" >> "$GITHUB_OUTPUT"
       shell: bash
 
     - name: Cache Playwright browsers
       uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
       with:
         path: ~/.cache/ms-playwright
-        key: ${{ inputs.cache-key-prefix }}-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+        # WebKit uses the same revision directory for different Ubuntu binaries.
+        key: ${{ inputs.cache-key-prefix }}-${{ steps.playwright-version.outputs.platform }}-${{ runner.arch }}-${{ steps.playwright-version.outputs.version }}
 
     - name: Install Playwright browsers
       working-directory: e2e
