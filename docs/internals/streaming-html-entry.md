@@ -37,10 +37,6 @@ v3 swaps the loading core for **client-side streaming rendering**: consume the H
 
 **Faster.** Stylesheets and scripts are extracted as the stream arrives and inserted into the document tree the moment they're processed. As soon as an external script shows up in one frame of the stream, it can be captured and executed right away, instead of waiting for the entire HTML to come back and then regex-matching a big block of text — the same route the browser takes natively for the first screen. Parsing also moves from regex to native DOM traversal (`writable-dom`), which is faster again.
 
-::: tip A benchmark
-Rendering a 500K HTML document, the old approach averaged about 500ms; streaming brings it down to about 300ms — roughly 40% faster.
-:::
-
 **Fewer bugs.** The old approach ran scripts by hand with `eval`. But once a script doesn't execute along the browser's native path, the events bound to its `<script>` element don't fire properly, and the sandbox has to fill the gap itself — dispatch `onload` by hand on success, `onerror` by hand on failure. The small differences between hand-rolled simulation and native browser handling threw off a hard-to-track bug now and then. v3 inserts script nodes straight into the DOM and lets the browser execute them (classic scripts wrapped as blob URLs, module scripts via the [ESM sandbox](/concepts/esm-sandbox)), so this class of bug is gone at the source.
 
 For how this pipeline is put together and what each stage does, read on.
@@ -64,12 +60,29 @@ flowchart TD
 In code the chain looks like this (`packages/loader/src/index.ts`):
 
 ```ts
-res.body
-  .pipeThrough(new TextDecoderStream())        // bytes → string
-  .pipeThrough(streamTransformer())            // optional, only if you supply one
-  .pipeThrough(createTagTransformStream(...))  // <head> → <qiankun-head>
-  .pipeTo(new WritableDOMStream(container, null, (clone) => { /* per-node hook */ }));
+let htmlStream = res.body.pipeThrough(new TextDecoderStream(), { signal });
+if (streamTransformer) {
+  htmlStream = htmlStream.pipeThrough(streamTransformer(), { signal });
+}
+
+void htmlStream
+  .pipeThrough(
+    createTagTransformStream([
+      { tag: '<head>', alt: '<qiankun-head>' },
+      { tag: '</head>', alt: '</qiankun-head>' },
+    ]),
+    { signal },
+  )
+  .pipeTo(
+    createAbortableDOMStream(container, (clone) => {
+      // ...
+      return nodeTransformer ? nodeTransformer(clone, transformerOpts) : clone;
+    }),
+    { signal },
+  );
 ```
+
+`createAbortableDOMStream` is the loader’s cancellation wrapper around the sink returned by `WritableDOMStream(container, null, transform)`. The excerpt omits asset tracking, defer handling, and entry detection; `WritableDOMStream` is called as a factory, not constructed with `new`.
 
 Each stage owns one job:
 
@@ -109,7 +122,7 @@ So the micro-app's `<head>...</head>` becomes a custom `<qiankun-head>...</qiank
 
 The sandbox's dynamic-append patch then treats `<qiankun-head>` as the app's virtual head: when the sub-app appends to `document.head`, the patch redirects the node into `container.querySelector('qiankun-head')` (`packages/sandbox/src/patchers/dynamicAppend/common.ts`) rather than the real `document.head`. That confines runtime head appends to the app container, and they're cleaned up along with the app on unmount.
 
-The replacement mechanism buffers stream chunks and runs one `String.prototype.replace` against the first occurrence. If a chunk boundary happens to cut a `<head>` tag in half, the transform holds the buffer until the next chunk completes it; once the replacement hits, it flushes and clears the buffer.
+The transformer emits safe text immediately and retains only a suffix that could begin a tag split across chunks. Each replacement rule is consumed at most once. At end of stream, unmatched text is emitted without synthesizing a missing `<head>`. This is literal matching, not HTML parsing.
 
 ## The entry-script convention
 
@@ -121,7 +134,7 @@ With so many scripts in an HTML file, qiankun needs to know which one is the mic
 
 qiankun enforces a few rules during streaming parse (`packages/loader/src/index.ts`):
 
-- **Exactly one entry script.** If a second external script also carries the `entry` attribute, `loadEntry` throws:
+- **At most one explicitly marked external entry script.** If a second external script also carries the `entry` attribute, `loadEntry` throws:
 
   > `QiankunError: You should not include more than 1 entry scripts in a single HTML entry`
 
@@ -146,9 +159,9 @@ In a Webpack UMD build the entry attribute lands on the runtime/main bundle; in 
 An entry script takes one of two execution paths, decided per script:
 
 - **Classic path** (`<script src="..." entry>`, UMD/global build). qiankun binds `onload`/`onerror` to the script. When it finishes loading, the entry is resolved out of the sandbox — see [How the app's exports are discovered](#how-the-app-s-exports-are-discovered) below.
-- **ESM path** (`<script type="module" ... entry>`). After transpilation the script carries `data-esm="true"` and is left **inert** — qiankun doesn't set its `src` for the browser to execute. Execution is driven instead by `EsmSandboxEngine`, and the completion signal comes back through the engine's `entryNamespacePromise`. For how modules are fetched, rewritten and evaluated, see the [ESM sandbox](/concepts/esm-sandbox).
+- **ESM path** (`<script type="module" ... entry>`). Transpilation marks the script with `data-esm="true"` and removes its `src` to prevent direct evaluation. The loader calls `importDocumentModules()` through the structural Compartment facade and resolves the entry from its returned namespace; it does not depend directly on `EsmSandboxEngine`. See [ESM sandbox internals](/internals/esm-sandbox) for module processing.
 
-Module scripts don't execute mid-stream. Once the HTML stream ends, qiankun calls `esmEngine.sealAndExecute()` and runs every module script in document order. This mirrors how the browser defers `type="module"` scripts until after the document has parsed.
+Module scripts are registered during streaming and evaluated in document order through `compartment.importDocumentModules()` after the stream ends. `onDOMStreamSettled` waits for module evaluation and Classic defer scripts to finish. It is separate from the entry-lifecycle Promise, which may resolve for a Classic entry while the HTML tail is still being written.
 
 ## Defer scripts, and preloading while blocked
 
@@ -161,7 +174,7 @@ Scripts marked `defer` (external + `defer` attribute) get special treatment: eac
 Once execution finishes, qiankun has to read the micro-app's lifecycle object out of whatever the entry produced. The two paths read it differently:
 
 - **Classic path.** The entry script assigns a global (a UMD build assigns `window.<libraryName> = { bootstrap, mount, unmount }`). The sandbox membrane records the **last** global the script set as `latestSetProp`. When the classic entry script's `load` event fires, `onEntryLoaded()` resolves the loader's promise with `sandbox.globalThis[sandbox.latestSetProp]`. The ordering here is deliberate — qiankun captures `latestSetProp` before invoking any listener the app itself attached, so the value can't be overwritten out from under it.
-- **ESM path.** The lifecycle object is the **entry module's namespace**. The engine resolves `entryNamespacePromise` with the module namespace (named exports `bootstrap`/`mount`/`unmount`, or a single `export default { ... }`).
+- **ESM path.** `compartment.importDocumentModules()` returns the entry module namespace; qiankun reads named lifecycle exports or `export default { ... }` from it.
 
 If the stream ends with **no explicit `entry` script found**, qiankun falls back:
 
@@ -171,7 +184,7 @@ If the stream ends with **no explicit `entry` script found**, qiankun falls back
 The resolved value is then handed to `getLifecyclesFromExports`, which accepts, in order: the object itself, its `.default`, the `latestSetProp` global, and `window[appName]`. For the full resolution order and what the exported object should look like, see [Micro-app lifecycle and props](/concepts/lifecycle-and-props).
 
 ::: warning Empty response body
-If the entry response has no body, `loadEntry` throws `QiankunError: The response body of entry ... is empty`. A blank response or a 204 is not a valid micro-app entry.
+If the entry response has no body, `loadEntry` throws `QiankunError: The response body of entry ... is empty`. A null response body, as with HTTP 204, triggers this error. A non-null empty stream without lifecycle exports fails later during lifecycle resolution.
 :::
 
 ### The decorated fetch
@@ -188,7 +201,7 @@ Cacheable is outermost, so repeated requests to the same URL are deduplicated. R
 
 The streaming loader is an ambitious idea shipped as a pragmatic implementation, and a few corners are worth knowing up front.
 
-- **Head replacement is a plain first-occurrence string replace.** The `<head>` → `<qiankun-head>` rewrite is a plain `String.prototype.replace` against the first occurrence. A `FIXME` in the source notes that non-standard HTML chunks without a `<head>` tag aren't handled. Standard documents emitted by real bundlers are fine; hand-written or unusual HTML may fail to virtualize its head.
+- **Tag rewriting is literal.** Current rules match the first `<head>` and `</head>` exactly, without normalizing case or attributes or synthesizing missing tags. Unmatched content still streams through; apps that need a virtual head should provide entry HTML following this convention.
 - **Body virtualization isn't implemented.** The matching `<body>` → `<qiankun-body>` replacement exists in the source but is commented out, and head/body auto-completion is off. Only the head is virtualized; body content is committed straight into the container.
 - **`sandbox: false` disables the classic export mechanism.** It's the sandbox membrane that records `latestSetProp`, and the ESM engine only exists when the sandbox is on. Under `sandbox: false` there's neither `latestSetProp` nor ESM sandbox execution, so lifecycle discovery is left to the `window[appName]` compatibility fallback. See [JS sandbox](/concepts/js-sandbox).
 

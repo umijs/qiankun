@@ -57,14 +57,14 @@ After solving these common problems of micro frontends and lots of polishing and
 
 Qiankun inherits the fundamentals of [single-spa](https://github.com/single-spa/single-spa) — **independent deployment**, **lazy loading**, and a **technology-agnostic** host that never dictates a micro app's stack — and adds the pieces a real product needs:
 
-- 📄 **HTML entry** — point qiankun at a URL, not a manifest of assets. The entry is streamed into the live document as it arrives, so a micro app starts rendering before its HTML has finished downloading.
-- 🧳 **JS sandbox** — every micro app runs against a Proxy-membrane view of `window` and `document`, so globals, timers, listeners and dynamic DOM stay inside the app and are reclaimed on unmount. On by default.
+- 📄 **HTML entry** — point qiankun at a URL, not a manifest of assets. The entry HTML is streamed into the container as it arrives and can appear progressively before the response finishes.
+- 🧳 **JS sandbox** — enabled by default through a Proxy-membrane view of `window` and `document`. Global property writes stay local, and tracked timers, event listeners, and dynamic resources are cleaned up on unmount.
 - 📦 **Native ESM** — `<script type="module">` micro apps execute as real modules, routed through the membrane with dynamically injected import maps. Dynamic `import()` works, and so does a Vite dev server.
 - 🛡 **Style isolation** — opt-in runtime scoping built on the CSS [`@scope`](https://developer.mozilla.org/docs/Web/CSS/@scope) at-rule, including external stylesheets. No rewriting your CSS, no Shadow DOM tax.
-- ⚡ **Prefetch** — warm a micro app's assets while the user is still elsewhere, so the switch feels instant.
+- ⚡ **Automatic preloading** — automatically discovers and preloads scripts and stylesheets while streaming the HTML entry. The pre-activation prefetch API `prefetchApps` is kept for backward compatibility, but is deprecated.
 - 🧩 **UI bindings** — `<MicroApp />` components for [React](packages/ui-bindings/react) and [Vue](packages/ui-bindings/vue), with loader and error-boundary slots, so a micro app is just another component.
 - 🔧 **Bundler plugins** — [one plugin](packages/bundler-plugin) for webpack 4/5 and Vite that adds the `entry` attribute to the appropriate script and fixes the output library, replacing the boilerplate you used to hand-write.
-- 🔬 **Standalone sandbox** — [`@qiankunjs/sandbox`](packages/sandbox) is usable on its own to contain any third-party script, with no micro-frontend framework attached.
+- 🔬 **Standalone sandbox** — [`@qiankunjs/sandbox`](packages/sandbox) can isolate global writes and manage common side effects of trusted third-party scripts without the full micro-frontend framework.
 
 ## 🚀 Getting started
 
@@ -89,10 +89,13 @@ Load a micro app into any container element, and keep the returned handle to unm
 ```ts
 import { loadMicroApp } from 'qiankun';
 
+const container = document.getElementById('subapp-container');
+if (!container) throw new Error('subapp-container not found');
+
 const microApp = loadMicroApp({
   name: 'react-app',
   entry: '//localhost:7100',
-  container: document.getElementById('subapp-container'),
+  container,
 });
 
 // when this part of the page goes away:
@@ -158,8 +161,6 @@ Full documentation lives at **[www.qiankunjs.com](https://www.qiankunjs.com)** (
 - [Cookbook](https://www.qiankunjs.com/cookbook/) — style isolation, sandbox plugins, error handling, performance
 - [API reference](https://www.qiankunjs.com/api/) — every option, typed
 - [FAQ](https://www.qiankunjs.com/faq/) — the questions that come up most
-
-Design decisions are recorded as RFCs under [docs/rfcs](./docs/rfcs).
 
 ## 🎯 Roadmap
 

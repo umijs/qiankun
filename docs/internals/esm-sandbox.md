@@ -1,6 +1,6 @@
 # ESM sandbox internals
 
-> This page documents the ESM execution engine for maintainers. For user-facing behavior, see [Native ESM support](/concepts/esm-sandbox). For the design rationale, see the [ESM sandbox RFC](https://github.com/umijs/qiankun/blob/next/docs/rfcs/esm-sandbox.md).
+> This page documents the ESM execution engine for maintainers. For user-facing behavior, see [Native ESM support](/concepts/esm-sandbox).
 
 Modern micro-apps ship native ES modules. A Vite dev server serves one `<script type="module">` per source file, wires them together with `import`/`export`, and relies on the browser's native module loader. qiankun's classic sandbox — which wraps source in `with (this) { … }` and reads the app's exports from the last global the script assigned — cannot run that code at all: `with` is a `SyntaxError` under ESM's forced strict mode, and lifecycle functions come from `export`, not from writes to `window`.
 
@@ -33,7 +33,7 @@ Dispatch happens by DOM node type in the loader's streaming pipeline (`packages/
 
 ## The technique
 
-For each module the engine performs a runtime source rewrite driven by a WASM lexer, then hands the result to the native loader:
+The engine parses module syntax with the pure-JavaScript parser from `es-module-lexer/js`, rewrites the source, and hands the result to the native loader:
 
 ```mermaid
 flowchart TD
@@ -45,7 +45,7 @@ flowchart TD
 ```
 
 1. **Fetch** the module through a separate response cache configured by `loadApp` (cacheable → retryable → throwable). Module sources do not consume the cache capacity reserved for HTML entries, Classic scripts, and styles.
-2. **Scan** it with [`es-module-lexer`](https://github.com/guybedford/es-module-lexer), a WASM lexer warmed once at `start()` time via `prepareEsmLexer()`.
+2. **Scan** it with `es-module-lexer/js`. The parser is synchronously ready and `prepareEsmLexer()` returns an already-resolved Promise; `start()` does not warm a WASM lexer.
 3. **Rewrite** the source so that:
    - references to sandboxed globals are destructured from the membrane view at the top of the module (`const { window, document, … } = __qk_view`);
    - each static import specifier is replaced with a synthetic specifier of the form `` `${instanceKey}/${resolvedUrl}` ``;
@@ -68,8 +68,8 @@ The header is bootstrapped by importing a per-instance runtime module — `impor
 
 Loading and evaluation are deliberately split around the HTML stream:
 
-- **During streaming**, each module script calls `loadModuleScript(...)` synchronously in document order. This immediately kicks off the async transpile (fetch → lexer → rewrite → recursively pre-fetch dependencies in parallel) but defers evaluation. Every task is queued.
-- **After the stream ends**, the loader calls `sealAndExecute()`. It returns `true` when module scripts existed — the signal that the loader should await the ESM entry namespace instead of the classic `latestSetProp`. It then awaits each queued record, flushes fresh import-map entries, and calls native `import(blobUrl)` for each module in order.
+- **During streaming**, each module script calls `compartment.registerDocumentModule(...)` synchronously in document order. This immediately kicks off the async transpile (fetch → lexer → rewrite → recursively pre-fetch dependencies in parallel) but defers evaluation. Every task is queued.
+- **After the stream ends**, the loader calls `compartment.importDocumentModules()`. The facade drives queued preparation, import-map updates, and native `import(blobUrl)` evaluation in document order. It returns `Promise<ModuleNamespace | undefined>`; the loader uses the ESM namespace when available and otherwise falls back to Classic `latestSetProp`.
 
 ### Choosing the entry namespace
 
@@ -116,7 +116,7 @@ The engine is designed to run a Vite dev server's native ESM output directly. Se
 - **React Fast Refresh** requires its preamble to run before component modules; ordering matters for it to initialize correctly.
 
 ::: warning CSS-as-JS can be lost on remount
-Vite serves CSS as JS modules that inject styles at the module top level. Because remount does not re-run top-level code (see below) while unmount clears the virtual head, such styles can disappear on the second mount. This is a known conflict tracked in the ESM-sandbox RFC.
+Vite serves CSS as JS modules that inject styles at the module top level. Because remount does not re-run top-level code (see below) while unmount clears the virtual head, such styles can disappear on the second mount.
 :::
 
 ## Lifecycle and caching
@@ -159,8 +159,8 @@ The ESM sandbox trades some classic-sandbox behaviors for native module semantic
 
 - **Implicit global writes throw.** `foo = 1` without `var`/`window.` is a `ReferenceError` in a strict ESM module — it never reaches the membrane's set trap. Code that relied on implicit globals being sandboxed breaks instead.
 - **Only base-set globals are membraned.** Just the names in each module's destructuring set — a subset of `esmDestructurableGlobals` — route through the membrane. Value- or getter-typed globals that a one-off snapshot cannot represent (`innerWidth`, `devicePixelRatio`, `length`, `name`, `status`, `event`, …) fall back to the real global and cannot be cleaned up on unmount.
-- **Typed imports are passthrough in v1.** `import x from '...' with { type: 'json' | 'css' }`, WASM, and similar are mapped straight to the original URL and loaded natively, without instance isolation, with a one-time `console.warn`. They require correct MIME types and CORS from the sub-app server. Relative specifiers in *typed dynamic* imports resolve against the blob URL — use absolute URLs.
-- **Firefox needs a flag.** Multiple dynamically-injected import maps require `dom.multiple_import_maps.enabled`, off by default in Firefox. The current runtime does not provide a shimmed execution path, so applications that require default Firefox support must use the Classic delivery path.
+- **Typed imports use native loading.** `import x from '...' with { type: 'json' | 'css' }`, WASM, and similar are mapped straight to the original URL and loaded natively, without instance isolation, with a one-time `console.warn`. They require correct MIME types and CORS from the sub-app server. Relative specifiers in *typed dynamic* imports resolve against the blob URL — use absolute URLs.
+- **Firefox does not enable the required ESM behavior by default.** The runtime provides no shim fallback; use a Classic build when Firefox support is required. See [Browser support](/guide/browser-support) for the supported range and capability probe.
 - **Observability regresses without source maps.** Uncaught errors' `error.stack` points at `blob:<host-origin>/<uuid>`; `//# sourceURL` only changes the DevTools display name, not the stack URL or line numbers. Production error reporting cannot directly map ESM sub-app frames to real files, so source maps become a production necessity rather than a nicety.
 
 ## See also

@@ -4,7 +4,7 @@
 
 ## Use hooks with loadMicroApp
 
-Pass hooks as the third argument to [`loadMicroApp`](/api/load-micro-app). They apply only to the returned instance:
+Pass hooks as the third argument to [`loadMicroApp`](/api/load-micro-app). A newly loaded instance uses these hooks. Reusing a loaded instance with the same `name` and `entry` retains its original hooks; hooks supplied by the later call do not replace them. Dispose of the old instance before loading again when you need different hooks:
 
 ```ts
 import { loadMicroApp } from 'qiankun';

@@ -60,4 +60,4 @@ qiankun 会在首次加载 ESM 模块前自动检测动态多 import map。检�
 - 模块及其资源必须返回正确的 CORS 响应头和 MIME 类型。JSON、CSS、WASM 等带类型的 import（`with { type: … }`）可能仍采用浏览器原生的页面级共享方式，无法实现完整的应用级隔离。
 - 生产环境的错误栈中可能出现 `blob:` URL，而不是真实源文件地址。请保留源码映射（source map），并配置错误上报系统将这些栈帧还原到部署源码。
 
-如果项目更重视 Classic 方案的浏览器兼容范围或开发体验，可以继续使用 UMD 构建。实现细节见 [ESM 沙箱实现](/zh-CN/internals/esm-sandbox)，设计取舍见 [ESM 沙箱 RFC](https://github.com/umijs/qiankun/blob/next/docs/rfcs/esm-sandbox.md)。
+如果项目更重视 Classic 方案的浏览器兼容范围或开发体验，可以继续使用 UMD 构建。实现细节见 [ESM 沙箱实现](/zh-CN/internals/esm-sandbox)。

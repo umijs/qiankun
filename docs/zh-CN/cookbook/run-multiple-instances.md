@@ -104,7 +104,7 @@ await Promise.all([left.unmount(), right.unmount()]);
 
 ## 相关内容
 
-- [`loadMicroApp` API](/zh-CN/api/load-micro-app)
-- [生命周期与 props](/zh-CN/concepts/lifecycle-and-props)
+- [loadMicroApp](/zh-CN/api/load-micro-app)
+- [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)
 - [JavaScript 隔离](/zh-CN/concepts/js-sandbox)
-- [应用间通信](/zh-CN/cookbook/communicate-between-apps)
+- [应用间共享状态与通信](/zh-CN/cookbook/communicate-between-apps)

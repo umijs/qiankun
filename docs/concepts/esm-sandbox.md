@@ -60,4 +60,4 @@ qiankun automatically checks dynamic multiple-import-map support before loading 
 - Modules and their assets must be served with correct CORS headers and MIME types. JSON, CSS, and WASM imports with type attributes (`with { type: … }`) may retain native, shared-page behavior rather than full per-app isolation.
 - Production stack traces can contain `blob:` URLs instead of source file URLs. Keep source maps and configure error reporting to map those frames back to deployed sources.
 
-Use the classic/UMD path when its browser reach or development behavior better fits the application. For implementation details, see [ESM sandbox internals](/internals/esm-sandbox) and the [ESM sandbox RFC](https://github.com/umijs/qiankun/blob/next/docs/rfcs/esm-sandbox.md).
+Use the classic/UMD path when its browser reach or development behavior better fits the application. For implementation details, see [ESM sandbox internals](/internals/esm-sandbox).

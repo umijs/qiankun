@@ -3,7 +3,7 @@
 `prefetchApps` 用于预先获取指定微应用的资源并填充浏览器 HTTP 缓存。该函数仅为兼容旧代码而保留，新项目不应使用。
 
 ::: warning 已废弃
-qiankun v3 的流式 HTML 入口加载会在处理入口时发现并加载资源。`start()` 也不再接收预取策略。当前性能建议见[优化微应用加载](/zh-CN/cookbook/optimize-loading)。
+qiankun v3 的流式 HTML Entry 加载会在处理入口时发现并加载资源。`start()` 也不再接收预取策略。当前性能建议见[优化微应用加载](/zh-CN/cookbook/optimize-loading)。
 :::
 
 ## 函数签名
@@ -38,5 +38,5 @@ prefetchApps([{ name: 'legacy-app', entry: 'https://cdn.example.com/legacy-app/'
 ## 相关内容
 
 - [优化微应用加载](/zh-CN/cookbook/optimize-loading)。
-- [HTML 入口](/zh-CN/concepts/html-entry-loading)。
+- [HTML Entry](/zh-CN/concepts/html-entry-loading)。
 - [从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。

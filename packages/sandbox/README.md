@@ -159,7 +159,7 @@ This package is a compatibility sandbox, not a security boundary for hostile cod
 - Mutating a host object obtained through read-through also mutates that shared object. Only the global property write is isolated.
 - DOM containment redirects the sandboxed `document.head` and `document.body`; it does not create a separate browser realm or origin.
 
-Use an iframe, Worker, or another origin/callable boundary for untrusted code. See the [Compartment Alignment RFC](../../docs/rfcs/compartment-alignment.md) for the rationale behind the write-isolation and identity-sharing model.
+Use an iframe, Worker, or another origin/callable boundary for untrusted code.
 
 ## Content Security Policy
 
@@ -177,4 +177,3 @@ This illustrative policy allows the runtime import map and a widget-created inli
 
 - [Standalone sandbox cookbook](../../docs/cookbook/standalone-sandbox.md)
 - [Extending sandbox isolation](../../docs/cookbook/sandbox-plugins.md)
-- [Standalone Sandbox RFC](../../docs/rfcs/standalone-sandbox.md)

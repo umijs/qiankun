@@ -15,7 +15,6 @@ const enNav = [
       { text: 'Runtime internals', link: '/internals/' },
       { text: 'Live examples', link: 'https://examples.qiankunjs.com' },
       { text: 'Releases', link: 'https://github.com/umijs/qiankun/releases' },
-      { text: 'RFCs', link: 'https://github.com/umijs/qiankun/tree/next/docs/rfcs' },
       { text: 'Roadmap', link: 'https://github.com/umijs/qiankun/discussions/1378' },
       { text: 'Community', link: 'https://github.com/umijs/qiankun/discussions' },
       { text: 'Contributing', link: 'https://github.com/umijs/qiankun/blob/next/.github/CONTRIBUTING.md' },
@@ -168,7 +167,6 @@ const zhNav = [
       { text: '运行时实现', link: '/zh-CN/internals/' },
       { text: '在线示例', link: 'https://examples.qiankunjs.com' },
       { text: '更新日志', link: 'https://github.com/umijs/qiankun/releases' },
-      { text: 'RFC 设计文档', link: 'https://github.com/umijs/qiankun/tree/next/docs/rfcs' },
       { text: '路线图', link: 'https://github.com/umijs/qiankun/discussions/1378' },
       { text: '社区讨论', link: 'https://github.com/umijs/qiankun/discussions' },
       { text: '参与贡献', link: 'https://github.com/umijs/qiankun/blob/next/.github/CONTRIBUTING.md' },
@@ -316,8 +314,7 @@ export default withMermaid(
     ignoreDeadLinks: 'localhostLinks',
     lastUpdated: true,
     metaChunk: true,
-    // RFCs are design discussions that live on GitHub; keep them out of the
-    // built site (and out of local search) so drafts are never published.
+    // Local design drafts are gitignored and must stay out of the built site and search.
     srcExclude: ['rfcs/**'],
 
     transformPageData(pageData, { siteConfig }) {

@@ -99,9 +99,13 @@ Plugins are appended after qiankun's built-in isolation plugins.
 - Calling `Free` during unmount releases side effects and returns a `Rebuild` function.
 - `Rebuild(container)` restores the recorded side effects before the next mount completes.
 
+`Free` callbacks run in reverse installation order, mount phase before bootstrap phase; their `Rebuild` callbacks replay in installation order. JS-only sandboxes have no container, so the `Rebuild` argument is optional.
+
+Plugins may also provide a synchronous `dispose(context): void` hook to release caches and views retained across ordinary unmounts. It runs once on terminal controller disposal, after all active `Free` callbacks and before Compartment disposal, in reverse installation order. It must tolerate partially completed bootstrap setup.
+
 ```ts
 type Free = () => Rebuild;
-type Rebuild = (container: HTMLElement) => Promise<void>;
+type Rebuild = (container?: HTMLElement) => Promise<void>;
 ```
 
 Keep per-application state inside the hook closure. Patches to shared prototypes need browser-realm coordination and reference counting so that one compartment cannot restore a prototype while another still uses it. When separately bundled qiankun copies can coexist, store that coordination record behind a stable `Symbol.for(...)` key on the native global instead of relying on module-local state.

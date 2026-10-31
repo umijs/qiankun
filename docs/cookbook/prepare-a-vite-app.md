@@ -202,7 +202,7 @@ Test the final asset URLs, redirects, MIME types, and CORS headers from the host
 3. Call `await microApp.unmount()` and then `await microApp.mount()`; confirm there are no duplicated roots, listeners, or stale views.
 4. Run `npm run build` in the Vite app and inspect `dist/index.html`: exactly one generated module script should have the `entry` attribute.
 5. Run `npm run preview`, point the host at the preview URL, and repeat the mount/unmount check.
-6. Before release, test the deployed entry from every supported browser and host origin. See [Native ESM support](/concepts/esm-sandbox) for browser constraints.
+6. Before release, test the deployed entry from every supported browser and host origin. See [Browser support](/guide/browser-support) for browser requirements.
 
 ## Related
 

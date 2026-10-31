@@ -14,7 +14,7 @@ import { setDefaultMountApp, runAfterFirstMounted } from 'qiankun';
 function setDefaultMountApp(defaultAppLink: string): void
 ```
 
-当 single-spa 首次报告 URL 已变化但没有匹配任何应用时，导航至 `defaultAppLink`。该函数可用于为主应用指定默认页面，避免初始路由未匹配应用时显示空白内容。
+在监听器收到的第一次 `single-spa:no-app-change` 事件中，若没有已挂载应用，则导航至 `defaultAppLink`。该函数可用于为主应用指定默认页面，避免初始路由未匹配应用时显示空白内容。
 
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
@@ -22,10 +22,10 @@ function setDefaultMountApp(defaultAppLink: string): void
 
 该函数监听 `single-spa:no-app-change` 事件。当 `getMountedApps()` 返回空列表时，调用 `navigateToUrl(defaultAppLink)`。监听器首次触发后会自动移除，因此重定向最多执行一次。当前 URL 已匹配已挂载应用时，不会执行重定向。
 
-由于该函数依赖路由匹配，`defaultAppLink` 必须匹配一个已注册且 `activeRule` 覆盖该路径的应用。如果目标路由仍未匹配应用，single-spa 会再次报告没有应用变化，但监听器已经移除，不会继续导航。
+用于选择默认微应用时，`defaultAppLink` 应匹配已注册应用的 `activeRule`；该函数本身不校验目标是否已注册。如果目标路由仍未匹配应用，single-spa 会再次报告没有应用变化，但监听器已经移除，不会继续导航。
 
 ::: tip 仅处理一次初始导航
-`setDefaultMountApp` 只处理一次初始导航，不提供持续生效的未匹配路由重定向。需要长期处理 404 路由时，应注册专用应用，或由主应用的路由系统处理。
+`setDefaultMountApp` 只处理一次事件，不提供持续生效的未匹配路由重定向。需要长期处理 404 路由时，应注册专用应用，或由主应用的路由系统处理。
 :::
 
 ### 示例：导航至默认路由

@@ -18,7 +18,7 @@ type HostProps = {
 type MountProps = HostProps & { container: HTMLElement };
 
 export async function bootstrap(context: BootstrapContext) {
-  // context 仅含这一代应用的 name 和 entry，不含业务 props 或 container。
+  // context 仅含当前应用的 name 和 entry，不含业务 props 或 container。
   // 在此执行与挂载位置、用户状态无关的初始化。
 }
 
@@ -65,7 +65,11 @@ await microApp.mount();
 
 ## bootstrap 的初始化上下文
 
-`bootstrap` 只接收 `BootstrapContext`，即只读的 `{ name, entry }`。qiankun 会单独构造并冻结该对象，不传入业务 props、容器或 single-spa 的挂载能力。它用于初始化一份已加载的应用代码，不绑定某次挂载。用户、路由、主题等可变数据应在 `mount` 或 `update` 中读取；框架根节点、路由实例和视图状态应在 `mount` 中创建，并在 `unmount` 中销毁。
+`bootstrap` 用于执行不依赖挂载位置和业务状态的初始化。用户、路由、主题等可变数据应在 `mount` 或 `update` 中读取。
+
+框架根节点、路由实例和视图状态应在 `mount` 中创建，并在 `unmount` 中销毁。
+
+`bootstrap` 只接收 `BootstrapContext`，即只读的 `{ name, entry }`。qiankun 会单独构造并冻结该对象，不传入业务 props、容器或 single-spa 的挂载能力。
 
 ## props、容器与主应用钩子
 
@@ -79,7 +83,7 @@ await microApp.mount();
 
 ## 挂载、卸载与重新挂载
 
-- `bootstrap` 在每一代应用加载后、首次挂载前执行一次；温复用时不再执行，缓存回收后冷加载则会重新执行；
+- `bootstrap` 在每次加载微应用代码后、首次挂载前执行一次；复用已加载的实例时不再重复执行，缓存回收后重新加载则会再次执行；
 - `mount` 创建可见的应用，并且可能执行多次；
 - `unmount` 必须清理由 `mount` 创建的所有可见内容和副作用；
 - `update`（如果已导出）将主应用提供的新 props 应用于已挂载实例。
@@ -103,7 +107,7 @@ await microApp.mount();
 
 ## 继续阅读
 
-- [`loadMicroApp` API](/zh-CN/api/load-micro-app)——完整的句柄与 Promise 参考。
+- [loadMicroApp](/zh-CN/api/load-micro-app)——完整的句柄与 Promise 参考。
 - [加载一个微应用实例](/zh-CN/concepts/architecture)——微应用的整体运行模型。
 - [运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)——容器与实例模式。
 - [生命周期解析原理](/zh-CN/internals/lifecycle-resolution)——供维护者阅读的导出发现与钩子顺序。

@@ -27,9 +27,10 @@ function loadMicroApp<T extends ObjectType>(
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
 | `name` | `string` | 是 | 微应用名称。多个实例可以复用名称；只有并发挂载的实例需要使用不同容器。 |
-| `entry` | `string` | 是 | 微应用 HTML 入口的 URL。仅支持字符串；v3 不再支持 2.x 的对象形式（`{ scripts, styles }`）。 |
+| `entry` | `string` | 是 | 微应用 HTML Entry 的 URL。仅支持字符串；v3 不再支持 2.x 的对象形式（`{ scripts, styles }`）。 |
 | `container` | `HTMLElement` | 是 | 用于渲染微应用的 DOM 元素。必须传入实际元素，不能使用 CSS 选择器字符串。 |
 | `props` | `T` | 否 | 传递给 `mount`、`unmount` 和可选 `update` 的业务数据，不传入 `bootstrap`。 |
+| `loader` | `(loading: boolean) => void` | 否 | 挂载链开始时收到 `true`，成功挂载后收到 `false`。失败时应同时处理句柄 Promise，不能依赖 `false` 结束错误状态。 |
 
 ```ts
 type ObjectType = Record<string, unknown>;
@@ -39,6 +40,7 @@ type LoadableApp<T extends ObjectType> = {
   entry: string;
   container: HTMLElement;
   props?: T;
+  loader?: (loading: boolean) => void;
 };
 ```
 
@@ -154,6 +156,7 @@ type Parcel = {
 - **调用后立即开始加载和挂载。** 无需预先调用 `start()`；如需等待应用完成渲染，应等待 `mountPromise`。
 - **一个容器在同一时刻只承载一个应用。** 如果连续向同一容器加载应用，后一个实例会等待前一个实例卸载。
 - **同名应用会复用已卸载的实例。** 以相同的 `name` 和 `entry` 再次调用时，如果该应用有已卸载、处于空闲状态的实例，qiankun 会把它挂载到本次传入的容器，不再重新加载入口，也不再调用 `bootstrap`。没有空闲实例时，已调用 `unmount()` 但尚未卸载完成的实例（包括仍在挂载中的实例）也会被复用，新实例等它卸载完成后再挂载。只有同时挂载的实例才会各自加载一份。因此同一 `name` 应始终指向同一个应用，每次挂载所需的状态应在 `mount()` 中初始化。
+- **复用实例时沿用原配置。** 命中缓存后，使用首次加载时的 `configuration`、`lifeCycles` 和 `loader`，再次调用时传入的新值不会替换它们。需要更换这些配置时，应先调用 `unload()` 或 `unloadMicroApp(name)` 销毁旧实例，再重新加载。
 - **空闲实例有数量和时间限制。** 同一 `name` 和 `entry` 最多保留 2 份空闲实例，全局最多保留 8 份；超限时淘汰最久未使用的空闲实例，连续空闲 5 分钟后也会回收。正在加载、挂载、排队或卸载的实例不参与淘汰。
 - **回收后旧句柄仍可重新挂载。** 命中缓存时复用沙箱；缓存已回收且没有其他可复用实例时，重新加载入口并执行 `bootstrap`。主动调用 `unload()` 后句柄失效，须重新调用 `loadMicroApp`。
 - **调用方负责卸载。** 不再展示应用时调用 `unmount()`，官方 `<MicroApp>` 组件也是这样做的。需要释放已加载的资源时，再调用 `unload()` 或 `unloadMicroApp(name)`。
@@ -198,7 +201,7 @@ function unloadMicroApp(name: string): Promise<void>;
 
 销毁会撤销隔离膜。销毁前已经排入队列的 `setTimeout`、`requestAnimationFrame` 和 Promise 回调如果在之后才执行，访问 `window` 等全局对象时会抛出 `TypeError`。微应用应在自己的 `unmount` 中清理这些挂起的异步回调。
 
-浏览器已经注册的原生 import map 条目及模块注册表无法通过 qiankun 撤销。移除注入脚本、撤销 blob URL 不等于清空浏览器模块注册表；重新加载会使用新的实例标识。机制限制见 [ESM 沙箱 RFC 第 11 节](https://github.com/umijs/qiankun/blob/next/docs/rfcs/esm-sandbox.md)。关闭沙箱（`sandbox: false`）时，微应用写入真实全局对象的状态也无法由 qiankun 自动回滚。
+浏览器已经注册的原生 import map 条目及模块注册表无法通过 qiankun 撤销。移除注入脚本、撤销 blob URL 不等于清空浏览器模块注册表；重新加载会使用新的实例标识。清理边界见 [ESM 沙箱实现](/zh-CN/internals/esm-sandbox)。关闭沙箱（`sandbox: false`）时，微应用写入真实全局对象的状态也无法由 qiankun 自动回滚。
 
 `unloadMicroApp` 只管理 `loadMicroApp` 创建的实例。路由注册应用应使用 [registerMicroApps](/zh-CN/api/register-micro-apps#unload-application) 页面说明的 `unloadApplication`。
 
@@ -247,6 +250,6 @@ const microApp = loadMicroApp({ name: 'legacy-app', entry: 'http://localhost:720
 - [registerMicroApps](/zh-CN/api/register-micro-apps)——根据路由自动激活和卸载应用。
 - [start](/zh-CN/api/start)——`loadMicroApp` 会自动调用该函数；路由驱动应用则需要显式调用。
 - [AppConfiguration](/zh-CN/api/configuration)——完整的配置项参考。
-- [生命周期钩子](/zh-CN/api/lifecycles)——`LifeCycles` 钩子的完整说明。
+- [生命周期钩子（`LifeCycles`）](/zh-CN/api/lifecycles)——`LifeCycles` 钩子的完整说明。
 - [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)——props 的传递方式与微应用生命周期。
 - [运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)——在同一页面运行多个实例的方法。

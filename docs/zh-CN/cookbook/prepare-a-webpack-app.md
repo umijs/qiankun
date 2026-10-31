@@ -12,7 +12,7 @@
 npm install --save-dev @qiankunjs/bundler-plugin@rc html-webpack-plugin
 ```
 
-`html-webpack-plugin` 用于生成 HTML 入口，使 qiankun 插件能够为对应的脚本添加 `entry` 属性。
+`html-webpack-plugin` 用于生成 HTML Entry，使 qiankun 插件能够为对应的脚本添加 `entry` 属性。
 
 ## 配置 Webpack
 
@@ -138,7 +138,7 @@ Webpack 会通过 `QiankunWebpackPlugin` 配置的全局库暴露这些入口导
 
 ## 从主应用加载
 
-主应用将 HTML 入口加载到现有的 `HTMLElement` 中。应保存返回的 `MicroApp` 句柄，并在所属视图移除之前卸载应用：
+主应用将 HTML Entry 加载到现有的 `HTMLElement` 中。应保存返回的 `MicroApp` 句柄，并在所属视图移除之前卸载应用：
 
 ```ts [main-app/src/micro-app.ts]
 import { loadMicroApp, type MicroApp } from 'qiankun';
@@ -179,7 +179,7 @@ qiankun 从主应用所在的源请求入口 HTML 及其资源。`QiankunWebpack
 部署前应完成以下检查：
 
 1. 执行微应用的生产构建，并将构建产物部署到预期的源。
-2. 直接打开部署后的 HTML 入口，确认独立运行仍然正常。
+2. 直接打开部署后的 HTML Entry，确认独立运行仍然正常。
 3. 通过 `loadMicroApp` 加载该入口，并分别执行一次卸载和重新挂载。
 4. 确认入口 HTML、JavaScript 代码分块、CSS 和外部资源来自预期 URL，并带有必要的 CORS 响应头。
 5. 在不同版本之间保持 `packageName` 稳定，并确认构建产物仍然只有一个标记为 `entry` 的脚本。

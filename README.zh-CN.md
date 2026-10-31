@@ -45,7 +45,7 @@ qiankun 诞生于我们内部大规模分布式团队协作陷入混乱的时期
 
 - 微应用的静态资源以什么形式发布？
 - 框架怎样把一个个独立的微应用集成起来？
-- 如何确保子应用之间彼此隔离（开发独立、部署独立），并且运行时相互沙箱化？
+- 如何确保微应用之间彼此隔离（开发独立、部署独立），并且运行时相互沙箱化？
 - 性能问题怎么办？公共依赖怎么处理？
 - ……
 
@@ -57,14 +57,14 @@ qiankun 诞生于我们内部大规模分布式团队协作陷入混乱的时期
 
 qiankun 继承了 [single-spa](https://github.com/single-spa/single-spa) 的基本盘——**独立部署**、**按需加载**、主应用**不限制微应用技术栈**——并补齐了真实产品所需的那些部分：
 
-- 📄 **HTML 入口** —— 接入一个 URL 即可，不需要维护资源清单。HTML 入口边下载边流式写入页面，微应用在 HTML 尚未下载完时就能开始渲染。
-- 🧳 **JS 沙箱** —— 每个微应用运行在 `window` 和 `document` 的 Proxy 隔离膜视图之上：全局变量、定时器、事件监听和动态 DOM 都被约束在应用内部，卸载时统一回收。默认开启。
+- 📄 **HTML Entry** —— 接入一个 URL 即可，不需要维护资源清单。HTML Entry 边下载边流式写入容器，其中的 HTML 可在响应结束前逐步呈现。
+- 🧳 **JS 沙箱** —— 默认启用 `window` 和 `document` 的 Proxy 隔离膜视图。全局属性写入保存在应用内，并追踪定时器、事件监听和动态资源等常见副作用，卸载时清理已追踪的资源。
 - 📦 **原生 ESM** —— `<script type="module">` 微应用以真正的模块方式执行，经隔离膜路由并配合动态注入的 import map。动态 `import()` 可用，Vite 开发服务器也可以直接接入。
 - 🛡 **样式隔离** —— 基于 CSS [`@scope`](https://developer.mozilla.org/docs/Web/CSS/@scope) 规则的运行时作用域方案（可选开启），外链样式表同样覆盖。不需要改写你的 CSS，也没有 Shadow DOM 的额外负担。
-- ⚡ **预加载** —— 在用户还停留在其他页面时提前加载微应用资源，切换时近乎即时。
+- ⚡ **自动预加载** —— 流式解析 HTML Entry 时，自动发现并预加载其中的脚本和样式。应用激活前的预取 API `prefetchApps` 仍为兼容旧代码而保留，但已废弃。
 - 🧩 **UI 绑定** —— 面向 [React](packages/ui-bindings/react) 和 [Vue](packages/ui-bindings/vue) 的 `<MicroApp />` 组件，自带加载态和错误边界插槽，微应用用起来就像一个普通组件。
 - 🔧 **构建插件** —— [一个插件](packages/bundler-plugin)同时支持 webpack 4/5 与 Vite，自动为相应脚本添加 `entry` 属性、修正产物库配置，替代过去手写的样板配置。
-- 🔬 **独立沙箱** —— [`@qiankunjs/sandbox`](packages/sandbox) 可以脱离微前端框架单独使用，用来隔离任意第三方脚本。
+- 🔬 **独立沙箱** —— [`@qiankunjs/sandbox`](packages/sandbox) 可以脱离微前端框架单独使用，用于隔离可信第三方脚本的全局写入并管理常见副作用。
 
 ## 🚀 快速上手
 
@@ -89,10 +89,13 @@ npm i qiankun@rc
 ```ts
 import { loadMicroApp } from 'qiankun';
 
+const container = document.getElementById('subapp-container');
+if (!container) throw new Error('subapp-container not found');
+
 const microApp = loadMicroApp({
   name: 'react-app',
   entry: '//localhost:7100',
-  container: document.getElementById('subapp-container'),
+  container,
 });
 
 // 页面区域销毁前卸载微应用：
@@ -141,7 +144,7 @@ pnpm start:example
 | 包名 | 版本（点击查看更新日志） | 说明 |
 | --- | :-- | --- |
 | [qiankun](packages/qiankun) | [![qiankun version](https://img.shields.io/npm/v/qiankun/rc.svg?style=flat-square)](packages/qiankun/CHANGELOG.md) | 框架本体：`registerMicroApps`、`loadMicroApp`、`start`、`prefetch` |
-| [@qiankunjs/loader](packages/loader) | [![loader version](https://img.shields.io/npm/v/@qiankunjs/loader/rc.svg?style=flat-square)](packages/loader/CHANGELOG.md) | 流式 HTML 入口加载器 |
+| [@qiankunjs/loader](packages/loader) | [![loader version](https://img.shields.io/npm/v/@qiankunjs/loader/rc.svg?style=flat-square)](packages/loader/CHANGELOG.md) | 流式 HTML Entry 加载器 |
 | [@qiankunjs/sandbox](packages/sandbox) | [![sandbox version](https://img.shields.io/npm/v/@qiankunjs/sandbox/rc.svg?style=flat-square)](packages/sandbox/CHANGELOG.md) | JS 沙箱，可独立使用 |
 | [@qiankunjs/shared](packages/shared) | [![shared version](https://img.shields.io/npm/v/@qiankunjs/shared/rc.svg?style=flat-square)](packages/shared/CHANGELOG.md) | 资源转译器、fetch 工具、ESM 沙箱引擎 |
 | [@qiankunjs/single-spa](packages/single-spa) | [![single-spa version](https://img.shields.io/npm/v/@qiankunjs/single-spa/latest.svg?style=flat-square)](packages/single-spa/CHANGELOG.md) | 框架底座：内置维护的 [single-spa](https://github.com/single-spa/single-spa) 分支 |
@@ -158,8 +161,6 @@ pnpm start:example
 - [实用指南](https://www.qiankunjs.com/zh-CN/cookbook/) —— 样式隔离、沙箱插件、错误处理、加载优化
 - [API 参考](https://www.qiankunjs.com/zh-CN/api/) —— 每个配置项都有类型
 - [常见问题](https://www.qiankunjs.com/zh-CN/faq/) —— 出现频率最高的那些问题
-
-设计决策以 RFC 形式沉淀在 [docs/rfcs](./docs/rfcs)。
 
 ## 🎯 路线图
 

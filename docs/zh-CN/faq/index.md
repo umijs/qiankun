@@ -6,17 +6,17 @@
 
 不需要。主应用通过 [`loadMicroApp`](/zh-CN/api/load-micro-app) 加载微应用实例。仅路由驱动场景需要使用 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 和 [`start`](/zh-CN/api/start)。
 
-微应用应使用 [`@qiankunjs/bundler-plugin`](/zh-CN/ecosystem/bundler-plugin) 生成符合 qiankun 约定的 HTML 入口，并配置开发服务器。已有项目可按照 [Vite](/zh-CN/cookbook/prepare-a-vite-app) 或 [Webpack](/zh-CN/cookbook/prepare-a-webpack-app) 指南接入。
+微应用应使用 [`@qiankunjs/bundler-plugin`](/zh-CN/ecosystem/bundler-plugin) 生成符合 qiankun 约定的 HTML Entry，并配置开发服务器。已有项目可按照 [Vite](/zh-CN/cookbook/prepare-a-vite-app) 或 [Webpack](/zh-CN/cookbook/prepare-a-webpack-app) 指南接入。
 
 ## 为什么会报 CORS 错误？
 
-主应用页面会获取微应用的 HTML 入口、脚本和样式。所有跨源资源都必须允许来自主应用所在源的请求。生产环境的 CORS 响应头应由实际提供资源的静态服务器或 CDN 配置，不能仅依赖开发插件。
+主应用页面会获取微应用的 HTML Entry、脚本和样式。所有跨源资源都必须允许来自主应用所在源的请求。生产环境的 CORS 响应头应由实际提供资源的静态服务器或 CDN 配置，不能仅依赖开发插件。
 
 应先在网络（Network）面板中定位首个失败请求，检查最终 URL、响应状态和 `Access-Control-Allow-Origin`。启用样式隔离后，外部 CSS 资源同样需要正确配置 CORS。
 
 ## 为什么出现 `more than one entry script` 错误？
 
-一个 HTML 入口最多只能包含一个带有 `entry` 属性的外部脚本。请勿为多个代码分块手动添加该标记；应由构建插件标记实际入口。相关约定见 [HTML 入口](/zh-CN/concepts/html-entry-loading)。
+一个 HTML Entry 最多只能包含一个带有 `entry` 属性的外部脚本。请勿为多个代码分块手动添加该标记；应由构建插件标记实际入口。相关约定见 [HTML Entry](/zh-CN/concepts/html-entry-loading)。
 
 ## 为什么出现 `lifecycle functions not found` 错误？
 

@@ -1,8 +1,8 @@
 # @qiankunjs/loader
 
-qiankun 的流式 HTML 入口加载器，负责将微应用的 HTML 逐步写入容器，并通过沙箱提供的接口完成资源转换和脚本执行。它是 qiankun 加载流程的底层组件；业务应用建议使用 `qiankun` 的公开 API，无需单独安装本包。
+qiankun 的流式 HTML Entry 加载器，负责将微应用的 HTML 逐步写入容器，并通过沙箱提供的接口完成资源转换和脚本执行。它是 qiankun 加载流程的底层组件；业务应用建议使用 `qiankun` 的公开 API，无需单独安装本包。
 
-文档：[HTML 入口](https://www.qiankunjs.com/zh-CN/concepts/html-entry-loading)。
+文档：[HTML Entry](https://www.qiankunjs.com/zh-CN/concepts/html-entry-loading)。
 
 ## English
 

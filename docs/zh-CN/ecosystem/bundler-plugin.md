@@ -1,6 +1,6 @@
 # @qiankunjs/bundler-plugin
 
-`@qiankunjs/bundler-plugin` 用于生成 qiankun 可识别的微应用 HTML 入口。主应用无需安装该插件。
+`@qiankunjs/bundler-plugin` 用于生成 qiankun 可识别的微应用 HTML Entry。主应用无需安装该插件。
 
 该包同时提供 Vite 和 Webpack 插件。使用时必须选择对应的导入路径，插件不会自动判断项目所用的构建工具。
 
@@ -47,7 +47,7 @@ export default defineConfig({
 
 ## Webpack
 
-Webpack 插件需要配合 `html-webpack-plugin` 生成 HTML 入口：
+Webpack 插件需要配合 `html-webpack-plugin` 生成 HTML Entry：
 
 ```js
 const HtmlWebpackPlugin = require('html-webpack-plugin');
@@ -79,9 +79,9 @@ Webpack 插件不会配置开发服务器的 CORS。开发服务器和生产静�
 
 ## 入口约束
 
-- 一个 HTML 入口最多只能有一个带 `entry` 属性的脚本。
+- 一个 HTML Entry 最多只能有一个带 `entry` 属性的脚本。
 - 插件标记入口后，请勿再手动添加入口标记。
 - 微应用必须导出[生命周期契约](/zh-CN/concepts/lifecycle-and-props)。
 - 生产资源必须满足浏览器的 CORS、CSP 和 MIME 类型要求。
 
-加载器对入口的处理方式参见 [HTML 入口](/zh-CN/concepts/html-entry-loading)。
+加载器对入口的处理方式参见 [HTML Entry](/zh-CN/concepts/html-entry-loading)。

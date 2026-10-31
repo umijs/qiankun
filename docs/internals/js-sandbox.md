@@ -12,16 +12,16 @@ Every micro-app gets its own virtual `window` (`globalThis` and `self` point at 
 
 - **Explicit global writes are local.** When an app runs `window.foo = 1`, the value lands on that app's own local object. The real `window` never sees it, and neither does another micro-app.
 - **Classic top-level declarations stay in the wrapper.** A top-level `var foo` is scoped to the Compartment's wrapper function; it does not become a property of either the proxied or real `window`.
-- **Reads fall through.** When an app reads a global it never set — `window.localStorage`, `window.crypto`, `document` — the lookup checks its local object first, then the handful of built-in values (endowments) qiankun injects, then falls through to the real main-app `window`. So the app still sees the real browser environment.
+- **Reads fall through.** When an app reads a global it never set — `window.localStorage`, `window.crypto`, `document` — the lookup checks the local target, including configured `globals`, then falls through to unshadowed host properties on `incubatorContext`. So the app still sees the real browser environment.
 
-The result: each app has a namespace that looks complete but can't pollute anything outside it.
+Explicit global property writes stay local. Objects obtained through read-through retain their identity, so modifying their internal properties can still change shared host state.
 
 ```mermaid
 flowchart TD
   A["micro-app code<br/>window.foo = 1"] --> P{"Proxy membrane"}
   P -->|write| L["app-local object<br/>(isolated)"]
   R["micro-app code<br/>read window.crypto"] --> P
-  P -->|"read: local → endowments → main app"| H["real main-app window"]
+  P -->|"read: local (including globals) → host"| H["real main-app window"]
 ```
 
 The asymmetry runs in only one direction. An app can't pollute the main app by writing, but it can still **read** anything on the real main-app `window` that it hasn't shadowed. The sandbox governs side effects, not security.
@@ -39,15 +39,20 @@ The membrane (`core/membrane`) is a `Proxy` wrapping the main-app `window` — i
 The membrane controls explicit `window.x` access, but a Classic UMD script also contains bare global references such as `React` and top-level declarations such as `var foo`. A Proxy alone cannot control lexical name resolution, so the Compartment (`core/compartment`) wraps the source before it runs, roughly like this:
 
 ```js
-;(function () {
-  with (this) {
-    const { Array, /* …destructured intrinsics… */ } = this;
-    /* original script source */
-  }
-}).bind(window.__compartment_globalThis__<N>__)();
+;(function (compartmentGlobalThis) {
+  if (!compartmentGlobalThis) return;
+  (function () {
+    with (this) {
+      const { window, self, globalThis, document /* ... */ } = this;
+      /* original script source */
+    }
+  }).call(compartmentGlobalThis);
+})(window.__compartment_globalThis__1__);
 ```
 
-`with (this)` routes a bare reference through the proxied `window` when that name already exists on the sandbox target or host global; top-level declarations remain local to the wrapper function. A completely new undeclared assignment such as `foo = 1` does not match the membrane's `has` trap and can escape to the real global in a sloppy-mode Classic script. Applications must avoid implicit globals and use declarations or explicit `window.foo` writes instead. qiankun runs the wrapped source through a **blob URL**, and the `<N>` suffix gives each instance a separate Compartment slot.
+Slot `1` illustrates the structure; the actual identifier is assigned per instance. The outer guard skips a queued script after its Compartment has been disposed, rather than coercing a missing receiver to the real `window`. The destructured names are configured unshadowable globals.
+
+`with (this)` routes a bare reference through the proxied `window` when that name already exists on the sandbox target or host global; top-level declarations remain local to the wrapper function. A completely new undeclared assignment such as `foo = 1` does not match the membrane's `has` trap and can escape to the real global in a sloppy-mode Classic script. Applications must avoid implicit globals and use declarations or explicit `window.foo` writes instead. qiankun runs the wrapped source through a **blob URL**, and each instance receives a separate Compartment slot.
 
 Only classic scripts take this path. `<script type="module">` is handled by the [ESM sandbox](/concepts/esm-sandbox), a separate engine that reads the **same** membrane view (via `sandbox.getEsmGlobalsView()`) but rewrites modules with a lexer instead of wrapping them in `with`. Both paths share the one global namespace for a given app.
 
@@ -97,7 +102,7 @@ These names really are written to the real `window` and shared across apps. Trea
 
 Some browser APIs must keep their original `this`. Calling `fetch` through the Proxy detaches it from `window` and throws `Illegal invocation`. The sandbox handles this by rebinding such native functions to the real window before the app ever touches them (its `useNativeWindowForBindingsProps` set), so `window.fetch(...)` inside the sandbox works as usual.
 
-Separately, `requestAnimationFrame` and `cancelAnimationFrame` pass straight through to the main app through the `whitelistBOMAPIs` set. The sandbox does not track or cancel pending callbacks, so a micro-app that owns an animation loop must call `cancelAnimationFrame` during `unmount`.
+`requestAnimationFrame` and `cancelAnimationFrame` are default unshadowable globals and use the host implementations unless replaced by the app. The sandbox does not track or cancel pending callbacks, so a micro-app that owns an animation loop must call `cancelAnimationFrame` during `unmount`.
 
 ## Multiple instances
 

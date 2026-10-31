@@ -360,7 +360,7 @@ After a load or `bootstrap` failure, call `loadMicroApp` again to reload; the sa
 v3 no longer exports `addGlobalUncaughtErrorHandler` or `removeGlobalUncaughtErrorHandler`. Migrate error handling according to the loading mode:
 
 - **Route apps**: use `addErrorHandler` / `removeErrorHandler` for single-spa loading and lifecycle errors; remove a handler with the same function reference.
-- **Manually loaded apps**: handle rejections from the returned handle’s promises; await `mountPromise` for the initial mount. Global `addErrorHandler` does not receive these initial loading and lifecycle errors.
+- **Manually loaded apps**: handle rejections from the returned handle’s promises; await `mountPromise` for the initial mount. Global `addErrorHandler` does not receive initial loading, bootstrap, or first-mount errors; a later `mount()` execution failure on the same handle also reaches the global observer.
 - **Other page errors**: use the browser’s `error` / `unhandledrejection` events for uncaught errors outside qiankun, and clean up listeners in the host.
 
 Identify framework errors with `QiankunError` imported from `qiankun` and its stable `code`, rather than matching message text. Business, network, and single-spa errors are not necessarily instances of this class.
@@ -439,6 +439,6 @@ The streaming loader preloads assets while parsing the current entry HTML; this 
 8. Drop the `prefetch` strategy and rely on streaming auto-prefetch.
 9. Gate browser startup with `isRuntimeCompatible()` to confirm the core runtime capabilities are present.
 10. Move business-prop- or container-dependent `bootstrap` logic into `mount`; do not rely on an automatically injected container in `update`.
-11. Check instance reuse and cold loading after cache reclamation; distinguish temporary unmounting from explicit disposal and await each operation’s returned promise.
+11. Check instance reuse and reloading after cache reclamation; distinguish temporary unmounting from explicit disposal and await each operation’s returned promise.
 12. Migrate error handling for each loading mode, configure `loadTimeout` if needed, and forward cancellation signals in custom fetch implementations.
 13. Review the host CSP for the ESM, style-isolation, and cross-origin resource paths actually used.

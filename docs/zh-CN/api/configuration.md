@@ -4,6 +4,8 @@
 
 使用 [`loadMicroApp`](/zh-CN/api/load-micro-app) 时，应将配置作为第二个参数传入。路由驱动应用通过 `registerMicroApps` 的 `configuration` 字段设置配置，`<MicroApp>` 组件则通过 `settings` 属性接收相同类型的配置。
 
+配置在创建已加载实例时生效。`loadMicroApp` 复用已有实例时，会沿用首次加载的配置；如需更换配置，应先销毁旧实例再重新加载，详见 [loadMicroApp](/zh-CN/api/load-micro-app#behavior)。
+
 ## 类型
 
 ```ts
@@ -17,7 +19,7 @@ import { type AppConfiguration } from 'qiankun';
 | `sandbox` | `boolean \| SandboxConfiguration` | `true` | 隔离能力的统一入口。设为 `false` 时微应用在真实全局对象中运行；设为 `true` 时以默认配置启用沙箱；传入对象时启用沙箱并配置底层 Compartment。 |
 | `fetch` | `typeof window.fetch` | `window.fetch` | 用于请求入口，以及由加载器处理的脚本、模块和样式。图片等由浏览器直接发起的请求不一定经过该函数。 |
 | `loadTimeout` | `number` | `0`（关闭） | 加载阶段的超时，单位为毫秒。不约束 `bootstrap`、`mount` 和 `unmount`。 |
-| `streamTransformer` | `() => TransformStream<string, string>` | `undefined` | 可选。用于自定义 HTML 入口的流式处理过程，接收解码后的 HTML 字符串流。 |
+| `streamTransformer` | `() => TransformStream<string, string>` | `undefined` | 可选。用于自定义 HTML Entry 的流式处理过程，接收解码后的 HTML 字符串流。 |
 | `nodeTransformer` | `<T extends Node>(node: T, opts) => T` | 内置资源转换器 | 在 `<script>`、`<link>` 和 `<style>` 节点进入容器前进行转换。仅用于高级扩展。 |
 
 ## 配置项说明
@@ -130,13 +132,13 @@ await app.mountPromise;
 
 ### streamTransformer
 
-默认值为 `undefined`。配置后，返回的 `TransformStream<string, string>` 会参与 HTML 入口的流式处理，执行位置在字节解码之后、qiankun 转换标签之前。该转换器可在流式处理期间修改入口 HTML，例如插入或删除标记。常规应用通常无需配置此项。
+默认值为 `undefined`。配置后，返回的 `TransformStream<string, string>` 会参与 HTML Entry 的流式处理，执行位置在字节解码之后、qiankun 转换标签之前。该转换器可在流式处理期间修改入口 HTML，例如插入或删除标记。常规应用通常无需配置此项。
 
-处理流程的详细说明见[流式 HTML 入口实现](/zh-CN/internals/streaming-html-entry)。
+处理流程的详细说明见[HTML Entry 流式加载原理](/zh-CN/internals/streaming-html-entry)。
 
 ### nodeTransformer
 
-默认转换器负责 qiankun 对 `<script>`、`<link>` 和 `<style>` 节点的标准处理。覆盖该转换器后，节点转换将由调用方负责，并可能同时影响脚本隔离、模块解析和样式隔离，因此仅适用于高级扩展。输入输出约定和默认处理流程参见[流式 HTML 入口实现](/zh-CN/internals/streaming-html-entry)。
+默认转换器负责 qiankun 对 `<script>`、`<link>` 和 `<style>` 节点的标准处理。覆盖该转换器后，节点转换将由调用方负责，并可能同时影响脚本隔离、模块解析和样式隔离，因此仅适用于高级扩展。输入输出约定和默认处理流程参见[HTML Entry 流式加载原理](/zh-CN/internals/streaming-html-entry)。
 
 ## 配置方式
 

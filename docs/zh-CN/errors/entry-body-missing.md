@@ -2,7 +2,7 @@
 
 ## 触发原因
 
-HTML 入口响应的 `Response.body` 为 `null`，加载器无法取得用于流式解析的响应体。
+HTML Entry 响应的 `Response.body` 为 `null`，加载器无法取得用于流式解析的响应体。
 
 虽然错误信息使用了 `empty`，此分支判断的是响应体是否为 `null`，不是正文长度。零字节但非 `null` 的可读流不会直接触发此错误。
 

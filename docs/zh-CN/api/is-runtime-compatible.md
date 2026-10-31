@@ -17,7 +17,7 @@ function isRuntimeCompatible(): boolean;
 | 能力 | qiankun 的用途 |
 | --- | --- |
 | `Proxy` | JavaScript 隔离 |
-| `TransformStream` | 流式加载 HTML 入口 |
+| `TransformStream` | 流式加载 HTML Entry |
 | `URL.createObjectURL` | 隔离执行脚本 |
 
 建议使用该函数检测运行时能力，而不是自行维护浏览器版本列表。

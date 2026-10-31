@@ -4,7 +4,7 @@
 
 ## 在 loadMicroApp 中使用
 
-将钩子作为 [`loadMicroApp`](/zh-CN/api/load-micro-app) 的第三个参数传入。钩子仅作用于本次调用创建的实例：
+将钩子作为 [`loadMicroApp`](/zh-CN/api/load-micro-app) 的第三个参数传入。新加载的实例使用这组钩子；以相同的 `name` 和 `entry` 复用已加载实例时，会沿用该实例首次加载时的钩子，本次传入的钩子不会替换它们。需要更换钩子时，应先销毁旧实例，再重新加载：
 
 ```ts
 import { loadMicroApp } from 'qiankun';

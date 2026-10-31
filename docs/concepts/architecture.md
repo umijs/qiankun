@@ -55,7 +55,7 @@ The HTML entry tells qiankun which scripts and styles belong to the app. The ent
 | Calling lifecycle functions in order | Disposing its framework root and external side effects |
 | Clearing the container during unmount | Treating mount and unmount as repeatable operations |
 
-Removing the container from the page does not replace lifecycle cleanup. Start `unmount()` before discarding the handle and always handle its Promise. Await completion before removing the container when the host flow allows it; framework cleanup callbacks that cannot await should attach a rejection handler. The loaded instance is kept after unmounting for reuse by the same app name; call `unload()` to release it. See [loadMicroApp](/api/load-micro-app#unload).
+Removing the container element does not replace lifecycle cleanup. Call `unmount()` and handle its Promise before discarding the handle, awaiting completion before removing the container when possible. For handling framework callbacks that cannot await async cleanup, see [Cleanup is a shared responsibility](/concepts/lifecycle-and-props#cleanup-is-a-shared-responsibility); for instance reuse and `unload()`, see [loadMicroApp](/api/load-micro-app#unload).
 
 ## Choose how activation is controlled
 
@@ -75,4 +75,4 @@ Removing the container from the page does not replace lifecycle cleanup. Start `
 - [Micro-app lifecycle and props](/concepts/lifecycle-and-props) — the contract behind the handle.
 - [HTML entry](/concepts/html-entry-loading) — how one URL describes an application.
 - [JavaScript isolation](/concepts/js-sandbox) and [Style isolation](/concepts/style-isolation) — guarantees and limits.
-- [`loadMicroApp` API](/api/load-micro-app) — options, return value, and error handling.
+- [loadMicroApp](/api/load-micro-app) — options, return value, and error handling.

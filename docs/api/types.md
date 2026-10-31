@@ -37,8 +37,8 @@ See [Migrate from qiankun 2.x](/cookbook/migrate-from-2x) for the full list.
 | `ObjectType` | `Record<string, unknown>` | Base constraint for the props generic `T`. |
 | `HTMLEntry` | `string` | The micro-app's HTML entry URL. String only. |
 | `AppMetadata` | `{ name; entry }` | The minimal identity of a micro-app. |
-| `LoadableApp<T>` | `AppMetadata & { container; props? }` | Used with [`loadMicroApp`](/api/load-micro-app). `container` is an `HTMLElement`. |
-| `RegistrableApp<T>` | `LoadableApp<T> & { loader?; activeRule; configuration? }` | Used with [`registerMicroApps`](/api/register-micro-apps). |
+| `LoadableApp<T>` | `AppMetadata & { container; props?; loader? }` | Used with [`loadMicroApp`](/api/load-micro-app). `container` is an `HTMLElement`. |
+| `RegistrableApp<T>` | `LoadableApp<T> & { activeRule; configuration? }` | Used with [`registerMicroApps`](/api/register-micro-apps). |
 | `AppConfiguration` | loader options `& { sandbox?; loadTimeout? }` | Per-app runtime configuration. See [AppConfiguration](/api/configuration). |
 | `SandboxConfiguration` | `{ styleIsolation?; globals?; incubatorContext?; plugins?; …module hooks }` | The object form of `sandbox`. See [SandboxConfiguration](/api/configuration#sandboxconfiguration). |
 | `LifeCycleFn<T>` | `(app, global) => Promise<void>` | A single framework lifecycle hook. |
@@ -94,6 +94,7 @@ The minimal descriptor of a micro-app: a stable `name` and its HTML `entry`. `Ap
 export type LoadableApp<T extends ObjectType> = AppMetadata & {
   container: HTMLElement;
   props?: T;
+  loader?: (loading: boolean) => void;
 };
 ```
 
@@ -105,6 +106,7 @@ The descriptor for an app you mount imperatively with [`loadMicroApp`](/api/load
 | `entry` | `HTMLEntry` | HTML entry URL. |
 | `container` | `HTMLElement` | The DOM element the app mounts into. Must be an element, not a selector. |
 | `props` | `T` (optional) | Business data passed to `mount`, `unmount`, and optional `update`, excluding `bootstrap`. |
+| `loader` | `(loading: boolean) => void` (optional) | Receives `true` when mounting starts and `false` after successful mounting; handle load and mount failures through the handle promises. |
 
 ```ts
 import { loadMicroApp } from 'qiankun';
@@ -126,13 +128,12 @@ const app = loadMicroApp<{ userId: number }>({
 
 ```ts
 export type RegistrableApp<T extends ObjectType> = LoadableApp<T> & {
-  loader?: (loading: boolean) => void;
   activeRule: RegisterApplicationConfig['activeWhen'];
   configuration?: AppConfiguration;
 };
 ```
 
-The descriptor for a route-driven app you hand to [`registerMicroApps`](/api/register-micro-apps). It extends `LoadableApp` with three route/loading fields.
+The descriptor for a route-driven app you hand to [`registerMicroApps`](/api/register-micro-apps). It inherits `loader` from `LoadableApp` and adds `activeRule` and `configuration`.
 
 | Field | Type | Description |
 | --- | --- | --- |
@@ -294,7 +295,7 @@ export type BootstrapContext = Readonly<AppMetadata>;
 // { readonly name: string; readonly entry: HTMLEntry }
 ```
 
-qiankun snapshots and freezes this identity when loading an app. It contains no business props, `container`, `domElement`, `mountParcel`, or `unmountSelf`. Warm reuse skips `bootstrap`; a cold load after cache reclamation creates a new initialization context.
+qiankun snapshots and freezes this identity when loading an app. It contains no business props, `container`, `domElement`, `mountParcel`, or `unmountSelf`. Reusing an existing instance skips `bootstrap`; reloading after cache reclamation creates a new initialization context.
 
 ## MicroAppLifeCycles
 
@@ -330,6 +331,33 @@ export async function unmount() {
   root = null;
 }
 ```
+
+## Sandbox and module types
+
+The following types are also re-exported by the `qiankun` root entry, so plugins and module hooks can import them directly:
+
+```ts
+import {
+  type IsolationPlugin,
+  type Free,
+  type Rebuild,
+  type ModuleDescriptor,
+  type ModuleSource,
+  type ResolveHook,
+  type ImportHook,
+  type PrecompileModuleSourceOpts,
+  precompileModuleSource,
+} from 'qiankun';
+```
+
+| Purpose | Types |
+| --- | --- |
+| Compartment globals and options | `Compartment`, `CompartmentGlobals`, `CompartmentOptions`, `UnshadowableGlobals` |
+| Sandbox controller and container protocol | `CreateSandboxOptions`, `SandboxController`, `SandboxContainerPreparation` |
+| Isolation plugins and cleanup | `IsolationPlugin`, `IsolationPluginContext`, `IsolationPluginConfig`, `Free`, `Rebuild` |
+| Module sources, resolution, and precompilation | `Modules`, `ModuleDescriptor`, `ModuleNamespace`, `ModuleSource`, `ResolveHook`, `ImportHook`, `PrecompileModuleSourceOpts` |
+
+`precompileModuleSource(options)` is synchronous and returns a `ModuleSource` for a module descriptor. See [Sandbox plugins](/cookbook/sandbox-plugins) for plugins, hooks, and precompiled modules, and [Standalone sandbox](/cookbook/standalone-sandbox) for controller usage.
 
 ## PrefetchStrategy
 

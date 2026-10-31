@@ -36,7 +36,7 @@ await reportApp.unmount();
 ```mermaid
 flowchart LR
   A[loadMicroApp] --> B[准备容器与隔离环境]
-  B --> C[加载 HTML 入口与资源]
+  B --> C[加载 HTML Entry 与资源]
   C --> D[执行一次 bootstrap]
   D --> E[挂载到容器]
   A --> F[返回 MicroApp 句柄]
@@ -44,18 +44,18 @@ flowchart LR
   F --> G[update、unmount 或 unload]
 ```
 
-HTML 入口声明微应用所需的脚本和样式，并通过入口脚本导出生命周期函数。qiankun 负责调用这些函数，并将主应用提供的容器传入微应用。JavaScript 隔离默认开启；[样式隔离](/zh-CN/concepts/style-isolation)需要显式启用。
+HTML Entry 声明微应用所需的脚本和样式，并通过入口脚本导出生命周期函数。qiankun 负责调用这些函数，并将主应用提供的容器传入微应用。JavaScript 隔离默认开启；[样式隔离](/zh-CN/concepts/style-isolation)需要显式启用。
 
 ## 双方各自负责什么
 
 | qiankun 负责 | 微应用负责 |
 | --- | --- |
-| 获取 HTML 入口及其资源 | 导出合法的生命周期函数 |
+| 获取 HTML Entry 及其资源 | 导出合法的生命周期函数 |
 | 准备隔离的运行环境 | 仅在 `props.container` 内渲染 |
 | 按顺序调用生命周期 | 销毁框架根节点并清理外部副作用 |
 | 卸载时清空容器 | 确保应用可重复挂载和卸载 |
 
-直接从页面中移除容器不能替代生命周期清理。不再使用实例时，应先调用 `unmount()` 并处理其返回的 Promise，再丢弃句柄。条件允许时，应等待卸载完成后再移除容器；如果框架的清理回调无法等待异步操作，也应给返回的 Promise 挂上 `catch`，处理卸载失败的情况。卸载后已加载的实例会保留，供同名应用复用；需要释放时调用 `unload()`，详见 [loadMicroApp](/zh-CN/api/load-micro-app#unload)。
+直接从页面中移除容器不能替代生命周期清理。不再使用微应用时，必须先调用 `unmount()` 并处理其返回的 Promise，并在条件允许时等待卸载完成后再移除容器。无法等待异步清理的框架回调处理详见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props#清理是双方共同的责任)；实例复用与 `unload()` 详见 [loadMicroApp](/zh-CN/api/load-micro-app#unload)。
 
 ## 选择激活方式
 
@@ -73,6 +73,6 @@ HTML 入口声明微应用所需的脚本和样式，并通过入口脚本导出
 ## 继续阅读
 
 - [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)——句柄所对应的应用契约。
-- [HTML 入口](/zh-CN/concepts/html-entry-loading)——一个 URL 如何描述一个应用。
+- [HTML Entry](/zh-CN/concepts/html-entry-loading)——一个 URL 如何描述一个应用。
 - [JavaScript 隔离](/zh-CN/concepts/js-sandbox)与[样式隔离](/zh-CN/concepts/style-isolation)——隔离保证与边界。
-- [`loadMicroApp` API](/zh-CN/api/load-micro-app)——配置、返回值和错误处理。
+- [loadMicroApp](/zh-CN/api/load-micro-app)——配置、返回值和错误处理。

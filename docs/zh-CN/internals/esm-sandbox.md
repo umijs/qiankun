@@ -1,6 +1,6 @@
 # ESM 沙箱实现
 
-> 本页面向维护者说明 ESM 执行引擎的实现细节。面向使用者的行为见[原生 ESM 支持](/zh-CN/concepts/esm-sandbox)，设计取舍见 [ESM 沙箱 RFC](https://github.com/umijs/qiankun/blob/next/docs/rfcs/esm-sandbox.md)。
+> 本页面向维护者说明 ESM 执行引擎的实现细节。面向使用者的行为见[原生 ESM 支持](/zh-CN/concepts/esm-sandbox)。
 
 现代构建工具可以直接输出原生 ES 模块。以 Vite 开发服务器为例，每个源文件都作为独立模块提供，并由浏览器通过 `import` 和 `export` 加载模块图。此类代码无法使用 Classic 沙箱的执行方式：Classic 沙箱通过 `with (this) { … }` 包装源码，并从入口脚本最后写入的全局变量中读取导出；ESM 强制采用严格模式，禁止使用 `with`，生命周期函数也来自模块导出，而非 `window` 属性。
 
@@ -17,7 +17,7 @@ qiankun v3 使用 `EsmSandboxEngine` 处理原生模块图。该引擎复用 [Ja
 | 重新挂载 | 顶层代码不重新执行，复用已解析的生命周期函数 | 顶层代码不重新执行，`import(sameBlob)` 返回相同的模块命名空间对象 |
 | 模块标识 | 直接使用 blob URL | 合成模块说明符 → import map → blob URL |
 
-ESM 引擎不重新实现模块解析，而是组合现有的 [HTML 入口](/zh-CN/concepts/html-entry-loading)加载器、Proxy 隔离膜和浏览器原生模块加载器。其职责集中在资源获取与模块求值之间的源码转换和地址映射。
+ESM 引擎不重新实现模块解析，而是组合现有的 [HTML Entry](/zh-CN/concepts/html-entry-loading)加载器、Proxy 隔离膜和浏览器原生模块加载器。其职责集中在资源获取与模块求值之间的源码转换和地址映射。
 
 ## 启用条件与脚本分发
 
@@ -27,11 +27,11 @@ ESM 引擎不重新实现模块解析，而是组合现有的 [HTML 入口](/zh-
 
 - **`<script type="module">`**：无论包含 `src` 还是内联源码，均交给 ESM 引擎。转译器移除 `src`，将原地址保存在 `data-src`，并添加 `data-esm="true"`，以阻止浏览器直接获取或执行原始 URL，从而避免绕过沙箱。
 - **`<script type="importmap">`**：由 qiankun 解析。元素类型会改写为 `qiankun-importmap`，防止浏览器将微应用 import map 合并到主应用文档。
-- **Classic `<script>` 或 `text/javascript`**：继续由 Classic 转译器处理，即通过 `with (this)` 包装后生成 blob。同一份 HTML 入口可以同时包含 Classic 和 ESM 脚本。
+- **Classic `<script>` 或 `text/javascript`**：继续由 Classic 转译器处理，即通过 `with (this)` 包装后生成 blob。同一份 HTML Entry 可以同时包含 Classic 和 ESM 脚本。
 
 ## 模块处理流程
 
-引擎先使用 WASM 词法分析器扫描并改写模块源码，再交给浏览器原生加载器：
+引擎使用 `es-module-lexer/js` 提供的纯 JavaScript 词法分析器扫描模块语法，再改写源码并交给浏览器原生加载器：
 
 ```mermaid
 flowchart TD
@@ -45,7 +45,7 @@ flowchart TD
 处理步骤如下：
 
 1. **获取源码**：`loadApp` 为模块配置独立的响应缓存，装饰器顺序为 cacheable → retryable → throwable。模块源码不占用入口、Classic 脚本和样式的缓存容量。
-2. **扫描模块**：使用 [`es-module-lexer`](https://github.com/guybedford/es-module-lexer) 分析源码。该 WASM 词法分析器会在 `start()` 期间通过 `prepareEsmLexer()` 预初始化。
+2. **扫描模块**：使用 `es-module-lexer/js` 分析源码。解析器同步可用，`prepareEsmLexer()` 返回已完成的 Promise；`start()` 不会预热 WASM。
 3. **改写源码**：
    - 将受沙箱管理的全局属性在模块顶部从隔离膜视图中解构，例如 `const { window, document, … } = __qk_view`；
    - 将静态 import 的模块说明符改写为 `` `${instanceKey}/${resolvedUrl}` `` 形式的合成说明符；
@@ -74,8 +74,8 @@ import { __qk_view, __qk_resolve, __qk_dynamic_import, __qk_track } from '<insta
 
 HTML 流处理阶段与模块求值阶段相互分离：
 
-- **流式处理阶段**：每个模块脚本按文档顺序同步调用一次 `loadModuleScript(...)`。该调用立即启动异步转换，包括 `fetch` 请求、词法分析、源码改写和依赖递归预取，但暂不执行模块。任务会按顺序加入队列。
-- **输入流结束后**：加载器调用 `sealAndExecute()`。存在模块脚本时，该方法返回 `true`，用于指示加载器等待 ESM 入口模块的命名空间对象，而不是读取 Classic `latestSetProp`。随后，引擎按顺序等待队列中的记录，更新 import map，并依次调用原生 `import(blobUrl)`。
+- **流式处理阶段**：每个模块脚本按文档顺序同步调用一次 `compartment.registerDocumentModule(...)`。该调用立即启动异步转换，包括 `fetch` 请求、词法分析、源码改写和依赖递归预取，但暂不执行模块。任务会按顺序加入队列。
+- **输入流结束后**：加载器调用 `compartment.importDocumentModules()`，由该门面驱动引擎按顺序等待队列记录、更新 import map 并执行原生 `import(blobUrl)`。该方法返回 `Promise<ModuleNamespace | undefined>`；存在 ESM 入口时，加载器使用返回的命名空间解析生命周期，否则回退到 Classic `latestSetProp`。
 
 ### 选择入口模块的命名空间对象
 
@@ -122,7 +122,7 @@ ESM 引擎支持直接运行 Vite 开发服务器提供的模块图。微应用�
 - **React Fast Refresh 依赖执行顺序。** Fast Refresh 要求预引导脚本（preamble）在组件模块之前执行，顺序不正确时无法完成初始化。
 
 ::: warning 重新挂载时可能丢失 JavaScript 注入的 CSS
-Vite 将 CSS 作为 JavaScript 模块加载，并在模块顶层注入样式。重新挂载不会再次执行模块顶层代码，而卸载会清空虚拟 `<head>`，因此第二次挂载时可能缺少此类样式。该限制已记录在 ESM 沙箱 RFC 中。
+Vite 将 CSS 作为 JavaScript 模块加载，并在模块顶层注入样式。重新挂载不会再次执行模块顶层代码，而卸载会清空虚拟 `<head>`，因此第二次挂载时可能缺少此类样式。
 :::
 
 ## 生命周期与缓存
@@ -165,14 +165,14 @@ export async function unmount(props) {
 
 - **隐式全局写入会抛出异常。** ESM 严格模式下，未通过 `var` 声明或 `window.` 访问的 `foo = 1` 会抛出 `ReferenceError`，不会进入隔离膜的 `set` trap。
 - **只有基准集合中的全局属性经过隔离膜。** 仅 `esmDestructurableGlobals` 子集中、出现在模块解构集合内的名称会由隔离膜提供。无法通过一次快照表示的值类型或访问器属性，例如 `innerWidth`、`devicePixelRatio`、`length`、`name`、`status` 和 `event`，会访问真实全局对象，卸载时也无法由沙箱清理。
-- **v1 对带类型的 import 采用原生加载。** `import x from '...' with { type: 'json' | 'css' }` 和 WASM 等资源会直接映射到原始 URL，不提供实例隔离，并输出一次 `console.warn`。这些资源需要正确的 MIME 类型和 CORS。对于带类型的动态 import，相对模块说明符会以 blob URL 为基准进行解析，因此应使用绝对 URL。
-- **Firefox 需要额外启用能力。** 多份动态注入的 import map 依赖 `dom.multiple_import_maps.enabled`，而 Firefox 默认关闭该选项。当前运行时不提供兼容实现（shim），需要默认支持 Firefox 的应用应采用 Classic 构建。
+- **带类型的 import 采用原生加载。** `import x from '...' with { type: 'json' | 'css' }` 和 WASM 等资源会直接映射到原始 URL，不提供实例隔离，并输出一次 `console.warn`。这些资源需要正确的 MIME 类型和 CORS。对于带类型的动态 import，相对模块说明符会以 blob URL 为基准进行解析，因此应使用绝对 URL。
+- **Firefox 默认不支持该 ESM 路径。** 当前运行时不提供兼容实现（shim）；需要支持 Firefox 时应采用 Classic 构建。支持范围与能力检测见[浏览器支持](/zh-CN/guide/browser-support)。
 - **错误栈需要源码映射还原。** 未捕获错误的 `error.stack` 指向 `blob:<host-origin>/<uuid>`。`//# sourceURL` 只能修改 DevTools 显示名称，不能修改错误栈中的 URL 和行号。生产环境的错误上报需要源码映射（source map），才能将 ESM 微应用栈帧还原到源文件。
 
 ## 延伸阅读
 
 - [加载一个微应用实例](/zh-CN/concepts/architecture)：面向使用者的整体运行模型。
 - [JavaScript 沙箱实现](/zh-CN/internals/js-sandbox)：ESM 引擎复用的 Proxy 隔离膜。
-- [HTML 入口流式加载原理](/zh-CN/internals/streaming-html-entry)：模块脚本的分发流程。
+- [HTML Entry 流式加载原理](/zh-CN/internals/streaming-html-entry)：模块脚本的分发流程。
 - [运行时编排原理](/zh-CN/internals/runtime-orchestration)：ESM 引擎在完整加载流程中的位置。
-- [Vite 接入指南](/zh-CN/cookbook/prepare-a-vite-app)：原生 ESM 微应用的配置。
+- [接入 Vite 应用](/zh-CN/cookbook/prepare-a-vite-app)：原生 ESM 微应用的配置。

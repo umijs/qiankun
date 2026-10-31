@@ -51,3 +51,6 @@ docs/.vitepress/cache
 
 # wrangler pages dev scratch (local simulation of the examples site)
 .wrangler/
+
+# private development design notes
+/docs/rfcs/

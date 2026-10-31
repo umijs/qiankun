@@ -46,7 +46,7 @@ type RegistrableApp<T extends ObjectType> = {
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
 | `name` | `string` | 是 | 路由注册应用的稳定唯一标识。重名应用会被忽略，因此同一应用多次注册时应保持名称一致。该名称通常无需与 `packageName` 或 Webpack 全局库名称相同。见 [`name` 是稳定的唯一标识](#name-是稳定的唯一标识)。 |
-| `entry` | `string` | 是 | 微应用 HTML 入口的 URL，例如 `//localhost:7100`。v3 仅支持字符串形式的 HTML 地址，不再支持 2.x 的 `{ scripts, styles }` 对象形式。 |
+| `entry` | `string` | 是 | 微应用 HTML Entry 的 URL，例如 `//localhost:7100`。v3 仅支持字符串形式的 HTML 地址，不再支持 2.x 的 `{ scripts, styles }` 对象形式。 |
 | `container` | `HTMLElement` | 是 | 用于挂载微应用的实际 DOM 元素，不能使用选择器字符串。可传入框架 ref 对应的节点，或 `document.getElementById(...)` 的返回值。 |
 | `activeRule` | `string \| ActivityFn \| Array<string \| ActivityFn>` | 是 | 应用的激活条件，将直接传递给 single-spa 的 `activeWhen`。字符串表示路径前缀；函数 `(location) => boolean` 可自定义匹配逻辑；数组中的任意一项匹配即可激活应用。 |
 | `props` | `T` | 否 | 传递给 `mount`、`unmount` 和可选 `update` 的业务数据；`bootstrap` 仅接收稳定的 `name` 和 `entry`。 |
@@ -260,6 +260,6 @@ await unloaded;
 - [start](/zh-CN/api/start)——激活已注册的应用。
 - [loadMicroApp](/zh-CN/api/load-micro-app)——按需挂载和管理微应用实例。
 - [AppConfiguration](/zh-CN/api/configuration)——单应用的 `sandbox`、`styleIsolation`、`fetch`。
-- [生命周期钩子（LifeCycles）](/zh-CN/api/lifecycles)——全局钩子参考。
+- [生命周期钩子（`LifeCycles`）](/zh-CN/api/lifecycles)——全局钩子参考。
 - [setDefaultMountApp / runAfterFirstMounted](/zh-CN/api/effects)——与默认路由和首次挂载相关的辅助函数。
 - [类型参考](/zh-CN/api/types)——`RegistrableApp`、`LoadableApp`、`HTMLEntry`。

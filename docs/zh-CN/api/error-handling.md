@@ -2,7 +2,7 @@
 
 这两个函数用于注册和移除 single-spa 的全局错误处理器。处理器主要接收路由驱动应用（经 `registerMicroApps` 注册）在加载和生命周期执行中产生的错误。移除处理器时必须传入注册时使用的同一函数引用。qiankun 直接导出 single-spa 的对应函数，不改变其行为。
 
-该 API 适合用于集中记录路由驱动应用的日志和上报监控数据。通过 `loadMicroApp` 创建的实例不会在首次加载或生命周期失败时调用该全局处理器，应通过实例句柄中的 Promise 处理相应错误。面向用户的错误恢复界面应由负责该区域的 `loadMicroApp` 调用方或 `<MicroApp>` 组件处理。
+该 API 适合用于集中记录路由驱动应用的日志和上报监控数据。`loadMicroApp` 的首次加载、`bootstrap` 和首次 `mount` 失败通过句柄 Promise 报告；同一句柄后续调用 `mount()` 的挂载执行失败还会进入全局处理器。调用方仍应处理每次实例操作返回的 Promise。面向用户的错误恢复界面应由负责该区域的 `loadMicroApp` 调用方或 `<MicroApp>` 组件处理。
 
 ## 函数签名
 
@@ -12,10 +12,10 @@ type AppError = Error & {
 };
 
 function addErrorHandler(handler: (error: AppError) => void): void;
-function removeErrorHandler(handler: (error: AppError) => void): void;
+function removeErrorHandler(handler: (error: AppError) => void): boolean;
 ```
 
-`appOrParcelName` 标识与错误关联的应用或实例。`removeErrorHandler` 按函数引用匹配，因此内容相同的新函数不能注销原来的处理器。
+`appOrParcelName` 标识与错误关联的应用或实例。`removeErrorHandler` 按函数引用匹配，因此内容相同的新函数不能注销原来的处理器。成功移除时返回 `true`，未找到对应处理器时返回 `false`。
 
 ## 使用方式
 
@@ -38,7 +38,7 @@ addErrorHandler(reportMicroAppError);
 removeErrorHandler(reportMicroAppError);
 ```
 
-由 `registerMicroApps` 注册的路由驱动应用会将入口加载失败和生命周期 Promise 被拒绝的错误传递给该处理器。`loadMicroApp` 使用 single-spa 的 Parcel 加载流程，其首次加载和生命周期错误只会反映在实例句柄对应的 Promise 中，不会传递给全局处理器。
+由 `registerMicroApps` 注册的路由驱动应用会将入口加载失败和生命周期 Promise 被拒绝的错误传递给该处理器。`loadMicroApp` 使用 single-spa 的 Parcel 流程：首次加载、`bootstrap` 和首次 `mount` 失败不进入全局处理器；后续 `mount()` 的挂载执行失败会进入全局处理器，qiankun 同时拒绝这次 `mount()` 返回的 Promise。`unmount()` 和 `update()` 的错误也应由调用方处理，不能依赖全局处理器兜底。
 
 该处理器作用于全局，不负责界面渲染。实例级界面应单独监听返回句柄中的 Promise：
 
@@ -56,7 +56,7 @@ void microApp.mountPromise.catch((error: unknown) => {
 
 ## 处理加载超时 {#load-timeout}
 
-启用 [`loadTimeout`](/zh-CN/api/configuration#loadtimeout) 后，加载超时会产生 `LoadAppTimeoutError`。该类从 `qiankun` 导出，继承 `QiankunError`，提供以下只读字段：
+启用 [`loadTimeout`](/zh-CN/api/configuration#loadtimeout) 后，加载超时会产生 `LoadAppTimeoutError`。该类从 `qiankun` 导出，继承 `QiankunError`，提供以下字段：
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
@@ -119,4 +119,4 @@ void microApp.mountPromise.catch((error: unknown) => {
 
 - [处理微应用错误](/zh-CN/cookbook/handle-errors)——错误界面、诊断与重试建议。
 - [`loadMicroApp`](/zh-CN/api/load-micro-app)——实例 Promise 与清理。
-- [React `<MicroApp>`](/zh-CN/ecosystem/react) 和 [Vue `<MicroApp>`](/zh-CN/ecosystem/vue)——组件错误边界。
+- [React `<MicroApp>` 组件（@qiankunjs/react）](/zh-CN/ecosystem/react) 和 [Vue `<MicroApp>` 组件（@qiankunjs/vue）](/zh-CN/ecosystem/vue)——组件错误边界。

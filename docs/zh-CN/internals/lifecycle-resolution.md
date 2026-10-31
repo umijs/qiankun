@@ -2,7 +2,7 @@
 
 > 本页面向维护者说明生命周期发现与编排的实现细节。面向使用者的约定见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
 
-qiankun 通过 HTML 入口加载微应用，而不是直接导入约定的模块。因此，入口脚本执行完成后，qiankun 需要从其导出中解析生命周期函数，并在对应阶段调用这些函数。本页说明微应用的导出约定、生命周期对象的解析顺序、主应用钩子与微应用生命周期的区别，以及 props 和运行时标记的传递方式。
+qiankun 通过 HTML Entry 加载微应用，而不是直接导入约定的模块。因此，入口脚本执行完成后，qiankun 需要从其导出中解析生命周期函数，并在对应阶段调用这些函数。本页说明微应用的导出约定、生命周期对象的解析顺序、主应用钩子与微应用生命周期的区别，以及 props 和运行时标记的传递方式。
 
 如果只需了解如何在微应用中导出生命周期，请参阅[教程](/zh-CN/tutorial/build-the-micro-app)、[Vite 接入指南](/zh-CN/cookbook/prepare-a-vite-app)或 [Webpack 接入指南](/zh-CN/cookbook/prepare-a-webpack-app)。
 
@@ -244,7 +244,7 @@ single-spa 的 `unmount` 用于停用应用并保留可复用的运行时状态�
 ## 延伸阅读
 
 - [loadMicroApp](/zh-CN/api/load-micro-app) 和 [registerMicroApps](/zh-CN/api/register-micro-apps)：入口 API 及其 `props`。
-- [生命周期钩子（LifeCycles）](/zh-CN/api/lifecycles)：主应用钩子的完整参考。
+- [生命周期钩子（`LifeCycles`）](/zh-CN/api/lifecycles)：主应用钩子的完整参考。
 - [AppConfiguration](/zh-CN/api/configuration)：`sandbox`、`styleIsolation` 和其他应用配置。
 - [JavaScript 隔离](/zh-CN/concepts/js-sandbox)和[原生 ESM 支持](/zh-CN/concepts/esm-sandbox)：两种执行方式的公开行为与边界。
 - [JavaScript 沙箱实现](/zh-CN/internals/js-sandbox)和 [ESM 沙箱实现](/zh-CN/internals/esm-sandbox)：Classic 与 ESM 的生命周期发现方式。

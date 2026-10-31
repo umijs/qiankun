@@ -21,7 +21,7 @@ qiankun/
 ├── skills/              # Agent skills (installed by users via `npx skills add umijs/qiankun`) — content, not code: no build/publish
 ├── e2e/                 # Playwright, runs against BUILT dist → e2e/README.md
 ├── examples/            # Runnable demos: two hosts (main = @qiankunjs/react, vue-host = @qiankunjs/vue) + react/vue/purehtml/webpack
-└── docs/                # VitePress site (docs/rfcs holds design RFCs)
+└── docs/                # VitePress site
 ```
 
 ## PROGRESSIVE DISCLOSURE — read the scoped doc before editing a package
@@ -42,7 +42,7 @@ qiankun/
 3. **loader** — `loadEntry(entry, container, opts)` streams the HTML entry through `writable-dom`, virtualizing `<head>` → `<qiankun-head>` and running each node through a `nodeTransformer`.
 4. **transpilers** (`shared/assets-transpilers`) rewrite each script/link/style node before it hits live DOM.
 
-Micro apps sharing one container element take FIFO turns for their DOM writes through the **container occupancy gate** (`core/containerOccupancy.ts`, two critical sections: load-phase streaming and mount→unmount; see `docs/rfcs/container-occupancy-gate.md`).
+Micro apps sharing one container element take FIFO turns for their DOM writes through the **container occupancy gate** (`core/containerOccupancy.ts`, two critical sections: load-phase streaming and mount→unmount).
 
 Two execution paths, chosen per script type:
 
@@ -112,7 +112,7 @@ Build/release:
 - **Chinese-first.** The primary audience is Chinese. `docs/zh-CN/` is the source of truth: write it to a native-author standard — no translationese, no AI-flavored filler (「让我们」「值得注意的是」「强大的/无缝的」), no calqued English syntax. The English pages align to the Chinese semantics, not the other way around; pure zh wording fixes don't require touching en. Same contract for `README.zh-CN.md` ↔ `README.md`: keep both editions in sync whenever either changes.
 - **Mainland reachability is a hard constraint.** Google Fonts only via the `.cn` mirrors (`fonts.googleapis.cn`/`fonts.gstatic.cn`); never reference resources on domains unreachable from mainland China.
 - **Domains**: canonical docs domain is `https://www.qiankunjs.com` (zh under `/zh-CN/`); `qiankun.umijs.org` stays alive and 307s to it; v2 docs live at `v2.qiankun.umijs.org`; live examples at `examples.qiankunjs.com`. Old-site URLs are kept working via `docs/public/_redirects` — extend it when moving pages, never break inbound links.
-- **Consistency rules**: terminology never drifts (主应用/微应用/沙箱/隔离膜; qiankun always lowercase); link text in reference lists ("相关内容"/"继续阅读"/"延伸阅读") equals the target page's H1; API pages use 「函数签名」/「默认值为 X」; `guide/browser-support` is the single source of truth for browser requirements — link it, don't restate version numbers elsewhere.
+- **Consistency rules**: terminology never drifts (主应用/微应用/沙箱/隔离膜/HTML Entry; qiankun always lowercase); link text in reference lists ("相关内容"/"继续阅读"/"延伸阅读") equals the target page's H1; API pages use 「函数签名」/「默认值为 X」; `guide/browser-support` is the single source of truth for browser requirements — link it, don't restate version numbers elsewhere.
 - Until 3.0 reaches npm `latest`, install commands must say `qiankun@rc`, and the site shows a version banner (layout-top slot in `docs/.vitepress/theme/index.js`; remove it together with `--vp-layout-top-height` once stable ships).
 - **README GitHub alerts**: put the `[!WARNING]`/`[!NOTE]` marker on its own line followed by a blank `>` line. Prettier's `proseWrap: never` re-joins plain soft breaks, which silently breaks alert rendering.
 - VitePress compiles every `.md` as a Vue SFC: bare `<Tag>` in prose/link text or `{{` in inline code breaks the build (fenced code blocks are safe).
@@ -130,5 +130,5 @@ Build/release:
 ## NOTES
 
 - Firefox doesn't support dynamically injected import maps → ESM-sandbox e2e tests are annotated `test.fail(firefox, …)` (expected failure, not skip). See `e2e/README.md`.
-- Design decisions live in `docs/rfcs/` (e.g. the ESM-sandbox RFC).
+- Local design drafts under `docs/rfcs/` are gitignored and excluded from the documentation site; never link them from public documentation.
 - v3 roadmap: github.com/umijs/qiankun/discussions/1378.

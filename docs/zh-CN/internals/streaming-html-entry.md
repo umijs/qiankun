@@ -1,10 +1,10 @@
-# HTML 入口流式加载原理
+# HTML Entry 流式加载原理
 
-> 本页面向维护者说明流式加载器的实现细节。面向使用者的约定见 [HTML 入口](/zh-CN/concepts/html-entry-loading)。
+> 本页面向维护者说明流式加载器的实现细节。面向使用者的约定见 [HTML Entry](/zh-CN/concepts/html-entry-loading)。
 
 qiankun 将微应用的 `index.html` 作为入口，通过流式解析、逐节点资源转换和增量 DOM 提交完成加载。主应用无需额外维护脚本和样式资源清单。本页介绍加载流程、入口 HTML 需要满足的约定及当前实现限制。
 
-## HTML 入口
+## HTML Entry
 
 qiankun 中的 `entry` 是微应用 HTML 文档的 URL：
 
@@ -23,7 +23,7 @@ const microApp = loadMicroApp({
 
 qiankun 将 HTML 文档作为微应用资源的唯一描述文件，并按照文档中的 `<script>`、`<link>` 和 `<style>` 声明加载资源，主应用无需同步维护 JavaScript 和 CSS 文件清单。新的页面会话或运行时缓存未命中时，qiankun 会从最新的 `index.html` 读取带哈希的资源文件名；同一页面内的重新挂载可能复用已缓存的入口和生命周期，因此不能指望通过重新挂载拿到新部署的版本。
 
-`loadEntry(entry, container, opts)`（`packages/loader/src/index.ts`）负责处理 HTML 入口的全过程。它不会将资源直接插入主文档，而是在节点进入应用容器前交给沙箱和资源转译器处理。
+`loadEntry(entry, container, opts)`（`packages/loader/src/index.ts`）负责处理 HTML Entry 的全过程。它不会将资源直接插入主文档，而是在节点进入应用容器前交给沙箱和资源转译器处理。
 
 ## 流式加载的原因
 
@@ -35,10 +35,6 @@ qiankun 3.0 之前的加载过程也是如此：完整下载 HTML 后，通过�
 
 - **缩短资源发现时间。** 外部脚本和样式一旦出现在当前数据块中，就可以开始处理，无需等待完整文档下载。解析方式也由正则表达式改为基于 `writable-dom` 的 DOM 遍历。
 - **减少手动模拟浏览器行为。** 旧实现通过 `eval` 执行脚本，需要自行模拟 `<script>` 的 `load` 和 `error` 事件。v3 将转换后的脚本节点插入 DOM，由浏览器负责执行和事件派发。Classic 脚本使用 blob URL，模块脚本则由 [ESM 沙箱实现](/zh-CN/internals/esm-sandbox)处理。
-
-::: tip 性能测试数据
-在一项针对 500 KB HTML 的测试中，旧处理方式平均约需 500 ms，流式处理约需 300 ms，耗时降低约 40%。实际效果取决于文档结构、网络环境和浏览器实现。
-:::
 
 ## 流式处理流程
 
@@ -59,16 +55,29 @@ flowchart TD
 `packages/loader/src/index.ts` 中的调用结构如下：
 
 ```ts
-res.body
-  .pipeThrough(new TextDecoderStream()) // 字节 → 字符串
-  .pipeThrough(streamTransformer()) // 仅在提供转换器时执行
-  .pipeThrough(createTagTransformStream(...)) // <head> → <qiankun-head>
+let htmlStream = res.body.pipeThrough(new TextDecoderStream(), { signal });
+if (streamTransformer) {
+  htmlStream = htmlStream.pipeThrough(streamTransformer(), { signal });
+}
+
+void htmlStream
+  .pipeThrough(
+    createTagTransformStream([
+      { tag: '<head>', alt: '<qiankun-head>' },
+      { tag: '</head>', alt: '</qiankun-head>' },
+    ]),
+    { signal },
+  )
   .pipeTo(
-    new WritableDOMStream(container, null, (clone) => {
-      /* 逐节点执行的钩子 */
+    createAbortableDOMStream(container, (clone) => {
+      // ...
+      return nodeTransformer ? nodeTransformer(clone, transformerOpts) : clone;
     }),
+    { signal },
   );
 ```
+
+`createAbortableDOMStream` 是加载器内部的取消包装器，底层 sink 由 `WritableDOMStream(container, null, transform)` 返回。上面省略了资源记录、`defer` 和入口识别等处理，不是直接调用构造函数的完整示例。
 
 各阶段职责如下：
 
@@ -108,11 +117,11 @@ res.body
 
 随后，沙箱的动态追加（dynamic append）补丁将 `<qiankun-head>` 作为应用级虚拟 `<head>`。微应用向 `document.head` 追加节点时，补丁会将节点重定向到 `container.querySelector('qiankun-head')`（`packages/sandbox/src/patchers/dynamicAppend/common.ts`），而不是真实 `document.head`。这些节点因此被限制在应用容器中，并在卸载时随容器清理。
 
-转换器会缓冲数据块，并对首次出现的标签执行 `String.prototype.replace`。如果数据块边界将 `<head>` 标签分割为两部分，转换器会保留缓冲内容，等待后续数据块补全；替换成功后再输出并清空缓冲区。
+转换器会立即输出无需继续匹配的内容，仅保留可能与下一数据块组成标签的尾部前缀。每条替换规则最多使用一次；流结束时，未匹配的剩余文本直接输出，不会等待补出缺失的 `<head>`。它按字面量匹配标签，不是 HTML 解析器。
 
 ## `entry` 脚本约定
 
-HTML 入口可能包含多个脚本，其中负责导出 `bootstrap`、`mount` 和 `unmount` 的脚本需要通过 `entry` 属性标识：
+HTML Entry 可能包含多个脚本，其中负责导出 `bootstrap`、`mount` 和 `unmount` 的脚本需要通过 `entry` 属性标识：
 
 ```html
 <script src="/app.js" entry></script>
@@ -145,9 +154,9 @@ Webpack UMD 构建会在 `runtime` 或 `main` 构建产物对应的脚本上添�
 标记为 `entry` 的脚本根据自身类型进入相应流程：
 
 - **Classic**（`<script src="..." entry>`，UMD／全局构建）：qiankun 为脚本绑定 `onload` 和 `onerror`。加载完成后，从沙箱中解析入口导出。
-- **ESM**（`<script type="module" ... entry>`）：转译后添加 `data-esm="true"`，并移除 `src`，避免浏览器直接执行。脚本由 `EsmSandboxEngine` 处理，执行结果通过 `entryNamespacePromise` 返回。模块获取、改写和求值过程见 [ESM 沙箱实现](/zh-CN/internals/esm-sandbox)。
+- **ESM**（`<script type="module" ... entry>`）：转译后添加 `data-esm="true"` 并移除 `src`，避免浏览器直接执行。加载器通过结构化的 Compartment 接口调用 `importDocumentModules()`，以其返回的模块命名空间解析入口，不直接依赖 `EsmSandboxEngine`。模块处理流程见 [ESM 沙箱实现](/zh-CN/internals/esm-sandbox)。
 
-模块脚本不会在 HTML 流处理中执行。输入流结束后，qiankun 调用 `esmEngine.sealAndExecute()`，按文档顺序执行所有模块脚本。这与浏览器在文档解析完成后执行 `type="module"` 脚本的时机一致。
+模块脚本在流式解析期间注册，输入流结束后由 `compartment.importDocumentModules()` 驱动按文档顺序执行。`onDOMStreamSettled` 会等待模块求值及 Classic `defer` 脚本结束后才触发，因此它与入口生命周期 Promise 的完成时机不同：Classic 入口可以在 HTML 尾部仍在写入时先完成。
 
 ## `defer` 与阻塞期间预加载
 
@@ -160,7 +169,7 @@ Webpack UMD 构建会在 `runtime` 或 `main` 构建产物对应的脚本上添�
 脚本执行完成后，两种执行方式通过不同来源返回生命周期对象：
 
 - **Classic**：UMD 入口脚本将生命周期对象赋值给全局变量，例如 `window.<libraryName> = { bootstrap, mount, unmount }`。沙箱隔离膜使用 `latestSetProp` 记录脚本最后设置的全局属性。标记为 `entry` 的非 ESM 脚本触发 `load` 事件时，`onEntryLoaded()` 以 `sandbox.globalThis[sandbox.latestSetProp]` 的值完成加载器 Promise。qiankun 会在调用应用自行注册的监听器前读取 `latestSetProp`，避免该值被后续写入覆盖。
-- **ESM**：入口模块命名空间即生命周期导出的来源。引擎使用具名导出 `bootstrap`、`mount`、`unmount`，或 `export default { ... }`，以该模块命名空间完成 `entryNamespacePromise`。
+- **ESM**：`compartment.importDocumentModules()` 返回入口模块命名空间，qiankun 从其中读取具名生命周期导出或 `export default { ... }`。
 
 如果输入流结束后没有找到显式 `entry` 脚本，加载器采用以下默认规则：
 
@@ -170,7 +179,7 @@ Webpack UMD 构建会在 `runtime` 或 `main` 构建产物对应的脚本上添�
 随后，`getLifecyclesFromExports` 依次检查导出对象本身、`.default`、`latestSetProp` 对应的全局属性和 `window[appName]`。完整顺序见[生命周期解析原理](/zh-CN/internals/lifecycle-resolution)。
 
 ::: warning 空响应体
-如果入口没有响应体，`loadEntry` 会抛出 `QiankunError: The response body of entry ... is empty`。空白响应或 HTTP 204 不能作为有效的微应用入口。
+如果入口没有响应体，`loadEntry` 会抛出 `QiankunError: The response body of entry ... is empty`。`Response.body === null`（例如 HTTP 204）会触发此错误；正文流非空但没有生命周期导出时，会在后续解析阶段报错。
 :::
 
 ### 增强后的 `fetch`
@@ -185,13 +194,13 @@ makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)));
 
 ## 当前实现限制
 
-- **`<head>` 仅进行首次出现的字符串替换。** `<head>` 到 `<qiankun-head>` 的转换通过一次 `String.prototype.replace` 完成。源码中的 `FIXME` 说明当前未处理不含 `<head>` 标签的非标准 HTML 数据块。标准构建产物不受影响，但非标准手写 HTML 可能无法完成 `<head>` 虚拟化。
+- **标签改写按字面量匹配。** 当前规则只匹配首次出现的 `<head>` 和 `</head>`，不会解析大小写、属性或补全缺失标签。无匹配标签的内容仍会流式输出；需要虚拟 `<head>` 的应用应提供符合该约定的入口。
 - **尚未实现 `<body>` 虚拟化。** 源码中存在 `<body>` 到 `<qiankun-body>` 的转换代码，但当前已注释；`<head>` 与 `<body>` 的自动补全也未开启。只有 `<head>` 会被虚拟化，`<body>` 内容直接提交到应用容器。
 - **`sandbox: false` 会停用部分导出解析。** `latestSetProp` 由沙箱隔离膜记录，ESM 引擎也仅在沙箱开启时创建。关闭沙箱后，两者均不可用，生命周期只能通过 `window[appName]` 兼容回退解析。详见 [JavaScript 沙箱实现](/zh-CN/internals/js-sandbox)。
 
 ## 延伸阅读
 
-- [加载一个微应用实例](/zh-CN/concepts/architecture)：HTML 入口在整体运行模型中的位置。
+- [加载一个微应用实例](/zh-CN/concepts/architecture)：HTML Entry 在整体运行模型中的位置。
 - [JavaScript 隔离](/zh-CN/concepts/js-sandbox)与[原生 ESM 支持](/zh-CN/concepts/esm-sandbox)：两种脚本执行方式的公开行为。
 - [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)：入口脚本需要导出的生命周期。
 - [运行时编排原理](/zh-CN/internals/runtime-orchestration)：加载器在完整加载流程中的位置。

@@ -50,7 +50,7 @@ export default defineConfig({
 
 该插件不接收参数，为 Vite 提供接入 qiankun 所需的两项能力：
 
-- 为开发服务器和预览服务器配置 CORS 响应头，使主应用能够获取 HTML 入口和模块依赖；
+- 为开发服务器和预览服务器配置 CORS 响应头，使主应用能够获取 HTML Entry 和模块依赖；
 - 在生产构建中为唯一的入口模块脚本添加 qiankun 所需的 `entry` 属性。
 
 Vite 插件必须从 `@qiankunjs/bundler-plugin/vite` 导入；包根路径导出的是 Webpack 插件。
@@ -189,7 +189,7 @@ await microApp.unmount();
 
 插件仅为 Vite 开发服务器和预览服务器启用 CORS。在生产环境中，服务器或 CDN 必须允许主应用所在的源获取以下资源：
 
-- HTML 入口；
+- HTML Entry；
 - JavaScript 模块和动态导入的代码块；
 - CSS、图片以及应用引用的其他资源。
 
@@ -202,11 +202,11 @@ await microApp.unmount();
 3. 依次调用 `await microApp.unmount()` 和 `await microApp.mount()`，确认没有重复的根节点、监听器或残留界面；
 4. 在 Vite 应用中执行 `npm run build`，检查 `dist/index.html`：应当恰好有一个生成的模块脚本带有 `entry` 属性；
 5. 执行 `npm run preview`，将主应用入口指向预览服务器地址，并重复检查挂载与卸载过程；
-6. 发布前，应分别在所有受支持的浏览器中，使用各主应用的实际源访问生产入口，确认应用能够正常加载。浏览器限制见[原生 ESM 支持](/zh-CN/concepts/esm-sandbox)。
+6. 发布前，应分别在所有受支持的浏览器中，使用各主应用的实际源访问生产入口，确认应用能够正常加载。浏览器兼容性要求见[浏览器支持](/zh-CN/guide/browser-support)。
 
 ## 相关内容
 
-- [HTML 入口](/zh-CN/concepts/html-entry-loading)——入口约定与 CORS 要求
+- [HTML Entry](/zh-CN/concepts/html-entry-loading)——入口约定与 CORS 要求
 - [原生 ESM 支持](/zh-CN/concepts/esm-sandbox)——ESM 的运行行为与兼容性
 - [`@qiankunjs/bundler-plugin`](/zh-CN/ecosystem/bundler-plugin)——插件参考
 - [运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)——重新挂载与清理模式

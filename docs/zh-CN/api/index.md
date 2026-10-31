@@ -29,6 +29,9 @@ await microApp.unmount();
 | [`setDefaultMountApp`](/zh-CN/api/effects) | 没有应用挂载时跳转到默认应用路由。 |
 | [`runAfterFirstMounted`](/zh-CN/api/effects) | 首个微应用挂载后执行一次回调。 |
 | [`addErrorHandler` / `removeErrorHandler`](/zh-CN/api/error-handling) | 注册或移除全局错误处理器。 |
+| [`QiankunError`](/zh-CN/api/error-handling#qiankunerror) | 识别 qiankun 框架错误，并读取稳定的 `code`。 |
+| [`precompileModuleSource`](/zh-CN/cookbook/sandbox-plugins#自定义模块-hook) | 为模块钩子生成可复用的预编译 `ModuleSource`。 |
+| [`navigateToUrl`](/zh-CN/api/types#microapp) | 发起路由导航；从 qiankun 顶层复用内置 single-spa 的函数。 |
 | [`LoadAppTimeoutError`](/zh-CN/api/error-handling#load-timeout) | 加载超时错误类，包含应用名称、配置时限和实际耗时。 |
 | [`isRuntimeCompatible`](/zh-CN/api/is-runtime-compatible) | 检查当前浏览器是否满足 qiankun v3 的基础运行条件。 |
 | [`prefetchApps`](/zh-CN/api/prefetch-apps) | 已废弃的手动预取 API。 |
@@ -71,4 +74,4 @@ start(opts?);
 
 从 qiankun 2.x 升级时，请参阅[从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)。各 API 页面仅描述当前版本的行为。
 
-`prefetchApps` 已废弃；流式 HTML 入口加载会在解析过程中自动发现并预加载资源。替代建议见[优化微应用加载](/zh-CN/cookbook/optimize-loading)。
+`prefetchApps` 已废弃；流式 HTML Entry 加载会在解析过程中自动发现并预加载资源。替代建议见[优化微应用加载](/zh-CN/cookbook/optimize-loading)。
