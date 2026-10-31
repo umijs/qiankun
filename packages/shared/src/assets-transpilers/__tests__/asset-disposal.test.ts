@@ -287,3 +287,23 @@ describe('stylesheet ownership', () => {
     expect(getStylesheetCacheStats().size).toBe(0);
   });
 });
+
+it('releases queued transform ownership on a native script error', async () => {
+  const release = vi.fn();
+  const owner = {} as CompartmentModuleFacade;
+  const script = document.createElement('script');
+  script.src = 'https://app.test/prepared.js';
+  transpileScript(script, 'https://app.test/', {
+    compartment: owner,
+    fetch: async () => new Response('prepared source'),
+    classicScriptTransformer: (_source, _url, registerCleanup) => {
+      registerCleanup?.(release);
+      return 'prepared invocation';
+    },
+  });
+  await vi.waitFor(() => expect(script.getAttribute('src')).toMatch(/^blob:/));
+  script.dispatchEvent(new Event('error'));
+  expect(release).toHaveBeenCalledTimes(1);
+  disposeCompartmentAssets(owner);
+  expect(release).toHaveBeenCalledTimes(1);
+});

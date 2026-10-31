@@ -51,6 +51,10 @@ qiankun 还会在当前页面内维护一个内存 LRU 缓存，保存成功的�
 
 完整字段见 [`AppConfiguration.fetch`](/zh-CN/api/configuration)。
 
+## 按需准备 classic 大包
+
+如果测量表明 classic 大包的解析和编译影响激活，可显式调用 [prepareClassicApps](/zh-CN/api/prepare-classic-apps)，并把句柄作为 `classicPreparation` 传给加载配置。准备阶段不执行业务代码；未命中时保留原路径。该能力默认关闭，需要自行评估提前量、预测命中率、主应用竞争和缓存释放，不应代替体积及 HTTP 缓存优化。
+
 ## 不应沿用 2.x 的预取配置
 
 - 不应调用 `start({ prefetch: ... })`；v3 的 `start()` 不接收此类配置。
