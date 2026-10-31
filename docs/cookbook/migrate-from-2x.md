@@ -439,6 +439,6 @@ The streaming loader preloads assets while parsing the current entry HTML; this 
 8. Drop the `prefetch` strategy and rely on streaming auto-prefetch.
 9. Gate browser startup with `isRuntimeCompatible()` to confirm the core runtime capabilities are present.
 10. Move business-prop- or container-dependent `bootstrap` logic into `mount`; do not rely on an automatically injected container in `update`.
-11. Check instance reuse and cold loading after cache reclamation; distinguish temporary unmounting from explicit disposal and await each operation’s returned promise.
+11. Check instance reuse and reloading after cache reclamation; distinguish temporary unmounting from explicit disposal and await each operation’s returned promise.
 12. Migrate error handling for each loading mode, configure `loadTimeout` if needed, and forward cancellation signals in custom fetch implementations.
 13. Review the host CSP for the ESM, style-isolation, and cross-origin resource paths actually used.

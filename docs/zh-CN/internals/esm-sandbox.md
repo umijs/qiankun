@@ -175,4 +175,4 @@ export async function unmount(props) {
 - [JavaScript 沙箱实现](/zh-CN/internals/js-sandbox)：ESM 引擎复用的 Proxy 隔离膜。
 - [HTML 入口流式加载原理](/zh-CN/internals/streaming-html-entry)：模块脚本的分发流程。
 - [运行时编排原理](/zh-CN/internals/runtime-orchestration)：ESM 引擎在完整加载流程中的位置。
-- [Vite 接入指南](/zh-CN/cookbook/prepare-a-vite-app)：原生 ESM 微应用的配置。
+- [接入 Vite 应用](/zh-CN/cookbook/prepare-a-vite-app)：原生 ESM 微应用的配置。

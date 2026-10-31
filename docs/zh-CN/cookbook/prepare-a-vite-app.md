@@ -202,7 +202,7 @@ await microApp.unmount();
 3. 依次调用 `await microApp.unmount()` 和 `await microApp.mount()`，确认没有重复的根节点、监听器或残留界面；
 4. 在 Vite 应用中执行 `npm run build`，检查 `dist/index.html`：应当恰好有一个生成的模块脚本带有 `entry` 属性；
 5. 执行 `npm run preview`，将主应用入口指向预览服务器地址，并重复检查挂载与卸载过程；
-6. 发布前，应分别在所有受支持的浏览器中，使用各主应用的实际源访问生产入口，确认应用能够正常加载。浏览器限制见[原生 ESM 支持](/zh-CN/concepts/esm-sandbox)。
+6. 发布前，应分别在所有受支持的浏览器中，使用各主应用的实际源访问生产入口，确认应用能够正常加载。浏览器兼容性要求见[浏览器支持](/zh-CN/guide/browser-support)。
 
 ## 相关内容
 

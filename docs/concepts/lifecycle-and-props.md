@@ -18,7 +18,7 @@ type HostProps = {
 type MountProps = HostProps & { container: HTMLElement };
 
 export async function bootstrap(context: BootstrapContext) {
-  // context contains only this evaluated instance's name and entry, without business props or a container.
+  // context contains only the current application's name and entry, without business props or a container.
   // Initialize code that does not depend on the mount location or user state here.
 }
 
@@ -65,7 +65,11 @@ The `update` method is present only when the micro-app exports `update`. If the 
 
 ## Bootstrap initialization context
 
-`bootstrap` receives only `BootstrapContext`, a readonly `{ name, entry }` object. qiankun constructs and freezes it separately, without business props, a container, or single-spa mount capabilities. It initializes one evaluated copy of the application, independently of any particular mount. Read changing user, route, and theme data in `mount` or `update`; create framework roots, router instances, and view state in `mount`, and destroy them in `unmount`.
+`bootstrap` runs initialization that does not depend on mount location or application state. Read mutable user, route, or theme data inside `mount` or `update`.
+
+Create framework roots, router instances, and view state in `mount`, and destroy them in `unmount`.
+
+`bootstrap` receives only `BootstrapContext`, a readonly `{ name, entry }` object. qiankun constructs and freezes it separately, without passing in business props, a container, or single-spa mount capabilities.
 
 ## Props, the container, and host hooks
 
@@ -79,7 +83,7 @@ Host lifecycle hooks (`beforeLoad`, `beforeMount`, `afterMount`, `beforeUnmount`
 
 ## Mount, unmount, and remount
 
-- `bootstrap` runs once before the first mount of each evaluated app instance. Warm reuse skips it; a cold load after cache reclamation runs it again.
+- `bootstrap` runs once before the first mount after the micro-app code is loaded. Reusing an existing instance skips it; reloading after cache reclamation runs it again.
 - `mount` creates the visible application and may run more than once.
 - `unmount` must reverse every user-visible effect created by `mount`.
 - `update`, when exported, applies new host props to an already mounted instance.
@@ -103,7 +107,7 @@ For URL-driven activation, [`registerMicroApps`](/api/register-micro-apps) uses 
 
 ## Continue reading
 
-- [`loadMicroApp` API](/api/load-micro-app) — complete handle and promise reference.
+- [loadMicroApp](/api/load-micro-app) — complete handle and promise reference.
 - [Loading a micro-app instance](/concepts/architecture) — the surrounding runtime model.
 - [Run multiple instances](/cookbook/run-multiple-instances) — container and instance patterns.
 - [Lifecycle resolution internals](/internals/lifecycle-resolution) — export discovery and hook ordering for maintainers.

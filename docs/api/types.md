@@ -294,7 +294,7 @@ export type BootstrapContext = Readonly<AppMetadata>;
 // { readonly name: string; readonly entry: HTMLEntry }
 ```
 
-qiankun snapshots and freezes this identity when loading an app. It contains no business props, `container`, `domElement`, `mountParcel`, or `unmountSelf`. Warm reuse skips `bootstrap`; a cold load after cache reclamation creates a new initialization context.
+qiankun snapshots and freezes this identity when loading an app. It contains no business props, `container`, `domElement`, `mountParcel`, or `unmountSelf`. Reusing an existing instance skips `bootstrap`; reloading after cache reclamation creates a new initialization context.
 
 ## MicroAppLifeCycles
 

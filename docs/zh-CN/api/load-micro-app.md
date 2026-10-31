@@ -247,6 +247,6 @@ const microApp = loadMicroApp({ name: 'legacy-app', entry: 'http://localhost:720
 - [registerMicroApps](/zh-CN/api/register-micro-apps)——根据路由自动激活和卸载应用。
 - [start](/zh-CN/api/start)——`loadMicroApp` 会自动调用该函数；路由驱动应用则需要显式调用。
 - [AppConfiguration](/zh-CN/api/configuration)——完整的配置项参考。
-- [生命周期钩子](/zh-CN/api/lifecycles)——`LifeCycles` 钩子的完整说明。
+- [生命周期钩子（`LifeCycles`）](/zh-CN/api/lifecycles)——`LifeCycles` 钩子的完整说明。
 - [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)——props 的传递方式与微应用生命周期。
 - [运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)——在同一页面运行多个实例的方法。

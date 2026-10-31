@@ -244,7 +244,7 @@ single-spa 的 `unmount` 用于停用应用并保留可复用的运行时状态�
 ## 延伸阅读
 
 - [loadMicroApp](/zh-CN/api/load-micro-app) 和 [registerMicroApps](/zh-CN/api/register-micro-apps)：入口 API 及其 `props`。
-- [生命周期钩子（LifeCycles）](/zh-CN/api/lifecycles)：主应用钩子的完整参考。
+- [生命周期钩子（`LifeCycles`）](/zh-CN/api/lifecycles)：主应用钩子的完整参考。
 - [AppConfiguration](/zh-CN/api/configuration)：`sandbox`、`styleIsolation` 和其他应用配置。
 - [JavaScript 隔离](/zh-CN/concepts/js-sandbox)和[原生 ESM 支持](/zh-CN/concepts/esm-sandbox)：两种执行方式的公开行为与边界。
 - [JavaScript 沙箱实现](/zh-CN/internals/js-sandbox)和 [ESM 沙箱实现](/zh-CN/internals/esm-sandbox)：Classic 与 ESM 的生命周期发现方式。

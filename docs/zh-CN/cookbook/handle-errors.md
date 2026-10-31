@@ -105,4 +105,4 @@ qiankun 增强后的 fetch 自带一个有限的自动重试额度，由同一�
 - [`addErrorHandler` / `removeErrorHandler`](/zh-CN/api/error-handling)——全局错误 API
 - [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)——可能失败的阶段
 - [原生 ESM 支持](/zh-CN/concepts/esm-sandbox)——ESM 行为与兼容性
-- [共享状态与通信](/zh-CN/cookbook/communicate-between-apps)——管理主应用回调与订阅的清理
+- [应用间共享状态与通信](/zh-CN/cookbook/communicate-between-apps)——管理主应用回调与订阅的清理

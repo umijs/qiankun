@@ -318,7 +318,7 @@ const appProps = reactive({ userId: 42 });
 
 ## 相关内容
 
-- [React `<MicroApp>` 组件](/zh-CN/ecosystem/react)——React 绑定及其 prop 传递方式。
+- [React `<MicroApp>` 组件（@qiankunjs/react）](/zh-CN/ecosystem/react)——React 绑定及其 prop 传递方式。
 - [loadMicroApp](/zh-CN/api/load-micro-app)——组件所封装的核心 API。
 - [AppConfiguration](/zh-CN/api/configuration)——`settings` 的类型定义。
 - [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)——`mount`、`update` 和 `unmount` 的语义。

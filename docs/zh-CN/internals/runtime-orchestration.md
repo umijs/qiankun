@@ -81,7 +81,7 @@ ESM 引擎也在该沙箱容器中创建，并且仅存在于 `if (sandbox)` 分
 **ESM 脚本**（`<script type="module">`）由 `EsmSandboxEngine`（`packages/shared/src/esm-sandbox`）处理。引擎通过增强后的 `fetch` 获取模块，再使用 WASM 词法分析器改写源码，使全局变量访问经过隔离膜；随后通过动态注入的 `<script type="importmap">` 解析合成模块说明符，并按文档顺序求值。模块实例化和求值仍由浏览器原生 ESM 加载器负责，因此能够保留顶层 `await`、循环依赖和实时绑定等语义。Vite 开发服务器提供的未打包模块图也可通过此方式在沙箱内运行。详见 [ESM 沙箱实现](/zh-CN/internals/esm-sandbox)。
 
 ::: info Firefox 与动态 import map
-ESM 沙箱依赖动态注入的 import map，而 Firefox 默认未启用所需能力。Chrome／Edge 133+ 和 Safari 18.4+ 已原生支持。ESM 沙箱的 e2e 测试在 Firefox 上标记为预期失败（expected failure），而非跳过（skip）。
+ESM 沙箱依赖动态注入的 import map，而 Firefox 默认未启用所需能力；完整的浏览器版本要求见[浏览器支持](/zh-CN/guide/browser-support)。ESM 沙箱的 e2e 测试在 Firefox 上标记为预期失败（expected failure），而非跳过（skip）。
 :::
 
 ## 内部包依赖关系
@@ -142,4 +142,4 @@ flowchart TD
 - [ESM 沙箱实现](/zh-CN/internals/esm-sandbox)：原生 `<script type="module">` 如何通过隔离膜执行。
 - [样式隔离实现](/zh-CN/internals/style-isolation)：CSS `@scope` 与 blob URL 样式表改写。
 - [生命周期解析原理](/zh-CN/internals/lifecycle-resolution)：生命周期对象的解析与组合。
-- [API 参考总览](/zh-CN/api/)：完整的公共 API。
+- [API 总览](/zh-CN/api/)：完整的公共 API。

@@ -73,7 +73,7 @@ Which path a script takes is decided per node by its type, and a single HTML ent
 **ESM** scripts (`<script type="module">`) are handled by `EsmSandboxEngine` (`packages/shared/src/esm-sandbox`). Modules are fetched through the enhanced fetch, rewritten with a WASM lexer so their global reads and writes route through the membrane, given synthetic specifiers via a dynamically injected `<script type="importmap">`, and evaluated in document order. The native ESM loader still owns instantiation and evaluation, so top-level `await`, circular dependencies, and live bindings are preserved. This path is what makes an unbundled Vite dev server work under the sandbox. See [the ESM sandbox](/concepts/esm-sandbox).
 
 ::: info Firefox and dynamically injected import maps
-The ESM path relies on dynamically injected import maps, which Firefox does not enable by default. Chrome/Edge 133+ and Safari 18.4+ support them natively. The ESM-sandbox e2e tests are annotated as expected failures on Firefox rather than skipped.
+The ESM path relies on dynamically injected import maps, which Firefox does not enable by default; see [Browser support](/guide/browser-support) for the full browser version matrix. The ESM-sandbox e2e tests are annotated as expected failures on Firefox rather than skipped.
 :::
 
 ## Internal package dependency graph

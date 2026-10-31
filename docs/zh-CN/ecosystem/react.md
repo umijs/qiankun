@@ -328,6 +328,6 @@ flowchart TD
 
 - [loadMicroApp](/zh-CN/api/load-micro-app)——组件所封装的核心 API。
 - [AppConfiguration](/zh-CN/api/configuration)——`settings` 的类型定义。
-- [生命周期钩子](/zh-CN/api/lifecycles)——`lifeCycles` 的类型定义。
-- [Vue `<MicroApp>` 组件](/zh-CN/ecosystem/vue)——Vue 绑定通过独立的 `appProps` 对象传递微应用 props。
-- [运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)。
+- [生命周期钩子（`LifeCycles`）](/zh-CN/api/lifecycles)——`lifeCycles` 的类型定义。
+- [Vue `<MicroApp>` 组件（@qiankunjs/vue）](/zh-CN/ecosystem/vue)——Vue 绑定通过独立的 `appProps` 对象传递微应用 props。
+- [运行多个微应用实例](/zh-CN/cookbook/run-multiple-instances)——同时挂载多个微应用。

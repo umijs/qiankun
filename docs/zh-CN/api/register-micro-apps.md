@@ -260,6 +260,6 @@ await unloaded;
 - [start](/zh-CN/api/start)——激活已注册的应用。
 - [loadMicroApp](/zh-CN/api/load-micro-app)——按需挂载和管理微应用实例。
 - [AppConfiguration](/zh-CN/api/configuration)——单应用的 `sandbox`、`styleIsolation`、`fetch`。
-- [生命周期钩子（LifeCycles）](/zh-CN/api/lifecycles)——全局钩子参考。
+- [生命周期钩子（`LifeCycles`）](/zh-CN/api/lifecycles)——全局钩子参考。
 - [setDefaultMountApp / runAfterFirstMounted](/zh-CN/api/effects)——与默认路由和首次挂载相关的辅助函数。
 - [类型参考](/zh-CN/api/types)——`RegistrableApp`、`LoadableApp`、`HTMLEntry`。

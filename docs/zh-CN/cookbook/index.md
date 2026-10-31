@@ -59,6 +59,6 @@ qiankun v3 已移除 2.x 中的 `initGlobalState`、`onGlobalStateChange` 和 `s
 
 ## 相关
 
-- [API 参考总览](/zh-CN/api/)——所有公开导出和类型
-- [加载微应用实例](/zh-CN/concepts/architecture)——`loadMicroApp` 的运行模型
+- [API 总览](/zh-CN/api/)——所有公开导出和类型
+- [加载一个微应用实例](/zh-CN/concepts/architecture)——`loadMicroApp` 的运行模型
 - [常见问题](/zh-CN/faq/index)——常见问题及简要解答

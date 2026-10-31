@@ -119,4 +119,4 @@ void microApp.mountPromise.catch((error: unknown) => {
 
 - [处理微应用错误](/zh-CN/cookbook/handle-errors)——错误界面、诊断与重试建议。
 - [`loadMicroApp`](/zh-CN/api/load-micro-app)——实例 Promise 与清理。
-- [React `<MicroApp>`](/zh-CN/ecosystem/react) 和 [Vue `<MicroApp>`](/zh-CN/ecosystem/vue)——组件错误边界。
+- [React `<MicroApp>` 组件（@qiankunjs/react）](/zh-CN/ecosystem/react) 和 [Vue `<MicroApp>` 组件（@qiankunjs/vue）](/zh-CN/ecosystem/vue)——组件错误边界。

@@ -76,4 +76,4 @@ qiankun 还会在当前页面内维护一个内存 LRU 缓存，保存成功的�
 - [HTML 入口](/zh-CN/concepts/html-entry-loading)——加载流程及其外部表现
 - [处理微应用错误](/zh-CN/cookbook/handle-errors)——处理资源加载失败
 - [AppConfiguration](/zh-CN/api/configuration)——自定义 `fetch` 与高级选项
-- [流式 HTML 入口实现](/zh-CN/internals/streaming-html-entry)——面向贡献者的实现细节
+- [HTML 入口流式加载原理](/zh-CN/internals/streaming-html-entry)——面向贡献者的实现细节

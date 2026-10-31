@@ -132,11 +132,11 @@ await app.mountPromise;
 
 默认值为 `undefined`。配置后，返回的 `TransformStream<string, string>` 会参与 HTML 入口的流式处理，执行位置在字节解码之后、qiankun 转换标签之前。该转换器可在流式处理期间修改入口 HTML，例如插入或删除标记。常规应用通常无需配置此项。
 
-处理流程的详细说明见[流式 HTML 入口实现](/zh-CN/internals/streaming-html-entry)。
+处理流程的详细说明见[HTML 入口流式加载原理](/zh-CN/internals/streaming-html-entry)。
 
 ### nodeTransformer
 
-默认转换器负责 qiankun 对 `<script>`、`<link>` 和 `<style>` 节点的标准处理。覆盖该转换器后，节点转换将由调用方负责，并可能同时影响脚本隔离、模块解析和样式隔离，因此仅适用于高级扩展。输入输出约定和默认处理流程参见[流式 HTML 入口实现](/zh-CN/internals/streaming-html-entry)。
+默认转换器负责 qiankun 对 `<script>`、`<link>` 和 `<style>` 节点的标准处理。覆盖该转换器后，节点转换将由调用方负责，并可能同时影响脚本隔离、模块解析和样式隔离，因此仅适用于高级扩展。输入输出约定和默认处理流程参见[HTML 入口流式加载原理](/zh-CN/internals/streaming-html-entry)。
 
 ## 配置方式
 

@@ -94,7 +94,7 @@ loadMicroApp(app, {
 
 用户插件排在 qiankun 内置隔离插件之后执行。
 
-- `bootstrap(context)` 只执行一次，并且一定早于任何子应用脚本；
+- `bootstrap(context)` 只执行一次，并且一定早于任何微应用脚本；
 - `mount(context)` 每次挂载都会执行，可返回 `Free`，也可返回 `Promise<Free>`；
 - 卸载时，qiankun 调用 `Free` 清理副作用，并保存其返回的 `Rebuild`；
 - 再次挂载时，`Rebuild(container)` 会在挂载完成前恢复需要保留的副作用。

@@ -18,6 +18,12 @@ npx skills add umijs/qiankun
 
 > 用 qiankun 创建一个 React + TypeScript 主应用 main-app（端口 7099，用 loadMicroApp 加载微应用）和一个 React + TypeScript 微应用 sub-app（端口 7101）
 
+如果生成的项目与预期不符，可直接让 agent 针对性修正，例如：`请确保 sub-app 的 vite.config.ts 引入了 @qiankunjs/bundler-plugin/vite 并固定端口为 7101，且入口导出 bootstrap、mount、unmount`。
+
+在启动前，可快速确认两个项目已满足接入约定：
+- **sub-app（微应用）**：`vite.config.ts` 中已配置 `@qiankunjs/bundler-plugin/vite` 且端口为 `7101`（建议开启 `strictPort: true`）；入口文件（如 `src/main.tsx`）导出了 `bootstrap`、`mount` 与 `unmount` 生命周期。
+- **main-app（主应用）**：依赖中已包含 `qiankun`，运行端口为 `7099`。
+
 如果不使用 agent，可按[教程](/zh-CN/tutorial/)手动搭建相同结构，本页其余内容同样适用。
 
 项目创建完成后，打开两个终端，在 `qiankun-demo` 目录下分别启动两个应用：
@@ -50,7 +56,7 @@ ESM 沙箱依赖动态注入 import map，而 Firefox 目前还不支持这项�
 
 ## 主应用如何管理微应用
 
-生成的主应用运行在 `7099` 端口。React 创建容器元素后，`App.tsx` 通过以下代码加载微应用：
+生成的主应用运行在 `7099` 端口。以下是 `App.tsx` 加载微应用的典型参考实现（根据 agent 生成方式的不同，具体的组件拆分或变量命名可能略有差异）：
 
 ```tsx
 import { loadMicroApp } from 'qiankun';
@@ -88,7 +94,7 @@ export default function App() {
 | `entry` | 微应用的 HTML 入口。本例指向运行在 `7101` 端口的开发服务器。 |
 | `container` | 用于挂载微应用的 `HTMLElement`。 |
 
-`loadMicroApp` 返回一个 `MicroApp` 实例句柄。在实例存续期间应保留该句柄，并在清理时调用 `unmount()`，以便 qiankun 执行微应用的 `unmount` 生命周期并完成卸载。`useEffect` 的清理函数不能返回 Promise，因此本例只是发起卸载，并捕获可能的失败。如果主应用的清理流程支持异步等待，则应在移除容器前等待 `unmount()` 完成。卸载后已加载的实例会保留，同名应用再次加载时直接复用；需要释放这些资源时，参见 [loadMicroApp](/zh-CN/api/load-micro-app#unload) 中的 `unload()`。
+`loadMicroApp` 返回一个 `MicroApp` 实例句柄。在实例存续期间应保留该句柄，并在清理时调用 `unmount()`，以便 qiankun 执行微应用的 `unmount` 生命周期并完成卸载。`useEffect` 的清理函数不能返回 Promise，因此本例只是发起卸载，并捕获可能的失败。如果主应用的清理流程支持异步等待，则应在移除容器前等待 `unmount()` 完成。实例复用与主动销毁的区别，见 [loadMicroApp](/zh-CN/api/load-micro-app#unload)。
 
 ## 微应用的接入要求
 
@@ -108,4 +114,4 @@ export default function App() {
 - 按照[教程](/zh-CN/tutorial/)一步步手动搭建相同结构。
 - 在[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)中了解应用契约。
 - 改造一个现有的 [Vite](/zh-CN/cookbook/prepare-a-vite-app) 或 [Webpack](/zh-CN/cookbook/prepare-a-webpack-app) 应用。
-- 在 [`loadMicroApp` API](/zh-CN/api/load-micro-app)中查看全部选项和方法。
+- 在 [loadMicroApp](/zh-CN/api/load-micro-app) 中查看全部选项和方法。

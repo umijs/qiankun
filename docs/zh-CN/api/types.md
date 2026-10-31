@@ -294,7 +294,7 @@ export type BootstrapContext = Readonly<AppMetadata>;
 // { readonly name: string; readonly entry: HTMLEntry }
 ```
 
-qiankun 在加载时根据应用身份单独构造并冻结该对象。它不包含业务 props、`container`、`domElement`、`mountParcel` 或 `unmountSelf`。温复用不会再次调用 `bootstrap`；缓存回收后的冷加载会创建新的初始化上下文。
+qiankun 在加载时根据应用身份单独构造并冻结该对象。它不包含业务 props、`container`、`domElement`、`mountParcel` 或 `unmountSelf`。复用已加载的实例不会再次调用 `bootstrap`；缓存回收后重新加载会创建新的初始化上下文。
 
 ## MicroAppLifeCycles
 
@@ -397,7 +397,7 @@ if (window.__POWERED_BY_QIANKUN__) {
 ## 相关内容
 
 - [AppConfiguration](/zh-CN/api/configuration)——各配置项的完整说明。
-- [生命周期钩子（LifeCycles）](/zh-CN/api/lifecycles)——框架级钩子参考。
+- [生命周期钩子（`LifeCycles`）](/zh-CN/api/lifecycles)——框架级钩子参考。
 - [registerMicroApps](/zh-CN/api/register-micro-apps) 和 [loadMicroApp](/zh-CN/api/load-micro-app)——使用这些类型的 API。
 - [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)——生命周期参数的传递方式。
 - [从 qiankun 2.x 迁移](/zh-CN/cookbook/migrate-from-2x)——不兼容类型变更。
