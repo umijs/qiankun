@@ -13,16 +13,28 @@
     "@qiankunjs/single-spa": "0.0.1-rc.0"
   },
   "changesets": [
+    "auto-04f3797",
     "auto-11b8442",
     "auto-1a25196",
+    "auto-2e4408a",
     "auto-34317aa",
+    "auto-349afef",
+    "auto-385cf6f",
+    "auto-4396911",
+    "auto-4945b07",
     "auto-4e9ce5f",
     "auto-5576442",
     "auto-59d9204",
+    "auto-66cb5ac",
     "auto-7eeefd0",
+    "auto-859e33e",
     "auto-8bec431",
     "auto-945fa02",
+    "auto-9b6b95c",
     "auto-9d70d5e",
+    "auto-a8ddfeb",
+    "auto-b40cd86",
+    "auto-cef8977",
     "auto-dc274f8",
     "release-bundler-plugin-fix"
   ]

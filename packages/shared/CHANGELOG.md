@@ -1,5 +1,20 @@
 # @qiankunjs/shared
 
+## 0.1.0-rc.15
+
+### Minor Changes
+
+- feat(qiankun): unload micro app generations and release owned resources (#3204)
+- feat(qiankun): abort loading when configured timeout expires (#3205)
+- feat: add typed exports for published packages (#3189)
+- feat(esm-sandbox): detect unsupported native ESM environments (#3216)
+- feat: add stable qiankun error codes and solution links (#3199)
+
+### Patch Changes
+
+- perf(esm-sandbox): isolate module source fetch cache (#3196)
+- fix: preserve teardown during updates and release asset ownership (#3215)
+
 ## 0.1.0-rc.14
 
 ### Minor Changes
