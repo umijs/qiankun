@@ -2,7 +2,7 @@
 
 ## 触发原因
 
-标记为 `entry` 的非 ESM 脚本触发了 `error` 事件，导致 HTML 入口加载失败，对应的 Promise 进入 rejected 状态。错误信息会包含 HTML 入口地址和脚本地址。
+标记为 `entry` 的非 ESM 脚本触发了 `error` 事件，导致 HTML Entry 加载失败，对应的 Promise 进入 rejected 状态。错误信息会包含 HTML Entry 地址和脚本地址。
 
 此错误码对应 `entry` 脚本元素的 `error` 事件，并不代表所有脚本运行时异常都会转换成此错误。标记为 `entry` 的 ESM 脚本通过模块导入 Promise 确认执行结果。
 

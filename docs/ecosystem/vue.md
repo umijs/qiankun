@@ -89,12 +89,12 @@ The Vue binding defaults `settings` to `{ sandbox: true }`. The [React binding](
 :::
 
 ::: warning Pass application data through `appProps`
-Unlike the React binding, the Vue binding does not forward arbitrary attributes to the micro-app. Put application data inside `appProps`. The current implementation also forwards `autoSetLoading`, `autoCaptureError`, and the `appProps` object itself; application code should not depend on these component-control fields.
+Unlike the React binding, the Vue binding does not forward arbitrary attributes to the micro-app. Put application data inside `appProps`. Component-control fields such as `autoSetLoading` and `autoCaptureError`, along with the `appProps` wrapper itself, are filtered out. The micro-app receives the business fields inside `appProps`.
 :::
 
 ### `settings` (AppConfiguration)
 
-`settings` accepts the same object as the second argument of [`loadMicroApp`](/api/load-micro-app). The full shape is documented in [AppConfiguration](/api/configuration); the fields are exactly `fetch`, `streamTransformer`, `nodeTransformer`, and `sandbox` (default `true`). Style isolation, extra globals, the incubator context, and isolation plugins all live inside the `sandbox` object.
+`settings` accepts the same object as the second argument of [`loadMicroApp`](/api/load-micro-app). The full shape is documented in [AppConfiguration](/api/configuration); the fields are `fetch`, `loadTimeout`, `streamTransformer`, `nodeTransformer`, and `sandbox` (default `true`). Style isolation, extra globals, the incubator context, and isolation plugins all live inside the `sandbox` object.
 
 ```vue
 <template>
@@ -148,9 +148,7 @@ Both the loading indicator and the error boundary are opt-in. When neither is en
 flowchart TD
   A[name changes / first mount] --> B[loading = true]
   B --> C[mountMicroApp -> loadMicroApp]
-  C -->|mountPromise resolves| D{autoSetLoading?}
-  D -->|yes| E[loading = false, loader hidden]
-  D -->|no| F[loading is not cleared automatically]
+  C -->|mountPromise resolves| E[loading = false, loader updated]
   C -->|load/bootstrap/mount rejects| G{error UI configured?}
   G -->|yes| H[error set, boundary shown]
   G -->|no| I[error re-thrown]
@@ -178,7 +176,7 @@ import { MicroApp } from '@qiankunjs/vue';
 The built-ins are intentionally minimal: the default loader renders the text `loading...`, and the default error boundary renders a `<div>` containing `error.message`. For anything production-grade, use the slots below.
 
 ::: info Initial loading state
-The Vue binding initializes `loading` to `false` (the React binding starts at `true`). The flag is set to `true` while the micro-app loads and cleared on the mount promise — but it is only auto-cleared when `autoSetLoading` is enabled. Without `autoSetLoading` no loader is rendered anyway.
+The Vue binding initializes `loading` to `false`, while React starts at `true`. Loading sets it to `true`; success or failure of `mountPromise` clears it regardless of `autoSetLoading`. That prop only selects the built-in indicator. A custom `#loader` slot receives the full state changes independently.
 :::
 
 ### Custom loader slot
@@ -192,7 +190,7 @@ import { MicroApp } from '@qiankunjs/vue';
 </script>
 
 <template>
-  <micro-app name="app1" entry="http://localhost:8000" autoSetLoading>
+  <micro-app name="app1" entry="http://localhost:8000">
     <template #loader="loading">
       <custom-loader :loading="loading" />
     </template>
@@ -200,7 +198,7 @@ import { MicroApp } from '@qiankunjs/vue';
 </template>
 ```
 
-A `#loader` slot takes precedence over the built-in loader. Keep `autoSetLoading` enabled if the component should automatically set `loading` to `false` when `mountPromise` resolves.
+A `#loader` slot takes precedence over the built-in indicator and works without `autoSetLoading`.
 
 ### Custom error boundary slot
 

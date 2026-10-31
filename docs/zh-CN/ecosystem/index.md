@@ -19,7 +19,7 @@ qiankun 核心运行时通过 `loadMicroApp` 加载和管理微应用实例。�
 - **React 或 Vue `<MicroApp>`**：在组件树中以声明式方式加载微应用，内部仍调用 `loadMicroApp`。
 - **`registerMicroApps + start`**：仅用于 URL 完全决定应用激活状态的路由驱动方案。
 
-以上三种接入方式均使用相同的微应用 HTML 入口、生命周期和隔离机制。
+以上三种接入方式均使用相同的微应用 HTML Entry、生命周期和隔离机制。
 
 ## 创建新项目
 
@@ -33,7 +33,7 @@ npx skills add umijs/qiankun
 
 ## 接入已有微应用
 
-使用 `@qiankunjs/bundler-plugin` 生成符合要求的 HTML 入口，并根据构建工具选择相应指南：
+使用 `@qiankunjs/bundler-plugin` 生成符合要求的 HTML Entry，并根据构建工具选择相应指南：
 
 - [接入 Vite 应用](/zh-CN/cookbook/prepare-a-vite-app)
 - [接入 Webpack 应用](/zh-CN/cookbook/prepare-a-webpack-app)

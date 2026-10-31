@@ -12,14 +12,14 @@
 
 - **显式全局写入保存在应用内部。** 执行 `window.foo = 1` 时，值会写入当前应用的本地对象，不会修改真实 `window`，其他微应用也无法访问。
 - **Classic 顶层声明保留在包装函数内。** 顶层 `var foo` 属于隔间的包装函数作用域，不会成为代理 `window` 或真实 `window` 的属性。
-- **读取操作可访问主应用全局对象。** 读取当前应用未定义的全局属性时，沙箱依次查询应用本地对象、qiankun 提供的内建值（endowments）和主应用的真实 `window`。因此，微应用仍可访问 `window.localStorage`、`window.crypto` 和 `document` 等浏览器能力。
+- **读取操作可访问主应用全局对象。** 读取当前应用未定义的全局属性时，沙箱先读取应用本地对象（包括配置的 `globals`），未命中时读取 `incubatorContext` 中未被遮蔽的宿主属性。因此，微应用仍可访问 `window.localStorage`、`window.crypto` 和 `document` 等浏览器能力。
 
 ```mermaid
 flowchart TD
   A["微应用代码<br/>window.foo = 1"] --> P{"Proxy 隔离膜"}
   P -->|写| L["应用本地对象<br/>（隔离）"]
   R["微应用代码<br/>读取 window.crypto"] --> P
-  P -->|"读：本地 → 内建值 → 主应用"| H["主应用真实 window"]
+  P -->|"读：本地（含 globals）→ 宿主"| H["主应用真实 window"]
 ```
 
 这种非对称行为可以隔离全局写入，同时保持对浏览器环境的兼容。由于微应用仍可读取未被自身覆盖的主应用全局属性，沙箱只能用于副作用隔离，不能作为运行不可信代码的安全边界。
@@ -37,19 +37,24 @@ flowchart TD
 隔离膜可以拦截显式的 `window.x` 访问，但 Classic UMD 脚本还会使用 `React` 等裸全局引用，并包含 `var foo` 等顶层声明。Proxy 无法单独控制词法名称解析，因此隔间（`core/compartment`）会在执行前包装脚本源码。其结构大致如下：
 
 ```js
-;(function () {
-  with (this) {
-    const { Array, /* …destructured intrinsics… */ } = this;
-    /* 原始脚本源码 */
-  }
-}).bind(window.__compartment_globalThis__<N>__)();
+;(function (compartmentGlobalThis) {
+  if (!compartmentGlobalThis) return;
+  (function () {
+    with (this) {
+      const { window, self, globalThis, document /* ... */ } = this;
+      /* 原始脚本源码 */
+    }
+  }).call(compartmentGlobalThis);
+})(window.__compartment_globalThis__1__);
 ```
 
-包装后的源码通过 blob URL 执行，`<N>` 为每个实例提供独立的隔间槽位。当某个名称已存在于沙箱本地对象或主应用全局对象时，`with (this)` 会使对应的裸引用经过代理 `window`；顶层声明则保留在包装函数的局部作用域中。
+示例中的槽位编号 `1` 仅用于说明结构，实际编号按实例分配。外层检查会跳过隔间已被销毁的排队脚本，避免把缺失的接收者当作真实 `window`；内部解构的是配置的非遮蔽全局属性。
+
+包装后的源码通过 blob URL 执行，每个实例使用独立的隔间槽位。当某个名称已存在于沙箱本地对象或主应用全局对象时，`with (this)` 会使对应的裸引用经过代理 `window`；顶层声明则保留在包装函数的局部作用域中。
 
 对于全新且未声明的赋值（如 `foo = 1`），隔离膜的 `has` 拦截器不会命中，该写入在非严格模式的 Classic 脚本中可能逃逸到真实全局对象。微应用必须避免隐式全局变量，应显式声明变量或使用 `window.foo`。
 
-只有 Classic 脚本使用隔间。`<script type="module">` 由 [ESM 沙箱实现](/zh-CN/internals/esm-sandbox)处理。ESM 引擎通过 `sandbox.getEsmGlobalsView()` 使用同一份隔离膜视图，但通过词法分析器改写模块源码，而不是使用 `with` 包装。两种执行方式共享当前应用的全局命名空间。
+只有 Classic 脚本使用 `with` 包装。`<script type="module">` 由 [ESM 沙箱实现](/zh-CN/internals/esm-sandbox)处理。ESM 引擎通过 `sandbox.getEsmGlobalsView()` 使用同一份隔离膜视图，但通过词法分析器改写模块源码，而不是使用 `with` 包装。两种执行方式共享当前应用的全局命名空间。
 
 ## 全局身份处理
 
@@ -97,7 +102,7 @@ const globalVariableWhiteList = ['System', '__cjsWrapper', /* + dev-only */];
 
 部分浏览器 API 要求调用时的 `this` 为真实 `window`。例如，通过 Proxy 直接调用未绑定的 `fetch` 可能抛出 `Illegal invocation`。沙箱会在应用读取此类函数时，将它们重新绑定到真实 `window`；对应属性记录在 `useNativeWindowForBindingsProps` 集合中。
 
-`requestAnimationFrame` 和 `cancelAnimationFrame` 通过 `whitelistBOMAPIs` 集合直接转发给主应用，沙箱不会追踪或取消尚未执行的回调。微应用创建动画循环后，必须在 `unmount` 中调用 `cancelAnimationFrame`。
+`requestAnimationFrame` 和 `cancelAnimationFrame` 属于默认的非遮蔽全局属性，未被应用替换时使用宿主实现；沙箱不会追踪或取消尚未执行的回调。微应用创建动画循环后，必须在 `unmount` 中调用 `cancelAnimationFrame`。
 
 ## 多实例隔离
 

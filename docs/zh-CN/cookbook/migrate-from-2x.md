@@ -316,7 +316,7 @@ Vue 的实现结构相同：在 `mount` 中调用 `createApp(...).mount(...)`，
 `mount` 和 `unmount` 会收到本次挂载的 `props.container`；可选的 `update` 只接收调用方传入的业务 props，不会自动注入容器。若更新时需要访问框架根节点或容器，应在 `mount` 中保存引用，在 `unmount` 中释放。
 
 ::: danger `entry` 脚本不得超过一个
-一份 HTML 入口中最多只能有一个带 `entry` 标记的脚本。若存在两个 `entry` 脚本，加载器会抛出 `QiankunError`。构建插件具有幂等性，只会为一个脚本添加 `entry` 属性。
+一份 HTML Entry 中最多只能有一个带 `entry` 标记的脚本。若存在两个 `entry` 脚本，加载器会抛出 `QiankunError`。构建插件具有幂等性，只会为一个脚本添加 `entry` 属性。
 
 :::
 
@@ -360,7 +360,7 @@ await app.unload();
 v3 不再导出 `addGlobalUncaughtErrorHandler` 和 `removeGlobalUncaughtErrorHandler`。应按加载方式迁移错误处理：
 
 - **路由应用**：用 `addErrorHandler` / `removeErrorHandler` 处理 single-spa 的加载和生命周期错误；移除时传入同一函数引用。
-- **手动加载应用**：处理返回句柄的 Promise 拒绝，首次挂载可等待 `mountPromise`。全局 `addErrorHandler` 不会接收这些首次加载及生命周期错误。
+- **手动加载应用**：处理返回句柄的 Promise 拒绝，首次挂载可等待 `mountPromise`。全局 `addErrorHandler` 不接收首次加载、`bootstrap` 和首次 `mount` 的错误；同一句柄后续 `mount()` 的挂载执行失败还会通知全局处理器。
 - **普通页面异常**：如需监听与 qiankun 无关的未捕获错误，使用浏览器的 `error` / `unhandledrejection` 事件，并由主应用管理监听器清理。
 
 框架错误可通过从 `qiankun` 导入的 `QiankunError` 及其稳定 `code` 识别；业务错误、网络异常和 single-spa 错误不一定属于该类型，不应通过匹配错误消息判断。

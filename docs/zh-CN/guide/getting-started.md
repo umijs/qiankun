@@ -91,7 +91,7 @@ export default function App() {
 | 字段 | 作用 |
 | --- | --- |
 | `name` | 当前微应用实例的名称。不同容器中的多个实例可以使用同一名称。 |
-| `entry` | 微应用的 HTML 入口。本例指向运行在 `7101` 端口的开发服务器。 |
+| `entry` | 微应用的 HTML Entry。本例指向运行在 `7101` 端口的开发服务器。 |
 | `container` | 用于挂载微应用的 `HTMLElement`。 |
 
 `loadMicroApp` 返回一个 `MicroApp` 实例句柄。在实例存续期间应保留该句柄，并在清理时调用 `unmount()`，以便 qiankun 执行微应用的 `unmount` 生命周期并完成卸载。`useEffect` 的清理函数不能返回 Promise，因此本例只是发起卸载，并捕获可能的失败。如果主应用的清理流程支持异步等待，则应在移除容器前等待 `unmount()` 完成。实例复用与主动销毁的区别，见 [loadMicroApp](/zh-CN/api/load-micro-app#unload)。
@@ -100,7 +100,7 @@ export default function App() {
 
 生成的微应用仍是标准的 Vite 应用，仅增加以下两部分 qiankun 接入代码：
 
-- `@qiankunjs/bundler-plugin` 为 qiankun 配置 HTML 入口和开发服务器。
+- `@qiankunjs/bundler-plugin` 为 qiankun 配置 HTML Entry 和开发服务器。
 - 入口模块导出 `bootstrap`、`mount` 和 `unmount`。`mount` 在主应用提供的容器内渲染，`unmount` 销毁框架根节点。
 
 直接访问 `7101` 端口时，微应用会走独立运行分支自行渲染。因此，该应用既可独立开发，也可由主应用加载。

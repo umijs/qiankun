@@ -4,6 +4,8 @@
 
 Pass it as the second argument to [`loadMicroApp`](/api/load-micro-app) by default. Route-driven apps use the `configuration` field in `registerMicroApps`, and `<MicroApp>` components expose the same type through `settings`.
 
+Configuration takes effect when a loaded instance is created. A `loadMicroApp` cache hit retains the original configuration; dispose of the old instance before loading again to change it. See [loadMicroApp](/api/load-micro-app#behavior).
+
 ## Type
 
 ```ts

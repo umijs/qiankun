@@ -268,7 +268,7 @@ Loader- and sandbox-related options all go through `settings`, an [`AppConfigura
 
 ## Lifecycle hooks
 
-Host lifecycle hooks are passed via `lifeCycles` and apply only to the instance created by this component. Each hook may be a single function or an array of functions.
+Pass host lifecycle hooks through `lifeCycles`, as single functions or arrays. Reusing a loaded instance retains its original hooks; see [Lifecycle hooks](/api/lifecycles).
 
 ```tsx
 <MicroApp

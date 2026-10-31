@@ -39,16 +39,20 @@ flowchart LR
 The `fetch` you pass in [`AppConfiguration`](/api/configuration) (default `window.fetch`) is wrapped in three decorators from `@qiankunjs/shared`:
 
 ```ts
-const enhancedFetch = makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)));
+const resourceFetch = makeFetchRetryable(makeFetchThrowable(fetch));
+const enhancedFetch = makeFetchCacheable(resourceFetch, { signal });
+const moduleFetch = makeFetchCacheable(resourceFetch, { scope: 'modules', signal });
 ```
 
-Read from the inside out: `makeFetchThrowable` throws when the response status is outside `200–399`, `makeFetchRetryable` provides a limited retry budget shared by that wrapped fetch instance when the inner fetch throws, and `makeFetchCacheable` (outermost) dedupes and caches. The retry layer does not classify errors as transient, so both network errors and invalid HTTP responses can consume the budget; it does not guarantee a retry for every failed request. This `enhancedFetch` is used for the entry HTML, resources that qiankun actively fetches for transformation—such as sandboxed Classic scripts, ESM modules, and isolated styles—and the script-stripped HTML reload on remount. Browser-native requests such as images and non-isolated stylesheets do not pass through it.
+Read from the inside out: `makeFetchThrowable` throws when the response status is outside `200–399`, `makeFetchRetryable` provides a limited retry budget shared by that wrapped fetch instance when the inner fetch throws, and `makeFetchCacheable` (outermost) dedupes and caches. The retry layer does not classify errors as transient, so both network errors and invalid HTTP responses can consume the budget; it does not guarantee a retry for every failed request. This `enhancedFetch` is used for the entry HTML, resources that qiankun actively fetches for transformation—such as sandboxed Classic scripts and isolated styles—and the script-stripped HTML reload on remount. Browser-native requests such as images and non-isolated stylesheets do not pass through it.
+
+`moduleFetch` is supplied through `compartmentOptions.moduleHost.fetch` and uses a separate module-source LRU, so module graphs do not displace entry and stylesheet responses. Both pools key requests by canonical URL and effective `credentials` and share the underlying transport validation and retry budget.
 
 ### 2. Sandbox container
 
 When `sandbox` is `true` or an object (the default is `true`), `createSandbox` (`packages/sandbox`) builds a Proxy-membrane view of `window` and `document`. `loadApp` then runs the app against `sandboxInstance.globalThis` (the proxied window) instead of the real global, so the app reads and writes its own isolated globals. See [the JS sandbox](/concepts/js-sandbox) for how the membrane works and how patchers clean up side effects on unmount.
 
-The container also constructs the ESM engine (covered below) — the engine only exists inside the `if (sandbox)` branch, so turning the sandbox off also disables native ESM execution.
+Module loading is exposed through the sandbox’s Compartment facade, which owns the underlying ESM engine. Setting `sandbox: false` also disables sandboxed native ESM execution.
 
 ### 3. Streaming loader
 
@@ -70,7 +74,7 @@ Which path a script takes is decided per node by its type, and a single HTML ent
 
 **Classic** scripts are the UMD/global model from qiankun 2.x. The entry script's source is wrapped and executed through a blob URL scoped to the sandbox membrane; qiankun reads the app's lifecycle object from `sandbox.latestSetProp`, the last global the script set.
 
-**ESM** scripts (`<script type="module">`) are handled by `EsmSandboxEngine` (`packages/shared/src/esm-sandbox`). Modules are fetched through the enhanced fetch, rewritten with a WASM lexer so their global reads and writes route through the membrane, given synthetic specifiers via a dynamically injected `<script type="importmap">`, and evaluated in document order. The native ESM loader still owns instantiation and evaluation, so top-level `await`, circular dependencies, and live bindings are preserved. This path is what makes an unbundled Vite dev server work under the sandbox. See [the ESM sandbox](/concepts/esm-sandbox).
+**ESM** scripts (`<script type="module">`) are handled by `EsmSandboxEngine` (`packages/shared/src/esm-sandbox`). Modules are fetched through the enhanced fetch, parsed with `es-module-lexer/js` and rewritten so their global reads and writes route through the membrane, given synthetic specifiers via a dynamically injected `<script type="importmap">`, and evaluated in document order. The native ESM loader still owns instantiation and evaluation, so top-level `await`, circular dependencies, and live bindings are preserved. This path is what makes an unbundled Vite dev server work under the sandbox. See [the ESM sandbox](/concepts/esm-sandbox).
 
 ::: info Firefox and dynamically injected import maps
 The ESM path relies on dynamically injected import maps, which Firefox does not enable by default; see [Browser support](/guide/browser-support) for the full browser version matrix. The ESM-sandbox e2e tests are annotated as expected failures on Firefox rather than skipped.
@@ -97,8 +101,8 @@ flowchart TD
 - `shared` — transpilers, fetch decorators, module resolver, and the ESM-sandbox engine.
 - `ui-bindings` — the `<MicroApp>` components for [React](/ecosystem/react) and [Vue](/ecosystem/vue), built on `qiankun`.
 
-::: warning These are internal packages
-Only the `qiankun` package (and the `@qiankunjs/react` / `@qiankunjs/vue` bindings) are public API. `loader`, `sandbox`, and `shared` are implementation detail — their exports can change between releases. Depend on the documented [API reference](/api/), not on internal packages.
+::: warning Public interfaces and implementation boundaries
+Integrate host apps through the public APIs of `qiankun`, `@qiankunjs/react`, or `@qiankunjs/vue`. Standalone `@qiankunjs/sandbox` users should follow the interfaces in [Standalone sandbox](/cookbook/standalone-sandbox). `loader`, `shared`, and undocumented internals are not application integration contracts.
 :::
 
 ## The end-to-end load lifecycle
@@ -107,7 +111,7 @@ Putting the stages together, here is what `loadApp` does for a single micro-app 
 
 1. **Resolve config defaults.** `fetch = window.fetch` (then decorated), `sandbox = true`, `nodeTransformer = defaultNodeTransformer`. When `sandbox` is an object, its own defaults apply too: `incubatorContext = window` and `styleIsolation` off. See [AppConfiguration](/api/configuration) for the full field list.
 2. **Initialize the container.** The container is emptied and stamped with `data-name`, `data-version`, and `data-sandbox-cfg`. `data-mount-times` appears after the same loaded app is mounted again (its value is the mount count), while `data-instance-id` is added to the second and later `loadApp` instances with the same app name. The `instanceId` comes from a per-name counter and distinguishes [multiple instances](/cookbook/run-multiple-instances) of the same app.
-3. **Create the sandbox and ESM engine.** When `sandbox` is on, the Proxy membrane is built and the `EsmSandboxEngine` is constructed with the app name, instance id, entry URL, and the enhanced fetch.
+3. **Create the sandbox and module facade.** With sandboxing enabled, `createSandbox` creates the Compartment and DOM isolation plugins. The entry URL, module hooks, and separate module fetch are passed through `compartmentOptions`; `loadApp` does not construct the ESM engine directly.
 4. **Stream the entry.** `loadEntry` runs the HTML through the streaming pipeline and transpilers; classic and module scripts are dispatched to their respective paths. Module scripts are collected during streaming and executed in document order once the stream seals.
 5. **Discover lifecycles.** `getLifecyclesFromExports` resolves `{ bootstrap, mount, unmount, update }` with a fallback chain: the exports object itself, then its `default`, then `global[latestSetProp]` (classic), then `window[appName]`. If none is a valid lifecycle object it throws. `update` is optional. See [Micro-app lifecycle and props](/concepts/lifecycle-and-props).
 6. **Assemble addons and user hooks.** Two built-in addons set `__POWERED_BY_QIANKUN__` and `__INJECTED_PUBLIC_PATH_BY_QIANKUN__` on the proxied global; your [lifecycle hooks](/api/lifecycles) (`beforeLoad`, `beforeMount`, `afterMount`, `beforeUnmount`, `afterUnmount`) are concatenated after them. `beforeLoad` runs in the `loadApp` body; the rest run inside the parcel's mount/unmount arrays.
@@ -117,11 +121,11 @@ Putting the stages together, here is what `loadApp` does for a single micro-app 
 `unmount` deactivates an app but keeps its sandbox and ESM module namespaces alive so a remount is cheap — for ESM apps, a remount re-runs only `mount(props)`, not top-level module code. Manually loaded apps use the handle's `unload()` or `unloadMicroApp(name)`; route applications use `unloadApplication`. Both paths release framework-held ESM-engine references and blob URLs, but cannot undo native browser module registrations. This is why modern-framework apps should create their app instance inside `mount()`, not at module top level.
 :::
 
-## start() side effects
+## start() and runtime initialization
 
-Beyond beginning single-spa routing, [`start`](/api/start) has one qiankun-specific side effect: it warms the ESM engine's WASM lexer via `prepareEsmLexer()`, so the first ESM micro-app does not pay the lexer initialization cost on its critical path. `start` is idempotent and accepts only single-spa's `{ urlRerouteOnly }`.
+[`start`](/api/start) starts single-spa routing. It is idempotent and accepts only `{ urlRerouteOnly }`. The ESM parser uses `es-module-lexer/js` and needs no WASM warm-up. `prepareEsmLexer()` preserves an asynchronous preparation interface but returns an already-resolved Promise; `start()` does not call it.
 
-[`loadMicroApp`](/api/load-micro-app) auto-calls `start()` if you have not called it yet. This is deliberate: it ensures the main app's `pushState`/`replaceState` correctly dispatch `popstate` so routing stays consistent even in a purely imperative setup.
+[`loadMicroApp`](/api/load-micro-app) calls `start()` automatically if the runtime has not started, so imperative loading needs no separate startup call.
 
 ## Where to go next
 

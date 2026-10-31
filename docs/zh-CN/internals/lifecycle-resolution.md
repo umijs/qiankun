@@ -2,7 +2,7 @@
 
 > 本页面向维护者说明生命周期发现与编排的实现细节。面向使用者的约定见[微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)。
 
-qiankun 通过 HTML 入口加载微应用，而不是直接导入约定的模块。因此，入口脚本执行完成后，qiankun 需要从其导出中解析生命周期函数，并在对应阶段调用这些函数。本页说明微应用的导出约定、生命周期对象的解析顺序、主应用钩子与微应用生命周期的区别，以及 props 和运行时标记的传递方式。
+qiankun 通过 HTML Entry 加载微应用，而不是直接导入约定的模块。因此，入口脚本执行完成后，qiankun 需要从其导出中解析生命周期函数，并在对应阶段调用这些函数。本页说明微应用的导出约定、生命周期对象的解析顺序、主应用钩子与微应用生命周期的区别，以及 props 和运行时标记的传递方式。
 
 如果只需了解如何在微应用中导出生命周期，请参阅[教程](/zh-CN/tutorial/build-the-micro-app)、[Vite 接入指南](/zh-CN/cookbook/prepare-a-vite-app)或 [Webpack 接入指南](/zh-CN/cookbook/prepare-a-webpack-app)。
 

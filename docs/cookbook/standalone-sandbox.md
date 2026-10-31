@@ -173,7 +173,7 @@ await controller.unmount();
 await controller.dispose();
 ```
 
-Mount before evaluating the source. Side effects created before `mount()` are outside the mount-phase tracking window. Style isolation requires a container; `createSandbox('name', { styleIsolation: true })` throws a `TypeError`.
+Mount before evaluating the source. Side effects created before `mount()` are outside the mount-phase tracking window. Style isolation requires a container; `createSandbox('name', { styleIsolation: true })` throws a `QiankunError` with code `container-required`.
 
 ## Container preparation
 
@@ -280,7 +280,7 @@ After evaluation:
 - `sharedSettings.theme` is `"dark"` in both host and sandbox because the same object crossed the boundary.
 - DOM nodes, events, functions, and library instances likewise keep their identity; `===` and `instanceof` continue to work.
 
-This model is not suitable for hostile code. It does not harden objects, freeze intrinsics, create another origin, or impose an iframe/Worker callable boundary. Use those browser isolation mechanisms when code must not access host capabilities. The [Compartment Alignment RFC](https://github.com/umijs/qiankun/blob/next/docs/rfcs/compartment-alignment.md) explains this design boundary in detail.
+This model is not suitable for hostile code. It does not harden objects, freeze intrinsics, create another origin, or impose an iframe/Worker callable boundary. Use those browser isolation mechanisms when code must not access host capabilities.
 
 ## Content Security Policy
 

@@ -360,7 +360,7 @@ After a load or `bootstrap` failure, call `loadMicroApp` again to reload; the sa
 v3 no longer exports `addGlobalUncaughtErrorHandler` or `removeGlobalUncaughtErrorHandler`. Migrate error handling according to the loading mode:
 
 - **Route apps**: use `addErrorHandler` / `removeErrorHandler` for single-spa loading and lifecycle errors; remove a handler with the same function reference.
-- **Manually loaded apps**: handle rejections from the returned handle’s promises; await `mountPromise` for the initial mount. Global `addErrorHandler` does not receive these initial loading and lifecycle errors.
+- **Manually loaded apps**: handle rejections from the returned handle’s promises; await `mountPromise` for the initial mount. Global `addErrorHandler` does not receive initial loading, bootstrap, or first-mount errors; a later `mount()` execution failure on the same handle also reaches the global observer.
 - **Other page errors**: use the browser’s `error` / `unhandledrejection` events for uncaught errors outside qiankun, and clean up listeners in the host.
 
 Identify framework errors with `QiankunError` imported from `qiankun` and its stable `code`, rather than matching message text. Business, network, and single-spa errors are not necessarily instances of this class.

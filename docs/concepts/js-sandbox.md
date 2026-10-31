@@ -50,6 +50,7 @@ Treat automatic cleanup as a safety net, not as a replacement for a well-defined
 ## Boundaries
 
 - **It is not a security sandbox.** Apps share the page's JavaScript environment and can read host globals that they have not shadowed. Only run code you trust.
+- **Mutations inside shared objects are not isolated.** Objects read from the host retain their identity. Assigning `window.sharedConfig.theme` changes the shared object; it differs from assigning a new value to `window.sharedConfig`.
 - **Only mediated operations can be tracked.** A resource created through an object outside the sandbox remains the application's responsibility.
 - **The host can still affect the app.** Changes made directly to shared browser services or host-owned objects are not rolled back for a micro-app.
 - **Isolation does not create private backends or storage.** Cookies, storage, network services, and other shared browser facilities keep their normal origin-level behavior.

@@ -35,10 +35,10 @@ import type {
 | 类型 | 定义 | 说明 |
 | --- | --- | --- |
 | `ObjectType` | `Record<string, unknown>` | props 泛型 `T` 的基础约束。 |
-| `HTMLEntry` | `string` | 微应用的 HTML 入口地址，仅支持字符串。 |
+| `HTMLEntry` | `string` | 微应用的 HTML Entry 地址，仅支持字符串。 |
 | `AppMetadata` | `{ name; entry }` | 微应用的基本描述信息。 |
-| `LoadableApp<T>` | `AppMetadata & { container; props? }` | 配合 [`loadMicroApp`](/zh-CN/api/load-micro-app) 使用，`container` 是 `HTMLElement`。 |
-| `RegistrableApp<T>` | `LoadableApp<T> & { loader?; activeRule; configuration? }` | 配合 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 使用。 |
+| `LoadableApp<T>` | `AppMetadata & { container; props?; loader? }` | 配合 [`loadMicroApp`](/zh-CN/api/load-micro-app) 使用，`container` 是 `HTMLElement`。 |
+| `RegistrableApp<T>` | `LoadableApp<T> & { activeRule; configuration? }` | 配合 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 使用。 |
 | `AppConfiguration` | 加载器选项 `& { sandbox?; loadTimeout? }` | 单个应用的运行时配置，见 [AppConfiguration](/zh-CN/api/configuration)。 |
 | `SandboxConfiguration` | `{ styleIsolation?; globals?; incubatorContext?; plugins?; …模块钩子 }` | `sandbox` 的对象形式，见 [SandboxConfiguration](/zh-CN/api/configuration#sandboxconfiguration)。 |
 | `LifeCycleFn<T>` | `(app, global) => Promise<void>` | 单个框架级生命周期钩子。 |
@@ -67,7 +67,7 @@ type Props = { userId: number; theme: 'light' | 'dark' };
 export type HTMLEntry = string;
 ```
 
-微应用入口始终是 HTML 文档的地址。qiankun 通过 [HTML 入口](/zh-CN/concepts/html-entry-loading)流式解析该文档，并执行其中引用的脚本。
+微应用入口始终是 HTML 文档的地址。qiankun 通过 [HTML Entry](/zh-CN/concepts/html-entry-loading)流式解析该文档，并执行其中引用的脚本。
 
 ```ts
 const entry: HTMLEntry = 'http://localhost:7101';
@@ -94,6 +94,7 @@ export type AppMetadata = {
 export type LoadableApp<T extends ObjectType> = AppMetadata & {
   container: HTMLElement;
   props?: T;
+  loader?: (loading: boolean) => void;
 };
 ```
 
@@ -102,9 +103,10 @@ export type LoadableApp<T extends ObjectType> = AppMetadata & {
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
 | `name` | `string` | 应用标识。不同容器中的多个 `loadMicroApp` 实例可以复用同一个名称。 |
-| `entry` | `HTMLEntry` | HTML 入口地址。 |
+| `entry` | `HTMLEntry` | HTML Entry 地址。 |
 | `container` | `HTMLElement` | 用于挂载应用的实际 DOM 元素，不能使用选择器字符串。 |
 | `props` | `T`（可选） | 传递给 `mount`、`unmount` 和可选 `update` 的业务数据，不传入 `bootstrap`。 |
+| `loader` | `(loading: boolean) => void`（可选） | 挂载链开始时收到 `true`，成功挂载后收到 `false`；加载或挂载失败应通过句柄 Promise 处理。 |
 
 ```ts
 import { loadMicroApp } from 'qiankun';
@@ -126,13 +128,12 @@ const app = loadMicroApp<{ userId: number }>({
 
 ```ts
 export type RegistrableApp<T extends ObjectType> = LoadableApp<T> & {
-  loader?: (loading: boolean) => void;
   activeRule: RegisterApplicationConfig['activeWhen'];
   configuration?: AppConfiguration;
 };
 ```
 
-传递给 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 的路由驱动应用描述对象。该类型在 `LoadableApp` 的基础上增加了三个与路由和加载相关的字段。
+传递给 [`registerMicroApps`](/zh-CN/api/register-micro-apps) 的路由驱动应用描述对象。该类型继承 `LoadableApp` 的 `loader`，并增加 `activeRule` 和 `configuration` 两个字段。
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
@@ -330,6 +331,33 @@ export async function unmount() {
   root = null;
 }
 ```
+
+## 沙箱与模块类型
+
+以下类型也由 `qiankun` 根入口直接导出，编写插件或模块钩子时可直接导入：
+
+```ts
+import {
+  type IsolationPlugin,
+  type Free,
+  type Rebuild,
+  type ModuleDescriptor,
+  type ModuleSource,
+  type ResolveHook,
+  type ImportHook,
+  type PrecompileModuleSourceOpts,
+  precompileModuleSource,
+} from 'qiankun';
+```
+
+| 用途 | 类型 |
+| --- | --- |
+| Compartment 全局对象和配置 | `Compartment`、`CompartmentGlobals`、`CompartmentOptions`、`UnshadowableGlobals` |
+| 沙箱控制器和容器协议 | `CreateSandboxOptions`、`SandboxController`、`SandboxContainerPreparation` |
+| 隔离插件与清理 | `IsolationPlugin`、`IsolationPluginContext`、`IsolationPluginConfig`、`Free`、`Rebuild` |
+| 模块来源、解析和预编译 | `Modules`、`ModuleDescriptor`、`ModuleNamespace`、`ModuleSource`、`ResolveHook`、`ImportHook`、`PrecompileModuleSourceOpts` |
+
+`precompileModuleSource(options)` 是同步函数，返回可供模块描述符使用的 `ModuleSource`。插件、钩子和预编译示例见[用插件扩展沙箱](/zh-CN/cookbook/sandbox-plugins)，控制器用法见[不依赖 qiankun，独立使用沙箱](/zh-CN/cookbook/standalone-sandbox)。
 
 ## PrefetchStrategy
 

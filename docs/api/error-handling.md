@@ -2,7 +2,7 @@
 
 Register a global single-spa error observer, primarily for load and lifecycle failures from route-driven applications registered with `registerMicroApps`, then remove it with the same function reference. qiankun re-exports both functions from single-spa without changing their behavior.
 
-Use this API for centralized logging and monitoring of route-driven applications. Initial load and lifecycle failures from `loadMicroApp` parcels reject their handle promises instead of entering this global channel. Handle those failures, and visible recovery, near the `loadMicroApp` instance or `<MicroApp>` component that owns the affected UI.
+Use this API for centralized logging and monitoring of route-driven applications. Initial loading, bootstrap, and first-mount failures from `loadMicroApp` reject handle promises. A later `mount()` execution failure also reaches the global observer; always handle the Promise returned by each operation. Handle those failures, and visible recovery, near the `loadMicroApp` instance or `<MicroApp>` component that owns the affected UI.
 
 ## Signatures
 
@@ -12,10 +12,10 @@ type AppError = Error & {
 };
 
 function addErrorHandler(handler: (error: AppError) => void): void;
-function removeErrorHandler(handler: (error: AppError) => void): void;
+function removeErrorHandler(handler: (error: AppError) => void): boolean;
 ```
 
-`appOrParcelName` identifies the application or instance associated with the failure. `removeErrorHandler` compares function references, so an equivalent new function does not unregister the original one.
+`appOrParcelName` identifies the application or instance associated with the failure. `removeErrorHandler` compares function references, so an equivalent new function does not unregister the original one. It returns `true` when a handler was removed and `false` when none matched.
 
 ## Usage
 
@@ -38,7 +38,7 @@ addErrorHandler(reportMicroAppError);
 removeErrorHandler(reportMicroAppError);
 ```
 
-The observer receives entry-loading and lifecycle failures from the route-driven `registerMicroApps` flow. Because `loadMicroApp` uses single-spa's root-parcel flow, its initial load and lifecycle failures reject the corresponding handle promises and are not sent to this observer.
+The observer receives entry-loading and lifecycle failures from the route-driven `registerMicroApps` flow. `loadMicroApp` uses the root-parcel flow: initial loading, bootstrap, and first-mount failures bypass this observer. A later `mount()` execution failure reaches the observer, and qiankun also rejects that call’s returned Promise. Handle `unmount()` and `update()` failures at the call site instead of relying on global reporting.
 
 The handler is global and renders nothing. For instance-level UI, observe the returned handle separately:
 
@@ -56,7 +56,7 @@ Keep the `MicroApp` handle and call `unmount()` when a successfully mounted view
 
 ## Handle loading timeouts {#load-timeout}
 
-When [`loadTimeout`](/api/configuration#loadtimeout) is enabled, a loading timeout produces a `LoadAppTimeoutError`. This class is exported from `qiankun`, extends `QiankunError`, and exposes these readonly fields:
+When [`loadTimeout`](/api/configuration#loadtimeout) is enabled, a loading timeout produces a `LoadAppTimeoutError`. This class is exported from `qiankun`, extends `QiankunError`, and exposes these fields:
 
 | Field | Type | Description |
 | --- | --- | --- |

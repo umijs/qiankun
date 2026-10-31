@@ -14,7 +14,7 @@ import { setDefaultMountApp, runAfterFirstMounted } from 'qiankun';
 function setDefaultMountApp(defaultAppLink: string): void
 ```
 
-Navigates to `defaultAppLink` the first time single-spa reports that a URL change resolved to no mounted app. This is how you pick a landing route so the shell does not start on a blank page.
+On the first `single-spa:no-app-change` event received by its listener, navigates to `defaultAppLink` if no application is mounted. This is how you pick a landing route so the shell does not start on a blank page.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
@@ -22,10 +22,10 @@ Navigates to `defaultAppLink` the first time single-spa reports that a URL chang
 
 How it works: on the `single-spa:no-app-change` event, if `getMountedApps()` returns an empty list, it calls `navigateToUrl(defaultAppLink)`. The listener removes itself after the first fire, so the redirect happens at most once. If a matching app is already mounted for the current URL, nothing happens.
 
-Because it relies on route matching, `defaultAppLink` must resolve to a registered app whose `activeRule` covers that path. If it does not, single-spa will again report no app change and — since the listener has already unbound — no further navigation occurs.
+When choosing a default micro-app, `defaultAppLink` should match a registered app’s `activeRule`; the helper itself does not validate that the destination is registered. If it does not, single-spa will again report no app change and — since the listener has already unbound — no further navigation occurs.
 
 ::: tip One-shot by design
-`setDefaultMountApp` only nudges the initial navigation. It is not a permanent fallback or a catch-all redirect for every unmatched route. For a persistent 404-style fallback, register a dedicated app or handle it in your shell's own router.
+`setDefaultMountApp` handles only the first `single-spa:no-app-change` event received after registration. It is not a permanent fallback or a catch-all redirect for every unmatched route. For a persistent 404-style fallback, register a dedicated app or handle it in your shell's own router.
 :::
 
 ### Example: land on a default route

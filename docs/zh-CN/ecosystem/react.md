@@ -56,7 +56,7 @@ export default function Navigation() {
 
 ## 基础用法
 
-`name` 和 `entry` 是仅有的两个必填 prop。`entry` 用于指定微应用 HTML 入口的 URL。
+`name` 和 `entry` 是仅有的两个必填 prop。`entry` 用于指定微应用 HTML Entry 的 URL。
 
 ```tsx
 import { MicroApp } from '@qiankunjs/react';
@@ -86,7 +86,7 @@ export type Props = SharedProps & SharedSlots<React.ReactNode> & Record<string, 
 | 属性 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
 | `name` * | `string` | — | 微应用实例的名称。值发生变化时，组件会卸载当前实例并创建新实例。 |
-| `entry` * | `string` | — | 微应用的 HTML 入口地址。 |
+| `entry` * | `string` | — | 微应用的 HTML Entry 地址。 |
 | `settings` | [`AppConfiguration`](/zh-CN/api/configuration) | — | 传递给 `loadMicroApp` 的加载器和沙箱配置。 |
 | `lifeCycles` | [`LifeCycles`](/zh-CN/api/lifecycles) | — | 由主应用提供的生命周期钩子，如 `beforeLoad`、`beforeMount`。 |
 | `autoSetLoading` | `boolean` | `false` | 是否渲染内置加载界面，并在应用挂载完成后自动结束加载状态。 |
@@ -266,7 +266,7 @@ ref 主要用于查询状态和等待生命周期 Promise。不应通过 ref 直
 
 ## 生命周期钩子
 
-主应用的生命周期钩子通过 `lifeCycles` 传递，并在当前微应用加载、挂载和卸载的相应阶段执行。每个钩子可以是单个函数或函数数组。
+主应用的生命周期钩子通过 `lifeCycles` 传递。每个钩子可以是单个函数或函数数组；复用已加载实例时，仍沿用该实例首次加载时的钩子，详见[生命周期钩子（`LifeCycles`）](/zh-CN/api/lifecycles)。
 
 ```tsx
 <MicroApp

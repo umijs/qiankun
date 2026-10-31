@@ -30,6 +30,7 @@ Describes which micro-app to load and where to mount it.
 | `entry` | `string` | yes | URL of the micro-app's HTML entry. Always a string — the 2.x object form (`{ scripts, styles }`) does not exist in v3. |
 | `container` | `HTMLElement` | yes | The DOM element to render into. Must be an actual element, not a CSS-selector string. |
 | `props` | `T` | no | Business data passed to `mount`, `unmount`, and optional `update`, excluding `bootstrap`. |
+| `loader` | `(loading: boolean) => void` | no | Receives `true` when the mount chain starts and `false` after a successful mount. Also handle the handle promises on failure; a final `false` is not guaranteed. |
 
 ```ts
 type ObjectType = Record<string, unknown>;
@@ -39,6 +40,7 @@ type LoadableApp<T extends ObjectType> = {
   entry: string;
   container: HTMLElement;
   props?: T;
+  loader?: (loading: boolean) => void;
 };
 ```
 
@@ -156,6 +158,7 @@ Observable behavior for callers:
 - **Loading and mounting start immediately.** You do not call `start()` first; await `mountPromise` when you need to know the app is visible.
 - **One container hosts one app at a time.** When apps are loaded into the same container in succession, the next instance waits for the previous one to unmount.
 - **An app name reuses its unmounted instances.** When you call it again with the same `name` and `entry` and that app has an idle, unmounted instance, qiankun mounts that instance into the container you pass, without loading the entry again or calling `bootstrap`. If none is idle, an instance whose `unmount()` has been called but has not finished (including one still mounting) is reused as well, and the new instance mounts once that unmount completes. Only instances mounted at the same time load separate copies. A `name` should therefore always refer to the same app, and per-mount state belongs in `mount()`.
+- **Reused instances keep their original configuration.** A cache hit retains the `configuration`, `lifeCycles`, and `loader` from the original load; later calls do not replace them. To change them, dispose of the old instance with `unload()` or `unloadMicroApp(name)` before loading again.
 - **Idle instances have capacity and time limits.** qiankun keeps at most 2 idle instances per `name` and `entry`, and 8 globally. Excess instances are reclaimed in least-recently-used order; instances idle for 5 minutes also expire. Loading, mounted, queued, and unmounting instances are excluded.
 - **Retained handles can remount after reclamation.** A cache hit reuses the sandbox; after reclamation, if no other instance can be reused, qiankun reloads the entry and runs `bootstrap`. An explicit `unload()` invalidates the handle and requires a new `loadMicroApp` call.
 - **The caller owns teardown.** Call `unmount()` when the app is no longer shown, as the official `<MicroApp>` components do. Call `unload()` or `unloadMicroApp(name)` only when the loaded resources should be released.
@@ -200,7 +203,7 @@ Disposal clears container nodes (including `qiankun-head`), framework-tracked si
 
 Disposal revokes the membrane. A `setTimeout`, `requestAnimationFrame`, or Promise callback queued before disposal throws a `TypeError` when it later runs and accesses globals such as `window`. Micro-apps should clear such pending asynchronous callbacks in their own `unmount`.
 
-qiankun cannot undo native import map entries or module registrations already held by the browser. Removing injected scripts and revoking blob URLs does not clear the browser's module registry; reloading uses a new instance identifier. See [ESM sandbox RFC §11](https://github.com/umijs/qiankun/blob/next/docs/rfcs/esm-sandbox.md) for this limitation. With `sandbox: false`, qiankun also cannot automatically roll back micro-app writes to the real global object.
+qiankun cannot undo native import map entries or module registrations already held by the browser. Removing injected scripts and revoking blob URLs does not clear the browser's module registry; reloading uses a new instance identifier. See [ESM sandbox internals](/internals/esm-sandbox) for the cleanup boundary. With `sandbox: false`, qiankun also cannot automatically roll back micro-app writes to the real global object.
 
 `unloadMicroApp` manages only instances created by `loadMicroApp`. For registered route applications, use `unloadApplication` as described on the [registerMicroApps](/api/register-micro-apps#unload-application) page.
 

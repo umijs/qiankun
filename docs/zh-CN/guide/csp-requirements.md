@@ -47,7 +47,7 @@ Content-Security-Policy: default-src 'self'; script-src 'self' blob: 'unsafe-inl
 Content-Security-Policy: default-src 'self'; script-src 'self' blob:; style-src 'self' blob: 'unsafe-inline'; connect-src 'self'
 ```
 
-此示例仍假设资源同源。它保留了样式隔离和内联样式所需的权限；没有这些样式时，可以继续收紧 `style-src`。不要将它直接用于包含内联 Classic 脚本的 HTML 入口：这类脚本只会被重写，不会自动转成 Blob URL。
+此示例仍假设资源同源。它保留了样式隔离和内联样式所需的权限；没有这些样式时，可以继续收紧 `style-src`。不要将它直接用于包含内联 Classic 脚本的 HTML Entry：这类脚本只会被重写，不会自动转成 Blob URL。
 
 ### 使用 ESM
 

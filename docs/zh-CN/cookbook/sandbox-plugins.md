@@ -99,9 +99,13 @@ loadMicroApp(app, {
 - 卸载时，qiankun 调用 `Free` 清理副作用，并保存其返回的 `Rebuild`；
 - 再次挂载时，`Rebuild(container)` 会在挂载完成前恢复需要保留的副作用。
 
+`Free` 按安装顺序的逆序执行，先处理挂载阶段，再处理初始化阶段；返回的 `Rebuild` 则按安装顺序重放。JS-only 沙箱没有容器，因此 `Rebuild` 的参数可省略。
+
+插件还可以提供同步的 `dispose(context): void` 钩子，用于释放普通卸载后仍需保留的缓存和视图。它只在控制器销毁时调用一次，位于所有活跃 `Free` 执行完成后、Compartment 销毁前，按逆安装顺序执行，并须能处理初始化仅部分完成的情况。
+
 ```ts
 type Free = () => Rebuild;
-type Rebuild = (container: HTMLElement) => Promise<void>;
+type Rebuild = (container?: HTMLElement) => Promise<void>;
 ```
 
 应用级状态放在钩子闭包中。如果插件修改了共享原型，则要在浏览器 realm 级维护引用计数，避免一个应用卸载时提前还原其他应用仍在使用的能力。如果页面可能同时加载多份独立打包的 qiankun，应通过原生全局对象上的稳定 `Symbol.for(...)` 键共享协调记录，不能只依赖模块局部状态。

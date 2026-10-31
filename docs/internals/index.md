@@ -16,5 +16,3 @@ You do not need these pages to integrate a micro-app. Start with [Loading a micr
 ## Stability
 
 Names, source paths, and control flow in this section are implementation details. They may change without a public API deprecation. Build integrations against documented APIs and observable behavior, not these internals.
-
-Design rationale that should outlive a particular implementation belongs in the [RFCs](https://github.com/umijs/qiankun/tree/next/docs/rfcs).

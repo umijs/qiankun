@@ -173,7 +173,7 @@ await controller.unmount();
 await controller.dispose();
 ```
 
-应在执行脚本前调用 `mount()`。在此之前创建的副作用不属于 mount 阶段的追踪范围。样式隔离必须依附于容器，因此 `createSandbox('name', { styleIsolation: true })` 会直接抛出 `TypeError`。
+应在执行脚本前调用 `mount()`。在此之前创建的副作用不属于 mount 阶段的追踪范围。样式隔离必须依附于容器，因此 `createSandbox('name', { styleIsolation: true })` 会抛出 `code` 为 `container-required` 的 `QiankunError`。
 
 ## 准备容器协议
 
@@ -280,7 +280,7 @@ await sandbox.evaluateScript(`
 - 宿主和沙箱看到的 `sharedSettings.theme` 都变成了 `"dark"`，因为双方持有的是同一个对象；
 - DOM 节点、事件、函数和库实例同样保持原始身份，`===` 与 `instanceof` 不会因为穿过边界而失效。
 
-因此，它不适合直接执行恶意或不受信任的代码。沙箱不会冻结共享对象，不会 harden intrinsics，也不会创建新的源，更不会提供 iframe 或 Worker 那样的调用边界。需要安全边界时，应采用浏览器原生隔离机制。设计取舍详见 [Compartment Alignment RFC](https://github.com/umijs/qiankun/blob/next/docs/rfcs/compartment-alignment.md)。
+因此，它不适合直接执行恶意或不受信任的代码。沙箱不会冻结共享对象，不会 harden intrinsics，也不会创建新的源，更不会提供 iframe 或 Worker 那样的调用边界。需要安全边界时，应采用浏览器原生隔离机制。
 
 ## Content Security Policy
 

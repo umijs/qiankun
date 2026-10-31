@@ -6,7 +6,7 @@
 
 - 每篇指南针对一个具体目标，例如启用某项能力、改造微应用或处理特定故障，不会逐项介绍某个 API 的全部功能。
 - 各篇内容可以独立阅读。文中的步骤假定 qiankun 已安装，并且已有可运行的主应用和至少一个微应用。尚未完成基础接入时，请先阅读[快速上手](/zh-CN/guide/getting-started)或[教程](/zh-CN/tutorial/)。
-- 本节不重复说明底层机制。相关内容请参阅 [JavaScript 沙箱](/zh-CN/concepts/js-sandbox)、[样式隔离](/zh-CN/concepts/style-isolation)和 [HTML 入口加载](/zh-CN/concepts/html-entry-loading)等核心概念页面。
+- 本节不重复说明底层机制。相关内容请参阅 [JavaScript 沙箱](/zh-CN/concepts/js-sandbox)、[样式隔离](/zh-CN/concepts/style-isolation)和 [HTML Entry 加载](/zh-CN/concepts/html-entry-loading)等核心概念页面。
 - 类型、默认值和完整字段说明见 [API 参考](/zh-CN/api/)。本节侧重说明各项配置在具体场景中的使用方式。
 
 ## 指南一览

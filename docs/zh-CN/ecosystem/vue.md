@@ -66,7 +66,7 @@ import { MicroApp } from '@qiankunjs/vue';
 </template>
 ```
 
-`name` 和 `entry` 是仅有的两个必填 prop。`name` 用于标识当前实例，`entry` 用于指定微应用的 HTML 入口 URL。缺少其中任意一项时，组件仅输出错误日志，不会加载微应用，也不会抛出异常。
+`name` 和 `entry` 是仅有的两个必填 prop。`name` 用于标识当前实例，`entry` 用于指定微应用的 HTML Entry URL。缺少其中任意一项时，组件仅输出错误日志，不会加载微应用，也不会抛出异常。
 
 组件会渲染一个 `class` 为 `qiankun-micro-app-container` 的 `<div>`，并将微应用内容流式写入该容器。只有启用加载状态或错误边界时，组件才会额外渲染一层包裹元素。详见[加载与错误界面](#loading-and-error-ui)。
 
@@ -75,7 +75,7 @@ import { MicroApp } from '@qiankunjs/vue';
 | Prop | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
 | `name` | `string` | — | **必填。** 微应用实例的名称；值发生变化时会重新挂载。 |
-| `entry` | `string` | — | **必填。** 微应用的 HTML 入口 URL。 |
+| `entry` | `string` | — | **必填。** 微应用的 HTML Entry URL。 |
 | `settings` | `AppConfiguration` | `{ sandbox: true }` | 传递给 `loadMicroApp` 的加载器和沙箱配置。参见 [AppConfiguration](/zh-CN/api/configuration)。 |
 | `lifeCycles` | `LifeCycles` | `undefined` | 由主应用提供的生命周期钩子，包括 `beforeLoad`、`beforeMount`、`afterMount`、`beforeUnmount` 和 `afterUnmount`。每项可传入函数或函数数组。参见[生命周期钩子](/zh-CN/api/lifecycles)。 |
 | `autoSetLoading` | `boolean` | `false` | 微应用加载期间渲染内置的加载指示器。 |
@@ -89,12 +89,12 @@ Vue 绑定的 `settings` 默认值为 `{ sandbox: true }`，[React 绑定](/zh-C
 :::
 
 ::: warning 业务数据通过 `appProps` 传递
-React 绑定会将 `<MicroApp>` 上的附加 prop 传递给微应用，Vue 绑定则不会传递任意附加属性。业务数据必须放入 `appProps` 对象，未声明的其他属性会被忽略。当前实现还会将 `autoSetLoading`、`autoCaptureError` 和 `appProps` 对象本身传入微应用；业务代码不应依赖这些组件控制字段。
+React 绑定会将 `<MicroApp>` 上的附加 prop 传递给微应用，Vue 绑定则不会传递任意附加属性。业务数据必须放入 `appProps` 对象，未声明的其他属性会被忽略。`autoSetLoading`、`autoCaptureError` 等组件控制字段及 `appProps` 包装对象会被过滤；微应用接收的是 `appProps` 内的业务字段。
 :::
 
 ### `settings`（AppConfiguration）
 
-`settings` 与 [`loadMicroApp`](/zh-CN/api/load-micro-app) 的第二个参数结构相同。完整定义参见 [AppConfiguration](/zh-CN/api/configuration)，字段为 `fetch`、`streamTransformer`、`nodeTransformer` 和 `sandbox`（默认值为 `true`）。样式隔离、额外全局变量、宿主全局对象（`incubatorContext`）和隔离插件均位于 `sandbox` 对象内部。
+`settings` 与 [`loadMicroApp`](/zh-CN/api/load-micro-app) 的第二个参数结构相同。完整定义参见 [AppConfiguration](/zh-CN/api/configuration)，字段为 `fetch`、`loadTimeout`、`streamTransformer`、`nodeTransformer` 和 `sandbox`（默认值为 `true`）。样式隔离、额外全局变量、宿主全局对象（`incubatorContext`）和隔离插件均位于 `sandbox` 对象内部。
 
 ```vue
 <template>
@@ -148,9 +148,7 @@ export async function mount(props) {
 flowchart TD
   A[name 变化 / 首次挂载] --> B[loading = true]
   B --> C[mountMicroApp -> loadMicroApp]
-  C -->|mountPromise 完成| D{是否启用 autoSetLoading}
-  D -->|是| E[loading = false，隐藏加载界面]
-  D -->|否| F[不自动清除 loading]
+  C -->|mountPromise 完成| E[loading = false，更新加载界面]
   C -->|load/bootstrap/mount 失败| G{是否配置错误界面}
   G -->|是| H[记录异常并显示错误边界]
   G -->|否| I[重新抛出异常]
@@ -178,7 +176,7 @@ import { MicroApp } from '@qiankunjs/vue';
 内置界面仅提供基础占位内容：默认加载界面渲染文本 `loading...`，默认错误边界渲染包含 `error.message` 的 `<div>`。生产环境通常应使用下文介绍的插槽提供自定义界面。
 
 ::: info 加载状态的初始值
-Vue 绑定将 `loading` 初始化为 `false`，React 绑定的初始值则为 `true`。微应用开始加载时，该状态会设为 `true`；启用 `autoSetLoading` 后，组件会在 `mountPromise` 完成时将其恢复为 `false`。未启用 `autoSetLoading` 时，组件不会渲染内置加载界面。
+Vue 绑定将 `loading` 初始化为 `false`，React 绑定的初始值为 `true`。开始加载时设为 `true`，`mountPromise` 成功或失败后恢复为 `false`，与 `autoSetLoading` 无关。该 prop 只决定是否使用内置加载界面，自定义 `#loader` 插槽也能独立接收完整的状态变化。
 :::
 
 ### 自定义 `loader` 插槽
@@ -192,7 +190,7 @@ import { MicroApp } from '@qiankunjs/vue';
 </script>
 
 <template>
-  <micro-app name="app1" entry="http://localhost:8000" autoSetLoading>
+  <micro-app name="app1" entry="http://localhost:8000">
     <template #loader="loading">
       <custom-loader :loading="loading" />
     </template>
@@ -200,7 +198,7 @@ import { MicroApp } from '@qiankunjs/vue';
 </template>
 ```
 
-`#loader` 插槽的优先级高于内置加载界面。提供该插槽后，组件不会渲染默认加载界面；仍需设置 `autoSetLoading`，组件才会在 `mountPromise` 完成后自动将 `loading` 设为 `false`。
+`#loader` 插槽优先于内置加载界面，可以独立使用，无需同时设置 `autoSetLoading`。
 
 ### 自定义错误边界插槽
 

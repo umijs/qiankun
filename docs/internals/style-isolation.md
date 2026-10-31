@@ -30,7 +30,7 @@ flowchart TD
   D --> G["runtime insertRule: scoped rule"]
 ```
 
-Style isolation is off by default. If you never set `sandbox.styleIsolation`, `<style>` and `<link>` nodes pass through the loader untouched.
+Style isolation is off by default. Without `sandbox.styleIsolation`, `<style>` and `<link>` nodes receive no scope rewriting; other asset transformations may still apply.
 
 ## Inline `<style>`
 

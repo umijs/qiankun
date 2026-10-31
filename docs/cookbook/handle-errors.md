@@ -59,7 +59,7 @@ addErrorHandler(reportMicroAppError);
 removeErrorHandler(reportMicroAppError);
 ```
 
-This channel observes load and lifecycle failures from applications activated with [`registerMicroApps`](/api/register-micro-apps). Initial load and lifecycle failures from `loadMicroApp` instances only reject their handle promises and do not enter the global channel. Use the global handler for route-driven telemetry, not for choosing or rendering an instance's fallback UI.
+This channel observes load and lifecycle failures from applications activated with [`registerMicroApps`](/api/register-micro-apps). Initial loading, bootstrap, and first-mount failures from `loadMicroApp` reject handle promises. A later `mount()` execution failure also reaches the global handler, but the caller must still handle the Promise returned by that method. Use the global handler for route-driven telemetry, not for choosing or rendering an instance's fallback UI.
 
 Do not throw, reload the page, or start an unbounded retry loop inside a global handler. See the [`addErrorHandler` / `removeErrorHandler` reference](/api/error-handling) for the error shape and lifecycle coverage.
 

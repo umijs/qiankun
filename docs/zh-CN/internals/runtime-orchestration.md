@@ -6,7 +6,7 @@
 
 ## 总体结构
 
-从解析 HTML 入口到运行隔离后的微应用，核心流程均由 `loadApp`（`packages/qiankun/src/core/loadApp.ts`）编排。`loadApp` 完成加载准备后返回一个工厂函数，由该函数生成供 [single-spa](https://single-spa.js.org/) 执行挂载和卸载的 Parcel 配置。
+从解析 HTML Entry 到运行隔离后的微应用，核心流程均由 `loadApp`（`packages/qiankun/src/core/loadApp.ts`）编排。`loadApp` 完成加载准备后返回一个工厂函数，由该函数生成供 [single-spa](https://single-spa.js.org/) 执行挂载和卸载的 Parcel 配置。
 
 微应用可以通过以下两种方式进入该流程，区别在于激活时机由谁控制：
 
@@ -39,7 +39,9 @@ flowchart LR
 [`AppConfiguration`](/zh-CN/api/configuration) 中提供的 `fetch`（默认为 `window.fetch`）会依次经过 `@qiankunjs/shared` 中的三层装饰器：
 
 ```ts
-const enhancedFetch = makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(fetch)));
+const resourceFetch = makeFetchRetryable(makeFetchThrowable(fetch));
+const enhancedFetch = makeFetchCacheable(resourceFetch, { signal });
+const moduleFetch = makeFetchCacheable(resourceFetch, { scope: 'modules', signal });
 ```
 
 从内到外，各层职责如下：`makeFetchThrowable` 在响应状态码不属于 `200–399` 时抛出异常，`makeFetchRetryable` 为当前封装后的 fetch 实例提供共享的有限重试额度，`makeFetchCacheable` 负责请求去重和缓存。重试层不会判断错误是否具有临时性，因此网络异常和无效 HTTP 响应均可能消耗该额度，也不保证每个失败请求都会得到重试。
@@ -47,8 +49,10 @@ const enhancedFetch = makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(f
 `enhancedFetch` 用于获取以下资源：
 
 - 入口 HTML；
-- 由 qiankun 主动获取并转换的资源，包括沙箱中的 Classic 脚本、ESM 模块和隔离样式；
+- 由 qiankun 主动获取并转换的资源，包括沙箱中的 Classic 脚本和隔离样式；
 - 重新挂载时不含脚本的 HTML。
+
+`moduleFetch` 通过 `compartmentOptions.moduleHost.fetch` 提供给模块加载器，使用独立的模块源码 LRU，避免模块图挤占入口和样式的缓存。两层缓存都以规范化 URL 和有效 `credentials` 为键，并共享底层请求校验及重试额度。
 
 图片和未启用隔离的样式表等浏览器原生请求不经过该函数。
 
@@ -56,11 +60,11 @@ const enhancedFetch = makeFetchCacheable(makeFetchRetryable(makeFetchThrowable(f
 
 当 `sandbox` 为 `true`（默认值）或对象时，`createSandbox`（`packages/sandbox`）会为 `window` 和 `document` 创建基于 Proxy 隔离膜的视图。应用代码运行在 `sandboxInstance.globalThis` 上，而非直接访问真实全局对象，因此全局写入会保存在当前应用的隔离环境中。隔离膜的行为以及补丁模块在卸载阶段的清理机制见 [JavaScript 沙箱实现](/zh-CN/internals/js-sandbox)。
 
-ESM 引擎也在该沙箱容器中创建，并且仅存在于 `if (sandbox)` 分支。因此，设置 `sandbox: false` 会同时关闭原生 ESM 沙箱执行。
+模块加载通过沙箱的 Compartment 门面提供，底层 ESM 引擎由该门面管理。设置 `sandbox: false` 会同时关闭原生 ESM 沙箱执行。
 
 ### 3. 流式加载器
 
-`loadEntry(entry, container, opts)`（`packages/loader`）获取入口 HTML，并将其作为 `ReadableStream` 依次交给解码器、可选的 `streamTransformer`、`<head>` 虚拟化转换以及 `writable-dom`。虚拟化过程会将 `<head>` 改写为 `<qiankun-head>`，供沙箱作为应用级虚拟 `<head>` 使用。`writable-dom` 在数据到达时逐步将节点提交到真实 DOM，无需先将整个文档缓冲为字符串。详见 [HTML 入口流式加载原理](/zh-CN/internals/streaming-html-entry)。
+`loadEntry(entry, container, opts)`（`packages/loader`）获取入口 HTML，并将其作为 `ReadableStream` 依次交给解码器、可选的 `streamTransformer`、`<head>` 虚拟化转换以及 `writable-dom`。虚拟化过程会将 `<head>` 改写为 `<qiankun-head>`，供沙箱作为应用级虚拟 `<head>` 使用。`writable-dom` 在数据到达时逐步将节点提交到真实 DOM，无需先将整个文档缓冲为字符串。详见 [HTML Entry 流式加载原理](/zh-CN/internals/streaming-html-entry)。
 
 ### 4. 资源转译器
 
@@ -68,7 +72,7 @@ ESM 引擎也在该沙箱容器中创建，并且仅存在于 `if (sandbox)` 分
 
 ## 两种脚本执行方式
 
-执行方式根据各脚本节点的类型分别确定，因此同一份 HTML 入口中可以同时包含 Classic 和 ESM 脚本。
+执行方式根据各脚本节点的类型分别确定，因此同一份 HTML Entry 中可以同时包含 Classic 和 ESM 脚本。
 
 | | Classic | ESM |
 | --- | --- | --- |
@@ -78,7 +82,7 @@ ESM 引擎也在该沙箱容器中创建，并且仅存在于 `if (sandbox)` 分
 
 **Classic 脚本**沿用 UMD／全局导出方式。入口脚本经过包装，通过绑定沙箱隔离膜的 blob URL 执行；qiankun 再从 `sandbox.latestSetProp` 所指向的全局变量中读取生命周期对象。
 
-**ESM 脚本**（`<script type="module">`）由 `EsmSandboxEngine`（`packages/shared/src/esm-sandbox`）处理。引擎通过增强后的 `fetch` 获取模块，再使用 WASM 词法分析器改写源码，使全局变量访问经过隔离膜；随后通过动态注入的 `<script type="importmap">` 解析合成模块说明符，并按文档顺序求值。模块实例化和求值仍由浏览器原生 ESM 加载器负责，因此能够保留顶层 `await`、循环依赖和实时绑定等语义。Vite 开发服务器提供的未打包模块图也可通过此方式在沙箱内运行。详见 [ESM 沙箱实现](/zh-CN/internals/esm-sandbox)。
+**ESM 脚本**（`<script type="module">`）由 `EsmSandboxEngine`（`packages/shared/src/esm-sandbox`）处理。引擎通过增强后的 `fetch` 获取模块，再通过 `es-module-lexer/js` 解析模块语法并改写源码，使全局变量访问经过隔离膜；随后通过动态注入的 `<script type="importmap">` 解析合成模块说明符，并按文档顺序求值。模块实例化和求值仍由浏览器原生 ESM 加载器负责，因此能够保留顶层 `await`、循环依赖和实时绑定等语义。Vite 开发服务器提供的未打包模块图也可通过此方式在沙箱内运行。详见 [ESM 沙箱实现](/zh-CN/internals/esm-sandbox)。
 
 ::: info Firefox 与动态 import map
 ESM 沙箱依赖动态注入的 import map，而 Firefox 默认未启用所需能力；完整的浏览器版本要求见[浏览器支持](/zh-CN/guide/browser-support)。ESM 沙箱的 e2e 测试在 Firefox 上标记为预期失败（expected failure），而非跳过（skip）。
@@ -100,13 +104,13 @@ flowchart TD
 ```
 
 - `qiankun`：公共 API 及 `loadApp` 编排逻辑。
-- `loader`：流式 HTML 入口加载器。
+- `loader`：流式 HTML Entry 加载器。
 - `sandbox`：基于 Proxy 隔离膜的 JavaScript 隔离。
 - `shared`：资源转译器、`fetch` 装饰器、模块解析器和 ESM 沙箱引擎。
 - `ui-bindings`：基于 `qiankun` 实现的 [React](/zh-CN/ecosystem/react) 和 [Vue](/zh-CN/ecosystem/vue) `<MicroApp>` 组件。
 
-::: warning 内部包不属于公共 API
-除 `qiankun`、`@qiankunjs/react` 和 `@qiankunjs/vue` 外，`loader`、`sandbox`、`shared` 均属于实现细节，其导出可能在版本升级时发生变化。应用代码应仅依赖 [API 参考](/zh-CN/api/)中明确记录的公共接口。
+::: warning 公开接口与实现边界
+主应用接入应使用 `qiankun`、`@qiankunjs/react` 或 `@qiankunjs/vue` 的公开接口。独立使用 `@qiankunjs/sandbox` 时，应遵循[独立使用沙箱](/zh-CN/cookbook/standalone-sandbox)中记录的接口。`loader`、`shared` 及未文档化的内部接口不属于应用接入契约。
 :::
 
 ## 完整加载生命周期
@@ -115,7 +119,7 @@ flowchart TD
 
 1. **设置配置默认值。** 默认配置包括 `fetch = window.fetch`（随后会增强）、`sandbox = true`、`nodeTransformer = defaultNodeTransformer`。`sandbox` 传入对象时还会应用其自身的默认值：`incubatorContext = window`，`styleIsolation` 关闭。完整字段见 [AppConfiguration](/zh-CN/api/configuration)。
 2. **初始化容器。** 清空容器，并设置 `data-name`、`data-version` 和 `data-sandbox-cfg`。重新挂载后容器上会出现 `data-mount-times`（值为挂载次数）；同名应用的第二个及后续实例会带上 `data-instance-id`。`instanceId` 由按应用名计数的计数器生成，用于区分同一应用的[多个实例](/zh-CN/cookbook/run-multiple-instances)。
-3. **创建沙箱与 ESM 引擎。** 启用沙箱时，创建 Proxy 隔离膜，并使用应用名、实例 ID、入口 URL 和增强后的 `fetch` 构造 `EsmSandboxEngine`。
+3. **创建沙箱与模块加载门面。** 启用沙箱时，由 `createSandbox` 创建 Compartment 和 DOM 隔离插件；入口 URL、模块钩子及独立的模块 fetch 通过 `compartmentOptions` 传入。`loadApp` 不直接构造 ESM 引擎。
 4. **流式加载入口。** `loadEntry` 使 HTML 依次经过流式处理和资源转译；Classic 脚本与模块脚本分别进入对应执行流程。模块脚本在流式处理阶段收集，输入流结束后再按文档顺序执行。
 5. **解析生命周期。** `getLifecyclesFromExports` 依次尝试从导出对象、`exports.default`、`global[latestSetProp]`（Classic）和 `window[appName]` 中解析 `{ bootstrap, mount, unmount, update }`。如果均不符合生命周期对象要求，则抛出异常；其中 `update` 为可选函数。详见[生命周期解析原理](/zh-CN/internals/lifecycle-resolution)。
 6. **组合内置扩展钩子和用户钩子。** 两个内置扩展钩子会在代理后的全局对象上设置 `__POWERED_BY_QIANKUN__` 和 `__INJECTED_PUBLIC_PATH_BY_QIANKUN__`。用户配置的[生命周期钩子](/zh-CN/api/lifecycles)（`beforeLoad`、`beforeMount`、`afterMount`、`beforeUnmount`、`afterUnmount`）会与内置逻辑组合。`beforeLoad` 在 `loadApp` 主体中执行，其余钩子分别加入 Parcel 的 `mount` 或 `unmount` 队列。
@@ -125,19 +129,19 @@ flowchart TD
 `unmount` 仅停用应用，同时保留沙箱和 ESM 模块命名空间，以降低重新挂载的开销。对于 ESM 应用，重新挂载只会再次调用 `mount(props)`，不会重新执行模块顶层代码。手动加载的应用通过句柄 `unload()` 或 `unloadMicroApp(name)` 销毁；路由应用通过 `unloadApplication` 触发销毁。两条路径都会清理 ESM 引擎的框架引用及 blob URL，但不能撤回浏览器原生模块注册。因此，框架实例应在 `mount()` 中创建，而不应在模块顶层创建。
 :::
 
-## `start()` 的附加行为
+## `start()` 与运行时初始化
 
-除启动 single-spa 路由外，[`start`](/zh-CN/api/start) 还会通过 `prepareEsmLexer()` 预初始化 ESM 引擎使用的 WASM 词法分析器，避免首个 ESM 微应用在关键加载阶段承担初始化开销。`start` 是幂等函数，仅接收 single-spa 的 `{ urlRerouteOnly }` 配置。
+[`start`](/zh-CN/api/start) 启动 single-spa 路由，是幂等函数，仅接收 `{ urlRerouteOnly }` 配置。当前 ESM 词法分析器使用 `es-module-lexer/js`，无需预热 WASM；`prepareEsmLexer()` 保留异步准备接口，但返回已完成的 Promise，`start()` 不调用它。
 
-如果主应用尚未调用 `start()`，[`loadMicroApp`](/zh-CN/api/load-micro-app) 会自动调用一次。这可以确保主应用的 `pushState` 和 `replaceState` 正确触发 `popstate`，使命令式加载场景中的路由行为保持一致。
+[`loadMicroApp`](/zh-CN/api/load-micro-app) 会在运行时尚未启动时自动调用 `start()`，因此按需加载无需单独启动路由运行时。
 
 ## 延伸阅读
 
 - [加载一个微应用实例](/zh-CN/concepts/architecture)：面向使用者的整体运行模型。
-- [HTML 入口](/zh-CN/concepts/html-entry-loading)：HTML 入口的公开约定。
+- [HTML Entry](/zh-CN/concepts/html-entry-loading)：HTML Entry 的公开约定。
 - [JavaScript 隔离](/zh-CN/concepts/js-sandbox)与[原生 ESM 支持](/zh-CN/concepts/esm-sandbox)：应用可依赖的隔离行为。
 - [微应用生命周期与 props](/zh-CN/concepts/lifecycle-and-props)：微应用需要满足的生命周期契约。
-- [HTML 入口流式加载原理](/zh-CN/internals/streaming-html-entry)：流式处理、`<head>` 虚拟化和脚本分类。
+- [HTML Entry 流式加载原理](/zh-CN/internals/streaming-html-entry)：流式处理、`<head>` 虚拟化和脚本分类。
 - [JavaScript 沙箱实现](/zh-CN/internals/js-sandbox)：Proxy 隔离膜，以及补丁模块对副作用的清理和恢复机制。
 - [ESM 沙箱实现](/zh-CN/internals/esm-sandbox)：原生 `<script type="module">` 如何通过隔离膜执行。
 - [样式隔离实现](/zh-CN/internals/style-isolation)：CSS `@scope` 与 blob URL 样式表改写。
