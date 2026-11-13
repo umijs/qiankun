@@ -13,6 +13,7 @@ import {
   getContainerHeadElement,
   getNewRemoveChild,
   getOverwrittenAppendChildOrInsertBefore,
+  isHijackingTag,
   rebuildCSSRules,
   recordStyledComponentsCSSRules,
   styleElementRefNodeNo,
@@ -43,6 +44,8 @@ interface DOMPrototypePatchState {
   patchedMutationObserverObserve: typeof MutationObserver.prototype.observe;
   nativeCompareDocumentPosition: typeof Node.prototype.compareDocumentPosition;
   patchedCompareDocumentPosition: typeof Node.prototype.compareDocumentPosition;
+  nativeInsertAdjacentElement: typeof Element.prototype.insertAdjacentElement;
+  patchedInsertAdjacentElement: typeof Element.prototype.insertAdjacentElement;
 }
 
 interface CSSOMPatchState {
@@ -88,6 +91,11 @@ const { containerOwners, elementConfigs, sandboxConfigs } = sharedState;
 const activeHeadPatchers = new WeakMap<PluginCompartment, (headElement: HTMLHeadElement) => void>();
 
 const getSandboxConfig = (element: HTMLElement) => elementConfigs.get(element);
+// Only the mount points carry both an owning config and instance-level insertion methods (installed
+// by patchDocumentHeadAndBodyMethods); stylesheet elements and nodes resolved by DOM position have a
+// config but never an own insertBefore.
+const isPatchedMountPoint = (element: HTMLElement) =>
+  Reflect.getOwnPropertyDescriptor(element, 'insertBefore') !== undefined && !!getSandboxConfig(element);
 const setSandboxConfig = (element: HTMLElement, config: SandboxConfig) => elementConfigs.set(element, config);
 
 /**
@@ -376,16 +384,55 @@ function patchDOMPrototypeFns(): Unpatch {
       return nativeCompareDocumentPosition.call(this, realNode);
     };
 
+    /*
+     * patch Element.prototype.insertAdjacentElement: it is an insertion into the parent of its
+     * receiver (or into the receiver itself), thus it bypasses the instance-level appendChild /
+     * insertBefore wrappers on the mount points — e.g. Vite inserts its dynamic styles right after
+     * the previously inserted one. When the insertion point is a patched mount point, delegate to
+     * the mount point's own insertBefore so the element is attributed, transpiled and recorded
+     * exactly like any other dynamic insertion. Anything else stays native.
+     * See https://github.com/umijs/qiankun/issues/3018
+     */
+    const nativeInsertAdjacentElement = Element.prototype.insertAdjacentElement;
+    const patchedInsertAdjacentElement = function insertAdjacentElement(
+      this: Element,
+      where: InsertPosition,
+      element: Element,
+    ): Element | null {
+      if (isHijackingTag(element.tagName)) {
+        const position = String(where).toLowerCase();
+        const mountPoint = position === 'afterbegin' || position === 'beforeend' ? this : this.parentNode;
+        if (mountPoint instanceof HTMLElement && isPatchedMountPoint(mountPoint)) {
+          switch (position) {
+            case 'beforebegin':
+              return mountPoint.insertBefore(element, this);
+            case 'afterbegin':
+              return mountPoint.insertBefore(element, mountPoint.firstChild);
+            case 'beforeend':
+              return mountPoint.insertBefore(element, null);
+            case 'afterend':
+              return mountPoint.insertBefore(element, this.nextSibling);
+            default:
+              break;
+          }
+        }
+      }
+      return nativeInsertAdjacentElement.call(this, where, element);
+    };
+
     state = {
       refCount: 0,
       nativeMutationObserverObserve,
       patchedMutationObserverObserve,
       nativeCompareDocumentPosition,
       patchedCompareDocumentPosition,
+      nativeInsertAdjacentElement,
+      patchedInsertAdjacentElement,
     };
     sharedState.domPrototypePatch = state;
     MutationObserver.prototype.observe = patchedMutationObserverObserve;
     Node.prototype.compareDocumentPosition = patchedCompareDocumentPosition;
+    Element.prototype.insertAdjacentElement = patchedInsertAdjacentElement;
   }
 
   state.refCount += 1;
@@ -403,6 +450,9 @@ function patchDOMPrototypeFns(): Unpatch {
     }
     if (Node.prototype.compareDocumentPosition === state.patchedCompareDocumentPosition) {
       Node.prototype.compareDocumentPosition = state.nativeCompareDocumentPosition;
+    }
+    if (Element.prototype.insertAdjacentElement === state.patchedInsertAdjacentElement) {
+      Element.prototype.insertAdjacentElement = state.nativeInsertAdjacentElement;
     }
     if (sharedState.domPrototypePatch === state) {
       delete sharedState.domPrototypePatch;

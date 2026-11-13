@@ -79,7 +79,7 @@ Beyond identity, the sandbox tracks stateful side effects through **isolation pl
 | `patchInterval` | `setInterval` / `clearInterval` — `free()` clears any still-live timers | mount |
 | `patchWindowListener` | `window.addEventListener` / `removeEventListener` — clears leftover listeners | mount |
 | `patchHistoryListener` | history-driven listeners | mount |
-| `patchStandardSandbox` (dynamicAppend) | `appendChild` / `insertBefore` for `<script>` / `<style>` / `<link>` — redirects them into the app's container instead of the real `document.head` | bootstrap **and** mount |
+| `patchStandardSandbox` (dynamicAppend) | `appendChild` / `insertBefore` / `insertAdjacentElement` for `<script>` / `<style>` / `<link>` — redirects them into the app's container instead of the real `document.head` | bootstrap **and** mount |
 
 Because every side effect is reverted through its `free()`, unmounting an app really does return the page to its pre-mount state — which is exactly why you **must** unmount. Skip it and you leak the timers, listeners, and injected DOM that `free()` was supposed to clean up, breaking remount and multi-instance. The sandbox is kept after unmounting for reuse by the same app; call `unload()` to release it completely.
 
