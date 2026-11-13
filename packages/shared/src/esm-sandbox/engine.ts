@@ -62,10 +62,10 @@ type Module = {
   url: string;
   loadContext: ModuleLoadContext;
   source: ModuleSource;
-  /** Every alias that must be updated when probe rebuilding replaces the blob. */
+  /** Aliases awaiting publication after this module's graph has finished probing. */
   syntheticSpecifiers: Set<string>;
   moduleUrl: string;
-  probed: boolean;
+  probePromise?: Promise<void>;
   namespace?: ModuleNamespace;
 };
 
@@ -357,11 +357,7 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
         module = this.createSourceModule(inlineKey, source, undefined, loadContext);
         this.inlineModules.push(module);
       }
-      const graph = await this.collectGraph(module);
-      this.assertAlive();
-      await this.probeModules(graph.values());
-      this.assertAlive();
-      return module;
+      return this.prepareModule(module);
     })();
     modulePromise.catch(noop);
 
@@ -683,7 +679,6 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
       source,
       syntheticSpecifiers: new Set(),
       moduleUrl: this.track(this.createModuleUrl(source.code)),
-      probed: false,
     };
 
     if (syntheticSpecifier) this.addSyntheticSpecifier(module, syntheticSpecifier);
@@ -737,7 +732,6 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
   private addSyntheticSpecifier(module: Module, specifier: string): void {
     const syntheticSpecifier = buildSyntheticSpecifier(module.loadContext.instanceKey, specifier);
     module.syntheticSpecifiers.add(syntheticSpecifier);
-    this.pendingImportMapEntries[syntheticSpecifier] = module.moduleUrl;
   }
 
   private registerTypedDependencies(typedDeps: string[], loadContext: ModuleLoadContext): void {
@@ -775,8 +769,12 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
   }
 
   private async probeModules(modules: Iterable<Module>): Promise<void> {
-    const candidates = Array.from(modules).filter((module) => !module.probed && this.mayCollide(module));
-    await Promise.all(candidates.map((module) => this.probeModule(module)));
+    const candidates = Array.from(modules).filter(
+      (module) => module.probePromise !== undefined || this.mayCollide(module),
+    );
+    // A shared module may already be probing for another graph. Every graph must
+    // wait for that same probe, including all rebuilds, before publishing its URL.
+    await Promise.all(candidates.map((module) => (module.probePromise ??= this.probeModule(module))));
   }
 
   private mayCollide(module: Module): boolean {
@@ -788,7 +786,6 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
     const runtimeSpecifier = buildSyntheticSpecifier(module.loadContext.instanceKey, runtimeModuleSubpath);
     const probeSpecifier = buildSyntheticSpecifier(module.loadContext.instanceKey, '__probe__');
 
-    module.probed = true;
     for (;;) {
       const probeCode = module.source.code.replace(runtimeSpecifier, probeSpecifier);
       this.assertAlive();
@@ -824,14 +821,20 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
       module.loadContext.instanceKey,
     );
     module.moduleUrl = this.track(this.createModuleUrl(module.source.code));
-    module.syntheticSpecifiers.forEach((specifier) => {
-      this.pendingImportMapEntries[specifier] = module.moduleUrl;
-    });
   }
 
-  private flushImportMapEntries(): void {
+  private flushImportMapEntries(modules: Iterable<Module>): void {
     this.assertAlive();
+    // Runtime and native typed-module mappings never change. Source-module
+    // aliases belong to their graph and must not expose provisional blob URLs
+    // from other graphs that are still probing concurrently.
     const entries = this.pendingImportMapEntries;
+    for (const module of modules) {
+      module.syntheticSpecifiers.forEach((specifier) => {
+        entries[specifier] = module.moduleUrl;
+      });
+      module.syntheticSpecifiers.clear();
+    }
     if (keys(entries).length > 0) {
       this.pendingImportMapEntries = {};
       this.releaseImportMaps.add(injectImportMapEntries(entries));
@@ -846,11 +849,15 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
     this.assertAlive();
     const module = await this.ensureModule(fullSpecifier, [], loadContext);
     this.assertAlive();
+    return this.prepareModule(module);
+  }
+
+  private async prepareModule(module: Module): Promise<Module> {
     const graph = await this.collectGraph(module);
     this.assertAlive();
     await this.probeModules(graph.values());
     this.assertAlive();
-    this.flushImportMapEntries();
+    this.flushImportMapEntries(graph.values());
     return module;
   }
 
@@ -873,7 +880,6 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
       try {
         const module = await task.modulePromise;
         this.assertAlive();
-        this.flushImportMapEntries();
         const namespace = await this.executeModule(module);
         this.assertAlive();
         executed.push(namespace);
