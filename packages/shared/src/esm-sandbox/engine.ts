@@ -66,13 +66,16 @@ type Module = {
   syntheticSpecifiers: Set<string>;
   moduleUrl: string;
   probed: boolean;
+  probePromise?: Promise<void>;
+  /** Pending synthetic/typed import map entries owned by this module until flushed post-probe. */
+  pendingImportMapEntries: Record<string, string>;
   namespace?: ModuleNamespace;
 };
 
 type ModuleScriptTask = {
   url?: string;
   explicitEntry: boolean;
-  modulePromise: Promise<Module>;
+  modulePromise: Promise<{ module: Module; graph: Map<string, Module> }>;
 };
 
 type ModuleCredentialsKey = NonNullable<RequestInit['credentials']>;
@@ -104,7 +107,8 @@ const defaultRevokeModuleUrl = (moduleUrl: string): void => {
 const redeclarationPatterns = [
   /Identifier '(.+?)' has already been declared/,
   /redeclaration of (?:\S+ )?['"]?([A-Za-z_$][\w$]*)['"]?/,
-  /Cannot declare a lexical variable twice: '(.+?)'/,
+  /Cannot declare a (?:(?:lexical|const|let) variable|class) twice: '(.+?)'/,
+  /Cannot declare a (?:var variable|function) that shadows .+?:? '(.+?)'/,
 ];
 
 const extractRedeclaredIdentifier = (error: unknown): string | undefined => {
@@ -229,7 +233,7 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
 
   private readonly excludedNames = new Map<string, Set<string>>();
 
-  private pendingImportMapEntries: Record<string, string> = {};
+  private readonly pendingRuntimeEntries = new Map<string, { specifier: string; url: string }>();
 
   private readonly releaseImportMaps = new Set<() => void>();
 
@@ -340,7 +344,7 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
     const url = script.url;
     const loadContext = this.getModuleLoadContext(script.credentials);
 
-    const modulePromise = (async (): Promise<Module> => {
+    const modulePromise = (async (): Promise<{ module: Module; graph: Map<string, Module> }> => {
       await assertEsmSupport();
       this.assertAlive();
       let module: Module;
@@ -361,7 +365,7 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
       this.assertAlive();
       await this.probeModules(graph.values());
       this.assertAlive();
-      return module;
+      return { module, graph };
     })();
     modulePromise.catch(noop);
 
@@ -416,7 +420,7 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
     this.modulePromises.clear();
     this.inlineModules.length = 0;
     this.moduleScriptTasks.length = 0;
-    this.pendingImportMapEntries = {};
+    this.pendingRuntimeEntries.clear();
     this.entryDeferred?.reject(
       new QiankunError(`ESM sandbox engine of app ${this.appName} has been disposed`, 'compartment-disposed'),
     );
@@ -507,8 +511,8 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
       'export const __qk_get_namespace = instance.getNamespace;',
     ].join('\n');
     const runtimeModuleUrl = this.track(this.createModuleUrl(runtimeModuleSource));
-    this.pendingImportMapEntries[buildSyntheticSpecifier(loadContext.instanceKey, runtimeModuleSubpath)] =
-      runtimeModuleUrl;
+    const specifier = buildSyntheticSpecifier(loadContext.instanceKey, runtimeModuleSubpath);
+    this.pendingRuntimeEntries.set(loadContext.instanceKey, { specifier, url: runtimeModuleUrl });
   }
 
   private getModuleCacheKey(fullSpecifier: string, loadContext: ModuleLoadContext): string {
@@ -684,10 +688,11 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
       syntheticSpecifiers: new Set(),
       moduleUrl: this.track(this.createModuleUrl(source.code)),
       probed: false,
+      pendingImportMapEntries: {},
     };
 
     if (syntheticSpecifier) this.addSyntheticSpecifier(module, syntheticSpecifier);
-    this.registerTypedDependencies(source.typedDeps, loadContext);
+    this.registerTypedDependencies(module, source.typedDeps, loadContext);
     source.deps.forEach((dep) => void this.ensureModule(dep, [], loadContext));
     return module;
   }
@@ -737,15 +742,15 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
   private addSyntheticSpecifier(module: Module, specifier: string): void {
     const syntheticSpecifier = buildSyntheticSpecifier(module.loadContext.instanceKey, specifier);
     module.syntheticSpecifiers.add(syntheticSpecifier);
-    this.pendingImportMapEntries[syntheticSpecifier] = module.moduleUrl;
+    module.pendingImportMapEntries[syntheticSpecifier] = module.moduleUrl;
   }
 
-  private registerTypedDependencies(typedDeps: string[], loadContext: ModuleLoadContext): void {
+  private registerTypedDependencies(module: Module, typedDeps: string[], loadContext: ModuleLoadContext): void {
     typedDeps.forEach((typedUrl) => {
       // Typed modules bypass the engine fetch pipeline. Native module loading
       // cannot inherit this document task's credentials setting, so this v1
       // passthrough provides neither instance isolation nor graph credentials.
-      this.pendingImportMapEntries[buildSyntheticSpecifier(loadContext.instanceKey, typedUrl)] = typedUrl;
+      module.pendingImportMapEntries[buildSyntheticSpecifier(loadContext.instanceKey, typedUrl)] = typedUrl;
       if (!this.warnedTypedModule) {
         this.warnedTypedModule = true;
         console.warn(
@@ -775,8 +780,26 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
   }
 
   private async probeModules(modules: Iterable<Module>): Promise<void> {
-    const candidates = Array.from(modules).filter((module) => !module.probed && this.mayCollide(module));
-    await Promise.all(candidates.map((module) => this.probeModule(module)));
+    const tasks: Array<Promise<void>> = [];
+    for (const module of modules) {
+      if (module.probed) continue;
+      if (module.probePromise) {
+        tasks.push(module.probePromise);
+        continue;
+      }
+      if (!this.mayCollide(module)) {
+        module.probed = true;
+        continue;
+      }
+      const probe = this.probeModule(module).finally(() => {
+        if (module.probePromise === probe) {
+          module.probePromise = undefined;
+        }
+      });
+      module.probePromise = probe;
+      tasks.push(probe);
+    }
+    await Promise.all(tasks);
   }
 
   private mayCollide(module: Module): boolean {
@@ -788,7 +811,6 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
     const runtimeSpecifier = buildSyntheticSpecifier(module.loadContext.instanceKey, runtimeModuleSubpath);
     const probeSpecifier = buildSyntheticSpecifier(module.loadContext.instanceKey, '__probe__');
 
-    module.probed = true;
     for (;;) {
       const probeCode = module.source.code.replace(runtimeSpecifier, probeSpecifier);
       this.assertAlive();
@@ -796,11 +818,15 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
       try {
         await this.moduleImporter(probeUrl);
         this.assertAlive();
+        module.probed = true;
         return;
       } catch (e) {
         this.assertAlive();
         const collided = extractRedeclaredIdentifier(e);
-        if (!collided || !module.source.destructured.includes(collided)) return;
+        if (!collided || !module.source.destructured.includes(collided)) {
+          module.probed = true;
+          return;
+        }
         const excluded = this.excludedNames.get(module.cacheKey) ?? new Set<string>();
         excluded.add(collided);
         this.excludedNames.set(module.cacheKey, excluded);
@@ -825,15 +851,27 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
     );
     module.moduleUrl = this.track(this.createModuleUrl(module.source.code));
     module.syntheticSpecifiers.forEach((specifier) => {
-      this.pendingImportMapEntries[specifier] = module.moduleUrl;
+      module.pendingImportMapEntries[specifier] = module.moduleUrl;
     });
   }
 
-  private flushImportMapEntries(): void {
+  private flushImportMapEntries(modules: Iterable<Module>): void {
     this.assertAlive();
-    const entries = this.pendingImportMapEntries;
+    const entries: Record<string, string> = {};
+    for (const module of modules) {
+      const runtimeKey = module.loadContext.instanceKey;
+      const runtimeEntry = this.pendingRuntimeEntries.get(runtimeKey);
+      if (runtimeEntry) {
+        entries[runtimeEntry.specifier] = runtimeEntry.url;
+        this.pendingRuntimeEntries.delete(runtimeKey);
+      }
+      const moduleEntries = module.pendingImportMapEntries;
+      if (keys(moduleEntries).length > 0) {
+        Object.assign(entries, moduleEntries);
+        module.pendingImportMapEntries = {};
+      }
+    }
     if (keys(entries).length > 0) {
-      this.pendingImportMapEntries = {};
       this.releaseImportMaps.add(injectImportMapEntries(entries));
     }
   }
@@ -850,7 +888,7 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
     this.assertAlive();
     await this.probeModules(graph.values());
     this.assertAlive();
-    this.flushImportMapEntries();
+    this.flushImportMapEntries(graph.values());
     return module;
   }
 
@@ -871,9 +909,9 @@ export class EsmSandboxEngine implements CompartmentModuleFacade {
 
     for (const task of tasks) {
       try {
-        const module = await task.modulePromise;
+        const { module, graph } = await task.modulePromise;
         this.assertAlive();
-        this.flushImportMapEntries();
+        this.flushImportMapEntries(graph.values());
         const namespace = await this.executeModule(module);
         this.assertAlive();
         executed.push(namespace);

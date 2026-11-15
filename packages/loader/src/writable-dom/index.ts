@@ -84,6 +84,8 @@ function writableDOM(
   let resolve: void | (() => void);
   let isBlocked = false;
   let curChunk = '';
+  let aborted = false;
+  const activeObservers = new Set<MutationObserver>();
 
   return {
     write(chunk: string) {
@@ -92,6 +94,9 @@ function writableDOM(
       walk();
     },
     abort() {
+      aborted = true;
+      activeObservers.forEach((observer) => observer.disconnect());
+      activeObservers.clear();
       if (isBlocked) {
         (targetNodes.get(walker.currentNode) as Element).remove();
       }
@@ -113,7 +118,31 @@ function writableDOM(
     const graftedHost = owner.importNode(host, false);
     graftedHost.appendChild(text);
     assertInPlaceTransform(graftedHost, assetTransformer(graftedHost));
-    return graftedHost.firstChild as Text;
+    if (graftedHost.firstChild) {
+      return graftedHost.firstChild as Text;
+    }
+    const placeholder = owner.createTextNode('');
+    // [qiankun] A transformer may clear inline text synchronously and populate it later
+    // (e.g. deferred resource inlining). Forward that deferred write to this placeholder node only.
+    if (!aborted && typeof MutationObserver === 'function') {
+      const wasConnected = target.isConnected;
+      const observer = new MutationObserver(() => {
+        observer.disconnect();
+        activeObservers.delete(observer);
+        if (
+          aborted ||
+          placeholder.parentNode !== host ||
+          !target.contains(placeholder) ||
+          (wasConnected && !placeholder.isConnected)
+        ) {
+          return;
+        }
+        placeholder.data = graftedHost.textContent ?? '';
+      });
+      activeObservers.add(observer);
+      observer.observe(graftedHost, { childList: true, characterData: true, subtree: true });
+    }
+    return placeholder;
   }
 
   function walk(): void {
@@ -141,10 +170,12 @@ function writableDOM(
       if (startNode.nodeType === NodeType.TEXT_NODE) {
         if (!isInlineScriptOrStyleTag((node = startNode.parentNode!))) {
           (targetNodes.get(startNode) as Text).data = (startNode as Text).data;
-        } else if (!isIncomplete(node)) {
+        } else if (!isIncomplete(node) && !targetNodes.has(startNode)) {
           // [qiankun] completed inline text goes through the transformer before it executes
           const host = targetNodes.get(node) as Element;
-          host.appendChild(transformInlineText(host, owner.importNode(startNode as Text, false)));
+          const inlineText = transformInlineText(host, owner.importNode(startNode as Text, false));
+          targetNodes.set(startNode, inlineText);
+          host.appendChild(inlineText);
         }
       }
 

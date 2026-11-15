@@ -19,14 +19,21 @@ export const SUB_APP_ENTRIES = {
   'sub-classic-broken-asset': `http://localhost:${PORTS['sub-classic']}/broken-asset.html`,
   // the app monkey-patches the document.head/body appendChild it sees before injecting styles
   'sub-classic-patched-append': `http://localhost:${PORTS['sub-classic']}/patched-append.html`,
+  // inline <style>@import url(...)</style> rewritten asynchronously to @scope
+  'sub-classic-async-import': `http://localhost:${PORTS['sub-classic']}/async-import.html`,
   // inline script immediately after </head>, before MutationObserver can patch the virtual head
   'sub-classic-early-head': `http://localhost:${PORTS['sub-classic']}/early-head.html`,
   'sub-esm': `http://localhost:${PORTS['sub-esm']}`,
   // same server, dedicated page whose HTML carries a <link rel="modulepreload">
   'sub-esm-preload': `http://localhost:${PORTS['sub-esm']}/preload.html`,
+  // concurrent dynamic imports with shared & independent global-colliding modules
+  'sub-esm-concurrent': `http://localhost:${PORTS['sub-esm']}/concurrent.html`,
   'sub-misbehaving': `http://localhost:${PORTS['sub-misbehaving']}`,
   // a classic app that is itself a qiankun host: it loads sub-classic-bodyless inside its own DOM
   'sub-nested': `http://localhost:${PORTS['sub-nested']}`,
   // resolves to a 404 on purpose: the error-handling suite asserts the failure path
   'sub-missing': `http://localhost:${PORTS['sub-misbehaving']}/missing/`,
+  // classic sub-app variants exposing update() + action button for React/Vue host binding tests
+  'sub-binding-a': `http://localhost:${PORTS['sub-classic']}/binding-target.html`,
+  'sub-binding-b': `http://localhost:${PORTS['sub-classic']}/binding-target-b.html`,
 } as const;

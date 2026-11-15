@@ -36,9 +36,26 @@ type EngineOverrides = Partial<
   Pick<EsmSandboxEngineOpts, 'importHook' | 'loadHook' | 'materializeRedirect' | 'modules' | 'resolveHook'>
 >;
 
+const createDeferred = <T = void>() => {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+};
+
 const createWorld = (
   modules: Partial<Record<string, string>>,
-  opts: { appName?: string; engine?: EngineOverrides } = {},
+  opts: {
+    appName?: string;
+    engine?: EngineOverrides;
+    wrapImporter?: (
+      moduleUrl: string,
+      next: (moduleUrl: string) => Promise<Record<string, unknown>>,
+    ) => Promise<Record<string, unknown>>;
+  } = {},
 ): MockWorld => {
   const codeByUrl = new Map<string, string>();
   const revoked: string[] = [];
@@ -98,7 +115,8 @@ const createWorld = (
       );
     },
     ...opts.engine,
-    moduleImporter: importerMock as unknown as (moduleUrl: string) => Promise<Record<string, unknown>>,
+    moduleImporter: (moduleUrl) =>
+      opts.wrapImporter ? opts.wrapImporter(moduleUrl, importerMock) : importerMock(moduleUrl),
     createModuleUrl: (code) => {
       const url = `mock:${++seq}`;
       codeByUrl.set(url, code);
@@ -1078,5 +1096,145 @@ export { history };`;
     expect(importHook).toHaveBeenCalledTimes(1);
     expect(namespace.code).toMatch(/const \{ window \} = __qk_view;/);
     expect(namespace.code).not.toMatch(/const \{ [^}]*history[^}]*\} = __qk_view;/);
+  });
+
+  it('awaits an in-flight probe when a concurrent graph shares the same colliding module', async () => {
+    const probeStarted = createDeferred();
+    const probeGate = createDeferred();
+    const branchBReachedProbe = createDeferred();
+    let sharedProbeAttempts = 0;
+
+    const world = createWorld(
+      {
+        'https://a.host/branch-a.js': `import { shared } from './shared.js';\nexport { shared };`,
+        'https://a.host/branch-b.js': `import { shared } from './shared.js';\nconst branchBMarker = window.location;\nexport { shared, branchBMarker };`,
+        'https://a.host/shared.js': `const history = { kind: 'shared' };\nwindow.foo = 1;\nexport const shared = history.kind;`,
+      },
+      {
+        wrapImporter: async (moduleUrl, next) => {
+          const code = world.codeByUrl.get(moduleUrl) ?? '';
+          if (code.includes('/__probe__')) {
+            if (code.includes("kind: 'shared'") && sharedProbeAttempts === 0) {
+              sharedProbeAttempts += 1;
+              probeStarted.resolve();
+              await probeGate.promise;
+            } else if (code.includes("kind: 'shared'")) {
+              sharedProbeAttempts += 1;
+            } else if (code.includes('branchBMarker')) {
+              try {
+                return await next(moduleUrl);
+              } finally {
+                branchBReachedProbe.resolve();
+              }
+            }
+          }
+          return next(moduleUrl);
+        },
+      },
+    );
+
+    const sharedKey = `${world.engine.instanceKey}/https://a.host/shared.js`;
+    const loadA = world.engine.load('./branch-a.js');
+    let loadB: Promise<unknown> | undefined;
+
+    try {
+      await probeStarted.promise;
+
+      let loadBSettledBeforeProbe = false;
+      loadB = world.engine.load('./branch-b.js').then(() => {
+        loadBSettledBeforeProbe = true;
+      });
+      await branchBReachedProbe.promise;
+      expect(sharedProbeAttempts).toBe(1);
+      expect(loadBSettledBeforeProbe).toBe(false);
+      expect(readInjectedImports()[sharedKey]).toBeUndefined();
+
+      probeGate.resolve();
+      await Promise.all([loadA, loadB]);
+
+      const sharedUrl = readInjectedImports()[sharedKey];
+      expect(sharedUrl).toBeDefined();
+      expect(world.codeByUrl.get(sharedUrl!)).not.toMatch(/const \{ [^}]*history[^}]*\} = __qk_view;/);
+    } finally {
+      probeGate.resolve();
+      await Promise.allSettled([loadA, loadB].filter(Boolean));
+      world.engine.dispose();
+    }
+  });
+
+  it('does not flush another concurrent graph’s un-probed colliding entry when a sibling finishes first', async () => {
+    const slowProbeStarted = createDeferred();
+    const slowProbeGate = createDeferred();
+
+    const world = createWorld(
+      {
+        'https://a.host/slow.js': `const history = { kind: 'slow' };\nwindow.foo = 1;\nexport const slow = history.kind;`,
+        'https://a.host/fast.js': `export const fast = 'ok';`,
+      },
+      {
+        wrapImporter: async (moduleUrl, next) => {
+          const code = world.codeByUrl.get(moduleUrl) ?? '';
+          if (code.includes('/__probe__')) {
+            slowProbeStarted.resolve();
+            await slowProbeGate.promise;
+          }
+          return next(moduleUrl);
+        },
+      },
+    );
+
+    const slowKey = `${world.engine.instanceKey}/https://a.host/slow.js`;
+    const slowPromise = world.engine.import('./slow.js');
+
+    try {
+      await slowProbeStarted.promise;
+
+      await expect(world.engine.import('./fast.js')).resolves.toBeDefined();
+      expect(readInjectedImports()[slowKey]).toBeUndefined();
+
+      slowProbeGate.resolve();
+      const slowNamespace = (await slowPromise) as { code: string };
+      expect(slowNamespace.code).not.toMatch(/const \{ [^}]*history[^}]*\} = __qk_view;/);
+
+      const slowUrl = readInjectedImports()[slowKey];
+      expect(slowUrl).toBeDefined();
+      expect(world.codeByUrl.get(slowUrl!)).not.toMatch(/const \{ [^}]*history[^}]*\} = __qk_view;/);
+    } finally {
+      slowProbeGate.resolve();
+      await Promise.allSettled([slowPromise]);
+      world.engine.dispose();
+    }
+  });
+
+  it.each([
+    "Identifier 'history' has already been declared",
+    "redeclaration of const 'history'",
+    "Cannot declare a lexical variable twice: 'history'.",
+    "Cannot declare a const variable twice: 'history'.",
+    "Cannot declare a let variable twice: 'history'.",
+    "Cannot declare a class twice: 'history'.",
+    "Cannot declare a var variable that shadows a let/const/class variable: 'history'.",
+    "Cannot declare a function that shadows a let/const/class/function variable 'history'.",
+  ])('extracts collided identifier from engine SyntaxError format: %s', async (errorMessage) => {
+    const world = createWorld(
+      {
+        'https://a.host/main.js': `const history = { push() {} };\nwindow.foo = 1;\nexport const mount = () => history;`,
+      },
+      {
+        wrapImporter: async (moduleUrl, next) => {
+          const code = world.codeByUrl.get(moduleUrl) ?? '';
+          if (code.includes('/__probe__') && /const \{ [^}]*history[^}]*\} = __qk_view;/.test(code)) {
+            throw new SyntaxError(errorMessage);
+          }
+          return next(moduleUrl);
+        },
+      },
+    );
+    world.engine.registerDocumentModule({ url: 'https://a.host/main.js', baseUrl: 'https://a.host/', isEntry: true });
+
+    const ns = (await world.engine.importDocumentModules()) as { code: string };
+    expect(ns.code).toMatch(/const \{ window \} = __qk_view;/);
+    expect(ns.code).not.toMatch(/const \{ [^}]*history[^}]*\} = __qk_view;/);
+    world.engine.dispose();
   });
 });

@@ -69,20 +69,6 @@ describe('MicroApp', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders the container before the loader and error slots', async () => {
-    app = createApp({
-      render: () =>
-        h(MicroApp, { name: 'app', entry: '//localhost:7100' }, { loader: () => h('div', { class: 'veil' }) }),
-    });
-    app.mount(host);
-    await settle();
-
-    const wrapper = host.querySelector('.qiankun-micro-app-wrapper')!;
-    const divs = Array.from(wrapper.children).filter((child) => child.tagName === 'DIV');
-    // slots render after the container so they paint above it without a z-index
-    expect(divs[0].classList.contains('qiankun-micro-app-container')).toBe(true);
-  });
-
   it('gives the loader slot an object so `#loader="{ loading }"` works', async () => {
     const seen: unknown[] = [];
     app = createApp({

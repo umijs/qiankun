@@ -129,4 +129,91 @@ test.describe('esm sub app under sandbox', () => {
     const counter = await request.get(`${SUB_ESM_ORIGIN}/__e2e__/request-count?path=${PRELOADED_MODULE_PATH}`);
     expect(((await counter.json()) as { count: number }).count).toBe(1);
   });
+
+  test('resolves concurrent dynamic imports with colliding modules without flushing stale import map entries', async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') errors.push(msg.text());
+    });
+    page.on('pageerror', (err) => {
+      errors.push(err.message);
+    });
+
+    const status = await loadApp(page, 'sub-esm-concurrent');
+    expect(status).toBe('MOUNTED');
+    await expect(page.getByTestId('esm-concurrent-shared')).toHaveText('a:shared-colliding|b:shared-colliding');
+    await expect(page.getByTestId('esm-concurrent-independent')).toHaveText('independent-colliding|fast-ok');
+    expect(errors).toEqual([]);
+    expect(await readMainRealmGlobal(page, '__CONCURRENT_SHARED__')).toBeUndefined();
+    expect(await readMainRealmGlobal(page, '__CONCURRENT_INDEPENDENT__')).toBeUndefined();
+  });
+
+  test('awaits an in-flight shared colliding probe across concurrent native graphs', async ({ page, browserName }) => {
+    test.fail(browserName === 'firefox', FIREFOX_ESM_LIMITATION);
+
+    await page.goto('/esm-race.html');
+    const result = await page.evaluate(() =>
+      (
+        window as unknown as {
+          __ESM_RACE__: {
+            verifySharedProbeBarrier(): Promise<{
+              initialCollisionProbeCalls: number;
+              bSettledDuringGate: boolean;
+              aSettledDuringGate: boolean;
+              sharedInImportMapDuringGate: boolean;
+              branchA: unknown;
+              branchB: unknown;
+              sandboxValue: unknown;
+              mainValue: unknown;
+            }>;
+          };
+        }
+      ).__ESM_RACE__.verifySharedProbeBarrier(),
+    );
+
+    expect(result.initialCollisionProbeCalls).toBe(1);
+    expect(result.bSettledDuringGate).toBe(false);
+    expect(result.aSettledDuringGate).toBe(false);
+    expect(result.sharedInImportMapDuringGate).toBe(false);
+    expect(result.branchA).toBe('a:shared-colliding');
+    expect(result.branchB).toBe('b:shared-colliding');
+    expect(result.sandboxValue).toBe('shared-colliding');
+    expect(result.mainValue).toBeUndefined();
+  });
+
+  test('does not flush another graph’s un-probed colliding import map entry while a sibling graph completes', async ({
+    page,
+    browserName,
+  }) => {
+    test.fail(browserName === 'firefox', FIREFOX_ESM_LIMITATION);
+
+    await page.goto('/esm-race.html');
+    const result = await page.evaluate(() =>
+      (
+        window as unknown as {
+          __ESM_RACE__: {
+            verifyIndependentFlushBarrier(): Promise<{
+              fastResult: unknown;
+              slowInImportMapWhilePending: boolean;
+              slowSettledWhilePending: boolean;
+              slowResult: unknown;
+              slowInImportMapAfterRelease: boolean;
+              sandboxValue: unknown;
+              mainValue: unknown;
+            }>;
+          };
+        }
+      ).__ESM_RACE__.verifyIndependentFlushBarrier(),
+    );
+
+    expect(result.fastResult).toBe('fast-ok');
+    expect(result.slowInImportMapWhilePending).toBe(false);
+    expect(result.slowSettledWhilePending).toBe(false);
+    expect(result.slowResult).toBe('independent-colliding');
+    expect(result.slowInImportMapAfterRelease).toBe(true);
+    expect(result.sandboxValue).toBe('independent-colliding');
+    expect(result.mainValue).toBeUndefined();
+  });
 });

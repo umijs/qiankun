@@ -4,15 +4,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 describe('prefetchApps', () => {
-  let mockFetch: any;
+  let mockFetch: ReturnType<typeof vi.fn<typeof fetch>>;
 
   beforeEach(async () => {
-    mockFetch = vi.fn().mockResolvedValue({
-      text: () =>
-        Promise.resolve(
+    mockFetch = vi.fn<typeof fetch>(
+      async () =>
+        new Response(
           '<html><head><script src="app.js"></script><link rel="stylesheet" href="style.css"></head><body></body></html>',
         ),
-    });
+    );
 
     // Mock navigator.onLine
     Object.defineProperty(window, 'navigator', {
@@ -44,27 +44,25 @@ describe('prefetchApps', () => {
       { name: 'app2', entry: 'http://localhost:7200/' },
     ];
 
-    prefetchApps(apps, mockFetch as unknown as typeof fetch);
+    prefetchApps(apps, mockFetch);
 
-    // Wait for async operations
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    expect(mockFetch).toHaveBeenCalledWith('http://localhost:7100/');
-    expect(mockFetch).toHaveBeenCalledWith('http://localhost:7200/');
+    await vi.waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:7100/');
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:7200/');
+    });
   });
 
   it('should prefetch external scripts and stylesheets', async () => {
     const { prefetchApps } = await import('../prefetch');
     const apps = [{ name: 'app1', entry: 'http://localhost:7100/' }];
 
-    prefetchApps(apps, mockFetch as unknown as typeof fetch);
+    prefetchApps(apps, mockFetch);
 
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    // Should fetch the HTML entry
-    expect(mockFetch).toHaveBeenCalledWith('http://localhost:7100/');
-    // Should also fetch external resources (script and stylesheet)
-    expect(mockFetch).toHaveBeenCalledWith('http://localhost:7100/app.js');
-    expect(mockFetch).toHaveBeenCalledWith('http://localhost:7100/style.css');
+    await vi.waitFor(() => {
+      // Should fetch the HTML entry and external resources (script and stylesheet)
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:7100/');
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:7100/app.js');
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:7100/style.css');
+    });
   });
 });

@@ -8,7 +8,18 @@
     "skipLibCheck": true,
     "noEmit": true,
     "allowJs": true,
-    "types": ["node"]
+    "jsx": "react-jsx",
+    "types": ["node"],
+    "paths": {
+      "@qiankunjs/shared": ["../packages/shared/dist/esm/index.d.ts"],
+      "@qiankunjs/react": ["../packages/ui-bindings/react/dist/esm/index.d.ts"],
+      "@qiankunjs/vue": ["../packages/ui-bindings/vue/dist/esm/index.d.ts"],
+      "@writable-dom-under-test": ["../packages/loader/src/writable-dom/index.ts"],
+      "react": ["../packages/ui-bindings/react/node_modules/@types/react/index.d.ts"],
+      "react/jsx-runtime": ["../packages/ui-bindings/react/node_modules/@types/react/jsx-runtime.d.ts"],
+      "react-dom/client": ["../packages/ui-bindings/react/node_modules/@types/react-dom/client.d.ts"],
+      "vue": ["../packages/ui-bindings/vue/node_modules/vue/dist/vue.d.ts"]
+    }
   },
   "include": ["tests", "fixtures/main/src", "playwright.config.ts", "ports.ts"]
 }

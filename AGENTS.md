@@ -107,6 +107,16 @@ Build/release:
 - Versioning via **changesets**, but changesets are **auto-derived from Conventional Commits** in CI (`scripts/generate-changesets.mjs`) — do **not** hand-write `.changeset/*.md`. Just land a well-formed conventional commit (`feat`/`fix`/`feat!`…); the release job maps changed files → packages and infers the bump. Each sub-package keeps its own `CHANGELOG.md` (changeset default, visible on npm); on publish `scripts/generate-release-notes.mjs` aggregates them into **one GitHub Release**, which can be polished after the fact via the `/release-changelog` skill (`gh release edit`). Full flow: `.changeset/README.md`.
 - Conventional commits enforced by commitlint (`feat:`, `fix:`, `feat(esm-sandbox):`, …).
 
+## TESTING
+
+Define the externally observable behavior first, then pick the smallest environment that genuinely proves it. When browser semantics are involved, prefer real-browser tests instead of defaulting to unit tests:
+
+- **Browser-first for browser semantics** — native ESM / import maps, CSS (`@scope`, cascade, CSSOM), DOM containment, streaming HTML parsing, and load/mount/unmount lifecycles default to browser tests.
+- **Unit tests for algorithms & state machines** — keep unit tests for chunking, queues, cache/resource ownership, error propagation, and deterministic concurrency interleavings.
+- **Right-sized browser fixtures** — focus full-app e2e on built `dist` outputs, public APIs, and host↔micro-app integration; verify other browser behaviors with minimal real-browser fixtures without requiring a full app.
+- **Cross-layer discipline & pruning** — cross-layer tests for the same behavior must each catch a distinct failure mode. Prioritize trimming tests that only restate implementation, inspect private bookkeeping, or repeat identical input/output cases; verify replacement behavioral coverage before deleting, and do not chase raw deletion counts.
+- **Real primitives & deterministic sync** — never mock browser primitives at the layer meant to verify them; avoid sleep (`waitForTimeout`) and use explicit barriers and web-first assertions.
+
 ## DOCS & README CONVENTIONS
 
 - **Chinese-first.** The primary audience is Chinese. `docs/zh-CN/` is the source of truth: write it to a native-author standard — no translationese, no AI-flavored filler (「让我们」「值得注意的是」「强大的/无缝的」), no calqued English syntax. The English pages align to the Chinese semantics, not the other way around; pure zh wording fixes don't require touching en. Same contract for `README.zh-CN.md` ↔ `README.md`: keep both editions in sync whenever either changes.

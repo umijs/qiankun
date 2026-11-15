@@ -1,7 +1,6 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createSandbox } from '../../../core/sandbox';
 import { type IsolationPluginConfig } from '../../types';
-import { type SandboxConfig } from '../types';
-import { afterEach, describe, expect, it, vi } from 'vitest';
 
 let appSequence = 0;
 const controllers: Array<ReturnType<typeof createSandbox>> = [];
@@ -19,12 +18,7 @@ function createController() {
     fetch: window.fetch,
   });
   controllers.push(controller);
-  const sharedState = Reflect.get(window, Symbol.for('qiankun.dynamicAppend.sharedState')) as {
-    sandboxConfigs: WeakMap<object, SandboxConfig>;
-  };
-  const config = sharedState.sandboxConfigs.get(controller.instance);
-  if (!config) throw new Error('sandbox config was not registered at bootstrap');
-  return { container, controller, nodeTransformer, config, sandboxDocument: controller.instance.globalThis.document };
+  return { container, controller, nodeTransformer, sandboxDocument: controller.instance.globalThis.document };
 }
 
 describe.sequential('virtual head patching', () => {
@@ -33,36 +27,41 @@ describe.sequential('virtual head patching', () => {
     containers.splice(0).forEach((container) => container.remove());
   });
 
-  it.each(['head', 'querySelector'] as const)('patches a newly inserted head before %s returns it', (accessor) => {
-    const { container, sandboxDocument, nodeTransformer, config } = createController();
-    const readHead = () => (accessor === 'head' ? sandboxDocument.head : sandboxDocument.querySelector('head'));
-    expect(readHead).toThrow(/head element not existed/);
+  it.each(['head', 'querySelector'] as const)(
+    'patches a newly inserted head before %s returns it and tracks dynamic stylesheets until removed',
+    async (accessor) => {
+      const { container, controller, sandboxDocument, nodeTransformer } = createController();
+      const readHead = () => (accessor === 'head' ? sandboxDocument.head : sandboxDocument.querySelector('head'));
+      expect(readHead).toThrow(/head element not existed/);
 
-    const head = document.createElement('qiankun-head');
-    container.appendChild(head);
-    // Stay in the insertion task: MutationObserver has not delivered the new head yet.
-    expect(Object.hasOwn(head, 'appendChild')).toBe(false);
-    expect(readHead()).toBe(head);
-    for (const method of ['appendChild', 'insertBefore', 'removeChild']) {
-      expect(Object.hasOwn(head, method)).toBe(true);
-    }
+      const head = document.createElement('qiankun-head');
+      container.appendChild(head);
+      expect(readHead()).toBe(head);
 
-    const style = sandboxDocument.createElement('style');
-    const link = sandboxDocument.createElement('link');
-    link.rel = 'stylesheet';
-    head.appendChild(style);
-    head.insertBefore(link, style);
-    const script = sandboxDocument.createElement('script');
-    head.appendChild(script);
+      const style = sandboxDocument.createElement('style');
+      const keptStyle = sandboxDocument.createElement('style');
+      keptStyle.dataset.keep = 'true';
+      head.appendChild(style);
+      head.insertBefore(keptStyle, style);
+      const script = sandboxDocument.createElement('script');
+      head.appendChild(script);
 
-    expect(nodeTransformer.mock.calls.map(([node]) => node)).toEqual([style, link, script]);
-    expect(config.dynamicStyleSheetElements).toEqual([style, link]);
-    head.removeChild(style);
-    expect(config.dynamicStyleSheetElements).toEqual([link]);
-  });
+      expect(nodeTransformer.mock.calls.map(([node]) => node)).toEqual([style, keptStyle, script]);
 
-  it('preserves app method wrappers across repeated reads and observer delivery', async () => {
-    const { container, controller, sandboxDocument, nodeTransformer, config } = createController();
+      // Removing a dynamically appended stylesheet drops it from remount replay while keeping remaining styles.
+      head.removeChild(style);
+      await controller.mount(container);
+      await controller.unmount();
+      head.innerHTML = '';
+
+      await controller.mount(container);
+      expect(head.querySelectorAll('style')).toHaveLength(1);
+      expect((head.querySelector('style') as HTMLElement).dataset.keep).toBe('true');
+    },
+  );
+
+  it('preserves app method wrappers across observer delivery and stops intercepting after dispose', async () => {
+    const { container, controller, sandboxDocument, nodeTransformer } = createController();
     const head = document.createElement('qiankun-head');
     container.appendChild(head);
     expect(sandboxDocument.head).toBe(head);
@@ -86,27 +85,42 @@ describe.sequential('virtual head patching', () => {
     const style = sandboxDocument.createElement('style');
     head.appendChild(style);
     expect(nodeTransformer).toHaveBeenCalledTimes(1);
-    expect(config.dynamicStyleSheetElements).toEqual([style]);
+    expect(wrapper).toHaveBeenCalledWith(style);
+
     await controller.dispose();
+    nodeTransformer.mockClear();
     expect(head.appendChild).toBe(wrapper);
-    expect(Object.hasOwn(head, 'insertBefore')).toBe(false);
-    expect(Object.hasOwn(head, 'removeChild')).toBe(false);
+
+    head.appendChild(document.createElement('style'));
+    expect(nodeTransformer).not.toHaveBeenCalled();
   });
 
-  it('still patches a streamed head through the observer when no getter is used', async () => {
-    const { container, controller } = createController();
+  it('patches a streamed head through the observer when no getter is used and cleans up on dispose', async () => {
+    const { container, controller, nodeTransformer } = createController();
     const head = document.createElement('qiankun-head');
-    container.appendChild(head);
-    await vi.waitFor(() => expect(Object.hasOwn(head, 'appendChild')).toBe(true));
+
+    // A later-registered observer on container runs after the sandbox's own MutationObserver.
+    await new Promise<void>((resolve) => {
+      const observer = new MutationObserver(() => {
+        observer.disconnect();
+        resolve();
+      });
+      observer.observe(container, { childList: true });
+      container.appendChild(head);
+    });
+
+    const probe = document.createElement('style');
+    head.appendChild(probe);
+    expect(nodeTransformer.mock.calls.map(([node]) => node)).toEqual([probe]);
 
     await controller.dispose();
-    for (const method of ['appendChild', 'insertBefore', 'removeChild']) {
-      expect(Object.hasOwn(head, method)).toBe(false);
-    }
+    nodeTransformer.mockClear();
+    head.appendChild(document.createElement('style'));
+    expect(nodeTransformer).not.toHaveBeenCalled();
   });
 
-  it('patches replacement heads and releases every patched head', async () => {
-    const { container, controller, sandboxDocument } = createController();
+  it('patches replacement heads and releases every patched head on dispose', async () => {
+    const { container, controller, sandboxDocument, nodeTransformer } = createController();
     const firstHead = document.createElement('qiankun-head');
     container.appendChild(firstHead);
     expect(sandboxDocument.head).toBe(firstHead);
@@ -114,14 +128,16 @@ describe.sequential('virtual head patching', () => {
     const secondHead = document.createElement('qiankun-head');
     firstHead.replaceWith(secondHead);
     expect(sandboxDocument.head).toBe(secondHead);
-    expect(Object.hasOwn(secondHead, 'appendChild')).toBe(true);
+
+    const style = document.createElement('style');
+    secondHead.appendChild(style);
+    expect(nodeTransformer.mock.calls.map(([node]) => node)).toEqual([style]);
 
     await controller.dispose();
-    for (const head of [firstHead, secondHead]) {
-      for (const method of ['appendChild', 'insertBefore', 'removeChild']) {
-        expect(Object.hasOwn(head, method)).toBe(false);
-      }
-    }
+    nodeTransformer.mockClear();
+    firstHead.appendChild(document.createElement('style'));
+    secondHead.appendChild(document.createElement('style'));
+    expect(nodeTransformer).not.toHaveBeenCalled();
   });
 
   it('uses the active installation when a script retains its document across remounts', async () => {
@@ -131,22 +147,25 @@ describe.sequential('virtual head patching', () => {
     await controller.mount(container);
     await controller.unmount();
 
-    // Accessing the retained proxy while unmounted must not restore released methods.
+    // Accessing the retained proxy while unmounted must not restore interception.
     expect(sandboxDocument.head).toBe(firstHead);
-    expect(Object.hasOwn(firstHead, 'appendChild')).toBe(false);
+    firstHead.appendChild(document.createElement('style'));
+    expect(nodeTransformer).not.toHaveBeenCalled();
+
     await controller.mount(container);
     const secondHead = document.createElement('qiankun-head');
     firstHead.replaceWith(secondHead);
     // ESM modules can keep the original document binding across subsequent mounts.
     expect(sandboxDocument.head).toBe(secondHead);
-    expect(Object.hasOwn(secondHead, 'appendChild')).toBe(true);
     const style = sandboxDocument.createElement('style');
     sandboxDocument.head.appendChild(style);
     expect(nodeTransformer).toHaveBeenCalledTimes(1);
 
     await controller.dispose();
     expect(() => sandboxDocument.head).toThrow(TypeError);
-    expect(Object.hasOwn(secondHead, 'appendChild')).toBe(false);
+    nodeTransformer.mockClear();
+    secondHead.appendChild(document.createElement('style'));
+    expect(nodeTransformer).not.toHaveBeenCalled();
   });
 
   it('does not let an old document getter take ownership from a later sandbox', async () => {
@@ -169,6 +188,5 @@ describe.sequential('virtual head patching', () => {
     head.appendChild(style);
     expect(secondTransformer).toHaveBeenCalledTimes(1);
     expect(first.nodeTransformer).not.toHaveBeenCalled();
-    expect(first.config.dynamicStyleSheetElements).toHaveLength(0);
   });
 });

@@ -217,13 +217,13 @@ export function transpileStyleRule(ruleText: string, opts: Pick<StyleTranspilerO
 
 export default function transpileStyle(
   style: HTMLStyleElement,
-  _baseURI: string,
+  baseURI: string,
   opts: StyleTranspilerOpts,
 ): HTMLStyleElement {
   const cssText = style.textContent;
   if (!cssText) return style;
 
-  const result = transpileStyleText(cssText, opts);
+  const result = transpileStyleText(cssText, opts.baseURL ? opts : { ...opts, baseURL: baseURI });
   if (typeof result === 'string') {
     style.textContent = result;
   } else {

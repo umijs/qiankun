@@ -100,18 +100,20 @@ test.describe('js sandbox isolation', () => {
   });
 
   test('leaked intervals are reclaimed by the sandbox on unmount', async ({ page }) => {
+    await page.clock.install();
     await loadApp(page, 'sub-misbehaving');
 
-    // condition-based wait: the leaked interval is demonstrably ticking
+    // Advance virtual clock deterministically so the 50ms interval ticks without real-time sleeps
     const ticksLocator = page.locator('html');
-    await expect.poll(async () => ticksLocator.getAttribute('data-leak-ticks'), { timeout: 5000 }).not.toBeNull();
+    await page.clock.runFor(200);
+    await expect(ticksLocator).toHaveAttribute('data-leak-ticks', /[1-9]/);
 
     await unmountApp(page, 'sub-misbehaving');
     const ticksAtUnmount = await ticksLocator.getAttribute('data-leak-ticks');
 
-    // negative assertion needs time passage: wait >4 interval periods (50ms each) in-page,
-    // then the counter must not have advanced — the sandbox cleared the leaked interval
-    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 300)));
+    // Negative assertion via explicit clock advance (>4 interval periods of 50ms):
+    // the counter must not advance because the sandbox cleared the leaked interval
+    await page.clock.runFor(300);
     await expect(ticksLocator).toHaveAttribute('data-leak-ticks', ticksAtUnmount!);
   });
 });

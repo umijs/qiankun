@@ -16,7 +16,7 @@ e2e/
 │   │                    # exposes window.__E2E__ for tests to drive loadMicroApp imperatively
 │   ├── sub-classic/     # classic global-lifecycle sub app (the UMD shape), no build step
 │   ├── sub-esm/         # native ESM sub app with a multi-module graph, no build step;
-│   │                    # preload.html variant carries a <link rel="modulepreload"> (vite output shape)
+│   │                    # preload.html (modulepreload), concurrent.html (concurrent colliding graphs)
 │   ├── sub-misbehaving/ # deliberately bad app: mount errors + leaked intervals (via props)
 │   └── sub-nested/      # vite-built classic app that is itself a qiankun host: it bundles its own
 │                        # copy of qiankun and mounts sub-classic-bodyless inside its own DOM
@@ -25,7 +25,7 @@ e2e/
 
 The standalone suite serves the built `examples/standalone-sandbox` app as an additional fixture. It imports only `@qiankunjs/sandbox` and exercises classic scripts, ESM, dynamic DOM, style isolation, and cleanup under a CSP without `unsafe-eval`.
 
-The main fixture serves two pages: `index.html` (imperative `loadMicroApp` playground driven via `window.__E2E__`) and `register.html` (`registerMicroApps` + hash-based `activeRule` routing mode).
+The main fixture serves four pages: `index.html` (imperative `loadMicroApp` playground driven via `window.__E2E__`), `register.html` (`registerMicroApps` + hash-based `activeRule` routing mode), `react-host.html` (`@qiankunjs/react` `<MicroApp>` host), and `vue-host.html` (`@qiankunjs/vue` `<MicroApp>` host).
 
 Suites map to qiankun's core promises:
 
@@ -41,6 +41,7 @@ Suites map to qiankun's core promises:
 - `router-mode` — route-driven mount/unmount/switch including history back
 - `container-gate` — container occupancy serialization: waiting takeover, cross-app remount handoff, no-await races, mount/unmount-failure fallback release
 - `standalone-sandbox` — direct package use without qiankun/loader, including the no-`unsafe-eval` CSP path
+- `ui-bindings` — `@qiankunjs/react` (`StrictMode` serialization, updates, rapid switch, unmount) and `@qiankunjs/vue` (`appProps` updates, rapid switch, unmount) host integrations plus loader/error overlay hit-testing (`elementFromPoint` and pointer interception)
 
 ## Fixture network controls
 

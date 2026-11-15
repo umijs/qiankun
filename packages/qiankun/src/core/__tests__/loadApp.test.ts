@@ -222,11 +222,12 @@ describe('loadApp sandbox cleanup', () => {
     );
   });
 
-  it('reuses a 270-module graph across live instances without evicting entry or stylesheet responses', async () => {
+  it('reuses a 55-module graph across live instances without evicting entry or stylesheet responses', async () => {
     const baseUrl = 'https://module-cache.test/';
     const entry = `${baseUrl}index.html`;
     const stylesheet = `${baseUrl}style.css`;
-    const moduleUrls = Array.from({ length: 270 }, (_, i) => `${baseUrl}${i}.js`);
+    // 55 > 50 (the asset cache limit), verifying moduleFetch uses its own cache pool.
+    const moduleUrls = Array.from({ length: 55 }, (_, i) => `${baseUrl}${i}.js`);
     const graph = moduleUrls
       .slice(1)
       .map((url) => `import '${url}';`)
@@ -253,7 +254,7 @@ describe('loadApp sandbox cleanup', () => {
     }
 
     // Both instances are still loaded: the second one links its own graph, but performs no new downloads.
-    expect(fetch).toHaveBeenCalledTimes(272);
+    expect(fetch).toHaveBeenCalledTimes(57);
     for (const url of [entry, stylesheet, ...moduleUrls]) {
       expect(fetch.mock.calls.filter(([input]) => String(input) === url)).toHaveLength(1);
     }
