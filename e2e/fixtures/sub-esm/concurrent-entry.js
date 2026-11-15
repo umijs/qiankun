@@ -1,20 +1,17 @@
+import { v } from './modules/shared-collision.js';
+import { slowTag } from './modules/delayed.js';
+
 export async function bootstrap() {}
 
 export async function mount(props) {
-  const [a, b] = await Promise.all([import('./modules/concurrent-a.js'), import('./modules/concurrent-b.js')]);
-  const [colliding, fast] = await Promise.all([
-    import('./modules/independent-colliding.js'),
-    import('./modules/independent-fast.js'),
-  ]);
-
-  const root = (props?.container ?? document).querySelector('#esm-concurrent-root');
-  root.innerHTML = [
-    `<p data-testid="esm-concurrent-shared">${a.branchA}|${b.branchB}</p>`,
-    `<p data-testid="esm-concurrent-independent">${colliding.independentColliding}|${fast.independentFast}</p>`,
-  ].join('');
+  const root = (props?.container ?? document).querySelector('#esm-root');
+  const result = document.createElement('p');
+  result.dataset.testid = 'esm-concurrent-result';
+  result.textContent = `${v}:${slowTag}:${String(window.__SHARED_COLLISION_HISTORY__)}`;
+  root.appendChild(result);
 }
 
 export async function unmount(props) {
-  const root = (props?.container ?? document).querySelector('#esm-concurrent-root');
+  const root = (props?.container ?? document).querySelector('#esm-root');
   if (root) root.innerHTML = '';
 }

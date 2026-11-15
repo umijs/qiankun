@@ -26,8 +26,10 @@ export const SUB_APP_ENTRIES = {
   'sub-esm': `http://localhost:${PORTS['sub-esm']}`,
   // same server, dedicated page whose HTML carries a <link rel="modulepreload">
   'sub-esm-preload': `http://localhost:${PORTS['sub-esm']}/preload.html`,
+  // concurrent module graphs exercising probe-before-publish import-map isolation
+  'sub-esm-concurrent': `http://localhost:${PORTS['sub-esm']}/concurrent-race.html`,
   // concurrent dynamic imports with shared & independent global-colliding modules
-  'sub-esm-concurrent': `http://localhost:${PORTS['sub-esm']}/concurrent.html`,
+  'sub-esm-concurrent-dynamic': `http://localhost:${PORTS['sub-esm']}/concurrent.html`,
   'sub-misbehaving': `http://localhost:${PORTS['sub-misbehaving']}`,
   // a classic app that is itself a qiankun host: it loads sub-classic-bodyless inside its own DOM
   'sub-nested': `http://localhost:${PORTS['sub-nested']}`,

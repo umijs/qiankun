@@ -6,6 +6,7 @@ vi.mock('../capability', () => ({ assertEsmSupport: vi.fn(async () => {}) }));
 import { EsmSandboxEngine, type EsmSandboxEngineOpts } from '../engine';
 import { assertEsmSupport } from '../capability';
 import { QiankunError } from '../../reporter/QiankunError';
+import { Deferred } from '../../utils';
 import { resetImportMapRegistry } from '../import-map-registry';
 import type { EsmInstance, InstanceHandle } from '../instance-registry';
 import { moduleSourceInstanceKeyPlaceholder, precompileModuleSource } from '../precompile';
@@ -267,6 +268,158 @@ describe('EsmSandboxEngine', () => {
     // `history` was excluded after the redeclaration probe, `window` remains sandboxed
     expect(ns.code).toMatch(/const \{ window \} = __qk_view;/);
     expect(ns.code).not.toMatch(/const \{ [^}]*history[^}]*\} = __qk_view;/);
+  });
+
+  describe('concurrent graph preparation', () => {
+    const operations = ['load', 'import', 'dynamic import', 'document module'] as const;
+    type Operation = (typeof operations)[number];
+
+    const prepare = (world: MockWorld, operation: Operation, url: string): Promise<unknown> => {
+      switch (operation) {
+        case 'load':
+          return world.engine.load(url);
+        case 'import':
+          return world.engine.import(url);
+        case 'dynamic import':
+          return world.getInstance().dynamicImport('same-origin', url, 'https://a.host/');
+        case 'document module':
+          world.engine.registerDocumentModule({ url, baseUrl: 'https://a.host/', isEntry: true });
+          return world.engine.importDocumentModules();
+      }
+    };
+
+    const pauseSharedProbe = (world: MockWorld) => {
+      const started = new Deferred<void>();
+      const gate = new Deferred<void>();
+      const importModule = world.importerMock.getMockImplementation()!;
+      world.importerMock.mockImplementation(async (url: string) => {
+        const code = world.codeByUrl.get(url)!;
+        if (code.includes('/__probe__') && code.includes('sourceURL=https://a.host/shared.js')) {
+          started.resolve();
+          await gate.promise;
+        }
+        return importModule(url);
+      });
+      return { started: started.promise, release: () => gate.resolve() };
+    };
+
+    it.each(operations)('waits for a shared dependency probe during concurrent %s', async (operation) => {
+      const world = createWorld({
+        'https://a.host/a.js': `import { value } from './shared.js'; export { value };`,
+        'https://a.host/b.js': `import { value } from './shared.js'; window.value = value; export const result = value;`,
+        'https://a.host/shared.js': `const history = {}; window.auditHistory = history; export const value = 42;`,
+      });
+      const probe = pauseSharedProbe(world);
+      const first = world.engine.import('./a.js');
+      await probe.started;
+      let settled = false;
+      const second = prepare(world, operation, './b.js').then(() => {
+        settled = true;
+      });
+
+      try {
+        // B's own probe can complete, but its shared dependency is still being probed by A.
+        await vi.waitFor(() => {
+          expect(
+            world.importerMock.mock.calls.some((args) => {
+              const code = world.codeByUrl.get(String(args[0]))!;
+              return code.includes('/__probe__') && code.includes('sourceURL=https://a.host/b.js');
+            }),
+          ).toBe(true);
+        });
+        expect(settled).toBe(false);
+        expect(readInjectedImports()[`${world.engine.instanceKey}/https://a.host/shared.js`]).toBeUndefined();
+        probe.release();
+        await Promise.all([first, second]);
+        const imports = readInjectedImports();
+        const sharedUrl = imports[`${world.engine.instanceKey}/https://a.host/shared.js`];
+        expect(sharedUrl).toBeDefined();
+        expect(world.revoked).not.toContain(sharedUrl);
+        expect(world.codeByUrl.get(sharedUrl)).not.toMatch(/const \{ [^}]*history[^}]*\} = __qk_view;/);
+      } finally {
+        probe.release();
+        await Promise.allSettled([first, second]);
+        world.engine.dispose();
+      }
+    });
+
+    it('does not publish typed dependency mappings from an unrelated pending graph', async () => {
+      const world = createWorld({
+        'https://a.host/a.js': `import data from './data.json' with { type: 'json' };\nimport { value } from './shared.js';\nexport { data, value };`,
+        'https://a.host/shared.js': `const history = {}; window.auditHistory = history; export const value = 42;`,
+        'https://a.host/b.js': `export const value = 7;`,
+      });
+      const probe = pauseSharedProbe(world);
+      const pending = world.engine.import('./a.js');
+      await probe.started;
+
+      try {
+        await world.engine.import('./b.js');
+        expect(readInjectedImports()[`${world.engine.instanceKey}/https://a.host/data.json`]).toBeUndefined();
+        probe.release();
+        await pending;
+        expect(readInjectedImports()[`${world.engine.instanceKey}/https://a.host/data.json`]).toBe(
+          'https://a.host/data.json',
+        );
+      } finally {
+        probe.release();
+        await Promise.allSettled([pending]);
+        world.engine.dispose();
+      }
+    });
+
+    it('waits for the target probe before publishing a concurrent redirect alias', async () => {
+      const world = createWorld(
+        {
+          'https://a.host/a.js': `import { value } from './shared.js'; export { value };`,
+          'https://a.host/b.js': `import { value } from './alias.js'; window.value = value; export const result = value;`,
+          'https://a.host/shared.js': `const history = {}; window.auditHistory = history; export const value = 42;`,
+        },
+        {
+          engine: {
+            modules: {
+              'https://a.host/alias.js': { specifier: './shared.js' },
+            },
+          },
+        },
+      );
+      const probe = pauseSharedProbe(world);
+      const first = world.engine.import('./a.js');
+      await probe.started;
+      let settled = false;
+      const second = world.engine.import('./b.js').then(() => {
+        settled = true;
+      });
+
+      try {
+        await vi.waitFor(() => {
+          expect(
+            world.importerMock.mock.calls.some((args) => {
+              const code = world.codeByUrl.get(String(args[0]))!;
+              return code.includes('/__probe__') && code.includes('sourceURL=https://a.host/b.js');
+            }),
+          ).toBe(true);
+        });
+        expect(settled).toBe(false);
+        const midImports = readInjectedImports();
+        expect(midImports[`${world.engine.instanceKey}/https://a.host/alias.js`]).toBeUndefined();
+        expect(midImports[`${world.engine.instanceKey}/https://a.host/shared.js`]).toBeUndefined();
+
+        probe.release();
+        await Promise.all([first, second]);
+        const imports = readInjectedImports();
+        const sharedUrl = imports[`${world.engine.instanceKey}/https://a.host/shared.js`];
+        const aliasUrl = imports[`${world.engine.instanceKey}/https://a.host/alias.js`];
+        expect(sharedUrl).toBeDefined();
+        expect(aliasUrl).toBe(sharedUrl);
+        expect(world.revoked).not.toContain(sharedUrl);
+        expect(world.codeByUrl.get(sharedUrl)).not.toMatch(/const \{ [^}]*history[^}]*\} = __qk_view;/);
+      } finally {
+        probe.release();
+        await Promise.allSettled([first, second]);
+        world.engine.dispose();
+      }
+    });
   });
 
   it('registers a shielded instance exposing view/resolve/dynamicImport', () => {
