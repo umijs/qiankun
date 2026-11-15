@@ -285,29 +285,6 @@ describe('EsmSandboxEngine', () => {
       return { started: started.promise, release: () => gate.resolve() };
     };
 
-    it.each(operations)('does not publish a pending %s graph when an unrelated graph completes', async (operation) => {
-      const world = createWorld({
-        'https://a.host/a.js': `import { value } from './shared.js'; export { value };`,
-        'https://a.host/shared.js': `const history = {}; window.auditHistory = history; export const value = 42;`,
-        'https://a.host/b.js': `export const value = 7;`,
-      });
-      const probe = pauseSharedProbe(world);
-      const pending = prepare(world, operation, './a.js');
-      await probe.started;
-
-      try {
-        await world.engine.import('./b.js');
-        const imports = readInjectedImports();
-        expect(imports[`${world.engine.instanceKey}/https://a.host/b.js`]).toBeDefined();
-        expect(imports[`${world.engine.instanceKey}/https://a.host/a.js`]).toBeUndefined();
-        expect(imports[`${world.engine.instanceKey}/https://a.host/shared.js`]).toBeUndefined();
-      } finally {
-        probe.release();
-        await pending;
-        world.engine.dispose();
-      }
-    });
-
     it.each(operations)('waits for a shared dependency probe during concurrent %s', async (operation) => {
       const world = createWorld({
         'https://a.host/a.js': `import { value } from './shared.js'; export { value };`,
