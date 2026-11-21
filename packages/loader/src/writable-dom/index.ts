@@ -77,6 +77,8 @@ function writableDOM(
   const root = (doc.body.firstChild as HTMLTemplateElement).content;
   const walker = doc.createTreeWalker(root);
   const targetNodes = new WeakMap<Node, Node>([[root, target]]);
+  // [qiankun] compare source text, not transformed output, to avoid transforming again on close.
+  const inlineTextSources = new WeakMap<Node, string>();
   const targetFragments = new WeakMap<ParentNode, DocumentFragment>();
   const isIncomplete = (node: ParentNode) => !(resolve || node.nextSibling || /<\/\w+>$/.test(curChunk));
   let appendedTargets = new Set<ParentNode>();
@@ -143,12 +145,22 @@ function writableDOM(
       if (startNode.nodeType === NodeType.TEXT_NODE) {
         if (!isInlineScriptOrStyleTag((node = startNode.parentNode!))) {
           (targetNodes.get(startNode) as Text).data = (startNode as Text).data;
-        } else if (!isIncomplete(node) && !targetNodes.has(startNode)) {
-          // [qiankun] completed inline text goes through the transformer before it executes
-          const host = targetNodes.get(node) as Element;
-          const inlineText = transformInlineText(host, owner.importNode(startNode as Text, false));
-          targetNodes.set(startNode, inlineText);
-          host.appendChild(inlineText);
+        } else if (!isIncomplete(node)) {
+          // A later write can extend an already-copied text node.
+          // Update its clone instead of appending a duplicate or skipping the new text.
+          const clone = targetNodes.get(startNode) as Text | undefined;
+          if (clone && typeof assetTransformer !== 'function') {
+            clone.data = (startNode as Text).data;
+          } else if (!clone || inlineTextSources.get(startNode) !== (startNode as Text).data) {
+            // [qiankun] transform changed source before insertion. Replace transformed text
+            // so pending async work retains its new Text and cannot update the old one.
+            const host = targetNodes.get(node) as Element;
+            const inlineText = transformInlineText(host, owner.importNode(startNode as Text, false));
+            inlineTextSources.set(startNode, (startNode as Text).data);
+            targetNodes.set(startNode, inlineText);
+            if (clone) clone.replaceWith(inlineText);
+            else host.appendChild(inlineText);
+          }
         }
       }
 
@@ -165,6 +177,7 @@ function writableDOM(
         // completed-text branch above
         if (node.nodeType === NodeType.TEXT_NODE && isInlineScriptOrStyleTag(parentNode)) {
           clone = transformInlineText(cloneParent as Element, clone as Text);
+          inlineTextSources.set(node, (node as Text).data);
         }
         targetNodes.set(node, clone);
 
