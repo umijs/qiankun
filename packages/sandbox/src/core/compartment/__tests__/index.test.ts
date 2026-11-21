@@ -490,3 +490,58 @@ describe('terminal disposal', () => {
     expect(createModuleUrl).toHaveBeenCalledOnce();
   });
 });
+
+describe('prepared classic source ownership', () => {
+  it('pins a queued factory independently and shields its bridge from application globals', () => {
+    const calls: WindowProxy[] = [];
+    const provider = {
+      get: () => (view: WindowProxy) =>
+        function () {
+          calls.push(view);
+        },
+    };
+    const sandbox = new StandardSandbox('prepared', {}, window, { classicPreparation: provider });
+    const source = sandbox.transformClassicScript('business()', 'https://app.test/entry.js');
+    const match = /window\["([^"]+)"\]\((\d+)\)/.exec(source)!;
+    const bridgeName = match[1];
+    expect(Reflect.get(sandbox.globalThis, bridgeName)).toBeUndefined();
+    const invoke = Reflect.get(window, bridgeName) as (token: number) => void;
+    invoke(Number(match[2]));
+    invoke(Number(match[2]));
+    expect(calls).toEqual([sandbox.globalThis]);
+    sandbox.dispose();
+    expect(Reflect.has(window, bridgeName)).toBe(false);
+  });
+
+  it('releases a queued pin when its script fails before execution', () => {
+    const called = vi.fn();
+    const sandbox = new StandardSandbox('failed-script', {}, window, {
+      classicPreparation: { get: () => (_view) => called },
+    });
+    let release: (() => void) | undefined;
+    const source = sandbox.transformClassicScript('business()', 'https://app.test/entry.js', (cleanup) => {
+      release = cleanup;
+    });
+    const match = /window\["([^"]+)"\]\((\d+)\)/.exec(source)!;
+    release!();
+    (Reflect.get(window, match[1]) as (token: number) => void)(Number(match[2]));
+    expect(called).not.toHaveBeenCalled();
+    sandbox.dispose();
+  });
+
+  it('falls back for transforms and removes unexecuted factory pins on terminal disposal', () => {
+    const get = vi.fn(() => (_view: WindowProxy) => function () {});
+    const sandbox = new StandardSandbox('transformed', {}, window, {
+      transforms: [(source) => `${source};extra()`],
+      classicPreparation: { get },
+    });
+    expect(sandbox.transformClassicScript('business()', 'https://app.test/entry.js')).toContain('business();extra()');
+    expect(get).not.toHaveBeenCalled();
+    sandbox.dispose();
+    const queued = new StandardSandbox('queued', {}, window, { classicPreparation: { get } });
+    const transformed = queued.transformClassicScript('business()', 'https://app.test/entry.js');
+    const name = /window\["([^"]+)"\]/.exec(transformed)![1];
+    queued.dispose();
+    expect(Reflect.has(window, name)).toBe(false);
+  });
+});
