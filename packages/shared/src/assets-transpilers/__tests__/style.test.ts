@@ -10,11 +10,14 @@ const defaultOpts: StyleTranspilerOpts = {
 
 describe('transpileStyleText', () => {
   describe('@scope wrapping', () => {
-    it('wraps basic CSS rules in @scope', async () => {
-      const input = '.container { color: red; }';
-      const result = await transpileStyleText(input, defaultOpts);
+    it.each([
+      ['basic rule', '.container { color: red; }'],
+      ['@media rule', '@media (max-width: 768px) { .a { color: red; } }'],
+      ['@supports rule', '@supports (display: grid) { .grid { display: grid; } }'],
+    ])('wraps %s inside @scope', (_label, input) => {
+      const result = transpileStyleText(input, defaultOpts);
       expect(result).toContain('@scope ([data-name="test-app"])');
-      expect(result).toContain('.container { color: red; }');
+      expect(result).toContain(input);
     });
 
     it('wraps multiple rules in a single @scope block', async () => {
@@ -26,28 +29,8 @@ describe('transpileStyleText', () => {
       expect(result).toContain('.b { color: blue; }');
     });
 
-    it('preserves nested @media rules inside @scope', async () => {
-      const input = '@media (max-width: 768px) { .a { color: red; } }';
+    it.each(['', '   \n\t  '])('returns empty string for empty/whitespace CSS (%j)', async (input) => {
       const result = await transpileStyleText(input, defaultOpts);
-      expect(result).toContain('@scope ([data-name="test-app"])');
-      expect(result).toContain('@media (max-width: 768px)');
-      expect(result).toContain('.a { color: red; }');
-    });
-
-    it('preserves nested @supports rules inside @scope', async () => {
-      const input = '@supports (display: grid) { .grid { display: grid; } }';
-      const result = await transpileStyleText(input, defaultOpts);
-      expect(result).toContain('@scope ([data-name="test-app"])');
-      expect(result).toContain('@supports (display: grid)');
-    });
-
-    it('handles empty CSS input without error', async () => {
-      const result = await transpileStyleText('', defaultOpts);
-      expect(result).toBe('');
-    });
-
-    it('handles whitespace-only CSS input', async () => {
-      const result = await transpileStyleText('   \n\t  ', defaultOpts);
       expect(result).toBe('');
     });
   });
@@ -378,23 +361,23 @@ describe('transpileStyleText', () => {
 const ruleOpts = { appName: 'test-app', scopeRoot: '[data-name="test-app"]' };
 
 describe('transpileStyleRule', () => {
-  it('wraps a regular rule in @scope', () => {
-    const result = transpileStyleRule('.foo { color: red; }', ruleOpts);
-    expect(result).toBe('@scope ([data-name="test-app"]) { .foo { color: red; } }');
+  it.each([
+    ['regular rule', '.foo { color: red; }'],
+    ['@media rule', '@media (max-width: 768px) { .a { color: red; } }'],
+    ['@supports rule', '@supports (display: grid) { .grid { display: grid; } }'],
+  ])('wraps %s in @scope', (_label, input) => {
+    expect(transpileStyleRule(input, ruleOpts)).toBe(`@scope ([data-name="test-app"]) { ${input} }`);
   });
 
-  it('returns empty string for empty input', () => {
-    expect(transpileStyleRule('', ruleOpts)).toBe('');
-    expect(transpileStyleRule('   ', ruleOpts)).toBe('');
+  it.each(['', '   '])('returns empty string for empty input (%j)', (input) => {
+    expect(transpileStyleRule(input, ruleOpts)).toBe('');
   });
 
-  it('returns @font-face as-is without wrapping', () => {
-    const input = '@font-face { font-family: "MyFont"; src: url("/f.woff2"); }';
-    expect(transpileStyleRule(input, ruleOpts)).toBe(input);
-  });
-
-  it('returns @namespace as-is without wrapping', () => {
-    const input = '@namespace svg "http://www.w3.org/2000/svg";';
+  it.each([
+    ['@font-face', '@font-face { font-family: "MyFont"; src: url("/f.woff2"); }'],
+    ['@namespace', '@namespace svg "http://www.w3.org/2000/svg";'],
+    ['already-scoped', '@scope ([data-name="test-app"]) { .foo { color: red; } }'],
+  ])('returns %s rule as-is without double-wrapping', (_label, input) => {
     expect(transpileStyleRule(input, ruleOpts)).toBe(input);
   });
 
@@ -403,25 +386,6 @@ describe('transpileStyleRule', () => {
     const result = transpileStyleRule(input, ruleOpts);
     expect(result).toContain('@keyframes __qk_test-app_fadeIn');
     expect(result).toMatch(/^@scope \(\[data-name="test-app"\]\)/);
-  });
-
-  it('skips already-scoped rules to prevent double-wrapping', () => {
-    const alreadyScoped = '@scope ([data-name="test-app"]) { .foo { color: red; } }';
-    expect(transpileStyleRule(alreadyScoped, ruleOpts)).toBe(alreadyScoped);
-  });
-
-  it('wraps @media rules in @scope', () => {
-    const input = '@media (max-width: 768px) { .a { color: red; } }';
-    const result = transpileStyleRule(input, ruleOpts);
-    expect(result).toContain('@scope ([data-name="test-app"])');
-    expect(result).toContain('@media (max-width: 768px)');
-  });
-
-  it('wraps @supports rules in @scope', () => {
-    const input = '@supports (display: grid) { .grid { display: grid; } }';
-    const result = transpileStyleRule(input, ruleOpts);
-    expect(result).toContain('@scope ([data-name="test-app"])');
-    expect(result).toContain('@supports (display: grid)');
   });
 });
 
@@ -462,5 +426,35 @@ describe('transpileStyle (default export)', () => {
 
     expect(style.textContent).toContain('@scope ([data-name="test-app"])');
     expect(style.textContent).toContain('.foo { color: red; }');
+  });
+
+  it('resolves relative @import URLs against baseURI when opts.baseURL is omitted', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(new Response('.rel { color: green; }'));
+    const style = document.createElement('style');
+    style.textContent = '@import url("./imported.css");';
+
+    transpileStyle(style, 'https://sub.example/nested/entry.html', { ...defaultOpts, fetch: mockFetch });
+
+    await vi.waitFor(() => {
+      expect(style.textContent).toContain('.rel { color: green; }');
+    });
+    expect(mockFetch).toHaveBeenCalledWith('https://sub.example/nested/imported.css');
+  });
+
+  it('prefers explicit opts.baseURL over baseURI when resolving @import URLs', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(new Response('.explicit { color: blue; }'));
+    const style = document.createElement('style');
+    style.textContent = '@import url("./imported.css");';
+
+    transpileStyle(style, 'https://fallback.example/entry.html', {
+      ...defaultOpts,
+      baseURL: 'https://explicit.example/sub/app.html',
+      fetch: mockFetch,
+    });
+
+    await vi.waitFor(() => {
+      expect(style.textContent).toContain('.explicit { color: blue; }');
+    });
+    expect(mockFetch).toHaveBeenCalledWith('https://explicit.example/sub/imported.css');
   });
 });

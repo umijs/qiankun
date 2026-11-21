@@ -24,7 +24,7 @@
     bootstrap: function () {
       return Promise.resolve();
     },
-    mount: function () {
+    mount: function (props) {
       if (!mounted) {
         wrapAppendChild(document.head, 'head');
         wrapAppendChild(document.body, 'body');
@@ -42,8 +42,31 @@
         mounted = true;
       }
 
+      if (props && typeof props.onRetainedHelpers === 'function') {
+        props.onRetainedHelpers({
+          readDocHead: function () {
+            return document.head;
+          },
+          appendViaDoc: function (testId, cssText) {
+            appendStyle(document.head, testId, cssText);
+          },
+        });
+      }
+
       var report = document.querySelector('[data-testid="patched-append-observed"]');
       if (report) report.textContent = observed.join(',');
+
+      var lateBtn = document.querySelector('[data-testid="patched-append-late-btn"]');
+      if (lateBtn) {
+        lateBtn.onclick = function () {
+          appendStyle(
+            document.head,
+            'patched-append-late-style',
+            'h1 { color: rgb(255, 0, 0); } .patched-append-late-target { color: rgb(81, 82, 83); }',
+          );
+          if (report) report.textContent = observed.join(',');
+        };
+      }
 
       return Promise.resolve();
     },

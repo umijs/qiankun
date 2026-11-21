@@ -106,7 +106,8 @@ const defaultRevokeModuleUrl = (moduleUrl: string): void => {
 const redeclarationPatterns = [
   /Identifier '(.+?)' has already been declared/,
   /redeclaration of (?:\S+ )?['"]?([A-Za-z_$][\w$]*)['"]?/,
-  /Cannot declare a lexical variable twice: '(.+?)'/,
+  /Cannot declare a (?:(?:lexical|const|let) variable|class) twice: '(.+?)'/,
+  /Cannot declare a (?:var variable|function) that shadows .+?:? '(.+?)'/,
 ];
 
 const extractRedeclaredIdentifier = (error: unknown): string | undefined => {
