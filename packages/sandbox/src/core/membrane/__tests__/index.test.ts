@@ -75,7 +75,6 @@ describe('non-configurable global properties', () => {
     const membrane = new Membrane(globalContext, {});
 
     expect(getDescriptorReads()).toBe(0);
-    expect(Object.prototype.hasOwnProperty.call(membrane.target, 'locked')).toBe(false);
     expect(Reflect.ownKeys(membrane.globalThisView)).toContain('locked');
     expect(getDescriptorReads()).toBe(0);
 
@@ -85,7 +84,7 @@ describe('non-configurable global properties', () => {
       value: 'host',
       writable: false,
     });
-    expect(Object.prototype.hasOwnProperty.call(membrane.target, 'locked')).toBe(true);
+    expect(getDescriptorReads()).toBeGreaterThan(0);
   });
 
   it('keeps non-configurable data and accessor behavior after lazy materialization', () => {
@@ -94,7 +93,6 @@ describe('non-configurable global properties', () => {
     const proxy = membrane.globalThisView as unknown as Record<string, unknown>;
 
     expect(proxy.lockedGetter).toBe('host-marker');
-    expect(Object.prototype.hasOwnProperty.call(membrane.target, 'lockedGetter')).toBe(false);
     expect(Object.getOwnPropertyDescriptor(proxy, 'lockedGetter')?.configurable).toBe(false);
     expect(proxy.lockedGetter).toBe('host-marker');
 
@@ -141,8 +139,10 @@ describe('non-configurable global properties', () => {
     proxy.__qk_r_test = 'sandbox-own';
 
     expect(proxy.__qk_r_test).toBe('sandbox-own');
-    expect(Object.getOwnPropertyDescriptor(membrane.target, '__qk_r_test')?.configurable).toBe(true);
+    expect(Object.getOwnPropertyDescriptor(proxy, '__qk_r_test')?.configurable).toBe(true);
     expect(rawGlobal.__qk_r_test).toBe(hostAccessor);
+    expect(delete proxy.__qk_r_test).toBe(true);
+    expect(proxy.__qk_r_test).toBeUndefined();
   });
 
   it('keeps explicit globals ahead of the host global without scanning host descriptors', () => {

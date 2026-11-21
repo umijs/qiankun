@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>sub-classic-async-import</title>
+    <style data-testid="async-import-style">
+      @import url('./async-import-extra.css');
+      #main-title {
+        color: rgb(255, 0, 0);
+      }
+      .async-import-local {
+        color: rgb(22, 33, 44);
+      }
+    </style>
+  </head>
+  <body>
+    <main id="async-import-root">
+      <p class="async-import-target" data-testid="async-import-target">async import target</p>
+      <p class="async-import-local" data-testid="async-import-local">async import local</p>
+    </main>
+    <script src="./entry-async-import.js" entry></script>
+  </body>
+</html>

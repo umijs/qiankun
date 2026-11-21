@@ -278,5 +278,69 @@ describe('transpileLink', () => {
       expect(fontFacePos).toBeGreaterThanOrEqual(0);
       expect(scopePos).toBeGreaterThan(fontFacePos);
     });
+
+    it('reuses cached raw CSS across different apps while scoping each app separately', async () => {
+      const mockFetch = vi.fn().mockResolvedValue(new Response('.header { font-size: 16px; }'));
+
+      const link1 = document.createElement('link');
+      link1.rel = 'stylesheet';
+      link1.setAttribute('href', 'https://example.com/common.css');
+      transpileLink(
+        link1,
+        'https://example.com/',
+        makeOpts({
+          fetch: mockFetch,
+          styleIsolation: { appName: 'app1', scopeRoot: '[data-name="app1"]' },
+        }),
+      );
+      await waitForBlobHref(link1);
+
+      const link2 = document.createElement('link');
+      link2.rel = 'stylesheet';
+      link2.setAttribute('href', 'https://example.com/common.css');
+      transpileLink(
+        link2,
+        'https://example.com/',
+        makeOpts({
+          fetch: mockFetch,
+          styleIsolation: { appName: 'app2', scopeRoot: '[data-name="app2"]' },
+        }),
+      );
+      await waitForBlobHref(link2);
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(await readBlobCss(link1)).toContain('[data-name="app1"]');
+      expect(await readBlobCss(link2)).toContain('[data-name="app2"]');
+      expect(link2.getAttribute('href')).not.toBe(link1.getAttribute('href'));
+    });
+
+    it('deduplicates concurrent in-flight fetches for the same stylesheet URL', async () => {
+      let resolveFetch!: (response: Response) => void;
+      const mockFetch = vi.fn(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveFetch = resolve;
+          }),
+      );
+      const opts = makeOpts({ fetch: mockFetch, styleIsolation });
+
+      const links = Array.from({ length: 10 }, () => {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.setAttribute('href', 'https://example.com/layout.css');
+        transpileLink(link, 'https://example.com/', opts);
+        return link;
+      });
+
+      expect(links.some((link) => /^blob:/.test(link.getAttribute('href') ?? ''))).toBe(false);
+
+      resolveFetch(new Response('.container { width: 100%; }'));
+      await vi.waitFor(() => {
+        expect(links.every((link) => /^blob:/.test(link.getAttribute('href') ?? ''))).toBe(true);
+      });
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(new Set(links.map((link) => link.getAttribute('href'))).size).toBe(1);
+    });
   });
 });

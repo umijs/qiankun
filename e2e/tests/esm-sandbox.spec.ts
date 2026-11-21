@@ -129,4 +129,160 @@ test.describe('esm sub app under sandbox', () => {
     const counter = await request.get(`${SUB_ESM_ORIGIN}/__e2e__/request-count?path=${PRELOADED_MODULE_PATH}`);
     expect(((await counter.json()) as { count: number }).count).toBe(1);
   });
+
+  test('resolves concurrent dynamic imports with colliding modules without flushing stale import map entries', async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') errors.push(msg.text());
+    });
+    page.on('pageerror', (err) => {
+      errors.push(err.message);
+    });
+
+    const status = await loadApp(page, 'sub-esm-concurrent-dynamic');
+    expect(status).toBe('MOUNTED');
+    await expect(page.getByTestId('esm-concurrent-shared')).toHaveText('a:shared-colliding|b:shared-colliding');
+    await expect(page.getByTestId('esm-concurrent-independent')).toHaveText('independent-colliding|fast-ok');
+    expect(errors).toEqual([]);
+    expect(await readMainRealmGlobal(page, '__CONCURRENT_SHARED__')).toBeUndefined();
+    expect(await readMainRealmGlobal(page, '__CONCURRENT_INDEPENDENT__')).toBeUndefined();
+  });
+
+  test('awaits an in-flight shared colliding probe across concurrent native graphs', async ({ page }) => {
+    await page.goto('/esm-race.html');
+    const result = await page.evaluate(() =>
+      (
+        window as unknown as {
+          __ESM_RACE__: {
+            verifySharedProbeBarrier(): Promise<{
+              initialCollisionProbeCalls: number;
+              bSettledDuringGate: boolean;
+              aSettledDuringGate: boolean;
+              sharedInImportMapDuringGate: boolean;
+              branchA: unknown;
+              branchB: unknown;
+              sandboxValue: unknown;
+              mainValue: unknown;
+            }>;
+          };
+        }
+      ).__ESM_RACE__.verifySharedProbeBarrier(),
+    );
+
+    expect(result.initialCollisionProbeCalls).toBe(1);
+    expect(result.bSettledDuringGate).toBe(false);
+    expect(result.aSettledDuringGate).toBe(false);
+    expect(result.sharedInImportMapDuringGate).toBe(false);
+    expect(result.branchA).toBe('a:shared-colliding');
+    expect(result.branchB).toBe('b:shared-colliding');
+    expect(result.sandboxValue).toBe('shared-colliding');
+    expect(result.mainValue).toBeUndefined();
+  });
+
+  test('does not flush another graph’s un-probed colliding import map entry while a sibling graph completes', async ({
+    page,
+  }) => {
+    await page.goto('/esm-race.html');
+    const result = await page.evaluate(() =>
+      (
+        window as unknown as {
+          __ESM_RACE__: {
+            verifyIndependentFlushBarrier(): Promise<{
+              fastResult: unknown;
+              slowInImportMapWhilePending: boolean;
+              slowSettledWhilePending: boolean;
+              slowResult: unknown;
+              slowInImportMapAfterRelease: boolean;
+              sandboxValue: unknown;
+              mainValue: unknown;
+            }>;
+          };
+        }
+      ).__ESM_RACE__.verifyIndependentFlushBarrier(),
+    );
+
+    expect(result.fastResult).toBe('fast-ok');
+    expect(result.slowInImportMapWhilePending).toBe(false);
+    expect(result.slowSettledWhilePending).toBe(false);
+    expect(result.slowResult).toBe('independent-colliding');
+    expect(result.slowInImportMapAfterRelease).toBe(true);
+    expect(result.sandboxValue).toBe('independent-colliding');
+    expect(result.mainValue).toBeUndefined();
+  });
+
+  test('concurrent module graph preparation does not publish provisional blob URLs before probe settles', async ({
+    page,
+  }) => {
+    const consoleErrors: string[] = [];
+    const pageErrors: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') consoleErrors.push(msg.text());
+    });
+    page.on('pageerror', (err) => pageErrors.push(err.message));
+
+    let releaseDelayed!: () => void;
+    const delayedGate = new Promise<void>((resolve) => {
+      releaseDelayed = resolve;
+    });
+    let markDelayedRequested!: () => void;
+    const delayedRequested = new Promise<void>((resolve) => {
+      markDelayedRequested = resolve;
+    });
+    let releaseFast!: () => void;
+    const fastGate = new Promise<void>((resolve) => {
+      releaseFast = resolve;
+    });
+
+    await page.route(`${SUB_ESM_ORIGIN}/modules/delayed.js`, async (route) => {
+      markDelayedRequested();
+      await delayedGate;
+      await route.continue();
+    });
+    await page.route(`${SUB_ESM_ORIGIN}/concurrent-fast.js`, async (route) => {
+      await fastGate;
+      await route.continue();
+    });
+
+    const readImportMapSpecifiers = () =>
+      page.evaluate(() => {
+        const scripts = document.querySelectorAll('script[type="importmap"][data-qiankun="esm"]');
+        return Array.from(scripts).flatMap((s) => Object.keys(JSON.parse(s.textContent || '{}').imports ?? {}));
+      });
+
+    const loadPromise = loadApp(page, 'sub-esm-concurrent');
+
+    try {
+      // Wait until shared-collision.js has been fetched while Graph A is still blocked on delayed.js.
+      await Promise.all([page.waitForResponse(`${SUB_ESM_ORIGIN}/modules/shared-collision.js`), delayedRequested]);
+      // Let fetch().text() + compileModuleSource() finish creating shared-collision's provisional module entry.
+      await page.evaluate(() => Promise.resolve());
+
+      // Release Graph B (concurrent-fast.js) and wait until its own import map is injected.
+      releaseFast();
+      await expect
+        .poll(readImportMapSpecifiers)
+        .toEqual(expect.arrayContaining([expect.stringContaining('/concurrent-fast.js')]));
+
+      // Graph B's flush must not expose Graph A's unprobed shared-collision.js blob URL.
+      const midSpecifiers = await readImportMapSpecifiers();
+      expect(midSpecifiers.some((spec) => spec.includes('/modules/shared-collision.js'))).toBe(false);
+
+      // Now unblock delayed.js so Graph A probes shared-collision.js (collides on `history`,
+      // rebuilds & revokes its old blob URL), publishes the settled URL, and mounts cleanly.
+      releaseDelayed();
+      expect(await loadPromise).toBe('MOUNTED');
+      await expect(page.getByTestId('esm-concurrent-result')).toHaveText('42:slow-ok:local-history');
+      await expect(page.getByTestId('esm-concurrent-fast')).toHaveText('fast-done');
+      expect(consoleErrors).toEqual([]);
+      expect(pageErrors).toEqual([]);
+      expect(await readMainRealmGlobal(page, '__SHARED_COLLISION_HISTORY__')).toBeUndefined();
+      expect(await readMainRealmGlobal(page, '__CONCURRENT_FAST_RAN__')).toBeUndefined();
+    } finally {
+      releaseFast();
+      releaseDelayed();
+      await loadPromise.catch(() => undefined);
+    }
+  });
 });

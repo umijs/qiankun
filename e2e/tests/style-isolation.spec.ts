@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { loadApp } from './helpers';
+import { type E2EWindow, loadApp, unmountApp } from './helpers';
 
 const BLUE = 'rgb(0, 0, 255)';
 const RED = 'rgb(255, 0, 0)';
@@ -136,5 +136,141 @@ test.describe('runtime style isolation (@scope)', () => {
     // ...while its body rule never reaches the main realm
     const bodyBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
     expect(bodyBg).not.toBe(LAZY);
+  });
+
+  test('delayed CSS @import inside an isolated style neither flashes host styles mid-flight nor leaks once resolved', async ({
+    page,
+  }) => {
+    const TARGET_COLOR = 'rgb(12, 134, 56)';
+    const LOCAL_COLOR = 'rgb(22, 33, 44)';
+    let releaseImportCss!: () => void;
+    let markImportRequested!: () => void;
+    const importRequested = new Promise<void>((resolve) => {
+      markImportRequested = resolve;
+    });
+    const importGate = new Promise<void>((resolve) => {
+      releaseImportCss = resolve;
+    });
+
+    await page.route('**/async-import-extra.css', async (route) => {
+      markImportRequested();
+      await importGate;
+      await route.continue();
+    });
+
+    const loadPromise = loadApp(page, 'sub-classic-async-import', { sandbox: { styleIsolation: true } });
+    try {
+      await importRequested;
+
+      // While @import is still pending, synchronous text clearing must suppress even local
+      // leaking rules (#main-title { color: rgb(255, 0, 0) }) and local target rules mid-flight
+      await expect(page.locator('#main-title')).toHaveCSS('color', BLUE);
+      await expect(page.getByTestId('async-import-local')).not.toHaveCSS('color', LOCAL_COLOR);
+      const midFlightCss = await page
+        .locator('[data-name="sub-classic-async-import"] [data-testid="async-import-style"]')
+        .textContent();
+      expect(midFlightCss ?? '').toBe('');
+    } finally {
+      releaseImportCss();
+    }
+
+    expect(await loadPromise).toBe('MOUNTED');
+    await expect(page.getByTestId('async-import-target')).toHaveCSS('color', TARGET_COLOR);
+    await expect(page.getByTestId('async-import-local')).toHaveCSS('color', LOCAL_COLOR);
+    await expect(page.locator('#main-title')).toHaveCSS('color', BLUE);
+  });
+
+  test('app appendChild wrapper survives observer ticks, leaves host head intact, and retained sandbox views do not hijack successor owners after unload', async ({
+    page,
+  }) => {
+    const LATE = 'rgb(81, 82, 83)';
+
+    await page.evaluate(async () => {
+      (window as unknown as { __RETAINED_APP1_HELPERS__?: unknown }).__RETAINED_APP1_HELPERS__ = undefined;
+      await (window as unknown as E2EWindow).__E2E__.load(
+        'sub-classic-patched-append',
+        { sandbox: { styleIsolation: true } },
+        'app1-head',
+        {
+          onRetainedHelpers: (helpers: unknown) => {
+            (window as unknown as { __RETAINED_APP1_HELPERS__?: unknown }).__RETAINED_APP1_HELPERS__ = helpers;
+          },
+        },
+        'shared-head-container',
+      );
+    });
+    await page.getByTestId('patched-append-late-btn').click();
+
+    await expect(page.getByTestId('patched-append-observed')).toHaveText('head:style,body:style,head:style');
+    const container = page.locator('#container-shared-head-container');
+    const lateStyle = container.locator('qiankun-head > style[data-testid="patched-append-late-style"]');
+    await expect(lateStyle).toHaveCount(1);
+    expect(await lateStyle.evaluate((el) => (el.textContent ?? '').trim().startsWith('@scope'))).toBe(true);
+    await expect(page.getByTestId('patched-append-late-target')).toHaveCSS('color', LATE);
+    await expect(page.locator('#main-title')).toHaveCSS('color', BLUE);
+
+    expect(await unmountApp(page, 'app1-head')).toBe('NOT_MOUNTED');
+
+    // Host document.head appendChild works natively after sandbox unmount without diversion into qiankun-head
+    const hostAppendedInDocumentHead = await page.evaluate(() => {
+      const style = document.createElement('style');
+      style.dataset.testid = 'host-post-unmount-style';
+      style.textContent = '#main-title { font-style: italic; }';
+      document.head.appendChild(style);
+      const inRealHead = style.parentElement === document.head;
+      style.remove();
+      return inRealHead;
+    });
+    expect(hostAppendedInDocumentHead).toBe(true);
+
+    // Terminal unload revokes App 1's retained documentView and hands container cleanly to a new owner
+    await page.evaluate(() => (window as unknown as E2EWindow).__E2E__.unload('app1-head'));
+    await loadApp(
+      page,
+      'sub-classic',
+      { sandbox: { styleIsolation: true } },
+      'app2-owner',
+      undefined,
+      'shared-head-container',
+    );
+
+    const postUnloadChecks = await page.evaluate(() => {
+      const helpers = (
+        window as unknown as {
+          __RETAINED_APP1_HELPERS__: {
+            readDocHead(): unknown;
+            appendViaDoc(id: string, css: string): void;
+          };
+        }
+      ).__RETAINED_APP1_HELPERS__;
+
+      let readDocHeadThrew = false;
+      try {
+        helpers.readDocHead();
+      } catch {
+        readDocHeadThrew = true;
+      }
+
+      let appendViaDocThrew = false;
+      try {
+        helpers.appendViaDoc('stale-app1-hijack', '#main-title { color: rgb(255, 0, 0); }');
+      } catch {
+        appendViaDocThrew = true;
+      }
+
+      return {
+        readDocHeadThrew,
+        appendViaDocThrew,
+        staleStyleCount: document.querySelectorAll('[data-testid="stale-app1-hijack"]').length,
+      };
+    });
+
+    expect(postUnloadChecks).toEqual({
+      readDocHeadThrew: true,
+      appendViaDocThrew: true,
+      staleStyleCount: 0,
+    });
+    await expect(page.getByTestId('classic-title')).toHaveText('classic mounted');
+    await expect(page.locator('#main-title')).toHaveCSS('color', BLUE);
   });
 });
