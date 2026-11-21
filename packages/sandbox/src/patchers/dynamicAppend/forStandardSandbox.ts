@@ -44,6 +44,10 @@ interface DOMPrototypePatchState {
   patchedMutationObserverObserve: typeof MutationObserver.prototype.observe;
   nativeCompareDocumentPosition: typeof Node.prototype.compareDocumentPosition;
   patchedCompareDocumentPosition: typeof Node.prototype.compareDocumentPosition;
+}
+
+interface InsertAdjacentElementPatchState {
+  refCount: number;
   nativeInsertAdjacentElement: typeof Element.prototype.insertAdjacentElement;
   patchedInsertAdjacentElement: typeof Element.prototype.insertAdjacentElement;
 }
@@ -59,6 +63,9 @@ interface DynamicAppendSharedState {
   elementConfigs: WeakMap<HTMLElement, SandboxConfig>;
   containerOwners: WeakMap<HTMLElement, PluginCompartment>;
   domPrototypePatch?: DOMPrototypePatchState;
+  // Kept apart from domPrototypePatch: qiankun copies that predate this patch already share that
+  // state, which would make a newer copy skip installing it (or leave it behind on release).
+  insertAdjacentElementPatch?: InsertAdjacentElementPatchState;
   cssomPatch?: CSSOMPatchState;
 }
 
@@ -384,6 +391,43 @@ function patchDOMPrototypeFns(): Unpatch {
       return nativeCompareDocumentPosition.call(this, realNode);
     };
 
+    state = {
+      refCount: 0,
+      nativeMutationObserverObserve,
+      patchedMutationObserverObserve,
+      nativeCompareDocumentPosition,
+      patchedCompareDocumentPosition,
+    };
+    sharedState.domPrototypePatch = state;
+    MutationObserver.prototype.observe = patchedMutationObserverObserve;
+    Node.prototype.compareDocumentPosition = patchedCompareDocumentPosition;
+  }
+
+  state.refCount += 1;
+
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    state.refCount -= 1;
+    if (state.refCount > 0) return;
+
+    // Do not clobber a host patch installed after qiankun's patch.
+    if (MutationObserver.prototype.observe === state.patchedMutationObserverObserve) {
+      MutationObserver.prototype.observe = state.nativeMutationObserverObserve;
+    }
+    if (Node.prototype.compareDocumentPosition === state.patchedCompareDocumentPosition) {
+      Node.prototype.compareDocumentPosition = state.nativeCompareDocumentPosition;
+    }
+    if (sharedState.domPrototypePatch === state) {
+      delete sharedState.domPrototypePatch;
+    }
+  };
+}
+
+function patchInsertAdjacentElement(): Unpatch {
+  let state = sharedState.insertAdjacentElementPatch;
+  if (!state) {
     /*
      * patch Element.prototype.insertAdjacentElement: it is an insertion into the parent of its
      * receiver (or into the receiver itself), thus it bypasses the instance-level appendChild /
@@ -420,18 +464,8 @@ function patchDOMPrototypeFns(): Unpatch {
       return nativeInsertAdjacentElement.call(this, where, element);
     };
 
-    state = {
-      refCount: 0,
-      nativeMutationObserverObserve,
-      patchedMutationObserverObserve,
-      nativeCompareDocumentPosition,
-      patchedCompareDocumentPosition,
-      nativeInsertAdjacentElement,
-      patchedInsertAdjacentElement,
-    };
-    sharedState.domPrototypePatch = state;
-    MutationObserver.prototype.observe = patchedMutationObserverObserve;
-    Node.prototype.compareDocumentPosition = patchedCompareDocumentPosition;
+    state = { refCount: 0, nativeInsertAdjacentElement, patchedInsertAdjacentElement };
+    sharedState.insertAdjacentElementPatch = state;
     Element.prototype.insertAdjacentElement = patchedInsertAdjacentElement;
   }
 
@@ -445,17 +479,11 @@ function patchDOMPrototypeFns(): Unpatch {
     if (state.refCount > 0) return;
 
     // Do not clobber a host patch installed after qiankun's patch.
-    if (MutationObserver.prototype.observe === state.patchedMutationObserverObserve) {
-      MutationObserver.prototype.observe = state.nativeMutationObserverObserve;
-    }
-    if (Node.prototype.compareDocumentPosition === state.patchedCompareDocumentPosition) {
-      Node.prototype.compareDocumentPosition = state.nativeCompareDocumentPosition;
-    }
     if (Element.prototype.insertAdjacentElement === state.patchedInsertAdjacentElement) {
       Element.prototype.insertAdjacentElement = state.nativeInsertAdjacentElement;
     }
-    if (sharedState.domPrototypePatch === state) {
-      delete sharedState.domPrototypePatch;
+    if (sharedState.insertAdjacentElementPatch === state) {
+      delete sharedState.insertAdjacentElementPatch;
     }
   };
 }
@@ -521,6 +549,7 @@ export function patchStandardSandbox(context: IsolationPluginContext): Free {
 
   const unpatchDocument = patchDocument(compartment, appName, getContainer, sandboxConfig);
   const unpatchDOMPrototype = patchDOMPrototypeFns();
+  const unpatchInsertAdjacentElement = patchInsertAdjacentElement();
   const unpatchCSSOM = styleIsolation ? patchCSSOM() : undefined;
 
   let released = false;
@@ -531,6 +560,7 @@ export function patchStandardSandbox(context: IsolationPluginContext): Free {
       unpatchDocument();
 
       unpatchCSSOM?.();
+      unpatchInsertAdjacentElement();
       unpatchDOMPrototype();
     }
 

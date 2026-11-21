@@ -202,14 +202,26 @@ export function getOverwrittenAppendChildOrInsertBefore(
             );
           }
           // FIXME we have to set the target container to global document to trigger style rendering while the real container was detached
-          const targetContainerDOM = stylesheetTargetDetached ? document[target] : this;
+          // A reference node living in the detached container can only be positioned against there,
+          // the global document would reject it as it is not its child.
+          const targetContainerDOM =
+            stylesheetTargetDetached && referenceNode?.parentNode !== this ? document[target] : this;
           const result = appendChild.call(targetContainerDOM, transpiledStyleSheetElement, referenceNode);
 
           // record refNo thus we can keep order while remounting
           if (typeof refNo === 'number' && refNo !== -1) {
             defineNonEnumerableProperty(transpiledStyleSheetElement, styleElementRefNodeNo, refNo);
+          } else {
+            // a moved element must not keep the position it was recorded at before
+            Reflect.deleteProperty(transpiledStyleSheetElement, styleElementRefNodeNo);
           }
           const { dynamicStyleSheetElements } = sandboxConfig;
+          // moving an already recorded element updates its entry instead of recording it twice,
+          // otherwise a single removal would leave a stale entry that remounts replay
+          const recordedIndex = dynamicStyleSheetElements.indexOf(transpiledStyleSheetElement);
+          if (recordedIndex !== -1) {
+            dynamicStyleSheetElements.splice(recordedIndex, 1);
+          }
           // record dynamic style elements after insert succeed
           dynamicStyleSheetElements.push(transpiledStyleSheetElement);
 
@@ -258,7 +270,7 @@ export function getOverwrittenAppendChildOrInsertBefore(
            FIXME we have to set the target container to global document to trigger script evaluation while the real container was detached,
            as dynamic append script element to detached element will not trigger script evaluation automatically
            */
-          const targetContainerDOM = scriptTargetDetached ? document[target] : this;
+          const targetContainerDOM = scriptTargetDetached && refChild?.parentNode !== this ? document[target] : this;
           const result = appendChild.call(targetContainerDOM, transpiledScriptElement, refChild) as T;
 
           // the script have no src attribute after transpile, indicating that the script needs to wait for the src to be filled

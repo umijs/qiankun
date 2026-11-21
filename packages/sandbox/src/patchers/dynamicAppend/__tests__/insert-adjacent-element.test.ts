@@ -1,6 +1,7 @@
 import { createSandbox } from '../../../core/sandbox';
 import { type IsolationPluginConfig } from '../../types';
 import { type SandboxConfig } from '../types';
+import { reattachDynamicStylesheets } from '../forStandardSandbox';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 let appSequence = 0;
@@ -132,5 +133,57 @@ describe.sequential('Element.prototype.insertAdjacentElement under the dynamic a
     await controller.dispose();
     controllers.splice(controllers.indexOf(controller), 1);
     expect(Element.prototype.insertAdjacentElement).toBe(native);
+  });
+
+  it('keeps the insertion in the detached head when the host detached the container first', () => {
+    const { container, head, sandboxDocument, config } = createController();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const anchor = sandboxDocument.createElement('style') as HTMLStyleElement;
+    head.appendChild(anchor);
+    const inserted = document.createElement('style');
+    container.remove();
+
+    expect(() => anchor.insertAdjacentElement('beforebegin', inserted)).not.toThrow();
+
+    expect(Array.from(head.children)).toEqual([inserted, anchor]);
+    expect(config.dynamicStyleSheetElements).toEqual([anchor, inserted]);
+  });
+
+  it('records a moved stylesheet once, so a single removal settles it', async () => {
+    const { container, head, controller, sandboxDocument, config } = createController();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const first = sandboxDocument.createElement('style') as HTMLStyleElement;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const second = sandboxDocument.createElement('style') as HTMLStyleElement;
+    head.appendChild(first);
+    head.appendChild(second);
+
+    first.insertAdjacentElement('afterend', second);
+    expect(config.dynamicStyleSheetElements).toEqual([first, second]);
+    head.insertBefore(first, null);
+    expect(config.dynamicStyleSheetElements).toEqual([second, first]);
+
+    head.removeChild(first);
+    head.removeChild(second);
+    expect(config.dynamicStyleSheetElements).toHaveLength(0);
+
+    await reattachDynamicStylesheets(controller.instance, container);
+    expect(head.children).toHaveLength(0);
+  });
+
+  it('installs and releases the patch independently of the shared prototype patch state', async () => {
+    const native = Element.prototype.insertAdjacentElement;
+    const sharedState = Reflect.get(window, Symbol.for('qiankun.dynamicAppend.sharedState')) as Record<string, unknown>;
+    // an older qiankun copy that only knows the prototype patch holds that state first
+    sharedState.domPrototypePatch = { refCount: 1 };
+    try {
+      const { controller } = createController();
+      expect(Element.prototype.insertAdjacentElement).not.toBe(native);
+      await controller.dispose();
+      controllers.splice(controllers.indexOf(controller), 1);
+      expect(Element.prototype.insertAdjacentElement).toBe(native);
+    } finally {
+      delete sharedState.domPrototypePatch;
+    }
   });
 });
