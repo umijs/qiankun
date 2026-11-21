@@ -8,7 +8,7 @@ qiankun 3 targets modern browsers and does not support IE. The exact requirement
 | --- | --- | --- |
 | Base runtime (loading, classic script execution, JS sandbox) | `Proxy`, `TransformStream`, `URL.createObjectURL` | Any recent mainstream Chrome, Edge, Safari, or Firefox |
 | Native ESM micro-apps ([Native ESM support](/concepts/esm-sandbox)) | Dynamically injected import maps | Chrome/Edge 133+, Safari 18.4+; **not supported in Firefox by default** |
-| Style isolation ([Style isolation](/concepts/style-isolation)) | Native CSS `@scope`, with no polyfill or fallback | Chrome/Edge 118+, Safari 17.4+, Firefox 128+ |
+| Style isolation ([Style isolation](/concepts/style-isolation)) | Native CSS `@scope`, with no polyfill or fallback | Chrome/Edge 118+, Safari 17.4+, Firefox 146+ |
 
 The rows stack: if you only ship classic micro-apps without style isolation, the first row is all that matters; each additional capability tightens the browser matrix by its own row.
 
