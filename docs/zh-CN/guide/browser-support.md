@@ -8,7 +8,7 @@ qiankun 3 面向现代浏览器构建，不支持 IE。具体的浏览器要求�
 | --- | --- | --- |
 | 基础运行时（加载、Classic 脚本执行、JS 沙箱） | `Proxy`、`TransformStream`、`URL.createObjectURL` | 近年主流版本的 Chrome、Edge、Safari、Firefox 均满足 |
 | 原生 ESM 微应用（[原生 ESM 支持](/zh-CN/concepts/esm-sandbox)） | 动态注入的 import map | Chrome／Edge 133+、Safari 18.4+；**Firefox 默认不支持** |
-| 样式隔离（[样式隔离](/zh-CN/concepts/style-isolation)） | 原生 CSS `@scope`，无 polyfill 或降级方案 | Chrome／Edge 118+、Safari 17.4+、Firefox 128+ |
+| 样式隔离（[样式隔离](/zh-CN/concepts/style-isolation)） | 原生 CSS `@scope`，无 polyfill 或降级方案 | Chrome／Edge 118+、Safari 17.4+、Firefox 146+ |
 
 三行是叠加关系：只用 Classic 微应用、不开样式隔离，按第一行评估即可；每多启用一项能力，按对应行收紧浏览器矩阵。
 
