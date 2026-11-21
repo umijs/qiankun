@@ -84,8 +84,6 @@ function writableDOM(
   let resolve: void | (() => void);
   let isBlocked = false;
   let curChunk = '';
-  let aborted = false;
-  const activeObservers = new Set<MutationObserver>();
 
   return {
     write(chunk: string) {
@@ -94,9 +92,6 @@ function writableDOM(
       walk();
     },
     abort() {
-      aborted = true;
-      activeObservers.forEach((observer) => observer.disconnect());
-      activeObservers.clear();
       if (isBlocked) {
         (targetNodes.get(walker.currentNode) as Element).remove();
       }
@@ -118,31 +113,9 @@ function writableDOM(
     const graftedHost = owner.importNode(host, false);
     graftedHost.appendChild(text);
     assertInPlaceTransform(graftedHost, assetTransformer(graftedHost));
-    if (graftedHost.firstChild) {
-      return graftedHost.firstChild as Text;
-    }
-    const placeholder = owner.createTextNode('');
-    // [qiankun] A transformer may clear inline text synchronously and populate it later
-    // (e.g. deferred resource inlining). Forward that deferred write to this placeholder node only.
-    if (!aborted && typeof MutationObserver === 'function') {
-      const wasConnected = target.isConnected;
-      const observer = new MutationObserver(() => {
-        observer.disconnect();
-        activeObservers.delete(observer);
-        if (
-          aborted ||
-          placeholder.parentNode !== host ||
-          !target.contains(placeholder) ||
-          (wasConnected && !placeholder.isConnected)
-        ) {
-          return;
-        }
-        placeholder.data = graftedHost.textContent ?? '';
-      });
-      activeObservers.add(observer);
-      observer.observe(graftedHost, { childList: true, characterData: true, subtree: true });
-    }
-    return placeholder;
+    // A transformer may intentionally remove all text. Async transformers must retain
+    // a Text node and update its data after this node moves into the live host.
+    return (graftedHost.firstChild as Text | null) ?? owner.createTextNode('');
   }
 
   function walk(): void {

@@ -11,6 +11,8 @@ export type StyleTranspilerOpts = {
   fetch: typeof globalThis.fetch;
   /** Base URL of the stylesheet, used to resolve relative url() and @import paths */
   baseURL?: string;
+  /** Terminal lifetime of the asset owner. */
+  signal?: AbortSignal;
 };
 
 const KEYFRAMES_RE = /@keyframes\s+([\w-]+)/g;
@@ -228,9 +230,15 @@ export default function transpileStyle(
     style.textContent = result;
   } else {
     // Clear synchronously so the unscoped source cannot apply globally during the fetch window.
-    style.textContent = '';
+    // Keep one Text node: the loader can move it from its detached transform host
+    // into the live style while @import is pending. Updating data preserves that
+    // identity and any sibling text subsequently appended by the application.
+    const text = style.ownerDocument.createTextNode('');
+    style.replaceChildren(text);
     void result.then((transformed) => {
-      style.textContent = transformed;
+      if (!opts.signal?.aborted && text.parentNode) {
+        text.data = transformed;
+      }
     });
   }
 

@@ -3,7 +3,7 @@
  * @since 2023-03-14
  */
 import transpileLink from './link';
-import transpileScript from './script';
+import transpileScript, { getAssetScope } from './script';
 import transpileStyle from './style';
 import type { AssetsTranspilerOpts } from './types';
 
@@ -32,6 +32,7 @@ export function transpileAssets<T extends Node>(node: T, baseURI: string, opts: 
         return transpileStyle(htmlElement as HTMLStyleElement, baseURI, {
           ...opts.styleIsolation,
           fetch: opts.fetch,
+          signal: getAssetScope(opts.compartment ?? opts.fetch).controller.signal,
         }) as unknown as T;
       }
       break;
