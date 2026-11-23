@@ -1,5 +1,32 @@
 # @qiankunjs/sandbox
 
+## 0.1.0-rc.19
+
+### Minor Changes
+
+- feat(qiankun): unload micro app generations and release owned resources (#3204)
+- feat(sandbox): route insertAdjacentElement through the dynamic append pipeline (#3223)
+- feat: add typed exports for published packages (#3189)
+- feat(esm-sandbox): detect unsupported native ESM environments (#3216)
+- feat: add stable qiankun error codes and solution links (#3199)
+
+### Patch Changes
+
+- perf(esm-sandbox): isolate module source fetch cache (#3196)
+- fix(sandbox): patch virtual head before document access
+- refactor: narrow the public qiankun API surface (#3200)
+- fix: strengthen browser behavior coverage and runtime isolation (#3224)
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies
+  - @qiankunjs/shared@0.1.0-rc.15
+
 ## 0.1.0-rc.18
 
 ### Minor Changes
