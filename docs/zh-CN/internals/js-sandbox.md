@@ -79,7 +79,7 @@ flowchart TD
 | `patchInterval` | `setInterval` / `clearInterval`；`free()` 时清理尚未停止的定时器 | 挂载 |
 | `patchWindowListener` | `window.addEventListener` / `removeEventListener`；清理残留监听器 | 挂载 |
 | `patchHistoryListener` | History API 相关监听器 | 挂载 |
-| `patchStandardSandbox`（`dynamicAppend`） | 拦截 `<script>`、`<style>` 和 `<link>` 的 `appendChild`、`insertBefore`，并重定向到应用容器 | `bootstrap` 和挂载 |
+| `patchStandardSandbox`（`dynamicAppend`） | 拦截 `<script>`、`<style>` 和 `<link>` 的 `appendChild`、`insertBefore`、`insertAdjacentElement`，并重定向到应用容器 | `bootstrap` 和挂载 |
 
 微应用实例不再使用时必须执行 `unmount()`。跳过卸载会使补丁模块的 `free()` 无法执行，导致定时器、事件监听器和动态插入的 DOM 节点继续存在，并影响重新挂载或多实例运行。卸载后沙箱会保留，供同名应用复用；需要彻底释放时调用 `unload()`。
 

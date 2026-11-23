@@ -13,6 +13,7 @@ import {
   getContainerHeadElement,
   getNewRemoveChild,
   getOverwrittenAppendChildOrInsertBefore,
+  isHijackingTag,
   rebuildCSSRules,
   recordStyledComponentsCSSRules,
   styleElementRefNodeNo,
@@ -45,6 +46,12 @@ interface DOMPrototypePatchState {
   patchedCompareDocumentPosition: typeof Node.prototype.compareDocumentPosition;
 }
 
+interface InsertAdjacentElementPatchState {
+  refCount: number;
+  nativeInsertAdjacentElement: typeof Element.prototype.insertAdjacentElement;
+  patchedInsertAdjacentElement: typeof Element.prototype.insertAdjacentElement;
+}
+
 interface CSSOMPatchState {
   refCount: number;
   nativeInsertRule: typeof CSSStyleSheet.prototype.insertRule;
@@ -56,6 +63,9 @@ interface DynamicAppendSharedState {
   elementConfigs: WeakMap<HTMLElement, SandboxConfig>;
   containerOwners: WeakMap<HTMLElement, PluginCompartment>;
   domPrototypePatch?: DOMPrototypePatchState;
+  // Kept apart from domPrototypePatch: qiankun copies that predate this patch already share that
+  // state, which would make a newer copy skip installing it (or leave it behind on release).
+  insertAdjacentElementPatch?: InsertAdjacentElementPatchState;
   cssomPatch?: CSSOMPatchState;
 }
 
@@ -88,6 +98,11 @@ const { containerOwners, elementConfigs, sandboxConfigs } = sharedState;
 const activeHeadPatchers = new WeakMap<PluginCompartment, (headElement: HTMLHeadElement) => void>();
 
 const getSandboxConfig = (element: HTMLElement) => elementConfigs.get(element);
+// Only the mount points carry both an owning config and instance-level insertion methods (installed
+// by patchDocumentHeadAndBodyMethods); stylesheet elements and nodes resolved by DOM position have a
+// config but never an own insertBefore.
+const isPatchedMountPoint = (element: HTMLElement) =>
+  Reflect.getOwnPropertyDescriptor(element, 'insertBefore') !== undefined && !!getSandboxConfig(element);
 const setSandboxConfig = (element: HTMLElement, config: SandboxConfig) => elementConfigs.set(element, config);
 
 /**
@@ -410,6 +425,69 @@ function patchDOMPrototypeFns(): Unpatch {
   };
 }
 
+function patchInsertAdjacentElement(): Unpatch {
+  let state = sharedState.insertAdjacentElementPatch;
+  if (!state) {
+    /*
+     * patch Element.prototype.insertAdjacentElement: it is an insertion into the parent of its
+     * receiver (or into the receiver itself), thus it bypasses the instance-level appendChild /
+     * insertBefore wrappers on the mount points — e.g. Vite inserts its dynamic styles right after
+     * the previously inserted one. When the insertion point is a patched mount point, delegate to
+     * the mount point's own insertBefore so the element is attributed, transpiled and recorded
+     * exactly like any other dynamic insertion. Anything else stays native.
+     * See https://github.com/umijs/qiankun/issues/3018
+     */
+    const nativeInsertAdjacentElement = Element.prototype.insertAdjacentElement;
+    const patchedInsertAdjacentElement = function insertAdjacentElement(
+      this: Element,
+      where: InsertPosition,
+      element: Element,
+    ): Element | null {
+      if (isHijackingTag(element.tagName)) {
+        const position = String(where).toLowerCase();
+        const mountPoint = position === 'afterbegin' || position === 'beforeend' ? this : this.parentNode;
+        if (mountPoint instanceof HTMLElement && isPatchedMountPoint(mountPoint)) {
+          switch (position) {
+            case 'beforebegin':
+              return mountPoint.insertBefore(element, this);
+            case 'afterbegin':
+              return mountPoint.insertBefore(element, mountPoint.firstChild);
+            case 'beforeend':
+              return mountPoint.insertBefore(element, null);
+            case 'afterend':
+              return mountPoint.insertBefore(element, this.nextSibling);
+            default:
+              break;
+          }
+        }
+      }
+      return nativeInsertAdjacentElement.call(this, where, element);
+    };
+
+    state = { refCount: 0, nativeInsertAdjacentElement, patchedInsertAdjacentElement };
+    sharedState.insertAdjacentElementPatch = state;
+    Element.prototype.insertAdjacentElement = patchedInsertAdjacentElement;
+  }
+
+  state.refCount += 1;
+
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    state.refCount -= 1;
+    if (state.refCount > 0) return;
+
+    // Do not clobber a host patch installed after qiankun's patch.
+    if (Element.prototype.insertAdjacentElement === state.patchedInsertAdjacentElement) {
+      Element.prototype.insertAdjacentElement = state.nativeInsertAdjacentElement;
+    }
+    if (sharedState.insertAdjacentElementPatch === state) {
+      delete sharedState.insertAdjacentElementPatch;
+    }
+  };
+}
+
 function patchCSSOM(): Unpatch {
   let state = sharedState.cssomPatch;
   if (!state) {
@@ -471,6 +549,7 @@ export function patchStandardSandbox(context: IsolationPluginContext): Free {
 
   const unpatchDocument = patchDocument(compartment, appName, getContainer, sandboxConfig);
   const unpatchDOMPrototype = patchDOMPrototypeFns();
+  const unpatchInsertAdjacentElement = patchInsertAdjacentElement();
   const unpatchCSSOM = styleIsolation ? patchCSSOM() : undefined;
 
   let released = false;
@@ -481,6 +560,7 @@ export function patchStandardSandbox(context: IsolationPluginContext): Free {
       unpatchDocument();
 
       unpatchCSSOM?.();
+      unpatchInsertAdjacentElement();
       unpatchDOMPrototype();
     }
 
