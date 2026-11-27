@@ -15,7 +15,11 @@ export type StyleIsolationOpts = {
 export type BaseTranspilerOpts = BaseLoaderOpts & {
   moduleResolver?: (url: string) => MatchResult | undefined;
   /** @internal synchronous bridge used by the streaming classic-script transform. */
-  classicScriptTransformer?: (source: string, sourceURL?: string) => string;
+  classicScriptTransformer?: (
+    source: string,
+    sourceURL?: string,
+    registerCleanup?: (cleanup: () => void) => void,
+  ) => string;
   /** Compartment-shaped module facade; the ESM mechanism stays private to the sandbox package. */
   compartment?: CompartmentModuleFacade;
   styleIsolation?: StyleIsolationOpts;
