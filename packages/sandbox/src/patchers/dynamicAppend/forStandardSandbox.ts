@@ -13,6 +13,7 @@ import {
   getContainerHeadElement,
   getNewRemoveChild,
   getOverwrittenAppendChildOrInsertBefore,
+  getStaticChildNode,
   isHijackingTag,
   rebuildCSSRules,
   recordStyledComponentsCSSRules,
@@ -23,6 +24,8 @@ import type { SandboxConfig } from './types';
 
 type PluginCompartment = IsolationPluginContext['compartment'];
 type Unpatch = () => void;
+// The patched mount point insertBefore accepts the node an insertion is positioned against.
+type AnchoredInsertBefore = (newChild: Element, refChild: Node | null, anchorNode: Node) => Element;
 
 function getRequiredContainer(getContainer: IsolationPluginContext['getContainer'], appName: string): HTMLElement {
   const container = getContainer();
@@ -455,7 +458,14 @@ function patchInsertAdjacentElement(): Unpatch {
             case 'beforeend':
               return mountPoint.insertBefore(element, null);
             case 'afterend':
-              return mountPoint.insertBefore(element, this.nextSibling);
+              // the receiver anchors the insertion even when it is the last child, so that a
+              // detached mount point keeps a stylesheet rather than redirecting it as a plain append
+              return (mountPoint.insertBefore as AnchoredInsertBefore).call(
+                mountPoint,
+                element,
+                this.nextSibling,
+                this,
+              );
             default:
               break;
           }
@@ -614,6 +624,9 @@ async function attachRecordedStylesheets(
     return false;
   };
 
+  // The ledger is kept in document order, so every replayed stylesheet must follow the previous
+  // one replayed into the same parent, wherever its position among the static nodes points to.
+  const lastReplayedElements = new Map<Node, Node>();
   await Promise.all(
     rebuildCSSRules(dynamicStyleSheetElements, async (stylesheetElement) => {
       if (!isElementExisted(stylesheetElement)) {
@@ -638,6 +651,9 @@ async function attachRecordedStylesheets(
           // micro app rendering should wait unit the rebuilding link element is loaded, otherwise it may cause style blink
           // As one external link element will just trigger loaded event once, although we append it multiple times, we need to clone it before every appending
           styleElement = styleElement.cloneNode(true) as HTMLLinkElement;
+          // the clone stands in for the recorded element, so it must not pass for a static node
+          const ownerConfig = getSandboxConfig(stylesheetElement);
+          if (ownerConfig) setSandboxConfig(styleElement, ownerConfig);
           styleElement.onload = () => deferred.resolve(true);
           styleElement.onerror = () => deferred.resolve(false);
         } else {
@@ -645,14 +661,18 @@ async function attachRecordedStylesheets(
         }
 
         const refNo = stylesheetElement[styleElementRefNodeNo];
-        if (typeof refNo === 'number' && refNo !== -1) {
-          // the reference node may be dynamic script comment which is not rebuilt while remounting thus reference node no longer exists
-          // in this case, we should append the style element to the end of mountDom
-          const refNode = mountDom.childNodes[refNo];
-          nativeInsertBefore.call(mountDom, styleElement, refNode);
-        } else {
-          nativeAppendChild.call(mountDom, styleElement);
+        // the static content may have changed since, in that case the element goes to the end of mountDom
+        let refNode = typeof refNo === 'number' ? getStaticChildNode(mountDom, refNo, getSandboxConfig) : null;
+        const lastReplayedElement = lastReplayedElements.get(mountDom);
+        if (
+          refNode &&
+          lastReplayedElement &&
+          lastReplayedElement.compareDocumentPosition(refNode) & Node.DOCUMENT_POSITION_PRECEDING
+        ) {
+          refNode = lastReplayedElement.nextSibling;
         }
+        nativeInsertBefore.call(mountDom, styleElement, refNode);
+        lastReplayedElements.set(mountDom, styleElement);
 
         return deferred.promise;
       }

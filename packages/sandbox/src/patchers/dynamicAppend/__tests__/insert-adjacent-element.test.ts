@@ -146,7 +146,100 @@ describe.sequential('Element.prototype.insertAdjacentElement under the dynamic a
     expect(() => anchor.insertAdjacentElement('beforebegin', inserted)).not.toThrow();
 
     expect(Array.from(head.children)).toEqual([inserted, anchor]);
-    expect(config.dynamicStyleSheetElements).toEqual([anchor, inserted]);
+    expect(config.dynamicStyleSheetElements).toEqual([inserted, anchor]);
+  });
+
+  it('keeps an insertion after the last stylesheet of a detached head in that head', () => {
+    const { container, head, config } = createController();
+    const last = document.createElement('style');
+    head.appendChild(last);
+    const inserted = document.createElement('style');
+    container.remove();
+
+    expect(last.insertAdjacentElement('afterend', inserted)).toBe(inserted);
+
+    expect(Array.from(head.children)).toEqual([last, inserted]);
+    expect(document.head.contains(inserted)).toBe(false);
+    expect(config.dynamicStyleSheetElements).toEqual([last, inserted]);
+  });
+
+  it('still sends a script inserted after the last child of a detached head to the global document', () => {
+    const { container, head } = createController();
+    const last = document.createElement('style');
+    head.appendChild(last);
+    const script = document.createElement('script');
+    script.textContent = '/* noop */';
+    container.remove();
+
+    expect(last.insertAdjacentElement('afterend', script)).toBe(script);
+
+    // a script inserted into a detached container would never be evaluated
+    expect(script.parentNode).toBe(document.head);
+    script.remove();
+  });
+
+  it('restores moved stylesheets in the order they had before the container was cleared', async () => {
+    const { container, head, controller } = createController();
+    const [a, , c] = ['a', 'b', 'c'].map((name) => {
+      const style = document.createElement('style');
+      style.dataset.name = name;
+      head.appendChild(style);
+      return style;
+    });
+    const order = () =>
+      Array.from(container.querySelector('qiankun-head')!.children).map((child) => (child as HTMLElement).dataset.name);
+
+    c.insertAdjacentElement('beforebegin', a);
+    expect(order()).toEqual(['b', 'a', 'c']);
+
+    // the host clears the container, and the remount streams a fresh head into it
+    container.innerHTML = '<qiankun-head></qiankun-head>';
+    await reattachDynamicStylesheets(controller.instance, container);
+
+    expect(order()).toEqual(['b', 'a', 'c']);
+  });
+
+  it('restores stylesheets around the static head content they were positioned against', async () => {
+    const { container, head, controller } = createController();
+    head.innerHTML = '<meta data-name="s0"><meta data-name="s1">';
+    const [s1] = Array.from(head.querySelectorAll('[data-name="s1"]'));
+    const style = (name: string) => {
+      const element = document.createElement('style');
+      element.dataset.name = name;
+      return element;
+    };
+    const order = () =>
+      Array.from(container.querySelector('qiankun-head')!.children).map((child) => (child as HTMLElement).dataset.name);
+
+    const a = style('a');
+    s1.insertAdjacentElement('beforebegin', a);
+    s1.insertAdjacentElement('beforebegin', style('b'));
+    head.insertBefore(style('c'), head.firstChild);
+    head.appendChild(a);
+    expect(order()).toEqual(['c', 's0', 'b', 's1', 'a']);
+
+    // the remount streams the static entry content into a fresh head before the replay
+    container.innerHTML = '<qiankun-head><meta data-name="s0"><meta data-name="s1"></qiankun-head>';
+    await reattachDynamicStylesheets(controller.instance, container);
+
+    expect(order()).toEqual(['c', 's0', 'b', 's1', 'a']);
+  });
+
+  it('hands a stylesheet moved into another sandbox over to that sandbox', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const first = createController();
+    const second = createController();
+    const style = document.createElement('style');
+    first.head.appendChild(style);
+
+    second.head.insertAdjacentElement('beforeend', style);
+
+    expect(first.config.dynamicStyleSheetElements).toHaveLength(0);
+    expect(second.config.dynamicStyleSheetElements).toEqual([style]);
+    await reattachDynamicStylesheets(first.controller.instance, first.container);
+    expect(style.parentNode).toBe(second.head);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('re-attributed'));
+    warnSpy.mockRestore();
   });
 
   it('records a moved stylesheet once, so a single removal settles it', async () => {

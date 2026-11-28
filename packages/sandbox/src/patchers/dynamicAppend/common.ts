@@ -92,16 +92,87 @@ export function getStyledElementCSSRules(styledElement: HTMLStyleElement): CSSRu
   return styledComponentCSSRulesMap.get(styledElement);
 }
 
+/**
+ * Nodes a remount does not stream into the fresh container again: every hijackable element that
+ * went through the dynamic pipeline (stylesheets are replayed from the ledger, scripts never).
+ */
+function isDynamicNode(node: Node, getSandboxConfig: (element: HTMLElement) => SandboxConfig | undefined): boolean {
+  return isHijackingTag((node as Element).tagName) && !!getSandboxConfig(node as HTMLElement);
+}
+
+/**
+ * The position of a stylesheet within the static content of its parent, i.e. the number of
+ * static nodes preceding it. Unlike a plain child index it does not depend on the other dynamic
+ * nodes, which may be moved, removed or replayed in a different sequence before a remount.
+ */
+function getStaticNodeNo(element: Node, getSandboxConfig: (element: HTMLElement) => SandboxConfig | undefined): number {
+  let staticNodeNo = 0;
+  for (let sibling = element.previousSibling; sibling; sibling = sibling.previousSibling) {
+    if (!isDynamicNode(sibling, getSandboxConfig)) staticNodeNo += 1;
+  }
+  return staticNodeNo;
+}
+
+/**
+ * Find the static child node a replayed stylesheet must be inserted before, `null` meaning the end.
+ */
+export function getStaticChildNode(
+  parent: Node,
+  staticNodeNo: number,
+  getSandboxConfig: (element: HTMLElement) => SandboxConfig | undefined,
+): ChildNode | null {
+  let remaining = staticNodeNo;
+  for (let child = parent.firstChild; child; child = child.nextSibling) {
+    if (!isDynamicNode(child, getSandboxConfig)) {
+      if (remaining === 0) return child;
+      remaining -= 1;
+    }
+  }
+  return null;
+}
+
+/**
+ * Record a stylesheet in the ledger at its document position, thus remounts replay the
+ * stylesheets in the order they had at last, wherever they have been moved to in between.
+ */
+function recordDynamicStyleSheetElement(
+  dynamicStyleSheetElements: SandboxConfig['dynamicStyleSheetElements'],
+  stylesheetElement: HTMLLinkElement | HTMLStyleElement,
+): void {
+  // moving an already recorded element updates its entry instead of recording it twice,
+  // otherwise a single removal would leave a stale entry that remounts replay
+  const recordedIndex = dynamicStyleSheetElements.indexOf(stylesheetElement);
+  if (recordedIndex !== -1) {
+    dynamicStyleSheetElements.splice(recordedIndex, 1);
+  }
+
+  // appending is the common case, so look for the position from the end of the ledger
+  let index = dynamicStyleSheetElements.length;
+  while (index > 0) {
+    const position = stylesheetElement.compareDocumentPosition(dynamicStyleSheetElements[index - 1]);
+    // the order of elements living in different trees (e.g. a cleared container) is unknown
+    if (position & Node.DOCUMENT_POSITION_DISCONNECTED || !(position & Node.DOCUMENT_POSITION_FOLLOWING)) break;
+    index -= 1;
+  }
+  dynamicStyleSheetElements.splice(index, 0, stylesheetElement);
+}
+
 export function getOverwrittenAppendChildOrInsertBefore(
   nativeFn: typeof HTMLElement.prototype.appendChild | typeof HTMLElement.prototype.insertBefore,
   getSandboxConfig: (element: HTMLElement) => SandboxConfig | undefined,
   target: DynamicDomMutationTarget = 'body',
   setSandboxConfig?: (element: HTMLElement, config: SandboxConfig) => void,
 ) {
+  /**
+   * @param anchorNode the node the insertion is positioned against, which is the reference node
+   * unless the caller positions it otherwise (e.g. `insertAdjacentElement('afterend')` right after
+   * the last child of the mount point)
+   */
   function appendChildInSandbox<T extends Node>(
     this: HTMLHeadElement | HTMLBodyElement,
     newChild: T,
     refChild: Node | null = null,
+    anchorNode: Node | null = refChild,
   ): T {
     const appendChild = nativeFn;
 
@@ -120,7 +191,7 @@ export function getOverwrittenAppendChildOrInsertBefore(
         Array.from(fragment.children).some((child) => isHijackingTag(child.tagName) && !isNativePassthroughNode(child));
       if (shouldDecompose) {
         Array.from(fragment.childNodes).forEach((child) => {
-          appendChildInSandbox.call(this, child, refChild);
+          appendChildInSandbox.call(this, child, refChild, anchorNode);
         });
         return newChild;
       }
@@ -176,10 +247,6 @@ export function getOverwrittenAppendChildOrInsertBefore(
           });
 
           const referenceNode = this.contains(refChild) ? refChild : null;
-          let refNo: number | undefined;
-          if (referenceNode) {
-            refNo = Array.from(this.childNodes).indexOf(referenceNode as ChildNode);
-          }
 
           const { compartment, nodeTransformer, fetch, styleIsolation } = sandboxConfig;
           const transpiledStyleSheetElement = nodeTransformer(stylesheetElement, {
@@ -202,28 +269,32 @@ export function getOverwrittenAppendChildOrInsertBefore(
             );
           }
           // FIXME we have to set the target container to global document to trigger style rendering while the real container was detached
-          // A reference node living in the detached container can only be positioned against there,
-          // the global document would reject it as it is not its child.
+          // An insertion positioned against a node living in the detached container can only land there,
+          // the global document would reject a reference node as it is not its child.
           const targetContainerDOM =
-            stylesheetTargetDetached && referenceNode?.parentNode !== this ? document[target] : this;
+            stylesheetTargetDetached && anchorNode?.parentNode !== this ? document[target] : this;
           const result = appendChild.call(targetContainerDOM, transpiledStyleSheetElement, referenceNode);
 
-          // record refNo thus we can keep order while remounting
-          if (typeof refNo === 'number' && refNo !== -1) {
-            defineNonEnumerableProperty(transpiledStyleSheetElement, styleElementRefNodeNo, refNo);
+          // record the position among the static nodes thus we can keep order while remounting
+          if (referenceNode && transpiledStyleSheetElement.parentNode === this) {
+            defineNonEnumerableProperty(
+              transpiledStyleSheetElement,
+              styleElementRefNodeNo,
+              getStaticNodeNo(transpiledStyleSheetElement, getSandboxConfig),
+            );
           } else {
             // a moved element must not keep the position it was recorded at before
             Reflect.deleteProperty(transpiledStyleSheetElement, styleElementRefNodeNo);
           }
-          const { dynamicStyleSheetElements } = sandboxConfig;
-          // moving an already recorded element updates its entry instead of recording it twice,
-          // otherwise a single removal would leave a stale entry that remounts replay
-          const recordedIndex = dynamicStyleSheetElements.indexOf(transpiledStyleSheetElement);
-          if (recordedIndex !== -1) {
-            dynamicStyleSheetElements.splice(recordedIndex, 1);
+          // the previous owner must not replay an element that moved into another sandbox
+          if (previousConfig && previousConfig !== sandboxConfig) {
+            const previousIndex = previousConfig.dynamicStyleSheetElements.indexOf(transpiledStyleSheetElement);
+            if (previousIndex !== -1) {
+              previousConfig.dynamicStyleSheetElements.splice(previousIndex, 1);
+            }
           }
           // record dynamic style elements after insert succeed
-          dynamicStyleSheetElements.push(transpiledStyleSheetElement);
+          recordDynamicStyleSheetElement(sandboxConfig.dynamicStyleSheetElements, transpiledStyleSheetElement);
 
           return result as T;
         }
@@ -268,7 +339,9 @@ export function getOverwrittenAppendChildOrInsertBefore(
           }
           /*
            FIXME we have to set the target container to global document to trigger script evaluation while the real container was detached,
-           as dynamic append script element to detached element will not trigger script evaluation automatically
+           as dynamic append script element to detached element will not trigger script evaluation automatically.
+           Unlike a stylesheet, a script stays in the detached container only when its reference node lives there,
+           an insertion merely anchored there (e.g. `afterend` of the last child) still goes to the global document
            */
           const targetContainerDOM = scriptTargetDetached && refChild?.parentNode !== this ? document[target] : this;
           const result = appendChild.call(targetContainerDOM, transpiledScriptElement, refChild) as T;
