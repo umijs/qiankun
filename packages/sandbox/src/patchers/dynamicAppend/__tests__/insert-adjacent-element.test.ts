@@ -163,6 +163,21 @@ describe.sequential('Element.prototype.insertAdjacentElement under the dynamic a
     expect(config.dynamicStyleSheetElements).toEqual([last, inserted]);
   });
 
+  it('still sends a script inserted after the last child of a detached head to the global document', () => {
+    const { container, head } = createController();
+    const last = document.createElement('style');
+    head.appendChild(last);
+    const script = document.createElement('script');
+    script.textContent = '/* noop */';
+    container.remove();
+
+    expect(last.insertAdjacentElement('afterend', script)).toBe(script);
+
+    // a script inserted into a detached container would never be evaluated
+    expect(script.parentNode).toBe(document.head);
+    script.remove();
+  });
+
   it('restores moved stylesheets in the order they had before the container was cleared', async () => {
     const { container, head, controller } = createController();
     const [a, , c] = ['a', 'b', 'c'].map((name) => {

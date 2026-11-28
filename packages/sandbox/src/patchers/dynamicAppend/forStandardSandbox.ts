@@ -459,7 +459,7 @@ function patchInsertAdjacentElement(): Unpatch {
               return mountPoint.insertBefore(element, null);
             case 'afterend':
               // the receiver anchors the insertion even when it is the last child, so that a
-              // detached mount point keeps it rather than redirecting it as a plain append
+              // detached mount point keeps a stylesheet rather than redirecting it as a plain append
               return (mountPoint.insertBefore as AnchoredInsertBefore).call(
                 mountPoint,
                 element,

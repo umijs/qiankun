@@ -339,9 +339,11 @@ export function getOverwrittenAppendChildOrInsertBefore(
           }
           /*
            FIXME we have to set the target container to global document to trigger script evaluation while the real container was detached,
-           as dynamic append script element to detached element will not trigger script evaluation automatically
+           as dynamic append script element to detached element will not trigger script evaluation automatically.
+           Unlike a stylesheet, a script stays in the detached container only when its reference node lives there,
+           an insertion merely anchored there (e.g. `afterend` of the last child) still goes to the global document
            */
-          const targetContainerDOM = scriptTargetDetached && anchorNode?.parentNode !== this ? document[target] : this;
+          const targetContainerDOM = scriptTargetDetached && refChild?.parentNode !== this ? document[target] : this;
           const result = appendChild.call(targetContainerDOM, transpiledScriptElement, refChild) as T;
 
           // the script have no src attribute after transpile, indicating that the script needs to wait for the src to be filled
